@@ -114,7 +114,7 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     /**
-     * Represents an event related to a custom paywall impression.
+     * Represents an event related to a custom paywall.
      *
      * @property id Unique identifier for the event.
      * @property version Version number of the event schema.
@@ -126,7 +126,7 @@ internal sealed class BackendEvent : Event {
      */
     @Serializable
     @SerialName("custom_paywall_event")
-    data class CustomPaywallImpression(
+    data class CustomPaywall(
         val id: String,
         val version: Int,
         val type: String,
@@ -194,8 +194,8 @@ internal sealed class BackendEvent : Event {
         const val AD_EVENT_SCHEMA_VERSION = 1
 
         /**
-         * Defines the version number of the custom paywall impression event schema.
+         * Defines the version number of the custom paywall event schema.
          */
-        const val CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION = 1
+        const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
     }
 }

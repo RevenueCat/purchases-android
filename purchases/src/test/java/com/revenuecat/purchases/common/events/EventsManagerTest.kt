@@ -25,7 +25,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
@@ -607,12 +607,12 @@ class EventsManagerTest {
     fun `tracking custom paywall impression event adds it to file with appSessionID`() {
         val fixedId = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009")
         val fixedDate = Date(1699270688884)
-        val customPaywallImpressionEvent = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+        val customPaywallImpressionEvent = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = "my-paywall"),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "my-paywall"),
         )
 
         eventsManager.track(customPaywallImpressionEvent)
@@ -626,12 +626,12 @@ class EventsManagerTest {
     fun `tracking custom paywall impression event with null paywallId adds it to file`() {
         val fixedId = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009")
         val fixedDate = Date(1699270688884)
-        val customPaywallImpressionEvent = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+        val customPaywallImpressionEvent = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = null),
+            data = CustomPaywallEvent.Impression.Data(paywallId = null),
         )
 
         eventsManager.track(customPaywallImpressionEvent)

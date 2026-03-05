@@ -12,7 +12,7 @@ import org.junit.Test
 import java.util.Date
 import java.util.UUID
 
-class CustomPaywallImpressionEventTest {
+class CustomPaywallEventTest {
 
     private val appUserID = "test-user-123"
     private val appSessionID = "session-abc-456"
@@ -27,8 +27,8 @@ class CustomPaywallImpressionEventTest {
                 subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
                 subclass(BackendStoredEvent.Ad::class, BackendStoredEvent.Ad.serializer())
                 subclass(
-                    BackendStoredEvent.CustomPaywallImpression::class,
-                    BackendStoredEvent.CustomPaywallImpression.serializer(),
+                    BackendStoredEvent.CustomPaywall::class,
+                    BackendStoredEvent.CustomPaywall.serializer(),
                 )
             }
         }
@@ -36,13 +36,13 @@ class CustomPaywallImpressionEventTest {
     }
 
     @Test
-    fun `CustomPaywallImpressionEvent is created with paywallId`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+    fun `CustomPaywallEvent Impression is created with paywallId`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = "my-paywall"),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "my-paywall"),
         )
 
         assertThat(event.creationData.id).isEqualTo(fixedId)
@@ -51,13 +51,13 @@ class CustomPaywallImpressionEventTest {
     }
 
     @Test
-    fun `CustomPaywallImpressionEvent is created with null paywallId`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+    fun `CustomPaywallEvent Impression is created with null paywallId`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = null),
+            data = CustomPaywallEvent.Impression.Data(paywallId = null),
         )
 
         assertThat(event.data.paywallId).isNull()
@@ -65,20 +65,20 @@ class CustomPaywallImpressionEventTest {
 
     @Test
     fun `toBackendStoredEvent converts event with paywallId correctly`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = "my-paywall"),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "my-paywall"),
         )
 
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
-        val expectedStoredEvent = BackendStoredEvent.CustomPaywallImpression(
-            BackendEvent.CustomPaywallImpression(
+        val expectedStoredEvent = BackendStoredEvent.CustomPaywall(
+            BackendEvent.CustomPaywall(
                 id = fixedId.toString(),
-                version = BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION,
+                version = BackendEvent.CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION,
                 type = "custom_paywall_impression",
                 appUserID = appUserID,
                 appSessionID = appSessionID,
@@ -91,20 +91,20 @@ class CustomPaywallImpressionEventTest {
 
     @Test
     fun `toBackendStoredEvent converts event with null paywallId correctly`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = null),
+            data = CustomPaywallEvent.Impression.Data(paywallId = null),
         )
 
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
-        val expectedStoredEvent = BackendStoredEvent.CustomPaywallImpression(
-            BackendEvent.CustomPaywallImpression(
+        val expectedStoredEvent = BackendStoredEvent.CustomPaywall(
+            BackendEvent.CustomPaywall(
                 id = fixedId.toString(),
-                version = BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION,
+                version = BackendEvent.CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION,
                 type = "custom_paywall_impression",
                 appUserID = appUserID,
                 appSessionID = appSessionID,
@@ -116,23 +116,23 @@ class CustomPaywallImpressionEventTest {
     }
 
     @Test
-    fun `BackendStoredEvent CustomPaywallImpression JSON roundtrip`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+    fun `BackendStoredEvent CustomPaywall JSON roundtrip`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = "my-paywall"),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "my-paywall"),
         )
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
         val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
         val decoded = json.decodeFromString(BackendStoredEvent.serializer(), jsonString)
 
-        assertThat(decoded).isInstanceOf(BackendStoredEvent.CustomPaywallImpression::class.java)
-        val decodedEvent = (decoded as BackendStoredEvent.CustomPaywallImpression).event
+        assertThat(decoded).isInstanceOf(BackendStoredEvent.CustomPaywall::class.java)
+        val decodedEvent = (decoded as BackendStoredEvent.CustomPaywall).event
         assertThat(decodedEvent.id).isEqualTo(fixedId.toString())
-        assertThat(decodedEvent.version).isEqualTo(BackendEvent.CUSTOM_PAYWALL_IMPRESSION_EVENT_SCHEMA_VERSION)
+        assertThat(decodedEvent.version).isEqualTo(BackendEvent.CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION)
         assertThat(decodedEvent.type).isEqualTo("custom_paywall_impression")
         assertThat(decodedEvent.appUserID).isEqualTo(appUserID)
         assertThat(decodedEvent.appSessionID).isEqualTo(appSessionID)
@@ -141,59 +141,59 @@ class CustomPaywallImpressionEventTest {
     }
 
     @Test
-    fun `BackendStoredEvent CustomPaywallImpression JSON roundtrip with null paywallId`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+    fun `BackendStoredEvent CustomPaywall JSON roundtrip with null paywallId`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = null),
+            data = CustomPaywallEvent.Impression.Data(paywallId = null),
         )
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
         val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
         val decoded = json.decodeFromString(BackendStoredEvent.serializer(), jsonString)
 
-        assertThat(decoded).isInstanceOf(BackendStoredEvent.CustomPaywallImpression::class.java)
-        val decodedEvent = (decoded as BackendStoredEvent.CustomPaywallImpression).event
+        assertThat(decoded).isInstanceOf(BackendStoredEvent.CustomPaywall::class.java)
+        val decodedEvent = (decoded as BackendStoredEvent.CustomPaywall).event
         assertThat(decodedEvent.paywallID).isNull()
     }
 
     @Test
     fun `version is 1 and type is custom_paywall_impression`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = "test"),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "test"),
         )
-        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID) as BackendStoredEvent.CustomPaywallImpression
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID) as BackendStoredEvent.CustomPaywall
 
         assertThat(storedEvent.event.version).isEqualTo(1)
         assertThat(storedEvent.event.type).isEqualTo("custom_paywall_impression")
     }
 
     @Test
-    fun `CustomPaywallImpressionParams default has null paywallId`() {
-        val params = CustomPaywallImpressionParams()
+    fun `CustomPaywallEventParams default has null paywallId`() {
+        val params = CustomPaywallEventParams()
         assertThat(params.paywallId).isNull()
     }
 
     @Test
-    fun `CustomPaywallImpressionParams with paywallId`() {
-        val params = CustomPaywallImpressionParams(paywallId = "my-paywall")
+    fun `CustomPaywallEventParams with paywallId`() {
+        val params = CustomPaywallEventParams(paywallId = "my-paywall")
         assertThat(params.paywallId).isEqualTo("my-paywall")
     }
 
     @Test
     fun `toBackendStoredEvent includes appSessionID in JSON`() {
-        val event = CustomPaywallImpressionEvent(
-            creationData = CustomPaywallImpressionEvent.CreationData(
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallImpressionEvent.Data(paywallId = "my-paywall"),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "my-paywall"),
         )
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
