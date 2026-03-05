@@ -37,7 +37,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +72,7 @@ internal fun DefaultPaywallView(
 ) {
     val context = LocalContext.current
     val isDarkTheme = isSystemInDarkTheme()
+    val density = LocalDensity.current
 
     val isDebugBuild =
         previewOverrides?.isDebugBuild ?: remember {
@@ -94,6 +97,8 @@ internal fun DefaultPaywallView(
 
     // Selection state
     var selectedPackage by remember(packages) { mutableStateOf(packages.firstOrNull()) }
+    var footerHeightPx by remember(packages) { mutableStateOf(0) }
+    val footerHeightDp = with(density) { footerHeightPx.toDp() }
 
     // Determine if we should show the warning (DEBUG only)
     val shouldShowWarning = isDebugBuild && warning != null
@@ -138,7 +143,12 @@ internal fun DefaultPaywallView(
                 .widthIn(max = 630.dp)
                 .align(Alignment.TopCenter)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(
+                    start = 16.dp,
+                    top = 16.dp,
+                    end = 16.dp,
+                    bottom = 16.dp + footerHeightDp,
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Title (only when showing warning)
@@ -146,6 +156,7 @@ internal fun DefaultPaywallView(
                 Text(
                     text = stringResource(R.string.revenuecatui_paywalls_title),
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
@@ -192,7 +203,7 @@ internal fun DefaultPaywallView(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                    .onSizeChanged { footerHeightPx = it.height }
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {

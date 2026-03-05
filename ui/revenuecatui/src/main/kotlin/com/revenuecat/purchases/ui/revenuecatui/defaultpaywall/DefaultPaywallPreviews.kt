@@ -1,8 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.defaultpaywall
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -89,12 +94,14 @@ private fun DefaultPaywallPreview(
     icon: DualColorImageGenerator.PreviewAppIcon,
     warning: PaywallWarning?,
 ) {
-    MaterialTheme {
+    val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+    MaterialTheme(colorScheme = colorScheme) {
         DefaultPaywallView(
             packages = previewPackages,
             warning = warning,
             onPurchase = {},
             onRestore = {},
+            modifier = Modifier.background(MaterialTheme.colorScheme.background),
             previewOverrides = DefaultPaywallPreviewOverrides(
                 appName = "RevenueCat",
                 appIconBitmap = icon.bitmap,
