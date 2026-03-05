@@ -108,7 +108,4 @@ public enum class PackageType(public val identifier: String?) {
      * A package configured with the predefined weekly identifier.
      */
     WEEKLY("\$rc_weekly"),
-    ;
-
-    public companion object
 }

@@ -85,7 +85,7 @@ internal enum class PreviewProductSpec(
     }
 }
 
-internal fun PackageType.Companion.inferFromIdentifier(identifier: String): PackageType {
+internal fun inferPackageTypeFromIdentifier(identifier: String): PackageType {
     val id = identifier.lowercase()
     return when {
         id.containsAny("lifetime", "forever", "permanent") -> PackageType.LIFETIME

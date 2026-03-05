@@ -230,8 +230,8 @@ internal class OfferingsFactory(
                     if (containsKey(key)) return@forEach
                     val identifier = pkg.nonBlankString("identifier")
                     val packageType = identifier?.let { packageTypeByIdentifier[it] }
-                        ?: planId?.let { PackageType.inferFromIdentifier(it) }
-                        ?: PackageType.inferFromIdentifier(productId)
+                        ?: planId?.let { inferPackageTypeFromIdentifier(it) }
+                        ?: inferPackageTypeFromIdentifier(productId)
                     put(key, listOf(PreviewProductSpec.fromPackageType(packageType).toTestStoreProduct(productId)))
                 }
         }

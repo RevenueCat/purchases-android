@@ -75,19 +75,19 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier matches lifetime keyword`() {
-        assertThat(PackageType.inferFromIdentifier("com.app.lifetime_access"))
+        assertThat(inferPackageTypeFromIdentifier("com.app.lifetime_access"))
             .isEqualTo(PackageType.LIFETIME)
     }
 
     @Test
     fun `inferFromIdentifier matches forever keyword`() {
-        assertThat(PackageType.inferFromIdentifier("forever_plan"))
+        assertThat(inferPackageTypeFromIdentifier("forever_plan"))
             .isEqualTo(PackageType.LIFETIME)
     }
 
     @Test
     fun `inferFromIdentifier matches permanent keyword`() {
-        assertThat(PackageType.inferFromIdentifier("permanent_sub"))
+        assertThat(inferPackageTypeFromIdentifier("permanent_sub"))
             .isEqualTo(PackageType.LIFETIME)
     }
 
@@ -97,13 +97,13 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier matches annual keyword`() {
-        assertThat(PackageType.inferFromIdentifier("com.app.annual_sub"))
+        assertThat(inferPackageTypeFromIdentifier("com.app.annual_sub"))
             .isEqualTo(PackageType.ANNUAL)
     }
 
     @Test
     fun `inferFromIdentifier matches year keyword and catches yearly`() {
-        assertThat(PackageType.inferFromIdentifier("yearly_plan"))
+        assertThat(inferPackageTypeFromIdentifier("yearly_plan"))
             .isEqualTo(PackageType.ANNUAL)
     }
 
@@ -113,25 +113,25 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier matches six_month keyword`() {
-        assertThat(PackageType.inferFromIdentifier("six_month_plan"))
+        assertThat(inferPackageTypeFromIdentifier("six_month_plan"))
             .isEqualTo(PackageType.SIX_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches sixmonth keyword`() {
-        assertThat(PackageType.inferFromIdentifier("sixmonth"))
+        assertThat(inferPackageTypeFromIdentifier("sixmonth"))
             .isEqualTo(PackageType.SIX_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches 6month keyword`() {
-        assertThat(PackageType.inferFromIdentifier("6month_sub"))
+        assertThat(inferPackageTypeFromIdentifier("6month_sub"))
             .isEqualTo(PackageType.SIX_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches semester keyword`() {
-        assertThat(PackageType.inferFromIdentifier("semester_pass"))
+        assertThat(inferPackageTypeFromIdentifier("semester_pass"))
             .isEqualTo(PackageType.SIX_MONTH)
     }
 
@@ -141,25 +141,25 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier matches three_month keyword`() {
-        assertThat(PackageType.inferFromIdentifier("three_month"))
+        assertThat(inferPackageTypeFromIdentifier("three_month"))
             .isEqualTo(PackageType.THREE_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches threemonth keyword`() {
-        assertThat(PackageType.inferFromIdentifier("threemonth"))
+        assertThat(inferPackageTypeFromIdentifier("threemonth"))
             .isEqualTo(PackageType.THREE_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches 3month keyword`() {
-        assertThat(PackageType.inferFromIdentifier("3month_sub"))
+        assertThat(inferPackageTypeFromIdentifier("3month_sub"))
             .isEqualTo(PackageType.THREE_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches quarter keyword`() {
-        assertThat(PackageType.inferFromIdentifier("quarterly"))
+        assertThat(inferPackageTypeFromIdentifier("quarterly"))
             .isEqualTo(PackageType.THREE_MONTH)
     }
 
@@ -169,25 +169,25 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier matches two_month keyword`() {
-        assertThat(PackageType.inferFromIdentifier("two_month"))
+        assertThat(inferPackageTypeFromIdentifier("two_month"))
             .isEqualTo(PackageType.TWO_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches twomonth keyword`() {
-        assertThat(PackageType.inferFromIdentifier("twomonth"))
+        assertThat(inferPackageTypeFromIdentifier("twomonth"))
             .isEqualTo(PackageType.TWO_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches 2month keyword`() {
-        assertThat(PackageType.inferFromIdentifier("2month_sub"))
+        assertThat(inferPackageTypeFromIdentifier("2month_sub"))
             .isEqualTo(PackageType.TWO_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier matches bimonth keyword`() {
-        assertThat(PackageType.inferFromIdentifier("bimonthly"))
+        assertThat(inferPackageTypeFromIdentifier("bimonthly"))
             .isEqualTo(PackageType.TWO_MONTH)
     }
 
@@ -197,13 +197,13 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier matches monthly keyword`() {
-        assertThat(PackageType.inferFromIdentifier("monthly_sub"))
+        assertThat(inferPackageTypeFromIdentifier("monthly_sub"))
             .isEqualTo(PackageType.MONTHLY)
     }
 
     @Test
     fun `inferFromIdentifier matches month keyword`() {
-        assertThat(PackageType.inferFromIdentifier("com.app.month_plan"))
+        assertThat(inferPackageTypeFromIdentifier("com.app.month_plan"))
             .isEqualTo(PackageType.MONTHLY)
     }
 
@@ -213,13 +213,13 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier matches weekly keyword`() {
-        assertThat(PackageType.inferFromIdentifier("weekly_sub"))
+        assertThat(inferPackageTypeFromIdentifier("weekly_sub"))
             .isEqualTo(PackageType.WEEKLY)
     }
 
     @Test
     fun `inferFromIdentifier matches week keyword`() {
-        assertThat(PackageType.inferFromIdentifier("com.app.week_pass"))
+        assertThat(inferPackageTypeFromIdentifier("com.app.week_pass"))
             .isEqualTo(PackageType.WEEKLY)
     }
 
@@ -229,43 +229,43 @@ class PreviewProductSpecTest {
 
     @Test
     fun `inferFromIdentifier returns CUSTOM for unrecognized product id`() {
-        assertThat(PackageType.inferFromIdentifier("com.app.some_product"))
+        assertThat(inferPackageTypeFromIdentifier("com.app.some_product"))
             .isEqualTo(PackageType.CUSTOM)
     }
 
     @Test
     fun `inferFromIdentifier returns CUSTOM for generic product id`() {
-        assertThat(PackageType.inferFromIdentifier("premium_access"))
+        assertThat(inferPackageTypeFromIdentifier("premium_access"))
             .isEqualTo(PackageType.CUSTOM)
     }
 
     @Test
     fun `inferFromIdentifier is case insensitive for uppercase`() {
-        assertThat(PackageType.inferFromIdentifier("ANNUAL_PLAN"))
+        assertThat(inferPackageTypeFromIdentifier("ANNUAL_PLAN"))
             .isEqualTo(PackageType.ANNUAL)
     }
 
     @Test
     fun `inferFromIdentifier is case insensitive for mixed case`() {
-        assertThat(PackageType.inferFromIdentifier("Monthly_Sub"))
+        assertThat(inferPackageTypeFromIdentifier("Monthly_Sub"))
             .isEqualTo(PackageType.MONTHLY)
     }
 
     @Test
     fun `inferFromIdentifier resolves six_month before month`() {
-        assertThat(PackageType.inferFromIdentifier("six_month_plan"))
+        assertThat(inferPackageTypeFromIdentifier("six_month_plan"))
             .isEqualTo(PackageType.SIX_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier resolves three_month before month`() {
-        assertThat(PackageType.inferFromIdentifier("three_month_plan"))
+        assertThat(inferPackageTypeFromIdentifier("three_month_plan"))
             .isEqualTo(PackageType.THREE_MONTH)
     }
 
     @Test
     fun `inferFromIdentifier resolves two_month before month`() {
-        assertThat(PackageType.inferFromIdentifier("two_month_plan"))
+        assertThat(inferPackageTypeFromIdentifier("two_month_plan"))
             .isEqualTo(PackageType.TWO_MONTH)
     }
 
