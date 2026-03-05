@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -678,6 +679,7 @@ class PurchaseInformationTest {
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `test PurchaseInformation with galaxy entitlement`() {
         val expiresDate = oneDayAgo
@@ -722,6 +724,7 @@ class PurchaseInformationTest {
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `test PurchaseInformation with non-renewing galaxy entitlement`() {
         val expiresDate = oneDayAgo
@@ -766,6 +769,7 @@ class PurchaseInformationTest {
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `test PurchaseInformation with expired galaxy entitlement`() {
         val expiresDate = oneDayAgo
