@@ -42,7 +42,7 @@ version: 2.1
 orbs:
   android: circleci/android@3.1.0
   gcp-cli: circleci/gcp-cli@3.3.1
-  revenuecat: revenuecat/sdks-common-config@3.8.0
+  revenuecat: revenuecat/sdks-common-config@3.13.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -267,6 +267,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -699,6 +701,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -802,6 +806,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - attach_workspace:
@@ -816,7 +822,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
           command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
@@ -859,6 +864,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - run:
@@ -868,7 +875,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Set GitHub token environment variable
           command: |
@@ -940,11 +946,12 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
