@@ -32,10 +32,14 @@ internal class OfferingsManager(
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
+    private val uiPreviewMode: Boolean = false,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
+
+    private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
+
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
@@ -43,6 +47,10 @@ internal class OfferingsManager(
         onSuccess: ((Offerings) -> Unit)? = null,
         fetchCurrent: Boolean = false,
     ) {
+        if (uiPreviewMode) {
+            dispatch { onSuccess?.invoke(emptyOfferings) }
+            return
+        }
         trackGetOfferingsStartedIfNeeded()
         val startTime = dateProvider.now
         val onErrorWithTracking: (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit = { error, cacheStatus ->
@@ -104,6 +112,7 @@ internal class OfferingsManager(
     }
 
     fun onAppForeground(appUserID: String) {
+        if (uiPreviewMode) return
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND }
             fetchAndCacheOfferings(appUserID, appInBackground = false)
@@ -116,6 +125,7 @@ internal class OfferingsManager(
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
+        if (uiPreviewMode) return
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
         backend.getOfferings(
             appUserID,
