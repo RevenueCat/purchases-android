@@ -16,4 +16,6 @@ internal object IdentityStrings {
     const val SWITCHING_USER = "Switching to user %s."
     const val SWITCHING_USER_SAME_APP_USER_ID = "switchUser called with the same appUserID as the current user %s. " +
         "This has no effect."
+    const val CONFIGURING_WITH_PREVIEW_MODE_USER_ID = "Configuring with UI preview mode user ID"
+    const val OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE = "Operation not supported in UI preview mode"
 }
