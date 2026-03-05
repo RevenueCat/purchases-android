@@ -171,12 +171,11 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     // Check if any component in the tree has an unsupported condition. If so, strip all rule-based
     // overrides across the entire paywall, rendering the "default paywall" with only base overrides.
     val config = paywallComponents.data.componentsConfig.base
-    Logger.d("Scanning paywall component tree for unsupported conditions.")
     val stripRules = config.containsUnsupportedCondition()
     if (stripRules) {
         Logger.w(
-            "Unsupported paywall condition encountered. " +
-                "Rendering default paywall with only base condition overrides.",
+            "Unsupported paywall rule encountered. " +
+                "Rendering paywall without visibility rules.",
         )
     }
 
