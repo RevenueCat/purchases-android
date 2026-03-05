@@ -97,6 +97,11 @@ internal class StyleFactory(
     private val fontAliases: Map<FontAlias, FontSpec>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     private val offering: Offering,
+    /**
+     * When true, all overrides containing rule conditions are stripped from every component,
+     * rendering the "default paywall" with only base condition overrides applied. This is set
+     * when the paywall component tree contains any unsupported condition type.
+     */
     private val stripRules: Boolean = false,
 ) {
 

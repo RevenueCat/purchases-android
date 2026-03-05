@@ -95,7 +95,7 @@ public class ComponentOverride<T : PartialComponent>(
         @Serializable
         public data class Unsupported(
             val originalType: String,
-        ) : Condition { override val isRule: Boolean get() = true }
+        ) : Condition
     }
 }
 
