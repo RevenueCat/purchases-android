@@ -192,7 +192,7 @@ internal class ComponentOverridesTests {
                             ),
                             ComponentOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.IntroOfferCondition(
+                                    ComponentOverride.Condition.IntroOfferRule(
                                         operator = ComponentOverride.EqualityOperator.EQUALS,
                                         value = true,
                                     ),
@@ -380,26 +380,26 @@ internal class ComponentOverridesTests {
                     ComponentOverride.Condition.PromoOffer,
                 ),
 
-                // IntroOfferCondition with operator and value
+                // IntroOfferRule with operator and value
                 arrayOf(
                     """{ "type": "intro_offer_condition", "operator": "=", "value": true }""",
-                    ComponentOverride.Condition.IntroOfferCondition(
+                    ComponentOverride.Condition.IntroOfferRule(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         value = true,
                     ),
                 ),
                 arrayOf(
                     """{ "type": "intro_offer_condition", "operator": "!=", "value": false }""",
-                    ComponentOverride.Condition.IntroOfferCondition(
+                    ComponentOverride.Condition.IntroOfferRule(
                         operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                         value = false,
                     ),
                 ),
 
-                // PromoOfferCondition with operator and value
+                // PromoOfferRule with operator and value
                 arrayOf(
                     """{ "type": "promo_offer_condition", "operator": "=", "value": true }""",
-                    ComponentOverride.Condition.PromoOfferCondition(
+                    ComponentOverride.Condition.PromoOfferRule(
                         operator = ComponentOverride.EqualityOperator.EQUALS,
                         value = true,
                     ),

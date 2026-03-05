@@ -7,7 +7,6 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
@@ -54,24 +53,28 @@ internal class PresentedOverride<T : PresentedPartial<T>>(
 /**
  * Converts component overrides to presented overrides.
  *
- * Returns an error if any override contains an [ComponentOverride.Condition.Unsupported] condition,
- * which indicates the paywall uses condition types this SDK version does not understand.
+ * @param stripRules If true, all overrides containing rule conditions are discarded, keeping only overrides with
+ * base conditions. This is used when the paywall contains any unsupported condition anywhere in its component tree,
+ * rendering the "default paywall" with only base overrides applied.
  */
 @Suppress("ReturnCount")
 @JvmSynthetic
 internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverride<T>>.toPresentedOverrides(
+    stripRules: Boolean = false,
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
-    return this.map { override ->
-        if (override.conditions.any { it is ComponentOverride.Condition.Unsupported }) {
-            val conditionTypes = override.conditions.joinToString(", ") { it.javaClass.simpleName }
-            Logger.w(
-                "Unsupported paywall condition encountered: " +
-                    "[$conditionTypes]. Falling back to default paywall.",
-            )
-            return Result.Error(PaywallValidationError.UnsupportedCondition)
+    val overridesToProcess = if (stripRules) {
+        // Also filter out Unsupported conditions explicitly: Unsupported has isRule = false (it's not
+        // a rule, it's an unknown condition type), but overrides containing it should still be discarded
+        // when stripping rules, since Unsupported is what triggered stripRules in the first place.
+        this.filter { override ->
+            override.conditions.none { it.isRule || it is ComponentOverride.Condition.Unsupported }
         }
+    } else {
+        this
+    }
 
+    return overridesToProcess.map { override ->
         val properties = transform(override.properties)
             .getOrElse { return Result.Error(it.head) }
 
@@ -138,16 +141,16 @@ private fun ComponentOverride.Condition.evaluate(
     -> windowSize.applicableConditions.contains(this)
     ComponentOverride.Condition.MultiplePhaseOffers -> offerEligibility.hasMultipleDiscountedPhases
     ComponentOverride.Condition.IntroOffer -> offerEligibility.isIntroOffer
-    is ComponentOverride.Condition.IntroOfferCondition -> evaluate(offerEligibility)
+    is ComponentOverride.Condition.IntroOfferRule -> evaluate(offerEligibility)
     ComponentOverride.Condition.Selected -> state == ComponentViewState.SELECTED
     ComponentOverride.Condition.PromoOffer -> offerEligibility.isPromoOffer
-    is ComponentOverride.Condition.PromoOfferCondition -> evaluate(offerEligibility)
+    is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
     ComponentOverride.Condition.Unsupported -> false
 }
 
-private fun ComponentOverride.Condition.IntroOfferCondition.evaluate(offerEligibility: OfferEligibility): Boolean {
+private fun ComponentOverride.Condition.IntroOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {
     val eligibility = offerEligibility.isIntroOffer
     return when (operator) {
         ComponentOverride.EqualityOperator.EQUALS -> eligibility == value
@@ -155,7 +158,7 @@ private fun ComponentOverride.Condition.IntroOfferCondition.evaluate(offerEligib
     }
 }
 
-private fun ComponentOverride.Condition.PromoOfferCondition.evaluate(offerEligibility: OfferEligibility): Boolean {
+private fun ComponentOverride.Condition.PromoOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {
     val eligibility = offerEligibility.isPromoOffer
     return when (operator) {
         ComponentOverride.EqualityOperator.EQUALS -> eligibility == value
