@@ -1,10 +1,12 @@
 package com.revenuecat.apitester.kotlin
 
 import android.content.Context
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import com.revenuecat.purchases.galaxy.GalaxyConfiguration
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE")
 private class GalaxyConfigurationAPI {
     fun checkConstructors(

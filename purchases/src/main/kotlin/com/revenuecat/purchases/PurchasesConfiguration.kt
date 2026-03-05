@@ -37,6 +37,8 @@ public open class PurchasesConfiguration(builder: Builder) {
     public val pendingTransactionsForPrepaidPlansEnabled: Boolean
     public val automaticDeviceIdentifierCollectionEnabled: Boolean
     public val preferredUILocaleOverride: String?
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public val galaxyBillingMode: GalaxyBillingMode
 
     init {
@@ -59,6 +61,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         this.galaxyBillingMode = builder.galaxyBillingMode
     }
 
@@ -66,6 +70,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         appUserID: String? = this.appUserID,
         service: ExecutorService? = this.service,
     ): PurchasesConfiguration {
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         var builder = Builder(context, apiKey)
             .appUserID(appUserID)
             .purchasesAreCompletedBy(purchasesAreCompletedBy)
@@ -125,7 +130,9 @@ public open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic
         internal var preferredUILocaleOverride: String? = null
 
-        @set:JvmSynthetic @get:JvmSynthetic
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        @set:JvmSynthetic
+        @get:JvmSynthetic
         internal var galaxyBillingMode: GalaxyBillingMode = GalaxyBillingMode.PRODUCTION
 
         /**
@@ -314,6 +321,7 @@ public open class PurchasesConfiguration(builder: Builder) {
          * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
          * @see GalaxyBillingMode
          */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         public fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode): Builder = apply {
             this.galaxyBillingMode = galaxyBillingMode
         }
@@ -344,6 +352,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
         if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         if (galaxyBillingMode != other.galaxyBillingMode) return false
 
         return true
@@ -361,6 +371,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
         result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         result = 31 * result + (galaxyBillingMode.hashCode())
         return result
     }

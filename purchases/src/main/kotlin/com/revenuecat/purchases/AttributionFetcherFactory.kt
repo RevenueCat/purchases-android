@@ -14,7 +14,8 @@ internal object AttributionFetcherFactory {
     ) = when (store) {
         Store.PLAY_STORE -> GoogleDeviceIdentifiersFetcher(dispatcher)
         Store.AMAZON -> AmazonDeviceIdentifiersFetcher()
-        Store.GALAXY -> GalaxyDeviceIdentifiersFetcher()
+        Store.GALAXY,
+        -> GalaxyDeviceIdentifiersFetcher()
         else -> {
             errorLog { "Incompatible store ($store) used" }
             throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")

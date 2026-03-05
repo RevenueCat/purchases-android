@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.strings
 
 import com.revenuecat.purchases.APIKeyValidator
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 
 internal object OfferingStrings {
@@ -59,6 +60,7 @@ internal object OfferingStrings {
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore: Store): String? {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
@@ -80,6 +82,7 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: Store): String {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {

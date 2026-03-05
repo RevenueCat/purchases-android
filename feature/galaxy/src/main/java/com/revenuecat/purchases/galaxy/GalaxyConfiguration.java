@@ -17,6 +17,7 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.Store;
 
@@ -24,14 +25,17 @@ import com.revenuecat.purchases.Store;
  * Holds parameters to initialize the SDK for the Galaxy Store. Create an instance of this class using the [Builder]
  * and pass it to [Purchases.configure].
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 public final class GalaxyConfiguration extends PurchasesConfiguration {
 
     public GalaxyConfiguration(@NonNull Builder builder) {
         super(builder);
     }
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public static final class Builder extends PurchasesConfiguration.Builder {
 
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         public Builder(
                 @NonNull Context context,
                 @NonNull String apiKey
@@ -41,6 +45,7 @@ public final class GalaxyConfiguration extends PurchasesConfiguration {
             this.galaxyBillingMode(GalaxyBillingMode.PRODUCTION);
         }
 
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         public Builder(
                 @NonNull Context context,
                 @NonNull String apiKey,

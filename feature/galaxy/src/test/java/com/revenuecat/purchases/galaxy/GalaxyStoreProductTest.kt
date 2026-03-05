@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
@@ -11,6 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class GalaxyStoreProductTest : GalaxyStoreTest() {
 

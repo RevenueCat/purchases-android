@@ -462,7 +462,7 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder dangerousSettings(com.revenuecat.purchases.DangerousSettings dangerousSettings);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder diagnosticsEnabled(boolean diagnosticsEnabled);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder entitlementVerificationMode(com.revenuecat.purchases.EntitlementVerificationMode verificationMode);
-    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder galaxyBillingMode(com.revenuecat.purchases.galaxy.GalaxyBillingMode galaxyBillingMode);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchasesConfiguration.Builder galaxyBillingMode(com.revenuecat.purchases.galaxy.GalaxyBillingMode galaxyBillingMode);
     method @Deprecated @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.PurchasesConfiguration.Builder informationalVerificationModeAndDiagnosticsEnabled(boolean enabled);
     method @Deprecated public final com.revenuecat.purchases.PurchasesConfiguration.Builder observerMode(boolean observerMode);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder pendingTransactionsForPrepaidPlansEnabled(boolean pendingTransactionsForPrepaidPlansEnabled);
@@ -919,7 +919,7 @@ package com.revenuecat.purchases.customercenter {
 
 package com.revenuecat.purchases.galaxy {
 
-  public enum GalaxyBillingMode {
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public enum GalaxyBillingMode {
     enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
     enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode PRODUCTION;
     enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;
@@ -1058,7 +1058,7 @@ package com.revenuecat.purchases.models {
     field public static final com.revenuecat.purchases.models.GalaxyReplacementMode.Companion Companion;
   }
 
-  public static final class GalaxyReplacementMode.Companion {
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static final class GalaxyReplacementMode.Companion {
     method public com.revenuecat.purchases.models.GalaxyReplacementMode getDefault();
     property public final com.revenuecat.purchases.models.GalaxyReplacementMode default;
   }

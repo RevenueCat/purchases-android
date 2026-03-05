@@ -12,13 +12,14 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) // For galaxyReplacementMode
 @Poko
 public class PurchaseParams(public val builder: Builder) {
 
     public val isPersonalizedPrice: Boolean?
     public val oldProductId: String?
     public val googleReplacementMode: GoogleReplacementMode
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public val galaxyReplacementMode: GalaxyReplacementMode
 
     @get:JvmSynthetic
@@ -42,6 +43,8 @@ public class PurchaseParams(public val builder: Builder) {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
         this.oldProductId = builder.oldProductId
         this.googleReplacementMode = builder.googleReplacementMode
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         this.galaxyReplacementMode = builder.galaxyReplacementMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
@@ -95,7 +98,7 @@ public class PurchaseParams(public val builder: Builder) {
         @get:JvmSynthetic
         internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
 
-        @OptIn(InternalRevenueCatAPI::class)
+        @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
         @set:JvmSynthetic
         @get:JvmSynthetic
         internal var galaxyReplacementMode: GalaxyReplacementMode = GalaxyReplacementMode.default

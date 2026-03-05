@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -137,6 +138,7 @@ private fun getSubtitle(
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Localization): String {
     val key = when (store) {
         Store.APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.APP_STORE
