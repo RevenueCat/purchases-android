@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">ابدأ الفترة التجريبية التي تبلغ {{ sub_offer_duration }}، ثم {{ Total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">لم يتم تثبيت المتصفح. تعذر فتح الرابط.</string>
     <string name="cannot_open_link">الرابط غير صالح. لم يتمكن من الفتح.</string>
+    <string name="revenuecatui_purchase">شراء</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">Začněte {{ sub_offer_duration }} zkušební období, poté {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Není nainstalován prohlížeč. Odkaz nelze otevřít.</string>
     <string name="cannot_open_link">Odkaz je neplatný. Nelze otevřít.</string>
+    <string name="revenuecatui_purchase">Koupit</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>
