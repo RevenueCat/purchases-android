@@ -1,9 +1,6 @@
 package com.revenuecat.apitester.java;
 
-import androidx.annotation.OptIn;
-
 import com.revenuecat.purchases.EntitlementInfo;
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.OwnershipType;
 import com.revenuecat.purchases.PeriodType;
 import com.revenuecat.purchases.Store;
@@ -63,7 +60,6 @@ final class EntitlementInfoAPI {
                 jsonObject);
     }
 
-    @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void store(final Store store) {
         switch (store) {
             case APP_STORE:

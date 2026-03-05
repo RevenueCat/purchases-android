@@ -8,14 +8,12 @@ import com.revenuecat.purchases.google.attribution.GoogleDeviceIdentifiersFetche
 
 internal object AttributionFetcherFactory {
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun createAttributionFetcher(
         store: Store,
         dispatcher: Dispatcher,
     ) = when (store) {
         Store.PLAY_STORE -> GoogleDeviceIdentifiersFetcher(dispatcher)
         Store.AMAZON -> AmazonDeviceIdentifiersFetcher()
-
         Store.GALAXY,
         -> GalaxyDeviceIdentifiersFetcher()
         else -> {

@@ -9,7 +9,6 @@ import com.revenuecat.purchases.simulatedstore.SimulatedStoreOfferingParser
 
 internal object OfferingParserFactory {
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun createOfferingParser(
         store: Store,
     ): OfferingParser {
