@@ -125,7 +125,7 @@ internal sealed class BackendEvent : Event {
      * @property paywallID The identifier of the custom paywall.
      */
     @Serializable
-    @SerialName("custom_paywall_impression")
+    @SerialName("custom_paywall_event")
     data class CustomPaywallImpression(
         val id: String,
         val version: Int,

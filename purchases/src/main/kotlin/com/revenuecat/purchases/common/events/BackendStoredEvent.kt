@@ -51,7 +51,7 @@ internal sealed class BackendStoredEvent : Event {
      * @property event The `BackendEvent.CustomPaywallImpression` event that is being stored.
      */
     @Serializable
-    @SerialName("custom_paywall_impression")
+    @SerialName("custom_paywall_event")
     data class CustomPaywallImpression(val event: BackendEvent.CustomPaywallImpression) : BackendStoredEvent()
 }
 

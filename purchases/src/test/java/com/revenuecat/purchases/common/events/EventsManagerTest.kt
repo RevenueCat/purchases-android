@@ -618,7 +618,7 @@ class EventsManagerTest {
         eventsManager.track(customPaywallImpressionEvent)
 
         checkFileContents(
-            """{"type":"custom_paywall_impression","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"custom_paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"paywall_id":"my-paywall"}}""".trimIndent() + "\n",
+            """{"type":"custom_paywall_event","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"custom_paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"paywall_id":"my-paywall"}}""".trimIndent() + "\n",
         )
     }
 
@@ -637,7 +637,7 @@ class EventsManagerTest {
         eventsManager.track(customPaywallImpressionEvent)
 
         checkFileContents(
-            """{"type":"custom_paywall_impression","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"custom_paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884}}""".trimIndent() + "\n",
+            """{"type":"custom_paywall_event","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"custom_paywall_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884}}""".trimIndent() + "\n",
         )
     }
 
