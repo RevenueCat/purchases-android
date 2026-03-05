@@ -40,6 +40,7 @@ import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@Suppress("LargeClass")
 class OfferingsFactoryTest {
 
     // language=JSON
@@ -863,6 +864,137 @@ class OfferingsFactoryTest {
         val product = resultData!!.offerings.current!!.availablePackages.first().product
         assertThat(product.price.amountMicros).isEqualTo(5_990_000)
         assertThat(product.period).isEqualTo(Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"))
+    }
+
+    @Test
+    fun `preview mode creates separate mock products for same product ID with different plan IDs`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        // language=JSON
+        val sharedProductIdOfferingResponse = JSONObject(
+            """
+            {
+                "offerings": [
+                    {
+                        "identifier": "$STUB_OFFERING_IDENTIFIER",
+                        "description": "Offering with multi-base-plan Google product",
+                        "packages": [
+                            {
+                                "identifier": "${'$'}rc_monthly",
+                                "platform_product_identifier": "premium_subscription",
+                                "platform_product_plan_identifier": "monthly-plan"
+                            },
+                            {
+                                "identifier": "${'$'}rc_annual",
+                                "platform_product_identifier": "premium_subscription",
+                                "platform_product_plan_identifier": "annual-plan"
+                            }
+                        ]
+                    }
+                ],
+                "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+            }
+            """.trimIndent()
+        )
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = sharedProductIdOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        val packages = resultData!!.offerings.current!!.availablePackages
+        assertThat(packages).hasSize(2)
+        val monthlyProduct = packages.first { it.identifier == "\$rc_monthly" }.product
+        val annualProduct = packages.first { it.identifier == "\$rc_annual" }.product
+        // Both have the same product ID (as would come from attribution)
+        assertThat(monthlyProduct.id).isEqualTo("premium_subscription")
+        assertThat(annualProduct.id).isEqualTo("premium_subscription")
+        // But they have different prices matching their respective package types
+        assertThat(monthlyProduct.price.amountMicros).isEqualTo(5_990_000)
+        assertThat(annualProduct.price.amountMicros).isEqualTo(59_990_000)
+    }
+
+    @Test
+    fun `preview mode infers package type from plan identifier when package identifier is custom`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        // language=JSON
+        val customPackageWithPlanResponse = JSONObject(
+            """
+            {
+                "offerings": [
+                    {
+                        "identifier": "$STUB_OFFERING_IDENTIFIER",
+                        "description": "Offering with custom package identifier but descriptive plan ID",
+                        "packages": [
+                            {
+                                "identifier": "pro_plan",
+                                "platform_product_identifier": "com.test.pro",
+                                "platform_product_plan_identifier": "annual-base"
+                            }
+                        ]
+                    }
+                ],
+                "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+            }
+            """.trimIndent()
+        )
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = customPackageWithPlanResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        val product = resultData!!.offerings.current!!.availablePackages.first().product
+        assertThat(product.price.amountMicros).isEqualTo(59_990_000)
+        assertThat(product.period).isEqualTo(Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"))
+    }
+
+    @Test
+    fun `preview mode works without plan ID (Amazon and INAPP products)`() {
+        every { appConfig.uiPreviewMode } returns true
+
+        // language=JSON
+        val noPlanIdResponse = JSONObject(
+            """
+            {
+                "offerings": [
+                    {
+                        "identifier": "$STUB_OFFERING_IDENTIFIER",
+                        "description": "Amazon offering without plan IDs",
+                        "packages": [
+                            {
+                                "identifier": "${'$'}rc_annual",
+                                "platform_product_identifier": "com.test.annual_sku"
+                            }
+                        ]
+                    }
+                ],
+                "current_offering_id": "$STUB_OFFERING_IDENTIFIER"
+            }
+            """.trimIndent()
+        )
+
+        var resultData: OfferingsResultData? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = noPlanIdResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { resultData = it },
+        )
+
+        val product = resultData!!.offerings.current!!.availablePackages.first().product
+        assertThat(product).isInstanceOf(TestStoreProduct::class.java)
+        assertThat(product.price.amountMicros).isEqualTo(59_990_000)
     }
 
     // endregion UI Preview Mode

@@ -32,15 +32,18 @@ internal class OfferingsFactory(
             .toMap()
 
     // The default OfferingParser matches products using base plan IDs (Google Play logic),
-    // which doesn't apply to mock products. In preview mode we key products purely by
-    // platform_product_identifier, so we override findMatchingProduct accordingly.
+    // which doesn't apply to mock products. In preview mode we key products by a composite
+    // "productId::planId" key (or just productId when no plan is present, e.g. Amazon/INAPP),
+    // so we override findMatchingProduct accordingly.
     private val previewOfferingParser = object : OfferingParser() {
         override fun findMatchingProduct(
             productsById: Map<String, List<StoreProduct>>,
             packageJson: JSONObject,
         ): StoreProduct? {
             val productIdentifier = packageJson.getString("platform_product_identifier")
-            return productsById[productIdentifier]?.firstOrNull()
+            val planIdentifier = packageJson.optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
+            val key = planIdentifier?.let { "$productIdentifier::$it" } ?: productIdentifier
+            return productsById[key]?.firstOrNull()
         }
     }
 
@@ -70,9 +73,15 @@ internal class OfferingsFactory(
                     offeringsJSON = offeringsJSON,
                     onCompleted = { productsById ->
                         try {
-                            val notFoundProductIds = allRequestedProductIdentifiers
-                                .filterNot { productsById.containsKey(it) }
-                                .toSet()
+                            // In preview mode the map is keyed by composite "productId::planId" keys,
+                            // so plain product ID lookups would all appear missing — skip the check.
+                            val notFoundProductIds = if (appConfig.uiPreviewMode) {
+                                emptySet()
+                            } else {
+                                allRequestedProductIdentifiers
+                                    .filterNot { productsById.containsKey(it) }
+                                    .toSet()
+                            }
                             notFoundProductIds
                                 .takeIf { it.isNotEmpty() }
                                 ?.let { missingProducts ->
@@ -159,7 +168,7 @@ internal class OfferingsFactory(
         onError: (PurchasesError) -> Unit,
     ) {
         if (appConfig.uiPreviewMode) {
-            val productsById = createPreviewProducts(productIds, offeringsJSON)
+            val productsById = createPreviewProducts(offeringsJSON)
             onCompleted(productsById)
             return
         }
@@ -199,34 +208,33 @@ internal class OfferingsFactory(
         )
     }
 
-    private fun createPreviewProducts(
-        productIds: Set<String>,
-        offeringsJSON: JSONObject,
-    ): Map<String, List<StoreProduct>> {
-        val packageTypeByProductId = extractPackageTypeByProductId(offeringsJSON)
-        return productIds.associateWith { productId ->
-            val packageType = packageTypeByProductId[productId]
-                ?: PreviewProductSpec.inferFromProductId(productId)
-            listOf(PreviewProductSpec.fromPackageType(packageType).toTestStoreProduct(productId))
+    // Builds a map of mock products keyed by "productId::planId" (or just "productId" when no
+    // plan is present, e.g. Amazon or INAPP). This ensures that multiple packages sharing the
+    // same platform_product_identifier but differing by platform_product_plan_identifier each
+    // get their own mock product with the correct pricing for their package type.
+    //
+    // Package type resolution priority:
+    //   1. RC package identifier (e.g. $rc_monthly, $rc_annual) — most reliable
+    //   2. Plan ID keywords (e.g. "monthly-plan", "annual-base") — helps custom packages on Google Play
+    //   3. Product ID keywords (e.g. "com.app.monthly_sub") — last resort fallback
+    private fun createPreviewProducts(offeringsJSON: JSONObject): Map<String, List<StoreProduct>> {
+        val offerings = offeringsJSON.optJSONArray("offerings") ?: return emptyMap()
+        return buildMap {
+            offerings.objects()
+                .mapNotNull { it.optJSONArray("packages") }
+                .flatMap { it.objects() }
+                .forEach { pkg ->
+                    val productId = pkg.nonBlankString("platform_product_identifier") ?: return@forEach
+                    val planId = pkg.nonBlankString("platform_product_plan_identifier")
+                    val key = planId?.let { "$productId::$it" } ?: productId
+                    if (containsKey(key)) return@forEach
+                    val identifier = pkg.nonBlankString("identifier")
+                    val packageType = identifier?.let { packageTypeByIdentifier[it] }
+                        ?: planId?.let { PackageType.inferFromIdentifier(it) }
+                        ?: PackageType.inferFromIdentifier(productId)
+                    put(key, listOf(PreviewProductSpec.fromPackageType(packageType).toTestStoreProduct(productId)))
+                }
         }
-    }
-
-    // Walks the offerings JSON to map each product ID to its PackageType using the package
-    // identifier (e.g. $rc_monthly). This lets us assign the correct mock price per package
-    // type rather than falling back to inference from the product ID string alone.
-    private fun extractPackageTypeByProductId(offeringsJson: JSONObject): Map<String, PackageType> {
-        val offerings = offeringsJson.optJSONArray("offerings") ?: return emptyMap()
-
-        return offerings.objects()
-            .mapNotNull { it.optJSONArray("packages") }
-            .flatMap { it.objects() }
-            .mapNotNull { pkg ->
-                val productId = pkg.nonBlankString("platform_product_identifier") ?: return@mapNotNull null
-                val identifier = pkg.nonBlankString("identifier") ?: return@mapNotNull null
-                val type = packageTypeByIdentifier[identifier] ?: return@mapNotNull null
-                productId to type
-            }
-            .toMap()
     }
 
     private fun JSONObject.nonBlankString(key: String): String? =
