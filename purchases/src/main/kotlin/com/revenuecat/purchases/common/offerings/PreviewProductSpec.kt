@@ -79,9 +79,6 @@ internal enum class PreviewProductSpec(
             PackageType.WEEKLY -> WEEKLY
             else -> DEFAULT
         }
-
-        private fun String.containsAny(vararg keywords: String): Boolean =
-            keywords.any { this.contains(it) }
     }
 }
 
