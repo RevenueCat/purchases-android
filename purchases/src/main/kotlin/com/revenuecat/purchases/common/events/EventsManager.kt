@@ -24,12 +24,14 @@ import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
+import com.revenuecat.purchases.utils.RateLimiter
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Manages the tracking, storing, and syncing of events in RevenueCat.
@@ -53,6 +55,10 @@ internal class EventsManager(
         () -> Unit,
         (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) -> Unit,
+    private val priorityFlushRateLimiter: RateLimiter = RateLimiter(
+        maxCallsInPeriod = 5,
+        periodSeconds = 60.seconds,
+    ),
 ) {
 
     companion object {
@@ -149,6 +155,10 @@ internal class EventsManager(
 
     @get:Synchronized
     @set:Synchronized
+    private var pendingPriorityFlush = false
+
+    @get:Synchronized
+    @set:Synchronized
     private var legacyFlushTriggered = false
 
     /**
@@ -218,6 +228,9 @@ internal class EventsManager(
             if (backendEvent != null) {
                 checkFileSizeAndClearIfNeeded()
                 fileHelper.appendEvent(backendEvent)
+                if (event.isPriorityEvent) {
+                    performPriorityFlush()
+                }
             } else {
                 debugLog { "Backend event not implemented for: $event" }
             }
@@ -255,7 +268,7 @@ internal class EventsManager(
     private fun flushNextBatch(batchNumber: Int, delay: Delay) {
         if (batchNumber > MAX_FLUSH_BATCHES) {
             verboseLog { "Reached maximum number of flush batches ($MAX_FLUSH_BATCHES). Stopping flush." }
-            flushInProgress.set(false)
+            onFlushComplete()
             return
         }
 
@@ -269,7 +282,7 @@ internal class EventsManager(
                     DebugEvent(name = DebugEventName.FLUSH_SKIPPED_NO_EVENTS),
                 )
             }
-            flushInProgress.set(false)
+            onFlushComplete()
             return
         }
 
@@ -309,10 +322,45 @@ internal class EventsManager(
                         fileHelper.clear(storedEventsWithNullValues.size)
                     }
                     // Stop flushing on error
-                    flushInProgress.set(false)
+                    onFlushComplete()
                 }
             },
         )
+    }
+
+    /**
+     * Attempts a priority flush for high-priority events.
+     * If a flush is already in progress, queues the flush to run after completion.
+     * Respects the rate limiter to prevent excessive network requests.
+     *
+     * Must be called from within an enqueue block.
+     */
+    private fun performPriorityFlush() {
+        if (!priorityFlushRateLimiter.shouldProceed()) {
+            debugLog { "Priority flush rate limited. Skipping." }
+            return
+        }
+        if (flushInProgress.getAndSet(true)) {
+            debugLog { "Flush in progress. Queuing priority flush." }
+            pendingPriorityFlush = true
+            return
+        }
+        debugLog { "Starting priority flush." }
+        flushNextBatch(batchNumber = 1, delay = Delay.NONE)
+    }
+
+    /**
+     * Called when a flush sequence completes (success, no events, max batches, or error).
+     * If a priority flush is pending, starts a new flush. Otherwise, marks flush as not in progress.
+     */
+    private fun onFlushComplete() {
+        if (pendingPriorityFlush) {
+            pendingPriorityFlush = false
+            debugLog { "Draining pending priority flush." }
+            flushNextBatch(batchNumber = 1, delay = Delay.NONE)
+        } else {
+            flushInProgress.set(false)
+        }
     }
 
     /**
