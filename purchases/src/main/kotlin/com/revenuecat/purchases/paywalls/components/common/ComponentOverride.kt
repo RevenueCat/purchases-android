@@ -44,6 +44,7 @@ public class ComponentOverride<T : PartialComponent>(
          * When an unsupported condition is encountered, all overrides containing rules are discarded,
          * rendering the "default paywall" with only base conditions applied.
          */
+        @InternalRevenueCatAPI
         public val isRule: Boolean get() = false
 
         @Serializable
