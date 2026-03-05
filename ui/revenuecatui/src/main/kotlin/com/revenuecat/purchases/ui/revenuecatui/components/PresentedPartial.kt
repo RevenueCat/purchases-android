@@ -7,7 +7,6 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
@@ -54,24 +53,17 @@ internal class PresentedOverride<T : PresentedPartial<T>>(
 /**
  * Converts component overrides to presented overrides.
  *
- * If any override contains an [ComponentOverride.Condition.Unsupported] condition, all conditional configurability
- * overrides are discarded and only legacy overrides (those whose conditions are all legacy) are kept. This renders
- * the "default paywall" — the same paywall template with only legacy overrides applied.
+ * @param stripRules If true, all overrides containing rule conditions are discarded, keeping only overrides with
+ * base conditions. This is used when the paywall contains any unsupported condition anywhere in its component tree,
+ * rendering the "default paywall" with only base overrides applied.
  */
 @Suppress("ReturnCount")
 @JvmSynthetic
 internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverride<T>>.toPresentedOverrides(
+    stripRules: Boolean = false,
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
-    val hasUnsupported = this.any { override ->
-        override.conditions.any { it is ComponentOverride.Condition.Unsupported }
-    }
-
-    val overridesToProcess = if (hasUnsupported) {
-        Logger.w(
-            "Unsupported paywall condition encountered. " +
-                "Rendering default paywall with only legacy overrides.",
-        )
+    val overridesToProcess = if (stripRules) {
         this.filter { override -> override.conditions.none { it.isRule } }
     } else {
         this

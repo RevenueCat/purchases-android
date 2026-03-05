@@ -10,7 +10,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.InvalidTemplate
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorOrNull
@@ -20,12 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
-import io.mockk.every
-import io.mockk.mockkObject
-import io.mockk.unmockkObject
 import org.junit.Assert.assertEquals
-import org.junit.After
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -40,18 +34,9 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
         val availableOverrides: List<ComponentOverride<PartialTextComponent>>,
         val transform: (PartialTextComponent) -> Result<LocalizedTextPartial, NonEmptyList<PaywallValidationError>>,
         val expected: Result<List<PresentedOverride<LocalizedTextPartial>>, PaywallValidationError>,
+        val stripRules: Boolean = false,
     )
 
-    @Before
-    fun setUp() {
-        mockkObject(Logger)
-        every { Logger.w(any()) } answers { }
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(Logger)
-    }
 
     companion object {
         private val localeId = LocaleId("en_US")
@@ -214,6 +199,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
             arrayOf(
                 "Should return empty list if only override contains Unsupported condition",
                 Args(
+                    stripRules = true,
                     availableOverrides = listOf(
                         ComponentOverride(
                             conditions = listOf(ComponentOverride.Condition.Unsupported),
@@ -232,6 +218,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
             arrayOf(
                 "Should filter out override with mixed legacy and Unsupported conditions",
                 Args(
+                    stripRules = true,
                     availableOverrides = listOf(
                         ComponentOverride(
                             conditions = listOf(
@@ -253,6 +240,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
             arrayOf(
                 "Should keep legacy overrides and discard non-legacy when Unsupported is present",
                 Args(
+                    stripRules = true,
                     availableOverrides = listOf(
                         ComponentOverride(
                             conditions = listOf(ComponentOverride.Condition.Compact),
@@ -287,6 +275,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
             arrayOf(
                 "Should keep only legacy overrides when Unsupported present among legacy and CC overrides",
                 Args(
+                    stripRules = true,
                     availableOverrides = listOf(
                         ComponentOverride(
                             conditions = listOf(ComponentOverride.Condition.Compact),
@@ -553,7 +542,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
     @Test
     fun `Should transform expectedly`() {
         // Arrange, Act
-        val actual = args.availableOverrides.toPresentedOverrides(args.transform)
+        val actual = args.availableOverrides.toPresentedOverrides(stripRules = args.stripRules, transform = args.transform)
 
         // Assert
         assertEquals(args.expected.isError, actual.isError)

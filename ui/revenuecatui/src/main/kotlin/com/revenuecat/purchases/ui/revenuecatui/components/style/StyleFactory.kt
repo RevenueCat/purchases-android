@@ -97,6 +97,7 @@ internal class StyleFactory(
     private val fontAliases: Map<FontAlias, FontSpec>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     private val offering: Offering,
+    private val stripRules: Boolean = false,
 ) {
 
     internal companion object {
@@ -714,7 +715,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            .toPresentedOverrides { partial ->
+            .toPresentedOverrides(stripRules) { partial ->
                 PresentedStackPartial(
                     from = partial,
                     aliases = colorAliases,
@@ -778,7 +779,7 @@ internal class StyleFactory(
             },
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            .toPresentedOverrides {
+            .toPresentedOverrides(stripRules) {
                 LocalizedTextPartial(
                     from = it,
                     using = localizations,
@@ -826,7 +827,7 @@ internal class StyleFactory(
     ): Result<ImageComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.overrides
-            .toPresentedOverrides {
+            .toPresentedOverrides(stripRules) {
                 it.source
                     ?.withLocalizedOverrides(it.overrideSourceLid)
                     .orSuccessfullyNull()
@@ -864,7 +865,7 @@ internal class StyleFactory(
     ): Result<VideoComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.fallbackSource?.withLocalizedOverrides(component.overrideSourceLid).orSuccessfullyNull(),
-        third = component.overrides?.toPresentedOverrides { videoPartial ->
+        third = component.overrides?.toPresentedOverrides(stripRules) { videoPartial ->
             videoPartial.source
                 ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
                 .orSuccessfullyNull()
@@ -920,7 +921,7 @@ internal class StyleFactory(
     ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
             first = component.overrides
-                .toPresentedOverrides { partial -> PresentedIconPartial(partial, colorAliases) }
+                .toPresentedOverrides(stripRules) { partial -> PresentedIconPartial(partial, colorAliases) }
                 .mapError { nonEmptyListOf(it) },
             second = component.color
                 ?.toColorStyles(aliases = colorAliases)
@@ -951,7 +952,7 @@ internal class StyleFactory(
         component: TimelineComponent,
     ): Result<TimelineComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
-            .toPresentedOverrides { partial -> Result.Success(PresentedTimelinePartial(partial)) }
+            .toPresentedOverrides(stripRules) { partial -> Result.Success(PresentedTimelinePartial(partial)) }
             .mapError { nonEmptyListOf(it) },
         second = component.items
             .map { createTimelineComponentItemStyle(it) }
@@ -979,7 +980,7 @@ internal class StyleFactory(
         item: TimelineComponent.Item,
     ): Result<TimelineComponentStyle.ItemStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = item.overrides
-            .toPresentedOverrides { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
+            .toPresentedOverrides(stripRules) { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
         second = createTextComponentStyle(item.title),
         third = item.description?.let { createTextComponentStyle(it) }.orSuccessfullyNull(),
@@ -1015,7 +1016,7 @@ internal class StyleFactory(
         component: CarouselComponent,
     ): Result<CarouselComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
-            .toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
+            .toPresentedOverrides(stripRules) { partial -> PresentedCarouselPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
         second = component.pages
             .map { createStackComponentStyle(it) }
@@ -1091,7 +1092,9 @@ internal class StyleFactory(
 
             zipOrAccumulate(
                 first = component.overrides
-                    .toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                    .toPresentedOverrides(
+                        stripRules,
+                    ) { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
                     .mapError { nonEmptyListOf(it) },
                 second = createTabsComponentStyleTabs(component.tabs, control),
                 third = createBackgroundStyles(component.background, component.backgroundColor),
