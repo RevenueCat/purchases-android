@@ -645,14 +645,14 @@ public class Purchases internal constructor(
 
     /**
      * Tracks a custom paywall impression event.
-     * @param params Optional parameters for the custom paywall impression event.
+     * @param params Parameters for the custom paywall impression event.
      */
     @OptIn(InternalRevenueCatAPI::class)
     @JvmSynthetic
-    internal fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams? = null) {
+    internal fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
         purchasesOrchestrator.track(
             CustomPaywallImpressionEvent(
-                data = CustomPaywallImpressionEvent.Data(paywallId = params?.paywallId),
+                data = CustomPaywallImpressionEvent.Data(paywallId = params.paywallId),
             ),
         )
     }
