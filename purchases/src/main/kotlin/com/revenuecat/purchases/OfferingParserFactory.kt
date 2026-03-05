@@ -9,6 +9,7 @@ import com.revenuecat.purchases.simulatedstore.SimulatedStoreOfferingParser
 
 internal object OfferingParserFactory {
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun createOfferingParser(
         store: Store,
     ): OfferingParser {
@@ -16,9 +17,8 @@ internal object OfferingParserFactory {
             Store.TEST_STORE -> SimulatedStoreOfferingParser()
             Store.PLAY_STORE -> GoogleOfferingParser()
             Store.AMAZON -> AmazonOfferingParser()
-
-            @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-            Store.GALAXY -> GalaxyOfferingParser()
+            Store.GALAXY,
+            -> GalaxyOfferingParser()
             else -> {
                 errorLog { "Incompatible store ($store) used" }
                 throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")

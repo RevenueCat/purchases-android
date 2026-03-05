@@ -8,6 +8,7 @@ import com.revenuecat.purchases.google.attribution.GoogleDeviceIdentifiersFetche
 
 internal object AttributionFetcherFactory {
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun createAttributionFetcher(
         store: Store,
         dispatcher: Dispatcher,
@@ -15,8 +16,8 @@ internal object AttributionFetcherFactory {
         Store.PLAY_STORE -> GoogleDeviceIdentifiersFetcher(dispatcher)
         Store.AMAZON -> AmazonDeviceIdentifiersFetcher()
 
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-        Store.GALAXY -> GalaxyDeviceIdentifiersFetcher()
+        Store.GALAXY,
+        -> GalaxyDeviceIdentifiersFetcher()
         else -> {
             errorLog { "Incompatible store ($store) used" }
             throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")

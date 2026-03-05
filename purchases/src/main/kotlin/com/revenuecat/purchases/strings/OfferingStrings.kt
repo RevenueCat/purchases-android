@@ -60,13 +60,12 @@ internal object OfferingStrings {
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore: Store): String? {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "Play Store"
             Store.AMAZON -> "Amazon Appstore"
-
-            @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
             Store.GALAXY -> "Galaxy Store"
             else -> null
         }
@@ -83,13 +82,12 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: Store): String {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "a" // "a Play Store API key"
             Store.AMAZON -> "an" // "an Amazon Appstore API key"
-
-            @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
             Store.GALAXY -> "a" // "a Galaxy Store API key"
             else -> "a"
         }
