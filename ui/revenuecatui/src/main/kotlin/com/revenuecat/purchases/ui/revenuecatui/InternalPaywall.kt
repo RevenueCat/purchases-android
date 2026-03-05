@@ -19,6 +19,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
@@ -39,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
@@ -54,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
+import kotlinx.coroutines.launch
 
 @Suppress("LongMethod")
 @Composable
@@ -157,6 +160,59 @@ internal fun InternalPaywall(
 @Composable
 private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     viewModel.trackPaywallImpressionIfNeeded()
+    val context = LocalContext.current
+    val activity = context.getActivity()
+    val coroutineScope = rememberCoroutineScope()
+
+    if (state.validationWarning != null) {
+        val defaultBackground = MaterialTheme.colorScheme.background
+        val defaultOnSurface = MaterialTheme.colorScheme.onSurface
+        Box(
+            modifier = Modifier
+                .conditional(state.isInFullScreenMode) {
+                    Modifier
+                        .fillMaxHeight()
+                        .background(defaultBackground)
+                }
+                .conditional(!state.isInFullScreenMode) {
+                    Modifier
+                        .clip(
+                            RoundedCornerShape(
+                                topStart = UIConstant.defaultCornerRadius,
+                                topEnd = UIConstant.defaultCornerRadius,
+                            ),
+                        )
+                        .background(defaultBackground)
+                },
+        ) {
+            DefaultPaywallView(
+                packages = state.offering.availablePackages,
+                warning = state.validationWarning,
+                onPurchase = { pkg ->
+                    if (activity != null) {
+                        coroutineScope.launch {
+                            viewModel.handlePackagePurchase(activity, pkg)
+                        }
+                    } else {
+                        Logger.e("Activity is null, cannot initiate purchase")
+                    }
+                },
+                onRestore = {
+                    coroutineScope.launch {
+                        viewModel.handleRestorePurchases()
+                    }
+                },
+            )
+            CloseButton(
+                shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+                color = defaultOnSurface,
+                actionInProgress = viewModel.actionInProgress.value,
+                onClick = viewModel::closePaywall,
+            )
+        }
+        return
+    }
+
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
         modifier = Modifier
@@ -179,7 +235,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
         val configuration = state.configurationWithOverriddenLocale()
 
         CompositionLocalProvider(
-            LocalActivity provides LocalContext.current.getActivity(),
+            LocalActivity provides activity,
             LocalContext provides state.contextWithConfiguration(configuration),
             LocalConfiguration provides configuration,
         ) {

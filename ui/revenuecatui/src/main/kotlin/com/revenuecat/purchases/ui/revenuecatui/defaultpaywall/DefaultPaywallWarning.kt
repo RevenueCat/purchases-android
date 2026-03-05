@@ -51,6 +51,7 @@ internal fun DefaultPaywallWarning(
             Text(
                 text = warning.title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
