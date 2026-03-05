@@ -175,7 +175,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     if (stripRules) {
         Logger.w(
             "Unsupported paywall rule encountered. " +
-                "Rendering paywall without visibility rules.",
+                "Rendering paywall without conditional overrides.",
         )
     }
 
