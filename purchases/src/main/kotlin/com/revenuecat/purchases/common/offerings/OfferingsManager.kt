@@ -125,7 +125,10 @@ internal class OfferingsManager(
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
-        if (uiPreviewMode) return
+        if (uiPreviewMode) {
+            dispatch { onSuccess?.invoke(OfferingsResultData(emptyOfferings, emptySet(), emptySet())) }
+            return
+        }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
         backend.getOfferings(
             appUserID,
