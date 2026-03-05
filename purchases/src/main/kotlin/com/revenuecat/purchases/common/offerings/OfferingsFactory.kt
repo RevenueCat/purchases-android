@@ -122,7 +122,7 @@ internal class OfferingsFactory(
                 jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
             for (j in 0 until jsonPackagesArray.length()) {
                 jsonPackagesArray.getJSONObject(j)
-                    .nonBlankString("platform_product_identifier")?.let {
+                    .optString("platform_product_identifier").takeIf { it.isNotBlank() }?.let {
                         productIds.add(it)
                     }
             }
@@ -170,7 +170,4 @@ internal class OfferingsFactory(
             },
         )
     }
-
-    private fun JSONObject.nonBlankString(key: String): String? =
-        optString(key).trim().takeIf { it.isNotEmpty() }
 }

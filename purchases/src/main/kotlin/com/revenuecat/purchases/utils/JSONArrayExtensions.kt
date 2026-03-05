@@ -35,31 +35,3 @@ internal fun <T> List<T?>.replaceJsonNullWithKotlinNull(): List<T?> {
         }
     } as List<T?>
 }
-
-/**
- * Returns a lazy [Sequence] over the elements of this [JSONArray].
- *
- * This removes the need for manual index-based iteration
- * (`for (i in 0 until length())`) and enables functional operators
- * such as `map`, `flatMap`, and `filter`.
- *
- * Elements are returned as nullable `Any?` because a JSONArray
- * may contain mixed or null values.
- */
-internal fun JSONArray.asSequence(): Sequence<Any?> = sequence {
-    for (index in 0 until length()) {
-        yield(opt(index))
-    }
-}
-
-/**
- * Returns a [Sequence] of [JSONObject] elements contained in this array.
- *
- * Non-JSONObject elements are ignored.
- *
- * This provides a safe and expressive way to traverse
- * JSON arrays that are expected to contain objects,
- * avoiding unsafe casts and manual type checks.
- */
-internal fun JSONArray.objects(): Sequence<JSONObject> =
-    asSequence().filterIsInstance<JSONObject>()
