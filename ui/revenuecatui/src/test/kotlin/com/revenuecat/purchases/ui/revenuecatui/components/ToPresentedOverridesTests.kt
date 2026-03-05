@@ -10,7 +10,6 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.InvalidTemplate
-import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.UnsupportedCondition
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -213,7 +212,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 )
             ),
             arrayOf(
-                "Should fail if override contains Unsupported condition",
+                "Should return empty list if only override contains Unsupported condition",
                 Args(
                     availableOverrides = listOf(
                         ComponentOverride(
@@ -227,11 +226,11 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         aliases = emptyMap(),
                         fontAliases = allFontAliases,
                     ) },
-                    expected = Result.Error(UnsupportedCondition)
+                    expected = Result.Success(emptyList())
                 )
             ),
             arrayOf(
-                "Should fail if Unsupported condition is among other conditions",
+                "Should filter out override with mixed legacy and Unsupported conditions",
                 Args(
                     availableOverrides = listOf(
                         ComponentOverride(
@@ -248,11 +247,11 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         aliases = emptyMap(),
                         fontAliases = allFontAliases,
                     ) },
-                    expected = Result.Error(UnsupportedCondition)
+                    expected = Result.Success(emptyList())
                 )
             ),
             arrayOf(
-                "Should fail if any override has Unsupported condition even if others are valid",
+                "Should keep legacy overrides and discard non-legacy when Unsupported is present",
                 Args(
                     availableOverrides = listOf(
                         ComponentOverride(
@@ -270,7 +269,85 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         aliases = emptyMap(),
                         fontAliases = allFontAliases,
                     ) },
-                    expected = Result.Error(UnsupportedCondition)
+                    expected = Result.Success(
+                        listOf(
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.Compact),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = compact),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                        )
+                    )
+                )
+            ),
+            arrayOf(
+                "Should keep only legacy overrides when Unsupported present among legacy and CC overrides",
+                Args(
+                    availableOverrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Compact),
+                            properties = PartialTextComponent(fontName = compact),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                            properties = PartialTextComponent(fontName = introOffer),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.SelectedPackage(
+                                    operator = ComponentOverride.ArrayOperator.IN,
+                                    packages = listOf("monthly"),
+                                ),
+                            ),
+                            properties = PartialTextComponent(fontName = medium),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Variable(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    variable = "plan",
+                                    value = JsonPrimitive("premium"),
+                                ),
+                            ),
+                            properties = PartialTextComponent(fontName = expanded),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = PartialTextComponent(fontName = multipleIntroOffers),
+                        ),
+                    ),
+                    transform = { partial -> LocalizedTextPartial(
+                        from = partial,
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        aliases = emptyMap(),
+                        fontAliases = allFontAliases,
+                    ) },
+                    expected = Result.Success(
+                        listOf(
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.Compact),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = compact),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = introOffer),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                        )
+                    )
                 )
             ),
             arrayOf(
@@ -310,7 +387,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         ),
                         ComponentOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOfferCondition(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = false,
                                 ),
@@ -384,7 +461,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             ),
                             PresentedOverride(
                                 conditions = listOf(
-                                    ComponentOverride.Condition.PromoOfferCondition(
+                                    ComponentOverride.Condition.PromoOfferRule(
                                         operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                         value = false,
                                     ),

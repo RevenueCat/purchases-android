@@ -54,24 +54,30 @@ internal class PresentedOverride<T : PresentedPartial<T>>(
 /**
  * Converts component overrides to presented overrides.
  *
- * Returns an error if any override contains an [ComponentOverride.Condition.Unsupported] condition,
- * which indicates the paywall uses condition types this SDK version does not understand.
+ * If any override contains an [ComponentOverride.Condition.Unsupported] condition, all conditional configurability
+ * overrides are discarded and only legacy overrides (those whose conditions are all legacy) are kept. This renders
+ * the "default paywall" — the same paywall template with only legacy overrides applied.
  */
 @Suppress("ReturnCount")
 @JvmSynthetic
 internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverride<T>>.toPresentedOverrides(
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
-    return this.map { override ->
-        if (override.conditions.any { it is ComponentOverride.Condition.Unsupported }) {
-            val conditionTypes = override.conditions.joinToString(", ") { it.javaClass.simpleName }
-            Logger.w(
-                "Unsupported paywall condition encountered: " +
-                    "[$conditionTypes]. Falling back to default paywall.",
-            )
-            return Result.Error(PaywallValidationError.UnsupportedCondition)
-        }
+    val hasUnsupported = this.any { override ->
+        override.conditions.any { it is ComponentOverride.Condition.Unsupported }
+    }
 
+    val overridesToProcess = if (hasUnsupported) {
+        Logger.w(
+            "Unsupported paywall condition encountered. " +
+                "Rendering default paywall with only legacy overrides.",
+        )
+        this.filter { override -> override.conditions.none { it.isRule } }
+    } else {
+        this
+    }
+
+    return overridesToProcess.map { override ->
         val properties = transform(override.properties)
             .getOrElse { return Result.Error(it.head) }
 
@@ -138,16 +144,16 @@ private fun ComponentOverride.Condition.evaluate(
     -> windowSize.applicableConditions.contains(this)
     ComponentOverride.Condition.MultiplePhaseOffers -> offerEligibility.hasMultipleDiscountedPhases
     ComponentOverride.Condition.IntroOffer -> offerEligibility.isIntroOffer
-    is ComponentOverride.Condition.IntroOfferCondition -> evaluate(offerEligibility)
+    is ComponentOverride.Condition.IntroOfferRule -> evaluate(offerEligibility)
     ComponentOverride.Condition.Selected -> state == ComponentViewState.SELECTED
     ComponentOverride.Condition.PromoOffer -> offerEligibility.isPromoOffer
-    is ComponentOverride.Condition.PromoOfferCondition -> evaluate(offerEligibility)
+    is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
     ComponentOverride.Condition.Unsupported -> false
 }
 
-private fun ComponentOverride.Condition.IntroOfferCondition.evaluate(offerEligibility: OfferEligibility): Boolean {
+private fun ComponentOverride.Condition.IntroOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {
     val eligibility = offerEligibility.isIntroOffer
     return when (operator) {
         ComponentOverride.EqualityOperator.EQUALS -> eligibility == value
@@ -155,7 +161,7 @@ private fun ComponentOverride.Condition.IntroOfferCondition.evaluate(offerEligib
     }
 }
 
-private fun ComponentOverride.Condition.PromoOfferCondition.evaluate(offerEligibility: OfferEligibility): Boolean {
+private fun ComponentOverride.Condition.PromoOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {
     val eligibility = offerEligibility.isPromoOffer
     return when (operator) {
         ComponentOverride.EqualityOperator.EQUALS -> eligibility == value

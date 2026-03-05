@@ -1106,7 +1106,7 @@ class VisibilityConditionTests {
             color = textColor,
             overrides = listOf(
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.IntroOffer()),
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
                     properties = PartialTextComponent(visible = false),
                 ),
             ),

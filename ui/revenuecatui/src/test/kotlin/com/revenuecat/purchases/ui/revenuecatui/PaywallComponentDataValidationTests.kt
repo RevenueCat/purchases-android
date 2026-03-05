@@ -1097,7 +1097,7 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
-    fun `Should fall back to legacy paywall if override contains unsupported condition`() {
+    fun `Should render default paywall with legacy overrides when unsupported condition is present`() {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
@@ -1143,10 +1143,8 @@ class PaywallComponentDataValidationTests {
         // Act
         val validated = testOffering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
 
-        // Assert - should be Legacy (fallback) with UnsupportedCondition error
-        check(validated is PaywallValidationResult.Legacy)
-        assertNotNull(validated.errors)
-        assertTrue(validated.errors!!.any { it is PaywallValidationError.UnsupportedCondition })
+        // Assert - should render as Components (default paywall), not Legacy (fallback)
+        check(validated is PaywallValidationResult.Components)
     }
 
     @Test

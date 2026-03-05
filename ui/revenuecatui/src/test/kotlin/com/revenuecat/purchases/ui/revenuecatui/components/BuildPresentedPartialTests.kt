@@ -1201,14 +1201,14 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
 
-            // IntroOfferCondition (with operator and value) tests
+            // IntroOfferRule (with operator and value) tests
             arrayOf(
                 "intro_offer_condition with operator=equals value=true: should apply when eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOfferCondition(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1228,7 +1228,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOfferCondition(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = false,
                                 ),
@@ -1248,7 +1248,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOfferCondition(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = false,
                                 ),
@@ -1268,7 +1268,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOfferCondition(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = true,
                                 ),
@@ -1320,7 +1320,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = true,
                                 ),
@@ -1340,7 +1340,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = false,
                                 ),
@@ -1360,7 +1360,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = false,
                                 ),
@@ -1380,7 +1380,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1400,7 +1400,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1420,7 +1420,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1435,14 +1435,14 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
 
-            // PromoOfferCondition (with operator and value) tests
+            // PromoOfferRule (with operator and value) tests
             arrayOf(
                 "promo_offer_condition with operator=equals value=true: should apply when eligible",
                 Args(
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOfferCondition(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1462,7 +1462,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOfferCondition(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = false,
                                 ),
@@ -1482,7 +1482,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOfferCondition(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = false,
                                 ),
@@ -1502,7 +1502,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = false,
                                 ),
@@ -1522,7 +1522,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = true,
                                 ),
@@ -1542,7 +1542,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = true,
                                 ),
@@ -1562,7 +1562,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
                                     value = false,
                                 ),
@@ -1582,7 +1582,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1602,7 +1602,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1622,7 +1622,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1644,7 +1644,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1653,7 +1653,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1673,7 +1673,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1682,7 +1682,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1702,7 +1702,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1711,7 +1711,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1731,7 +1731,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1740,7 +1740,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1760,7 +1760,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1769,7 +1769,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1919,7 +1919,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.IntroOffer(
+                                ComponentOverride.Condition.IntroOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),
@@ -1939,7 +1939,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     availableOverrides = listOf(
                         PresentedOverride(
                             conditions = listOf(
-                                ComponentOverride.Condition.PromoOffer(
+                                ComponentOverride.Condition.PromoOfferRule(
                                     operator = ComponentOverride.EqualityOperator.EQUALS,
                                     value = true,
                                 ),

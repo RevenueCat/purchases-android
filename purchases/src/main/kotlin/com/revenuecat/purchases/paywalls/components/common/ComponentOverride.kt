@@ -37,6 +37,15 @@ public class ComponentOverride<T : PartialComponent>(
 
     @Serializable(with = ConditionSerializer::class)
     public sealed interface Condition {
+
+        /**
+         * Whether this condition is a rule introduced by conditional configurability
+         * (e.g., variable_condition, selected_package_condition, intro_offer_condition, promo_offer_condition).
+         * When an unsupported condition is encountered, all overrides containing rules are discarded,
+         * rendering the "default paywall" with only base conditions applied.
+         */
+        public val isRule: Boolean get() = false
+
         @Serializable
         public object Compact : Condition
 
@@ -50,10 +59,10 @@ public class ComponentOverride<T : PartialComponent>(
         public object IntroOffer : Condition
 
         @Serializable
-        public data class IntroOfferCondition(
+        public data class IntroOfferRule(
             public val operator: EqualityOperator,
             public val value: Boolean,
-        ) : Condition
+        ) : Condition { override val isRule: Boolean get() = true }
 
         @Serializable
         public object MultiplePhaseOffers : Condition
@@ -65,26 +74,26 @@ public class ComponentOverride<T : PartialComponent>(
         public object PromoOffer : Condition
 
         @Serializable
-        public data class PromoOfferCondition(
+        public data class PromoOfferRule(
             public val operator: EqualityOperator,
             public val value: Boolean,
-        ) : Condition
+        ) : Condition { override val isRule: Boolean get() = true }
 
         @Serializable
         public data class SelectedPackage(
             public val operator: ArrayOperator,
             public val packages: List<String>,
-        ) : Condition
+        ) : Condition { override val isRule: Boolean get() = true }
 
         @Serializable
         public data class Variable(
             public val operator: EqualityOperator,
             public val variable: String,
             public val value: JsonPrimitive,
-        ) : Condition
+        ) : Condition { override val isRule: Boolean get() = true }
 
         @Serializable
-        public object Unsupported : Condition
+        public object Unsupported : Condition { override val isRule: Boolean get() = true }
     }
 }
 
@@ -96,11 +105,11 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "medium" to { Condition.Medium.serializer() },
         "expanded" to { Condition.Expanded.serializer() },
         "intro_offer" to { Condition.IntroOffer.serializer() },
-        "intro_offer_condition" to { Condition.IntroOfferCondition.serializer() },
+        "intro_offer_condition" to { Condition.IntroOfferRule.serializer() },
         "multiple_intro_offers" to { Condition.MultiplePhaseOffers.serializer() },
         "selected" to { Condition.Selected.serializer() },
         "promo_offer" to { Condition.PromoOffer.serializer() },
-        "promo_offer_condition" to { Condition.PromoOfferCondition.serializer() },
+        "promo_offer_condition" to { Condition.PromoOfferRule.serializer() },
         "selected_package_condition" to { Condition.SelectedPackage.serializer() },
         "variable_condition" to { Condition.Variable.serializer() },
     ),
