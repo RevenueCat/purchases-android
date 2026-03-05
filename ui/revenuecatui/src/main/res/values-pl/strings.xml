@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">Rozpocznij okres próbny {{ sub_offer_duration }}, a następnie {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Brak zainstalowanej przeglądarki. Link nie mógł zostać otwarty.</string>
     <string name="cannot_open_link">Link jest nieprawidłowy. Nie można go otworzyć.</string>
+    <string name="revenuecatui_purchase">Kup</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>
