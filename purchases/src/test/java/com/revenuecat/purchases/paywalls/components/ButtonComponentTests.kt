@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -559,6 +560,110 @@ internal class ButtonComponentTests {
                                         color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
                                     )
                                 ),
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "with visible false",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "visible": false,
+                          "action": {
+                            "type": "restore_purchases"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            visible = false,
+                            action = ButtonComponent.Action.RestorePurchases,
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "with overrides",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "restore_purchases"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          },
+                          "overrides": [
+                            {
+                              "conditions": [
+                                {
+                                  "type": "compact"
+                                }
+                              ],
+                              "properties": {
+                                "visible": false
+                              }
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.RestorePurchases,
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    )
+                                ),
+                            ),
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = listOf(ComponentOverride.Condition.Compact),
+                                    properties = PartialButtonComponent(visible = false),
+                                )
                             )
                         )
                     ),

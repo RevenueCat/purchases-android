@@ -444,7 +444,8 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is ImageComponent -> overrides.hasUnsupportedCondition()
     is VideoComponent -> overrides?.hasUnsupportedCondition() == true
     is IconComponent -> overrides.hasUnsupportedCondition()
-    is ButtonComponent -> stack.containsUnsupportedCondition() ||
+    is ButtonComponent -> overrides.hasUnsupportedCondition() ||
+        stack.containsUnsupportedCondition() ||
         (action as? ButtonComponent.Action.NavigateTo)?.destination.let { destination ->
             when (destination) {
                 is ButtonComponent.Destination.Sheet -> destination.stack.containsUnsupportedCondition()

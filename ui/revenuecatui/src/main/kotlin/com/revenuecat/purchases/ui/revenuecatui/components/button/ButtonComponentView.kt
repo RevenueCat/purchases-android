@@ -9,7 +9,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +28,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -35,8 +38,13 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.TransitionView
+import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
@@ -48,8 +56,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyl
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.rememberUpdatedStackComponentState
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.coroutines.launch
 import kotlin.math.min
@@ -78,6 +88,15 @@ internal fun ButtonComponentView(
         paywallState = state,
     )
     if (!stackState.visible) {
+        return
+    }
+
+    // Button-level visibility
+    val buttonVisible = rememberUpdatedButtonVisible(
+        style = style,
+        paywallState = state,
+    )
+    if (!buttonVisible) {
         return
     }
 
@@ -235,6 +254,74 @@ private val Color.brightness: Float
     get() = red * COEFFICIENT_LUMINANCE_RED +
         green * COEFFICIENT_LUMINANCE_GREEN +
         blue * COEFFICIENT_LUMINANCE_BLUE
+
+@Composable
+private fun rememberUpdatedButtonVisible(
+    style: ButtonComponentStyle,
+    paywallState: PaywallState.Loaded.Components,
+): Boolean {
+    if (style.overrides.isEmpty()) return true
+
+    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+
+    val state = remember(style) {
+        ButtonVisibilityState(
+            initialWindowSize = windowSize,
+            style = style,
+            selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+            selectedTabIndexProvider = { paywallState.selectedTabIndex },
+            selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
+            customVariablesProvider = { paywallState.mergedCustomVariables },
+        )
+    }.apply {
+        update(windowSize = windowSize)
+    }
+
+    return state.visible
+}
+
+@Stable
+private class ButtonVisibilityState(
+    initialWindowSize: WindowWidthSizeClass,
+    private val style: ButtonComponentStyle,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
+    private val selectedTabIndexProvider: () -> Int,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+    private val customVariablesProvider: () -> Map<String, CustomVariableValue>,
+) {
+    private var windowSize by mutableStateOf(initialWindowSize)
+
+    private val packageAwareDelegate = PackageAwareDelegate(
+        style = style.stackComponentStyle,
+        selectedPackageInfoProvider = selectedPackageInfoProvider,
+        selectedTabIndexProvider = selectedTabIndexProvider,
+        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+    )
+
+    private val presentedPartial by derivedStateOf {
+        val windowCondition = ScreenCondition.from(windowSize)
+        val componentState =
+            if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
+
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            packageAwareDelegate.offerEligibility,
+            componentState,
+            conditionContext = ConditionContext(
+                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                customVariables = customVariablesProvider(),
+            ),
+        )
+    }
+
+    @get:JvmSynthetic
+    val visible by derivedStateOf { presentedPartial?.visible ?: true }
+
+    @JvmSynthetic
+    fun update(windowSize: WindowWidthSizeClass) {
+        this.windowSize = windowSize
+    }
+}
 
 @Preview
 @Composable

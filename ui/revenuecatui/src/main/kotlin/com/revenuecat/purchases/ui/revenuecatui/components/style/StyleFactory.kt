@@ -36,6 +36,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedButtonPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
@@ -511,12 +512,16 @@ internal class StyleFactory(
     ): Result<ButtonComponentStyle?, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = createStackComponentStyle(component.stack),
         second = convertAction(component.action),
-    ) { stack, action ->
+        third = component.overrides.toPresentedOverrides(stripRules) { partial ->
+            Result.Success(PresentedButtonPartial(visible = partial.visible))
+        }.mapError { nonEmptyListOf(it) },
+    ) { stack, action, overrides ->
         action?.let {
             ButtonComponentStyle(
                 stackComponentStyle = stack,
                 action = action,
                 transition = component.transition,
+                overrides = overrides,
             )
         }
     }

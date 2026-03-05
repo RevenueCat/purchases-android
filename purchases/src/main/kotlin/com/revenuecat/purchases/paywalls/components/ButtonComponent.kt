@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -23,9 +24,11 @@ import kotlinx.serialization.encoding.Encoder
 @SerialName("button")
 @Immutable
 public class ButtonComponent(
+    @get:JvmSynthetic public val visible: Boolean? = null,
     @get:JvmSynthetic public val action: Action,
     @get:JvmSynthetic public val stack: StackComponent,
     @get:JvmSynthetic public val transition: PaywallTransition? = null,
+    @get:JvmSynthetic public val overrides: List<ComponentOverride<PartialButtonComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
@@ -103,6 +106,21 @@ public class ButtonComponent(
         UNKNOWN,
     }
 }
+
+@InternalRevenueCatAPI
+@Poko
+@Serializable
+@Immutable
+public class PartialButtonComponent(
+    @get:JvmSynthetic
+    public val visible: Boolean? = true,
+    @get:JvmSynthetic
+    public val action: ButtonComponent.Action? = null,
+    @get:JvmSynthetic
+    public val stack: StackComponent? = null,
+    @get:JvmSynthetic
+    public val transition: PaywallTransition? = null,
+) : PartialComponent
 
 /**
  * A custom (de)serializer for Actions using the surrogate pattern. The JSON we get from the backend does not map 1 to

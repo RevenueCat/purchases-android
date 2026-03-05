@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
@@ -264,6 +265,38 @@ internal class ContainsUnsupportedConditionTests {
         val button = ButtonComponent(
             action = ButtonComponent.Action.NavigateBack,
             stack = emptyStack(components = listOf(textComponent())),
+        )
+        val stack = emptyStack(components = listOf(button))
+        assertFalse(stack.containsUnsupportedCondition())
+    }
+
+    @Test
+    fun `ButtonComponent with unsupported condition in own overrides returns true`() {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.RestorePurchases,
+            stack = emptyStack(),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Unsupported),
+                    properties = PartialButtonComponent(),
+                ),
+            ),
+        )
+        val stack = emptyStack(components = listOf(button))
+        assertTrue(stack.containsUnsupportedCondition())
+    }
+
+    @Test
+    fun `ButtonComponent with supported condition in own overrides returns false`() {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.RestorePurchases,
+            stack = emptyStack(),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
         )
         val stack = emptyStack(components = listOf(button))
         assertFalse(stack.containsUnsupportedCondition())
