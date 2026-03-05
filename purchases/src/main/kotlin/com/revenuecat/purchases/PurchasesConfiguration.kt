@@ -38,7 +38,7 @@ public open class PurchasesConfiguration(builder: Builder) {
     public val automaticDeviceIdentifierCollectionEnabled: Boolean
     public val preferredUILocaleOverride: String?
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public val galaxyBillingMode: GalaxyBillingMode
 
     init {

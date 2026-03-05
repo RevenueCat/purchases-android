@@ -19,7 +19,8 @@ public class PurchaseParams(public val builder: Builder) {
     public val oldProductId: String?
     public val googleReplacementMode: GoogleReplacementMode
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public val galaxyReplacementMode: GalaxyReplacementMode
 
     @get:JvmSynthetic
