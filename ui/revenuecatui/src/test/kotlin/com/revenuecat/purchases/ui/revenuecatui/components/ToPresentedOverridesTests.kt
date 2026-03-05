@@ -467,6 +467,50 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                 )
             ),
             arrayOf(
+                "Should NOT filter Unsupported overrides when stripRules is false",
+                Args(
+                    stripRules = false,
+                    availableOverrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Compact),
+                            properties = PartialTextComponent(fontName = compact),
+                        ),
+                        ComponentOverride(
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
+                            properties = PartialTextComponent(fontName = medium),
+                        ),
+                    ),
+                    transform = { partial -> LocalizedTextPartial(
+                        from = partial,
+                        using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                        aliases = emptyMap(),
+                        fontAliases = allFontAliases,
+                    ) },
+                    expected = Result.Success(
+                        listOf(
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.Compact),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = compact),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                            PresentedOverride(
+                                conditions = listOf(ComponentOverride.Condition.Unsupported),
+                                properties = LocalizedTextPartial(
+                                    from = PartialTextComponent(fontName = medium),
+                                    using = nonEmptyMapOf(localeId to dummyLocalizationDictionary),
+                                    aliases = emptyMap(),
+                                    fontAliases = allFontAliases,
+                                ).getOrThrow(),
+                            ),
+                        )
+                    )
+                )
+            ),
+            arrayOf(
                 "Should succeed if all transformations succeed",
                 Args(
                     availableOverrides = defaultAvailableOverrides,

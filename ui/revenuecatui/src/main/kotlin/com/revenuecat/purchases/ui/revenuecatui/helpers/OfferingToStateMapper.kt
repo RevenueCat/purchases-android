@@ -428,22 +428,35 @@ private val Offering.PaywallComponents.defaultVariableLocalization: Map<Variable
  * Recursively checks whether any component override in the paywall config contains an
  * [ComponentOverride.Condition.Unsupported] condition.
  */
-private fun PaywallComponentsConfig.containsUnsupportedCondition(): Boolean =
+@JvmSynthetic
+internal fun PaywallComponentsConfig.containsUnsupportedCondition(): Boolean =
     stack.containsUnsupportedCondition() || stickyFooter?.stack?.containsUnsupportedCondition() == true
 
-private fun StackComponent.containsUnsupportedCondition(): Boolean =
+@JvmSynthetic
+internal fun StackComponent.containsUnsupportedCondition(): Boolean =
     overrides.hasUnsupportedCondition() || components.any { it.containsUnsupportedCondition() }
 
 @Suppress("CyclomaticComplexMethod")
-private fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (this) {
+@JvmSynthetic
+internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (this) {
     is StackComponent -> containsUnsupportedCondition()
     is TextComponent -> overrides.hasUnsupportedCondition()
     is ImageComponent -> overrides.hasUnsupportedCondition()
     is VideoComponent -> overrides?.hasUnsupportedCondition() == true
     is IconComponent -> overrides.hasUnsupportedCondition()
     is ButtonComponent -> stack.containsUnsupportedCondition() ||
-        (action as? ButtonComponent.Action.NavigateTo)?.destination
-            ?.let { (it as? ButtonComponent.Destination.Sheet)?.stack?.containsUnsupportedCondition() } == true
+        (action as? ButtonComponent.Action.NavigateTo)?.destination.let { destination ->
+            when (destination) {
+                is ButtonComponent.Destination.Sheet -> destination.stack.containsUnsupportedCondition()
+                is ButtonComponent.Destination.CustomerCenter,
+                is ButtonComponent.Destination.PrivacyPolicy,
+                is ButtonComponent.Destination.Terms,
+                is ButtonComponent.Destination.Url,
+                is ButtonComponent.Destination.Unknown,
+                null,
+                -> false
+            }
+        }
     is PackageComponent -> stack.containsUnsupportedCondition()
     is PurchaseButtonComponent -> stack.containsUnsupportedCondition()
     is StickyFooterComponent -> stack.containsUnsupportedCondition()
@@ -472,5 +485,6 @@ private fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (thi
     is TabControlComponent -> false
 }
 
-private fun List<ComponentOverride<*>>.hasUnsupportedCondition(): Boolean =
+@JvmSynthetic
+internal fun List<ComponentOverride<*>>.hasUnsupportedCondition(): Boolean =
     any { override -> override.conditions.any { it is ComponentOverride.Condition.Unsupported } }

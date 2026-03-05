@@ -1097,8 +1097,10 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
-    fun `Should render default paywall with legacy overrides when unsupported condition is present`() {
-        // Arrange
+    fun `Should render default paywall and strip rule overrides when unsupported condition is present`() {
+        // Arrange - text has a base override (Compact), a rule override (SelectedPackage), and an Unsupported override.
+        // When an unsupported condition is detected, rule and unsupported overrides should be stripped,
+        // but the base override (Compact) should survive.
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
             id = "paywall_id",
@@ -1112,6 +1114,19 @@ class PaywallComponentDataValidationTests {
                                 text = localizationKey,
                                 color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
                                 overrides = listOf(
+                                    ComponentOverride(
+                                        conditions = listOf(ComponentOverride.Condition.Compact),
+                                        properties = PartialTextComponent(visible = false),
+                                    ),
+                                    ComponentOverride(
+                                        conditions = listOf(
+                                            ComponentOverride.Condition.SelectedPackage(
+                                                operator = ComponentOverride.ArrayOperator.IN,
+                                                packages = listOf("monthly"),
+                                            ),
+                                        ),
+                                        properties = PartialTextComponent(visible = true),
+                                    ),
                                     ComponentOverride(
                                         conditions = listOf(ComponentOverride.Condition.Unsupported),
                                         properties = PartialTextComponent(visible = false),
@@ -1145,6 +1160,11 @@ class PaywallComponentDataValidationTests {
 
         // Assert - should render as Components (default paywall), not Legacy (fallback)
         check(validated is PaywallValidationResult.Components)
+        val stack = validated.stack as StackComponentStyle
+        val textStyle = stack.children[0] as TextComponentStyle
+        // Only the base override (Compact) should remain; rule (SelectedPackage) and Unsupported are stripped
+        assertEquals(1, textStyle.overrides.size)
+        assertEquals(listOf(ComponentOverride.Condition.Compact), textStyle.overrides[0].conditions)
     }
 
     @Test
@@ -1213,8 +1233,11 @@ class PaywallComponentDataValidationTests {
         // Act
         val validated = testOffering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
 
-        // Assert - should be Components (not fallback), no errors
+        // Assert - should be Components (not fallback), no errors, and all 3 overrides are preserved
         check(validated is PaywallValidationResult.Components)
         assertNull(validated.errors)
+        val stack = validated.stack as StackComponentStyle
+        val textStyle = stack.children[0] as TextComponentStyle
+        assertEquals(3, textStyle.overrides.size)
     }
 }

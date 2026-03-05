@@ -64,6 +64,9 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
     val overridesToProcess = if (stripRules) {
+        // Also filter out Unsupported conditions explicitly: Unsupported has isRule = false (it's not
+        // a rule, it's an unknown condition type), but overrides containing it should still be discarded
+        // when stripping rules, since Unsupported is what triggered stripRules in the first place.
         this.filter { override ->
             override.conditions.none { it.isRule || it is ComponentOverride.Condition.Unsupported }
         }
