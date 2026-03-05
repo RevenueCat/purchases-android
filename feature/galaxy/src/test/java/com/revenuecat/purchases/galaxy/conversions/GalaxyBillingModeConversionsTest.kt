@@ -1,12 +1,14 @@
 package com.revenuecat.purchases.galaxy.conversions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class GalaxyBillingModeConversionsTest {
 
