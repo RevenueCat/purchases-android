@@ -202,7 +202,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                     stripRules = true,
                     availableOverrides = listOf(
                         ComponentOverride(
-                            conditions = listOf(ComponentOverride.Condition.Unsupported("unknown")),
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
                             properties = PartialTextComponent(fontName = compact),
                         ),
                     ),
@@ -223,7 +223,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                         ComponentOverride(
                             conditions = listOf(
                                 ComponentOverride.Condition.Compact,
-                                ComponentOverride.Condition.Unsupported("unknown"),
+                                ComponentOverride.Condition.Unsupported,
                             ),
                             properties = PartialTextComponent(fontName = compact),
                         ),
@@ -247,7 +247,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             properties = PartialTextComponent(fontName = compact),
                         ),
                         ComponentOverride(
-                            conditions = listOf(ComponentOverride.Condition.Unsupported("unknown")),
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
                             properties = PartialTextComponent(fontName = medium),
                         ),
                     ),
@@ -305,7 +305,7 @@ internal class ToPresentedOverridesTests(@Suppress("UNUSED_PARAMETER") name: Str
                             properties = PartialTextComponent(fontName = expanded),
                         ),
                         ComponentOverride(
-                            conditions = listOf(ComponentOverride.Condition.Unsupported("unknown")),
+                            conditions = listOf(ComponentOverride.Condition.Unsupported),
                             properties = PartialTextComponent(fontName = multipleIntroOffers),
                         ),
                     ),

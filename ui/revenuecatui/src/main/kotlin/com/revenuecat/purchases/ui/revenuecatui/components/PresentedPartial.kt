@@ -64,7 +64,9 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
     val overridesToProcess = if (stripRules) {
-        this.filter { override -> override.conditions.none { it.isRule } }
+        this.filter { override ->
+            override.conditions.none { it.isRule || it is ComponentOverride.Condition.Unsupported }
+        }
     } else {
         this
     }
@@ -142,7 +144,7 @@ private fun ComponentOverride.Condition.evaluate(
     is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
-    is ComponentOverride.Condition.Unsupported -> false
+    ComponentOverride.Condition.Unsupported -> false
 }
 
 private fun ComponentOverride.Condition.IntroOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {

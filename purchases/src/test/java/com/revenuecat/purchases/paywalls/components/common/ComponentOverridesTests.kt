@@ -131,7 +131,7 @@ internal class ComponentOverridesTests {
                                 properties = PartialTextComponent(fontName = FontAlias("compact font")),
                             ),
                             ComponentOverride(
-                                conditions = listOf(ComponentOverride.Condition.Unsupported("unknown")),
+                                conditions = listOf(ComponentOverride.Condition.Unsupported),
                                 properties = PartialTextComponent(fontName = FontAlias("unknown condition font")),
                             ),
                             ComponentOverride(
@@ -366,8 +366,8 @@ internal class ComponentOverridesTests {
                 arrayOf("{ \"type\": \"multiple_intro_offers\" }", ComponentOverride.Condition.MultiplePhaseOffers),
                 arrayOf("{ \"type\": \"selected\" }", ComponentOverride.Condition.Selected),
                 arrayOf("{ \"type\": \"promo_offer\" }", ComponentOverride.Condition.PromoOffer),
-                arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported("unsupported")),
-                arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported("some_future_unknown_value")),
+                arrayOf("{ \"type\": \"unsupported\" }", ComponentOverride.Condition.Unsupported),
+                arrayOf("{ \"type\": \"some_future_unknown_value\" }", ComponentOverride.Condition.Unsupported),
 
                 // Legacy intro_offer/promo_offer with extra operator+value fields are silently
                 // ignored and deserialized as plain objects (backward compat)
@@ -479,19 +479,19 @@ internal class ComponentOverridesTests {
                 // Known type with unknown operator falls back to Unsupported
                 arrayOf(
                     """{ "type": "selected_package_condition", "operator": "contains", "packages": ["a"] }""",
-                    ComponentOverride.Condition.Unsupported("selected_package_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
                     """{ "type": "variable_condition", "operator": ">", "variable": "x", "value": 1 }""",
-                    ComponentOverride.Condition.Unsupported("variable_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
                     """{ "type": "intro_offer_condition", "operator": ">=", "value": true }""",
-                    ComponentOverride.Condition.Unsupported("intro_offer_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
                     """{ "type": "promo_offer_condition", "operator": ">=", "value": true }""",
-                    ComponentOverride.Condition.Unsupported("promo_offer_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
 
                 // Variable with null value deserializes (JsonNull is a JsonPrimitive); won't match any variable type
@@ -506,35 +506,35 @@ internal class ComponentOverridesTests {
                 // Known type with missing required fields falls back to Unsupported
                 arrayOf(
                     """{ "type": "selected_package_condition" }""",
-                    ComponentOverride.Condition.Unsupported("selected_package_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
                     """{ "type": "variable_condition", "operator": "=" }""",
-                    ComponentOverride.Condition.Unsupported("variable_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
 
                 // Known type with changed field types falls back to Unsupported
                 arrayOf(
                     """{ "type": "selected_package_condition", "operator": "in", "packages": "not_an_array" }""",
-                    ComponentOverride.Condition.Unsupported("selected_package_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
                     """{ "type": "variable_condition", "operator": "=", "variable": "x", "value": [1, 2] }""",
-                    ComponentOverride.Condition.Unsupported("variable_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
                     """{ "type": "variable_condition", "operator": "=", "variable": "x", "value": {"nested": true} }""",
-                    ComponentOverride.Condition.Unsupported("variable_condition"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
 
                 // Completely unexpected JSON shape falls back to Unsupported
                 arrayOf(
                     """{ "no_type_field": true }""",
-                    ComponentOverride.Condition.Unsupported("null"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
                 arrayOf(
                     """{}""",
-                    ComponentOverride.Condition.Unsupported("null"),
+                    ComponentOverride.Condition.Unsupported,
                 ),
             )
         }

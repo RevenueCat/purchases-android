@@ -93,9 +93,7 @@ public class ComponentOverride<T : PartialComponent>(
         ) : Condition { override val isRule: Boolean get() = true }
 
         @Serializable
-        public data class Unsupported(
-            val originalType: String,
-        ) : Condition
+        public object Unsupported : Condition
     }
 }
 
@@ -115,5 +113,5 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "selected_package_condition" to { Condition.SelectedPackage.serializer() },
         "variable_condition" to { Condition.Variable.serializer() },
     ),
-    defaultValue = { type -> Condition.Unsupported(originalType = type) },
+    defaultValue = { Condition.Unsupported },
 )
