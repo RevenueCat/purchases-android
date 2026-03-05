@@ -122,7 +122,7 @@ internal sealed class BackendEvent : Event {
      * @property appUserID The app user identifier associated with this event.
      * @property appSessionID The session ID of the app session when this event occurred.
      * @property timestamp Unix timestamp representing when the event occurred.
-     * @property paywallId The identifier of the custom paywall.
+     * @property paywallID The identifier of the custom paywall.
      */
     @Serializable
     @SerialName("custom_paywall_impression")
@@ -136,7 +136,7 @@ internal sealed class BackendEvent : Event {
         val appSessionID: String? = null,
         val timestamp: Long,
         @SerialName("paywall_id")
-        val paywallId: String?,
+        val paywallID: String? = null,
     ) : BackendEvent()
 
     @Serializable

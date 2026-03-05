@@ -83,7 +83,7 @@ class CustomPaywallImpressionEventTest {
                 appUserID = appUserID,
                 appSessionID = appSessionID,
                 timestamp = fixedDate.time,
-                paywallId = "my-paywall",
+                paywallID = "my-paywall",
             ),
         )
         assertThat(storedEvent).isEqualTo(expectedStoredEvent)
@@ -109,7 +109,7 @@ class CustomPaywallImpressionEventTest {
                 appUserID = appUserID,
                 appSessionID = appSessionID,
                 timestamp = fixedDate.time,
-                paywallId = null,
+                paywallID = null,
             ),
         )
         assertThat(storedEvent).isEqualTo(expectedStoredEvent)
@@ -137,7 +137,7 @@ class CustomPaywallImpressionEventTest {
         assertThat(decodedEvent.appUserID).isEqualTo(appUserID)
         assertThat(decodedEvent.appSessionID).isEqualTo(appSessionID)
         assertThat(decodedEvent.timestamp).isEqualTo(fixedDate.time)
-        assertThat(decodedEvent.paywallId).isEqualTo("my-paywall")
+        assertThat(decodedEvent.paywallID).isEqualTo("my-paywall")
     }
 
     @Test
@@ -156,7 +156,7 @@ class CustomPaywallImpressionEventTest {
 
         assertThat(decoded).isInstanceOf(BackendStoredEvent.CustomPaywallImpression::class.java)
         val decodedEvent = (decoded as BackendStoredEvent.CustomPaywallImpression).event
-        assertThat(decodedEvent.paywallId).isNull()
+        assertThat(decodedEvent.paywallID).isNull()
     }
 
     @Test
