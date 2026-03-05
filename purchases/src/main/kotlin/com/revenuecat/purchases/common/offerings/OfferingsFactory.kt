@@ -33,7 +33,7 @@ internal class OfferingsFactory(
 
     // The default OfferingParser matches products using base plan IDs (Google Play logic),
     // which doesn't apply to mock products. In preview mode we key products by a composite
-    // "productId::planId" key (or just productId when no plan is present, e.g. Amazon/INAPP),
+    // "productId:planId" key (or just productId when no plan is present, e.g. Amazon/INAPP),
     // so we override findMatchingProduct accordingly.
     private val previewOfferingParser = object : OfferingParser() {
         override fun findMatchingProduct(
@@ -42,7 +42,7 @@ internal class OfferingsFactory(
         ): StoreProduct? {
             val productIdentifier = packageJson.getString("platform_product_identifier")
             val planIdentifier = packageJson.optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
-            val key = planIdentifier?.let { "$productIdentifier::$it" } ?: productIdentifier
+            val key = planIdentifier?.let { "$productIdentifier:$it" } ?: productIdentifier
             return productsById[key]?.firstOrNull()
         }
     }
@@ -73,7 +73,7 @@ internal class OfferingsFactory(
                     offeringsJSON = offeringsJSON,
                     onCompleted = { productsById ->
                         try {
-                            // In preview mode the map is keyed by composite "productId::planId" keys,
+                            // In preview mode the map is keyed by composite "productId:planId" keys,
                             // so plain product ID lookups would all appear missing — skip the check.
                             val notFoundProductIds = if (appConfig.uiPreviewMode) {
                                 emptySet()
@@ -208,7 +208,7 @@ internal class OfferingsFactory(
         )
     }
 
-    // Builds a map of mock products keyed by "productId::planId" (or just "productId" when no
+    // Builds a map of mock products keyed by "productId:planId" (or just "productId" when no
     // plan is present, e.g. Amazon or INAPP). This ensures that multiple packages sharing the
     // same platform_product_identifier but differing by platform_product_plan_identifier each
     // get their own mock product with the correct pricing for their package type.
@@ -226,7 +226,7 @@ internal class OfferingsFactory(
                 .forEach { pkg ->
                     val productId = pkg.nonBlankString("platform_product_identifier") ?: return@forEach
                     val planId = pkg.nonBlankString("platform_product_plan_identifier")
-                    val key = planId?.let { "$productId::$it" } ?: productId
+                    val key = planId?.let { "$productId:$it" } ?: productId
                     if (containsKey(key)) return@forEach
                     val identifier = pkg.nonBlankString("identifier")
                     val packageType = identifier?.let { packageTypeByIdentifier[it] }
