@@ -131,7 +131,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         internal var preferredUILocaleOverride: String? = null
 
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-        @set:JvmSynthetic @get:JvmSynthetic
+        @set:JvmSynthetic
+        @get:JvmSynthetic
         internal var galaxyBillingMode: GalaxyBillingMode = GalaxyBillingMode.PRODUCTION
 
         /**
