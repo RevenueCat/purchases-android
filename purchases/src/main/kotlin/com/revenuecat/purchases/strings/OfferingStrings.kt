@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.strings
 
 import com.revenuecat.purchases.APIKeyValidator
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 
 internal object OfferingStrings {
@@ -64,6 +65,8 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "Play Store"
             Store.AMAZON -> "Amazon Appstore"
+
+            @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
             Store.GALAXY -> "Galaxy Store"
             else -> null
         }
@@ -85,6 +88,8 @@ private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: 
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "a" // "a Play Store API key"
             Store.AMAZON -> "an" // "an Amazon Appstore API key"
+
+            @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
             Store.GALAXY -> "a" // "a Galaxy Store API key"
             else -> "a"
         }

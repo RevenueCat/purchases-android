@@ -16,6 +16,8 @@ internal object OfferingParserFactory {
             Store.TEST_STORE -> SimulatedStoreOfferingParser()
             Store.PLAY_STORE -> GoogleOfferingParser()
             Store.AMAZON -> AmazonOfferingParser()
+
+            @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
             Store.GALAXY -> GalaxyOfferingParser()
             else -> {
                 errorLog { "Incompatible store ($store) used" }

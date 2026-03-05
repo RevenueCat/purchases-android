@@ -14,6 +14,8 @@ internal object AttributionFetcherFactory {
     ) = when (store) {
         Store.PLAY_STORE -> GoogleDeviceIdentifiersFetcher(dispatcher)
         Store.AMAZON -> AmazonDeviceIdentifiersFetcher()
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         Store.GALAXY -> GalaxyDeviceIdentifiersFetcher()
         else -> {
             errorLog { "Incompatible store ($store) used" }
