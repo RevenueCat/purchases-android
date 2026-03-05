@@ -945,6 +945,28 @@ public class Purchases internal constructor(
         purchasesOrchestrator.setAppsFlyerConversionData(data)
     }
 
+    /**
+     * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
+     * fresh offerings so that Appstack-based targeting is applied before the callback returns.
+     *
+     * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+     * cached offerings will be returned instead.
+     *
+     * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate attributes.
+     * Note that this method will never unset any attributes. To unset an attribute, call the individual
+     * setter with a `null` value.
+     *
+     * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+     * @param callback Called with fresh [Offerings] (targeted with Appstack data) or a [PurchasesError].
+     */
+    public fun setAppstackAttributionParams(
+        data: Map<String, String>,
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        purchasesOrchestrator.setAppstackAttributionParams(data, callback)
+    }
+
     // endregion
     // region Campaign parameters
 
