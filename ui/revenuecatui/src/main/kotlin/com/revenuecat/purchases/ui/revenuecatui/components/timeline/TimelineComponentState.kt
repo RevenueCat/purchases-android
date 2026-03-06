@@ -12,10 +12,15 @@ import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
+import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
+import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -177,13 +182,13 @@ internal class TimelineComponentState(
         val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
         @get:JvmSynthetic
-        val title by derivedStateOf { style.title }
+        val title by derivedStateOf { style.title.withAppliedOverride(presentedPartial?.title) }
 
         @get:JvmSynthetic
-        val description by derivedStateOf { style.description }
+        val description by derivedStateOf { style.description?.withAppliedOverride(presentedPartial?.description) }
 
         @get:JvmSynthetic
-        val icon by derivedStateOf { style.icon }
+        val icon by derivedStateOf { style.icon.withAppliedOverride(presentedPartial?.icon) }
 
         @get:JvmSynthetic
         val connector by derivedStateOf { presentedPartial?.connectorStyle ?: style.connector }
@@ -195,4 +200,52 @@ internal class TimelineComponentState(
             if (windowSize != null) this.windowSize = windowSize
         }
     }
+}
+
+private fun TextComponentStyle.withAppliedOverride(partial: LocalizedTextPartial?): TextComponentStyle {
+    if (partial == null) return this
+
+    return TextComponentStyle(
+        texts = texts,
+        color = color,
+        fontSize = fontSize,
+        fontWeight = fontWeight,
+        fontSpec = fontSpec,
+        textAlign = textAlign,
+        horizontalAlignment = horizontalAlignment,
+        backgroundColor = backgroundColor,
+        visible = visible,
+        size = size,
+        padding = padding,
+        margin = margin,
+        rcPackage = rcPackage,
+        resolvedOffer = resolvedOffer,
+        tabIndex = tabIndex,
+        offerEligibility = offerEligibility,
+        countdownDate = countdownDate,
+        countFrom = countFrom,
+        variableLocalizations = variableLocalizations,
+        overrides = overrides + PresentedOverride(conditions = emptyList(), properties = partial),
+    )
+}
+
+private fun IconComponentStyle.withAppliedOverride(partial: PresentedIconPartial?): IconComponentStyle {
+    if (partial == null) return this
+
+    return IconComponentStyle(
+        baseUrl = baseUrl,
+        iconName = iconName,
+        formats = formats,
+        visible = visible,
+        size = size,
+        color = color,
+        padding = padding,
+        margin = margin,
+        iconBackground = iconBackground,
+        rcPackage = rcPackage,
+        resolvedOffer = resolvedOffer,
+        tabIndex = tabIndex,
+        offerEligibility = offerEligibility,
+        overrides = overrides + PresentedOverride(conditions = emptyList(), properties = partial),
+    )
 }
