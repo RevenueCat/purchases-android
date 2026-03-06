@@ -198,7 +198,7 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
-
+  
   checkout-submodule:
     description: "Checks out a git submodule."
     parameters:
@@ -206,7 +206,7 @@ commands:
         type: string
         default: ""
     steps:
-      - run:
+      - run: 
           name: Check out submodule << parameters.path >>
           command: |
             git submodule init << parameters.path >>
