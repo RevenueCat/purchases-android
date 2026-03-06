@@ -113,6 +113,13 @@ class ProductChangeConfigTest(
         assert(wrapper.productChangeConfig == null)
     }
 
+    @Test
+    fun `Malformed non-object play_store_product_change_mode deserializes to null`() {
+        val json = """{"play_store_product_change_mode":"unexpected"}"""
+        val wrapper = JsonTools.json.decodeFromString<Wrapper>(json)
+        assert(wrapper.productChangeConfig == null)
+    }
+
     private object TestSerializer : EmptyObjectToNullSerializer<ProductChangeConfig>(
         ProductChangeConfig.serializer(),
     )
