@@ -350,6 +350,37 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test-galaxy:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
+      - run:
+          name: Compile API Tester with Galaxy Files
+          command: |
+            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
+      - run:
+          name: Run Galaxy Unit Tests
+          command: |
+            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            RESULTS_DIR="build/test-results-galaxy"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+      - store_test_results:
+          path: build/test-results-galaxy
+      - store_artifacts:
+          path: build/reports
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -1055,6 +1086,9 @@ workflows:
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+      - test-galaxy:
+          requires:
+            - prepare-tests
       - run-backend-integration-tests:
           requires:
             - prepare-tests
@@ -1092,6 +1126,7 @@ workflows:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
+            - test-galaxy
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester

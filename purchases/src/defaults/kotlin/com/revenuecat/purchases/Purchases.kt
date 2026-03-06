@@ -107,6 +107,8 @@ public class Purchases internal constructor(
      * The storefront country code in ISO-3166-1 alpha2.
      * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
      * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     *
+     * Not supported for the Galaxy Store.
      */
     public val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
@@ -213,6 +215,8 @@ public class Purchases internal constructor(
     /**
      * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
      * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
      */
     public fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         purchasesOrchestrator.getStorefrontCountryCode(callback)
@@ -221,6 +225,8 @@ public class Purchases internal constructor(
     /**
      * This method will try to obtain the Store (Google/Amazon) locale.
      * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
@@ -1265,6 +1271,7 @@ public class Purchases internal constructor(
          * @param configuration: the [PurchasesConfiguration] object you wish to use to configure [Purchases].
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         public fun configure(
             configuration: PurchasesConfiguration,
