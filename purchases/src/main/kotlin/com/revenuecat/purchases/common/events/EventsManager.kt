@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
@@ -75,6 +76,10 @@ internal class EventsManager(
                     subclass(BackendStoredEvent.CustomerCenter::class, BackendStoredEvent.CustomerCenter.serializer())
                     subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
                     subclass(BackendStoredEvent.Ad::class, BackendStoredEvent.Ad.serializer())
+                    subclass(
+                        BackendStoredEvent.CustomPaywall::class,
+                        BackendStoredEvent.CustomPaywall.serializer(),
+                    )
                 }
             }
             explicitNulls = false
@@ -200,6 +205,10 @@ internal class EventsManager(
                     appSessionID.toString(),
                 )
                 is AdEvent.FailedToLoad -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is CustomPaywallEvent.Impression -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
