@@ -42,20 +42,19 @@ internal class HTTPTimeoutManager(
     private val lastTimeoutRequestTime = AtomicLong(0L)
 
     /**
-     * Calculates the timeout for a request based on the endpoint and whether it's a fallback call.
-     * @param endpoint The endpoint being requested
+     * Calculates the timeout for a request based on whether fallback URLs are available.
      * @param isFallback Whether this is a fallback request
+     * @param fallbackAvailable Whether fallback URLs are available for this request
      * @return The timeout in milliseconds
      */
-    fun getTimeoutForRequest(endpoint: Endpoint, isFallback: Boolean): Long {
+    fun getTimeoutForRequest(isFallback: Boolean, fallbackAvailable: Boolean): Long {
         // Check if reset is needed (10 minutes elapsed)
         if (shouldResetTimeout()) {
             resetTimeout()
         }
 
         val timeout = when {
-            isFallback -> DEFAULT_TIMEOUT_MS
-            !endpoint.supportsFallbackBaseURLs -> DEFAULT_TIMEOUT_MS
+            isFallback || !fallbackAvailable -> DEFAULT_TIMEOUT_MS
             lastTimeoutRequestTime.get() > 0L -> REDUCED_TIMEOUT_MS
             else -> SUPPORTED_FALLBACK_TIMEOUT_MS
         }
