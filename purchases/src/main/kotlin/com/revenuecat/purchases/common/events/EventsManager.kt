@@ -265,6 +265,7 @@ internal class EventsManager(
      *
      * @param batchNumber The current batch number being flushed.
      */
+    @Suppress("LongMethod")
     private fun flushNextBatch(batchNumber: Int, delay: Delay) {
         if (batchNumber > MAX_FLUSH_BATCHES) {
             verboseLog { "Reached maximum number of flush batches ($MAX_FLUSH_BATCHES). Stopping flush." }
@@ -272,6 +273,7 @@ internal class EventsManager(
             return
         }
 
+        val batchStartTimeMillis = System.currentTimeMillis()
         val storedEventsWithNullValues = getStoredEvents()
         val storedEvents = storedEventsWithNullValues.filterNotNull()
 
@@ -295,7 +297,10 @@ internal class EventsManager(
                 debugEventListener?.onDebugEventReceived(
                     DebugEvent(
                         name = DebugEventName.FLUSH_COMPLETED,
-                        properties = mapOf("batch_number" to batchNumber.toString()),
+                        properties = mapOf(
+                            "batch_number" to batchNumber.toString(),
+                            "elapsed_millis" to (System.currentTimeMillis() - batchStartTimeMillis).toString(),
+                        ),
                     ),
                 )
                 enqueue {
