@@ -292,9 +292,8 @@ internal class HTTPClient(
             }
 
             val timeout = timeoutManager.getTimeoutForRequest(
-                endpoint,
-                isFallbackURL,
-                hasProxyURL = appConfig.fallbackBaseURLs.isEmpty(),
+                isFallback = isFallbackURL,
+                fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
             )
 
             connection = getConnection(httpRequest, timeout)
