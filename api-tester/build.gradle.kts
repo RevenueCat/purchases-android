@@ -1,5 +1,5 @@
 plugins {
-    id("revenuecat-api-tester-application")
+    alias(libs.plugins.revenuecat.api.tester.application)
     alias(libs.plugins.compose.compiler)
 }
 
