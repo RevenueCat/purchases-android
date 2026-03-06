@@ -20,6 +20,7 @@ import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
+import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
@@ -263,7 +264,11 @@ final class PurchasesAPI {
             }
 
             @Override
-            public void onPromotionalOfferSuccess() {
+            public void onPromotionalOfferSucceeded(
+                    @NonNull CustomerInfo customerInfo,
+                    @NonNull StoreTransaction transaction,
+                    @NonNull String offerId
+            ) {
             }
         };
         Purchases.getSharedInstance().setCustomerCenterListener(new CustomerCenterListener() {});
