@@ -30,6 +30,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
+import com.revenuecat.purchases.utils.RateLimiter
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -44,6 +45,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.util.Date
 import java.util.UUID
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 class EventsManagerTest {
@@ -87,6 +89,9 @@ class EventsManagerTest {
         impressionId = "impression-id"
     )
     private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
+    private val disabledRateLimiter = mockk<RateLimiter>().apply {
+        every { shouldProceed() } returns false
+    }
     private var postedRequest: EventsRequest? = null
 
     private val testFolder = "temp_test_folder"
@@ -137,6 +142,7 @@ class EventsManagerTest {
                     onErrorHandler = onError,
                 )
             },
+            priorityFlushRateLimiter = disabledRateLimiter,
         )
     }
 
@@ -988,5 +994,265 @@ class EventsManagerTest {
 
         val skippedEvents = receivedEvents.filter { it.name == DebugEventName.FLUSH_SKIPPED_NO_EVENTS }
         assertThat(skippedEvents).isEmpty()
+    }
+
+    // Priority Flush Tests
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `isPriorityEvent returns true for paywall impression event`() {
+        val impressionEvent = paywallEvent.copy(type = PaywallEventType.IMPRESSION)
+        assertThat(impressionEvent.isPriorityEvent).isTrue()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `isPriorityEvent returns false for non-impression paywall events`() {
+        val cancelEvent = paywallEvent.copy(type = PaywallEventType.CANCEL)
+        assertThat(cancelEvent.isPriorityEvent).isFalse()
+
+        val closeEvent = paywallEvent.copy(type = PaywallEventType.CLOSE)
+        assertThat(closeEvent.isPriorityEvent).isFalse()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `isPriorityEvent returns true for custom paywall events`() {
+        val customEvent = CustomPaywallEvent.Impression(
+            data = CustomPaywallEvent.Impression.Data(paywallId = "test"),
+        )
+        assertThat(customEvent.isPriorityEvent).isTrue()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `isPriorityEvent returns false for customer center events`() {
+        assertThat(customerCenterImpressionEvent.isPriorityEvent).isFalse()
+    }
+
+    @Test
+    fun `tracking priority event triggers immediate flush`() {
+        val enabledRateLimiter = RateLimiter(maxCallsInPeriod = 5, periodSeconds = 60.seconds)
+        val priorityEventsManager = EventsManager(
+            appSessionID,
+            legacyFileHelper,
+            fileHelper,
+            identityManager,
+            paywallEventsDispatcher,
+            postEvents = { request, delay, onSuccess, onError ->
+                postedRequest = request
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+            priorityFlushRateLimiter = enabledRateLimiter,
+        )
+
+        mockBackendResponse(success = true)
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+
+        // Should have triggered a flush automatically
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+        checkFileContents("")
+    }
+
+    @Test
+    fun `tracking non-priority event does not trigger flush`() {
+        val enabledRateLimiter = RateLimiter(maxCallsInPeriod = 5, periodSeconds = 60.seconds)
+        val priorityEventsManager = EventsManager(
+            appSessionID,
+            legacyFileHelper,
+            fileHelper,
+            identityManager,
+            paywallEventsDispatcher,
+            postEvents = { request, delay, onSuccess, onError ->
+                postedRequest = request
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+            priorityFlushRateLimiter = enabledRateLimiter,
+        )
+
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.CANCEL))
+
+        // Should not have triggered a flush
+        verify(exactly = 0) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+        checkFileNumberOfEvents(1)
+    }
+
+    @Test
+    fun `priority flush is rate limited after exceeding max calls`() {
+        val rateLimiter = RateLimiter(maxCallsInPeriod = 2, periodSeconds = 60.seconds)
+        val priorityEventsManager = EventsManager(
+            appSessionID,
+            legacyFileHelper,
+            fileHelper,
+            identityManager,
+            paywallEventsDispatcher,
+            postEvents = { request, delay, onSuccess, onError ->
+                postedRequest = request
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+            priorityFlushRateLimiter = rateLimiter,
+        )
+
+        mockBackendResponse(success = true)
+
+        // First two priority events should trigger flushes
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+
+        // Third priority event should be rate limited (no additional flush)
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+
+        // Only 2 flushes should have happened (rate limited the 3rd)
+        // The 3rd event is stored but not flushed
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+        checkFileNumberOfEvents(1)
+    }
+
+    @Test
+    fun `priority event during flush queues and drains after completion`() {
+        val rateLimiter = RateLimiter(maxCallsInPeriod = 5, periodSeconds = 60.seconds)
+        val priorityEventsManager = EventsManager(
+            appSessionID,
+            legacyFileHelper,
+            fileHelper,
+            identityManager,
+            paywallEventsDispatcher,
+            postEvents = { request, delay, onSuccess, onError ->
+                postedRequest = request
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+            priorityFlushRateLimiter = rateLimiter,
+        )
+
+        // Mock backend to capture callbacks without immediately invoking them
+        val successSlot = slot<() -> Unit>()
+        every {
+            backend.postEvents(any(), any(), any(), capture(successSlot), any())
+        } just Runs
+
+        // Track a priority event - starts flush, but backend doesn't complete yet
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Track another priority event while flush is in progress - should queue
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+        // Still only 1 backend call since flush is in progress
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Complete the first flush - should trigger the queued priority flush
+        successSlot.captured()
+
+        // Now the queued flush should have fired
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Complete the second flush
+        successSlot.captured()
+
+        // All events should be flushed
+        checkFileContents("")
+    }
+
+    @Test
+    fun `queued priority events during flush do not exhaust rate limiter`() {
+        val rateLimiter = RateLimiter(maxCallsInPeriod = 3, periodSeconds = 60.seconds)
+        val priorityEventsManager = EventsManager(
+            appSessionID,
+            legacyFileHelper,
+            fileHelper,
+            identityManager,
+            paywallEventsDispatcher,
+            postEvents = { request, delay, onSuccess, onError ->
+                postedRequest = request
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+            priorityFlushRateLimiter = rateLimiter,
+        )
+
+        // Mock backend to capture callbacks without immediately invoking them
+        val successSlot = slot<() -> Unit>()
+        every {
+            backend.postEvents(any(), any(), any(), capture(successSlot), any())
+        } just Runs
+
+        // Track a priority event - starts flush, but backend doesn't complete yet
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Track 3 more priority events while flush is in progress
+        // These should coalesce into a single pending flush, NOT exhaust the rate limiter
+        for (i in 0..2) {
+            priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+        }
+
+        // Still only 1 backend call since flush is in progress
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Complete the first flush - should trigger ONE queued priority flush
+        successSlot.captured()
+
+        // Now the queued flush should have fired (consuming 1 rate limiter call)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Complete the second flush
+        successSlot.captured()
+
+        // Track another priority event — should still flush because rate limiter
+        // was only consumed 2 times (initial flush + drain), NOT 4 times (once per queued event).
+        // With maxCallsInPeriod = 3, this 3rd call should succeed.
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+
+        // If rate limiter were exhausted by queued events (old bug), this would still be 2.
+        // With the fix, it should be 3 since the rate limiter has capacity remaining.
+        verify(exactly = 3) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
     }
 }

@@ -12,6 +12,8 @@ import java.util.UUID
 @OptIn(InternalRevenueCatAPI::class)
 internal sealed class CustomPaywallEvent : FeatureEvent {
 
+    override val isPriorityEvent: Boolean get() = true
+
     /**
      * Type representing a custom paywall impression event. Meant for tracking custom paywall views.
      */
