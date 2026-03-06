@@ -274,6 +274,32 @@ internal class HTTPTimeoutManagerTest {
     }
 
     @Test
+    fun `getTimeoutForRequest returns DEFAULT_TIMEOUT_MS for fallback-supporting endpoint when proxy URL is set`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        // When proxy is set, fallback URLs are disabled. The timeout manager should use
+        // the default timeout instead of the aggressive short timeout.
+        val timeout = timeoutManager.getTimeoutForRequest(endpoint, isFallback = false, hasProxyURL = true)
+        assertThat(timeout).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
+    }
+
+    @Test
+    fun `getTimeoutForRequest returns DEFAULT_TIMEOUT_MS after timeout when proxy URL is set`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+
+        // Record a previous timeout
+        timeoutManager.recordRequestResult(
+            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+        )
+
+        // Even after a previous timeout, with a proxy URL the request should use
+        // the default timeout, not the reduced 2s timeout.
+        val timeout = timeoutManager.getTimeoutForRequest(endpoint, isFallback = false, hasProxyURL = true)
+        assertThat(timeout).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
+    }
+
+    @Test
     fun `endpoints without fallback support always use DEFAULT_TIMEOUT_MS`() {
         val endpoint = Endpoint.LogIn
         assert(!endpoint.supportsFallbackBaseURLs)

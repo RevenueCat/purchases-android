@@ -47,15 +47,14 @@ internal class HTTPTimeoutManager(
      * @param isFallback Whether this is a fallback request
      * @return The timeout in milliseconds
      */
-    fun getTimeoutForRequest(endpoint: Endpoint, isFallback: Boolean): Long {
+    fun getTimeoutForRequest(endpoint: Endpoint, isFallback: Boolean, hasProxyURL: Boolean = false): Long {
         // Check if reset is needed (10 minutes elapsed)
         if (shouldResetTimeout()) {
             resetTimeout()
         }
 
         val timeout = when {
-            isFallback -> DEFAULT_TIMEOUT_MS
-            !endpoint.supportsFallbackBaseURLs -> DEFAULT_TIMEOUT_MS
+            isFallback || !endpoint.supportsFallbackBaseURLs || hasProxyURL -> DEFAULT_TIMEOUT_MS
             lastTimeoutRequestTime.get() > 0L -> REDUCED_TIMEOUT_MS
             else -> SUPPORTED_FALLBACK_TIMEOUT_MS
         }
