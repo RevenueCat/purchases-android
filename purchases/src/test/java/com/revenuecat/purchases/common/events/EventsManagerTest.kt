@@ -944,6 +944,8 @@ class EventsManagerTest {
         val flushCompleted = receivedEvents.filter { it.name == DebugEventName.FLUSH_COMPLETED }
         assertThat(flushCompleted).hasSize(1)
         assertThat(flushCompleted.first().properties["batch_number"]).isEqualTo("1")
+        assertThat(flushCompleted.first().properties["elapsed_millis"]).isNotNull()
+        assertThat(flushCompleted.first().properties["elapsed_millis"]!!.toLong()).isGreaterThanOrEqualTo(0)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -961,7 +963,9 @@ class EventsManagerTest {
         val flushCompleted = receivedEvents.filter { it.name == DebugEventName.FLUSH_COMPLETED }
         assertThat(flushCompleted).hasSize(2)
         assertThat(flushCompleted[0].properties["batch_number"]).isEqualTo("1")
+        assertThat(flushCompleted[0].properties["elapsed_millis"]).isNotNull()
         assertThat(flushCompleted[1].properties["batch_number"]).isEqualTo("2")
+        assertThat(flushCompleted[1].properties["elapsed_millis"]).isNotNull()
     }
 
     @OptIn(InternalRevenueCatAPI::class)
