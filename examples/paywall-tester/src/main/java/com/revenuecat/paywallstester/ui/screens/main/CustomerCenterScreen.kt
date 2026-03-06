@@ -88,5 +88,9 @@ internal fun createCustomerCenterListener(
             )
             onCustomAction(actionIdentifier, purchaseIdentifier)
         }
+
+        override fun onPromotionalOfferSuccess() {
+            Log.d(tag, "Local listener: onPromotionalOfferSuccess called")
+        }
     }
 }

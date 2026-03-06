@@ -271,6 +271,10 @@ final class PurchasesAPI {
                     Uri uri = customUrl.getUri();
                 }
             }
+
+            @Override
+            public void onPromotionalOfferSuccess() {
+            }
         };
         Purchases.getSharedInstance().setCustomerCenterListener(new CustomerCenterListener() {});
         Purchases.getSharedInstance().setCustomerCenterListener(customerInfoListener);
