@@ -20,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PartialTimelineComponent
+import com.revenuecat.purchases.paywalls.components.PartialTimelineComponentItem
 import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -61,6 +62,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabsComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
@@ -276,6 +278,67 @@ class VisibilityConditionTests {
 
         // Timeline is hidden — item title should not exist
         onNodeWithText(timelineTitleValue).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Timeline item title color override applies from item override`(): Unit = with(composeTestRule) {
+        val expectedBaseColor = Color.Black
+        val expectedOverrideColor = Color.White
+        val timeline = TimelineComponent(
+            itemSpacing = 8,
+            textSpacing = 4,
+            columnGutter = 12,
+            iconAlignment = TimelineComponent.IconAlignment.Title,
+            items = listOf(
+                TimelineComponent.Item(
+                    title = TextComponent(
+                        text = timelineTitleKey,
+                        color = ColorScheme(light = ColorInfo.Hex(expectedBaseColor.toArgb())),
+                    ),
+                    icon = IconComponent(
+                        baseUrl = "https://assets.example.com",
+                        iconName = "check",
+                        formats = IconComponent.Formats(webp = "check.webp"),
+                        size = Size(
+                            width = SizeConstraint.Fixed(24u),
+                            height = SizeConstraint.Fixed(24u),
+                        ),
+                    ),
+                    overrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.Variable(
+                                    operator = ComponentOverride.EqualityOperator.EQUALS,
+                                    variable = "light_text",
+                                    value = JsonPrimitive(true),
+                                ),
+                            ),
+                            properties = PartialTimelineComponentItem(
+                                title = PartialTextComponent(
+                                    color = ColorScheme(light = ColorInfo.Hex(expectedOverrideColor.toArgb())),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val state = FakePaywallState(
+            localizations = localizations,
+            defaultLocaleIdentifier = localeId,
+            components = listOf(timeline),
+            customVariables = mapOf("light_text" to CustomVariableValue.Boolean(true)),
+        )
+        val style = styleFactory.create(timeline).getOrThrow().componentStyle as TimelineComponentStyle
+
+        setContent {
+            TimelineComponentView(style = style, state = state)
+        }
+
+        onNodeWithText(timelineTitleValue)
+            .assertIsDisplayed()
+            .assertTextColorEquals(expectedOverrideColor)
     }
 
     // endregion

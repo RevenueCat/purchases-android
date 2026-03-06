@@ -122,6 +122,12 @@ public class PartialTimelineComponentItem(
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
+    public val title: PartialTextComponent? = null,
+    @get:JvmSynthetic
+    public val description: PartialTextComponent? = null,
+    @get:JvmSynthetic
+    public val icon: PartialIconComponent? = null,
+    @get:JvmSynthetic
     public val connector: TimelineComponent.Connector? = null,
 ) : PartialComponent
 

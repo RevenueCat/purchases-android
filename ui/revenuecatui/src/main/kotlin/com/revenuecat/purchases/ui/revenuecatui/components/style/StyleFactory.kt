@@ -985,7 +985,14 @@ internal class StyleFactory(
         item: TimelineComponent.Item,
     ): Result<TimelineComponentStyle.ItemStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = item.overrides
-            .toPresentedOverrides(stripRules) { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
+            .toPresentedOverrides(stripRules) { partial ->
+                PresentedTimelineItemPartial(
+                    from = partial,
+                    localizations = localizations,
+                    aliases = colorAliases,
+                    fontAliases = fontAliases,
+                )
+            }
             .mapError { nonEmptyListOf(it) },
         second = createTextComponentStyle(item.title),
         third = item.description?.let { createTextComponentStyle(it) }.orSuccessfullyNull(),

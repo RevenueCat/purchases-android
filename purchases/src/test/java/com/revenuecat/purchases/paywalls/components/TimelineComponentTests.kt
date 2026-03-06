@@ -379,6 +379,16 @@ internal class TimelineComponentTests {
                         json = """
                         {
                           "visible": true,
+                            "title": {
+                                "visible": false,
+                                "font_size": 18
+                            },
+                            "description": {
+                                "font_weight": "extra_bold"
+                            },
+                            "icon": {
+                                "icon_name": "Updated icon name"
+                            },
                             "connector": {
                                 "width": 40,
                                 "margin": {
@@ -393,6 +403,16 @@ internal class TimelineComponentTests {
                         """.trimIndent(),
                         expected = PartialTimelineComponentItem(
                             visible = true,
+                            title = PartialTextComponent(
+                                visible = false,
+                                fontSize = 18,
+                            ),
+                            description = PartialTextComponent(
+                                fontWeight = com.revenuecat.purchases.paywalls.components.properties.FontWeight.EXTRA_BOLD,
+                            ),
+                            icon = PartialIconComponent(
+                                iconName = "Updated icon name",
+                            ),
                             connector = TimelineComponent.Connector(
                                 width = 40,
                                 margin = Padding(
