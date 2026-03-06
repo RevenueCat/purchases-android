@@ -734,6 +734,91 @@ class OfferingsManagerTest {
 
     // endregion
 
+    // region UI Preview Mode
+
+    @Test
+    fun `getOfferings returns empty Offerings and does not call backend when uiPreviewMode is true`() {
+        val previewOfferingsManager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            uiPreviewMode = true,
+        )
+
+        var receivedOfferings: Offerings? = null
+        previewOfferingsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected success but got error: $it") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNotNull
+        val offerings = receivedOfferings!!
+        assertThat(offerings.current).isNull()
+        assertThat(offerings.all).isEmpty()
+        verify(exactly = 0) {
+            backend.getOfferings(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `onAppForeground does not fetch when uiPreviewMode is true`() {
+        val previewOfferingsManager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            uiPreviewMode = true,
+        )
+        mockCacheStale(offeringsStale = true)
+        mockDeviceCache()
+
+        previewOfferingsManager.onAppForeground(appUserId)
+
+        verify(exactly = 0) {
+            backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+        }
+    }
+
+    @Test
+    fun `fetchAndCacheOfferings does not call backend and invokes onSuccess with empty result when uiPreviewMode is true`() {
+        val previewOfferingsManager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            uiPreviewMode = true,
+        )
+
+        var receivedResult: OfferingsResultData? = null
+        previewOfferingsManager.fetchAndCacheOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected no error: $it") },
+            onSuccess = { receivedResult = it },
+        )
+
+        verify(exactly = 0) {
+            backend.getOfferings(any(), any(), any(), any())
+        }
+        assertThat(receivedResult).isNotNull
+        val result = receivedResult!!
+        assertThat(result.offerings.current).isNull()
+        assertThat(result.offerings.all).isEmpty()
+        assertThat(result.requestedProductIds).isEmpty()
+        assertThat(result.notFoundProductIds).isEmpty()
+    }
+
+    // endregion UI Preview Mode
+
     // region helpers
 
     private fun mockOfferingsFactory(
