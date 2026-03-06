@@ -41,6 +41,7 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
@@ -843,7 +844,12 @@ internal class CustomerCenterViewModelImpl(
         }
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
-            purchases.awaitPurchase(purchaseParams)
+            val result = purchases.awaitPurchase(purchaseParams)
+            notifyListenersForPromotionalOfferSucceeded(
+                result.customerInfo,
+                result.storeTransaction,
+                subscriptionOption.id,
+            )
 
             // Reload customer center data to refresh the UI with the latest subscription information
             // It will also go back to main screen
@@ -1282,6 +1288,15 @@ internal class CustomerCenterViewModelImpl(
             customActionData.actionIdentifier,
             customActionData.purchaseIdentifier,
         )
+    }
+
+    private fun notifyListenersForPromotionalOfferSucceeded(
+        customerInfo: CustomerInfo,
+        transaction: StoreTransaction,
+        offerId: String,
+    ) {
+        listener?.onPromotionalOfferSucceeded(customerInfo, transaction, offerId)
+        purchases.customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction, offerId)
     }
 
     override fun showPaywall(context: Context) {

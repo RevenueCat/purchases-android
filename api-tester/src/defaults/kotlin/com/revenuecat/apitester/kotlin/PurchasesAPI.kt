@@ -49,6 +49,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
@@ -376,6 +377,13 @@ private class PurchasesAPI {
                         val uri: Uri = action.uri
                     }
                 }
+            }
+
+            override fun onPromotionalOfferSucceeded(
+                customerInfo: CustomerInfo,
+                transaction: StoreTransaction,
+                offerId: String,
+            ) {
             }
         }
         sharedInstance.customerCenterListener = object : CustomerCenterListener {}
