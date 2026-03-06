@@ -49,6 +49,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
@@ -386,7 +387,11 @@ private class PurchasesAPI {
                 }
             }
 
-            override fun onPromotionalOfferSuccess() {
+            override fun onPromotionalOfferSucceeded(
+                customerInfo: CustomerInfo,
+                transaction: StoreTransaction,
+                offerId: String,
+            ) {
             }
         }
         sharedInstance.customerCenterListener = object : CustomerCenterListener {}

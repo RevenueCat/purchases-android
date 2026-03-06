@@ -2,6 +2,7 @@ package com.revenuecat.purchases.customercenter
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.models.StoreTransaction
 
 /**
  * Listener interface for receiving callbacks for Customer Center events.
@@ -71,9 +72,18 @@ public interface CustomerCenterListener {
     }
 
     /**
-     * Called when a promotional offer is successfully redeemed in the Customer Center.
+     * Called when a promotional offer purchase completes successfully in the Customer Center,
+     * providing the resulting customer info, transaction, and the promotional offer identifier.
+     *
+     * @param customerInfo The updated customer information after the purchase.
+     * @param transaction The store transaction for the purchase.
+     * @param offerId The identifier of the promotional offer that was redeemed.
      */
-    public fun onPromotionalOfferSuccess() {
+    public fun onPromotionalOfferSucceeded(
+        customerInfo: CustomerInfo,
+        transaction: StoreTransaction,
+        offerId: String,
+    ) {
         // Default empty implementation
     }
 }

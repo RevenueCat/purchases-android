@@ -995,7 +995,7 @@ package com.revenuecat.purchases.customercenter {
     method public default void onCustomActionSelected(String actionIdentifier, String? purchaseIdentifier);
     method public default void onFeedbackSurveyCompleted(String feedbackSurveyOptionId);
     method public default void onManagementOptionSelected(com.revenuecat.purchases.customercenter.CustomerCenterManagementOption action);
-    method public default void onPromotionalOfferSuccess();
+    method public default void onPromotionalOfferSucceeded(@NonNull com.revenuecat.purchases.CustomerInfo customerInfo, @NonNull com.revenuecat.purchases.models.StoreTransaction transaction, @NonNull String offerId);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public default void onRestoreFailed(com.revenuecat.purchases.PurchasesError error);
     method public default void onRestoreStarted();
