@@ -34,6 +34,7 @@ public fun String.sha256(): String =
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))
         }
+
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
 
