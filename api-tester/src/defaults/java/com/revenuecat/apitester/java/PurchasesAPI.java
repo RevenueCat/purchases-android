@@ -186,6 +186,19 @@ final class PurchasesAPI {
         purchases.setAppsFlyerConversionData(mapStringInt);
     }
 
+    static void checkSetAppstackAttributionParams(final Purchases purchases) {
+        final SyncAttributesAndOfferingsCallback callback = new SyncAttributesAndOfferingsCallback() {
+            @Override
+            public void onSuccess(@NonNull Offerings offerings) {}
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {}
+        };
+
+        Map<String, String> mapStringString = new HashMap<>();
+        purchases.setAppstackAttributionParams(mapStringString, callback);
+    }
+
     static void checkConfiguration(final Context context,
                                    final ExecutorService executorService,
                                    final PurchasesConfiguration purchasesConfiguration) {
