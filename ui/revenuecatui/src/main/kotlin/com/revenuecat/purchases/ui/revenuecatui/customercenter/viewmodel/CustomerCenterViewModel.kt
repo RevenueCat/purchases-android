@@ -844,6 +844,7 @@ internal class CustomerCenterViewModelImpl(
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
             purchases.awaitPurchase(purchaseParams)
+            notifyListenersForPromotionalOfferSuccess()
 
             // Reload customer center data to refresh the UI with the latest subscription information
             // It will also go back to main screen
@@ -1282,6 +1283,11 @@ internal class CustomerCenterViewModelImpl(
             customActionData.actionIdentifier,
             customActionData.purchaseIdentifier,
         )
+    }
+
+    private fun notifyListenersForPromotionalOfferSuccess() {
+        listener?.onPromotionalOfferSuccess()
+        purchases.customerCenterListener?.onPromotionalOfferSuccess()
     }
 
     override fun showPaywall(context: Context) {

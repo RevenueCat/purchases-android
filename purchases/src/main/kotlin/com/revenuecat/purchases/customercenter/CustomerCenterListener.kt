@@ -69,4 +69,11 @@ public interface CustomerCenterListener {
     public fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
         // Default empty implementation
     }
+
+    /**
+     * Called when a promotional offer is successfully redeemed in the Customer Center.
+     */
+    public fun onPromotionalOfferSuccess() {
+        // Default empty implementation
+    }
 }
