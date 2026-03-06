@@ -336,10 +336,35 @@ internal class EventsManager(
      * Must be called from within an enqueue block.
      */
     private fun performPriorityFlush() {
+        pendingPriorityFlush = true
+        if (flushInProgress.get()) {
+            debugLog { "Flush in progress. Queuing priority flush." }
+            return
+        }
+        startPendingPriorityFlushIfNeeded()
+    }
+
+    /**
+     * Called when a flush sequence completes (success, no events, max batches, or error).
+     * Marks flush as not in progress, then starts any pending priority flush.
+     */
+    private fun onFlushComplete() {
+        flushInProgress.set(false)
+        startPendingPriorityFlushIfNeeded()
+    }
+
+    /**
+     * Starts a pending priority flush if the rate limiter allows.
+     * Sets `flushInProgress` while flushing to prevent concurrent flushes.
+     */
+    private fun startPendingPriorityFlushIfNeeded() {
+        if (!pendingPriorityFlush) return
         if (!priorityFlushRateLimiter.shouldProceed()) {
+            pendingPriorityFlush = false
             debugLog { "Priority flush rate limited. Skipping." }
             return
         }
+        pendingPriorityFlush = false
         if (flushInProgress.getAndSet(true)) {
             debugLog { "Flush in progress. Queuing priority flush." }
             pendingPriorityFlush = true
@@ -347,20 +372,6 @@ internal class EventsManager(
         }
         debugLog { "Starting priority flush." }
         flushNextBatch(batchNumber = 1, delay = Delay.NONE)
-    }
-
-    /**
-     * Called when a flush sequence completes (success, no events, max batches, or error).
-     * If a priority flush is pending, starts a new flush. Otherwise, marks flush as not in progress.
-     */
-    private fun onFlushComplete() {
-        if (pendingPriorityFlush) {
-            pendingPriorityFlush = false
-            debugLog { "Draining pending priority flush." }
-            flushNextBatch(batchNumber = 1, delay = Delay.NONE)
-        } else {
-            flushInProgress.set(false)
-        }
     }
 
     /**

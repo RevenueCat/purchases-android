@@ -1187,4 +1187,72 @@ class EventsManagerTest {
         // All events should be flushed
         checkFileContents("")
     }
+
+    @Test
+    fun `queued priority events during flush do not exhaust rate limiter`() {
+        val rateLimiter = RateLimiter(maxCallsInPeriod = 3, periodSeconds = 60.seconds)
+        val priorityEventsManager = EventsManager(
+            appSessionID,
+            legacyFileHelper,
+            fileHelper,
+            identityManager,
+            paywallEventsDispatcher,
+            postEvents = { request, delay, onSuccess, onError ->
+                postedRequest = request
+                backend.postEvents(
+                    paywallEventRequest = request,
+                    baseURL = AppConfig.paywallEventsURL,
+                    delay = delay,
+                    onSuccessHandler = onSuccess,
+                    onErrorHandler = onError,
+                )
+            },
+            priorityFlushRateLimiter = rateLimiter,
+        )
+
+        // Mock backend to capture callbacks without immediately invoking them
+        val successSlot = slot<() -> Unit>()
+        every {
+            backend.postEvents(any(), any(), any(), capture(successSlot), any())
+        } just Runs
+
+        // Track a priority event - starts flush, but backend doesn't complete yet
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Track 3 more priority events while flush is in progress
+        // These should coalesce into a single pending flush, NOT exhaust the rate limiter
+        for (i in 0..2) {
+            priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+        }
+
+        // Still only 1 backend call since flush is in progress
+        verify(exactly = 1) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Complete the first flush - should trigger ONE queued priority flush
+        successSlot.captured()
+
+        // Now the queued flush should have fired (consuming 1 rate limiter call)
+        verify(exactly = 2) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+
+        // Complete the second flush
+        successSlot.captured()
+
+        // Track another priority event — should still flush because rate limiter
+        // was only consumed 2 times (initial flush + drain), NOT 4 times (once per queued event).
+        // With maxCallsInPeriod = 3, this 3rd call should succeed.
+        priorityEventsManager.track(paywallEvent.copy(type = PaywallEventType.IMPRESSION))
+
+        // If rate limiter were exhausted by queued events (old bug), this would still be 2.
+        // With the fix, it should be 3 since the rate limiter has capacity remaining.
+        verify(exactly = 3) {
+            backend.postEvents(any(), any(), any(), any(), any())
+        }
+    }
 }
