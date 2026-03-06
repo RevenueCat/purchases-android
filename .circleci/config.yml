@@ -1155,8 +1155,8 @@ workflows:
       - publish-paywall-tester-release:
           track: "alpha"
           requires:
-            - deploy
-            - docs-deploy
+              - deploy
+              - docs-deploy
           <<: *release-tags
       - publish-rct-tester-release:
           track: "alpha"
