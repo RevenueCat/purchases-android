@@ -24,7 +24,7 @@ import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
@@ -88,14 +88,14 @@ internal class OfferingsManager(
     ): Pair<
         (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit,
         (OfferingsResultData, DiagnosticsTracker.CacheStatus) -> Unit,
-    > {
+        > {
         val onErrorWithTracking: (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit = { error, cacheStatus ->
             trackGetOfferingsResultIfNeeded(startTime, cacheStatus, error, null, null)
             onError?.invoke(error)
         }
         val onSuccessWithTracking: (
             OfferingsResultData,
-            DiagnosticsTracker.CacheStatus
+            DiagnosticsTracker.CacheStatus,
         ) -> Unit = { result, cacheStatus ->
             trackGetOfferingsResultIfNeeded(
                 startTime,
