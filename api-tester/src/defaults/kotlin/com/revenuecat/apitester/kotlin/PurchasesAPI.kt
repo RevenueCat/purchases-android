@@ -377,6 +377,9 @@ private class PurchasesAPI {
                     }
                 }
             }
+
+            override fun onPromotionalOfferSuccess() {
+            }
         }
         sharedInstance.customerCenterListener = object : CustomerCenterListener {}
         sharedInstance.customerCenterListener = customerInfoListener
