@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.utils.serializers.EmptyObjectToNullSerializer
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -112,7 +113,7 @@ class ProductChangeConfigTest(
         assert(wrapper.productChangeConfig == null)
     }
 
-    private object TestSerializer : com.revenuecat.purchases.utils.serializers.EmptyObjectToNullSerializer<ProductChangeConfig>(
+    private object TestSerializer : EmptyObjectToNullSerializer<ProductChangeConfig>(
         ProductChangeConfig.serializer(),
     )
 
