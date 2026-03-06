@@ -42,7 +42,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property eventsDispatcher Dispatches event-related operations.
  * @property postEvents Function for sending events to the backend.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class EventsManager(
     private val appSessionID: UUID = Companion.appSessionID,
     private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>?,
@@ -359,19 +359,16 @@ internal class EventsManager(
      */
     private fun startPendingPriorityFlushIfNeeded() {
         if (!pendingPriorityFlush) return
-        if (!priorityFlushRateLimiter.shouldProceed()) {
-            pendingPriorityFlush = false
-            debugLog { "Priority flush rate limited. Skipping." }
-            return
-        }
         pendingPriorityFlush = false
-        if (flushInProgress.getAndSet(true)) {
+        if (!priorityFlushRateLimiter.shouldProceed()) {
+            debugLog { "Priority flush rate limited. Skipping." }
+        } else if (flushInProgress.getAndSet(true)) {
             debugLog { "Flush in progress. Queuing priority flush." }
             pendingPriorityFlush = true
-            return
+        } else {
+            debugLog { "Starting priority flush." }
+            flushNextBatch(batchNumber = 1, delay = Delay.NONE)
         }
-        debugLog { "Starting priority flush." }
-        flushNextBatch(batchNumber = 1, delay = Delay.NONE)
     }
 
     /**
