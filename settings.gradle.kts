@@ -120,7 +120,8 @@ dependencyResolutionManagement {
     }
 }
 
-include(":feature:amazon")
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 val samsungIAPAARPresent = isSamsungIAPAARPresent(samsungIapSdkDir)
 gradle.beforeProject {
     if (this == rootProject) {
@@ -130,20 +131,22 @@ gradle.beforeProject {
 if (samsungIAPAARPresent) {
     include(":feature:galaxy")
 }
+
+include(":api-tester")
+include(":baselineprofile")
+include(":bom")
+include(":dokka-hide-internal")
+include(":examples:admob-sample")
+include(":examples:paywall-tester")
+include(":examples:purchase-tester")
+include(":examples:rcttester")
+include(":examples:web-purchase-redemption-sample")
 include(":feature:admob")
+include(":feature:amazon")
 include(":integration-tests")
 include(":purchases")
-include(":examples:purchase-tester")
-include(":api-tester")
-include(":ui:debugview")
-include(":ui:revenuecatui")
-include(":bom")
-include(":examples:paywall-tester")
+include(":test-apps:e2etests")
 include(":test-apps:testpurchasesandroidcompatibility")
 include(":test-apps:testpurchasesuiandroidcompatibility")
-include(":examples:web-purchase-redemption-sample")
-include(":examples:admob-sample")
-include(":dokka-hide-internal")
-include(":baselineprofile")
-include(":test-apps:e2etests")
-include(":examples:rcttester")
+include(":ui:debugview")
+include(":ui:revenuecatui")

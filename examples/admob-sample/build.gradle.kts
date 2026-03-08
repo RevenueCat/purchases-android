@@ -60,10 +60,10 @@ android {
 
 dependencies {
     // RevenueCat
-    implementation(project(":purchases"))
+    implementation(projects.purchases)
 
     // RevenueCat AdMob Adapter
-    implementation(project(":feature:admob"))
+    implementation(projects.feature.admob)
 
     // AndroidX
     implementation(libs.androidx.cardview)

@@ -86,8 +86,8 @@ emerge {
 }
 
 dependencies {
-    implementation(project(":purchases"))
-    implementation(project(":ui:revenuecatui"))
+    implementation(projects.purchases)
+    implementation(projects.ui.revenuecatui)
 
     androidTestImplementation(libs.emerge.snapshots)
 

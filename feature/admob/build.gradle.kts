@@ -31,7 +31,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":purchases"))
+    implementation(projects.purchases)
     implementation(libs.google.mobile.ads)
 
     testImplementation(libs.bundles.test)

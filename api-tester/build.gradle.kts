@@ -42,15 +42,15 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 dependencies {
-    implementation(project(":purchases"))
-    implementation(project(":feature:amazon"))
+    implementation(projects.purchases)
+    implementation(projects.feature.amazon)
     if (hasSamsungIapAar) {
         implementation(project(":feature:galaxy"))
     }
-    defaultsImplementation(project(":feature:admob"))
+    defaultsImplementation(projects.feature.admob)
     defaultsImplementation(libs.google.mobile.ads)
-    implementation(project(":ui:debugview"))
-    implementation(project(":ui:revenuecatui"))
+    implementation(projects.ui.debugview)
+    implementation(projects.ui.revenuecatui)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

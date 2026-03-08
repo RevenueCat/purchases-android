@@ -184,7 +184,7 @@ dependencies {
 
     debugImplementation(libs.androidx.annotation.experimental)
 
-    dokkaPlugin(project(":dokka-hide-internal"))
+    dokkaPlugin(projects.dokkaHideInternal)
 
     testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
@@ -209,7 +209,7 @@ dependencies {
     androidTestImplementation(libs.mockk.agent)
     androidTestImplementation(libs.leakcanary.android.instrumentation)
 
-    baselineProfile(project(":baselineprofile"))
+    baselineProfile(projects.baselineprofile)
     testImplementation(kotlin("test"))
 }
 
@@ -296,7 +296,7 @@ tasks.dokkaHtmlPartial.configure {
 // after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
 afterEvaluate {
     dependencies {
-        add("kover", project(":feature:amazon"))
+        add("kover", projects.feature.amazon)
     }
 }
 

@@ -72,8 +72,8 @@ android {
 }
 
 dependencies {
-    implementation(project(":purchases"))
-    implementation(project(":feature:amazon"))
+    implementation(projects.purchases)
+    implementation(projects.feature.amazon)
     val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
     if (hasSamsungIapAar) {
         implementation(project(":feature:galaxy"))
