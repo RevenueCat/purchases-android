@@ -53,7 +53,14 @@ internal class PostPendingTransactionsHelper(
                         }
                     }
                     deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
-                    val transactionsToSync = deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
+                    val newPurchases = deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
+                    val autoRenewingChanged = deviceCache.getPurchasesWithAutoRenewingChange(
+                        purchasesByHashedToken,
+                    )
+                    deviceCache.saveAutoRenewingStatus(purchasesByHashedToken)
+                    val transactionsToSync = (newPurchases + autoRenewingChanged).distinctBy {
+                        it.purchaseToken
+                    }
                     val pendingTransactionsTokens = purchasesByHashedToken.values
                         .filter { it.purchaseState == PurchaseState.PENDING }
                         .map { it.purchaseToken }

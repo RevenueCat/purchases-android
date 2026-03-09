@@ -57,6 +57,7 @@ internal open class DeviceCache(
     val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+    val tokensAutoRenewingCacheKey: String by lazy { "$apiKeyPrefix.tokensAutoRenewing" }
     val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
@@ -435,6 +436,48 @@ internal open class DeviceCache(
         return hashedTokens
             .minus(getPreviouslySentHashedTokens())
             .values.toList()
+    }
+
+    /**
+     * Returns purchases whose [StoreTransaction.isAutoRenewing] status has changed compared to
+     * the cached value. This detects subscription changes made outside the app (e.g., cancellations
+     * in Play Store subscription management) without requiring a full syncPurchases.
+     */
+    @Synchronized
+    fun getPurchasesWithAutoRenewingChange(
+        hashedTokens: Map<String, StoreTransaction>,
+    ): List<StoreTransaction> {
+        val cachedAutoRenewing = getCachedAutoRenewingStatus()
+        val sentTokens = getPreviouslySentHashedTokens()
+        return hashedTokens.filter { (hash, transaction) ->
+            hash in sentTokens &&
+                hash in cachedAutoRenewing &&
+                transaction.isAutoRenewing != cachedAutoRenewing[hash]
+        }.values.toList()
+    }
+
+    @Synchronized
+    private fun getCachedAutoRenewingStatus(): Map<String, Boolean> {
+        return try {
+            val json = preferences.getString(tokensAutoRenewingCacheKey, null) ?: return emptyMap()
+            val jsonObject = JSONObject(json)
+            jsonObject.keys().asSequence().associateWith { jsonObject.getBoolean(it) }
+        } catch (@Suppress("SwallowedException") e: JSONException) {
+            emptyMap()
+        }
+    }
+
+    /**
+     * Saves the auto-renewing status for the given hashed tokens, replacing any previously stored
+     * values. Also removes entries for tokens no longer in [hashedTokens].
+     */
+    @Synchronized
+    fun saveAutoRenewingStatus(hashedTokens: Map<String, StoreTransaction>) {
+        val statusMap = hashedTokens.mapValues { (_, transaction) -> transaction.isAutoRenewing }
+            .filterValues { it != null }
+            .mapValues { (_, value) -> value!! }
+        val jsonObject = JSONObject(statusMap as Map<*, *>)
+        preferences.edit().putString(tokensAutoRenewingCacheKey, jsonObject.toString()).apply()
     }
 
     // endregion
