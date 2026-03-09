@@ -1055,6 +1055,30 @@ class DeviceCacheTest {
         }
     }
 
+    @Test
+    fun `updateAutoRenewingStatus updates single token`() {
+        val sha1 = "token1".sha1()
+        mockTokenMap("""{"$sha1":null}""")
+        every { mockEditor.apply() } just runs
+
+        cache.updateAutoRenewingStatus("token1", false)
+        verify {
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 1 && obj.getBoolean(sha1) == false
+            })
+        }
+    }
+
+    @Test
+    fun `updateAutoRenewingStatus does nothing for unknown token`() {
+        mockTokenMap("""{"hash1":true}""")
+        cache.updateAutoRenewingStatus("unknown", false)
+        verify(exactly = 0) {
+            mockEditor.putString(cache.tokensCacheKey, any())
+        }
+    }
+
     // endregion legacy token migration
 
     private fun mockTokenMap(json: String) {

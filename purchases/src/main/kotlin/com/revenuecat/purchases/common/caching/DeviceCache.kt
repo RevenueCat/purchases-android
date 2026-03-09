@@ -531,6 +531,20 @@ internal open class DeviceCache(
         saveTokenMap(current)
     }
 
+    /**
+     * Updates the cached auto-renewing status for a single token. Used to persist the status
+     * after a successful post, so we don't eagerly save before knowing the post succeeded.
+     */
+    @Synchronized
+    fun updateAutoRenewingStatus(token: String, isAutoRenewing: Boolean?) {
+        val hashedToken = token.sha1()
+        val current = getTokenMap().toMutableMap()
+        if (hashedToken in current) {
+            current[hashedToken] = isAutoRenewing
+            saveTokenMap(current)
+        }
+    }
+
     // endregion
 
     // region offerings response

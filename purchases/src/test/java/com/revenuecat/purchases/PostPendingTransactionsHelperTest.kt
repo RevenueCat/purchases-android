@@ -66,6 +66,8 @@ class PostPendingTransactionsHelperTest {
             lambda<() -> Unit>().captured.invoke()
         }
 
+        every { deviceCache.updateAutoRenewingStatus(any(), any()) } just Runs
+
         changeBillingConnected()
         changeAutoSyncEnabled(true)
 
@@ -368,7 +370,10 @@ class PostPendingTransactionsHelperTest {
                     lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfo!!)
                 }
             } ?: run {
-                lambda<SuccessfulPurchaseCallback>().captured.invoke(mockk(), customerInfo!!)
+                lambda<SuccessfulPurchaseCallback>().captured.invoke(
+                    mockk(relaxed = true),
+                    customerInfo!!,
+                )
             }
         }
     }
@@ -398,7 +403,7 @@ class PostPendingTransactionsHelperTest {
             deviceCache.getPurchasesWithAutoRenewingChange(purchasesByHashedToken)
         } returns autoRenewingChanged
         every {
-            deviceCache.saveAutoRenewingStatus(purchasesByHashedToken)
+            deviceCache.saveAutoRenewingStatus(any())
         } just Runs
 
         every {
@@ -849,7 +854,7 @@ class PostPendingTransactionsHelperTest {
     }
 
     @Test
-    fun `auto-renewing status is saved after detecting changes`() {
+    fun `auto-renewing status is saved for unchanged tokens`() {
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
             productIds = listOf("product"),
@@ -868,6 +873,80 @@ class PostPendingTransactionsHelperTest {
 
         verify(exactly = 1) {
             deviceCache.saveAutoRenewingStatus(purchasesByHash)
+        }
+    }
+
+    @Test
+    fun `auto-renewing status is not eagerly saved for changed tokens`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = listOf(transaction),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, listOf(transaction))
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        // Changed tokens are excluded from the eager save
+        verify(exactly = 1) {
+            deviceCache.saveAutoRenewingStatus(emptyMap())
+        }
+        // Instead, auto-renewing is saved per-transaction on post success
+        verify(exactly = 1) {
+            deviceCache.updateAutoRenewingStatus(transaction.purchaseToken, transaction.isAutoRenewing)
+        }
+    }
+
+    @Test
+    fun `failed post of changed auto-renewing does not update cache`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = listOf(transaction),
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.NetworkError)
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                transactionPostSuccess = any(),
+                transactionPostError = captureLambda(),
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(transaction, error)
+        }
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        // Changed token excluded from eager save
+        verify(exactly = 1) {
+            deviceCache.saveAutoRenewingStatus(emptyMap())
+        }
+        // updateAutoRenewingStatus NOT called since the post failed
+        verify(exactly = 0) {
+            deviceCache.updateAutoRenewingStatus(any(), any())
         }
     }
 
