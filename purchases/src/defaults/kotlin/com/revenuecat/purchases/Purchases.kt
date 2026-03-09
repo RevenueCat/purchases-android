@@ -650,12 +650,16 @@ public class Purchases internal constructor(
     }
 
     /**
-     * Tracks a custom paywall impression event.
+     * Tracks an impression for a custom paywall.
+     *
+     * Call this method when your custom (non-RevenueCat) paywall is displayed to a user.
+     * This enables RevenueCat to track paywall impressions for analytics.
+     *
      * @param params Parameters for the custom paywall impression event.
      */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     @OptIn(InternalRevenueCatAPI::class)
-    @JvmSynthetic
-    internal fun trackCustomPaywallImpression(params: CustomPaywallEventParams = CustomPaywallEventParams()) {
+    public fun trackCustomPaywallImpression(params: CustomPaywallEventParams = CustomPaywallEventParams()) {
         purchasesOrchestrator.track(
             CustomPaywallEvent.Impression(
                 data = CustomPaywallEvent.Impression.Data(paywallId = params.paywallId),

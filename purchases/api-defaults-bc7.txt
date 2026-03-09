@@ -479,6 +479,7 @@ package com.revenuecat.purchases {
     method @Deprecated public void syncObserverModeAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price);
     method public void syncPurchases();
     method public void syncPurchases(optional com.revenuecat.purchases.interfaces.SyncPurchasesCallback? listener);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void trackCustomPaywallImpression(optional com.revenuecat.purchases.paywalls.events.CustomPaywallEventParams params);
     property @Deprecated @kotlin.jvm.Synchronized public final boolean allowSharingPlayStoreAccount;
     property @kotlin.jvm.Synchronized public final String appUserID;
     property public final com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? cachedVirtualCurrencies;
@@ -1612,6 +1613,16 @@ package com.revenuecat.purchases.models {
     property public final com.revenuecat.purchases.Store store;
     property public final String? storeTransactionId;
     property public final String transactionIdentifier;
+  }
+
+}
+
+package com.revenuecat.purchases.paywalls.events {
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class CustomPaywallEventParams {
+    ctor public CustomPaywallEventParams(optional String? paywallId);
+    method public String? getPaywallId();
+    property public final String? paywallId;
   }
 
 }

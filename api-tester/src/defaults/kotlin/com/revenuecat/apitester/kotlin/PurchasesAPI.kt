@@ -49,6 +49,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEventParams
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
@@ -133,6 +134,13 @@ private class PurchasesAPI {
 
         val locale: Locale? = purchases.storefrontLocale
         purchases.getStorefrontLocale(getStorefrontLocaleCallback)
+
+        // trackCustomPaywallImpression API
+        val defaultParams = CustomPaywallEventParams()
+        val paramsWithId = CustomPaywallEventParams(paywallId = "my-paywall")
+        purchases.trackCustomPaywallImpression()
+        purchases.trackCustomPaywallImpression(defaultParams)
+        purchases.trackCustomPaywallImpression(paramsWithId)
     }
 
     @Suppress("LongParameterList")
