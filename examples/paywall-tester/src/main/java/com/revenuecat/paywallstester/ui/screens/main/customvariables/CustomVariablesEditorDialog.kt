@@ -357,8 +357,8 @@ private fun AddVariableDialog(
                 onClick = {
                     val value = when (selectedType) {
                         VariableType.STRING -> CustomVariableValue.String(stringValue)
-                        VariableType.NUMBER -> CustomVariableValue.String(numberValue)
-                        VariableType.BOOLEAN -> CustomVariableValue.String(booleanValue.toString())
+                        VariableType.NUMBER -> CustomVariableValue.Number(numberValue.toDouble())
+                        VariableType.BOOLEAN -> CustomVariableValue.Boolean(booleanValue)
                     }
                     onAdd(name, value)
                 },

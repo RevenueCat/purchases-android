@@ -153,7 +153,7 @@ internal class PurchasesFactory(
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
-            if (diagnosticsEnabled && isAndroidNOrNewer()) {
+            if (shouldInitializeDiagnostics(diagnosticsEnabled, appConfig.uiPreviewMode) && isAndroidNOrNewer()) {
                 diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(contextForStorage))
                 diagnosticsHelper = DiagnosticsHelper(contextForStorage, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
@@ -162,7 +162,7 @@ internal class PurchasesFactory(
                     diagnosticsHelper,
                     eventsDispatcher,
                 )
-            } else if (diagnosticsEnabled) {
+            } else if (shouldInitializeDiagnostics(diagnosticsEnabled, appConfig.uiPreviewMode)) {
                 warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
@@ -254,6 +254,7 @@ internal class PurchasesFactory(
                 backend,
                 offlineEntitlementsManager,
                 dispatcher,
+                uiPreviewMode = appConfig.uiPreviewMode,
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
@@ -302,6 +303,7 @@ internal class PurchasesFactory(
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,
                 diagnosticsTracker,
+                uiPreviewMode = appConfig.uiPreviewMode,
             )
             val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
 
@@ -346,6 +348,7 @@ internal class PurchasesFactory(
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
+                uiPreviewMode = appConfig.uiPreviewMode,
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
@@ -503,5 +506,13 @@ internal class PurchasesFactory(
             }
             return Thread(wrapperRunnable, threadName)
         }
+    }
+
+    companion object {
+        @VisibleForTesting
+        internal fun shouldInitializeDiagnostics(
+            diagnosticsEnabled: Boolean,
+            uiPreviewMode: Boolean,
+        ): Boolean = diagnosticsEnabled && !uiPreviewMode
     }
 }

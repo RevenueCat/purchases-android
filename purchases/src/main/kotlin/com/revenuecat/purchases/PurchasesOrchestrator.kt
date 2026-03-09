@@ -286,8 +286,10 @@ internal class PurchasesOrchestrator(
             DebugEvent(name = DebugEventName.APP_BACKGROUNDED),
         )
         appConfig.isAppBackgrounded = true
-        synchronizeSubscriberAttributesIfNeeded()
-        flushEvents(Delay.NONE)
+        if (!appConfig.uiPreviewMode) {
+            synchronizeSubscriberAttributesIfNeeded()
+            flushEvents(Delay.NONE)
+        }
     }
 
     /** @suppress */
@@ -301,6 +303,8 @@ internal class PurchasesOrchestrator(
         appConfig.isAppBackgrounded = false
 
         enqueue {
+            if (appConfig.uiPreviewMode) return@enqueue
+
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
                 customerInfoHelper.retrieveCustomerInfo(
@@ -1100,6 +1104,15 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
     }
 
+    fun setAppstackAttributionParams(
+        data: Map<String, String>,
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppstackAttributionParams") }
+        subscriberAttributesManager.setAppstackAttributionParams(appUserID, data, application)
+        syncAttributesAndOfferingsIfNeeded(callback)
+    }
+
     // endregion
 
     /**
@@ -1644,10 +1657,12 @@ internal class PurchasesOrchestrator(
     }
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
+        if (appConfig.uiPreviewMode) return
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
     }
 
     private fun flushEvents(delay: Delay) {
+        if (appConfig.uiPreviewMode) return
         eventsManager.flushEvents(delay)
         adEventsManager.flushEvents(delay)
     }
