@@ -363,12 +363,9 @@ class PostPendingTransactionsHelperTest {
                 transactionPostError = any()
             )
         } answers {
-            transactions?.let {
-                it.forEach { transaction ->
-                    lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfo!!)
-                }
-            } ?: run {
-                lambda<SuccessfulPurchaseCallback>().captured.invoke(mockk(), customerInfo!!)
+            val capturedTransactions = firstArg<List<StoreTransaction>>()
+            capturedTransactions.forEach { transaction ->
+                lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfo!!)
             }
         }
     }
@@ -398,7 +395,7 @@ class PostPendingTransactionsHelperTest {
             deviceCache.getPurchasesWithAutoRenewingChange(purchasesByHashedToken)
         } returns autoRenewingChanged
         every {
-            deviceCache.saveAutoRenewingStatus(purchasesByHashedToken)
+            deviceCache.saveAutoRenewingStatus(any())
         } just Runs
 
         every {
@@ -868,6 +865,44 @@ class PostPendingTransactionsHelperTest {
 
         verify(exactly = 1) {
             deviceCache.saveAutoRenewingStatus(purchasesByHash)
+        }
+    }
+
+    @Test
+    fun `when auto-renewing status change sync fails, status is not saved`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = listOf(transaction),
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(transaction),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                transactionPostSuccess = any(),
+                transactionPostError = captureLambda(),
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(transaction, error)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
+
+        verify(exactly = 0) {
+            deviceCache.saveAutoRenewingStatus(any())
         }
     }
 

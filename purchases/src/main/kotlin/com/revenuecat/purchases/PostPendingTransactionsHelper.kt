@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
@@ -57,9 +58,15 @@ internal class PostPendingTransactionsHelper(
                     val autoRenewingChanged = deviceCache.getPurchasesWithAutoRenewingChange(
                         purchasesByHashedToken,
                     )
-                    deviceCache.saveAutoRenewingStatus(purchasesByHashedToken)
                     val transactionsToSync = (newPurchases + autoRenewingChanged).distinctBy {
                         it.purchaseToken
+                    }
+                    val transactionsToSyncTokens = transactionsToSync.map { it.purchaseToken }.toSet()
+                    val purchasesNotBeingSynced = purchasesByHashedToken.filterValues { transaction ->
+                        transaction.purchaseToken !in transactionsToSyncTokens
+                    }
+                    if (purchasesNotBeingSynced.isNotEmpty()) {
+                        deviceCache.saveAutoRenewingStatus(purchasesNotBeingSynced)
                     }
                     val pendingTransactionsTokens = purchasesByHashedToken.values
                         .filter { it.purchaseState == PurchaseState.PENDING }
@@ -119,6 +126,13 @@ internal class PostPendingTransactionsHelper(
                                 },
                             )
                         },
+                        onTransactionSuccess = { transaction ->
+                            deviceCache.saveAutoRenewingStatus(
+                                mapOf(
+                                    transaction.purchaseToken.sha1() to transaction,
+                                ),
+                            )
+                        },
                     )
                 },
                 onError = { error ->
@@ -137,6 +151,7 @@ internal class PostPendingTransactionsHelper(
         onNoTransactionsToSync: (() -> Unit),
         onError: ((PurchasesError) -> Unit),
         onSuccess: ((CustomerInfo) -> Unit),
+        onTransactionSuccess: ((StoreTransaction) -> Unit) = {},
     ) {
         if (transactionsToSync.isEmpty()) {
             log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
@@ -149,7 +164,8 @@ internal class PostPendingTransactionsHelper(
                 appUserID,
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 sdkOriginated = false,
-                transactionPostSuccess = { _, customerInfo ->
+                transactionPostSuccess = { transaction, customerInfo ->
+                    onTransactionSuccess(transaction)
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)
                 },
