@@ -113,6 +113,7 @@ private class TextureVideoView @JvmOverloads constructor(
         texture.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
             override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
                 if (released) return
+                releaseAttachedSurface()
                 attachedSurface = Surface(st)
                 playerOwner.setSurface(attachedSurface)
                 if (!viewTreeObserverListening) {
@@ -134,7 +135,7 @@ private class TextureVideoView @JvmOverloads constructor(
 
             override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
                 if (released) {
-                    attachedSurface = null
+                    releaseAttachedSurface()
                     return true
                 }
                 // snapshot play state & position to resume after recreation
@@ -145,7 +146,7 @@ private class TextureVideoView @JvmOverloads constructor(
                     pause()
                 }
                 playerOwner.setSurface(null)
-                attachedSurface = null
+                releaseAttachedSurface()
                 return true // we release the surface
             }
 
@@ -241,7 +242,7 @@ private class TextureVideoView @JvmOverloads constructor(
         controller?.hide()
         controller = null
         playerOwner.setSurface(null)
-        attachedSurface = null
+        releaseAttachedSurface()
         playerOwner.release()
         if (viewTreeObserverListening) {
             viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
@@ -288,6 +289,11 @@ private class TextureVideoView @JvmOverloads constructor(
         if (prepared && position > 0) {
             playerOwner.seekTo(position)
         }
+    }
+
+    private fun releaseAttachedSurface() {
+        attachedSurface?.release()
+        attachedSurface = null
     }
 
     private fun applySizing() {

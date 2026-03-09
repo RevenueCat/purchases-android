@@ -1,9 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
 import android.content.Context
+import android.media.MediaPlayer
 import android.net.Uri
 import android.view.Surface
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.CapturingSlot
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.slot
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,22 +31,22 @@ class MediaPlayerThreadOwnerTests {
         val allowReleaseToFinish = CountDownLatch(1)
         val releaseCompleted = CountDownLatch(1)
 
-        val fakePlayer = FakeMediaPlayerFacade(
+        val mediaPlayer = createMockMediaPlayer(
             onSetDataSource = { _, _ -> setDataSourceCalled.countDown() },
             onRelease = {
                 releaseStarted.countDown()
                 allowReleaseToFinish.await(1000, TimeUnit.MILLISECONDS)
                 releaseCompleted.countDown()
             },
-            onPrepareAsync = { player ->
-                player.triggerPrepared()
+            onPrepareAsync = { player, preparedListener, _, _ ->
+                preparedListener?.onPrepared(player)
             },
         )
 
         val owner = MediaPlayerThreadOwner(
             context = appContext,
             muteAudio = false,
-            playerFactory = { fakePlayer },
+            playerFactory = { mediaPlayer },
         )
 
         owner.prepare(
@@ -74,10 +79,11 @@ class MediaPlayerThreadOwnerTests {
         val setSurfaceCalled = CountDownLatch(1)
         val releaseCalled = CountDownLatch(1)
 
-        val fakePlayer = FakeMediaPlayerFacade(
+        val mediaPlayer = createMockMediaPlayer(
             operationThreadIds = operationThreadIds,
-            onPrepareAsync = { player ->
-                player.triggerPrepared()
+            onPrepareAsync = { player, preparedListener, videoSizeChangedListener, _ ->
+                preparedListener?.onPrepared(player)
+                videoSizeChangedListener?.onVideoSizeChanged(player, 1280, 720)
                 prepareCompleted.countDown()
             },
             onStart = { startCalled.countDown() },
@@ -91,7 +97,7 @@ class MediaPlayerThreadOwnerTests {
         val owner = MediaPlayerThreadOwner(
             context = appContext,
             muteAudio = false,
-            playerFactory = { fakePlayer },
+            playerFactory = { mediaPlayer },
         )
 
         owner.prepare(
@@ -125,126 +131,120 @@ class MediaPlayerThreadOwnerTests {
     }
 }
 
-private class FakeMediaPlayerFacade(
-    private val operationThreadIds: MutableList<Long>? = null,
-    private val onSetSurface: ((Surface?) -> Unit)? = null,
-    private val onSetDataSource: ((Context, Uri) -> Unit)? = null,
-    private val onPrepareAsync: ((FakeMediaPlayerFacade) -> Unit)? = null,
-    private val onSetLooping: ((Boolean) -> Unit)? = null,
-    private val onStart: (() -> Unit)? = null,
-    private val onPause: (() -> Unit)? = null,
-    private val onSeekTo: ((Int) -> Unit)? = null,
-    private val onRelease: (() -> Unit)? = null,
-) : MediaPlayerFacade {
+@Suppress("LongMethod", "LongParameterList")
+private fun createMockMediaPlayer(
+    operationThreadIds: MutableList<Long>? = null,
+    onSetSurface: ((Surface?) -> Unit)? = null,
+    onSetDataSource: ((Context, Uri) -> Unit)? = null,
+    onPrepareAsync: ((
+        MediaPlayer,
+        MediaPlayer.OnPreparedListener?,
+        MediaPlayer.OnVideoSizeChangedListener?,
+        MediaPlayer.OnCompletionListener?,
+    ) -> Unit)? = null,
+    onSetLooping: ((Boolean) -> Unit)? = null,
+    onStart: (() -> Unit)? = null,
+    onPause: (() -> Unit)? = null,
+    onSeekTo: ((Int) -> Unit)? = null,
+    onRelease: (() -> Unit)? = null,
+): MediaPlayer {
+    val mediaPlayer = mockk<MediaPlayer>(relaxed = true)
+    val preparedListenerSlot = slot<MediaPlayer.OnPreparedListener>()
+    val videoSizeChangedListenerSlot = slot<MediaPlayer.OnVideoSizeChangedListener>()
+    val completionListenerSlot = slot<MediaPlayer.OnCompletionListener>()
 
-    private var onPreparedListener: ((MediaPlayerFacade) -> Unit)? = null
-    private var onVideoSizeChangedListener: ((Int, Int) -> Unit)? = null
-    private var onCompletionListener: ((MediaPlayerFacade) -> Unit)? = null
+    var playing = false
+    var positionMs = 0
 
-    private var looping = false
-    private var playing = false
-    private var positionMs = 0
-
-    override var isLooping: Boolean
-        get() = looping
-        set(value) {
-            recordThread()
-            looping = value
-            onSetLooping?.invoke(value)
-        }
-
-    override val isPlaying: Boolean
-        get() = playing
-
-    override val duration: Int
-        get() = 1_000
-
-    override val currentPosition: Int
-        get() = positionMs
-
-    override val audioSessionId: Int
-        get() = 1
-
-    override val videoWidth: Int
-        get() = 1280
-
-    override val videoHeight: Int
-        get() = 720
-
-    override fun setSurface(surface: Surface?) {
-        recordThread()
-        onSetSurface?.invoke(surface)
+    every { mediaPlayer.isLooping = any() } answers {
+        recordThread(operationThreadIds)
+        onSetLooping?.invoke(firstArg())
     }
-
-    override fun setVolume(leftVolume: Float, rightVolume: Float) {
-        recordThread()
+    every { mediaPlayer.isPlaying } answers {
+        recordThread(operationThreadIds)
+        playing
     }
-
-    override fun setDataSource(context: Context, uri: Uri) {
-        recordThread()
-        onSetDataSource?.invoke(context, uri)
+    every { mediaPlayer.duration } answers {
+        recordThread(operationThreadIds)
+        1_000
     }
-
-    override fun prepareAsync() {
-        recordThread()
-        onPrepareAsync?.invoke(this) ?: triggerPrepared()
+    every { mediaPlayer.currentPosition } answers {
+        recordThread(operationThreadIds)
+        positionMs
     }
-
-    override fun reset() {
-        recordThread()
+    every { mediaPlayer.audioSessionId } answers {
+        recordThread(operationThreadIds)
+        1
+    }
+    every { mediaPlayer.videoWidth } answers {
+        recordThread(operationThreadIds)
+        1280
+    }
+    every { mediaPlayer.videoHeight } answers {
+        recordThread(operationThreadIds)
+        720
+    }
+    every { mediaPlayer.setSurface(any()) } answers {
+        recordThread(operationThreadIds)
+        onSetSurface?.invoke(firstArg())
+    }
+    every { mediaPlayer.setVolume(any(), any()) } answers {
+        recordThread(operationThreadIds)
+    }
+    every { mediaPlayer.setDataSource(any(), any<Uri>()) } answers {
+        recordThread(operationThreadIds)
+        onSetDataSource?.invoke(firstArg(), secondArg())
+    }
+    every { mediaPlayer.prepareAsync() } answers {
+        recordThread(operationThreadIds)
+        onPrepareAsync?.invoke(
+            mediaPlayer,
+            capturedOrNull(preparedListenerSlot),
+            capturedOrNull(videoSizeChangedListenerSlot),
+            capturedOrNull(completionListenerSlot),
+        )
+    }
+    every { mediaPlayer.reset() } answers {
+        recordThread(operationThreadIds)
         playing = false
         positionMs = 0
     }
-
-    override fun release() {
-        recordThread()
+    every { mediaPlayer.release() } answers {
+        recordThread(operationThreadIds)
         onRelease?.invoke()
     }
-
-    override fun start() {
-        recordThread()
+    every { mediaPlayer.start() } answers {
+        recordThread(operationThreadIds)
         playing = true
         onStart?.invoke()
     }
-
-    override fun pause() {
-        recordThread()
+    every { mediaPlayer.pause() } answers {
+        recordThread(operationThreadIds)
         playing = false
         onPause?.invoke()
     }
-
-    override fun seekTo(positionMs: Int) {
-        recordThread()
-        this.positionMs = positionMs
+    every { mediaPlayer.seekTo(any<Int>()) } answers {
+        recordThread(operationThreadIds)
+        positionMs = firstArg()
         onSeekTo?.invoke(positionMs)
     }
-
-    override fun setOnPreparedListener(listener: ((MediaPlayerFacade) -> Unit)?) {
-        recordThread()
-        onPreparedListener = listener
+    every { mediaPlayer.setOnPreparedListener(capture(preparedListenerSlot)) } answers {
+        recordThread(operationThreadIds)
+    }
+    every { mediaPlayer.setOnVideoSizeChangedListener(capture(videoSizeChangedListenerSlot)) } answers {
+        recordThread(operationThreadIds)
+    }
+    every { mediaPlayer.setOnCompletionListener(capture(completionListenerSlot)) } answers {
+        recordThread(operationThreadIds)
     }
 
-    override fun setOnVideoSizeChangedListener(listener: ((videoWidth: Int, videoHeight: Int) -> Unit)?) {
-        recordThread()
-        onVideoSizeChangedListener = listener
-    }
+    return mediaPlayer
+}
 
-    override fun setOnCompletionListener(listener: ((MediaPlayerFacade) -> Unit)?) {
-        recordThread()
-        onCompletionListener = listener
-    }
+private fun <T> capturedOrNull(slot: CapturingSlot<T>): T? {
+    return if (slot.isCaptured) slot.captured else null
+}
 
-    fun triggerPrepared() {
-        onPreparedListener?.invoke(this)
-        onVideoSizeChangedListener?.invoke(videoWidth, videoHeight)
-    }
-
-    @Suppress("unused")
-    fun triggerCompletion() {
-        onCompletionListener?.invoke(this)
-    }
-
-    private fun recordThread() {
-        operationThreadIds?.add(Thread.currentThread().id)
-    }
+private fun recordThread(operationThreadIds: MutableList<Long>?) {
+    operationThreadIds?.add(Thread.currentThread().id)
 }

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
 import android.content.Context
+import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.HandlerThread
@@ -10,12 +11,20 @@ import android.view.Surface
 internal class MediaPlayerThreadOwner(
     context: Context,
     private val muteAudio: Boolean,
-    private val playerFactory: () -> MediaPlayerFacade = { AndroidMediaPlayerFacade() },
+    private val playerFactory: () -> MediaPlayer = { MediaPlayer() },
 ) {
 
     private companion object {
         const val POSITION_POLL_INTERVAL_MS = 250L
     }
+
+    private data class PlaybackSnapshot(
+        val prepared: Boolean = false,
+        val durationMs: Int = 0,
+        val currentPositionMs: Int = 0,
+        val isPlaying: Boolean = false,
+        val audioSessionId: Int = 0,
+    )
 
     private val appContext = context.applicationContext
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -24,22 +33,13 @@ internal class MediaPlayerThreadOwner(
 
     @Volatile
     private var released = false
-    @Volatile
-    private var prepared = false
-    @Volatile
-    private var looping = false
-    @Volatile
-    private var cachedDurationMs = 0
-    @Volatile
-    private var cachedCurrentPositionMs = 0
-    @Volatile
-    private var cachedIsPlaying = false
-    @Volatile
-    private var cachedAudioSessionId = 0
-    @Volatile
-    private var currentSurface: Surface? = null
 
-    private var player: MediaPlayerFacade? = null
+    @Volatile
+    private var playbackSnapshot = PlaybackSnapshot()
+
+    private var looping = false
+    private var currentSurface: Surface? = null
+    private var player: MediaPlayer? = null
     private var positionTickerScheduled = false
 
     private val positionTicker = object : Runnable {
@@ -48,14 +48,23 @@ internal class MediaPlayerThreadOwner(
                 positionTickerScheduled = false
                 return
             }
+
             val mediaPlayer = player
-            if (mediaPlayer == null || !prepared) {
+            if (mediaPlayer == null || !playbackSnapshot.prepared) {
                 positionTickerScheduled = false
                 return
             }
+
             val isPlayingNow = getPlayerValue(mediaPlayer, false) { it.isPlaying }
-            cachedIsPlaying = isPlayingNow
-            cachedCurrentPositionMs = getPlayerValue(mediaPlayer, cachedCurrentPositionMs) { it.currentPosition }
+            updatePlaybackSnapshot {
+                it.copy(
+                    isPlaying = isPlayingNow,
+                    currentPositionMs = getPlayerValue(mediaPlayer, it.currentPositionMs) { currentPlayer ->
+                        currentPlayer.currentPosition
+                    },
+                )
+            }
+
             if (isPlayingNow) {
                 workerHandler.postDelayed(this, POSITION_POLL_INTERVAL_MS)
             } else {
@@ -65,8 +74,8 @@ internal class MediaPlayerThreadOwner(
     }
 
     fun setSurface(surface: Surface?) {
-        currentSurface = surface
         post {
+            currentSurface = surface
             val mediaPlayer = player ?: return@post
             safely(execute = {
                 mediaPlayer.setSurface(surface)
@@ -77,8 +86,8 @@ internal class MediaPlayerThreadOwner(
     }
 
     fun setLooping(loop: Boolean) {
-        looping = loop
         post {
+            looping = loop
             player?.let { mediaPlayer ->
                 safely(execute = {
                     mediaPlayer.isLooping = loop
@@ -96,9 +105,14 @@ internal class MediaPlayerThreadOwner(
     ) {
         post {
             val mediaPlayer = ensurePlayer()
-            prepared = false
-            cachedIsPlaying = false
-            cachedDurationMs = 0
+            updatePlaybackSnapshot {
+                it.copy(
+                    prepared = false,
+                    isPlaying = false,
+                    durationMs = 0,
+                    currentPositionMs = 0,
+                )
+            }
             stopPositionTicker()
 
             safely(execute = {
@@ -109,20 +123,29 @@ internal class MediaPlayerThreadOwner(
                     mediaPlayer.setVolume(0f, 0f)
                 }
 
-                mediaPlayer.setOnPreparedListener { player ->
+                mediaPlayer.setOnPreparedListener { preparedPlayer ->
                     if (released) return@setOnPreparedListener
-                    prepared = true
-                    cachedDurationMs = getPlayerValue(player, 0) { it.duration }
-                    cachedCurrentPositionMs = getPlayerValue(player, 0) { it.currentPosition }
-                    cachedAudioSessionId = getPlayerValue(player, cachedAudioSessionId) { it.audioSessionId }
+                    val activePlayer = preparedPlayer ?: return@setOnPreparedListener
+                    updatePlaybackSnapshot {
+                        it.copy(
+                            prepared = true,
+                            durationMs = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.duration },
+                            currentPositionMs = getPlayerValue(activePlayer, 0) { currentPlayer ->
+                                currentPlayer.currentPosition
+                            },
+                            audioSessionId = getPlayerValue(activePlayer, it.audioSessionId) { currentPlayer ->
+                                currentPlayer.audioSessionId
+                            },
+                        )
+                    }
                     mainHandler.post {
                         if (!released) {
-                            onPrepared(player.videoWidth, player.videoHeight)
+                            onPrepared(activePlayer.videoWidth, activePlayer.videoHeight)
                         }
                     }
                 }
 
-                mediaPlayer.setOnVideoSizeChangedListener { width, height ->
+                mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
                     if (released) return@setOnVideoSizeChangedListener
                     mainHandler.post {
                         if (!released) {
@@ -131,9 +154,16 @@ internal class MediaPlayerThreadOwner(
                     }
                 }
 
-                mediaPlayer.setOnCompletionListener { player ->
-                    cachedIsPlaying = false
-                    cachedCurrentPositionMs = getPlayerValue(player, cachedDurationMs) { it.currentPosition }
+                mediaPlayer.setOnCompletionListener { completedPlayer ->
+                    val activePlayer = completedPlayer ?: return@setOnCompletionListener
+                    updatePlaybackSnapshot {
+                        it.copy(
+                            isPlaying = false,
+                            currentPositionMs = getPlayerValue(activePlayer, it.durationMs) { currentPlayer ->
+                                currentPlayer.currentPosition
+                            },
+                        )
+                    }
                     stopPositionTicker()
                 }
 
@@ -147,11 +177,11 @@ internal class MediaPlayerThreadOwner(
 
     fun start() {
         post {
-            if (!prepared) return@post
+            if (!playbackSnapshot.prepared) return@post
             val mediaPlayer = player ?: return@post
             safely(execute = {
                 mediaPlayer.start()
-                cachedIsPlaying = true
+                updatePlaybackSnapshot { it.copy(isPlaying = true) }
                 startPositionTicker()
             }, failureMessage = { e ->
                 "Could not start media player: ${e.message}"
@@ -161,14 +191,20 @@ internal class MediaPlayerThreadOwner(
 
     fun pause() {
         post {
-            if (!prepared) return@post
+            if (!playbackSnapshot.prepared) return@post
             val mediaPlayer = player ?: return@post
             safely(execute = {
                 if (mediaPlayer.isPlaying) {
                     mediaPlayer.pause()
                 }
-                cachedIsPlaying = false
-                cachedCurrentPositionMs = mediaPlayer.currentPosition
+                updatePlaybackSnapshot {
+                    it.copy(
+                        isPlaying = false,
+                        currentPositionMs = getPlayerValue(mediaPlayer, it.currentPositionMs) { currentPlayer ->
+                            currentPlayer.currentPosition
+                        },
+                    )
+                }
                 stopPositionTicker()
             }, failureMessage = { e ->
                 "Could not pause media player: ${e.message}"
@@ -177,37 +213,40 @@ internal class MediaPlayerThreadOwner(
     }
 
     fun seekTo(positionMs: Int) {
-        cachedCurrentPositionMs = positionMs
         post {
-            if (!prepared || positionMs < 0) return@post
+            if (!playbackSnapshot.prepared || positionMs < 0) return@post
             val mediaPlayer = player ?: return@post
             safely(execute = {
                 mediaPlayer.seekTo(positionMs)
-                cachedCurrentPositionMs = positionMs
+                updatePlaybackSnapshot { it.copy(currentPositionMs = positionMs) }
             }, failureMessage = { e ->
                 "Could not seek media player: ${e.message}"
             })
         }
     }
 
-    fun isPlaying(): Boolean = cachedIsPlaying
+    fun isPlaying(): Boolean = playbackSnapshot.isPlaying
 
-    fun getDuration(): Int = cachedDurationMs
+    fun getDuration(): Int = playbackSnapshot.durationMs
 
-    fun getCurrentPosition(): Int = cachedCurrentPositionMs
+    fun getCurrentPosition(): Int = playbackSnapshot.currentPositionMs
 
-    fun getAudioSessionId(): Int = cachedAudioSessionId
+    fun getAudioSessionId(): Int = playbackSnapshot.audioSessionId
 
     fun release() {
         if (released) return
         released = true
-        cachedIsPlaying = false
-        prepared = false
-        currentSurface = null
+        updatePlaybackSnapshot {
+            it.copy(
+                prepared = false,
+                isPlaying = false,
+            )
+        }
         workerHandler.removeCallbacksAndMessages(null)
         workerHandler.post {
             val mediaPlayer = player
             player = null
+            currentSurface = null
             stopPositionTicker()
             safely(execute = {
                 mediaPlayer?.setSurface(null)
@@ -221,10 +260,12 @@ internal class MediaPlayerThreadOwner(
         }
     }
 
-    private fun ensurePlayer(): MediaPlayerFacade {
+    private fun ensurePlayer(): MediaPlayer {
         return player ?: playerFactory().also { mediaPlayer ->
             player = mediaPlayer
-            cachedAudioSessionId = getPlayerValue(mediaPlayer, 0) { it.audioSessionId }
+            updatePlaybackSnapshot {
+                it.copy(audioSessionId = getPlayerValue(mediaPlayer, 0) { currentPlayer -> currentPlayer.audioSessionId })
+            }
             currentSurface?.let { surface ->
                 safely(execute = {
                     mediaPlayer.setSurface(surface)
@@ -255,10 +296,14 @@ internal class MediaPlayerThreadOwner(
         workerHandler.removeCallbacks(positionTicker)
     }
 
+    private inline fun updatePlaybackSnapshot(transform: (PlaybackSnapshot) -> PlaybackSnapshot) {
+        playbackSnapshot = transform(playbackSnapshot)
+    }
+
     private inline fun <T> getPlayerValue(
-        mediaPlayer: MediaPlayerFacade,
+        mediaPlayer: MediaPlayer,
         fallback: T,
-        valueProvider: (MediaPlayerFacade) -> T,
+        valueProvider: (MediaPlayer) -> T,
     ): T {
         return try {
             valueProvider(mediaPlayer)
