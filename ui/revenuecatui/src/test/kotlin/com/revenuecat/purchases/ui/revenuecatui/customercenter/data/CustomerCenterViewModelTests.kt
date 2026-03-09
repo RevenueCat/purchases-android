@@ -2617,8 +2617,9 @@ class CustomerCenterViewModelTests {
 
         val context = mockk<Context>(relaxed = true)
         every { context.packageName } returns "com.revenuecat.test"
-        val product = mockk<StoreProduct> {
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
             every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
         }
         val purchaseInformation = mockk<PurchaseInformation> {
             every { store } returns Store.PLAY_STORE
@@ -2663,8 +2664,9 @@ class CustomerCenterViewModelTests {
 
         val context = mockk<Context>(relaxed = true)
         every { context.packageName } returns "com.revenuecat.test"
-        val product = mockk<StoreProduct> {
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
             every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
         }
         val purchaseInformation = mockk<PurchaseInformation> {
             every { store } returns Store.PLAY_STORE

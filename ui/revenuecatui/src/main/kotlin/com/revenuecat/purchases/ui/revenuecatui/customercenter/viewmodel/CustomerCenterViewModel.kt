@@ -68,6 +68,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -207,21 +208,21 @@ internal class CustomerCenterViewModelImpl(
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
-    override val state = _state.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
-        initialValue = CustomerCenterState.Loading,
-    )
+    override val state = _state
+        .onStart {
+            if (_state.value is CustomerCenterState.NotLoaded) {
+                loadCustomerCenter()
+            }
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(STOP_FLOW_TIMEOUT),
+            initialValue = CustomerCenterState.Loading,
+        )
 
     override val actionError: State<PurchasesError?>
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
-
-    init {
-        viewModelScope.launch {
-            loadCustomerCenter()
-        }
-    }
 
     override fun pathButtonPressed(
         context: Context,
