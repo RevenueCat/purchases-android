@@ -56,8 +56,31 @@ internal open class DeviceCache(
     val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
     val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
-    val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
-    val tokensAutoRenewingCacheKey: String by lazy { "$apiKeyPrefix.tokensAutoRenewing" }
+
+    /**
+     * Legacy key that stored sent token hashes as a `Set<String>` via `putStringSet`.
+     * Replaced by [tokensCacheKey] which stores a JSON map of `{ hashedToken: isAutoRenewing }`.
+     * Kept for migration: on first read, entries are migrated to the new key with `null`
+     * auto-renewing values, then this key is deleted.
+     */
+    val legacyTokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+
+    /**
+     * Unified token cache storing both "which tokens have been posted" (the key set) and
+     * their `isAutoRenewing` status (the values) as a JSON object.
+     *
+     * Format: `{ "hashedToken1": true, "hashedToken2": false, "hashedToken3": null }`
+     * - Keys = hashed tokens that have been successfully posted (replaces the old StringSet)
+     * - Values = cached `isAutoRenewing` status (`null` = unknown, e.g. migrated from legacy
+     *   cache or posted via a path that doesn't have the StoreTransaction)
+     *
+     * The `isAutoRenewing` values are used to detect subscription changes made outside the app
+     * (e.g., cancellations in Play Store management). When `queryPurchases` returns a different
+     * `isAutoRenewing` value than what's cached, the token is reposted so the backend can
+     * re-check the subscription status with Google — avoiding a full `syncPurchases` which
+     * reposts everything with `RESTORE` initiation source.
+     */
+    val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokensV2" }
     val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
@@ -383,30 +406,69 @@ internal open class DeviceCache(
 
     // region purchase tokens
 
+    /**
+     * Returns the unified token map (hashedToken → isAutoRenewing), migrating from legacy
+     * StringSet format if needed. The key set represents all previously sent tokens; the values
+     * represent cached isAutoRenewing status (null = unknown).
+     */
+    @Synchronized
+    private fun getTokenMap(): Map<String, Boolean?> {
+        val json = preferences.getString(tokensCacheKey, null)
+        if (json != null) {
+            return try {
+                val jsonObject = JSONObject(json)
+                jsonObject.keys().asSequence().associateWith { key ->
+                    if (jsonObject.isNull(key)) null else jsonObject.getBoolean(key)
+                }
+            } catch (@Suppress("SwallowedException") e: JSONException) {
+                emptyMap()
+            }
+        }
+        // Migrate from legacy StringSet if it exists
+        return try {
+            val legacyTokens = preferences.getStringSet(legacyTokensCacheKey, null)?.toSet()
+            if (legacyTokens != null) {
+                val migrated = legacyTokens.associateWith<String, Boolean?> { null }
+                saveTokenMap(migrated)
+                preferences.edit().remove(legacyTokensCacheKey).apply()
+                log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(migrated.keys) }
+                migrated
+            } else {
+                emptyMap()
+            }
+        } catch (@Suppress("SwallowedException") e: ClassCastException) {
+            emptyMap()
+        }
+    }
+
+    @Synchronized
+    private fun saveTokenMap(tokenMap: Map<String, Boolean?>) {
+        val jsonObject = JSONObject().apply {
+            for ((hash, autoRenewing) in tokenMap) {
+                put(hash, autoRenewing ?: JSONObject.NULL)
+            }
+        }
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(tokenMap.keys) }
+        putString(tokensCacheKey, jsonObject.toString())
+    }
+
     @Synchronized
     fun getPreviouslySentHashedTokens(): Set<String> {
-        return try {
-            (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-                log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(it) }
-            }
-        } catch (e: ClassCastException) {
-            emptySet()
+        return getTokenMap().keys.also {
+            log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(it) }
         }
     }
 
     @Synchronized
     fun addSuccessfullyPostedToken(token: String) {
-        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()) }
-        getPreviouslySentHashedTokens().let {
-            log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(it) }
-            setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
+        val hashedToken = token.sha1()
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, hashedToken) }
+        val current = getTokenMap().toMutableMap()
+        log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(current.keys) }
+        if (hashedToken !in current) {
+            current[hashedToken] = null
+            saveTokenMap(current)
         }
-    }
-
-    @Synchronized
-    private fun setSavedTokenHashes(newSet: Set<String>) {
-        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(newSet) }
-        preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
 
     /**
@@ -418,9 +480,9 @@ internal open class DeviceCache(
         hashedTokens: Set<String>,
     ) {
         log(LogIntent.DEBUG) { ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN }
-        setSavedTokenHashes(
-            hashedTokens.intersect(getPreviouslySentHashedTokens()),
-        )
+        val current = getTokenMap()
+        val cleaned = current.filterKeys { it in hashedTokens }
+        saveTokenMap(cleaned)
     }
 
     /**
@@ -447,33 +509,26 @@ internal open class DeviceCache(
     fun getPurchasesWithAutoRenewingChange(
         hashedTokens: Map<String, StoreTransaction>,
     ): List<StoreTransaction> {
-        val cachedAutoRenewing = getCachedAutoRenewingStatus()
-        val sentTokens = getPreviouslySentHashedTokens()
+        val tokenMap = getTokenMap()
         return hashedTokens.filter { (hash, transaction) ->
-            hash in sentTokens &&
-                hash in cachedAutoRenewing &&
-                transaction.isAutoRenewing != cachedAutoRenewing[hash]
+            val cachedAutoRenewing = tokenMap[hash]
+            cachedAutoRenewing != null && transaction.isAutoRenewing != cachedAutoRenewing
         }.values.toList()
     }
 
-    @Synchronized
-    private fun getCachedAutoRenewingStatus(): Map<String, Boolean> {
-        val jsonObject = getJSONObjectOrNull(tokensAutoRenewingCacheKey) ?: return emptyMap()
-        return jsonObject.keys().asSequence().associateWith { jsonObject.getBoolean(it) }
-    }
-
     /**
-     * Saves the auto-renewing status for the given hashed tokens, replacing any previously stored
-     * values. Also removes entries for tokens no longer in [hashedTokens].
+     * Saves the auto-renewing status for all given hashed tokens. Tokens already in the cache
+     * get their status updated; tokens not in the cache are ignored (they haven't been posted yet).
      */
     @Synchronized
     fun saveAutoRenewingStatus(hashedTokens: Map<String, StoreTransaction>) {
-        val jsonObject = JSONObject().apply {
-            for ((hash, transaction) in hashedTokens) {
-                transaction.isAutoRenewing?.let { put(hash, it) }
+        val current = getTokenMap().toMutableMap()
+        for ((hash, transaction) in hashedTokens) {
+            if (hash in current) {
+                current[hash] = transaction.isAutoRenewing
             }
         }
-        putString(tokensAutoRenewingCacheKey, jsonObject.toString())
+        saveTokenMap(current)
     }
 
     // endregion
