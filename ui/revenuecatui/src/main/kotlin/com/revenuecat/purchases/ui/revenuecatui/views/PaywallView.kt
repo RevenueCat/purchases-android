@@ -2,6 +2,10 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -227,6 +231,11 @@ public class PaywallView : CompatComposeView {
         val paywallOptions by remember {
             paywallOptionsState
         }
-        Paywall(paywallOptions)
+        val isDarkTheme = isSystemInDarkTheme()
+        val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
+
+        MaterialTheme(colorScheme = colorScheme) {
+            Paywall(paywallOptions)
+        }
     }
 }
