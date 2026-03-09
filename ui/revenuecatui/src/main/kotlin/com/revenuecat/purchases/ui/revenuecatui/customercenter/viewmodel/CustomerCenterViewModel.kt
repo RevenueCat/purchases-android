@@ -956,10 +956,14 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun refreshCustomerCenter() {
-        loadCustomerCenter(isRefresh = true)
+        loadCustomerCenter(isRefresh = true, forceSync = false)
     }
 
-    private suspend fun loadCustomerCenter(isRefresh: Boolean) {
+    private suspend fun refreshCustomerCenterWithSync() {
+        loadCustomerCenter(isRefresh = true, forceSync = true)
+    }
+
+    private suspend fun loadCustomerCenter(isRefresh: Boolean, forceSync: Boolean = false) {
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {
                 // For refresh, keep Success state but set isRefreshing flag
@@ -977,7 +981,7 @@ internal class CustomerCenterViewModelImpl(
                 dateFormatter = dateFormatter,
                 locale = locale,
                 localization = customerCenterConfigData.localization,
-                forceSync = isRefresh,
+                forceSync = forceSync,
             )
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
@@ -1058,10 +1062,13 @@ internal class CustomerCenterViewModelImpl(
             val previousJob = activeRefreshJob
             activeRefreshJob = viewModelScope.launch {
                 previousJob?.join()
-                refreshCustomerCenter()
+                // Use syncPurchases here because subscription changes made in Play Store's
+                // management screen happen outside the SDK. FETCH_CURRENT only syncs
+                // SDK-initiated pending purchases, which won't pick up external changes.
+                refreshCustomerCenterWithSync()
                 if (runFollowUp) {
                     delay(FOLLOW_UP_REFRESH_DELAY_MS)
-                    refreshCustomerCenter()
+                    refreshCustomerCenterWithSync()
                 }
             }
         }

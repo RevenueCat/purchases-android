@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
@@ -2588,7 +2589,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `refreshCustomerCenter forces syncPurchases`(): Unit = runBlocking {
+    fun `refreshCustomerCenter uses FETCH_CURRENT not syncPurchases`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -2597,8 +2598,8 @@ class CustomerCenterViewModelTests {
 
         model.refreshCustomerCenter()
 
-        coVerify(atLeast = 1) { purchases.awaitSyncPurchases() }
-        coVerify(exactly = 0) { purchases.awaitCustomerInfo(any()) }
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
     }
 
     @Test
@@ -2646,15 +2647,23 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `onActivityResumed awaits in-flight refresh before starting new one`(): Unit = runBlocking {
+    fun `onActivityResumed awaits in-flight refresh before starting sync`(): Unit = runBlocking {
         setupPurchasesMock()
 
         var syncCalls = 0
-        val firstSyncGate = CompletableDeferred<Unit>()
         coEvery { purchases.awaitSyncPurchases() } coAnswers {
             syncCalls++
-            if (syncCalls == 1) {
-                firstSyncGate.await()
+            customerInfo
+        }
+
+        // Gate the lightweight refresh from onActivityStarted
+        var fetchCurrentCalls = 0
+        val fetchCurrentGate = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } coAnswers {
+            fetchCurrentCalls++
+            if (fetchCurrentCalls == 2) {
+                // Gate on the second call (first is initial load, second is onActivityStarted refresh)
+                fetchCurrentGate.await()
             }
             customerInfo
         }
@@ -2682,23 +2691,22 @@ class CustomerCenterViewModelTests {
         model.pathButtonPressed(context, cancelPath, purchaseInformation)
         verify(timeout = 2_000) { context.startActivity(any()) }
 
-        // Simulate lifecycle: stop -> start (triggers background refresh) -> resume
+        // Simulate lifecycle: stop -> start (triggers lightweight refresh) -> resume
         model.onActivityStopped(isChangingConfigurations = false)
         model.onActivityStarted()
         model.onActivityResumed()
 
-        // Only one sync should be in progress (the background refresh from onActivityStarted).
-        // onActivityResumed awaits it rather than starting a concurrent one.
-        assertThat(syncCalls).isEqualTo(1)
+        // onActivityStarted refresh is in progress, onActivityResumed awaits it.
+        // No syncPurchases should have started yet.
+        assertThat(syncCalls).isEqualTo(0)
 
-        // Unblock the first sync — onActivityResumed will then start its own refresh
-        firstSyncGate.complete(Unit)
+        // Unblock the lightweight refresh — onActivityResumed will then start syncPurchases
+        fetchCurrentGate.complete(Unit)
 
         val deadline = System.currentTimeMillis() + 2_000
-        while (System.currentTimeMillis() < deadline && syncCalls < 2) {
+        while (System.currentTimeMillis() < deadline && syncCalls < 1) {
             Thread.sleep(25)
         }
-        // After the first completes, onActivityResumed's refresh runs
-        assertThat(syncCalls).isGreaterThanOrEqualTo(2)
+        assertThat(syncCalls).isGreaterThanOrEqualTo(1)
     }
 }
