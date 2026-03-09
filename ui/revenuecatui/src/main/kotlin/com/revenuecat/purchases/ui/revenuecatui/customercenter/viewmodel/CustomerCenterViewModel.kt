@@ -672,12 +672,11 @@ internal class CustomerCenterViewModelImpl(
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
-        var purchaseInformationList: List<PurchaseInformation> = emptyList()
         if (hasActiveSubscriptions || hasNonSubscriptionTransactions) {
             val activeTransactions = findActiveTransactions(customerInfo)
 
             if (activeTransactions.isNotEmpty()) {
-                purchaseInformationList = activeTransactions.map { transaction ->
+                return activeTransactions.map { transaction ->
                     val entitlement = customerInfo.entitlements.all.values
                         .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
@@ -694,26 +693,24 @@ internal class CustomerCenterViewModelImpl(
             }
         }
 
-        if (purchaseInformationList.isEmpty()) {
-            // If no active purchases found, try to find the latest expired subscription
-            val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
-            if (latestExpiredTransaction != null) {
-                val entitlement = customerInfo.entitlements.all.values
-                    .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+        // If no active purchases found, try to find the latest expired subscription
+        val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
+        return if (latestExpiredTransaction != null) {
+            val entitlement = customerInfo.entitlements.all.values
+                .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
 
-                purchaseInformationList = listOf(
-                    createPurchaseInformation(
-                        latestExpiredTransaction,
-                        entitlement,
-                        dateFormatter,
-                        locale,
-                        localization,
-                    ),
-                )
-            }
+            listOf(
+                createPurchaseInformation(
+                    latestExpiredTransaction,
+                    entitlement,
+                    dateFormatter,
+                    locale,
+                    localization,
+                ),
+            )
+        } else {
+            emptyList()
         }
-
-        return purchaseInformationList
     }
 
     private fun findActiveTransactions(customerInfo: CustomerInfo): List<TransactionDetails> {
