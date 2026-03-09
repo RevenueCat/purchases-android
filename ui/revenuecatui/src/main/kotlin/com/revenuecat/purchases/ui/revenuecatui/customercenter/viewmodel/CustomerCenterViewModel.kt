@@ -212,7 +212,8 @@ internal class CustomerCenterViewModelImpl(
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
     override val state = _state
         .onStart {
-            if (_state.value is CustomerCenterState.NotLoaded) {
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.NotLoaded || currentState is CustomerCenterState.Loading) {
                 loadCustomerCenter()
             }
         }
