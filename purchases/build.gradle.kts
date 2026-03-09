@@ -3,7 +3,7 @@ import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
-    id("revenuecat-public-library")
+    alias(libs.plugins.revenuecat.public.library)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.poko)
