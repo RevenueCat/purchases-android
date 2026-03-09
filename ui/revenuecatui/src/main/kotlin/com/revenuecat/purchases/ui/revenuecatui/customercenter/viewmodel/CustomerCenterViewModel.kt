@@ -1055,8 +1055,9 @@ internal class CustomerCenterViewModelImpl(
             shouldRefreshOnResume = false
             val runFollowUp = shouldRunFollowUpRefreshAfterResume
             shouldRunFollowUpRefreshAfterResume = false
-            viewModelScope.launch {
-                activeRefreshJob?.join()
+            val previousJob = activeRefreshJob
+            activeRefreshJob = viewModelScope.launch {
+                previousJob?.join()
                 refreshCustomerCenter()
                 if (runFollowUp) {
                     delay(FOLLOW_UP_REFRESH_DELAY_MS)
