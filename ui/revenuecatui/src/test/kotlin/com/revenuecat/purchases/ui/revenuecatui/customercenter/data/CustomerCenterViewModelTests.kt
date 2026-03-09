@@ -2646,7 +2646,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `onActivityResumed does not keep refresh retry flag sticky while refresh is running`(): Unit = runBlocking {
+    fun `onActivityResumed awaits in-flight refresh before starting new one`(): Unit = runBlocking {
         setupPurchasesMock()
 
         var syncCalls = 0
@@ -2682,20 +2682,23 @@ class CustomerCenterViewModelTests {
         model.pathButtonPressed(context, cancelPath, purchaseInformation)
         verify(timeout = 2_000) { context.startActivity(any()) }
 
+        // Simulate lifecycle: stop -> start (triggers background refresh) -> resume
         model.onActivityStopped(isChangingConfigurations = false)
         model.onActivityStarted()
         model.onActivityResumed()
-        model.onActivityResumed()
 
-        val shouldRefreshOnResume = CustomerCenterViewModelImpl::class.java
-            .getDeclaredField("shouldRefreshOnResume")
-            .also { it.isAccessible = true }
-            .getBoolean(model)
-
-        assertThat(shouldRefreshOnResume).isFalse()
+        // Only one sync should be in progress (the background refresh from onActivityStarted).
+        // onActivityResumed awaits it rather than starting a concurrent one.
         assertThat(syncCalls).isEqualTo(1)
-        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
 
+        // Unblock the first sync — onActivityResumed will then start its own refresh
         firstSyncGate.complete(Unit)
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && syncCalls < 2) {
+            Thread.sleep(25)
+        }
+        // After the first completes, onActivityResumed's refresh runs
+        assertThat(syncCalls).isGreaterThanOrEqualTo(2)
     }
 }

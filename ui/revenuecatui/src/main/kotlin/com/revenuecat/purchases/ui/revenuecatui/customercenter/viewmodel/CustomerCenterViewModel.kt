@@ -64,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -205,6 +206,7 @@ internal class CustomerCenterViewModelImpl(
     private var wasBackgrounded = false
     private var shouldRefreshOnResume = false
     private var shouldRunFollowUpRefreshAfterResume = false
+    private var activeRefreshJob: Job? = null
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -1032,38 +1034,30 @@ internal class CustomerCenterViewModelImpl(
     override fun onActivityStarted() {
         if (wasBackgrounded) {
             wasBackgrounded = false
-            refreshIfPossible(setRetryOnRefreshing = true)
+            launchRefreshIfPossible()
         }
     }
 
     override fun onActivityResumed() {
         if (shouldRefreshOnResume) {
             shouldRefreshOnResume = false
-            refreshIfPossible(setRetryOnRefreshing = false)
-            runFollowUpRefreshAfterResumeIfNeeded()
+            val runFollowUp = shouldRunFollowUpRefreshAfterResume
+            shouldRunFollowUpRefreshAfterResume = false
+            viewModelScope.launch {
+                activeRefreshJob?.join()
+                refreshCustomerCenter()
+                if (runFollowUp) {
+                    delay(FOLLOW_UP_REFRESH_DELAY_MS)
+                    refreshCustomerCenter()
+                }
+            }
         }
     }
 
-    private fun refreshIfPossible(setRetryOnRefreshing: Boolean) {
+    private fun launchRefreshIfPossible() {
         val currentState = _state.value
         if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
-            viewModelScope.launch {
-                refreshCustomerCenter()
-            }
-        } else if (setRetryOnRefreshing && currentState is CustomerCenterState.Success) {
-            // If we're already refreshing, keep retry flag for next resume.
-            shouldRefreshOnResume = true
-        }
-    }
-
-    private fun runFollowUpRefreshAfterResumeIfNeeded() {
-        if (!shouldRunFollowUpRefreshAfterResume) return
-        shouldRunFollowUpRefreshAfterResume = false
-
-        viewModelScope.launch {
-            delay(FOLLOW_UP_REFRESH_DELAY_MS)
-            val state = _state.value
-            if (state is CustomerCenterState.Success && !state.isRefreshing) {
+            activeRefreshJob = viewModelScope.launch {
                 refreshCustomerCenter()
             }
         }
