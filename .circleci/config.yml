@@ -446,9 +446,9 @@ jobs:
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
-        name: Download Samsung IAP SDK AAR
-        command: |
-          ./gradlew downloadSamsungIapAar --no-daemon
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
