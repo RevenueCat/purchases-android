@@ -1006,8 +1006,9 @@ internal class CustomerCenterViewModelImpl(
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
-            _state.update {
+            _state.update { currentState ->
                 successState.copy(mainScreenPaths = mainScreenPaths)
+                    .preservingUIStateIfRefresh(isRefresh, currentState)
             }
         } catch (e: PurchasesException) {
             _state.update { currentState ->
@@ -1020,6 +1021,19 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
         }
+    }
+
+    private fun CustomerCenterState.Success.preservingUIStateIfRefresh(
+        isRefresh: Boolean,
+        previousState: CustomerCenterState,
+    ): CustomerCenterState.Success {
+        if (!isRefresh || previousState !is CustomerCenterState.Success) return this
+        return copy(
+            navigationState = previousState.navigationState,
+            navigationButtonType = previousState.navigationButtonType,
+            restorePurchasesState = previousState.restorePurchasesState,
+            showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+        )
     }
 
     override fun onActivityStopped(isChangingConfigurations: Boolean) {
