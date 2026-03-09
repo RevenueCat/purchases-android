@@ -32,7 +32,7 @@ dependencies {
 }
 
 tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
