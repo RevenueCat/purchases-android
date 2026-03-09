@@ -126,6 +126,8 @@ internal class MediaPlayerThreadOwner(
                 mediaPlayer.setOnPreparedListener { preparedPlayer ->
                     if (released) return@setOnPreparedListener
                     val activePlayer = preparedPlayer ?: return@setOnPreparedListener
+                    val videoWidth = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.videoWidth }
+                    val videoHeight = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.videoHeight }
                     updatePlaybackSnapshot {
                         it.copy(
                             prepared = true,
@@ -140,7 +142,7 @@ internal class MediaPlayerThreadOwner(
                     }
                     mainHandler.post {
                         if (!released) {
-                            onPrepared(activePlayer.videoWidth, activePlayer.videoHeight)
+                            onPrepared(videoWidth, videoHeight)
                         }
                     }
                 }
@@ -236,14 +238,14 @@ internal class MediaPlayerThreadOwner(
     fun release() {
         if (released) return
         released = true
-        updatePlaybackSnapshot {
-            it.copy(
-                prepared = false,
-                isPlaying = false,
-            )
-        }
         workerHandler.removeCallbacksAndMessages(null)
         workerHandler.post {
+            updatePlaybackSnapshot {
+                it.copy(
+                    prepared = false,
+                    isPlaying = false,
+                )
+            }
             val mediaPlayer = player
             player = null
             currentSurface = null
