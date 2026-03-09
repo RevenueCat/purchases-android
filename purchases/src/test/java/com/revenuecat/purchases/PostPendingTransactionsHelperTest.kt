@@ -385,7 +385,8 @@ class PostPendingTransactionsHelperTest {
 
     private fun mockSuccessfulQueryPurchases(
         purchasesByHashedToken: Map<String, StoreTransaction>,
-        notInCache: List<StoreTransaction>
+        notInCache: List<StoreTransaction>,
+        autoRenewingChanged: List<StoreTransaction> = emptyList(),
     ) {
         every {
             deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
@@ -393,6 +394,12 @@ class PostPendingTransactionsHelperTest {
         every {
             deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
         } returns notInCache
+        every {
+            deviceCache.getPurchasesWithAutoRenewingChange(purchasesByHashedToken)
+        } returns autoRenewingChanged
+        every {
+            deviceCache.saveAutoRenewingStatus(purchasesByHashedToken)
+        } just Runs
 
         every {
             billing.queryPurchases(
@@ -718,6 +725,150 @@ class PostPendingTransactionsHelperTest {
         // Verify that only the pending transaction tokens are passed
         assertThat(pendingTokensSlot.captured).containsExactlyInAnyOrder("pendingToken1", "pendingToken2")
         assertThat(pendingTokensSlot.captured).doesNotContain("purchasedToken")
+    }
+
+    // endregion
+
+    // region auto-renewing change detection
+
+    @Test
+    fun `when auto-renewing status changes, transaction is synced`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = listOf(transaction),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock)
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(transaction),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                transactionPostSuccess = any(),
+                transactionPostError = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `when auto-renewing status changes and there are new purchases, both are synced`() {
+        val existingPurchase = stubGooglePurchase(
+            purchaseToken = "existing-token",
+            productIds = listOf("product1"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val existingTransaction = existingPurchase.toStoreTransaction(ProductType.SUBS)
+
+        val newPurchase = stubGooglePurchase(
+            purchaseToken = "new-token",
+            productIds = listOf("product2"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val newTransaction = newPurchase.toStoreTransaction(ProductType.SUBS)
+
+        val purchasesByHash = mapOf(
+            existingPurchase.purchaseToken.sha1() to existingTransaction,
+            newPurchase.purchaseToken.sha1() to newTransaction,
+        )
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = listOf(newTransaction),
+            autoRenewingChanged = listOf(existingTransaction),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        val transactionsSlot = slot<List<StoreTransaction>>()
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = capture(transactionsSlot),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                transactionPostSuccess = captureLambda(),
+                transactionPostError = any(),
+            )
+        } answers {
+            val captured = transactionsSlot.captured
+            captured.forEach { transaction ->
+                lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfoMock)
+            }
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        assertThat(transactionsSlot.captured).hasSize(2)
+        assertThat(transactionsSlot.captured).containsExactlyInAnyOrder(newTransaction, existingTransaction)
+    }
+
+    @Test
+    fun `when no auto-renewing changes and no new purchases, no transactions synced`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = emptyList(),
+        )
+
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+
+        verify(exactly = 0) {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = any(),
+                allowSharingPlayStoreAccount = any(),
+                appUserID = any(),
+                initiationSource = any(),
+                sdkOriginated = any(),
+                transactionPostSuccess = any(),
+                transactionPostError = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `auto-renewing status is saved after detecting changes`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = emptyList(),
+        )
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        verify(exactly = 1) {
+            deviceCache.saveAutoRenewingStatus(purchasesByHash)
+        }
     }
 
     // endregion

@@ -893,6 +893,102 @@ class DeviceCacheTest {
     }
     // endregion virtualCurrencies
 
+    // region auto-renewing status
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange returns empty when no cached status`() {
+        every { mockPrefs.getStringSet(cache.tokensCacheKey, any()) } returns setOf("hash1")
+        every { mockPrefs.getString(cache.tokensAutoRenewingCacheKey, null) } returns null
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange detects change from true to false`() {
+        every { mockPrefs.getStringSet(cache.tokensCacheKey, any()) } returns setOf("hash1")
+        every {
+            mockPrefs.getString(cache.tokensAutoRenewingCacheKey, null)
+        } returns """{"hash1":true}"""
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).containsExactly(transaction)
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange detects change from false to true`() {
+        every { mockPrefs.getStringSet(cache.tokensCacheKey, any()) } returns setOf("hash1")
+        every {
+            mockPrefs.getString(cache.tokensAutoRenewingCacheKey, null)
+        } returns """{"hash1":false}"""
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns true
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).containsExactly(transaction)
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange returns empty when status unchanged`() {
+        every { mockPrefs.getStringSet(cache.tokensCacheKey, any()) } returns setOf("hash1")
+        every {
+            mockPrefs.getString(cache.tokensAutoRenewingCacheKey, null)
+        } returns """{"hash1":true}"""
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns true
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange ignores tokens not in sent cache`() {
+        every { mockPrefs.getStringSet(cache.tokensCacheKey, any()) } returns setOf("hash2")
+        every {
+            mockPrefs.getString(cache.tokensAutoRenewingCacheKey, null)
+        } returns """{"hash1":true}"""
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `saveAutoRenewingStatus saves status as JSON`() {
+        every { mockEditor.apply() } just runs
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns true
+        }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
+        verify {
+            mockEditor.putString(cache.tokensAutoRenewingCacheKey, """{"hash1":true}""")
+        }
+    }
+
+    @Test
+    fun `saveAutoRenewingStatus skips null isAutoRenewing`() {
+        every { mockEditor.apply() } just runs
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns null
+        }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
+        verify {
+            mockEditor.putString(cache.tokensAutoRenewingCacheKey, """{}""")
+        }
+    }
+
+    // endregion auto-renewing status
+
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())
