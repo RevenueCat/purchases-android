@@ -642,6 +642,7 @@ private fun MainStackComponent(
         } else {
             stack(
                 outerShapeModifier
+                    .clip(composeShape)
                     .then(borderModifier)
                     .then(innerShapeModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
