@@ -1033,6 +1033,7 @@ internal class CustomerCenterViewModelImpl(
             navigationButtonType = previousState.navigationButtonType,
             restorePurchasesState = previousState.restorePurchasesState,
             showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+            detailScreenPaths = previousState.detailScreenPaths,
         )
     }
 
