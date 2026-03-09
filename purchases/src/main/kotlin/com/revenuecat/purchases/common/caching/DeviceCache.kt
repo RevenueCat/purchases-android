@@ -458,13 +458,8 @@ internal open class DeviceCache(
 
     @Synchronized
     private fun getCachedAutoRenewingStatus(): Map<String, Boolean> {
-        return try {
-            val json = preferences.getString(tokensAutoRenewingCacheKey, null) ?: return emptyMap()
-            val jsonObject = JSONObject(json)
-            jsonObject.keys().asSequence().associateWith { jsonObject.getBoolean(it) }
-        } catch (@Suppress("SwallowedException") e: JSONException) {
-            emptyMap()
-        }
+        val jsonObject = getJSONObjectOrNull(tokensAutoRenewingCacheKey) ?: return emptyMap()
+        return jsonObject.keys().asSequence().associateWith { jsonObject.getBoolean(it) }
     }
 
     /**
@@ -473,11 +468,12 @@ internal open class DeviceCache(
      */
     @Synchronized
     fun saveAutoRenewingStatus(hashedTokens: Map<String, StoreTransaction>) {
-        val statusMap = hashedTokens.mapValues { (_, transaction) -> transaction.isAutoRenewing }
-            .filterValues { it != null }
-            .mapValues { (_, value) -> value!! }
-        val jsonObject = JSONObject(statusMap as Map<*, *>)
-        preferences.edit().putString(tokensAutoRenewingCacheKey, jsonObject.toString()).apply()
+        val jsonObject = JSONObject().apply {
+            for ((hash, transaction) in hashedTokens) {
+                transaction.isAutoRenewing?.let { put(hash, it) }
+            }
+        }
+        putString(tokensAutoRenewingCacheKey, jsonObject.toString())
     }
 
     // endregion
