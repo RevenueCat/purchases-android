@@ -1078,7 +1078,9 @@ internal class CustomerCenterViewModelImpl(
     private fun launchRefreshIfPossible() {
         val currentState = _state.value
         if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
+            val previousJob = activeRefreshJob
             activeRefreshJob = viewModelScope.launch {
+                previousJob?.join()
                 refreshCustomerCenter()
             }
         }
