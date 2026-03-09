@@ -496,6 +496,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             every { isDebugBuild } returns true
             every { isAppBackgrounded } returns false
             every { runningTests } returns true
+            every { fallbackBaseURLs } returns emptyList()
         }
         return HTTPClient(
             appConfig = appConfig,

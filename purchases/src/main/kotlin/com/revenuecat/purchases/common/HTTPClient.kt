@@ -293,7 +293,10 @@ internal class HTTPClient(
                 debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
             }
 
-            val timeout = timeoutManager.getTimeoutForRequest(endpoint, isFallbackURL)
+            val timeout = timeoutManager.getTimeoutForRequest(
+                isFallback = isFallbackURL,
+                fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
+            )
 
             connection = getConnection(httpRequest, timeout)
         } catch (e: MalformedURLException) {
