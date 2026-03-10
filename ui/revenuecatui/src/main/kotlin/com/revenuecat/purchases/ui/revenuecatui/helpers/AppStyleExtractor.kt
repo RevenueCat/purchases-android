@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.drawable.toBitmap
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -29,7 +30,8 @@ internal object AppStyleExtractor {
             val packageManager = context.packageManager
             val drawable = context.applicationInfo.loadIcon(packageManager)
             drawable.toBitmap(config = Bitmap.Config.ARGB_8888)
-        } catch (@Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            Logger.e("Failed to load app icon bitmap.", e)
             null
         }
     }
@@ -46,20 +48,16 @@ internal object AppStyleExtractor {
      *
      * @param bitmap The bitmap to extract colors from (defaults to app icon)
      * @param count Maximum number of colors to return
+     * @param dispatcher Dispatcher used for the extraction work. Pass a caller-controlled dispatcher to keep
+     * execution on the current thread in previews or tests.
      * @return List of prominent colors
      */
     suspend fun getProminentColorsFromBitmap(
         bitmap: Bitmap?,
         count: Int = 2,
-    ): List<Color> = withContext(Dispatchers.Default) {
+        dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    ): List<Color> = withContext(dispatcher) {
         extractProminentColors(bitmap, count)
-    }
-
-    /**
-     * Synchronous color extraction for testing/previews.
-     */
-    internal fun extractProminentColorsSync(bitmap: Bitmap?, count: Int = 2): List<Color> {
-        return extractProminentColors(bitmap, count)
     }
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "ReturnCount")

@@ -6,61 +6,83 @@ import androidx.compose.ui.graphics.Color
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])
 class AppStyleExtractorTests {
 
     @Test
-    fun `extractProminentColors returns empty list for null bitmap`() {
-        val colors = AppStyleExtractor.extractProminentColorsSync(null)
+    fun `extractProminentColors returns empty list for null bitmap`() = runTest {
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = null,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
         assertThat(colors).isEmpty()
     }
 
     @Test
-    fun `extractProminentColors returns colors for valid bitmap with red`() {
+    fun `extractProminentColors returns colors for valid bitmap with red`() = runTest {
         val bitmap = createTestBitmap(AndroidColor.rgb(200, 50, 50))
-        val colors = AppStyleExtractor.extractProminentColorsSync(bitmap, count = 2)
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            count = 2,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
         assertThat(colors).isNotEmpty()
     }
 
     @Test
-    fun `extractProminentColors returns colors for large bitmap`() {
+    fun `extractProminentColors returns colors for large bitmap`() = runTest {
         val bitmap = createTestBitmap(
             color = AndroidColor.rgb(200, 50, 50),
             width = 400,
             height = 400,
         )
-        val colors = AppStyleExtractor.extractProminentColorsSync(bitmap, count = 1)
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            count = 1,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
         assertThat(colors).hasSize(1)
     }
 
     @Test
-    fun `extractProminentColors filters out near-black colors`() {
+    fun `extractProminentColors filters out near-black colors`() = runTest {
         val bitmap = createTestBitmap(AndroidColor.BLACK)
-        val colors = AppStyleExtractor.extractProminentColorsSync(bitmap)
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
         assertThat(colors).isEmpty()
     }
 
     @Test
-    fun `extractProminentColors filters out near-white colors`() {
+    fun `extractProminentColors filters out near-white colors`() = runTest {
         val bitmap = createTestBitmap(AndroidColor.WHITE)
-        val colors = AppStyleExtractor.extractProminentColorsSync(bitmap)
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
         assertThat(colors).isEmpty()
     }
 
     @Test
-    fun `extractProminentColors filters out transparent pixels`() {
+    fun `extractProminentColors filters out transparent pixels`() = runTest {
         val bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
         // Leave the bitmap with default transparent pixels
-        val colors = AppStyleExtractor.extractProminentColorsSync(bitmap)
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
         assertThat(colors).isEmpty()
     }
 
     @Test
-    fun `extractProminentColors returns at most the requested count`() {
+    fun `extractProminentColors returns at most the requested count`() = runTest {
         // Create a bitmap with multiple distinct colors
         val bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
         // Fill top half with red
@@ -76,7 +98,11 @@ class AppStyleExtractorTests {
             }
         }
 
-        val colors = AppStyleExtractor.extractProminentColorsSync(bitmap, count = 1)
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            count = 1,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
         assertThat(colors).hasSize(1)
     }
 
@@ -136,10 +162,10 @@ class AppStyleExtractorTests {
     }
 
     @Test
-    fun `selectColorWithBestContrast returns background color for empty list`() {
+    fun `selectColorWithBestContrast returns null for empty list`() {
         val colors = emptyList<Color>()
         val selected = selectColorWithBestContrast(colors, Color.Red)
-        assertThat(selected).isEqualTo(Color.Red)
+        assertThat(selected).isNull()
     }
 
     private fun createTestBitmap(
