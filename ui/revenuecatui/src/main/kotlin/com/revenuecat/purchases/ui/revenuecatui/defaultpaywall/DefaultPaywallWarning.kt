@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.defaultpaywall
 
-import android.content.Intent
+import android.content.ActivityNotFoundException
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,8 +21,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 
 @Composable
@@ -66,8 +68,15 @@ internal fun DefaultPaywallWarning(
         warning.helpUrl?.let { url ->
             OutlinedButton(
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                    context.startActivity(intent)
+                    context.openUriOrElse(url) { exception ->
+                        val message = if (exception is ActivityNotFoundException) {
+                            context.getString(R.string.no_browser_cannot_open_link)
+                        } else {
+                            context.getString(R.string.cannot_open_link)
+                        }
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        Logger.w(message)
+                    }
                 },
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = warningColor,
