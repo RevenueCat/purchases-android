@@ -19,6 +19,7 @@ package com.revenuecat.purchases {
   }
 
   public final class CoroutinesExtensionsCommonKt {
+    method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitCanMakePayments(com.revenuecat.purchases.Purchases.Companion, android.content.Context context, optional java.util.List<? extends com.revenuecat.purchases.models.BillingFeature> features, kotlin.coroutines.Continuation<? super java.lang.Boolean>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitGetProducts(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, kotlin.coroutines.Continuation<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>>);
     method @kotlin.jvm.JvmSynthetic public static suspend Object? awaitGetProductsResult(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, kotlin.coroutines.Continuation<? super kotlin.Result<? extends java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>>>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitOfferings(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
@@ -35,6 +36,7 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitGetVirtualCurrencies(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogIn(com.revenuecat.purchases.Purchases, String appUserID, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.data.LogInResult>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogOut(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
+    method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSetAppstackAttributionParams(com.revenuecat.purchases.Purchases, java.util.Map<java.lang.String,java.lang.String> data, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitStorefrontLocale(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.util.Locale>) throws com.revenuecat.purchases.PurchasesException;
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSyncAttributesAndOfferingsIfNeeded(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSyncPurchases(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
@@ -87,6 +89,10 @@ package com.revenuecat.purchases {
     ctor public DangerousSettings(optional boolean autoSyncPurchases);
     method public boolean getAutoSyncPurchases();
     property public final boolean autoSyncPurchases;
+    field public static final com.revenuecat.purchases.DangerousSettings.Companion Companion;
+  }
+
+  public static final class DangerousSettings.Companion {
   }
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class EntitlementInfo implements android.os.Parcelable com.revenuecat.purchases.models.RawDataContainer<org.json.JSONObject> {
@@ -428,6 +434,7 @@ package com.revenuecat.purchases {
     method @Deprecated @kotlin.jvm.Synchronized public void setAllowSharingPlayStoreAccount(boolean);
     method public void setAppsFlyerConversionData(java.util.Map<? extends java.lang.Object?,? extends java.lang.Object?>? data);
     method public void setAppsflyerID(String? appsflyerID);
+    method public void setAppstackAttributionParams(java.util.Map<java.lang.String,java.lang.String> data, com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback callback);
     method public void setAttributes(java.util.Map<java.lang.String,java.lang.String?> attributes);
     method public void setCampaign(String? campaign);
     method public void setCleverTapID(String? cleverTapID);
