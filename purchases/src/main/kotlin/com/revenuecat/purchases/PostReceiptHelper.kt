@@ -54,6 +54,7 @@ internal class PostReceiptHelper(
         initiationSource: PostReceiptInitiationSource,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
+        isAutoRenewing: Boolean? = null,
     ) {
         postReceiptAndSubscriberAttributes(
             appUserID,
@@ -63,12 +64,12 @@ internal class PostReceiptHelper(
             initiationSource,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
             onSuccess = { postReceiptResponse ->
-                deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                deviceCache.addSuccessfullyPostedToken(purchaseToken, isAutoRenewing)
                 onSuccess(postReceiptResponse.customerInfo)
             },
             onError = { backendError, errorHandlingBehavior, _ ->
                 if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                    deviceCache.addSuccessfullyPostedToken(purchaseToken, isAutoRenewing)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
                     errorHandlingBehavior,
