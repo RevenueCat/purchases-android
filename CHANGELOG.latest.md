@@ -1,9 +1,15 @@
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Fix default value for `productChangeConfig` (#3153) via Cesar de la Vega (@vegaro)
+**This is an automatic release.**
 
-### 🔄 Other Changes
-* Add elapsed_millis to FLUSH_COMPLETED debug event (#3184) via Toni Rico (@tonidero)
-* Add priority flush with rate limiting and queuing (#3179) via Rick (@rickvdl)
-* Bypass billing in preview mode (#3162) via Monika Mateska (@MonikaMateska)
+> WARNING: The Galaxy Store features in this release are considered to be in beta and are subject to change at any time. If you'd like to try them out, please reach out to support and let us know.
+
+## RevenueCat SDK
+
+### ✨ New Features
+
+- Initial support for the Galaxy Store in the `purchases-android` SDK.
+
+### 🐞 Bugfixes
+
+- Fixed the deployment pipeline to include the `purchases-store-galaxy` modules in releases.
+
+## RevenueCatUI SDK
