@@ -47,6 +47,8 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.selectColorWithBestContrast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Suppress("MagicNumber")
 private val RevenueCatBrandRed = Color(0xFFF2545B)
@@ -70,10 +72,16 @@ internal fun DefaultPaywallView(
 
     // App metadata
     val appName = remember { AppStyleExtractor.getAppName(context) }
-    val appIconBitmap = remember { AppStyleExtractor.getAppIconBitmap(context) }
+    var appIconBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     // Color extraction state
     var prominentColors by remember { mutableStateOf<List<Color>>(emptyList()) }
+
+    LaunchedEffect(context) {
+        appIconBitmap = withContext(Dispatchers.Default) {
+            AppStyleExtractor.getAppIconBitmap(context)
+        }
+    }
 
     LaunchedEffect(appIconBitmap) {
         prominentColors = AppStyleExtractor.getProminentColorsFromBitmap(appIconBitmap, count = 2)
