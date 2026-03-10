@@ -89,10 +89,11 @@ internal fun DefaultPaywallView(
     val iconColor = if (prominentColors.isEmpty()) {
         MaterialTheme.colorScheme.primary
     } else {
+        // Keep a usable accent/background color even if extraction finds no distinct contrast winner.
         selectColorWithBestContrast(
             from = prominentColors,
             againstColor = if (isDarkTheme) Color.Black else Color.White,
-        )
+        ) ?: MaterialTheme.colorScheme.primary
     }
 
     val mainColor = if (shouldShowWarning) RevenueCatBrandRed else iconColor
@@ -100,10 +101,11 @@ internal fun DefaultPaywallView(
     val foregroundOnAccentColor = if (shouldShowWarning) {
         Color.White
     } else {
+        // Always fall back to a valid content color for the chosen background/accent color.
         selectColorWithBestContrast(
             from = prominentColors + listOf(if (isDarkTheme) Color.Black else Color.White),
             againstColor = iconColor,
-        )
+        ) ?: MaterialTheme.colorScheme.onPrimary
     }
 
     // Main layout
