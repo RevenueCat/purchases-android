@@ -446,6 +446,10 @@ jobs:
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
+      - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy
@@ -477,6 +481,10 @@ jobs:
       - android/restore_build_cache:
           cache_prefix: v1a
       - prepare-signing-key
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
