@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.icons.CircleOutlined
 
+@Suppress("LongParameterList")
 @Composable
 internal fun DefaultProductCell(
     pkg: Package,

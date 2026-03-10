@@ -149,7 +149,7 @@ internal fun DefaultPaywallView(
                         .widthIn(max = 630.dp)
                         .fillMaxWidth()
                         .align(Alignment.TopCenter)
-                        .heightIn(min = maxHeight)
+                        .heightIn(min = this.maxHeight)
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.SpaceBetween,
