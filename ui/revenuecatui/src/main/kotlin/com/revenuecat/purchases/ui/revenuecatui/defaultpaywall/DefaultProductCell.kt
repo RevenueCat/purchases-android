@@ -2,12 +2,12 @@ package com.revenuecat.purchases.ui.revenuecatui.defaultpaywall
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -51,14 +51,18 @@ internal fun DefaultProductCell(
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
             .background(backgroundColor)
-            .clickable(role = Role.RadioButton, onClick = onSelect)
+            .selectable(
+                selected = isSelected,
+                role = Role.RadioButton,
+                onClick = onSelect,
+            )
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(
             imageVector = if (isSelected) Icons.Filled.CheckCircle else CircleOutlined,
-            contentDescription = if (isSelected) "Selected" else "Not selected",
+            contentDescription = null,
             tint = contentColor.copy(alpha = if (isSelected) 1f else 0.5f),
         )
 
