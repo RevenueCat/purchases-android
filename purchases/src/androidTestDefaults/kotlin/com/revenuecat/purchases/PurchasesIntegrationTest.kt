@@ -492,9 +492,11 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             every { packageName } returns "com.revenuecat.purchase_integration_tests"
             every { finishTransactions } returns true
             every { customEntitlementComputation } returns false
+            every { uiPreviewMode } returns false
             every { isDebugBuild } returns true
             every { isAppBackgrounded } returns false
             every { runningTests } returns true
+            every { fallbackBaseURLs } returns emptyList()
         }
         return HTTPClient(
             appConfig = appConfig,

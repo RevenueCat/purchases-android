@@ -82,6 +82,8 @@ public data class PaywallEvent(
     public val type: PaywallEventType,
 ) : FeatureEvent {
 
+    override val isPriorityEvent: Boolean get() = type == PaywallEventType.IMPRESSION
+
     @Serializable
     public data class CreationData(
         @Serializable(with = UUIDSerializer::class)
