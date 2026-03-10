@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.EmptyObjectToNullSerializer
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import dev.drewhamilton.poko.Poko
@@ -41,6 +42,12 @@ public class PaywallComponentsData(
     @SerialName("exit_offers")
     public val exitOffers: ExitOffers? = null,
     @get:JvmSynthetic
+    @Serializable(with = ProductChangeConfigSerializer::class)
     @SerialName("play_store_product_change_mode")
     public val productChangeConfig: ProductChangeConfig? = null,
+)
+
+@OptIn(InternalRevenueCatAPI::class)
+private object ProductChangeConfigSerializer : EmptyObjectToNullSerializer<ProductChangeConfig>(
+    ProductChangeConfig.serializer(),
 )

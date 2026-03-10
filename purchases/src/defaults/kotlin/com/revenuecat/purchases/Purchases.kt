@@ -36,6 +36,8 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEventParams
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -641,6 +643,20 @@ public class Purchases internal constructor(
         purchasesOrchestrator.track(event)
     }
 
+    /**
+     * Tracks a custom paywall impression event.
+     * @param params Parameters for the custom paywall impression event.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    @JvmSynthetic
+    internal fun trackCustomPaywallImpression(params: CustomPaywallEventParams = CustomPaywallEventParams()) {
+        purchasesOrchestrator.track(
+            CustomPaywallEvent.Impression(
+                data = CustomPaywallEvent.Impression.Data(paywallId = params.paywallId),
+            ),
+        )
+    }
+
     // Kept internal since it's not meant for public usage.
     internal fun getCustomerCenterConfigData(
         callback: GetCustomerCenterConfigCallback,
@@ -927,6 +943,28 @@ public class Purchases internal constructor(
      */
     public fun setAppsFlyerConversionData(data: Map<*, *>?) {
         purchasesOrchestrator.setAppsFlyerConversionData(data)
+    }
+
+    /**
+     * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
+     * fresh offerings so that Appstack-based targeting is applied before the callback returns.
+     *
+     * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+     * cached offerings will be returned instead.
+     *
+     * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate attributes.
+     * Note that this method will never unset any attributes. To unset an attribute, call the individual
+     * setter with a `null` value.
+     *
+     * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+     * @param callback Called with fresh [Offerings] (targeted with Appstack data) or a [PurchasesError].
+     */
+    public fun setAppstackAttributionParams(
+        data: Map<String, String>,
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        purchasesOrchestrator.setAppstackAttributionParams(data, callback)
     }
 
     // endregion
