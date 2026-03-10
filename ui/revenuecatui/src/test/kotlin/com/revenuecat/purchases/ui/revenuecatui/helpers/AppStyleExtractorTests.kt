@@ -136,10 +136,10 @@ class AppStyleExtractorTests {
     }
 
     @Test
-    fun `selectColorWithBestContrast returns background color for empty list`() {
+    fun `selectColorWithBestContrast returns null for empty list`() {
         val colors = emptyList<Color>()
         val selected = selectColorWithBestContrast(colors, Color.Red)
-        assertThat(selected).isEqualTo(Color.Red)
+        assertThat(selected).isNull()
     }
 
     private fun createTestBitmap(

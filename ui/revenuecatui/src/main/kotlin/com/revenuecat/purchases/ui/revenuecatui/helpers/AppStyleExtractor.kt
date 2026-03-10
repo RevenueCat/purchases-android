@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
 import androidx.core.graphics.drawable.toBitmap
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -29,7 +30,8 @@ internal object AppStyleExtractor {
             val packageManager = context.packageManager
             val drawable = context.applicationInfo.loadIcon(packageManager)
             drawable.toBitmap(config = Bitmap.Config.ARGB_8888)
-        } catch (@Suppress("TooGenericExceptionCaught", "SwallowedException") e: Exception) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            Logger.e("Failed to load app icon bitmap.", e)
             null
         }
     }
@@ -51,7 +53,8 @@ internal object AppStyleExtractor {
     suspend fun getProminentColorsFromBitmap(
         bitmap: Bitmap?,
         count: Int = 2,
-    ): List<Color> = withContext(Dispatchers.Default) {
+        dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    ): List<Color> = withContext(dispatcher) {
         extractProminentColors(bitmap, count)
     }
 
