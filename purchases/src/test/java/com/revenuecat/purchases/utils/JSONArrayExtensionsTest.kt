@@ -3,7 +3,6 @@ package com.revenuecat.purchases.utils
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONArray
-import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config

@@ -8,4 +8,6 @@
 /ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/customercenter/** @RevenueCat/customer-center
 
 # Paywalls
-/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/templates/** @RevenueCat/monetization
+/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/templates/** @RevenueCat/paywalls
+/ui/revenuecatui/src/**/com/revenuecat/purchases/ui/revenuecatui/views/** @RevenueCat/paywalls
+/purchases/src/**/com/revenuecat/purchases/paywalls/** @RevenueCat/paywalls

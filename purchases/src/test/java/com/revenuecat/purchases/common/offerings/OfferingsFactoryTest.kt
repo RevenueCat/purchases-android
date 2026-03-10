@@ -8,14 +8,12 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.OfferingParser
-import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE
@@ -28,6 +26,7 @@ import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
@@ -39,6 +38,7 @@ import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@Suppress("LargeClass")
 class OfferingsFactoryTest {
 
     // language=JSON
@@ -247,6 +247,7 @@ class OfferingsFactoryTest {
         appConfig = mockk<AppConfig>().apply {
             every { store } returns Store.PLAY_STORE
             every { apiKeyValidationResult } returns APIKeyValidator.ValidationResult.VALID
+            every { uiPreviewMode } returns false
         }
         billing = mockk()
         offeringParser = GoogleOfferingParser()
