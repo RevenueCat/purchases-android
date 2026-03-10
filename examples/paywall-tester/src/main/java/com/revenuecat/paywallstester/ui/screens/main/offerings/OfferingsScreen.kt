@@ -131,6 +131,7 @@ private fun OfferingsListScreen(
     val customVariablesViewModel: CustomVariablesViewModel = viewModel()
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
+    var displayFallbackPaywallOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
     var showCustomVariablesEditor by remember { mutableStateOf(false) }
@@ -205,6 +206,10 @@ private fun OfferingsListScreen(
                             tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
                             tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
                             tappedOnDisplayOfferingAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
+                            tappedOnDisplayFallbackPaywall = {
+                                dropdownExpandedOffering = null
+                                displayFallbackPaywallOffering = it
+                            },
                             dismissed = { dropdownExpandedOffering = null },
                         )
                     }
@@ -299,6 +304,21 @@ private fun OfferingsListScreen(
         )
     }
 
+    displayFallbackPaywallOffering?.let { offering ->
+        val paywalllessOffering = Offering(
+            identifier = offering.identifier,
+            serverDescription = offering.serverDescription,
+            metadata = offering.metadata,
+            availablePackages = offering.availablePackages,
+        )
+        PaywallDialog(
+            PaywallDialogOptions.Builder()
+                .setDismissRequest { displayFallbackPaywallOffering = null }
+                .setOffering(paywalllessOffering)
+                .build(),
+        )
+    }
+
     if (showDialog.value) {
         PlacementDialog(tappedOnNavigateToOfferingByPlacement = tappedOnNavigateToOfferingByPlacement)
     }
@@ -372,6 +392,7 @@ private fun DisplayOfferingMenu(
     tappedOnDisplayOfferingAsDialog: (Offering) -> Unit,
     tappedOnDisplayOfferingAsFooter: (Offering) -> Unit,
     tappedOnDisplayOfferingAsCondensedFooter: (Offering) -> Unit,
+    tappedOnDisplayFallbackPaywall: (Offering) -> Unit,
     dismissed: () -> Unit,
 ) {
     val activity = LocalContext.current as MainActivity
@@ -407,6 +428,10 @@ private fun DisplayOfferingMenu(
         DropdownMenuItem(
             text = { Text(text = "Display paywall as footer view in an activity") },
             onClick = { activity.launchPaywallFooterViewAsActivity(offering) },
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Force fallback paywall", color = Color(0xFFF2545B)) },
+            onClick = { tappedOnDisplayFallbackPaywall(offering) },
         )
     }
 }
