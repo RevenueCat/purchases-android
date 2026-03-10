@@ -57,7 +57,7 @@ import kotlinx.coroutines.withContext
 private val RevenueCatBrandRed = Color(0xFFF2545B)
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH")
 internal fun DefaultPaywallView(
     packages: List<Package>,
     warning: PaywallWarning?,
