@@ -107,6 +107,17 @@ class AppStyleExtractorTests {
     }
 
     @Test
+    fun `extractProminentColors returns empty list when count is zero`() = runTest {
+        val bitmap = createTestBitmap(AndroidColor.rgb(200, 50, 50))
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            count = 0,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
+        assertThat(colors).isEmpty()
+    }
+
+    @Test
     fun `colorDistance calculates correct distance between black and white`() {
         val black = Triple(0.0, 0.0, 0.0)
         val white = Triple(1.0, 1.0, 1.0)

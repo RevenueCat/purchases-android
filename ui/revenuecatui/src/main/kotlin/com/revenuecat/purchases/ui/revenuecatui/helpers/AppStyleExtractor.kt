@@ -63,6 +63,7 @@ internal object AppStyleExtractor {
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "ReturnCount")
     private fun extractProminentColors(bitmap: Bitmap?, count: Int): List<Color> {
         if (bitmap == null) return emptyList()
+        if (count <= 0) return emptyList()
 
         val width = bitmap.width
         val height = bitmap.height
