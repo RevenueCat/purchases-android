@@ -113,6 +113,59 @@ class InterstitialAdFlowTest {
         assertSame(error, loadCallback.failedToLoadError)
     }
 
+    @Test
+    fun `interstitial success with null optional params does not crash`() {
+        val context = mockk<Context>()
+        val adRequest = mockk<AdRequest>()
+        val interstitialAd = mockk<InterstitialAd>(relaxed = true)
+        val responseInfo = mockk<ResponseInfo>(relaxed = true)
+        every { interstitialAd.responseInfo } returns responseInfo
+
+        val loadCallbackSlot = slot<InterstitialAdLoadCallback>()
+        every {
+            InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
+        } answers {}
+
+        val adTracker = mockk<AdTracker>(relaxed = true)
+        adTracker.loadAndTrackInterstitialAd(
+            context = context,
+            adUnitId = "interstitial-unit",
+            adRequest = adRequest,
+        )
+
+        assertNotNull(loadCallbackSlot.captured)
+        loadCallbackSlot.captured.onAdLoaded(interstitialAd)
+
+        val fscSlot = slot<FullScreenContentCallback>()
+        verify { interstitialAd.fullScreenContentCallback = capture(fscSlot) }
+        fscSlot.captured.onAdShowedFullScreenContent()
+        fscSlot.captured.onAdClicked()
+        fscSlot.captured.onAdDismissedFullScreenContent()
+        fscSlot.captured.onAdImpression()
+    }
+
+    @Test
+    fun `interstitial failure with null loadCallback does not crash`() {
+        val context = mockk<Context>()
+        val adRequest = mockk<AdRequest>()
+        val error = mockk<LoadAdError>(relaxed = true)
+
+        val loadCallbackSlot = slot<InterstitialAdLoadCallback>()
+        every {
+            InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
+        } answers {}
+
+        val adTracker = mockk<AdTracker>(relaxed = true)
+        adTracker.loadAndTrackInterstitialAd(
+            context = context,
+            adUnitId = "interstitial-unit",
+            adRequest = adRequest,
+        )
+
+        assertNotNull(loadCallbackSlot.captured)
+        loadCallbackSlot.captured.onAdFailedToLoad(error)
+    }
+
     private class RecordingInterstitialLoadCallback : InterstitialAdLoadCallback() {
         var loadedAd: InterstitialAd? = null
         var failedToLoadError: LoadAdError? = null
