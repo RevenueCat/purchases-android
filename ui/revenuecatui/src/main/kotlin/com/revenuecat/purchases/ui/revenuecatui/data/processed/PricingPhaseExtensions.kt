@@ -31,16 +31,6 @@ internal fun resolveOfferPrice(
 ): String? =
     discountPhase?.productOfferPrice(localizedVariableKeys) ?: productFallback()
 
-internal fun resolveOfferPricePerPeriod(
-    discountPhase: PricingPhase?,
-    localizedVariableKeys: Map<VariableLocalizationKey, String>,
-    unit: Period.Unit,
-    discountPriceCalculation: PricingPhase.() -> Price,
-    productFallback: () -> String?,
-): String? =
-    discountPhase?.productOfferPricePerPeriod(localizedVariableKeys, unit, discountPriceCalculation)
-        ?: productFallback()
-
 internal fun resolveOfferPeriod(
     discountPhase: PricingPhase?,
     discountValue: (PricingPhase) -> String?,

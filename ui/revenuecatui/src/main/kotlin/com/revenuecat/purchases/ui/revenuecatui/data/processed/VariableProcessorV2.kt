@@ -470,8 +470,15 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PERIOD_IN_YEARS -> rcPackage?.product?.period?.roundedValueInYears
         Variable.PRODUCT_PERIOD_WITH_UNIT -> rcPackage?.productPeriodWithUnit(localizedVariableKeys)
         Variable.PRODUCT_OFFER_PRICE ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPrice(localizedVariableKeys)
-                ?: rcPackage?.product?.price?.formatted
+            resolveOfferPrice(
+                discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
+                localizedVariableKeys = localizedVariableKeys,
+            ) {
+                rcPackage?.let { pkg ->
+                    val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
+                    variableDataProvider?.localizedPrice(pkg, currencyLocale, showZero)
+                }
+            }
 
         Variable.PRODUCT_OFFER_PRICE_PER_DAY ->
             primaryDiscountPhase(subscriptionOption, rcPackage)
@@ -506,12 +513,16 @@ internal object VariableProcessorV2 {
                 }
 
         Variable.PRODUCT_OFFER_PERIOD ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriod(localizedVariableKeys)
-                ?: rcPackage?.productPeriod(localizedVariableKeys)
+            resolveOfferPeriod(
+                discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
+                discountValue = { it.productOfferPeriod(localizedVariableKeys) },
+            ) { rcPackage?.productPeriod(localizedVariableKeys) }
 
         Variable.PRODUCT_OFFER_PERIOD_ABBREVIATED ->
-            primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodAbbreviated(localizedVariableKeys)
-                ?: rcPackage?.productPeriodAbbreviated(localizedVariableKeys)
+            resolveOfferPeriod(
+                discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
+                discountValue = { it.productOfferPeriodAbbreviated(localizedVariableKeys) },
+            ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
 
         Variable.PRODUCT_OFFER_PERIOD_IN_DAYS ->
             primaryDiscountPhase(subscriptionOption, rcPackage)?.productOfferPeriodInDays
@@ -539,7 +550,12 @@ internal object VariableProcessorV2 {
             resolveOfferPrice(
                 discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
                 localizedVariableKeys = localizedVariableKeys,
-            ) { rcPackage?.product?.price?.formatted }
+            ) {
+                rcPackage?.let { pkg ->
+                    val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
+                    variableDataProvider?.localizedPrice(pkg, currencyLocale, showZero)
+                }
+            }
 
         Variable.PRODUCT_SECONDARY_OFFER_PERIOD ->
             resolveOfferPeriod(
