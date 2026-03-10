@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -79,14 +80,14 @@ internal fun DefaultPaywallView(
     // Color extraction state
     var prominentColors by remember { mutableStateOf<List<Color>>(emptyList()) }
 
-    LaunchedEffect(context) {
-        appIconBitmap = withContext(Dispatchers.Default) {
+    LaunchedEffect(Unit) {
+        val bitmap = withContext(Dispatchers.Default) {
             AppStyleExtractor.getAppIconBitmap(context)
         }
-    }
+        val extractedProminentColors = AppStyleExtractor.getProminentColorsFromBitmap(bitmap, count = 2)
 
-    LaunchedEffect(appIconBitmap) {
-        prominentColors = AppStyleExtractor.getProminentColorsFromBitmap(appIconBitmap, count = 2)
+        appIconBitmap = bitmap
+        prominentColors = extractedProminentColors
     }
 
     // Selection state
@@ -182,6 +183,7 @@ internal fun DefaultPaywallView(
                     }
 
                     Column(
+                        modifier = Modifier.selectableGroup(),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
