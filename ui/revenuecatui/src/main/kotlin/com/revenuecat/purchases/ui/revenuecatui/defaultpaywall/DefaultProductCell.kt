@@ -67,7 +67,7 @@ internal fun DefaultProductCell(
         )
 
         Text(
-            text = pkg.product.title,
+            text = pkg.product.name,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color = contentColor,
