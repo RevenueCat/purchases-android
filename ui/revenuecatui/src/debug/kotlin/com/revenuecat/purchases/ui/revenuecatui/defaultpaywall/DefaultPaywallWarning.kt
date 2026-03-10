@@ -39,7 +39,6 @@ internal fun DefaultPaywallWarning(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        // RevenueCat logo
         Image(
             painter = painterResource(id = R.drawable.visual_ob_create_paywall),
             contentDescription = null,
