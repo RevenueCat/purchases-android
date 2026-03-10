@@ -29,8 +29,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 @Composable
 internal fun DefaultPaywallWarning(
     warning: PaywallWarning,
-    modifier: Modifier = Modifier,
     warningColor: Color,
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
