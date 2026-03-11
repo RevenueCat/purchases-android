@@ -157,7 +157,7 @@ internal class PostPendingTransactionsHelper(
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 sdkOriginated = false,
                 transactionPostSuccess = { transaction, customerInfo ->
-                    deviceCache.updateAutoRenewingStatus(
+                    deviceCache.addSuccessfullyPostedToken(
                         transaction.purchaseToken,
                         transaction.isAutoRenewing,
                     )

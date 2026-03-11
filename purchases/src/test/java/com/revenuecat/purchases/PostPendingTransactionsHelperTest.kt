@@ -66,7 +66,7 @@ class PostPendingTransactionsHelperTest {
             lambda<() -> Unit>().captured.invoke()
         }
 
-        every { deviceCache.updateAutoRenewingStatus(any(), any()) } just Runs
+        every { deviceCache.addSuccessfullyPostedToken(any(), any()) } just Runs
 
         changeBillingConnected()
         changeAutoSyncEnabled(true)
@@ -903,7 +903,7 @@ class PostPendingTransactionsHelperTest {
         }
         // Instead, auto-renewing is saved per-transaction on post success
         verify(exactly = 1) {
-            deviceCache.updateAutoRenewingStatus(transaction.purchaseToken, transaction.isAutoRenewing)
+            deviceCache.addSuccessfullyPostedToken(transaction.purchaseToken, transaction.isAutoRenewing)
         }
     }
 
@@ -944,9 +944,9 @@ class PostPendingTransactionsHelperTest {
         verify(exactly = 1) {
             deviceCache.saveAutoRenewingStatus(emptyMap())
         }
-        // updateAutoRenewingStatus NOT called since the post failed
+        // addSuccessfullyPostedToken NOT called since the post failed
         verify(exactly = 0) {
-            deviceCache.updateAutoRenewingStatus(any(), any())
+            deviceCache.addSuccessfullyPostedToken(any(), any())
         }
     }
 

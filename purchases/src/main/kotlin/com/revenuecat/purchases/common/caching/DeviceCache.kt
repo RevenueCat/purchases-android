@@ -28,7 +28,10 @@ import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
@@ -38,12 +41,14 @@ import kotlin.time.Duration.Companion.hours
 private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 25.hours
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 private const val KEY_IS_AUTO_RENEWING = "isAutoRenewing"
+private val tokenMapSerializer = MapSerializer(String.serializer(), TokenCacheEntry.serializer())
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
 /**
  * Per-token metadata stored in the unified token cache.
  * Using a data class allows adding more fields in the future without a cache migration.
  */
+@Serializable
 internal data class TokenCacheEntry(
     val isAutoRenewing: Boolean? = null,
 )
@@ -427,26 +432,11 @@ internal open class DeviceCache(
         val json = preferences.getString(tokensCacheKey, null)
         if (json != null) {
             return try {
-                val jsonObject = JSONObject(json)
-                jsonObject.keys().asSequence().associateWith { key ->
-                    val value = jsonObject.get(key)
-                    if (value is JSONObject) {
-                        TokenCacheEntry(
-                            isAutoRenewing = if (value.isNull(KEY_IS_AUTO_RENEWING)) {
-                                null
-                            } else {
-                                value.getBoolean(KEY_IS_AUTO_RENEWING)
-                            },
-                        )
-                    } else {
-                        // Backwards compatibility: old format stored Boolean? directly
-                        TokenCacheEntry(
-                            isAutoRenewing = if (jsonObject.isNull(key)) null else jsonObject.getBoolean(key),
-                        )
-                    }
-                }
-            } catch (@Suppress("SwallowedException") e: JSONException) {
-                emptyMap()
+                Json.decodeFromString(tokenMapSerializer, json)
+            } catch (@Suppress("SwallowedException") e: SerializationException) {
+                parseLegacyTokenMapJson(json)
+            } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+                parseLegacyTokenMapJson(json)
             }
         }
         // Migrate from legacy StringSet if it exists
@@ -466,20 +456,38 @@ internal open class DeviceCache(
         }
     }
 
+    /**
+     * Parses the legacy JSON format where values were either `{ "isAutoRenewing": true }` objects
+     * using org.json, or flat `Boolean?` values (pre-serializable format).
+     */
+    private fun parseLegacyTokenMapJson(json: String): Map<String, TokenCacheEntry> {
+        return try {
+            val jsonObject = JSONObject(json)
+            jsonObject.keys().asSequence().associateWith { key ->
+                val value = jsonObject.get(key)
+                if (value is JSONObject) {
+                    TokenCacheEntry(
+                        isAutoRenewing = if (value.isNull(KEY_IS_AUTO_RENEWING)) {
+                            null
+                        } else {
+                            value.getBoolean(KEY_IS_AUTO_RENEWING)
+                        },
+                    )
+                } else {
+                    TokenCacheEntry(
+                        isAutoRenewing = if (jsonObject.isNull(key)) null else jsonObject.getBoolean(key),
+                    )
+                }
+            }
+        } catch (@Suppress("SwallowedException") e: JSONException) {
+            emptyMap()
+        }
+    }
+
     @Synchronized
     private fun saveTokenMap(tokenMap: Map<String, TokenCacheEntry>) {
-        val jsonObject = JSONObject().apply {
-            for ((hash, entry) in tokenMap) {
-                put(
-                    hash,
-                    JSONObject().apply {
-                        put(KEY_IS_AUTO_RENEWING, entry.isAutoRenewing ?: JSONObject.NULL)
-                    },
-                )
-            }
-        }
         log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(tokenMap.keys) }
-        putString(tokensCacheKey, jsonObject.toString())
+        putString(tokensCacheKey, Json.encodeToString(tokenMapSerializer, tokenMap))
     }
 
     @Synchronized
@@ -495,8 +503,12 @@ internal open class DeviceCache(
         log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, hashedToken) }
         val current = getTokenMap().toMutableMap()
         log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(current.keys) }
-        if (hashedToken !in current) {
+        val existing = current[hashedToken]
+        if (existing == null) {
             current[hashedToken] = TokenCacheEntry(isAutoRenewing = isAutoRenewing)
+            saveTokenMap(current)
+        } else if (isAutoRenewing != null && existing.isAutoRenewing != isAutoRenewing) {
+            current[hashedToken] = existing.copy(isAutoRenewing = isAutoRenewing)
             saveTokenMap(current)
         }
     }
@@ -563,21 +575,6 @@ internal open class DeviceCache(
             }
         }
         saveTokenMap(current)
-    }
-
-    /**
-     * Updates the cached auto-renewing status for a single token. Used to persist the status
-     * after a successful post, so we don't eagerly save before knowing the post succeeded.
-     */
-    @Synchronized
-    fun updateAutoRenewingStatus(token: String, isAutoRenewing: Boolean?) {
-        val hashedToken = token.sha1()
-        val current = getTokenMap().toMutableMap()
-        val existing = current[hashedToken]
-        if (existing != null) {
-            current[hashedToken] = existing.copy(isAutoRenewing = isAutoRenewing)
-            saveTokenMap(current)
-        }
     }
 
     // endregion

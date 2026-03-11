@@ -1069,12 +1069,12 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `updateAutoRenewingStatus updates single token`() {
+    fun `addSuccessfullyPostedToken updates auto-renewing for existing token`() {
         val sha1 = "token1".sha1()
         mockTokenMap(tokenMapJson(sha1 to null))
         every { mockEditor.apply() } just runs
 
-        cache.updateAutoRenewingStatus("token1", false)
+        cache.addSuccessfullyPostedToken("token1", false)
         verify {
             mockEditor.putString(cache.tokensCacheKey, match { json ->
                 val obj = JSONObject(json)
@@ -1084,9 +1084,10 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `updateAutoRenewingStatus does nothing for unknown token`() {
-        mockTokenMap(tokenMapJson("hash1" to true))
-        cache.updateAutoRenewingStatus("unknown", false)
+    fun `addSuccessfullyPostedToken does not overwrite with same value`() {
+        val sha1 = "token1".sha1()
+        mockTokenMap(tokenMapJson(sha1 to true))
+        cache.addSuccessfullyPostedToken("token1", true)
         verify(exactly = 0) {
             mockEditor.putString(cache.tokensCacheKey, any())
         }
