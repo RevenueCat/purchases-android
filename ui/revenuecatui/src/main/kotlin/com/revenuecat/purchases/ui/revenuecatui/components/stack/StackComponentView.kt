@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
@@ -485,7 +485,7 @@ private fun MainStackComponent(
     shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val systemBarInsets = WindowInsets.systemBars
+    val safeDrawingInsets = WindowInsets.safeDrawing
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
@@ -520,7 +520,7 @@ private fun MainStackComponent(
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
                                 .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
                                 .alpha(contentAlpha),
                         )
@@ -552,7 +552,7 @@ private fun MainStackComponent(
                                         index == 0 &&
                                         !child.shouldIgnoreTopWindowInsets,
                                 ) {
-                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
                                 .alpha(contentAlpha),
                         )
@@ -579,7 +579,7 @@ private fun MainStackComponent(
                             onClick = clickHandler,
                             modifier = Modifier
                                 .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
                                 .alpha(contentAlpha),
                         )
@@ -635,7 +635,10 @@ private fun MainStackComponent(
                     Modifier
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
-                            windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
+                        }
+                        .conditional(stackState.applyHorizontalWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Horizontal))
                         },
                 )
             }
@@ -645,7 +648,10 @@ private fun MainStackComponent(
                     .then(borderModifier)
                     .then(innerShapeModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
-                        windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
+                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
+                    }
+                    .conditional(stackState.applyHorizontalWindowInsets) {
+                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Horizontal))
                     },
             )
         }

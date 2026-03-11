@@ -405,6 +405,21 @@ internal class StyleFactory(
                 this
             }
 
+        @Suppress("UNCHECKED_CAST")
+        fun <T : ComponentStyle> T.applyHorizontalWindowInsetsIfNecessary(shouldApply: Boolean): T =
+            if (shouldApply) {
+                when (this) {
+                    is StackComponentStyle -> copy(applyHorizontalWindowInsets = true)
+                    is StickyFooterComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
+                    )
+
+                    else -> this
+                } as T
+            } else {
+                this
+            }
+
         private fun recordPackage(pkg: AvailablePackages.Info) {
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
@@ -425,10 +440,13 @@ internal class StyleFactory(
     /**
      * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
      * passed-in [component]).
+     * @param applyHorizontalWindowInsets Whether to apply horizontal window insets to the root of this tree (i.e. the
+     * passed-in [component]). Needed for landscape mode to avoid rendering behind camera cutouts.
      */
     fun create(
         component: PaywallComponent,
         applyBottomWindowInsets: Boolean = false,
+        applyHorizontalWindowInsets: Boolean = false,
     ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
         with(StyleFactoryScope()) {
             createInternal(component)
@@ -440,6 +458,9 @@ internal class StyleFactory(
                 }
                 .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
+                .map { componentStyle ->
+                    componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
+                }
                 .map { componentStyle ->
                     StyleResult(
                         componentStyle = componentStyle,
@@ -683,6 +704,7 @@ internal class StyleFactory(
             is ButtonComponent.Destination.Sheet ->
                 createStackComponentStyle(destination.stack)
                     .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
+                    .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
                     .map { stackComponentStyle ->
                         ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
                             id = destination.id,
