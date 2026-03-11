@@ -195,7 +195,6 @@ poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
 android-test = { id = "com.android.test", version.ref = "agp" }
 baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprofile" }
 revenuecat-android-application = { id = "revenuecat-android-application" }
-revenuecat-android-library = { id = "revenuecat-android-library" }
 revenuecat-api-tester-application = { id = "revenuecat-api-tester-application" }
 revenuecat-public-library = { id = "revenuecat-public-library" }
 
