@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -168,7 +169,7 @@ internal fun DefaultPaywallView(
             ) {
                 Column(
                     Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
                         .widthIn(max = ReadableContentWidth.dp),
                 ) {
                     Column(
@@ -176,7 +177,7 @@ internal fun DefaultPaywallView(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
-                        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 32.dp))
                         if (shouldShowWarning) {
                             Text(
                                 text = stringResource(R.string.revenuecatui_paywalls_title),
