@@ -418,6 +418,7 @@ internal class GalaxyBillingWrapper(
                     try {
                         val storeTransactions = ownedProducts
                             .filter {
+                                // TO DO: Find out what this returns for OTPs when we support OTPs
                                 it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
                             }
                             .map {
