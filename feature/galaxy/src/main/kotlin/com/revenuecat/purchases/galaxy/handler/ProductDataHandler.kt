@@ -74,6 +74,8 @@ internal class ProductDataHandler(
             onError = onError,
         )
 
+        this.inFlightRequest = request
+
         // When requesting products from the Samsung IAP SDK, the `productIds` param is a string where
         // the following contents product the following results:
         // - An empty string: queries all products
@@ -84,8 +86,6 @@ internal class ProductDataHandler(
             productIDs = productIdRequestString,
             onGetProductsDetailsListener = this,
         )
-
-        this.inFlightRequest = request
     }
 
     override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo?>) {
