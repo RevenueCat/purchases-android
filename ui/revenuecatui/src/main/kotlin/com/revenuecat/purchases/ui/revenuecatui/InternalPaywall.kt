@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -169,22 +170,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
         val defaultBackground = MaterialTheme.colorScheme.background
         val defaultOnSurface = MaterialTheme.colorScheme.onSurface
         Box(
-            modifier = Modifier
-                .conditional(state.isInFullScreenMode) {
-                    Modifier
-                        .fillMaxHeight()
-                        .background(defaultBackground)
-                }
-                .conditional(!state.isInFullScreenMode) {
-                    Modifier
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = UIConstant.defaultCornerRadius,
-                                topEnd = UIConstant.defaultCornerRadius,
-                            ),
-                        )
-                        .background(defaultBackground)
-                },
+            modifier = Modifier.screenModeBackground(state.isInFullScreenMode, defaultBackground),
         ) {
             DefaultPaywallView(
                 packages = state.offering.availablePackages,
@@ -216,22 +202,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
 
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
-        modifier = Modifier
-            .conditional(state.isInFullScreenMode) {
-                Modifier
-                    .fillMaxHeight()
-                    .background(backgroundColor)
-            }
-            .conditional(!state.isInFullScreenMode) {
-                Modifier
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = UIConstant.defaultCornerRadius,
-                            topEnd = UIConstant.defaultCornerRadius,
-                        ),
-                    )
-                    .background(backgroundColor)
-            },
+        modifier = Modifier.screenModeBackground(state.isInFullScreenMode, backgroundColor),
     ) {
         val configuration = state.configurationWithOverriddenLocale()
 
@@ -322,6 +293,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                             resolvedOffer = action.resolvedOffer,
                         )
                     }
+
                 is PaywallAction.External.LaunchWebCheckout -> {
                     val url = viewModel.getWebCheckoutUrl(action)
                     if (url == null) {
@@ -365,3 +337,20 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
 
     URLOpener.openURL(this, url, openingMethod)
 }
+
+private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this
+    .conditional(isInFullScreenMode) {
+        Modifier
+            .fillMaxHeight()
+            .background(backgroundColor)
+    }
+    .conditional(!isInFullScreenMode) {
+        Modifier
+            .clip(
+                RoundedCornerShape(
+                    topStart = UIConstant.defaultCornerRadius,
+                    topEnd = UIConstant.defaultCornerRadius,
+                ),
+            )
+            .background(backgroundColor)
+    }
