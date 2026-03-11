@@ -74,8 +74,8 @@ internal fun DefaultPaywallView(
     warning: PaywallWarning?,
     onPurchase: (Package) -> Unit,
     onRestore: () -> Unit,
-    previewOverrides: DefaultPaywallPreviewOverrides? = null,
     modifier: Modifier = Modifier,
+    previewOverrides: DefaultPaywallPreviewOverrides? = null,
 ) {
     val context = LocalContext.current
     val isDarkTheme = isSystemInDarkTheme()
