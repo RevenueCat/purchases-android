@@ -55,6 +55,7 @@ import org.junit.Before
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.fail
 
@@ -516,7 +517,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
                 onError = any(),
             )
         } answers { }
-        val now = parseGalaxyDate("2026-01-01 00:00:00")
+        val now = parseGalaxyDate("2024-02-10 00:00:00")
+        val activeSubscriptionEndDate = formatGalaxyDate(nowPlusDays(now, 7))
         val wrapper = createWrapper(
             getOwnedListHandler = getOwnedListHandler,
             dateProvider = FixedDateProvider(now),
@@ -536,7 +538,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             type = "subscription",
             purchaseDate = "2024-02-01 00:00:00",
         ).also {
-            every { it.subscriptionEndDate } returns "2024-02-20 00:00:00"
+            every { it.subscriptionEndDate } returns activeSubscriptionEndDate
         }
         val invalidOwnedProduct = createOwnedProductVo(
             itemId = "invalid_product",
@@ -1121,6 +1123,14 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     private fun parseGalaxyDate(dateString: String): Date {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).parse(dateString)!!
+    }
+
+    private fun formatGalaxyDate(date: Date): String {
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(date)
+    }
+
+    private fun nowPlusDays(now: Date, days: Long): Date {
+        return Date(now.time + TimeUnit.DAYS.toMillis(days))
     }
 
     private class FixedDateProvider(
