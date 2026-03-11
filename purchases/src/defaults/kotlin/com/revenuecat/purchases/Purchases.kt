@@ -29,6 +29,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.RestoreByOrderIdListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -1134,6 +1135,17 @@ public class Purchases internal constructor(
      */
     public fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
         purchasesOrchestrator.redeemWebPurchase(webPurchaseRedemption, listener)
+    }
+
+    /**
+     * Restores a purchase using a Google Play order ID. This is useful for cases where a purchase
+     * needs to be transferred to an anonymous user.
+     *
+     * @param orderId The Google Play order ID associated with the purchase to restore.
+     * @param listener The listener to handle the result of the operation.
+     */
+    public fun restorePurchaseByOrderId(orderId: String, listener: RestoreByOrderIdListener) {
+        purchasesOrchestrator.restorePurchaseByOrderId(orderId, listener)
     }
 
     // region Static

@@ -44,6 +44,7 @@ import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.RestoreByOrderIdListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
@@ -63,6 +64,7 @@ private class PurchasesAPI {
         purchases: Purchases,
         webPurchaseRedemption: WebPurchaseRedemption,
         redeemWebPurchaseListener: RedeemWebPurchaseListener,
+        restoreByOrderIdListener: RestoreByOrderIdListener,
         intent: Intent,
     ) {
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
@@ -124,6 +126,7 @@ private class PurchasesAPI {
         val configuration: PurchasesConfiguration = purchases.currentConfiguration
 
         purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
+        purchases.restorePurchaseByOrderId("order_id", restoreByOrderIdListener)
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
 
