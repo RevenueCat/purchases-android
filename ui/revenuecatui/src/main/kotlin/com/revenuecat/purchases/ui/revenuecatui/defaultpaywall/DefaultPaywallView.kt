@@ -169,7 +169,7 @@ internal fun DefaultPaywallView(
             Column(
                 Modifier
                     .fillMaxSize()
-                    .widthIn(max = 630.dp)
+                    .widthIn(max = ReadableContentWidth.dp)
                     .align(Alignment.TopCenter),
             ) {
                 Column(
@@ -251,7 +251,7 @@ private fun DefaultPaywallFooter(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .widthIn(max = 630.dp)
+                .widthIn(max = ReadableContentWidth.dp)
                 .navigationBarsPadding()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -332,4 +332,8 @@ private fun AppIconSection(
             modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
+}
+
+private object ReadableContentWidth {
+    val dp = 630.dp
 }
