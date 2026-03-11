@@ -1,7 +1,7 @@
 import java.util.Properties
 
 plugins {
-    id("revenuecat-android-application")
+    alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.compose.compiler)
 }
 
