@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
 import android.view.Surface
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 internal class MediaPlayerThreadOwner(
     context: Context,
@@ -94,6 +95,8 @@ internal class MediaPlayerThreadOwner(
                 }, failureMessage = { e ->
                     "Could not set looping mode: ${e.message}"
                 })
+            } ?: run {
+                Logger.w("TextureVideoView: Looping was set before media player initialization. Value cached for prepare.")
             }
         }
     }
@@ -117,7 +120,12 @@ internal class MediaPlayerThreadOwner(
 
             safely(execute = {
                 mediaPlayer.reset()
-                currentSurface?.let { mediaPlayer.setSurface(it) }
+                val surface = currentSurface
+                if (surface != null) {
+                    mediaPlayer.setSurface(surface)
+                } else {
+                    Logger.w("TextureVideoView: Preparing media player without a surface. Audio may play before video is attached.")
+                }
                 mediaPlayer.isLooping = looping
                 if (muteAudio) {
                     mediaPlayer.setVolume(0f, 0f)
@@ -126,6 +134,8 @@ internal class MediaPlayerThreadOwner(
                 mediaPlayer.setOnPreparedListener { preparedPlayer ->
                     if (released) return@setOnPreparedListener
                     val activePlayer = preparedPlayer ?: return@setOnPreparedListener
+                    val videoWidth = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.videoWidth }
+                    val videoHeight = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.videoHeight }
                     updatePlaybackSnapshot {
                         it.copy(
                             prepared = true,
@@ -140,7 +150,7 @@ internal class MediaPlayerThreadOwner(
                     }
                     mainHandler.post {
                         if (!released) {
-                            onPrepared(activePlayer.videoWidth, activePlayer.videoHeight)
+                            onPrepared(videoWidth, videoHeight)
                         }
                     }
                 }
@@ -236,14 +246,14 @@ internal class MediaPlayerThreadOwner(
     fun release() {
         if (released) return
         released = true
-        updatePlaybackSnapshot {
-            it.copy(
-                prepared = false,
-                isPlaying = false,
-            )
-        }
         workerHandler.removeCallbacksAndMessages(null)
         workerHandler.post {
+            updatePlaybackSnapshot {
+                it.copy(
+                    prepared = false,
+                    isPlaying = false,
+                )
+            }
             val mediaPlayer = player
             player = null
             currentSurface = null
@@ -309,6 +319,16 @@ internal class MediaPlayerThreadOwner(
             valueProvider(mediaPlayer)
         } catch (_: Exception) {
             fallback
+        }
+    }
+
+    private inline fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? = { null }) {
+        try {
+            execute()
+        } catch (e: Exception) {
+            failureMessage(e)?.run {
+                Logger.e("TextureVideoView: $this", e)
+            }
         }
     }
 }

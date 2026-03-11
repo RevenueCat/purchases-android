@@ -134,18 +134,16 @@ private class TextureVideoView @JvmOverloads constructor(
                 applySizing()
 
             override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
-                if (released) {
-                    releaseAttachedSurface()
-                    return true
+                if (!released) {
+                    // snapshot play state & position to resume after recreation
+                    resumePlayWhenReady = isPlaying
+                    resumePosMs = currentPosition
+                    // pause before losing surface to avoid state exceptions
+                    if (prepared) {
+                        pause()
+                    }
+                    playerOwner.setSurface(null)
                 }
-                // snapshot play state & position to resume after recreation
-                resumePlayWhenReady = isPlaying
-                resumePosMs = currentPosition
-                // pause before losing surface to avoid state exceptions
-                if (prepared) {
-                    pause()
-                }
-                playerOwner.setSurface(null)
                 releaseAttachedSurface()
                 return true // we release the surface
             }
@@ -478,7 +476,7 @@ private fun Video(
 }
 
 @Suppress("TooGenericExceptionCaught")
-internal fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? = { null }) {
+private fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? = { null }) {
     try {
         execute()
     } catch (e: Exception) {
