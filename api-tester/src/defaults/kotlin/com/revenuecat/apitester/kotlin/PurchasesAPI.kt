@@ -390,7 +390,6 @@ private class PurchasesAPI {
             override fun onPromotionalOfferSucceeded(
                 customerInfo: CustomerInfo,
                 transaction: StoreTransaction,
-                offerId: String,
             ) {
             }
         }

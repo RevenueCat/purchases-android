@@ -73,16 +73,14 @@ public interface CustomerCenterListener {
 
     /**
      * Called when a promotional offer purchase completes successfully in the Customer Center,
-     * providing the resulting customer info, transaction, and the promotional offer identifier.
+     * providing the resulting customer info and transaction.
      *
      * @param customerInfo The updated customer information after the purchase.
      * @param transaction The store transaction for the purchase.
-     * @param offerId The identifier of the promotional offer that was redeemed.
      */
     public fun onPromotionalOfferSucceeded(
         customerInfo: CustomerInfo,
         transaction: StoreTransaction,
-        offerId: String,
     ) {
         // Default empty implementation
     }

@@ -848,7 +848,6 @@ internal class CustomerCenterViewModelImpl(
             notifyListenersForPromotionalOfferSucceeded(
                 result.customerInfo,
                 result.storeTransaction,
-                subscriptionOption.id,
             )
 
             // Reload customer center data to refresh the UI with the latest subscription information
@@ -1293,10 +1292,9 @@ internal class CustomerCenterViewModelImpl(
     private fun notifyListenersForPromotionalOfferSucceeded(
         customerInfo: CustomerInfo,
         transaction: StoreTransaction,
-        offerId: String,
     ) {
-        listener?.onPromotionalOfferSucceeded(customerInfo, transaction, offerId)
-        purchases.customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction, offerId)
+        listener?.onPromotionalOfferSucceeded(customerInfo, transaction)
+        purchases.customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
     }
 
     override fun showPaywall(context: Context) {

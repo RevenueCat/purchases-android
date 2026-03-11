@@ -276,8 +276,7 @@ final class PurchasesAPI {
             @Override
             public void onPromotionalOfferSucceeded(
                     @NonNull CustomerInfo customerInfo,
-                    @NonNull StoreTransaction transaction,
-                    @NonNull String offerId
+                    @NonNull StoreTransaction transaction
             ) {
             }
         };
