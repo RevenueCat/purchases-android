@@ -8,6 +8,7 @@ import android.os.HandlerThread
 import android.os.Looper
 import android.view.Surface
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import java.util.concurrent.CountDownLatch
 
 internal class MediaPlayerThreadOwner(
     context: Context,
@@ -76,13 +77,55 @@ internal class MediaPlayerThreadOwner(
 
     fun setSurface(surface: Surface?) {
         post {
-            currentSurface = surface
-            val mediaPlayer = player ?: return@post
-            safely(execute = {
-                mediaPlayer.setSurface(surface)
-            }, failureMessage = { e ->
-                "Could not set media surface: ${e.message}"
-            })
+            setSurfaceInternal(surface)
+        }
+    }
+
+    /**
+     * Detaches the current [Surface] from [MediaPlayer] and waits until that detach has run on the
+     * player worker thread.
+     *
+     * This blocking is intentional and narrowly scoped. `TextureVideoView` may need to call
+     * `Surface.release()` immediately from callbacks such as `onSurfaceTextureDestroyed`, but doing
+     * that before `MediaPlayer.setSurface(null)` has executed creates an ordering race:
+     *
+     * 1. the [Surface] is released on the caller thread
+     * 2. the player is still rendering until the worker thread later processes `setSurface(null)`
+     *
+     * During that gap, some devices will hit native rendering errors because the player can still
+     * attempt to dequeue buffers from a surface that has already been disconnected from its
+     * `SurfaceTexture`.
+     *
+     * Waiting here preserves the required ordering invariant: `MediaPlayer.setSurface(null)` must
+     * finish first, and only then may the caller release the corresponding [Surface].
+     *
+     * This is intentionally not a synchronous full player teardown. Only the surface detach is
+     * awaited here; [release] still performs the heavier player release asynchronously.
+     *
+     * If this method is called from the worker thread, it executes inline to avoid deadlocking by
+     * posting to the same looper and waiting on itself.
+     */
+    fun clearSurfaceBlocking() {
+        if (released) return
+
+        if (Looper.myLooper() == workerThread.looper) {
+            setSurfaceInternal(null)
+            return
+        }
+
+        val detached = CountDownLatch(1)
+        val posted = workerHandler.post {
+            try {
+                if (!released) {
+                    setSurfaceInternal(null)
+                }
+            } finally {
+                detached.countDown()
+            }
+        }
+
+        if (posted) {
+            detached.await()
         }
     }
 
@@ -284,6 +327,16 @@ internal class MediaPlayerThreadOwner(
                 })
             }
         }
+    }
+
+    private fun setSurfaceInternal(surface: Surface?) {
+        currentSurface = surface
+        val mediaPlayer = player ?: return
+        safely(execute = {
+            mediaPlayer.setSurface(surface)
+        }, failureMessage = { e ->
+            "Could not set media surface: ${e.message}"
+        })
     }
 
     private fun post(operation: () -> Unit) {

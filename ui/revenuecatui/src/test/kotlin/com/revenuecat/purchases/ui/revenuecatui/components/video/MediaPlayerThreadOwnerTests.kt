@@ -129,6 +129,61 @@ class MediaPlayerThreadOwnerTests {
         assertThat(operationThreadIds.toSet()).hasSize(1)
         assertThat(operationThreadIds.first()).isNotEqualTo(Thread.currentThread().id)
     }
+
+    @Test
+    fun `clearSurfaceBlocking waits for worker thread detach before returning`() {
+        val prepareCompleted = CountDownLatch(1)
+        val detachStarted = CountDownLatch(1)
+        val allowDetachToFinish = CountDownLatch(1)
+        val clearSurfaceReturned = CountDownLatch(1)
+        val events = Collections.synchronizedList(mutableListOf<String>())
+
+        val mediaPlayer = createMockMediaPlayer(
+            onPrepareAsync = { player, preparedListener, _, _ ->
+                preparedListener?.onPrepared(player)
+                prepareCompleted.countDown()
+            },
+            onSetSurface = { surface ->
+                if (surface == null) {
+                    events.add("detach-started")
+                    detachStarted.countDown()
+                    allowDetachToFinish.await(1000, TimeUnit.MILLISECONDS)
+                    events.add("detach-finished")
+                }
+            },
+        )
+
+        val owner = MediaPlayerThreadOwner(
+            context = appContext,
+            muteAudio = false,
+            playerFactory = { mediaPlayer },
+        )
+
+        owner.prepare(
+            uri = uri,
+            onPrepared = { _, _ -> },
+            onVideoSizeChanged = { _, _ -> },
+        )
+        assertThat(prepareCompleted.await(200, TimeUnit.MILLISECONDS)).isTrue()
+
+        val detachCaller = Thread {
+            owner.clearSurfaceBlocking()
+            events.add("caller-returned")
+            clearSurfaceReturned.countDown()
+        }
+
+        detachCaller.start()
+
+        assertThat(detachStarted.await(200, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(clearSurfaceReturned.await(100, TimeUnit.MILLISECONDS)).isFalse()
+
+        allowDetachToFinish.countDown()
+
+        assertThat(clearSurfaceReturned.await(200, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(events).containsExactly("detach-started", "detach-finished", "caller-returned")
+
+        owner.release()
+    }
 }
 
 @Suppress("LongMethod", "LongParameterList")

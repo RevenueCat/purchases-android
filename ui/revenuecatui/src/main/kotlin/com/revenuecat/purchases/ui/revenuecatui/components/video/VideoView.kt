@@ -142,7 +142,7 @@ private class TextureVideoView @JvmOverloads constructor(
                     if (prepared) {
                         pause()
                     }
-                    playerOwner.setSurface(null)
+                    playerOwner.clearSurfaceBlocking()
                 }
                 releaseAttachedSurface()
                 return true // we release the surface
@@ -239,7 +239,7 @@ private class TextureVideoView @JvmOverloads constructor(
         prepareRequestId += 1
         controller?.hide()
         controller = null
-        playerOwner.setSurface(null)
+        playerOwner.clearSurfaceBlocking()
         releaseAttachedSurface()
         playerOwner.release()
         if (viewTreeObserverListening) {
