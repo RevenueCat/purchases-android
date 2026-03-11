@@ -69,6 +69,7 @@ import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.RestoreByOrderIdListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -144,6 +145,13 @@ internal class PurchasesOrchestrator(
     private val localeProvider: DefaultLocaleProvider,
     private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
         WebPurchaseRedemptionHelper(
+            backend,
+            identityManager,
+            offlineEntitlementsManager,
+            customerInfoUpdateHandler,
+        ),
+    private val restoreByOrderIdManager: RestoreByOrderIdManager =
+        RestoreByOrderIdManager(
             backend,
             identityManager,
             offlineEntitlementsManager,
@@ -349,6 +357,13 @@ internal class PurchasesOrchestrator(
         listener: RedeemWebPurchaseListener,
     ) {
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption, listener)
+    }
+
+    fun restorePurchaseByOrderId(
+        orderId: String,
+        listener: RestoreByOrderIdListener,
+    ) {
+        restoreByOrderIdManager.restoreByOrderId(orderId, listener)
     }
 
     // region Public Methods
