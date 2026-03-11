@@ -7,6 +7,9 @@ import android.graphics.Paint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import okhttp3.Dispatcher
 
 /**
  * Utility for generating deterministic images used in previews and tests.
@@ -64,7 +67,13 @@ internal object DualColorImageGenerator {
         ) ?: return null
         return PreviewAppIcon(
             bitmap = bitmap,
-            prominentColors = AppStyleExtractor.extractProminentColorsSync(bitmap, count = 2),
+            prominentColors = runBlocking {
+                AppStyleExtractor.getProminentColorsFromBitmap(
+                    bitmap = bitmap,
+                    count = 2,
+                    dispatcher = Dispatchers.Main,
+                )
+            },
         )
     }
 
