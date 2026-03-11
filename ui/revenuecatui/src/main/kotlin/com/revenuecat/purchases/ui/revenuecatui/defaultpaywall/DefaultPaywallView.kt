@@ -162,66 +162,70 @@ internal fun DefaultPaywallView(
                 }
             },
         ) { paddingValues ->
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .widthIn(max = ReadableContentWidth.dp)
-                    .align(Alignment.TopCenter),
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter,
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    Modifier
+                        .fillMaxSize()
+                        .widthIn(max = ReadableContentWidth.dp),
                 ) {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    if (shouldShowWarning) {
-                        Text(
-                            text = stringResource(R.string.revenuecatui_paywalls_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        if (shouldShowWarning) {
+                            Text(
+                                text = stringResource(R.string.revenuecatui_paywalls_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        if (warningToShow != null) {
+                            DefaultPaywallWarning(warning = warningToShow, warningColor = RevenueCatBrandRed)
+                        } else {
+                            AppIconSection(
+                                bitmap = appIconBitmap,
+                                appName = appName,
+                                shadowColor = mainColor,
+                            )
+                        }
                     }
 
-                    if (warningToShow != null) {
-                        DefaultPaywallWarning(warning = warningToShow, warningColor = RevenueCatBrandRed)
-                    } else {
-                        AppIconSection(
-                            bitmap = appIconBitmap,
-                            appName = appName,
-                            shadowColor = mainColor,
-                        )
-                    }
-                }
+                    Spacer(modifier = Modifier.weight(1f))
 
-                Spacer(modifier = Modifier.weight(1f))
+                    LazyColumn(
+                        modifier = Modifier
+                            .selectableGroup()
+                            .padding(paddingValues),
+                        contentPadding = PaddingValues(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(
+                            items = packages,
+                            key = { it.identifier },
+                        ) { pkg ->
+                            DefaultProductCell(
+                                pkg = pkg,
+                                accentColor = mainColor,
+                                selectedFontColor = foregroundOnAccentColor,
+                                isSelected = selectedPackage == pkg,
+                                onSelect = { selectedPackage = pkg },
+                            )
+                        }
 
-                LazyColumn(
-                    modifier = Modifier
-                        .selectableGroup()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(
-                        items = packages,
-                        key = { it.identifier },
-                    ) { pkg ->
-                        DefaultProductCell(
-                            pkg = pkg,
-                            accentColor = mainColor,
-                            selectedFontColor = foregroundOnAccentColor,
-                            isSelected = selectedPackage == pkg,
-                            onSelect = { selectedPackage = pkg },
-                        )
-                    }
-
-                    if (packages.isNotEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
+                        if (packages.isNotEmpty()) {
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
                         }
                     }
                 }
