@@ -157,6 +157,7 @@ internal fun InternalPaywall(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     viewModel.trackPaywallImpressionIfNeeded()

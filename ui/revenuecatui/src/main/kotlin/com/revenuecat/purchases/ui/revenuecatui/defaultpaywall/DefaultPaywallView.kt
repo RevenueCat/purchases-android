@@ -19,10 +19,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +41,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.ModifierLocalBeyondBoundsLayout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -68,7 +65,7 @@ internal data class DefaultPaywallPreviewOverrides(
 )
 
 @Composable
-@Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH")
+@Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH", "CyclomaticComplexMethod", "LongParameterList")
 internal fun DefaultPaywallView(
     packages: List<Package>,
     warning: PaywallWarning?,
@@ -150,7 +147,6 @@ internal fun DefaultPaywallView(
                 ),
             ),
     ) {
-
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color.Transparent,

@@ -2,13 +2,13 @@ package com.revenuecat.purchases.ui.revenuecatui.defaultpaywall
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color as AndroidColor
 import android.graphics.Paint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
+import android.graphics.Color as AndroidColor
 
 /**
  * Utility for generating deterministic images used in previews and tests.
@@ -26,9 +26,11 @@ internal object DualColorImageGenerator {
     val blueGreen: PreviewAppIcon by lazy {
         create(color1 = Color.Blue, color2 = Color.Green) ?: error("Failed to generate blueGreen preview icon")
     }
+
+    @Suppress("MagicNumber")
     val purpleOrange: PreviewAppIcon by lazy {
-        create(color1 = Color(0xFF800080), color2 = Color(0xFFFFA500)) ?:
-            error("Failed to generate purpleOrange preview icon")
+        create(color1 = Color(0xFF800080), color2 = Color(0xFFFFA500))
+            ?: error("Failed to generate purpleOrange preview icon")
     }
     val blackWhite: PreviewAppIcon by lazy {
         create(color1 = Color.Black, color2 = Color.White) ?: error("Failed to generate blackWhite preview icon")
