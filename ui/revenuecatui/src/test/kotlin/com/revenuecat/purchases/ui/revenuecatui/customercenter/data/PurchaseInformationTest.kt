@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -668,6 +669,141 @@ class PurchaseInformationTest {
             title = "Subscription",
             price = PriceDetails.Unknown,
             store = Store.PADDLE,
+            product = null,
+            isSubscription = true,
+            isExpired = true,
+            isTrial = false,
+            isCancelled = true,
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `test PurchaseInformation with galaxy entitlement`() {
+        val expiresDate = oneDayAgo
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = true,
+            store = Store.GALAXY,
+            productIdentifier = "com.revenuecat.product",
+            expirationDate = expiresDate
+        )
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = true,
+            store = Store.GALAXY,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Subscription",
+            price = PriceDetails.Unknown,
+            store = Store.GALAXY,
+            product = null,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `test PurchaseInformation with non-renewing galaxy entitlement`() {
+        val expiresDate = oneDayAgo
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
+            store = Store.GALAXY,
+            productIdentifier = "com.revenuecat.product",
+            expirationDate = expiresDate
+        )
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
+            store = Store.GALAXY,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Subscription",
+            price = PriceDetails.Unknown,
+            store = Store.GALAXY,
+            product = null,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = true,
+            expirationOrRenewal = ExpirationOrRenewal.Expiration("3 Oct 2063"),
+            managementURL = Uri.parse(MANAGEMENT_URL),
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `test PurchaseInformation with expired galaxy entitlement`() {
+        val expiresDate = oneDayAgo
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = false,
+            willRenew = false,
+            store = Store.GALAXY,
+            productIdentifier = "com.revenuecat.product",
+            expirationDate = expiresDate
+        )
+        val transaction = createTransactionDetails(
+            isActive = false,
+            willRenew = false,
+            store = Store.GALAXY,
+            productIdentifier = "com.revenuecat.product",
+            expiresDate = expiresDate
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization
+        )
+
+        assertPurchaseInformation(
+            purchaseInformation,
+            title = "Subscription",
+            price = PriceDetails.Unknown,
+            store = Store.GALAXY,
             product = null,
             isSubscription = true,
             isExpired = true,

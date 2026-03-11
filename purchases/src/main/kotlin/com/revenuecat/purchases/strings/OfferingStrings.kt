@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.strings
 
 import com.revenuecat.purchases.APIKeyValidator
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 
 internal object OfferingStrings {
@@ -59,11 +60,13 @@ internal object OfferingStrings {
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore: Store): String? {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "Play Store"
             Store.AMAZON -> "Amazon Appstore"
+            Store.GALAXY -> "Galaxy Store"
             else -> null
         }
         APIKeyValidator.ValidationResult.LEGACY -> "Play Store"
@@ -71,15 +74,21 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
         APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_GALAXY_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GALAXY_STORE,
         -> null
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: Store): String {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "a" // "a Play Store API key"
             Store.AMAZON -> "an" // "an Amazon Appstore API key"
+            Store.GALAXY -> "a" // "a Galaxy Store API key"
             else -> "a"
         }
         APIKeyValidator.ValidationResult.LEGACY -> "a" // "a Play Store API key"
@@ -87,6 +96,10 @@ private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: 
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
         APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_GALAXY_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GALAXY_STORE,
         -> "a"
     }
 }

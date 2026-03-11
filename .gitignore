@@ -140,5 +140,8 @@ purchases-android-snapshots
 # Kotlin Gradle plugin
 .kotlin
 
+# Store specific SDKs
+libs/samsung-iap-*.aar
+
 # Claude Code
 .claude/

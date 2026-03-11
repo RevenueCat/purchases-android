@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
@@ -34,6 +35,7 @@ internal open class Dispatcher(
         const val INTEGRATION_TEST_DELAY_PERCENTAGE: Double = .01
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     abstract class AsyncCall : Runnable {
         @Throws(JSONException::class, IOException::class)
         abstract fun call(): HTTPResult

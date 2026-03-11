@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offerings
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.utils.copy
 import org.json.JSONObject
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class OfferingsCache(
     private val deviceCache: DeviceCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
