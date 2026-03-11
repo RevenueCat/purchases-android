@@ -418,7 +418,17 @@ internal class GalaxyBillingWrapper(
                     val storeTransactions = ownedProducts
                         .filter {
                             // TO DO: Find out what this returns for OTPs when we support OTPs
-                            it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
+                            try {
+                                it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
+                            } catch (_: IllegalArgumentException) {
+                                log(LogIntent.GALAXY_WARNING) {
+                                    GalaxyStrings.WARNING_SKIPPING_OWNED_PRODUCT_WITH_INVALID_SUBSCRIPTION_END_DATE.format(
+                                        it.itemId,
+                                        it.subscriptionEndDate,
+                                    )
+                                }
+                                false
+                            }
                         }
                         .map {
                             try {

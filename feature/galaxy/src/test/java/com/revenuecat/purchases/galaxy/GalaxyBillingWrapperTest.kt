@@ -507,6 +507,56 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
+    fun `queryPurchases filters products with invalid subscription end date`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val now = parseGalaxyDate("2026-01-01 00:00:00")
+        val wrapper = createWrapper(
+            getOwnedListHandler = getOwnedListHandler,
+            dateProvider = FixedDateProvider(now),
+        )
+
+        var receivedMap: Map<String, StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "app_user",
+            onSuccess = { receivedMap = it },
+            onError = { receivedError = it },
+        )
+
+        val activeOwnedProduct = createOwnedProductVo(
+            itemId = "active_product",
+            purchaseId = "active_token",
+            type = "subscription",
+            purchaseDate = "2024-02-01 00:00:00",
+        ).also {
+            every { it.subscriptionEndDate } returns "2024-02-20 00:00:00"
+        }
+        val invalidOwnedProduct = createOwnedProductVo(
+            itemId = "invalid_product",
+            purchaseId = "invalid_token",
+            type = "subscription",
+            purchaseDate = "2024-02-01 00:00:00",
+        ).also {
+            every { it.subscriptionEndDate } returns "INVALID-DATE"
+        }
+
+        onSuccessSlot.captured.invoke(arrayListOf(activeOwnedProduct, invalidOwnedProduct))
+
+        val purchases = receivedMap ?: fail("Expected purchases")
+        assertThat(receivedError).isNull()
+        assertThat(purchases.keys).containsExactly("active_token".sha1())
+        assertThat(purchases.values.map { it.purchaseToken }).containsExactly("active_token")
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
     fun `queryPurchases forwards errors from getOwnedList`() {
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
         val onErrorSlot = slot<(PurchasesError) -> Unit>()

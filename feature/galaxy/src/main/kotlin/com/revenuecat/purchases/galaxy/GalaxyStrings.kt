@@ -98,6 +98,8 @@ internal object GalaxyStrings {
         "request for processing."
     const val GET_OWNED_LIST_REQUEST_ERRORED = "An error occurred while getting the owned products " +
         "from the Galaxy Store. Error: %s"
+    const val WARNING_SKIPPING_OWNED_PRODUCT_WITH_INVALID_SUBSCRIPTION_END_DATE =
+        "Skipping owned Galaxy Store product %s because its subscription end date could not be parsed: %s"
 
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
