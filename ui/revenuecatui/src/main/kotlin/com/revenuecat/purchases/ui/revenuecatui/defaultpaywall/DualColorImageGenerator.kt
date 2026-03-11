@@ -9,7 +9,6 @@ import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import okhttp3.Dispatcher
 
 /**
  * Utility for generating deterministic images used in previews and tests.
@@ -80,8 +79,8 @@ internal object DualColorImageGenerator {
     private fun createBitmap(
         color1: Int,
         color2: Int,
-        width: Int = SPLIT_IMAGE_SIZE,
-        height: Int = SPLIT_IMAGE_SIZE,
+        width: Int,
+        height: Int,
     ): Bitmap? {
         if (width <= 0 || height <= 0) return null
 
@@ -99,6 +98,5 @@ internal object DualColorImageGenerator {
         return bitmap
     }
 
-    private const val SPLIT_IMAGE_SIZE = 50
     private const val DEFAULT_IMAGE_SIZE = 200
 }
