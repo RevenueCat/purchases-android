@@ -1,7 +1,8 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("revenuecat-public-library")
+    alias(libs.plugins.revenuecat.public.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelize)
@@ -78,10 +79,10 @@ metalava {
     )
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         if (project.findProperty("revenuecat.enableComposeCompilerReports") == "true") {
-            val composeMetricsDir = "${project.buildDir.absolutePath}/compose_metrics"
+            val composeMetricsDir = "${project.layout.buildDirectory.get().asFile.absolutePath}/compose_metrics"
             freeCompilerArgs.addAll(
                 listOf(
                     "-P",

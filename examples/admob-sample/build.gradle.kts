@@ -1,7 +1,7 @@
 import java.util.Properties
 
 plugins {
-    id("revenuecat-android-application")
+    alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.compose.compiler)
 }
 
@@ -66,10 +66,10 @@ dependencies {
     implementation(project(":feature:admob"))
 
     // AndroidX
+    implementation(libs.androidx.cardview)
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.activity.compose)
-    implementation("androidx.cardview:cardview:1.0.0")
 
     // Compose
     implementation(platform(libs.compose.bom))

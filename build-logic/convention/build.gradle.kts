@@ -24,11 +24,6 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("AndroidLibrary") {
-            id = "revenuecat-android-library"
-            implementationClass =
-                "com.revenuecat.purchases.android.buildlogic.plugin.AndroidLibraryConventionPlugin"
-        }
         register("PublicLibrary") {
             id = "revenuecat-public-library"
             implementationClass =

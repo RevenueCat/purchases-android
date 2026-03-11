@@ -34,7 +34,7 @@ dependencies {
 }
 
 tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 val isCiBuild = providers.environmentVariable("CI").orNull.equals("true", ignoreCase = true)
