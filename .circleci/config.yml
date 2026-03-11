@@ -112,7 +112,7 @@ commands:
       - gcp-cli/setup:
           # Use the version preinstalled in the gcp-cli executor image.
           # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
-          skip_installation: true
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -671,7 +671,7 @@ jobs:
       - gcp-cli/setup:
           # Use the version preinstalled in the gcp-cli executor image.
           # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
-          skip_installation: true
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -698,7 +698,7 @@ jobs:
       - gcp-cli/setup:
           # Use the version preinstalled in the gcp-cli executor image.
           # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
-          skip_installation: true
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
