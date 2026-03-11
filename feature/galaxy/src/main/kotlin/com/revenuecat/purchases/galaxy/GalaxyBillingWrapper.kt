@@ -415,43 +415,32 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
-                    val storeTransactions = ownedProducts
-                        .filter {
-                            // TO DO: Find out what this returns for OTPs when we support OTPs
-                            try {
+                    try {
+                        val storeTransactions = ownedProducts
+                            .filter {
                                 it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
-                            } catch (_: IllegalArgumentException) {
-                                log(LogIntent.GALAXY_WARNING) {
-                                    GalaxyStrings.WARNING_SKIPPING_OWNED_PRODUCT_WITH_INVALID_SUBSCRIPTION_END_DATE.format(
-                                        it.itemId,
-                                        it.subscriptionEndDate,
-                                    )
-                                }
-                                false
                             }
-                        }
-                        .map {
-                            try {
+                            .map {
                                 it.toStoreTransaction(purchaseState = PurchaseState.PURCHASED)
-                            } catch (e: IllegalArgumentException) {
-                                val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
-                                log(LogIntent.GALAXY_ERROR) { errorMessage }
-
-                                val error = PurchasesError(
-                                    code = PurchasesErrorCode.InvalidReceiptError,
-                                    underlyingErrorMessage = errorMessage,
-                                )
-                                onError(error)
-                                finish()
-                                return@getOwnedList
                             }
-                        }
 
-                    val purchasesMap = storeTransactions.associateBy { storeTransaction ->
-                        storeTransaction.purchaseToken.sha1()
+                        val purchasesMap = storeTransactions.associateBy { storeTransaction ->
+                            storeTransaction.purchaseToken.sha1()
+                        }
+                        onSuccess(purchasesMap)
+                    } catch (e: IllegalArgumentException) {
+                        val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
+                        log(LogIntent.GALAXY_ERROR) { errorMessage }
+
+                        onError(
+                            PurchasesError(
+                                code = PurchasesErrorCode.InvalidReceiptError,
+                                underlyingErrorMessage = errorMessage,
+                            ),
+                        )
+                    } finally {
+                        finish()
                     }
-                    onSuccess(purchasesMap)
-                    finish()
                 },
                 onError = { error ->
                     onError(error)
