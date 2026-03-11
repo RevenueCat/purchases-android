@@ -32,27 +32,6 @@ internal object DualColorImageGenerator {
         create(color1 = Color(0xFF800080), color2 = Color(0xFFFFA500))
             ?: error("Failed to generate purpleOrange preview icon")
     }
-    val blackWhite: PreviewAppIcon by lazy {
-        create(color1 = Color.Black, color2 = Color.White) ?: error("Failed to generate blackWhite preview icon")
-    }
-
-    fun singleColor(
-        color: Color,
-        width: Int = DEFAULT_IMAGE_SIZE,
-        height: Int = DEFAULT_IMAGE_SIZE,
-    ): PreviewAppIcon? {
-        return create(color1 = color, color2 = color, width = width, height = height)
-    }
-
-    fun transparent(
-        width: Int = DEFAULT_IMAGE_SIZE,
-        height: Int = DEFAULT_IMAGE_SIZE,
-    ): Bitmap? {
-        if (width <= 0 || height <= 0) return null
-        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).apply {
-            eraseColor(AndroidColor.TRANSPARENT)
-        }
-    }
 
     fun create(
         color1: Color,
