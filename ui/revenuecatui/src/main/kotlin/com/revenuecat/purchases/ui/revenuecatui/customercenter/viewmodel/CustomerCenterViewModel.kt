@@ -37,6 +37,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -429,15 +430,20 @@ internal class CustomerCenterViewModelImpl(
 
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
-                startGoogleProductCancellation(context, purchaseInfo.product.id)
+                startGoogleProductCancellation(context, purchaseInfo.product)
             purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
             else -> Logger.e("No product or management URL available for cancel path")
         }
     }
 
-    private fun startGoogleProductCancellation(context: Context, productId: String) {
+    private fun startGoogleProductCancellation(context: Context, product: StoreProduct) {
+        val googleProduct = product as? GoogleStoreProduct
+        if (googleProduct == null) {
+            Logger.e("Expected GoogleStoreProduct for Play Store cancellation")
+            return
+        }
         notifyListenersForManageSubscription()
-        showManageSubscriptions(context, productId)
+        showManageSubscriptions(context, googleProduct.productId)
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {

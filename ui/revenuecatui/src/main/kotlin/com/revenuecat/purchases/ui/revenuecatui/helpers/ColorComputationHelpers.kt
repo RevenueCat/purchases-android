@@ -77,6 +77,6 @@ internal fun contrastRatio(color1: Color, color2: Color): Double {
 /**
  * Select the color with best contrast against a background color.
  */
-internal fun selectColorWithBestContrast(from: List<Color>, againstColor: Color): Color {
-    return from.maxByOrNull { contrastRatio(it, againstColor) } ?: againstColor
+internal fun selectColorWithBestContrast(from: List<Color>, againstColor: Color): Color? {
+    return from.maxByOrNull { contrastRatio(it, againstColor) }
 }
