@@ -544,6 +544,7 @@ internal open class DeviceCache(
             val cachedEntry = tokenMap[hash]
             cachedEntry != null &&
                 cachedEntry.isAutoRenewing != null &&
+                transaction.isAutoRenewing != null &&
                 transaction.isAutoRenewing != cachedEntry.isAutoRenewing
         }.values.toList()
     }

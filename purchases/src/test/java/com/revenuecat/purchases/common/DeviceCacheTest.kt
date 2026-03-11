@@ -947,6 +947,17 @@ class DeviceCacheTest {
     }
 
     @Test
+    fun `getPurchasesWithAutoRenewingChange returns empty when transaction isAutoRenewing is null`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns null
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
     fun `saveAutoRenewingStatus updates existing tokens only`() {
         mockTokenMap(tokenMapJson("hash1" to null, "hash2" to true))
         every { mockEditor.apply() } just runs
