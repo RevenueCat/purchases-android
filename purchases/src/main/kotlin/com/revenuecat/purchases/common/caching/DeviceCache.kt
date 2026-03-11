@@ -570,7 +570,7 @@ internal open class DeviceCache(
         val current = getTokenMap().toMutableMap()
         for ((hash, transaction) in hashedTokens) {
             val existing = current[hash]
-            if (existing != null) {
+            if (existing != null && transaction.isAutoRenewing != null) {
                 current[hash] = existing.copy(isAutoRenewing = transaction.isAutoRenewing)
             }
         }

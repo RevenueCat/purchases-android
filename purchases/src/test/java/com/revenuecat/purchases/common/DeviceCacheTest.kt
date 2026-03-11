@@ -976,6 +976,23 @@ class DeviceCacheTest {
         }
     }
 
+    @Test
+    fun `saveAutoRenewingStatus does not overwrite non-null cached value with null`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+        every { mockEditor.apply() } just runs
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns null
+        }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
+        verify {
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 1 && verifyTokenEntry(obj, "hash1", true)
+            })
+        }
+    }
+
     // endregion auto-renewing status
 
     // region legacy token migration
