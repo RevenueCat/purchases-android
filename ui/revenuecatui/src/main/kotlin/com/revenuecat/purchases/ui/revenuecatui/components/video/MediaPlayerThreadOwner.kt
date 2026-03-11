@@ -10,6 +10,7 @@ import android.view.Surface
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.concurrent.CountDownLatch
 
+@Suppress("TooManyFunctions")
 internal class MediaPlayerThreadOwner(
     context: Context,
     private val muteAudio: Boolean,
@@ -139,11 +140,14 @@ internal class MediaPlayerThreadOwner(
                     "Could not set looping mode: ${e.message}"
                 })
             } ?: run {
-                Logger.w("TextureVideoView: Looping was set before media player initialization. Value cached for prepare.")
+                Logger.w(
+                    "TextureVideoView: Looping was set before media player initialization. Value cached for prepare.",
+                )
             }
         }
     }
 
+    @Suppress("LongMethod")
     fun prepare(
         uri: Uri,
         onPrepared: (videoWidth: Int, videoHeight: Int) -> Unit,
@@ -167,7 +171,10 @@ internal class MediaPlayerThreadOwner(
                 if (surface != null) {
                     mediaPlayer.setSurface(surface)
                 } else {
-                    Logger.w("TextureVideoView: Preparing media player without a surface. Audio may play before video is attached.")
+                    Logger.w(
+                        "TextureVideoView: Preparing media player without a surface." +
+                            "Audio may play before video is attached.",
+                    )
                 }
                 mediaPlayer.isLooping = looping
                 if (muteAudio) {
@@ -177,12 +184,21 @@ internal class MediaPlayerThreadOwner(
                 mediaPlayer.setOnPreparedListener { preparedPlayer ->
                     if (released) return@setOnPreparedListener
                     val activePlayer = preparedPlayer ?: return@setOnPreparedListener
-                    val videoWidth = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.videoWidth }
-                    val videoHeight = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.videoHeight }
+                    val videoWidth = getPlayerValue(activePlayer, 0) {
+                            currentPlayer ->
+                        currentPlayer.videoWidth
+                    }
+                    val videoHeight = getPlayerValue(activePlayer, 0) {
+                            currentPlayer ->
+                        currentPlayer.videoHeight
+                    }
                     updatePlaybackSnapshot {
                         it.copy(
                             prepared = true,
-                            durationMs = getPlayerValue(activePlayer, 0) { currentPlayer -> currentPlayer.duration },
+                            durationMs = getPlayerValue(activePlayer, 0) {
+                                    currentPlayer ->
+                                currentPlayer.duration
+                            },
                             currentPositionMs = getPlayerValue(activePlayer, 0) { currentPlayer ->
                                 currentPlayer.currentPosition
                             },
@@ -317,7 +333,12 @@ internal class MediaPlayerThreadOwner(
         return player ?: playerFactory().also { mediaPlayer ->
             player = mediaPlayer
             updatePlaybackSnapshot {
-                it.copy(audioSessionId = getPlayerValue(mediaPlayer, 0) { currentPlayer -> currentPlayer.audioSessionId })
+                it.copy(
+                    audioSessionId = getPlayerValue(mediaPlayer, 0) {
+                            currentPlayer ->
+                        currentPlayer.audioSessionId
+                    },
+                )
             }
             currentSurface?.let { surface ->
                 safely(execute = {
@@ -375,6 +396,7 @@ internal class MediaPlayerThreadOwner(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private inline fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? = { null }) {
         try {
             execute()

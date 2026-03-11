@@ -30,7 +30,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.parcelize.Parcelize
 
 @Suppress("LongParameterList")
