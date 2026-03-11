@@ -137,6 +137,34 @@ class PurchasesFactoryTest {
         assertThat(capturedIntent.getStringExtra("redactedApiKey")).isEqualTo("a_redacted_api_key")
     }
 
+    // region shouldInitializeDiagnostics
+
+    @Test
+    fun `shouldInitializeDiagnostics returns true when diagnostics enabled and preview mode off`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = false))
+            .isTrue
+    }
+
+    @Test
+    fun `shouldInitializeDiagnostics returns false when preview mode is on`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = true))
+            .isFalse
+    }
+
+    @Test
+    fun `shouldInitializeDiagnostics returns false when diagnostics disabled`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = false))
+            .isFalse
+    }
+
+    @Test
+    fun `shouldInitializeDiagnostics returns false when both diagnostics disabled and preview mode on`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = true))
+            .isFalse
+    }
+
+    // endregion
+
     private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {
         return PurchasesConfiguration.Builder(contextMock, testApiKey)
             .appUserID("appUserID")

@@ -7,15 +7,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -47,12 +50,14 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.selectColorWithBestContrast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Suppress("MagicNumber")
 private val RevenueCatBrandRed = Color(0xFFF2545B)
 
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH")
 internal fun DefaultPaywallView(
     packages: List<Package>,
     warning: PaywallWarning?,
@@ -70,29 +75,37 @@ internal fun DefaultPaywallView(
 
     // App metadata
     val appName = remember { AppStyleExtractor.getAppName(context) }
-    val appIconBitmap = remember { AppStyleExtractor.getAppIconBitmap(context) }
+    var appIconBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     // Color extraction state
     var prominentColors by remember { mutableStateOf<List<Color>>(emptyList()) }
 
-    LaunchedEffect(appIconBitmap) {
-        prominentColors = AppStyleExtractor.getProminentColorsFromBitmap(appIconBitmap, count = 2)
+    LaunchedEffect(Unit) {
+        val bitmap = withContext(Dispatchers.Default) {
+            AppStyleExtractor.getAppIconBitmap(context)
+        }
+        val extractedProminentColors = AppStyleExtractor.getProminentColorsFromBitmap(bitmap, count = 2)
+
+        appIconBitmap = bitmap
+        prominentColors = extractedProminentColors
     }
 
     // Selection state
     var selectedPackage by remember(packages) { mutableStateOf(packages.firstOrNull()) }
 
     // Determine if we should show the warning (DEBUG only)
-    val shouldShowWarning = isDebugBuild && warning != null
+    val warningToShow = warning.takeIf { isDebugBuild }
+    val shouldShowWarning = warningToShow != null
 
     // Calculate colors
     val iconColor = if (prominentColors.isEmpty()) {
         MaterialTheme.colorScheme.primary
     } else {
+        // Keep a usable accent/background color even if extraction finds no distinct contrast winner.
         selectColorWithBestContrast(
             from = prominentColors,
             againstColor = if (isDarkTheme) Color.Black else Color.White,
-        )
+        ) ?: MaterialTheme.colorScheme.primary
     }
 
     val mainColor = if (shouldShowWarning) RevenueCatBrandRed else iconColor
@@ -100,10 +113,11 @@ internal fun DefaultPaywallView(
     val foregroundOnAccentColor = if (shouldShowWarning) {
         Color.White
     } else {
+        // Always fall back to a valid content color for the chosen background/accent color.
         selectColorWithBestContrast(
             from = prominentColors + listOf(if (isDarkTheme) Color.Black else Color.White),
             againstColor = iconColor,
-        )
+        ) ?: MaterialTheme.colorScheme.onPrimary
     }
 
     // Main layout
@@ -122,94 +136,106 @@ internal fun DefaultPaywallView(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 630.dp)
-                .align(Alignment.TopCenter)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .align(Alignment.TopCenter),
         ) {
-            // Title (only when showing warning)
-            if (shouldShowWarning) {
-                Text(
-                    text = stringResource(R.string.revenuecatui_paywalls_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Content area - either warning or app icon
-            if (shouldShowWarning && warning != null) {
-                DefaultPaywallWarning(warning = warning, warningColor = RevenueCatBrandRed)
-            } else {
-                AppIconSection(
-                    bitmap = appIconBitmap,
-                    appName = appName,
-                    shadowColor = mainColor,
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Product list
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                packages.forEach { pkg ->
-                    DefaultProductCell(
-                        pkg = pkg,
-                        accentColor = mainColor,
-                        selectedFontColor = foregroundOnAccentColor,
-                        isSelected = selectedPackage == pkg,
-                        onSelect = { selectedPackage = pkg },
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Footer buttons
-        if (packages.isNotEmpty()) {
-            Column(
+            BoxWithConstraints(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .weight(1f)
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .verticalScroll(rememberScrollState()),
             ) {
-                Button(
-                    onClick = { selectedPackage?.let(onPurchase) },
-                    enabled = selectedPackage != null,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = mainColor,
-                        contentColor = foregroundOnAccentColor,
-                    ),
+                Column(
                     modifier = Modifier
-                        .widthIn(max = 480.dp)
+                        .widthIn(max = 630.dp)
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .align(Alignment.TopCenter)
+                        .heightIn(min = this.maxHeight)
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text(
-                        text = stringResource(R.string.revenuecatui_purchase),
-                        fontWeight = FontWeight.Bold,
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(24.dp),
+                    ) {
+                        if (shouldShowWarning) {
+                            Text(
+                                text = stringResource(R.string.revenuecatui_paywalls_title),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+
+                        if (warningToShow != null) {
+                            DefaultPaywallWarning(
+                                warning = warningToShow,
+                                warningColor = RevenueCatBrandRed,
+                            )
+                        } else {
+                            AppIconSection(
+                                bitmap = appIconBitmap,
+                                appName = appName,
+                                shadowColor = mainColor,
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.selectableGroup(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        packages.forEach { pkg ->
+                            DefaultProductCell(
+                                pkg = pkg,
+                                accentColor = mainColor,
+                                selectedFontColor = foregroundOnAccentColor,
+                                isSelected = selectedPackage == pkg,
+                                onSelect = { selectedPackage = pkg },
+                            )
+                        }
+                    }
                 }
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
-
-                TextButton(
-                    onClick = onRestore,
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.onSurface,
-                    ),
+            if (packages.isNotEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Text(text = stringResource(R.string.revenuecatui_restore_purchases))
+                    Button(
+                        onClick = { selectedPackage?.let(onPurchase) },
+                        enabled = selectedPackage != null,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = mainColor,
+                            contentColor = foregroundOnAccentColor,
+                        ),
+                        modifier = Modifier
+                            .widthIn(max = 480.dp)
+                            .fillMaxWidth()
+                            .height(52.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.revenuecatui_purchase),
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(
+                        onClick = onRestore,
+                        colors = ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface,
+                        ),
+                    ) {
+                        Text(text = stringResource(R.string.revenuecatui_restore_purchases))
+                    }
                 }
             }
         }
