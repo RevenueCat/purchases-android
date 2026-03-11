@@ -475,17 +475,6 @@ private fun Video(
     }
 }
 
-@Suppress("TooGenericExceptionCaught")
-private fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? = { null }) {
-    try {
-        execute()
-    } catch (e: Exception) {
-        failureMessage(e)?.run {
-            Logger.e("TextureVideoView: $this", e)
-        }
-    }
-}
-
 /**
  * Represents the playback state of a video at a point in time.
  *
