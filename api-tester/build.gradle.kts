@@ -30,6 +30,11 @@ android {
     namespace = "com.revenuecat.api_tester_kotlin"
 }
 
+val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
+if (hasSamsungIapAar) {
+    android.sourceSets.getByName("main").java.srcDir("src/galaxy/kotlin")
+}
+
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
@@ -39,6 +44,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+    if (hasSamsungIapAar) {
+        implementation(project(":feature:galaxy"))
+    }
     defaultsImplementation(project(":feature:admob"))
     defaultsImplementation(libs.google.mobile.ads)
     implementation(project(":ui:debugview"))

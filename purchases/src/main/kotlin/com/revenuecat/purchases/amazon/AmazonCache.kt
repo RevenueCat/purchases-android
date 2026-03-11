@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.amazon
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
@@ -8,6 +9,7 @@ import org.json.JSONObject
 
 private const val RECEIPTS_TO_SKUS_KEY = "receiptsToSkus"
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class AmazonCache(
     private val deviceCache: DeviceCache,
 ) {

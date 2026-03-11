@@ -17,6 +17,7 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -937,6 +938,58 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 any(),
                 any(),
                 storeProduct.defaultOption!!.purchasingData,
+                expectedReplaceProductInfo,
+                any(),
+                any()
+            )
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `upgrade uses galaxyReplacementMode when store is Galaxy`() {
+        buildPurchases(anonymous = false, store = Store.GALAXY)
+
+        val productId = "galaxy_gold"
+        val oldSubId = "oldGalaxySubId"
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                onCompletion = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE
+        val upgradePurchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            storeProduct
+        )
+            .oldProductId(oldSubId)
+            .galaxyReplacementMode(replacementMode)
+            .build()
+
+        purchases.purchaseWith(
+            upgradePurchaseParams,
+            onError = { _, _ ->
+            },
+        ) { _, _ -> }
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            replacementMode,
+        )
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                storeProduct.purchasingData,
                 expectedReplaceProductInfo,
                 any(),
                 any()
