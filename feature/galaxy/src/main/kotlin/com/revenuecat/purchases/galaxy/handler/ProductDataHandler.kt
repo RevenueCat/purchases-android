@@ -66,15 +66,12 @@ internal class ProductDataHandler(
         }
 
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
-
-        val request = Request(
+        this.inFlightRequest = Request(
             productIds = productIds,
             productType = productType,
             onReceive = onReceive,
             onError = onError,
         )
-
-        this.inFlightRequest = request
 
         // When requesting products from the Samsung IAP SDK, the `productIds` param is a string where
         // the following contents product the following results:
