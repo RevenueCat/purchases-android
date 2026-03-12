@@ -37,7 +37,7 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
-import com.revenuecat.purchases.paywalls.events.CustomPaywallEventParams
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -659,7 +659,8 @@ public class Purchases internal constructor(
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     @OptIn(InternalRevenueCatAPI::class)
-    public fun trackCustomPaywallImpression(params: CustomPaywallEventParams = CustomPaywallEventParams()) {
+    @JvmOverloads
+    public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
         purchasesOrchestrator.track(
             CustomPaywallEvent.Impression(
                 data = CustomPaywallEvent.Impression.Data(paywallId = params.paywallId),

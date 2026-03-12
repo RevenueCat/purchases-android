@@ -49,7 +49,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.paywalls.events.CustomPaywallEventParams
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
@@ -136,8 +136,8 @@ private class PurchasesAPI {
         purchases.getStorefrontLocale(getStorefrontLocaleCallback)
 
         // trackCustomPaywallImpression API
-        val defaultParams = CustomPaywallEventParams()
-        val paramsWithId = CustomPaywallEventParams(paywallId = "my-paywall")
+        val defaultParams = CustomPaywallImpressionParams()
+        val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
         purchases.trackCustomPaywallImpression()
         purchases.trackCustomPaywallImpression(defaultParams)
         purchases.trackCustomPaywallImpression(paramsWithId)

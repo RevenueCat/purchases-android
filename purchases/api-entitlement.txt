@@ -1497,8 +1497,8 @@ package com.revenuecat.purchases.models {
 
 package com.revenuecat.purchases.paywalls.events {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class CustomPaywallEventParams {
-    ctor public CustomPaywallEventParams(optional String? paywallId);
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class CustomPaywallImpressionParams {
+    ctor public CustomPaywallImpressionParams(optional String? paywallId);
     method public String? getPaywallId();
     property public final String? paywallId;
   }
