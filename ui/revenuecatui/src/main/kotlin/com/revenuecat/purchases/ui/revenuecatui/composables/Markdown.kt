@@ -268,7 +268,9 @@ private fun MDBulletList(
         textFillMaxWidth = textFillMaxWidth,
     ) {
         val text = buildAnnotatedString {
-            pushStyle(MaterialTheme.typography.bodyLarge.toSpanStyle())
+            pushStyle(
+                MaterialTheme.typography.bodyLarge.copy(fontWeight = fontWeight).toSpanStyle(),
+            )
             append("$marker ")
             appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
@@ -313,7 +315,7 @@ private fun MDOrderedList(
         textFillMaxWidth = textFillMaxWidth,
     ) {
         val text = buildAnnotatedString {
-            pushStyle(style.toSpanStyle())
+            pushStyle(style.copy(fontWeight = fontWeight).toSpanStyle())
             append("${number++}$delimiter ")
             appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
