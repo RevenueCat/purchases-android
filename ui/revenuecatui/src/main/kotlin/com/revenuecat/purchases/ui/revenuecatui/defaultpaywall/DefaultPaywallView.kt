@@ -179,8 +179,10 @@ internal fun DefaultPaywallView(
                     ) {
                         Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 32.dp))
                         if (shouldShowWarning) {
+                            // Debug string (not translating since this is never shown to an end user)
+                            val title = "RevenueCat Paywalls"
                             Text(
-                                text = DeveloperFacingPaywallStrings.TITLE,
+                                text = title,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
@@ -337,8 +339,4 @@ private fun AppIconSection(
 
 private object ReadableContentWidth {
     val dp = 630.dp
-}
-
-private object DeveloperFacingPaywallStrings {
-    const val TITLE = "RevenueCat Paywalls"
 }

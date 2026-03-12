@@ -31,6 +31,9 @@ internal fun DefaultPaywallWarning(
     warningColor: Color,
     modifier: Modifier = Modifier,
 ) {
+    // Debug string (not translating since this is never shown to an end user)
+    val goToDashboard = "Go to Dashboard"
+
     val context = LocalContext.current
 
     Column(
@@ -82,15 +85,10 @@ internal fun DefaultPaywallWarning(
                 ),
             ) {
                 Text(
-                    text = DeveloperFacingPaywallStrings.GO_TO_DASHBOARD,
+                    text = goToDashboard,
                     fontWeight = FontWeight.Bold,
                 )
             }
         }
     }
-}
-
-// Debug strings (not translating these since they are never shown to an end user)
-private object DeveloperFacingPaywallStrings {
-    const val GO_TO_DASHBOARD = "Go to Dashboard"
 }
