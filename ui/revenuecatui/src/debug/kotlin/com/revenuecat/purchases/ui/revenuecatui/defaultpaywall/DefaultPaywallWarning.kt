@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -52,6 +51,7 @@ internal fun DefaultPaywallWarning(
             Text(
                 text = warning.title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center,
             )
@@ -82,10 +82,15 @@ internal fun DefaultPaywallWarning(
                 ),
             ) {
                 Text(
-                    text = stringResource(R.string.revenuecatui_go_to_dashboard),
+                    text = DeveloperFacingPaywallStrings.GO_TO_DASHBOARD,
                     fontWeight = FontWeight.Bold,
                 )
             }
         }
     }
+}
+
+// Debug strings (not translating these since they are never shown to an end user)
+private object DeveloperFacingPaywallStrings {
+    const val GO_TO_DASHBOARD = "Go to Dashboard"
 }

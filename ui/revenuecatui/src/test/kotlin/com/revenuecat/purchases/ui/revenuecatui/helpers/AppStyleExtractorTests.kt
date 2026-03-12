@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
 import androidx.compose.ui.graphics.Color
+import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DualColorImageGenerator
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,6 +34,20 @@ class AppStyleExtractorTests {
             dispatcher = StandardTestDispatcher(testScheduler),
         )
         assertThat(colors).isNotEmpty()
+    }
+
+    @Test
+    fun `extractProminentColors extracts red and green from red-green image`() = runTest {
+        val bitmap = DualColorImageGenerator.redGreen.bitmap
+        val colors = AppStyleExtractor.getProminentColorsFromBitmap(
+            bitmap = bitmap,
+            count = 2,
+            dispatcher = StandardTestDispatcher(testScheduler),
+        )
+
+        assertThat(colors).hasSize(2)
+        assertThat(colors.contains(Color.Red)).isTrue()
+        assertThat(colors.contains(Color.Green)).isTrue()
     }
 
     @Test

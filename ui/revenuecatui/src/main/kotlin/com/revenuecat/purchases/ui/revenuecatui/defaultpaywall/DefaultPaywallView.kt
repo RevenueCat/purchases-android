@@ -7,23 +7,25 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,38 +58,52 @@ import kotlinx.coroutines.withContext
 @Suppress("MagicNumber")
 private val RevenueCatBrandRed = Color(0xFFF2545B)
 
+internal data class DefaultPaywallPreviewOverrides(
+    val appName: String? = null,
+    val appIconBitmap: Bitmap? = null,
+    val prominentColors: List<Color>? = null,
+    val isDebugBuild: Boolean? = null,
+)
+
 @Composable
-@Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH")
+@Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH", "CyclomaticComplexMethod", "LongParameterList")
 internal fun DefaultPaywallView(
     packages: List<Package>,
     warning: PaywallWarning?,
     onPurchase: (Package) -> Unit,
     onRestore: () -> Unit,
     modifier: Modifier = Modifier,
+    previewOverrides: DefaultPaywallPreviewOverrides? = null,
 ) {
     val context = LocalContext.current
     val isDarkTheme = isSystemInDarkTheme()
 
-    // Check if the app is in debug mode
-    val isDebugBuild = remember {
-        (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
-    }
+    val isDebugBuild =
+        previewOverrides?.isDebugBuild ?: remember {
+            (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        }
 
     // App metadata
-    val appName = remember { AppStyleExtractor.getAppName(context) }
-    var appIconBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    val appName = previewOverrides?.appName ?: remember { AppStyleExtractor.getAppName(context) }
+    var appIconBitmap by remember { mutableStateOf(previewOverrides?.appIconBitmap) }
+    val providedProminentColors = previewOverrides?.prominentColors
 
     // Color extraction state
-    var prominentColors by remember { mutableStateOf<List<Color>>(emptyList()) }
+    var prominentColors by remember(appIconBitmap, providedProminentColors) {
+        mutableStateOf(providedProminentColors ?: emptyList())
+    }
 
-    LaunchedEffect(Unit) {
-        val bitmap = withContext(Dispatchers.Default) {
-            AppStyleExtractor.getAppIconBitmap(context)
+    LaunchedEffect(appIconBitmap, providedProminentColors) {
+        if (providedProminentColors == null) {
+            prominentColors = AppStyleExtractor.getProminentColorsFromBitmap(appIconBitmap, count = 2)
         }
-        val extractedProminentColors = AppStyleExtractor.getProminentColorsFromBitmap(bitmap, count = 2)
 
-        appIconBitmap = bitmap
-        prominentColors = extractedProminentColors
+        if (appIconBitmap == null) {
+            val bitmap = withContext(Dispatchers.Default) {
+                AppStyleExtractor.getAppIconBitmap(context)
+            }
+            appIconBitmap = bitmap
+        }
     }
 
     // Selection state
@@ -120,7 +136,6 @@ internal fun DefaultPaywallView(
         ) ?: MaterialTheme.colorScheme.onPrimary
     }
 
-    // Main layout
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -133,35 +148,41 @@ internal fun DefaultPaywallView(
                 ),
             ),
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .align(Alignment.TopCenter),
-        ) {
-            BoxWithConstraints(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState()),
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            bottomBar = {
+                if (packages.isNotEmpty()) {
+                    DefaultPaywallFooter(
+                        onPurchase = { selectedPackage?.let(onPurchase) },
+                        onRestore = onRestore,
+                        purchaseEnabled = selectedPackage != null,
+                        mainColor = mainColor,
+                        foregroundOnAccentColor = foregroundOnAccentColor,
+                    )
+                }
+            },
+        ) { paddingValues ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter,
             ) {
                 Column(
-                    modifier = Modifier
-                        .widthIn(max = 630.dp)
-                        .fillMaxWidth()
-                        .align(Alignment.TopCenter)
-                        .heightIn(min = this.maxHeight)
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.SpaceBetween,
+                    Modifier
+                        .fillMaxHeight()
+                        .widthIn(max = ReadableContentWidth.dp),
                 ) {
                     Column(
+                        modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(24.dp),
                     ) {
+                        Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 32.dp))
                         if (shouldShowWarning) {
                             Text(
-                                text = stringResource(R.string.revenuecatui_paywalls_title),
+                                text = DeveloperFacingPaywallStrings.TITLE,
                                 style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth(),
@@ -169,10 +190,7 @@ internal fun DefaultPaywallView(
                         }
 
                         if (warningToShow != null) {
-                            DefaultPaywallWarning(
-                                warning = warningToShow,
-                                warningColor = RevenueCatBrandRed,
-                            )
+                            DefaultPaywallWarning(warning = warningToShow, warningColor = RevenueCatBrandRed)
                         } else {
                             AppIconSection(
                                 bitmap = appIconBitmap,
@@ -182,12 +200,20 @@ internal fun DefaultPaywallView(
                         }
                     }
 
-                    Column(
-                        modifier = Modifier.selectableGroup(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .selectableGroup()
+                            .padding(bottom = paddingValues.calculateBottomPadding()),
+                        contentPadding = PaddingValues(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        packages.forEach { pkg ->
+                        items(
+                            items = packages,
+                            key = { it.identifier },
+                        ) { pkg ->
                             DefaultProductCell(
                                 pkg = pkg,
                                 accentColor = mainColor,
@@ -196,47 +222,68 @@ internal fun DefaultPaywallView(
                                 onSelect = { selectedPackage = pkg },
                             )
                         }
+
+                        if (packages.isNotEmpty()) {
+                            item {
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
                     }
                 }
             }
+        }
+    }
+}
 
-            if (packages.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Button(
-                        onClick = { selectedPackage?.let(onPurchase) },
-                        enabled = selectedPackage != null,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = mainColor,
-                            contentColor = foregroundOnAccentColor,
-                        ),
-                        modifier = Modifier
-                            .widthIn(max = 480.dp)
-                            .fillMaxWidth()
-                            .height(52.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.revenuecatui_purchase),
-                            fontWeight = FontWeight.Bold,
-                        )
-                    }
+@Composable
+private fun DefaultPaywallFooter(
+    onPurchase: () -> Unit,
+    onRestore: () -> Unit,
+    purchaseEnabled: Boolean,
+    mainColor: Color,
+    foregroundOnAccentColor: Color,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = ReadableContentWidth.dp)
+                .navigationBarsPadding()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Button(
+                onClick = onPurchase,
+                enabled = purchaseEnabled,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = mainColor,
+                    contentColor = foregroundOnAccentColor,
+                ),
+                modifier = Modifier
+                    .widthIn(max = 480.dp)
+                    .fillMaxWidth()
+                    .height(52.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.revenuecatui_purchase),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                    TextButton(
-                        onClick = onRestore,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                    ) {
-                        Text(text = stringResource(R.string.revenuecatui_restore_purchases))
-                    }
-                }
+            TextButton(
+                onClick = onRestore,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            ) {
+                Text(text = stringResource(R.string.revenuecatui_restore_purchases))
             }
         }
     }
@@ -286,4 +333,12 @@ private fun AppIconSection(
             modifier = Modifier.padding(horizontal = 16.dp),
         )
     }
+}
+
+private object ReadableContentWidth {
+    val dp = 630.dp
+}
+
+private object DeveloperFacingPaywallStrings {
+    const val TITLE = "RevenueCat Paywalls"
 }
