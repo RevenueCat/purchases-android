@@ -534,7 +534,7 @@ internal class PurchasesOrchestrator(
         }
 
         debugLog { "Locale changed, attempting to fetch fresh offerings" }
-        return clearCacheAndFetchOfferingsWithRateLimit { offerings, error ->
+        return clearInMemoryCacheAndFetchOfferingsWithRateLimit { offerings, error ->
             if (offerings != null) {
                 debugLog { "Fresh offerings fetch completed successfully" }
             } else {
@@ -1125,7 +1125,7 @@ internal class PurchasesOrchestrator(
      * @param callback Callback to handle the result
      * @return true if fresh fetch was triggered, false if rate limited
      */
-    private fun clearCacheAndFetchOfferingsWithRateLimit(
+    private fun clearInMemoryCacheAndFetchOfferingsWithRateLimit(
         callback: (Offerings?, PurchasesError?) -> Unit,
     ): Boolean {
         return if (preferredLocaleOverrideRateLimiter.shouldProceed()) {
