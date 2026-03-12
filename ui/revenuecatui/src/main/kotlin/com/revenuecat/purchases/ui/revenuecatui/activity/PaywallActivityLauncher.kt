@@ -70,7 +70,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
      * Only available for original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
-     * Default is true for Android 15+, false otherwise.
+     * On Android 15+, edge-to-edge is enforced by the system regardless of this setting.
      * @param customVariables Custom variables to be used in paywall text. These values will replace
      * `{{ custom.key }}` or `{{ $custom.key }}` placeholders in the paywall configuration.
      */
@@ -110,7 +110,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
-     * Default is true for Android 15+, false otherwise.
+     * On Android 15+, edge-to-edge is enforced by the system regardless of this setting.
      */
     @Deprecated(
         message = "Use launch with offering instead",
@@ -179,7 +179,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
-     * Default is true for Android 15+, false otherwise.
+     * On Android 15+, edge-to-edge is enforced by the system regardless of this setting.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
     @Suppress("LongParameterList")
@@ -228,7 +228,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
-     * Default is true for Android 15+, false otherwise.
+     * On Android 15+, edge-to-edge is enforced by the system regardless of this setting.
      * @param paywallDisplayCallback Callback that will be called with true if the paywall was displayed
      */
     @Deprecated(
@@ -312,7 +312,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall. Only available for
      * original template paywalls. Ignored for v2 Paywalls.
      * @param edgeToEdge Whether to display the paywall in edge-to-edge mode.
-     * Default is true for Android 15+, false otherwise.
+     * On Android 15+, edge-to-edge is enforced by the system regardless of this setting.
      * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
     @JvmOverloads

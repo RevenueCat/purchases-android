@@ -117,7 +117,7 @@ public class PaywallActivityLaunchOptions private constructor(
 
         /**
          * Sets whether to display the paywall in edge-to-edge mode.
-         * Default is true for Android 15+, false otherwise.
+         * On Android 15+, edge-to-edge is enforced by the system regardless of this setting.
          */
         public fun setEdgeToEdge(edgeToEdge: Boolean): Builder = apply {
             this.edgeToEdge = edgeToEdge
@@ -302,7 +302,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
 
         /**
          * Sets whether to display the paywall in edge-to-edge mode.
-         * Default is true for Android 15+, false otherwise.
+         * On Android 15+, edge-to-edge is enforced by the system regardless of this setting.
          */
         public fun setEdgeToEdge(edgeToEdge: Boolean): Builder = apply {
             this.edgeToEdge = edgeToEdge
