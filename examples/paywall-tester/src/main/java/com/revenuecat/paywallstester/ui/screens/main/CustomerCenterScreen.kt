@@ -93,9 +93,8 @@ internal fun createCustomerCenterListener(
         override fun onPromotionalOfferSucceeded(
             customerInfo: CustomerInfo,
             transaction: StoreTransaction,
-            offerId: String,
         ) {
-            Log.d(tag, "Local listener: onPromotionalOfferSucceeded: offerId=$offerId")
+            Log.d(tag, "Local listener: onPromotionalOfferSucceeded called")
         }
     }
 }
