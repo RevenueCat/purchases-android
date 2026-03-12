@@ -205,7 +205,7 @@ internal fun DefaultPaywallView(
                     LazyColumn(
                         modifier = Modifier
                             .selectableGroup()
-                            .padding(paddingValues),
+                            .padding(bottom = paddingValues.calculateBottomPadding()),
                         contentPadding = PaddingValues(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
