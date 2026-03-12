@@ -10,6 +10,6 @@ import dev.drewhamilton.poko.Poko
  */
 @Poko
 @ExperimentalPreviewRevenueCatPurchasesAPI
-public class CustomPaywallImpressionParams(
+public class CustomPaywallImpressionParams @JvmOverloads constructor(
     public val paywallId: String? = null,
 )
