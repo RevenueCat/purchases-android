@@ -66,7 +66,7 @@ internal data class DefaultPaywallPreviewOverrides(
 )
 
 @Composable
-@Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH", "CyclomaticComplexMethod", "LongParameterList")
+@Suppress("LongMethod", "CyclomaticComplexMethod", "LongParameterList")
 internal fun DefaultPaywallView(
     packages: List<TemplateConfiguration.PackageInfo>,
     selectedPackage: TemplateConfiguration.PackageInfo?,
