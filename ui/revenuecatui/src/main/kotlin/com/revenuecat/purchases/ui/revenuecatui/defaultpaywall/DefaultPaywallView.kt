@@ -338,3 +338,7 @@ private fun AppIconSection(
 private object ReadableContentWidth {
     val dp = 630.dp
 }
+
+private object DeveloperFacingPaywallStrings {
+    const val TITLE = "RevenueCat Paywalls"
+}

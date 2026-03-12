@@ -90,3 +90,7 @@ internal fun DefaultPaywallWarning(
     }
 }
 
+// Debug strings (not translating these since they are never shown to an end user)
+private object DeveloperFacingPaywallStrings {
+    const val GO_TO_DASHBOARD = "Go to Dashboard"
+}
