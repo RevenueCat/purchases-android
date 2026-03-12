@@ -110,6 +110,9 @@ commands:
         type: string
     steps:
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -425,7 +428,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.24.0-SNAPSHOT s3://purchases-docs/android/9.24.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.25.0-SNAPSHOT s3://purchases-docs/android/9.25.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -666,6 +669,9 @@ jobs:
           cache-version: v1
       - gcp-cli/install
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -690,6 +696,9 @@ jobs:
           cache-version: v1
       - gcp-cli/install
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
