@@ -8,7 +8,6 @@ import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import android.graphics.Color as AndroidColor
 
 /**
  * Utility for generating deterministic images used in previews and tests.

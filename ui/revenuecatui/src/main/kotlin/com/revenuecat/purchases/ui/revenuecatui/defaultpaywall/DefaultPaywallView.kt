@@ -180,7 +180,7 @@ internal fun DefaultPaywallView(
                         Spacer(modifier = Modifier.height(paddingValues.calculateTopPadding() + 32.dp))
                         if (shouldShowWarning) {
                             Text(
-                                text = stringResource(R.string.revenuecatui_paywalls_title),
+                                text = DebugPaywallStrings.TITLE,
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
