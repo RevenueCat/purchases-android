@@ -30,6 +30,9 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
+import androidx.annotation.OptIn;
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -38,6 +41,7 @@ import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
 final class PurchasesAPI {
+    @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void check(
             final Purchases purchases,
             final WebPurchaseRedemption webPurchaseRedemption,
