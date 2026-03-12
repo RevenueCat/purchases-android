@@ -110,6 +110,9 @@ commands:
         type: string
     steps:
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -350,6 +353,37 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test-galaxy:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
+      - run:
+          name: Compile API Tester with Galaxy Files
+          command: |
+            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
+      - run:
+          name: Run Galaxy Unit Tests
+          command: |
+            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            RESULTS_DIR="build/test-results-galaxy"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+      - store_test_results:
+          path: build/test-results-galaxy
+      - store_artifacts:
+          path: build/reports
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -394,7 +428,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.24.0-SNAPSHOT s3://purchases-docs/android/9.24.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.26.0-SNAPSHOT s3://purchases-docs/android/9.26.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -414,6 +448,10 @@ jobs:
       - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -446,6 +484,10 @@ jobs:
       - android/restore_build_cache:
           cache_prefix: v1a
       - prepare-signing-key
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -627,6 +669,9 @@ jobs:
           cache-version: v1
       - gcp-cli/install
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -651,6 +696,9 @@ jobs:
           cache-version: v1
       - gcp-cli/install
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -1055,6 +1103,9 @@ workflows:
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+      - test-galaxy:
+          requires:
+            - prepare-tests
       - run-backend-integration-tests:
           requires:
             - prepare-tests
@@ -1092,6 +1143,7 @@ workflows:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
+            - test-galaxy
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester

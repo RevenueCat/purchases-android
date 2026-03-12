@@ -125,6 +125,54 @@ class OfferingsCacheTest {
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
     }
 
+    @Test
+    fun `clearInMemoryOfferingsCache clears cached offerings`() {
+        mockDeviceCacheOfferingResponse()
+        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
+        }, JSONObject())
+        assertThat(offeringsCache.cachedOfferings).isNotNull
+        offeringsCache.clearInMemoryOfferingsCache()
+        assertThat(offeringsCache.cachedOfferings).isNull()
+    }
+
+    @Test
+    fun `clearInMemoryOfferingsCache makes cache stale`() {
+        mockDeviceCacheOfferingResponse()
+        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
+        }, JSONObject())
+        assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
+        offeringsCache.clearInMemoryOfferingsCache()
+        assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
+        assertThat(offeringsCache.isOfferingsCacheStale(true)).isTrue
+    }
+
+    @Test
+    fun `clearInMemoryOfferingsCache does not clear disk cache`() {
+        mockDeviceCacheOfferingResponse()
+        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
+        }, JSONObject())
+        offeringsCache.clearInMemoryOfferingsCache()
+        verify(exactly = 0) { deviceCache.clearOfferingsResponseCache() }
+    }
+
+    @Test
+    fun `clearInMemoryOfferingsCache preserves disk cache for fallback`() {
+        val offeringsResponse = JSONObject().apply { put("test", "value") }
+        mockDeviceCacheOfferingResponse()
+        every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
+        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
+        }, offeringsResponse)
+
+        offeringsCache.clearInMemoryOfferingsCache()
+
+        assertThat(offeringsCache.cachedOfferings).isNull()
+        assertThat(offeringsCache.cachedOfferingsResponse).isNotNull
+    }
+
     // endregion offerings cache
 
     // region locale cache tests

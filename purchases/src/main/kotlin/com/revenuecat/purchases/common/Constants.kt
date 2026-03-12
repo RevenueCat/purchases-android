@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 
 internal object Constants {
     const val GOOGLE_PLAY_MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
+    const val GALAXY_STORE_MANAGEMENT_URL = "samsungapps://SubscriptionList/"
     const val SUBS_ID_BASE_PLAN_ID_SEPARATOR = ":"
 }
 

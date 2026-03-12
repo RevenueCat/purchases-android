@@ -171,6 +171,14 @@ platform :android do
       gradle_properties
     )
 
+    UI.verbose("Deploying galaxy Billing Client 7 version")
+    deploy_specific_package(
+      "defaultsBc7Release",
+      "purchases-store-galaxy-bc7",
+      "feature:galaxy",
+      gradle_properties
+    )
+
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
       "customEntitlementComputationBc8Release",
