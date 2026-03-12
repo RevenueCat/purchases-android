@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template5
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
@@ -511,6 +512,7 @@ internal class MockResourceProvider(
 internal class MockViewModel(
     mode: PaywallMode = PaywallMode.default,
     offering: Offering,
+    validationWarning: PaywallWarning? = null,
     private val allowsPurchases: Boolean = false,
     private val shouldErrorOnUnsupportedMethods: Boolean = true,
 ) : ViewModel(), PaywallViewModel {
@@ -538,6 +540,7 @@ internal class MockViewModel(
                 template = validated.template,
                 shouldDisplayDismissButton = false,
                 storefrontCountryCode = "US",
+                validationWarning = validationWarning,
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validated,
@@ -585,7 +588,7 @@ internal class MockViewModel(
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         selectPackageCallCount++
         selectPackageCallParams.add(packageToSelect)
-        unsupportedMethod()
+        loadedLegacyState()?.selectPackage(packageToSelect) ?: unsupportedMethod()
     }
 
     var closePaywallCallCount = 0
@@ -614,9 +617,12 @@ internal class MockViewModel(
         private set
     var purchaseSelectedPackageParams = mutableListOf<Activity?>()
         private set
+    var purchaseSelectedPackageIdentifiers = mutableListOf<String?>()
+        private set
     override fun purchaseSelectedPackage(activity: Activity?) {
         purchaseSelectedPackageCallCount++
         purchaseSelectedPackageParams.add(activity)
+        purchaseSelectedPackageIdentifiers.add(loadedLegacyState()?.selectedPackage?.value?.rcPackage?.identifier)
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {

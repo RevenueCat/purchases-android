@@ -47,8 +47,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.selectColorWithBestContrast
@@ -68,9 +68,11 @@ internal data class DefaultPaywallPreviewOverrides(
 @Composable
 @Suppress("LongMethod", "COMPOSE_APPLIER_CALL_MISMATCH", "CyclomaticComplexMethod", "LongParameterList")
 internal fun DefaultPaywallView(
-    packages: List<Package>,
+    packages: List<TemplateConfiguration.PackageInfo>,
+    selectedPackage: TemplateConfiguration.PackageInfo?,
     warning: PaywallWarning?,
-    onPurchase: (Package) -> Unit,
+    onSelectPackage: (TemplateConfiguration.PackageInfo) -> Unit,
+    onPurchase: () -> Unit,
     onRestore: () -> Unit,
     modifier: Modifier = Modifier,
     previewOverrides: DefaultPaywallPreviewOverrides? = null,
@@ -105,9 +107,6 @@ internal fun DefaultPaywallView(
             appIconBitmap = bitmap
         }
     }
-
-    // Selection state
-    var selectedPackage by remember(packages) { mutableStateOf(packages.firstOrNull()) }
 
     // Determine if we should show the warning (DEBUG only)
     val warningToShow = warning.takeIf { isDebugBuild }
@@ -154,7 +153,7 @@ internal fun DefaultPaywallView(
             bottomBar = {
                 if (packages.isNotEmpty()) {
                     DefaultPaywallFooter(
-                        onPurchase = { selectedPackage?.let(onPurchase) },
+                        onPurchase = onPurchase,
                         onRestore = onRestore,
                         purchaseEnabled = selectedPackage != null,
                         mainColor = mainColor,
@@ -214,14 +213,14 @@ internal fun DefaultPaywallView(
                     ) {
                         items(
                             items = packages,
-                            key = { it.identifier },
-                        ) { pkg ->
+                            key = { it.rcPackage.identifier },
+                        ) { packageInfo ->
                             DefaultProductCell(
-                                pkg = pkg,
+                                pkg = packageInfo.rcPackage,
                                 accentColor = mainColor,
                                 selectedFontColor = foregroundOnAccentColor,
-                                isSelected = selectedPackage == pkg,
-                                onSelect = { selectedPackage = pkg },
+                                isSelected = selectedPackage == packageInfo,
+                                onSelect = { onSelectPackage(packageInfo) },
                             )
                         }
 

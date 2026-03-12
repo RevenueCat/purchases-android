@@ -9,14 +9,33 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 
-private val previewPackages: List<Package> = listOf(
+private val previewPackages: List<TemplateConfiguration.PackageInfo> = listOf(
     TestData.Packages.annual,
     TestData.Packages.monthly,
-)
+).map { pkg ->
+    TemplateConfiguration.PackageInfo(
+        rcPackage = pkg,
+        localization = ProcessedLocalizedConfiguration(
+            title = pkg.product.name,
+            subtitle = null,
+            callToAction = "Continue",
+            callToActionWithIntroOffer = null,
+            callToActionWithMultipleIntroOffers = null,
+            offerDetails = null,
+            offerDetailsWithIntroOffer = null,
+            offerDetailsWithMultipleIntroOffers = null,
+            offerName = pkg.product.name,
+            offerBadge = null,
+            tierName = null,
+        ),
+        discountRelativeToMostExpensivePerMonth = null,
+    )
+}
 
 @Preview(showBackground = true, name = "Fallback Paywall R/G")
 @Preview(
@@ -98,7 +117,9 @@ private fun DefaultPaywallPreview(
     MaterialTheme(colorScheme = colorScheme) {
         DefaultPaywallView(
             packages = previewPackages,
+            selectedPackage = previewPackages.first(),
             warning = warning,
+            onSelectPackage = {},
             onPurchase = {},
             onRestore = {},
             modifier = Modifier.background(MaterialTheme.colorScheme.background),

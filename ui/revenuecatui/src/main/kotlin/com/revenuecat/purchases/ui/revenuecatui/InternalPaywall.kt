@@ -173,16 +173,12 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
             modifier = Modifier.screenModeBackground(state.isInFullScreenMode, defaultBackground),
         ) {
             DefaultPaywallView(
-                packages = state.offering.availablePackages,
+                packages = state.templateConfiguration.packages.all,
+                selectedPackage = state.selectedPackage.value,
                 warning = state.validationWarning,
-                onPurchase = { pkg ->
-                    if (activity != null) {
-                        coroutineScope.launch {
-                            viewModel.handlePackagePurchase(activity, pkg)
-                        }
-                    } else {
-                        Logger.e("Activity is null, cannot initiate purchase")
-                    }
+                onSelectPackage = viewModel::selectPackage,
+                onPurchase = {
+                    viewModel.purchaseSelectedPackage(activity)
                 },
                 onRestore = {
                     coroutineScope.launch {

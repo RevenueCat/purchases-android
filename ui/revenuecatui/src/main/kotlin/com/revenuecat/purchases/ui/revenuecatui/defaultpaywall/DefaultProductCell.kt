@@ -21,10 +21,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
 import com.revenuecat.purchases.ui.revenuecatui.icons.CircleOutlined
 
 @Suppress("LongParameterList")
@@ -57,6 +59,7 @@ internal fun DefaultProductCell(
                 role = Role.RadioButton,
                 onClick = onSelect,
             )
+            .testTag(TestTag.selectButtonTestTag(pkg.identifier))
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
