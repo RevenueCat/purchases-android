@@ -130,7 +130,7 @@ gradle.beforeProject {
 if (samsungIAPAARPresent) {
     include(":feature:galaxy")
 }
-include(":feature:admob")
+include(":feature:google-mobile-ads")
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")

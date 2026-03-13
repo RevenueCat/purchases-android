@@ -28,6 +28,6 @@ dependencies {
         if (hasSamsungIapAar) {
             api(project(":feature:galaxy"))
         }
-        api(project(":feature:admob"))
+        api(project(":feature:google-mobile-ads"))
     }
 }
