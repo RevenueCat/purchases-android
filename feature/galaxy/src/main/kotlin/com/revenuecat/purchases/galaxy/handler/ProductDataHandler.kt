@@ -79,6 +79,7 @@ internal class ProductDataHandler(
         // - A string with one product ID in it: queries for that one product
         // - A string with multiple product IDs in it, delimited by a comma
         val productIdRequestString = productIds.joinToString(separator = ",")
+        // Note: getProductsDetails() swallows all exceptions
         iapHelper.getProductsDetails(
             productIDs = productIdRequestString,
             onGetProductsDetailsListener = this,
