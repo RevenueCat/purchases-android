@@ -3,7 +3,7 @@ import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
-    id("revenuecat-public-library")
+    alias(libs.plugins.revenuecat.public.library)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.poko)
@@ -60,6 +60,12 @@ android {
             type = "boolean",
             name = "ENABLE_QUERY_PURCHASE_HISTORY_AIDL",
             value = (localProperties["ENABLE_QUERY_PURCHASE_HISTORY_AIDL"] as? String ?: "true"),
+        )
+
+        buildConfigField(
+            type = "String",
+            name = "SAMSUNG_IAP_SDK_VERSION",
+            value = "\"${libs.versions.samsungIap.get()}\"",
         )
 
         packagingOptions.resources.excludes.addAll(

@@ -1,9 +1,6 @@
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Fix default value for `productChangeConfig` (#3153) via Cesar de la Vega (@vegaro)
+## RevenueCat SDK
+### ✨ New Features
+* Expose trackCustomPaywallImpression as experimental public API (#3199) via Rick (@rickvdl)
 
 ### 🔄 Other Changes
-* Add elapsed_millis to FLUSH_COMPLETED debug event (#3184) via Toni Rico (@tonidero)
-* Add priority flush with rate limiting and queuing (#3179) via Rick (@rickvdl)
-* Bypass billing in preview mode (#3162) via Monika Mateska (@MonikaMateska)
+* [EXTERNAL] Migrate deprecated kotlinOptions to compilerOptions (#3219) contributed by @AlexanderTalledo (#3223) via Toni Rico (@tonidero)

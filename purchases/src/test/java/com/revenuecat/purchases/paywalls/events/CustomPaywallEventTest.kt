@@ -175,14 +175,14 @@ class CustomPaywallEventTest {
     }
 
     @Test
-    fun `CustomPaywallEventParams default has null paywallId`() {
-        val params = CustomPaywallEventParams()
+    fun `CustomPaywallImpressionParams default has null paywallId`() {
+        val params = CustomPaywallImpressionParams()
         assertThat(params.paywallId).isNull()
     }
 
     @Test
-    fun `CustomPaywallEventParams with paywallId`() {
-        val params = CustomPaywallEventParams(paywallId = "my-paywall")
+    fun `CustomPaywallImpressionParams with paywallId`() {
+        val params = CustomPaywallImpressionParams(paywallId = "my-paywall")
         assertThat(params.paywallId).isEqualTo("my-paywall")
     }
 
