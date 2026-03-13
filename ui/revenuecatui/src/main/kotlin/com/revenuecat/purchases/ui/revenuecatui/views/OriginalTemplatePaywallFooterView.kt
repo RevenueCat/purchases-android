@@ -190,10 +190,12 @@ public open class OriginalTemplatePaywallFooterView : FrameLayout {
                     val paywallOptions by remember {
                         paywallOptionsState
                     }
-                    OriginalTemplatePaywallFooter(
-                        options = paywallOptions,
-                        condensed = initialCondensed,
-                    )
+                    RevenueCatTheme {
+                        OriginalTemplatePaywallFooter(
+                            options = paywallOptions,
+                            condensed = initialCondensed,
+                        )
+                    }
                 }
             },
         )

@@ -73,6 +73,7 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -533,7 +534,7 @@ internal class PurchasesOrchestrator(
         }
 
         debugLog { "Locale changed, attempting to fetch fresh offerings" }
-        return fetchOfferingsWithRateLimit { offerings, error ->
+        return clearInMemoryCacheAndFetchOfferingsWithRateLimit { offerings, error ->
             if (offerings != null) {
                 debugLog { "Fresh offerings fetch completed successfully" }
             } else {
@@ -608,6 +609,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun purchase(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
@@ -626,6 +628,7 @@ internal class PurchasesOrchestrator(
                     presentedOfferingContext,
                     productId,
                     googleReplacementMode,
+                    galaxyReplacementMode,
                     isPersonalizedPrice,
                     callback,
                 )
@@ -1116,13 +1119,17 @@ internal class PurchasesOrchestrator(
     // endregion
 
     /**
-     * Fetches fresh offerings with rate limiting to prevent excessive network requests.
+     * Clears the in-memory offerings cache and fetches fresh offerings, subject to rate
+     * limiting. Both the cache clear and the fetch are skipped when the rate limit is reached.
      *
      * @param callback Callback to handle the result
      * @return true if fresh fetch was triggered, false if rate limited
      */
-    private fun fetchOfferingsWithRateLimit(callback: (Offerings?, PurchasesError?) -> Unit): Boolean {
+    private fun clearInMemoryCacheAndFetchOfferingsWithRateLimit(
+        callback: (Offerings?, PurchasesError?) -> Unit,
+    ): Boolean {
         return if (preferredLocaleOverrideRateLimiter.shouldProceed()) {
+            offeringsManager.clearInMemoryOfferingsCache()
             verboseLog { "Fetching fresh offerings" }
             getOfferings(
                 object : ReceiveOfferingsCallback {
@@ -1134,7 +1141,6 @@ internal class PurchasesOrchestrator(
                         callback(null, error)
                     }
                 },
-                fetchCurrent = true,
             )
             true
         } else {
@@ -1516,6 +1522,7 @@ internal class PurchasesOrchestrator(
         presentedOfferingContext: PresentedOfferingContext?,
         oldProductId: String,
         googleReplacementMode: GoogleReplacementMode,
+        galaxyReplacementMode: GalaxyReplacementMode,
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback,
     ) {
@@ -1583,10 +1590,15 @@ internal class PurchasesOrchestrator(
             }
         }
         userPurchasing?.let { appUserID ->
+            val replacementMode: ReplacementMode? = when (store) {
+                Store.PLAY_STORE -> googleReplacementMode
+                Store.GALAXY -> galaxyReplacementMode
+                else -> null
+            }
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleReplacementMode,
+                replacementMode,
                 activity,
                 appUserID,
                 presentedOfferingContext,
@@ -1604,7 +1616,7 @@ internal class PurchasesOrchestrator(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        googleReplacementMode: GoogleReplacementMode?,
+        replacementMode: ReplacementMode?,
         activity: Activity,
         appUserID: String,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1642,7 +1654,7 @@ internal class PurchasesOrchestrator(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, googleReplacementMode),
+                    ReplaceProductInfo(purchaseRecord, replacementMode),
                     presentedOfferingContext,
                     isPersonalizedPrice,
                 )

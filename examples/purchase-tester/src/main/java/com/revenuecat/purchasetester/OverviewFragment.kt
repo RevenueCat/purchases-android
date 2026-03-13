@@ -108,7 +108,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         lifecycleScope.launch {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
-                if (sdkConfiguration.useAmazon) {
+                if (sdkConfiguration.store == Store.AMAZON) {
                     Purchases.sharedInstance.getAmazonLWAConsentStatusWith({
                         Log.i("PurchaseTester", "AmazonLWAConsentStatus Success: $it")
                     }, {
