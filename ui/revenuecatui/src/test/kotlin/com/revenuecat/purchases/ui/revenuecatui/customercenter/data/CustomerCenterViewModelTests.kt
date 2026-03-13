@@ -1203,6 +1203,73 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
+    fun `notifyListenersForPromotionalOfferSucceeded calls both listeners`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val storeTransaction = mockk<com.revenuecat.purchases.models.StoreTransaction>(relaxed = true)
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(storeTransaction, customerInfo)
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        model.state.first { it is CustomerCenterState.Success }
+
+        // After purchase, onAcceptedPromotionalOffer calls loadCustomerCenter which reloads.
+        // Suspend the reload indefinitely so it doesn't interfere with test teardown.
+        val reloadDeferred = CompletableDeferred<CustomerCenterConfigData>()
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers { reloadDeferred.await() }
+
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        verify(exactly = 1) { directListener.onPromotionalOfferSucceeded(customerInfo, storeTransaction) }
+        verify(exactly = 1) { purchasesListener.onPromotionalOfferSucceeded(customerInfo, storeTransaction) }
+    }
+
+    @Test
+    fun `notifyListenersForPromotionalOfferSucceeded not called on purchase failure`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(error)
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        model.state.first { it is CustomerCenterState.Success }
+
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        verify(exactly = 0) { directListener.onPromotionalOfferSucceeded(any(), any()) }
+        verify(exactly = 0) { purchasesListener.onPromotionalOfferSucceeded(any(), any()) }
+    }
+
+    @Test
     fun `loadCustomerCenter uses base plan from active subscription when entitlements are empty`(): Unit = runBlocking {
         setupPurchasesMock()
 
