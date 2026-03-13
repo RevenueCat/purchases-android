@@ -511,8 +511,9 @@ public open class DeviceCache(
         }
     }
 
+    @InternalRevenueCatAPI
     @Synchronized
-    internal fun addSuccessfullyPostedToken(token: String, isAutoRenewing: Boolean? = null) {
+    public fun addSuccessfullyPostedToken(token: String, isAutoRenewing: Boolean? = null) {
         val hashedToken = token.sha1()
         log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, hashedToken) }
         val current = getTokenMap().toMutableMap()

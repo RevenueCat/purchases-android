@@ -186,7 +186,7 @@ internal class GalaxyBillingWrapper(
         initiationSource: PostReceiptInitiationSource,
     ) {
         if (!finishTransactions || purchase.type == ProductType.UNKNOWN) {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken, isAutoRenewing = true)
             return
         }
 
@@ -196,7 +196,9 @@ internal class GalaxyBillingWrapper(
         if (purchase.type == ProductType.SUBS) {
             acknowledgePurchase(
                 storeTransaction = purchase,
-                onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                onAcknowledged = { token ->
+                    deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = true)
+                },
             )
         } else {
             log(LogIntent.GALAXY_WARNING) { GalaxyStrings.WARNING_CANNOT_CONSUME_NON_SUBS_PRODUCT_TYPES }
