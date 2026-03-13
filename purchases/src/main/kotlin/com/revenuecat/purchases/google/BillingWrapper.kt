@@ -479,32 +479,36 @@ internal class BillingWrapper(
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
         val isInAppProduct = purchase.type == ProductType.INAPP
 
+        val addToken = { token: String ->
+            deviceCache.addSuccessfullyPostedToken(token, purchase.isAutoRenewing)
+        }
+
         if (isInAppProduct) {
             if (finishTransactions && shouldConsume) {
                 consumePurchase(
                     purchase.purchaseToken,
                     initiationSource,
-                    onConsumed = deviceCache::addSuccessfullyPostedToken,
+                    onConsumed = addToken,
                 )
             } else if (finishTransactions && !alreadyAcknowledged) {
                 log(LogIntent.PURCHASE) { PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND }
                 acknowledge(
                     purchase.purchaseToken,
                     initiationSource,
-                    onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                    onAcknowledged = addToken,
                 )
             } else {
-                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                addToken(purchase.purchaseToken)
             }
         } else {
             if (finishTransactions && !alreadyAcknowledged) {
                 acknowledge(
                     purchase.purchaseToken,
                     initiationSource,
-                    onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                    onAcknowledged = addToken,
                 )
             } else {
-                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                addToken(purchase.purchaseToken)
             }
         }
     }
