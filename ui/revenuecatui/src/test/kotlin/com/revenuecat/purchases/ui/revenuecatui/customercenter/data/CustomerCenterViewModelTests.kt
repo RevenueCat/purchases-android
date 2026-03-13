@@ -2647,23 +2647,18 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `onActivityResumed awaits in-flight refresh before starting its own`(): Unit = runBlocking {
+    fun `onActivityStarted skips refresh when onActivityResumed will handle it`(): Unit = runBlocking {
         setupPurchasesMock()
 
-        // Gate the refresh from onActivityStarted
         var fetchCurrentCalls = 0
-        val fetchCurrentGate = CompletableDeferred<Unit>()
         coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } coAnswers {
             fetchCurrentCalls++
-            if (fetchCurrentCalls == 2) {
-                // Gate on the second call (first is initial load, second is onActivityStarted refresh)
-                fetchCurrentGate.await()
-            }
             customerInfo
         }
 
         val model = setupViewModel()
         model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val callsAfterInitialLoad = fetchCurrentCalls
 
         val context = mockk<Context>(relaxed = true)
         every { context.packageName } returns "com.revenuecat.test"
@@ -2685,23 +2680,16 @@ class CustomerCenterViewModelTests {
         model.pathButtonPressed(context, cancelPath, purchaseInformation)
         verify(timeout = 2_000) { context.startActivity(any()) }
 
-        // Simulate lifecycle: stop -> start (triggers refresh) -> resume
+        // Simulate lifecycle: stop -> start -> resume
         model.onActivityStopped(isChangingConfigurations = false)
         model.onActivityStarted()
         model.onActivityResumed()
 
-        // onActivityStarted refresh is in progress (gated at fetchCurrentCalls == 2).
-        // onActivityResumed should be waiting for it to finish.
-        assertThat(fetchCurrentCalls).isEqualTo(2)
-
-        // Unblock the in-flight refresh — onActivityResumed will then start its own refresh
-        fetchCurrentGate.complete(Unit)
-
         val deadline = System.currentTimeMillis() + 2_000
-        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < 3) {
+        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < callsAfterInitialLoad + 1) {
             Thread.sleep(25)
         }
-        // Third call is from onActivityResumed's refresh
-        assertThat(fetchCurrentCalls).isGreaterThanOrEqualTo(3)
+        // Only one additional refresh from onActivityResumed, none from onActivityStarted
+        assertThat(fetchCurrentCalls).isEqualTo(callsAfterInitialLoad + 1)
     }
 }

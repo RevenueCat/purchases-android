@@ -210,7 +210,10 @@ internal class CustomerCenterViewModelImpl(
     override val state = _state
         .onStart {
             val currentState = _state.value
-            if (currentState is CustomerCenterState.NotLoaded || currentState is CustomerCenterState.Loading) {
+            if (currentState is CustomerCenterState.NotLoaded ||
+                currentState is CustomerCenterState.Loading ||
+                currentState is CustomerCenterState.Error
+            ) {
                 loadCustomerCenter()
             }
         }
@@ -1036,7 +1039,9 @@ internal class CustomerCenterViewModelImpl(
     override fun onActivityStarted() {
         if (wasBackgrounded) {
             wasBackgrounded = false
-            launchRefreshIfPossible()
+            if (!shouldRefreshOnResume) {
+                launchRefreshIfPossible()
+            }
         }
     }
 
