@@ -6,7 +6,7 @@ import android.util.Log
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 
-private const val TAG = "PurchasesGoogleMobileAds"
+private const val TAG = "RCGoogleMobileAds"
 
 /**
  * Executes [block] with the [Purchases] ad tracker if the SDK is configured.
