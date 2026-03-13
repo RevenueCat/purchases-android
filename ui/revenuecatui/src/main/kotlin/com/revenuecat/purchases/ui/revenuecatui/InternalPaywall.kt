@@ -19,7 +19,6 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -57,7 +56,6 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
-import kotlinx.coroutines.launch
 
 @Suppress("LongMethod")
 @Composable
@@ -164,7 +162,6 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
     viewModel.trackPaywallImpressionIfNeeded()
     val context = LocalContext.current
     val activity = context.getActivity()
-    val coroutineScope = rememberCoroutineScope()
 
     if (state.validationWarning != null) {
         val defaultBackground = MaterialTheme.colorScheme.background
@@ -181,9 +178,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
                     viewModel.purchaseSelectedPackage(activity)
                 },
                 onRestore = {
-                    coroutineScope.launch {
-                        viewModel.handleRestorePurchases()
-                    }
+                    viewModel.restorePurchases()
                 },
             )
             CloseButton(
