@@ -46,13 +46,10 @@ internal object DualColorImageGenerator {
         ) ?: return null
         return PreviewAppIcon(
             bitmap = bitmap,
-            prominentColors = runBlocking {
-                AppStyleExtractor.getProminentColorsFromBitmap(
-                    bitmap = bitmap,
-                    count = 2,
-                    dispatcher = Dispatchers.Main,
-                )
-            },
+            prominentColors = AppStyleExtractor.extractProminentColors(
+                bitmap = bitmap,
+                count = 2,
+            ),
         )
     }
 
