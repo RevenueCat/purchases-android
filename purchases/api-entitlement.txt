@@ -309,12 +309,14 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.models.GalaxyReplacementMode getGalaxyReplacementMode();
     method public com.revenuecat.purchases.models.GoogleReplacementMode getGoogleReplacementMode();
     method public String? getOldProductId();
+    method public com.revenuecat.purchases.models.StoreReplacementMode getReplacementMode();
     method public Boolean? isPersonalizedPrice();
     property public final com.revenuecat.purchases.PurchaseParams.Builder builder;
     property public final com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode;
     property public final com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode;
     property public final Boolean? isPersonalizedPrice;
     property public final String? oldProductId;
+    property public final com.revenuecat.purchases.models.StoreReplacementMode replacementMode;
   }
 
   public static class PurchaseParams.Builder {
@@ -330,6 +332,7 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
     method public final com.revenuecat.purchases.PurchaseParams.Builder oldProductId(String oldProductId);
     method public final com.revenuecat.purchases.PurchaseParams.Builder presentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
+    method public final com.revenuecat.purchases.PurchaseParams.Builder replacementMode(com.revenuecat.purchases.models.StoreReplacementMode replacementMode);
   }
 
   @dev.drewhamilton.poko.Poko public final class PurchaseResult {
