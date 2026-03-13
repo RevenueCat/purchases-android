@@ -2643,20 +2643,14 @@ class CustomerCenterViewModelTests {
             Thread.sleep(25)
         }
         assertThat(customerCenterConfigCalls).isGreaterThan(initialCalls)
-        coVerify(atLeast = 1) { purchases.awaitSyncPurchases() }
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
     }
 
     @Test
-    fun `onActivityResumed awaits in-flight refresh before starting sync`(): Unit = runBlocking {
+    fun `onActivityResumed awaits in-flight refresh before starting its own`(): Unit = runBlocking {
         setupPurchasesMock()
 
-        var syncCalls = 0
-        coEvery { purchases.awaitSyncPurchases() } coAnswers {
-            syncCalls++
-            customerInfo
-        }
-
-        // Gate the lightweight refresh from onActivityStarted
+        // Gate the refresh from onActivityStarted
         var fetchCurrentCalls = 0
         val fetchCurrentGate = CompletableDeferred<Unit>()
         coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } coAnswers {
@@ -2691,22 +2685,23 @@ class CustomerCenterViewModelTests {
         model.pathButtonPressed(context, cancelPath, purchaseInformation)
         verify(timeout = 2_000) { context.startActivity(any()) }
 
-        // Simulate lifecycle: stop -> start (triggers lightweight refresh) -> resume
+        // Simulate lifecycle: stop -> start (triggers refresh) -> resume
         model.onActivityStopped(isChangingConfigurations = false)
         model.onActivityStarted()
         model.onActivityResumed()
 
-        // onActivityStarted refresh is in progress, onActivityResumed awaits it.
-        // No syncPurchases should have started yet.
-        assertThat(syncCalls).isEqualTo(0)
+        // onActivityStarted refresh is in progress (gated at fetchCurrentCalls == 2).
+        // onActivityResumed should be waiting for it to finish.
+        assertThat(fetchCurrentCalls).isEqualTo(2)
 
-        // Unblock the lightweight refresh — onActivityResumed will then start syncPurchases
+        // Unblock the in-flight refresh — onActivityResumed will then start its own refresh
         fetchCurrentGate.complete(Unit)
 
         val deadline = System.currentTimeMillis() + 2_000
-        while (System.currentTimeMillis() < deadline && syncCalls < 1) {
+        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < 3) {
             Thread.sleep(25)
         }
-        assertThat(syncCalls).isGreaterThanOrEqualTo(1)
+        // Third call is from onActivityResumed's refresh
+        assertThat(fetchCurrentCalls).isGreaterThanOrEqualTo(3)
     }
 }

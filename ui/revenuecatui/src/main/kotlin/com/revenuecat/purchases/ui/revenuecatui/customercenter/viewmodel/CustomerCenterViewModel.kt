@@ -65,7 +65,6 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -199,13 +198,11 @@ internal class CustomerCenterViewModelImpl(
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
-        private const val FOLLOW_UP_REFRESH_DELAY_MS = 3_000L
     }
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
     private var wasBackgrounded = false
     private var shouldRefreshOnResume = false
-    private var shouldRunFollowUpRefreshAfterResume = false
     private var activeRefreshJob: Job? = null
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
@@ -457,14 +454,12 @@ internal class CustomerCenterViewModelImpl(
             return
         }
         shouldRefreshOnResume = true
-        shouldRunFollowUpRefreshAfterResume = true
         notifyListenersForManageSubscription()
         showManageSubscriptions(context, googleProduct.productId)
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
         shouldRefreshOnResume = true
-        shouldRunFollowUpRefreshAfterResume = true
         notifyListenersForManageSubscription()
         openURL(
             context,
@@ -662,13 +657,8 @@ internal class CustomerCenterViewModelImpl(
         dateFormatter: DateFormatter,
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
-        forceSync: Boolean = false,
     ): List<PurchaseInformation> {
-        val customerInfo = if (forceSync) {
-            purchases.awaitSyncPurchases()
-        } else {
-            purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
-        }
+        val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
 
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
@@ -957,14 +947,10 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun refreshCustomerCenter() {
-        loadCustomerCenter(isRefresh = true, forceSync = false)
+        loadCustomerCenter(isRefresh = true)
     }
 
-    private suspend fun refreshCustomerCenterWithSync() {
-        loadCustomerCenter(isRefresh = true, forceSync = true)
-    }
-
-    private suspend fun loadCustomerCenter(isRefresh: Boolean, forceSync: Boolean = false) {
+    private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {
                 // For refresh, keep Success state but set isRefreshing flag
@@ -982,7 +968,6 @@ internal class CustomerCenterViewModelImpl(
                 dateFormatter = dateFormatter,
                 locale = locale,
                 localization = customerCenterConfigData.localization,
-                forceSync = forceSync,
             )
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
@@ -1058,19 +1043,10 @@ internal class CustomerCenterViewModelImpl(
     override fun onActivityResumed() {
         if (shouldRefreshOnResume) {
             shouldRefreshOnResume = false
-            val runFollowUp = shouldRunFollowUpRefreshAfterResume
-            shouldRunFollowUpRefreshAfterResume = false
             val previousJob = activeRefreshJob
             activeRefreshJob = viewModelScope.launch {
                 previousJob?.join()
-                // Use syncPurchases here because subscription changes made in Play Store's
-                // management screen happen outside the SDK. FETCH_CURRENT only syncs
-                // SDK-initiated pending purchases, which won't pick up external changes.
-                refreshCustomerCenterWithSync()
-                if (runFollowUp) {
-                    delay(FOLLOW_UP_REFRESH_DELAY_MS)
-                    refreshCustomerCenterWithSync()
-                }
+                refreshCustomerCenter()
             }
         }
     }
