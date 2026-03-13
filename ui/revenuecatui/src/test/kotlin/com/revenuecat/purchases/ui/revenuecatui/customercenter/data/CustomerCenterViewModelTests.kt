@@ -58,6 +58,7 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -2589,6 +2590,31 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
+    fun `state retries loading on restart when current state is Error`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var configCalls = 0
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers {
+            configCalls++
+            if (configCalls == 1) {
+                throw PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError, "Network error"))
+            }
+            configData
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Error>().first()
+
+        // Wait past WhileSubscribed timeout so a new collection restarts upstream and runs onStart.
+        Thread.sleep(5_200)
+
+        withTimeout(2_000) {
+            model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        }
+        assertThat(configCalls).isEqualTo(2)
+    }
+
+    @Test
     fun `refreshCustomerCenter uses FETCH_CURRENT not syncPurchases`(): Unit = runBlocking {
         setupPurchasesMock()
 
@@ -2647,18 +2673,12 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `onActivityResumed awaits in-flight refresh before starting its own`(): Unit = runBlocking {
+    fun `onActivityStarted skips refresh when a resume refresh is pending`(): Unit = runBlocking {
         setupPurchasesMock()
 
-        // Gate the refresh from onActivityStarted
         var fetchCurrentCalls = 0
-        val fetchCurrentGate = CompletableDeferred<Unit>()
         coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } coAnswers {
             fetchCurrentCalls++
-            if (fetchCurrentCalls == 2) {
-                // Gate on the second call (first is initial load, second is onActivityStarted refresh)
-                fetchCurrentGate.await()
-            }
             customerInfo
         }
 
@@ -2685,23 +2705,19 @@ class CustomerCenterViewModelTests {
         model.pathButtonPressed(context, cancelPath, purchaseInformation)
         verify(timeout = 2_000) { context.startActivity(any()) }
 
-        // Simulate lifecycle: stop -> start (triggers refresh) -> resume
+        // Simulate lifecycle: stop -> start -> resume
         model.onActivityStopped(isChangingConfigurations = false)
         model.onActivityStarted()
+        // onActivityStarted should not refresh when shouldRefreshOnResume is true.
+        assertThat(fetchCurrentCalls).isEqualTo(1)
+
         model.onActivityResumed()
 
-        // onActivityStarted refresh is in progress (gated at fetchCurrentCalls == 2).
-        // onActivityResumed should be waiting for it to finish.
-        assertThat(fetchCurrentCalls).isEqualTo(2)
-
-        // Unblock the in-flight refresh — onActivityResumed will then start its own refresh
-        fetchCurrentGate.complete(Unit)
-
         val deadline = System.currentTimeMillis() + 2_000
-        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < 3) {
+        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < 2) {
             Thread.sleep(25)
         }
-        // Third call is from onActivityResumed's refresh
-        assertThat(fetchCurrentCalls).isGreaterThanOrEqualTo(3)
+        // Second call is from onActivityResumed's refresh.
+        assertThat(fetchCurrentCalls).isEqualTo(2)
     }
 }
