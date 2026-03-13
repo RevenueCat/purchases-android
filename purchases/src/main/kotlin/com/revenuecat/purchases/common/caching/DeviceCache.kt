@@ -42,7 +42,6 @@ import kotlin.time.Duration.Companion.hours
 
 private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 25.hours
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
-private const val KEY_IS_AUTO_RENEWING = "isAutoRenewing"
 private val tokenMapSerializer = MapSerializer(String.serializer(), TokenCacheEntry.serializer())
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
@@ -104,6 +103,12 @@ public open class DeviceCache(
      * reposts everything with `RESTORE` initiation source.
      */
     internal val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokensV2" }
+
+    /**
+     * In-memory cache for the token map to avoid repeated JSON deserialization.
+     * Populated on first read, invalidated on writes via [saveTokenMap].
+     */
+    private var tokenMapCache: Map<String, TokenCacheEntry>? = null
 
     @VisibleForTesting
     internal val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
@@ -443,14 +448,22 @@ public open class DeviceCache(
      */
     @Synchronized
     private fun getTokenMap(): Map<String, TokenCacheEntry> {
+        tokenMapCache?.let { return it }
+
+        val result = loadTokenMapFromPreferences()
+        tokenMapCache = result
+        return result
+    }
+
+    private fun loadTokenMapFromPreferences(): Map<String, TokenCacheEntry> {
         val json = preferences.getString(tokensCacheKey, null)
         if (json != null) {
             return try {
                 Json.decodeFromString(tokenMapSerializer, json)
             } catch (@Suppress("SwallowedException") e: SerializationException) {
-                parseLegacyTokenMapJson(json)
+                emptyMap()
             } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
-                parseLegacyTokenMapJson(json)
+                emptyMap()
             }
         }
         // Migrate from legacy StringSet if it exists
@@ -470,38 +483,11 @@ public open class DeviceCache(
         }
     }
 
-    /**
-     * Parses the legacy JSON format where values were either `{ "isAutoRenewing": true }` objects
-     * using org.json, or flat `Boolean?` values (pre-serializable format).
-     */
-    private fun parseLegacyTokenMapJson(json: String): Map<String, TokenCacheEntry> {
-        return try {
-            val jsonObject = JSONObject(json)
-            jsonObject.keys().asSequence().associateWith { key ->
-                val value = jsonObject.get(key)
-                if (value is JSONObject) {
-                    TokenCacheEntry(
-                        isAutoRenewing = if (value.isNull(KEY_IS_AUTO_RENEWING)) {
-                            null
-                        } else {
-                            value.getBoolean(KEY_IS_AUTO_RENEWING)
-                        },
-                    )
-                } else {
-                    TokenCacheEntry(
-                        isAutoRenewing = if (jsonObject.isNull(key)) null else jsonObject.getBoolean(key),
-                    )
-                }
-            }
-        } catch (@Suppress("SwallowedException") e: JSONException) {
-            emptyMap()
-        }
-    }
-
     @Synchronized
     private fun saveTokenMap(tokenMap: Map<String, TokenCacheEntry>) {
         log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(tokenMap.keys) }
         putString(tokensCacheKey, Json.encodeToString(tokenMapSerializer, tokenMap))
+        tokenMapCache = tokenMap
     }
 
     @Synchronized
@@ -583,13 +569,19 @@ public open class DeviceCache(
     @Synchronized
     internal fun saveAutoRenewingStatus(hashedTokens: Map<String, StoreTransaction>) {
         val current = getTokenMap().toMutableMap()
+        var changed = false
         for ((hash, transaction) in hashedTokens) {
             val existing = current[hash]
-            if (existing != null && transaction.isAutoRenewing != null) {
+            if (existing != null && transaction.isAutoRenewing != null &&
+                existing.isAutoRenewing != transaction.isAutoRenewing
+            ) {
                 current[hash] = existing.copy(isAutoRenewing = transaction.isAutoRenewing)
+                changed = true
             }
         }
-        saveTokenMap(current)
+        if (changed) {
+            saveTokenMap(current)
+        }
     }
 
     // endregion

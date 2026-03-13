@@ -979,17 +979,13 @@ class DeviceCacheTest {
     @Test
     fun `saveAutoRenewingStatus does not overwrite non-null cached value with null`() {
         mockTokenMap(tokenMapJson("hash1" to true))
-        every { mockEditor.apply() } just runs
 
         val transaction = mockk<StoreTransaction>(relaxed = true).also {
             every { it.isAutoRenewing } returns null
         }
         cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
-        verify {
-            mockEditor.putString(cache.tokensCacheKey, match { json ->
-                val obj = JSONObject(json)
-                obj.length() == 1 && verifyTokenEntry(obj, "hash1", true)
-            })
+        verify(exactly = 0) {
+            mockEditor.putString(cache.tokensCacheKey, any())
         }
     }
 
@@ -1110,23 +1106,69 @@ class DeviceCacheTest {
         }
     }
 
+    // endregion legacy token migration
+
+    // region in-memory token cache
+
     @Test
-    fun `reads old flat boolean format for backwards compatibility`() {
-        // Old format: { "hash1": true, "hash2": null }
-        mockTokenMap("""{"hash1":true,"hash2":null}""")
+    fun `getTokenMap caches result in memory and avoids repeated deserialization`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        cache.getPreviouslySentHashedTokens()
+        cache.getPreviouslySentHashedTokens()
+
+        verify(exactly = 1) {
+            mockPrefs.getString(cache.tokensCacheKey, isNull())
+        }
+    }
+
+    @Test
+    fun `addSuccessfullyPostedToken updates in-memory cache`() {
+        mockTokenMap(tokenMapJson())
+        every { mockEditor.apply() } just runs
+
+        cache.addSuccessfullyPostedToken("token1", true)
+
+        // Clear the mock so SharedPreferences would return null if called
+        every { mockPrefs.getString(cache.tokensCacheKey, isNull()) } returns null
 
         val sentTokens = cache.getPreviouslySentHashedTokens()
-        assertThat(sentTokens).containsExactlyInAnyOrder("hash1", "hash2")
+        assertThat(sentTokens).contains("token1".sha1())
+    }
 
-        // Verify auto-renewing change detection works with old format
+    @Test
+    fun `cleanPreviouslySentTokens updates in-memory cache`() {
+        mockTokenMap(tokenMapJson("hash1" to true, "hash2" to false))
+        every { mockEditor.apply() } just runs
+
+        cache.cleanPreviouslySentTokens(setOf("hash1"))
+
+        // Clear the mock so SharedPreferences would return null if called
+        every { mockPrefs.getString(cache.tokensCacheKey, isNull()) } returns null
+
+        val sentTokens = cache.getPreviouslySentHashedTokens()
+        assertThat(sentTokens).containsExactly("hash1")
+    }
+
+    @Test
+    fun `saveAutoRenewingStatus updates in-memory cache`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+        every { mockEditor.apply() } just runs
+
         val transaction = mockk<StoreTransaction>(relaxed = true).also {
             every { it.isAutoRenewing } returns false
         }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
+
+        // Clear the mock so SharedPreferences would return null if called
+        every { mockPrefs.getString(cache.tokensCacheKey, isNull()) } returns null
+
+        // Should still detect the change from the in-memory cache
         val changed = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
-        assertThat(changed).containsExactly(transaction)
+        assertThat(changed).isEmpty() // false == false, no change
     }
 
-    // endregion legacy token migration
+    // endregion in-memory token cache
 
     private fun mockTokenMap(json: String) {
         mockString(cache.tokensCacheKey, json)
