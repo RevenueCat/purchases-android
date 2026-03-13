@@ -53,6 +53,8 @@ internal object GalaxyStrings {
         "returned no error, but also returned no result. This is likely an issue with the Galaxy Store."
     const val CHANGE_SUBSCRIPTION_PLAN_REQUEST_ERRORED = "An error occurred while changing subscription from " +
         "product ID %s to %s with the Galaxy Store. Error: %s"
+    const val CHARGE_FULL_PRICE_NOT_SUPPORTED = "StoreReplacementMode.CHARGE_FULL_PRICE is not supported for " +
+        "Galaxy Store subscription changes."
 
     // Promotion Eligibility
     const val EMPTY_GET_PROMOTION_ELIGIBILITY_REQUEST = "Received a promotion eligibility request for 0 " +
