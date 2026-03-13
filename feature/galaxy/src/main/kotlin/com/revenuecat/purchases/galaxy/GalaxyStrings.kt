@@ -47,7 +47,7 @@ internal object GalaxyStrings {
         "date string: %s"
 
     const val ERROR_CANNOT_PARSE_SUBSCRIPTION_END_DATE = "Could not parse the subscription end date for Galaxy Store " +
-        "purchase. Purchase date string: %s"
+        "purchase. Error: %s"
 
     // Subscription Plan Changes
     const val ANOTHER_CHANGE_SUBSCRIPTION_PLAN_REQUEST_IN_FLIGHT = "Another subscription plan change request with " +
