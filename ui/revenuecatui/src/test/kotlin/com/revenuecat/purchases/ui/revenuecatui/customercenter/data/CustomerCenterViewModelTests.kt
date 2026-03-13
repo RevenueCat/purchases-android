@@ -1225,13 +1225,6 @@ class CustomerCenterViewModelTests {
         val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
         val activity = mockk<Activity>(relaxed = true)
 
-        model.state.first { it is CustomerCenterState.Success }
-
-        // After purchase, onAcceptedPromotionalOffer calls loadCustomerCenter which reloads.
-        // Suspend the reload indefinitely so it doesn't interfere with test teardown.
-        val reloadDeferred = CompletableDeferred<CustomerCenterConfigData>()
-        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers { reloadDeferred.await() }
-
         model.onAcceptedPromotionalOffer(subscriptionOption, activity)
 
         verify(exactly = 1) { directListener.onPromotionalOfferSucceeded(customerInfo, storeTransaction) }
@@ -1260,8 +1253,6 @@ class CustomerCenterViewModelTests {
 
         val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
         val activity = mockk<Activity>(relaxed = true)
-
-        model.state.first { it is CustomerCenterState.Success }
 
         model.onAcceptedPromotionalOffer(subscriptionOption, activity)
 
