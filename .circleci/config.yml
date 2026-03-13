@@ -249,7 +249,7 @@ jobs:
           command: bundle exec fastlane android build_custom_entitlement_computation_sample
       - android/save_build_cache
 
-  assemble-admob-integration-sample-app:
+  assemble-google-mobile-ads-integration-sample-app:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -262,7 +262,7 @@ jobs:
       - android/restore_build_cache
       - run:
           name: Build sample app
-          command: bundle exec fastlane android build_admob_integration_sample
+          command: bundle exec fastlane android build_google_mobile_ads_integration_sample
       - android/save_build_cache
 
   prepare-tests:
@@ -1034,7 +1034,7 @@ workflows:
       - assemble-custom-entitlement-computation-sample-app:
           requires:
             - deploy-snapshot
-      - assemble-admob-integration-sample-app
+      - assemble-google-mobile-ads-integration-sample-app
 
   build-test-deploy:
     when:
@@ -1097,7 +1097,7 @@ workflows:
       - assemble-rct-tester-release:
           requires:
             - prepare-tests
-      - assemble-admob-integration-sample-app:
+      - assemble-google-mobile-ads-integration-sample-app:
           requires:
             - prepare-tests
       - test_dokka_hide_internal:
