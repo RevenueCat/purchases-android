@@ -366,6 +366,11 @@ jobs:
           command: |
             ./gradlew downloadSamsungIapAar --no-daemon
       - run:
+          name: Validate Galaxy API Signature with Metalava
+          command: |
+            ./gradlew :feature:galaxy:metalavaGenerateSignatureBc8Release --no-daemon
+            git diff --exit-code -- feature/galaxy/api.txt
+      - run:
           name: Compile API Tester with Galaxy Files
           command: |
             ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
