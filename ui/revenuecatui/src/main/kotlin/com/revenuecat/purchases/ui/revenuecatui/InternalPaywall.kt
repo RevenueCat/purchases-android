@@ -21,6 +21,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
@@ -154,32 +156,49 @@ internal fun InternalPaywall(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     viewModel.trackPaywallImpressionIfNeeded()
+    val context = LocalContext.current
+    val activity = context.getActivity()
+
+    if (state.validationWarning != null) {
+        val defaultBackground = MaterialTheme.colorScheme.background
+        val defaultOnSurface = MaterialTheme.colorScheme.onSurface
+        Box(
+            modifier = Modifier.screenModeBackground(state.isInFullScreenMode, defaultBackground),
+        ) {
+            DefaultPaywallView(
+                packages = state.templateConfiguration.packages.all,
+                selectedPackage = state.selectedPackage.value,
+                warning = state.validationWarning,
+                onSelectPackage = viewModel::selectPackage,
+                onPurchase = {
+                    viewModel.purchaseSelectedPackage(activity)
+                },
+                onRestore = {
+                    viewModel.restorePurchases()
+                },
+            )
+            CloseButton(
+                shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+                color = defaultOnSurface,
+                actionInProgress = viewModel.actionInProgress.value,
+                onClick = viewModel::closePaywall,
+            )
+        }
+        return
+    }
+
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
-        modifier = Modifier
-            .conditional(state.isInFullScreenMode) {
-                Modifier
-                    .fillMaxHeight()
-                    .background(backgroundColor)
-            }
-            .conditional(!state.isInFullScreenMode) {
-                Modifier
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = UIConstant.defaultCornerRadius,
-                            topEnd = UIConstant.defaultCornerRadius,
-                        ),
-                    )
-                    .background(backgroundColor)
-            },
+        modifier = Modifier.screenModeBackground(state.isInFullScreenMode, backgroundColor),
     ) {
         val configuration = state.configurationWithOverriddenLocale()
 
         CompositionLocalProvider(
-            LocalActivity provides LocalContext.current.getActivity(),
+            LocalActivity provides activity,
             LocalContext provides state.contextWithConfiguration(configuration),
             LocalConfiguration provides configuration,
         ) {
@@ -265,6 +284,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                             resolvedOffer = action.resolvedOffer,
                         )
                     }
+
                 is PaywallAction.External.LaunchWebCheckout -> {
                     val url = viewModel.getWebCheckoutUrl(action)
                     if (url == null) {
@@ -308,3 +328,20 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
 
     URLOpener.openURL(this, url, openingMethod)
 }
+
+private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this
+    .conditional(isInFullScreenMode) {
+        Modifier
+            .fillMaxHeight()
+            .background(backgroundColor)
+    }
+    .conditional(!isInFullScreenMode) {
+        Modifier
+            .clip(
+                RoundedCornerShape(
+                    topStart = UIConstant.defaultCornerRadius,
+                    topEnd = UIConstant.defaultCornerRadius,
+                ),
+            )
+            .background(backgroundColor)
+    }
