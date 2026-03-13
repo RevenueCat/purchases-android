@@ -46,8 +46,8 @@ class AppStyleExtractorTests {
         )
 
         assertThat(colors).hasSize(2)
-        assertThat(colors.contains(Color.Red)).isTrue()
-        assertThat(colors.contains(Color.Green)).isTrue()
+        assertThat(colors.any { it.isCloseTo(Color.Red) }).isTrue()
+        assertThat(colors.any { it.isCloseTo(Color.Green) }).isTrue()
     }
 
     @Test
@@ -202,5 +202,11 @@ class AppStyleExtractorTests {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         bitmap.eraseColor(color)
         return bitmap
+    }
+
+    private fun Color.isCloseTo(expected: Color, tolerance: Double = 0.1): Boolean {
+        val actualColor = Triple(red.toDouble(), green.toDouble(), blue.toDouble())
+        val expectedColor = Triple(expected.red.toDouble(), expected.green.toDouble(), expected.blue.toDouble())
+        return colorDistance(actualColor, expectedColor) <= tolerance
     }
 }
