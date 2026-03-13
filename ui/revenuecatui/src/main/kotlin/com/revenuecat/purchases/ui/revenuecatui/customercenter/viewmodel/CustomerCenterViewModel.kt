@@ -1043,6 +1043,7 @@ internal class CustomerCenterViewModelImpl(
     override fun onActivityResumed() {
         if (shouldRefreshOnResume) {
             shouldRefreshOnResume = false
+            Logger.d("Refreshing Customer Center after returning from manage subscriptions")
             val previousJob = activeRefreshJob
             activeRefreshJob = viewModelScope.launch {
                 previousJob?.join()
