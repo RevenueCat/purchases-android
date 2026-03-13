@@ -30,6 +30,7 @@ import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.RestoreByOrderIdListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -71,6 +72,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         binding.getProductsButton.setOnClickListener { showGetProductsDialog() }
         binding.purchaseProductIdButton.setOnClickListener { showPurchaseProductIdDialog() }
         binding.findByPlacementButton.setOnClickListener { showFindPlacementDialog() }
+        binding.restoreByOrderIdButton.setOnClickListener { showRestoreByOrderIdDialog() }
 
         viewModel = OverviewViewModel(this)
 
@@ -330,6 +332,55 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         }
         val dialog = builder.create()
         dialog.show()
+    }
+
+    private fun showRestoreByOrderIdDialog() {
+        val builder = MaterialAlertDialogBuilder(requireContext())
+        builder.setTitle("Enter the Order ID to restore:")
+        val input = EditText(context)
+        input.inputType = InputType.TYPE_CLASS_TEXT
+        input.hint = "e.g., GPA.1234-5678-9012-34567"
+        builder.setView(input)
+        builder.setPositiveButton("Restore") { _, _ ->
+            val orderId = input.text.toString()
+            if (orderId.isBlank()) {
+                showToast("Please enter an order ID")
+                return@setPositiveButton
+            }
+            Purchases.sharedInstance.restorePurchaseByOrderId(orderId) { result ->
+                when (result) {
+                    is RestoreByOrderIdListener.Result.Success -> {
+                        viewModel.customerInfo.postValue(result.customerInfo)
+                        showToast("Successfully restored purchase for order ID: $orderId")
+                    }
+                    is RestoreByOrderIdListener.Result.Error -> {
+                        showUserError(requireActivity(), result.error)
+                    }
+                    is RestoreByOrderIdListener.Result.RateLimitExceeded -> {
+                        showToast("Rate limit exceeded. Please try again later.")
+                    }
+                    is RestoreByOrderIdListener.Result.OrderIdNotFound -> {
+                        showToast("Order ID not found: $orderId")
+                    }
+                    is RestoreByOrderIdListener.Result.OrderNotEligible -> {
+                        showToast("Order is not eligible for restore.")
+                    }
+                    is RestoreByOrderIdListener.Result.FeatureNotEnabled -> {
+                        showToast("Restore by order ID is not enabled in the dashboard.")
+                    }
+                    is RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser -> {
+                        showToast("Purchase belongs to an authenticated user and cannot be transferred.")
+                    }
+                    else -> {
+                        showToast("Unknown result: $result")
+                    }
+                }
+            }
+        }
+        builder.setNegativeButton("Cancel") { dialog, _ ->
+            dialog.cancel()
+        }
+        builder.create().show()
     }
 
     override fun displayError(error: PurchasesError) {

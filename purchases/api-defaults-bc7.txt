@@ -428,6 +428,7 @@ package com.revenuecat.purchases {
     method @Deprecated public void purchaseProduct(android.app.Activity activity, com.revenuecat.purchases.models.StoreProduct storeProduct, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
     method public void redeemWebPurchase(com.revenuecat.purchases.WebPurchaseRedemption webPurchaseRedemption, com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener listener);
     method public void removeUpdatedCustomerInfoListener();
+    method public void restorePurchaseByOrderId(String orderId, com.revenuecat.purchases.interfaces.RestoreByOrderIdListener listener);
     method public void restorePurchases(com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
     method public void setAd(String? ad);
     method public void setAdGroup(String? adGroup);
