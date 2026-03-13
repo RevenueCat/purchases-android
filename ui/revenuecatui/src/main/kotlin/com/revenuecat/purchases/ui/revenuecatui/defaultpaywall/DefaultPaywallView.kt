@@ -252,8 +252,8 @@ private fun DefaultPaywallFooter(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
                 .widthIn(max = ReadableContentWidth.dp)
+                .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
