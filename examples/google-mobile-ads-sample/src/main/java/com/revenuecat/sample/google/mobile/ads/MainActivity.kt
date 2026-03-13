@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob
+package com.revenuecat.sample.google.mobile.ads
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -7,10 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import com.revenuecat.sample.admob.ui.HomeScreen
+import com.revenuecat.sample.google.mobile.ads.ui.HomeScreen
 
 /**
- * Main activity for the AdMob Integration Sample app.
+ * Main activity for the Google Mobile Ads Integration Sample app.
  *
  * This activity sets up Jetpack Compose and displays the HomeScreen
  * with all ad format examples. Each composable calls `Purchases.sharedInstance.adTracker` for load-and-track

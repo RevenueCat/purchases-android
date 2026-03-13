@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob
+package com.revenuecat.sample.google.mobile.ads
 
 import android.app.Application
 import android.util.Log
@@ -6,10 +6,10 @@ import com.google.android.gms.ads.MobileAds
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
-import com.revenuecat.sample.admob.data.Constants
+import com.revenuecat.sample.google.mobile.ads.data.Constants
 
 /**
- * Main application class for the AdMob Integration Sample.
+ * Main application class for the Google Mobile Ads Integration Sample.
  *
  * This class demonstrates:
  * 1. Initializing the RevenueCat SDK
@@ -22,7 +22,7 @@ class MainApplication : Application() {
         super.onCreate()
 
         initializeRevenueCat()
-        initializeAdMob()
+        initializeGoogleMobileAds()
     }
 
     /**
@@ -52,19 +52,19 @@ class MainApplication : Application() {
     }
 
     /**
-     * Initialize Google Mobile Ads SDK (AdMob)
+     * Initialize Google Mobile Ads SDK
      *
-     * This initializes the AdMob SDK asynchronously. Once initialization is complete,
+     * This initializes the SDK asynchronously. Once initialization is complete,
      * ads can be loaded and displayed.
      */
-    private fun initializeAdMob() {
+    private fun initializeGoogleMobileAds() {
         MobileAds.initialize(this) { initializationStatus ->
             val statusMap = initializationStatus.adapterStatusMap
             for (adapterClass in statusMap.keys) {
                 val status = statusMap[adapterClass]
-                Log.d(TAG, "AdMob adapter $adapterClass: ${status?.description}")
+                Log.d(TAG, "Google Mobile Ads adapter $adapterClass: ${status?.description}")
             }
-            Log.d(TAG, "AdMob SDK initialized successfully")
+            Log.d(TAG, "Google Mobile Ads SDK initialized successfully")
         }
     }
 

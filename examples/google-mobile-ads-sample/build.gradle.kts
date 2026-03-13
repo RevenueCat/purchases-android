@@ -14,7 +14,7 @@ val localProperties = Properties().apply {
 
 android {
     defaultConfig {
-        applicationId = "com.revenuecat.sample.admob"
+        applicationId = "com.revenuecat.sample.google.mobile.ads"
         minSdk = 26
         versionCode = 1
         versionName = "1.0"
@@ -55,14 +55,14 @@ android {
         }
     }
 
-    namespace = "com.revenuecat.sample.admob"
+    namespace = "com.revenuecat.sample.google.mobile.ads"
 }
 
 dependencies {
     // RevenueCat
     implementation(project(":purchases"))
 
-    // RevenueCat AdMob Adapter
+    // RevenueCat Google Mobile Ads adapter
     implementation(project(":feature:google-mobile-ads"))
 
     // AndroidX
@@ -78,6 +78,6 @@ dependencies {
     implementation(libs.compose.ui.tooling.preview)
     implementation(libs.compose.material3)
 
-    // AdMob APIs are referenced directly in sample source files.
+    // Google Mobile Ads APIs are referenced directly in sample source files.
     implementation(libs.google.mobile.ads)
 }

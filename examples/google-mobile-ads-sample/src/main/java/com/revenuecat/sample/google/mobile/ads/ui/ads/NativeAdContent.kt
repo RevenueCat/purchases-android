@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui.ads
+package com.revenuecat.sample.google.mobile.ads.ui.ads
 
 import android.view.LayoutInflater
 import android.view.View
@@ -27,9 +27,9 @@ import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.google.mobile.ads.forNativeAdWithTracking
-import com.revenuecat.sample.admob.R
-import com.revenuecat.sample.admob.data.Constants
-import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView
+import com.revenuecat.sample.google.mobile.ads.R
+import com.revenuecat.sample.google.mobile.ads.data.Constants
+import com.google.android.gms.ads.nativead.NativeAdView as GmaNativeAdView
 
 @Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -55,9 +55,9 @@ internal fun NativeAdContent() {
 
     Button(
         onClick = {
-            AdLoader.Builder(context, Constants.AdMob.NATIVE_AD_UNIT_ID)
+            AdLoader.Builder(context, Constants.GoogleMobileAds.NATIVE_AD_UNIT_ID)
                 .forNativeAdWithTracking(
-                    adUnitId = Constants.AdMob.NATIVE_AD_UNIT_ID,
+                    adUnitId = Constants.GoogleMobileAds.NATIVE_AD_UNIT_ID,
                     placement = "home_native",
                 ) { nativeAd ->
                     nativeAdState?.destroy()
@@ -101,9 +101,9 @@ internal fun NativeVideoAdContent() {
 
     Button(
         onClick = {
-            AdLoader.Builder(context, Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID)
+            AdLoader.Builder(context, Constants.GoogleMobileAds.NATIVE_VIDEO_AD_UNIT_ID)
                 .forNativeAdWithTracking(
-                    adUnitId = Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID,
+                    adUnitId = Constants.GoogleMobileAds.NATIVE_VIDEO_AD_UNIT_ID,
                     placement = "home_native_video",
                 ) { nativeAd ->
                     nativeVideoAdState?.destroy()
@@ -131,7 +131,7 @@ private fun NativeAdView(nativeAd: NativeAd) {
             .padding(vertical = 8.dp),
         factory = { context ->
             val adView = LayoutInflater.from(context)
-                .inflate(R.layout.native_ad_layout, null) as AdMobNativeAdView
+                .inflate(R.layout.native_ad_layout, null) as GmaNativeAdView
 
             populateNativeAdView(nativeAd, adView)
 
@@ -140,7 +140,7 @@ private fun NativeAdView(nativeAd: NativeAd) {
     )
 }
 
-private fun populateNativeAdView(nativeAd: NativeAd, adView: AdMobNativeAdView) {
+private fun populateNativeAdView(nativeAd: NativeAd, adView: GmaNativeAdView) {
     val headlineView = adView.findViewById<TextView>(R.id.ad_headline)
     val bodyView = adView.findViewById<TextView>(R.id.ad_body)
     val callToActionView = adView.findViewById<Button>(R.id.ad_call_to_action)

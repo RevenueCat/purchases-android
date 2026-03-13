@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui.ads
+package com.revenuecat.sample.google.mobile.ads.ui.ads
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,7 +12,7 @@ import com.google.android.gms.ads.AdRequest
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.google.mobile.ads.loadAndTrackInterstitialAd
-import com.revenuecat.sample.admob.data.Constants
+import com.revenuecat.sample.google.mobile.ads.data.Constants
 
 @Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -29,7 +29,7 @@ internal fun ErrorTestingContent() {
         onClick = {
             Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
                 context = context,
-                adUnitId = Constants.AdMob.INVALID_AD_UNIT_ID,
+                adUnitId = Constants.GoogleMobileAds.INVALID_AD_UNIT_ID,
                 adRequest = AdRequest.Builder().build(),
                 placement = "error_test",
             )

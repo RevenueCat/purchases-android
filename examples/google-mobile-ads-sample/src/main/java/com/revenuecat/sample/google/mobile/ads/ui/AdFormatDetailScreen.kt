@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui
+package com.revenuecat.sample.google.mobile.ads.ui
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
@@ -19,14 +19,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.revenuecat.sample.admob.ui.ads.AppOpenAdContent
-import com.revenuecat.sample.admob.ui.ads.BannerAdContent
-import com.revenuecat.sample.admob.ui.ads.ErrorTestingContent
-import com.revenuecat.sample.admob.ui.ads.InterstitialAdContent
-import com.revenuecat.sample.admob.ui.ads.NativeAdContent
-import com.revenuecat.sample.admob.ui.ads.NativeVideoAdContent
-import com.revenuecat.sample.admob.ui.ads.RewardedAdContent
-import com.revenuecat.sample.admob.ui.ads.RewardedInterstitialAdContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.AppOpenAdContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.BannerAdContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.ErrorTestingContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.InterstitialAdContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.NativeAdContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.NativeVideoAdContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.RewardedAdContent
+import com.revenuecat.sample.google.mobile.ads.ui.ads.RewardedInterstitialAdContent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

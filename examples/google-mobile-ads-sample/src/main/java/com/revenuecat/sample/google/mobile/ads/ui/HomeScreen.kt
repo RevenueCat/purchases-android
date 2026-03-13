@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui
+package com.revenuecat.sample.google.mobile.ads.ui
 
 import android.app.Activity
 import androidx.compose.runtime.Composable

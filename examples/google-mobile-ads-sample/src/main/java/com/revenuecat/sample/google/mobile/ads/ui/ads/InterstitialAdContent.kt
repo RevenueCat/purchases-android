@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui.ads
+package com.revenuecat.sample.google.mobile.ads.ui.ads
 
 import android.app.Activity
 import android.widget.Toast
@@ -16,22 +16,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
-import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.google.mobile.ads.loadAndTrackAppOpenAd
-import com.revenuecat.sample.admob.data.Constants
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackInterstitialAd
+import com.revenuecat.sample.google.mobile.ads.data.Constants
 
 @Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
-internal fun AppOpenAdContent(activity: Activity) {
+internal fun InterstitialAdContent(activity: Activity) {
     val context = LocalContext.current
     var status by remember { mutableStateOf("Not Loaded") }
-    var appOpenAd by remember { mutableStateOf<AppOpenAd?>(null) }
+    var interstitialAd by remember { mutableStateOf<InterstitialAd?>(null) }
 
     Text(
-        text = "Full-screen ad designed for app launch/resume. Tracks: Loaded, Displayed, Opened (on click), Revenue.",
+        text = "Full-screen ad. Tracks: Loaded, Displayed, Opened (on click), Revenue.",
         style = MaterialTheme.typography.bodySmall,
     )
 
@@ -44,20 +45,20 @@ internal fun AppOpenAdContent(activity: Activity) {
     Button(
         onClick = {
             status = "Loading..."
-            Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
+            Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
                 context = context,
-                adUnitId = Constants.AdMob.APP_OPEN_AD_UNIT_ID,
+                adUnitId = Constants.GoogleMobileAds.INTERSTITIAL_AD_UNIT_ID,
                 adRequest = AdRequest.Builder().build(),
-                placement = "home_app_open",
-                loadCallback = object : AppOpenAd.AppOpenAdLoadCallback() {
-                    override fun onAdLoaded(ad: AppOpenAd) {
-                        appOpenAd = ad
+                placement = "home_interstitial",
+                loadCallback = object : InterstitialAdLoadCallback() {
+                    override fun onAdLoaded(ad: InterstitialAd) {
+                        interstitialAd = ad
                         status = "Loaded - Ready to Show"
-                        Toast.makeText(context, "App open ad loaded!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Interstitial loaded!", Toast.LENGTH_SHORT).show()
                     }
 
                     override fun onAdFailedToLoad(error: LoadAdError) {
-                        appOpenAd = null
+                        interstitialAd = null
                         status = "Failed: ${error.message}"
                         Toast.makeText(context, "Failed to load", Toast.LENGTH_SHORT).show()
                     }
@@ -71,10 +72,10 @@ internal fun AppOpenAdContent(activity: Activity) {
 
     Button(
         onClick = {
-            val ad = appOpenAd
+            val ad = interstitialAd
             if (ad != null) {
                 ad.show(activity)
-                appOpenAd = null
+                interstitialAd = null
                 status = "Shown - Load Again"
             } else {
                 Toast.makeText(context, "No ad loaded yet", Toast.LENGTH_SHORT).show()

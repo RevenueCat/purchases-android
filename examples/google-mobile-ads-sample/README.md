@@ -1,6 +1,6 @@
-# AdMob Integration Sample
+# Google Mobile Ads Integration Sample
 
-This sample app demonstrates how to integrate Google AdMob with RevenueCat's ad event tracking using the `purchases-google-mobile-ads` adapter library. The adapter handles all event mapping automatically — you load ads through it and RevenueCat events are tracked for you.
+This sample app demonstrates how to integrate Google Mobile Ads (AdMob) with RevenueCat's ad event tracking using the `purchases-google-mobile-ads` adapter library. The adapter handles all event mapping automatically — you load ads through it and RevenueCat events are tracked for you.
 
 ## Overview
 

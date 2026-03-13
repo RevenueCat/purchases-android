@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui.ads
+package com.revenuecat.sample.google.mobile.ads.ui.ads
 
 import android.app.Activity
 import android.widget.Toast
@@ -21,7 +21,7 @@ import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoa
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.google.mobile.ads.loadAndTrackRewardedInterstitialAd
-import com.revenuecat.sample.admob.data.Constants
+import com.revenuecat.sample.google.mobile.ads.data.Constants
 
 @Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -47,7 +47,7 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
             status = "Loading..."
             Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
                 context = context,
-                adUnitId = Constants.AdMob.REWARDED_INTERSTITIAL_AD_UNIT_ID,
+                adUnitId = Constants.GoogleMobileAds.REWARDED_INTERSTITIAL_AD_UNIT_ID,
                 adRequest = AdRequest.Builder().build(),
                 placement = "home_rewarded_interstitial",
                 loadCallback = object : RewardedInterstitialAdLoadCallback() {

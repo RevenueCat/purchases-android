@@ -1,9 +1,9 @@
-package com.revenuecat.sample.admob.data
+package com.revenuecat.sample.google.mobile.ads.data
 
-import com.revenuecat.sample.admob.BuildConfig
+import com.revenuecat.sample.google.mobile.ads.BuildConfig
 
 /**
- * Constants for the AdMob Integration Sample app.
+ * Constants for the Google Mobile Ads Integration Sample app.
  *
  * IMPORTANT: These are test ad unit IDs provided by Google AdMob for development and testing.
  * Replace these with your actual production ad unit IDs before publishing your app.
@@ -28,7 +28,7 @@ object Constants {
      * These are official test IDs provided by Google that always serve test ads.
      * Source: https://developers.google.com/admob/android/test-ads
      */
-    object AdMob {
+    object GoogleMobileAds {
         /**
          * Banner Ad Test Unit ID
          * Always successfully loads and displays a test banner ad.

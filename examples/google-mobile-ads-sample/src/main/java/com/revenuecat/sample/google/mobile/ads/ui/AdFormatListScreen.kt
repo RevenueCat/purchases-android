@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui
+package com.revenuecat.sample.google.mobile.ads.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +38,7 @@ internal fun AdFormatListScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "AdMob + RevenueCat",
+                        text = "Google Mobile Ads + RevenueCat",
                         fontWeight = FontWeight.Bold,
                     )
                 },

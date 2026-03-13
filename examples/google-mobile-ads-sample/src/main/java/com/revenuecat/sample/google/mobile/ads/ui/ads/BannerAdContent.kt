@@ -1,4 +1,4 @@
-package com.revenuecat.sample.admob.ui.ads
+package com.revenuecat.sample.google.mobile.ads.ui.ads
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.MaterialTheme
@@ -11,7 +11,7 @@ import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.google.mobile.ads.loadAndTrackAd
-import com.revenuecat.sample.admob.data.Constants
+import com.revenuecat.sample.google.mobile.ads.data.Constants
 
 @Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -27,7 +27,7 @@ internal fun BannerAdContent() {
         factory = { context ->
             AdView(context).apply {
                 setAdSize(AdSize.BANNER)
-                adUnitId = Constants.AdMob.BANNER_AD_UNIT_ID
+                adUnitId = Constants.GoogleMobileAds.BANNER_AD_UNIT_ID
 
                 // Load the ad with RevenueCat event tracking
                 loadAndTrackAd(adRequest = AdRequest.Builder().build(), placement = "home_banner")
