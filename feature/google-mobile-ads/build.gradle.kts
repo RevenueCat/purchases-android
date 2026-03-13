@@ -7,7 +7,7 @@ metalava {
 }
 
 android {
-    namespace = "com.revenuecat.purchases.admob"
+    namespace = "com.revenuecat.purchases.google.mobile.ads"
 
     defaultConfig {
         missingDimensionStrategy("apis", "defaults")

@@ -2,7 +2,7 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.google.mobile.ads
 
 import android.annotation.SuppressLint
 import android.content.Context

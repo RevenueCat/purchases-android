@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.google.mobile.ads
 
 import android.content.Context
 import com.google.android.gms.ads.AdRequest
@@ -9,8 +9,7 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
-import com.google.android.gms.ads.rewarded.RewardedAd
-import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.appopen.AppOpenAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.AdTracker
 import io.mockk.every
@@ -25,60 +24,58 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
-@RunWith(RobolectricTestRunner::class)
-class RewardedAdFlowTest {
+class AppOpenAdFlowTest {
 
     @Before
     fun setUp() {
-        mockkStatic(RewardedAd::class)
+        mockkStatic(AppOpenAd::class)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(RewardedAd::class)
+        unmockkStatic(AppOpenAd::class)
     }
 
     @Test
-    fun `rewarded success wires wrappers and forwards callbacks`() {
-        val context = mockk<Context>(relaxed = true)
+    fun `app open success wires wrappers and forwards callbacks`() {
+        val context = mockk<Context>()
         val adRequest = mockk<AdRequest>()
-        val rewardedAd = mockk<RewardedAd>(relaxed = true)
+        val appOpenAd = mockk<AppOpenAd>(relaxed = true)
         val responseInfo = mockk<ResponseInfo>()
-        every { rewardedAd.responseInfo } returns responseInfo
+        every { appOpenAd.responseInfo } returns responseInfo
 
         val delegateFsc = RecordingFullScreenContentCallback()
         val delegatePaid = RecordingPaidEventListener()
-        val loadCallback = RecordingRewardedLoadCallback()
+        val loadCallback = RecordingAppOpenLoadCallback()
 
-        val loadCallbackSlot = slot<RewardedAdLoadCallback>()
+        val loadCallbackSlot = slot<AppOpenAd.AppOpenAdLoadCallback>()
         every {
-            RewardedAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
+            AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
         val adTracker = mockk<AdTracker>(relaxed = true)
-        adTracker.loadAndTrackRewardedAd(
+        adTracker.loadAndTrackAppOpenAd(
             context = context,
-            adUnitId = "rewarded-unit",
+            adUnitId = "app-open-unit",
             adRequest = adRequest,
-            placement = "rewarded",
+            placement = "app_open",
             loadCallback = loadCallback,
             fullScreenContentCallback = delegateFsc,
             onPaidEventListener = delegatePaid,
         )
 
         assertNotNull(loadCallbackSlot.captured)
-        loadCallbackSlot.captured.onAdLoaded(rewardedAd)
+        loadCallbackSlot.captured.onAdLoaded(appOpenAd)
 
-        assertSame(rewardedAd, loadCallback.loadedAd)
+        assertSame(appOpenAd, loadCallback.loadedAd)
+
         val fscSlot = slot<FullScreenContentCallback>()
-        verify { rewardedAd.fullScreenContentCallback = capture(fscSlot) }
+        verify { appOpenAd.fullScreenContentCallback = capture(fscSlot) }
         assertTrue(fscSlot.captured is TrackingFullScreenContentCallback)
 
         val paidSlot = slot<OnPaidEventListener>()
-        verify { rewardedAd.onPaidEventListener = capture(paidSlot) }
+        verify { appOpenAd.onPaidEventListener = capture(paidSlot) }
 
         fscSlot.captured.onAdDismissedFullScreenContent()
         assertTrue(delegateFsc.dismissedCalled)
@@ -89,23 +86,23 @@ class RewardedAdFlowTest {
     }
 
     @Test
-    fun `rewarded failure forwards to load callback`() {
-        val context = mockk<Context>(relaxed = true)
+    fun `app open failure forwards to load callback`() {
+        val context = mockk<Context>()
         val adRequest = mockk<AdRequest>()
         val error = mockk<LoadAdError>()
-        val loadCallback = RecordingRewardedLoadCallback()
+        val loadCallback = RecordingAppOpenLoadCallback()
 
-        val loadCallbackSlot = slot<RewardedAdLoadCallback>()
+        val loadCallbackSlot = slot<AppOpenAd.AppOpenAdLoadCallback>()
         every {
-            RewardedAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
+            AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
         } answers {}
 
         val adTracker = mockk<AdTracker>(relaxed = true)
-        adTracker.loadAndTrackRewardedAd(
+        adTracker.loadAndTrackAppOpenAd(
             context = context,
-            adUnitId = "rewarded-unit",
+            adUnitId = "app-open-unit",
             adRequest = adRequest,
-            placement = "rewarded",
+            placement = "app_open",
             loadCallback = loadCallback,
         )
 
@@ -115,11 +112,11 @@ class RewardedAdFlowTest {
         assertSame(error, loadCallback.failedToLoadError)
     }
 
-    private class RecordingRewardedLoadCallback : RewardedAdLoadCallback() {
-        var loadedAd: RewardedAd? = null
+    private class RecordingAppOpenLoadCallback : AppOpenAd.AppOpenAdLoadCallback() {
+        var loadedAd: AppOpenAd? = null
         var failedToLoadError: LoadAdError? = null
 
-        override fun onAdLoaded(ad: RewardedAd) {
+        override fun onAdLoaded(ad: AppOpenAd) {
             loadedAd = ad
         }
 

@@ -20,7 +20,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.admob.loadAndTrackInterstitialAd
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackInterstitialAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")

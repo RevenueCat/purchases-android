@@ -19,7 +19,7 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.admob.loadAndTrackAppOpenAd
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackAppOpenAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")

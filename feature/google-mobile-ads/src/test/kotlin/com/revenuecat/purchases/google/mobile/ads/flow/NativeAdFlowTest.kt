@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.google.mobile.ads
 
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.gms.ads.AdListener

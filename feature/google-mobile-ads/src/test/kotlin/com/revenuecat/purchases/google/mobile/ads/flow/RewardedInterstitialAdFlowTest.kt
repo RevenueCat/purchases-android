@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.google.mobile.ads
 
 import android.content.Context
 import com.google.android.gms.ads.AdRequest
@@ -9,7 +9,8 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
-import com.google.android.gms.ads.appopen.AppOpenAd
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.AdTracker
 import io.mockk.every
@@ -24,58 +25,60 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
-class AppOpenAdFlowTest {
+@RunWith(RobolectricTestRunner::class)
+class RewardedInterstitialAdFlowTest {
 
     @Before
     fun setUp() {
-        mockkStatic(AppOpenAd::class)
+        mockkStatic(RewardedInterstitialAd::class)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(AppOpenAd::class)
+        unmockkStatic(RewardedInterstitialAd::class)
     }
 
     @Test
-    fun `app open success wires wrappers and forwards callbacks`() {
-        val context = mockk<Context>()
+    fun `rewarded interstitial success wires wrappers and forwards callbacks`() {
+        val context = mockk<Context>(relaxed = true)
         val adRequest = mockk<AdRequest>()
-        val appOpenAd = mockk<AppOpenAd>(relaxed = true)
+        val rewardedInterstitialAd = mockk<RewardedInterstitialAd>(relaxed = true)
         val responseInfo = mockk<ResponseInfo>()
-        every { appOpenAd.responseInfo } returns responseInfo
+        every { rewardedInterstitialAd.responseInfo } returns responseInfo
 
         val delegateFsc = RecordingFullScreenContentCallback()
         val delegatePaid = RecordingPaidEventListener()
-        val loadCallback = RecordingAppOpenLoadCallback()
+        val loadCallback = RecordingRewardedInterstitialLoadCallback()
 
-        val loadCallbackSlot = slot<AppOpenAd.AppOpenAdLoadCallback>()
+        val loadCallbackSlot = slot<RewardedInterstitialAdLoadCallback>()
         every {
-            AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
+            RewardedInterstitialAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
         val adTracker = mockk<AdTracker>(relaxed = true)
-        adTracker.loadAndTrackAppOpenAd(
+        adTracker.loadAndTrackRewardedInterstitialAd(
             context = context,
-            adUnitId = "app-open-unit",
+            adUnitId = "rewarded-interstitial-unit",
             adRequest = adRequest,
-            placement = "app_open",
+            placement = "rewarded_interstitial",
             loadCallback = loadCallback,
             fullScreenContentCallback = delegateFsc,
             onPaidEventListener = delegatePaid,
         )
 
         assertNotNull(loadCallbackSlot.captured)
-        loadCallbackSlot.captured.onAdLoaded(appOpenAd)
+        loadCallbackSlot.captured.onAdLoaded(rewardedInterstitialAd)
 
-        assertSame(appOpenAd, loadCallback.loadedAd)
-
+        assertSame(rewardedInterstitialAd, loadCallback.loadedAd)
         val fscSlot = slot<FullScreenContentCallback>()
-        verify { appOpenAd.fullScreenContentCallback = capture(fscSlot) }
+        verify { rewardedInterstitialAd.fullScreenContentCallback = capture(fscSlot) }
         assertTrue(fscSlot.captured is TrackingFullScreenContentCallback)
 
         val paidSlot = slot<OnPaidEventListener>()
-        verify { appOpenAd.onPaidEventListener = capture(paidSlot) }
+        verify { rewardedInterstitialAd.onPaidEventListener = capture(paidSlot) }
 
         fscSlot.captured.onAdDismissedFullScreenContent()
         assertTrue(delegateFsc.dismissedCalled)
@@ -86,23 +89,23 @@ class AppOpenAdFlowTest {
     }
 
     @Test
-    fun `app open failure forwards to load callback`() {
-        val context = mockk<Context>()
+    fun `rewarded interstitial failure forwards to load callback`() {
+        val context = mockk<Context>(relaxed = true)
         val adRequest = mockk<AdRequest>()
         val error = mockk<LoadAdError>()
-        val loadCallback = RecordingAppOpenLoadCallback()
+        val loadCallback = RecordingRewardedInterstitialLoadCallback()
 
-        val loadCallbackSlot = slot<AppOpenAd.AppOpenAdLoadCallback>()
+        val loadCallbackSlot = slot<RewardedInterstitialAdLoadCallback>()
         every {
-            AppOpenAd.load(any(), any(), any(), capture(loadCallbackSlot))
+            RewardedInterstitialAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
         val adTracker = mockk<AdTracker>(relaxed = true)
-        adTracker.loadAndTrackAppOpenAd(
+        adTracker.loadAndTrackRewardedInterstitialAd(
             context = context,
-            adUnitId = "app-open-unit",
+            adUnitId = "rewarded-interstitial-unit",
             adRequest = adRequest,
-            placement = "app_open",
+            placement = "rewarded_interstitial",
             loadCallback = loadCallback,
         )
 
@@ -112,11 +115,11 @@ class AppOpenAdFlowTest {
         assertSame(error, loadCallback.failedToLoadError)
     }
 
-    private class RecordingAppOpenLoadCallback : AppOpenAd.AppOpenAdLoadCallback() {
-        var loadedAd: AppOpenAd? = null
+    private class RecordingRewardedInterstitialLoadCallback : RewardedInterstitialAdLoadCallback() {
+        var loadedAd: RewardedInterstitialAd? = null
         var failedToLoadError: LoadAdError? = null
 
-        override fun onAdLoaded(ad: AppOpenAd) {
+        override fun onAdLoaded(ad: RewardedInterstitialAd) {
             loadedAd = ad
         }
 

@@ -26,7 +26,7 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.forNativeAdWithTracking
+import com.revenuecat.purchases.google.mobile.ads.forNativeAdWithTracking
 import com.revenuecat.sample.admob.R
 import com.revenuecat.sample.admob.data.Constants
 import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView

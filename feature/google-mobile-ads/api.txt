@@ -1,5 +1,5 @@
 // Signature format: 4.0
-package com.revenuecat.purchases.admob {
+package com.revenuecat.purchases.google.mobile.ads {
 
   public final class AdTrackerAdMob {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackAppOpenAd(com.revenuecat.purchases.ads.events.AdTracker, android.content.Context context, String adUnitId, com.google.android.gms.ads.AdRequest adRequest, optional String? placement, optional com.google.android.gms.ads.appopen.AppOpenAd.AppOpenAdLoadCallback? loadCallback, optional com.google.android.gms.ads.FullScreenContentCallback? fullScreenContentCallback, optional com.google.android.gms.ads.OnPaidEventListener? onPaidEventListener);

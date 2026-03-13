@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.google.mobile.ads
 
 import android.content.Context
 import com.google.android.gms.ads.AdRequest
@@ -9,8 +9,8 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
-import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
-import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.AdTracker
 import io.mockk.every
@@ -29,56 +29,56 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
-class RewardedInterstitialAdFlowTest {
+class RewardedAdFlowTest {
 
     @Before
     fun setUp() {
-        mockkStatic(RewardedInterstitialAd::class)
+        mockkStatic(RewardedAd::class)
     }
 
     @After
     fun tearDown() {
-        unmockkStatic(RewardedInterstitialAd::class)
+        unmockkStatic(RewardedAd::class)
     }
 
     @Test
-    fun `rewarded interstitial success wires wrappers and forwards callbacks`() {
+    fun `rewarded success wires wrappers and forwards callbacks`() {
         val context = mockk<Context>(relaxed = true)
         val adRequest = mockk<AdRequest>()
-        val rewardedInterstitialAd = mockk<RewardedInterstitialAd>(relaxed = true)
+        val rewardedAd = mockk<RewardedAd>(relaxed = true)
         val responseInfo = mockk<ResponseInfo>()
-        every { rewardedInterstitialAd.responseInfo } returns responseInfo
+        every { rewardedAd.responseInfo } returns responseInfo
 
         val delegateFsc = RecordingFullScreenContentCallback()
         val delegatePaid = RecordingPaidEventListener()
-        val loadCallback = RecordingRewardedInterstitialLoadCallback()
+        val loadCallback = RecordingRewardedLoadCallback()
 
-        val loadCallbackSlot = slot<RewardedInterstitialAdLoadCallback>()
+        val loadCallbackSlot = slot<RewardedAdLoadCallback>()
         every {
-            RewardedInterstitialAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
+            RewardedAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
         val adTracker = mockk<AdTracker>(relaxed = true)
-        adTracker.loadAndTrackRewardedInterstitialAd(
+        adTracker.loadAndTrackRewardedAd(
             context = context,
-            adUnitId = "rewarded-interstitial-unit",
+            adUnitId = "rewarded-unit",
             adRequest = adRequest,
-            placement = "rewarded_interstitial",
+            placement = "rewarded",
             loadCallback = loadCallback,
             fullScreenContentCallback = delegateFsc,
             onPaidEventListener = delegatePaid,
         )
 
         assertNotNull(loadCallbackSlot.captured)
-        loadCallbackSlot.captured.onAdLoaded(rewardedInterstitialAd)
+        loadCallbackSlot.captured.onAdLoaded(rewardedAd)
 
-        assertSame(rewardedInterstitialAd, loadCallback.loadedAd)
+        assertSame(rewardedAd, loadCallback.loadedAd)
         val fscSlot = slot<FullScreenContentCallback>()
-        verify { rewardedInterstitialAd.fullScreenContentCallback = capture(fscSlot) }
+        verify { rewardedAd.fullScreenContentCallback = capture(fscSlot) }
         assertTrue(fscSlot.captured is TrackingFullScreenContentCallback)
 
         val paidSlot = slot<OnPaidEventListener>()
-        verify { rewardedInterstitialAd.onPaidEventListener = capture(paidSlot) }
+        verify { rewardedAd.onPaidEventListener = capture(paidSlot) }
 
         fscSlot.captured.onAdDismissedFullScreenContent()
         assertTrue(delegateFsc.dismissedCalled)
@@ -89,23 +89,23 @@ class RewardedInterstitialAdFlowTest {
     }
 
     @Test
-    fun `rewarded interstitial failure forwards to load callback`() {
+    fun `rewarded failure forwards to load callback`() {
         val context = mockk<Context>(relaxed = true)
         val adRequest = mockk<AdRequest>()
         val error = mockk<LoadAdError>()
-        val loadCallback = RecordingRewardedInterstitialLoadCallback()
+        val loadCallback = RecordingRewardedLoadCallback()
 
-        val loadCallbackSlot = slot<RewardedInterstitialAdLoadCallback>()
+        val loadCallbackSlot = slot<RewardedAdLoadCallback>()
         every {
-            RewardedInterstitialAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
+            RewardedAd.load(any<Context>(), any<String>(), any<AdRequest>(), capture(loadCallbackSlot))
         } answers {}
 
         val adTracker = mockk<AdTracker>(relaxed = true)
-        adTracker.loadAndTrackRewardedInterstitialAd(
+        adTracker.loadAndTrackRewardedAd(
             context = context,
-            adUnitId = "rewarded-interstitial-unit",
+            adUnitId = "rewarded-unit",
             adRequest = adRequest,
-            placement = "rewarded_interstitial",
+            placement = "rewarded",
             loadCallback = loadCallback,
         )
 
@@ -115,11 +115,11 @@ class RewardedInterstitialAdFlowTest {
         assertSame(error, loadCallback.failedToLoadError)
     }
 
-    private class RecordingRewardedInterstitialLoadCallback : RewardedInterstitialAdLoadCallback() {
-        var loadedAd: RewardedInterstitialAd? = null
+    private class RecordingRewardedLoadCallback : RewardedAdLoadCallback() {
+        var loadedAd: RewardedAd? = null
         var failedToLoadError: LoadAdError? = null
 
-        override fun onAdLoaded(ad: RewardedInterstitialAd) {
+        override fun onAdLoaded(ad: RewardedAd) {
             loadedAd = ad
         }
 

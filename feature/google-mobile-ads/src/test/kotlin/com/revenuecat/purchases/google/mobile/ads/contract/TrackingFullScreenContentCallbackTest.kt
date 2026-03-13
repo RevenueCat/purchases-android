@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.google.mobile.ads
 
 import com.google.android.gms.ads.FullScreenContentCallback
 import org.junit.Assert.assertTrue

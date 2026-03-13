@@ -7,13 +7,13 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.nativead.NativeAdOptions
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.admob.forNativeAdWithTracking
-import com.revenuecat.purchases.admob.loadAndTrackAd
-import com.revenuecat.purchases.admob.loadAndTrackAppOpenAd
-import com.revenuecat.purchases.admob.loadAndTrackBannerAd
-import com.revenuecat.purchases.admob.loadAndTrackInterstitialAd
-import com.revenuecat.purchases.admob.loadAndTrackRewardedAd
-import com.revenuecat.purchases.admob.loadAndTrackRewardedInterstitialAd
+import com.revenuecat.purchases.google.mobile.ads.forNativeAdWithTracking
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackAd
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackAppOpenAd
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackBannerAd
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackInterstitialAd
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackRewardedAd
+import com.revenuecat.purchases.google.mobile.ads.loadAndTrackRewardedInterstitialAd
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class AdMobAPI {
