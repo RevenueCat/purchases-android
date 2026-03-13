@@ -124,21 +124,24 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
-                    val storeTransactions = ownedProducts.map {
+                    val storeTransactions = ownedProducts.mapNotNull {
                         try {
                             it.toStoreTransaction(purchaseState = PurchaseState.PURCHASED)
                         } catch (e: IllegalArgumentException) {
-                            val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
+                            val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_TRANSACTION.format(e.message)
                             log(LogIntent.GALAXY_ERROR) { errorMessage }
-
-                            val error = PurchasesError(
-                                code = PurchasesErrorCode.InvalidReceiptError,
-                                underlyingErrorMessage = errorMessage,
-                            )
-                            onReceivePurchaseHistoryError(error)
-                            finish()
-                            return@getOwnedList
+                            null
                         }
+                    }
+
+                    if (ownedProducts.isNotEmpty() && storeTransactions.isEmpty()) {
+                        val error = PurchasesError(
+                            code = PurchasesErrorCode.InvalidReceiptError,
+                            underlyingErrorMessage = "No valid transactions were parsed for the getOwnedList query.",
+                        )
+                        onReceivePurchaseHistoryError(error)
+                        finish()
+                        return@getOwnedList
                     }
 
                     onReceivePurchaseHistory(storeTransactions)
@@ -415,40 +418,42 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
-                    val storeTransactions = ownedProducts
+                    val activeOwnedProducts = ownedProducts
                         .filter {
                             // TO DO: Find out what this returns for OTPs when we support OTPs
                             try {
                                 it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
-                            } catch (_: IllegalArgumentException) {
-                                log(LogIntent.GALAXY_WARNING) {
-                                    GalaxyStrings.WARNING_SKIPPING_OWNED_PRODUCT_WITH_INVALID_SUBSCRIPTION_END_DATE.format(
-                                        it.itemId,
-                                        it.subscriptionEndDate,
-                                    )
-                                }
+                            } catch (e: IllegalArgumentException) {
+                                val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_SUBSCRIPTION_END_DATE
+                                    .format(e.message)
+                                log(LogIntent.GALAXY_ERROR) { errorMessage }
                                 false
                             }
                         }
-                        .map {
+                    val storeTransactions = activeOwnedProducts
+                        .mapNotNull {
                             try {
                                 it.toStoreTransaction(purchaseState = PurchaseState.PURCHASED)
                             } catch (e: IllegalArgumentException) {
-                                val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_RESULT.format(e.message)
+                                val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_TRANSACTION.format(e.message)
                                 log(LogIntent.GALAXY_ERROR) { errorMessage }
-
-                                val error = PurchasesError(
-                                    code = PurchasesErrorCode.InvalidReceiptError,
-                                    underlyingErrorMessage = errorMessage,
-                                )
-                                onError(error)
-                                finish()
-                                return@getOwnedList
+                                null
                             }
                         }
                     val purchasesMap = storeTransactions.associateBy { storeTransaction ->
                         storeTransaction.purchaseToken.sha1()
                     }
+
+                    if (activeOwnedProducts.isNotEmpty() && purchasesMap.isEmpty()) {
+                        val error = PurchasesError(
+                            code = PurchasesErrorCode.InvalidReceiptError,
+                            underlyingErrorMessage = "No valid transactions were parsed for the getOwnedList query.",
+                        )
+                        onError(error)
+                        finish()
+                        return@getOwnedList
+                    }
+
                     onSuccess(purchasesMap)
                     finish()
                 },

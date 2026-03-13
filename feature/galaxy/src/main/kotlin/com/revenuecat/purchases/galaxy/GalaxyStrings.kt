@@ -39,8 +39,15 @@ internal object GalaxyStrings {
         "returned no purchase result. This is likely an issue with the Galaxy Store."
     const val ERROR_CANNOT_PARSE_PURCHASE_RESULT = "Could not parse the purchase result for a Galaxy Store purchase. " +
         "This is likely an issue with the Galaxy Store. Error: %s."
+
+    const val ERROR_CANNOT_PARSE_TRANSACTION = "Could not parse the transaction for a Galaxy Store purchase. " +
+        "This is likely an issue with the Galaxy Store. Error: %s."
+
     const val ERROR_CANNOT_PARSE_PURCHASE_DATE = "Could not parse purchase date for Galaxy Store purchase. Purchase " +
         "date string: %s"
+
+    const val ERROR_CANNOT_PARSE_SUBSCRIPTION_END_DATE = "Could not parse the subscription end date for Galaxy Store " +
+        "purchase. Purchase date string: %s"
 
     // Subscription Plan Changes
     const val ANOTHER_CHANGE_SUBSCRIPTION_PLAN_REQUEST_IN_FLIGHT = "Another subscription plan change request with " +
@@ -98,8 +105,6 @@ internal object GalaxyStrings {
         "request for processing."
     const val GET_OWNED_LIST_REQUEST_ERRORED = "An error occurred while getting the owned products " +
         "from the Galaxy Store. Error: %s"
-    const val WARNING_SKIPPING_OWNED_PRODUCT_WITH_INVALID_SUBSCRIPTION_END_DATE =
-        "Skipping owned Galaxy Store product %s because its subscription end date could not be parsed: %s"
 
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
