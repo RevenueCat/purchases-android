@@ -1,4 +1,4 @@
-@file:JvmName("AdTrackerAdMob")
+@file:JvmName("AdTrackerGoogleMobileAds")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 

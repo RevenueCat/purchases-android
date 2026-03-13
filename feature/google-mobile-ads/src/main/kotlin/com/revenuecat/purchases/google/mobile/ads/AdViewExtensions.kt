@@ -1,4 +1,4 @@
-@file:JvmName("RCAdMobBannerAd")
+@file:JvmName("RCGoogleMobileAdsBannerAd")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 

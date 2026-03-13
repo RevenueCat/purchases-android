@@ -8,7 +8,7 @@ import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class AdMobPrecisionMappingTest {
+class PrecisionMappingTest {
 
     @Test
     fun `precise maps to exact`() {
