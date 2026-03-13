@@ -8,7 +8,9 @@ import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.toGoogleReplacementMode
 import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
@@ -21,6 +23,8 @@ public class PurchaseParams(public val builder: Builder) {
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public val galaxyReplacementMode: GalaxyReplacementMode
+
+    public val replacementMode: StoreReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
@@ -43,7 +47,7 @@ public class PurchaseParams(public val builder: Builder) {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
         this.oldProductId = builder.oldProductId
         this.googleReplacementMode = builder.googleReplacementMode
-
+        this.replacementMode = builder.replacementMode
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         this.galaxyReplacementMode = builder.galaxyReplacementMode
         this.purchasingData = builder.purchasingData
@@ -61,6 +65,7 @@ public class PurchaseParams(public val builder: Builder) {
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */
+    @Suppress("TooManyFunctions")
     public open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal var purchasingData: PurchasingData,
@@ -97,6 +102,10 @@ public class PurchaseParams(public val builder: Builder) {
         @set:JvmSynthetic
         @get:JvmSynthetic
         internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
+
+        @set:JvmSynthetic
+        @get:JvmSynthetic
+        internal var replacementMode: StoreReplacementMode = StoreReplacementMode.WITHOUT_PRORATION
 
         @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
         @set:JvmSynthetic
@@ -147,6 +156,20 @@ public class PurchaseParams(public val builder: Builder) {
          */
         public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
             this.googleReplacementMode = googleReplacementMode
+        }
+
+        /**
+         * The [StoreReplacementMode] to use when replacing the given oldProductId. Defaults to
+         * [StoreReplacementMode.WITHOUT_PRORATION].
+         *
+         * Refer to the [StoreReplacementMode] docs for a list of
+         * supported replacement modes for each store.
+         */
+        public fun replacementMode(replacementMode: StoreReplacementMode): Builder = apply {
+            this.replacementMode = replacementMode
+
+            // We can remove this once we fully remove PurchaseParams.googleReplacementMode
+            this.googleReplacementMode = replacementMode.toGoogleReplacementMode()
         }
 
         /*

@@ -309,12 +309,14 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.models.GalaxyReplacementMode getGalaxyReplacementMode();
     method public com.revenuecat.purchases.models.GoogleReplacementMode getGoogleReplacementMode();
     method public String? getOldProductId();
+    method public com.revenuecat.purchases.models.StoreReplacementMode getReplacementMode();
     method public Boolean? isPersonalizedPrice();
     property public final com.revenuecat.purchases.PurchaseParams.Builder builder;
     property public final com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode;
     property public final com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode;
     property public final Boolean? isPersonalizedPrice;
     property public final String? oldProductId;
+    property public final com.revenuecat.purchases.models.StoreReplacementMode replacementMode;
   }
 
   public static class PurchaseParams.Builder {
@@ -330,6 +332,7 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
     method public final com.revenuecat.purchases.PurchaseParams.Builder oldProductId(String oldProductId);
     method public final com.revenuecat.purchases.PurchaseParams.Builder presentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
+    method public final com.revenuecat.purchases.PurchaseParams.Builder replacementMode(com.revenuecat.purchases.models.StoreReplacementMode replacementMode);
   }
 
   @dev.drewhamilton.poko.Poko public final class PurchaseResult {
@@ -1343,6 +1346,14 @@ package com.revenuecat.purchases.models {
     property public abstract com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions;
     property public abstract String title;
     property public abstract com.revenuecat.purchases.ProductType type;
+  }
+
+  @kotlinx.parcelize.Parcelize public enum StoreReplacementMode implements com.revenuecat.purchases.ReplacementMode {
+    enum_constant public static final com.revenuecat.purchases.models.StoreReplacementMode CHARGE_FULL_PRICE;
+    enum_constant public static final com.revenuecat.purchases.models.StoreReplacementMode CHARGE_PRORATED_PRICE;
+    enum_constant public static final com.revenuecat.purchases.models.StoreReplacementMode DEFERRED;
+    enum_constant public static final com.revenuecat.purchases.models.StoreReplacementMode WITHOUT_PRORATION;
+    enum_constant public static final com.revenuecat.purchases.models.StoreReplacementMode WITH_TIME_PRORATION;
   }
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {
