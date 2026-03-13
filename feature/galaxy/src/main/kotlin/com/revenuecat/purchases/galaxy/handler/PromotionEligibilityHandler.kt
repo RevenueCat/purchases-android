@@ -58,6 +58,8 @@ internal class PromotionEligibilityHandler(
 
         val requestString = productIds.joinToString(separator = ",")
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PROMOTION_ELIGIBILITY.format(requestString) }
+
+        // Note: getPromotionEligibility() swallows all exceptions
         val requestWasDispatched = iapHelper.getPromotionEligibility(
             itemIDs = requestString,
             onGetPromotionEligibilityListener = this,

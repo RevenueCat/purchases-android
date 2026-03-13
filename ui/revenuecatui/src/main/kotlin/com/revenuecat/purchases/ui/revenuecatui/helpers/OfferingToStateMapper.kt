@@ -314,6 +314,7 @@ internal fun Offering.toLegacyPaywallState(
     template: PaywallTemplate,
     shouldDisplayDismissButton: Boolean,
     storefrontCountryCode: String?,
+    validationWarning: PaywallWarning? = null,
 ): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -332,6 +333,7 @@ internal fun Offering.toLegacyPaywallState(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
+        validationWarning = validationWarning,
     )
 }
 

@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">試用期{{ sub_offer_duration }}，屆滿後{{ total_price_and_per_month }}。</string>
     <string name="no_browser_cannot_open_link">未安裝瀏覽器。連結無法打開。</string>
     <string name="cannot_open_link">連結無效，無法開啟。</string>
+    <string name="revenuecatui_purchase">購買</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

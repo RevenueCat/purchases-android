@@ -66,8 +66,7 @@ internal class ProductDataHandler(
         }
 
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_PRODUCTS.format(productIds.joinToString()) }
-
-        val request = Request(
+        this.inFlightRequest = Request(
             productIds = productIds,
             productType = productType,
             onReceive = onReceive,
@@ -80,12 +79,11 @@ internal class ProductDataHandler(
         // - A string with one product ID in it: queries for that one product
         // - A string with multiple product IDs in it, delimited by a comma
         val productIdRequestString = productIds.joinToString(separator = ",")
+        // Note: getProductsDetails() swallows all exceptions
         iapHelper.getProductsDetails(
             productIDs = productIdRequestString,
             onGetProductsDetailsListener = this,
         )
-
-        this.inFlightRequest = request
     }
 
     override fun onGetProducts(error: ErrorVo, products: ArrayList<ProductVo?>) {
