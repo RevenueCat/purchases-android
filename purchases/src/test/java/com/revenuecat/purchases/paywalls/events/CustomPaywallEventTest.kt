@@ -64,6 +64,35 @@ class CustomPaywallEventTest {
     }
 
     @Test
+    fun `CustomPaywallEvent Impression is created with offeringId`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "my-paywall",
+                offeringId = "offering-123",
+            ),
+        )
+
+        assertThat(event.data.offeringId).isEqualTo("offering-123")
+    }
+
+    @Test
+    fun `CustomPaywallEvent Impression offeringId defaults to null`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "my-paywall"),
+        )
+
+        assertThat(event.data.offeringId).isNull()
+    }
+
+    @Test
     fun `toBackendStoredEvent converts event with paywallId correctly`() {
         val event = CustomPaywallEvent.Impression(
             creationData = CustomPaywallEvent.Impression.CreationData(
@@ -116,13 +145,76 @@ class CustomPaywallEventTest {
     }
 
     @Test
+    fun `toBackendStoredEvent converts event with offeringId correctly`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "my-paywall",
+                offeringId = "offering-123",
+            ),
+        )
+
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val expectedStoredEvent = BackendStoredEvent.CustomPaywall(
+            BackendEvent.CustomPaywall(
+                id = fixedId.toString(),
+                version = BackendEvent.CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION,
+                type = "custom_paywall_impression",
+                appUserID = appUserID,
+                appSessionID = appSessionID,
+                timestamp = fixedDate.time,
+                paywallID = "my-paywall",
+                offeringID = "offering-123",
+            ),
+        )
+        assertThat(storedEvent).isEqualTo(expectedStoredEvent)
+    }
+
+    @Test
+    fun `toBackendStoredEvent converts event with null offeringId correctly`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "my-paywall",
+                offeringId = null,
+            ),
+        )
+
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val expectedStoredEvent = BackendStoredEvent.CustomPaywall(
+            BackendEvent.CustomPaywall(
+                id = fixedId.toString(),
+                version = BackendEvent.CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION,
+                type = "custom_paywall_impression",
+                appUserID = appUserID,
+                appSessionID = appSessionID,
+                timestamp = fixedDate.time,
+                paywallID = "my-paywall",
+                offeringID = null,
+            ),
+        )
+        assertThat(storedEvent).isEqualTo(expectedStoredEvent)
+    }
+
+    @Test
     fun `BackendStoredEvent CustomPaywall JSON roundtrip`() {
         val event = CustomPaywallEvent.Impression(
             creationData = CustomPaywallEvent.Impression.CreationData(
                 id = fixedId,
                 date = fixedDate,
             ),
-            data = CustomPaywallEvent.Impression.Data(paywallId = "my-paywall"),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "my-paywall",
+                offeringId = "offering-123",
+            ),
         )
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
 
@@ -138,6 +230,7 @@ class CustomPaywallEventTest {
         assertThat(decodedEvent.appSessionID).isEqualTo(appSessionID)
         assertThat(decodedEvent.timestamp).isEqualTo(fixedDate.time)
         assertThat(decodedEvent.paywallID).isEqualTo("my-paywall")
+        assertThat(decodedEvent.offeringID).isEqualTo("offering-123")
     }
 
     @Test
@@ -157,6 +250,66 @@ class CustomPaywallEventTest {
         assertThat(decoded).isInstanceOf(BackendStoredEvent.CustomPaywall::class.java)
         val decodedEvent = (decoded as BackendStoredEvent.CustomPaywall).event
         assertThat(decodedEvent.paywallID).isNull()
+    }
+
+    @Test
+    fun `BackendStoredEvent CustomPaywall JSON roundtrip with null offeringId`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "my-paywall",
+                offeringId = null,
+            ),
+        )
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
+        val decoded = json.decodeFromString(BackendStoredEvent.serializer(), jsonString)
+
+        assertThat(decoded).isInstanceOf(BackendStoredEvent.CustomPaywall::class.java)
+        val decodedEvent = (decoded as BackendStoredEvent.CustomPaywall).event
+        assertThat(decodedEvent.offeringID).isNull()
+    }
+
+    @Test
+    fun `BackendStoredEvent CustomPaywall JSON contains offering_id key`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "my-paywall",
+                offeringId = "offering-123",
+            ),
+        )
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
+
+        assertThat(jsonString).contains("\"offering_id\":\"offering-123\"")
+    }
+
+    @Test
+    fun `BackendStoredEvent CustomPaywall JSON omits offering_id when null`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(
+                id = fixedId,
+                date = fixedDate,
+            ),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "my-paywall",
+                offeringId = null,
+            ),
+        )
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
+
+        assertThat(jsonString).doesNotContain("offering_id")
     }
 
     @Test

@@ -137,6 +137,8 @@ internal sealed class BackendEvent : Event {
         val timestamp: Long,
         @SerialName("paywall_id")
         val paywallID: String? = null,
+        @SerialName("offering_id")
+        val offeringID: String? = null,
     ) : BackendEvent()
 
     @Serializable
