@@ -74,6 +74,17 @@ class OfferingsManagerTest {
         )
     }
 
+    // region clearInMemoryOfferingsCache
+
+    @Test
+    fun `clearInMemoryOfferingsCache delegates to cache`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        offeringsManager.clearInMemoryOfferingsCache()
+        verify(exactly = 1) { cache.clearInMemoryOfferingsCache() }
+    }
+
+    // endregion clearInMemoryOfferingsCache
+
     // region onAppForeground
 
     @Test

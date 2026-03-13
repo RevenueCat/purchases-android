@@ -2620,6 +2620,61 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     // endregion
 
+    // region overridePreferredUILocale
+
+    @Test
+    fun `overridePreferredUILocale clears cache before fetching`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+
+        assertThat(result).isTrue
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache()
+            mockOfferingsManager.getOfferings(appUserId, any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns false if locale unchanged`() {
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(null)
+
+        assertThat(result).isFalse
+        verify(exactly = 0) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 0) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale skips cache clear and fetch when rate limited`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result1 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+        val result2 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("es_ES")
+        val result3 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("de_DE")
+
+        assertThat(result1).isTrue
+        assertThat(result2).isTrue
+        assertThat(result3).isFalse
+        verify(exactly = 2) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 2) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns true even when fetch fails`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "test error")
+        mockOfferingsManagerGetOfferings(error)
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("ja_JP")
+
+        assertThat(result).isTrue
+        verify(exactly = 1) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+    }
+
+    // endregion
+
     // region restoring
 
     @Test

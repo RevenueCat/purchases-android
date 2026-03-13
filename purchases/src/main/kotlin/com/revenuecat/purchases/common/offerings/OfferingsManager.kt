@@ -162,6 +162,10 @@ internal class OfferingsManager(
         }
     }
 
+    fun clearInMemoryOfferingsCache() {
+        offeringsCache.clearInMemoryOfferingsCache()
+    }
+
     fun onAppForeground(appUserID: String) {
         if (uiPreviewMode) return
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {

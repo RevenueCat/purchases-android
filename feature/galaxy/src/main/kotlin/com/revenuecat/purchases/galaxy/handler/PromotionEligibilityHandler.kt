@@ -97,6 +97,12 @@ internal class PromotionEligibilityHandler(
         promotionEligibilities: ArrayList<PromotionEligibilityVo>,
     ) {
         if (promotionEligibilities.isEmpty()) {
+            // promotionEligibilities contains PromotionEligibilityVo objects even for products that are not eligible
+            // for promotions. Their pricing string is set to "RegularPrice". Therefore, not receiving any promotion
+            // eligibilities is an error case, since we don't make a request to getPromotionEligibility() if 0
+            // products were provided. For more details, see
+            // https://developer.samsung.com/iap/programming-guide/iap-helper-programming.html#Get-promotion-eligibility-for-subscription
+
             log(LogIntent.GALAXY_ERROR) {
                 GalaxyStrings.PROMOTION_ELIGIBILITY_RETURNED_SUCCESS_BUT_NO_ACKNOWLEDGEMENT_RESULTS
             }
