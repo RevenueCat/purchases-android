@@ -158,12 +158,17 @@ class CreateSupportTicketViewTest {
         composeTestRule.onNodeWithTag("email_field").performTextInput(testEmail)
         composeTestRule.onNodeWithTag("description_field").performTextInput(testDescription)
 
+        // Disable auto-advance to prevent AppNotIdleException from CircularProgressIndicator
+        composeTestRule.mainClock.autoAdvance = false
+
         // Click submit
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET
             )
         ).performClick()
+
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify onSubmit was called with correct parameters
         verify {
@@ -204,12 +209,17 @@ class CreateSupportTicketViewTest {
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help")
 
+        // Disable auto-advance to prevent AppNotIdleException from CircularProgressIndicator
+        composeTestRule.mainClock.autoAdvance = false
+
         // Click submit
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET
             )
         ).performClick()
+
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify success callback was called
         assert(successCalled)
@@ -238,6 +248,9 @@ class CreateSupportTicketViewTest {
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help")
 
+        // Disable auto-advance to prevent AppNotIdleException from snackbar animations
+        composeTestRule.mainClock.autoAdvance = false
+
         // Click submit
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
@@ -245,8 +258,8 @@ class CreateSupportTicketViewTest {
             )
         ).performClick()
 
-        // Wait for snackbar to appear
-        composeTestRule.waitForIdle()
+        // Advance clock to process error callback and show snackbar
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify snackbar error message is shown
         composeTestRule.onNodeWithText(
@@ -288,18 +301,27 @@ class CreateSupportTicketViewTest {
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help")
 
-        // Click submit twice
+        // Disable auto-advance to prevent AppNotIdleException from snackbar/spinner animations
+        composeTestRule.mainClock.autoAdvance = false
+
+        // Click submit first time
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET
             )
         ).performClick()
 
+        // Advance clock to process error callback and re-enable the button
+        composeTestRule.mainClock.advanceTimeBy(1000)
+
+        // Click submit second time
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET
             )
         ).performClick()
+
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify onSubmit was called twice
         assert(submitCount == 2)
