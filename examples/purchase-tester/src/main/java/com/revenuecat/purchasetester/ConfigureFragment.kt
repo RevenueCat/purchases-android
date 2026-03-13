@@ -1,12 +1,15 @@
 package com.revenuecat.purchasetester
 
+import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -29,6 +32,7 @@ import kotlinx.coroutines.launch
 import java.net.MalformedURLException
 import java.net.URL
 
+@Suppress("TooManyFunctions")
 class ConfigureFragment : Fragment() {
 
     lateinit var binding: FragmentConfigureBinding
@@ -56,12 +60,13 @@ class ConfigureFragment : Fragment() {
                 binding.apiKeyInput.setText(sdkConfiguration.apiKey)
                 binding.proxyUrlInput.setText(sdkConfiguration.proxyUrl)
                 val storeToCheckId =
-                    if (sdkConfiguration.useAmazon) {
-                        R.id.amazon_store_radio_id
-                    } else {
-                        R.id.google_store_radio_id
+                    when (sdkConfiguration.store) {
+                        Store.AMAZON -> R.id.amazon_store_radio_id
+                        Store.GALAXY -> R.id.galaxy_store_radio_id
+                        Store.GOOGLE -> R.id.google_store_radio_id
                     }
                 binding.storeRadioGroup.check(storeToCheckId)
+                updateGalaxyWarningVisibility()
             }.collect()
         }
 
@@ -90,8 +95,12 @@ class ConfigureFragment : Fragment() {
             binding.continueButton.isEnabled = false
 
             lifecycleScope.launch {
-                configureSDK()
-                navigateToLoginFragment()
+                val didConfigure = configureSDK()
+                if (didConfigure) {
+                    navigateToLoginFragment()
+                } else {
+                    binding.continueButton.isEnabled = true
+                }
             }
         }
 
@@ -116,17 +125,26 @@ class ConfigureFragment : Fragment() {
             }
         }
 
+        binding.storeRadioGroup.setOnCheckedChangeListener { _, _ ->
+            updateGalaxyWarningVisibility()
+        }
+
         return binding.root
     }
 
+    @Suppress("CyclomaticComplexMethod")
     @OptIn(InternalRevenueCatAPI::class)
-    private suspend fun configureSDK() {
+    private suspend fun configureSDK(): Boolean {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
 
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
-        val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
+        val selectedStore = when (binding.storeRadioGroup.checkedRadioButtonId) {
+            R.id.amazon_store_radio_id -> Store.AMAZON
+            R.id.galaxy_store_radio_id -> Store.GALAXY
+            else -> Store.GOOGLE
+        }
         val purchasesAreCompletedBy = when (binding.purchaseCompletionRadioGroup.checkedRadioButtonId) {
             R.id.completed_by_revenuecat_radio_id -> PurchasesAreCompletedBy.REVENUECAT
             R.id.completed_by_my_app_radio_id -> PurchasesAreCompletedBy.MY_APP
@@ -142,10 +160,13 @@ class ConfigureFragment : Fragment() {
         Purchases.logLevel = LogLevel.VERBOSE
 
         val configurationBuilder =
-            if (useAmazonStore) {
-                AmazonConfiguration.Builder(application, apiKey)
-            } else {
-                PurchasesConfiguration.Builder(application, apiKey)
+            when (selectedStore) {
+                Store.AMAZON -> AmazonConfiguration.Builder(application, apiKey)
+                Store.GALAXY -> createGalaxyConfigurationBuilder(application, apiKey) ?: run {
+                    showError("Galaxy Store support is unavailable in this build.")
+                    return false
+                }
+                Store.GOOGLE -> PurchasesConfiguration.Builder(application, apiKey)
             }
 
         val configuration = configurationBuilder
@@ -169,7 +190,8 @@ class ConfigureFragment : Fragment() {
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
 
-        dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, useAmazonStore))
+        dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, selectedStore))
+        return true
     }
 
     private fun setupSupportedStoresRadioButtons() {
@@ -181,6 +203,61 @@ class ConfigureFragment : Fragment() {
         if (!supportedStores.contains("amazon")) {
             binding.amazonStoreRadioId.isEnabled = false
             binding.amazonUnavailableTextView.visibility = View.VISIBLE
+        }
+        if (!supportedStores.contains("galaxy") || !isGalaxyAvailable()) {
+            binding.galaxyStoreRadioId.isEnabled = false
+        }
+    }
+
+    private fun updateGalaxyWarningVisibility() {
+        val isGalaxySelected = binding.storeRadioGroup.checkedRadioButtonId == R.id.galaxy_store_radio_id
+        binding.galaxyWarningTextView.visibility = if (isGalaxySelected) View.VISIBLE else View.GONE
+    }
+
+    private fun isGalaxyAvailable(): Boolean {
+        return try {
+            Class.forName("com.revenuecat.purchases.galaxy.GalaxyConfiguration")
+            true
+        } catch (_: ClassNotFoundException) {
+            false
+        }
+    }
+
+    private fun createGalaxyConfigurationBuilder(
+        context: Context,
+        apiKey: String,
+    ): PurchasesConfiguration.Builder? {
+        return try {
+            // Galaxy types are instantiated via reflection because the Samsung IAP AAR isn't always present,
+            // and settings.gradle.kts conditionally includes the purchases-galaxy module depending on the presence
+            // of the Samsung IAP AAR. In our case, we want to be able to compile and run the purchase tester app
+            // with and without the Samsung IAP, so the module's conditional availability is necessary. In a normal
+            // app, you wouldn't need to do that and could avoid the reflection here.
+            val builderClass =
+                Class.forName("com.revenuecat.purchases.galaxy.GalaxyConfiguration\$Builder")
+            val constructor = builderClass.getConstructor(Context::class.java, String::class.java)
+            val builder = constructor.newInstance(context, apiKey) as PurchasesConfiguration.Builder
+            try {
+                val modeClass = Class.forName("com.revenuecat.purchases.galaxy.GalaxyBillingMode")
+
+                // We can't use the default Enum import (kotlin.Enum) since it doesn't have a valueOf() function.
+                // We need to
+                @Suppress("UNCHECKED_CAST")
+                val testMode =
+                    java.lang.Enum.valueOf(modeClass as Class<out Enum<*>>, "TEST")
+                val method = builderClass.getMethod("galaxyBillingMode", modeClass)
+                method.invoke(builder, testMode)
+            } catch (e: ReflectiveOperationException) {
+                Log.e("PurchaseTester", "Failed to set Galaxy billing mode via reflection.", e)
+                Toast.makeText(
+                    context,
+                    "Galaxy billing mode unavailable. Using defaults.",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+            builder
+        } catch (_: Exception) {
+            null
         }
     }
 

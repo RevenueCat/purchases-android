@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.subscriberattributes.caching
 
 import android.content.SharedPreferences
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.subscriberattributes.buildLegacySubscriberAttributes
 
 @Synchronized
@@ -39,6 +40,7 @@ internal fun SubscriberAttributesCache.migrateSubscriberAttributes(
 internal fun SubscriberAttributesCache.legacySubscriberAttributesCacheKey(appUserID: String) =
     "$subscriberAttributesCacheKey.$appUserID"
 
+@OptIn(InternalRevenueCatAPI::class)
 @Synchronized
 internal fun SubscriberAttributesCache.getAllLegacyStoredSubscriberAttributes(): SubscriberAttributesPerAppUserIDMap {
     val legacySubscriberAttributesCacheKeyPrefix = legacySubscriberAttributesCacheKey("")

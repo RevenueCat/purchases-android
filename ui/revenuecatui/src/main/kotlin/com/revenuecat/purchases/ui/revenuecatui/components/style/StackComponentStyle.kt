@@ -93,4 +93,10 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyBottomWindowInsets: Boolean = false,
+    /**
+     * Will cause this stack to apply the horizontal window insets (start/end) to its content.
+     * This is needed in landscape mode to avoid rendering behind camera cutouts or display notches.
+     */
+    @get:JvmSynthetic
+    val applyHorizontalWindowInsets: Boolean = false,
 ) : ComponentStyle, PackageContext

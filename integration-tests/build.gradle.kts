@@ -1,5 +1,5 @@
 plugins {
-    id("revenuecat-android-application")
+    alias(libs.plugins.revenuecat.android.application)
 }
 
 fun obtainTestBuildType(): String {

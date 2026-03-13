@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
@@ -15,7 +16,9 @@ private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
 private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
 private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 
-internal data class HTTPResult(
+@Suppress("ForbiddenPublicDataClass")
+@InternalRevenueCatAPI
+public data class HTTPResult(
     val responseCode: Int,
     val payload: String,
     val origin: Origin,
@@ -24,13 +27,13 @@ internal data class HTTPResult(
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
 ) {
-    companion object {
-        const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
-        const val SIGNATURE_HEADER_NAME = "X-Signature"
-        const val REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time"
-        const val LOAD_SHEDDER_HEADER_NAME = "x-revenuecat-fortress"
+    internal companion object {
+        internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
+        internal const val SIGNATURE_HEADER_NAME = "X-Signature"
+        internal const val REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time"
+        internal const val LOAD_SHEDDER_HEADER_NAME = "x-revenuecat-fortress"
 
-        fun deserialize(serialized: String): HTTPResult {
+        internal fun deserialize(serialized: String): HTTPResult {
             val jsonObject = JSONObject(serialized)
             val responseCode = jsonObject.getInt(SERIALIZATION_NAME_RESPONSE_CODE)
             val payload = jsonObject.getString(SERIALIZATION_NAME_PAYLOAD)
@@ -71,7 +74,7 @@ internal data class HTTPResult(
         }
     }
 
-    enum class Origin {
+    public enum class Origin {
         BACKEND, CACHE
     }
 
@@ -96,7 +99,7 @@ internal data class HTTPResult(
         null
     }
 
-    fun serialize(): String {
+    internal fun serialize(): String {
         val jsonObject = JSONObject().apply {
             put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
             put(SERIALIZATION_NAME_PAYLOAD, payload)
