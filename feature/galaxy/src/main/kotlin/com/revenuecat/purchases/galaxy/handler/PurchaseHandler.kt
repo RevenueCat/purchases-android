@@ -55,8 +55,8 @@ internal class PurchaseHandler(
 
         log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASING_PRODUCT.format(productId) }
 
-        // startPayment returns false if the request was not sent to server and was not processed. When this happens,
-        // the onPaymentListener is never invoked.
+        // startPayment() returns false if the request was not sent to server and was not processed. When this happens,
+        // the onPaymentListener is never invoked. startPayment() swallows all exceptions.
         val requestWasDispatched = iapHelper.startPayment(
             itemId = productId,
             obfuscatedAccountId = appUserID.sha256(),

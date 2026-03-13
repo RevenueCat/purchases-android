@@ -20,4 +20,6 @@
     <string name="lifetime">Toda la vida</string>
     <string name="no_browser_cannot_open_link">No hay navegador instalado. No se pudo abrir el enlace.</string>
     <string name="cannot_open_link">Enlace inválido. No se pudo abrir.</string>
+    <string name="revenuecatui_purchase">Comprar</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

@@ -73,6 +73,7 @@ internal class AcknowledgePurchaseHandler(
             PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(transaction.purchaseToken)
         }
 
+        // Note: acknowledgePurchases() swallows all exceptions
         val requestWasDispatched = iapHelper.acknowledgePurchases(
             purchaseIds = transaction.purchaseToken,
             onAcknowledgePurchasesListener = this,
