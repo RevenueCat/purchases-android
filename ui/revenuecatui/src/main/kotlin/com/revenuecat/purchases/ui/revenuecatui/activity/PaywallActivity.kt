@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -96,6 +97,7 @@ internal class PaywallActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -191,6 +193,8 @@ internal class PaywallActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
+                // Scaffold padding is intentionally ignored because we zero out contentWindowInsets
+                // and let the Paywall composable handle its own insets to avoid double padding.
                 Scaffold(
                     contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 ) { _ ->
