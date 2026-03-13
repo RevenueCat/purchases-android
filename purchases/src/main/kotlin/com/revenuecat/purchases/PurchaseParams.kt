@@ -9,8 +9,8 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
-import com.revenuecat.purchases.models.toGoogleReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.toGoogleReplacementMode
 import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
