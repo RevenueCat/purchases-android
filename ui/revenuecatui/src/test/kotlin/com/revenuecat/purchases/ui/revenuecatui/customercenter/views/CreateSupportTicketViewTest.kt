@@ -15,6 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,6 +27,11 @@ class CreateSupportTicketViewTest {
     val composeTestRule = createComposeRule()
 
     private val mockLocalization = CustomerCenterConfigTestData.customerCenterData().localization
+
+    @Before
+    fun setup() {
+        composeTestRule.mainClock.autoAdvance = false
+    }
 
     @Test
     fun `initial state has empty fields and disabled submit button`() {
@@ -41,6 +47,7 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
@@ -63,12 +70,14 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Fill email field
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
 
         // Fill description field
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help with my subscription")
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Submit button should now be enabled
         composeTestRule.onNodeWithText(
@@ -92,9 +101,11 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Fill only email field
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Submit button should still be disabled
         composeTestRule.onNodeWithText(
@@ -118,9 +129,11 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Fill only description field
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help with my subscription")
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Submit button should still be disabled
         composeTestRule.onNodeWithText(
@@ -150,6 +163,7 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         val testEmail = "test@example.com"
         val testDescription = "I need help"
@@ -157,6 +171,7 @@ class CreateSupportTicketViewTest {
         // Fill both fields
         composeTestRule.onNodeWithTag("email_field").performTextInput(testEmail)
         composeTestRule.onNodeWithTag("description_field").performTextInput(testDescription)
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Click submit
         composeTestRule.onNodeWithText(
@@ -199,10 +214,12 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Fill both fields
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help")
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Click submit
         composeTestRule.onNodeWithText(
@@ -210,6 +227,8 @@ class CreateSupportTicketViewTest {
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET
             )
         ).performClick()
+
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify success callback was called
         assert(successCalled)
@@ -233,10 +252,12 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Fill both fields
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help")
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Click submit
         composeTestRule.onNodeWithText(
@@ -245,8 +266,8 @@ class CreateSupportTicketViewTest {
             )
         ).performClick()
 
-        // Wait for snackbar to appear
-        composeTestRule.waitForIdle()
+        // Process callback and snackbar state changes
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify snackbar error message is shown
         composeTestRule.onNodeWithText(
@@ -283,10 +304,12 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Fill both fields
         composeTestRule.onNodeWithTag("email_field").performTextInput("test@example.com")
         composeTestRule.onNodeWithTag("description_field").performTextInput("I need help")
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Click submit twice
         composeTestRule.onNodeWithText(
@@ -295,11 +318,15 @@ class CreateSupportTicketViewTest {
             )
         ).performClick()
 
+        composeTestRule.mainClock.advanceTimeBy(1000)
+
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET
             )
         ).performClick()
+
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify onSubmit was called twice
         assert(submitCount == 2)
@@ -319,6 +346,7 @@ class CreateSupportTicketViewTest {
                 localization = mockLocalization,
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         // Verify email label exists
         composeTestRule.onNodeWithText(

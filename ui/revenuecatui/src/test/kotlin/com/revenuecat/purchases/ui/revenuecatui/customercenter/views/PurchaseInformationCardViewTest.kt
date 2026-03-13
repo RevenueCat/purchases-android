@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,6 +19,11 @@ class PurchaseInformationCardViewTest {
     val composeTestRule = createComposeRule()
 
     private val mockLocalization = CustomerCenterConfigTestData.customerCenterData().localization
+
+    @Before
+    fun setup() {
+        composeTestRule.mainClock.autoAdvance = false
+    }
 
     @Test
     fun `clickable card triggers callback when clicked`() {
@@ -31,6 +37,7 @@ class PurchaseInformationCardViewTest {
                 onCardClick = onCardClick
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
 
         composeTestRule.onNode(hasText("Lifetime")).performClick()
 
@@ -47,6 +54,7 @@ class PurchaseInformationCardViewTest {
                 onCardClick = null
             )
         }
+        composeTestRule.mainClock.advanceTimeBy(1000)
     }
 
 }
