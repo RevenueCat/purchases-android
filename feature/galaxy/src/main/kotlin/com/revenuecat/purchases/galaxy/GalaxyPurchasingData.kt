@@ -8,6 +8,7 @@ import dev.drewhamilton.poko.Poko
 @ExperimentalPreviewRevenueCatPurchasesAPI
 public sealed class GalaxyPurchasingData : PurchasingData {
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     @Poko
     public class Product(
         override val productId: String,
