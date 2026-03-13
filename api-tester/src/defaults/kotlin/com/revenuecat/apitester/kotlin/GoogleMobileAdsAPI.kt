@@ -16,7 +16,7 @@ import com.revenuecat.purchases.google.mobile.ads.loadAndTrackRewardedAd
 import com.revenuecat.purchases.google.mobile.ads.loadAndTrackRewardedInterstitialAd
 
 @Suppress("unused", "UNUSED_VARIABLE")
-private class AdMobAPI {
+private class GoogleMobileAdsAPI {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(
@@ -28,7 +28,7 @@ private class AdMobAPI {
     ) {
         val adTracker = Purchases.sharedInstance.adTracker
 
-        // AdView extension API (AdMob-close)
+        // AdView extension API (Google Mobile Ads–close)
         adView.loadAndTrackAd(adRequest = adRequest, placement = "api_tester_banner")
 
         // AdTracker load-and-track APIs

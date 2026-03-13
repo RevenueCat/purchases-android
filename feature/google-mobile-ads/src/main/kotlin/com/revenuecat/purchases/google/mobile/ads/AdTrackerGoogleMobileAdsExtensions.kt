@@ -355,7 +355,7 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
  *
  * Call via [Purchases.sharedInstance.adTracker].
  *
- * For an AdMob-close API without passing the tracker, use [AdView.loadAndTrackAd] instead.
+ * For a Google-Mobile-Ads–close API without passing the tracker, use [AdView.loadAndTrackAd] instead.
  *
  * @param adView The [AdView] to track and load.
  * @param adRequest The [AdRequest] to use.

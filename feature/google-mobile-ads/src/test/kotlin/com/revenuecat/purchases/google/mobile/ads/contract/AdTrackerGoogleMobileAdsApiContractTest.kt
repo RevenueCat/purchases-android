@@ -6,5 +6,5 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 
 class AdTrackerGoogleMobileAdsApiContractTest {
 
-    // AdMob adapter APIs are @JvmSynthetic (Kotlin-only). No Java contract tests.
+    // Google Mobile Ads adapter APIs are @JvmSynthetic (Kotlin-only). No Java contract tests.
 }
