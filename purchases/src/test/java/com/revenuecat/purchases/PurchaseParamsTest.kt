@@ -11,6 +11,7 @@ import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
@@ -132,6 +133,33 @@ class PurchaseParamsTest {
             .build()
 
         assertThat(purchaseParams.galaxyReplacementMode).isEqualTo(GalaxyReplacementMode.INSTANT_PRORATED_DATE)
+    }
+
+    @Test
+    fun `initializing defaults replacementMode to WITHOUT_PRORATION`() {
+        val storeProduct = stubStoreProduct("abc")
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            storeProduct
+        ).build()
+
+        assertThat(purchaseParams.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
+    }
+
+    @Test
+    fun `replacementMode set on builder is reflected in PurchaseParams`() {
+        val storeProduct = stubStoreProduct("abc")
+
+        StoreReplacementMode.values().forEach { replacementMode ->
+            val purchaseParams = PurchaseParams.Builder(
+                mockk(),
+                storeProduct
+            )
+                .replacementMode(replacementMode)
+                .build()
+
+            assertThat(purchaseParams.replacementMode).isEqualTo(replacementMode)
+        }
     }
 
     // region Add-Ons
