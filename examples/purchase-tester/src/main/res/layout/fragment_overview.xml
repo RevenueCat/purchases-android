@@ -179,6 +179,13 @@
                                 app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
                                 app:layout_constraintTop_toTopOf="@id/customer_info_restore_purchases_button" />
 
+                        <com.google.android.material.button.MaterialButton
+                                android:id="@+id/restore_by_order_id_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_margin="@dimen/padding_tiny"
+                                android:text="@string/restore_by_order_id" />
+
                     </LinearLayout>
 
                     <com.google.android.material.button.MaterialButton
@@ -214,7 +221,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_margin="@dimen/padding_tiny"
                                 android:text="Invalidate VC Cache" />
-        
+
 
                     </LinearLayout>
 
@@ -317,13 +324,6 @@
                 android:layout_marginEnd="@dimen/padding_large"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/restore_by_order_id_button"
-                    android:text="Restore by Order ID"
-                    android:layout_gravity="end|bottom"
-                    android:layout_marginEnd="@dimen/padding_small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/find_by_placement_button"
                     android:text="@string/find_placement"
