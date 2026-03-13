@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -12,8 +13,8 @@ java {
 }
 
 tasks.withType<KotlinCompile>().configureEach {
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -24,11 +25,6 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("AndroidLibrary") {
-            id = "revenuecat-android-library"
-            implementationClass =
-                "com.revenuecat.purchases.android.buildlogic.plugin.AndroidLibraryConventionPlugin"
-        }
         register("PublicLibrary") {
             id = "revenuecat-public-library"
             implementationClass =
