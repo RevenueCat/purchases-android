@@ -42,6 +42,9 @@ internal class OfferingsManager(
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
 
+    val cachedCurrentOfferingIdentifier: String?
+        get() = offeringsCache.cachedOfferings?.current?.identifier
+
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
