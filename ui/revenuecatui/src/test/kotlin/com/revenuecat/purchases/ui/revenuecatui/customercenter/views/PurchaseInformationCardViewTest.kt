@@ -49,4 +49,38 @@ class PurchaseInformationCardViewTest {
         }
     }
 
+    @Test
+    fun `subscription purchase card with onCardClick is clickable`() {
+        val onCardClick = mockk<() -> Unit>(relaxed = true)
+
+        composeTestRule.setContent {
+            PurchaseInformationCardView(
+                purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                localization = mockLocalization,
+                isDetailedView = false,
+                onCardClick = onCardClick
+            )
+        }
+
+        composeTestRule.onNode(hasText("Basic")).performClick()
+        verify { onCardClick() }
+    }
+
+    @Test
+    fun `lifetime purchase card with onCardClick is clickable`() {
+        val onCardClick = mockk<() -> Unit>(relaxed = true)
+
+        composeTestRule.setContent {
+            PurchaseInformationCardView(
+                purchaseInformation = CustomerCenterConfigTestData.purchaseInformationLifetime,
+                localization = mockLocalization,
+                isDetailedView = false,
+                onCardClick = onCardClick
+            )
+        }
+
+        composeTestRule.onAllNodes(hasText("Lifetime"))[0].performClick()
+        verify { onCardClick() }
+    }
+
 }

@@ -562,13 +562,14 @@ private fun MainScreenContent(
                 localization = configuration.localization,
                 supportTickets = configuration.support.supportTickets,
                 onPurchaseSelect = { purchase ->
-                    // Only allow selection if there are multiple purchases
-                    if (state.purchases.size > 1) {
+                    // Only allow selection if there are multiple purchases and the purchase has actions
+                    if (state.purchases.size > 1 && purchase in state.purchasesWithActions) {
                         onAction(CustomerCenterAction.SelectPurchase(purchase))
                     }
                 },
                 onAction = onAction,
                 purchases = state.purchases,
+                purchasesWithActions = state.purchasesWithActions,
             )
         } ?: run {
             // Handle missing management screen
