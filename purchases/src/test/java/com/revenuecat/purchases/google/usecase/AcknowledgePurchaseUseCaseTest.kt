@@ -64,7 +64,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -80,7 +80,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
@@ -90,7 +90,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -106,7 +106,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
@@ -116,7 +116,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googleRecordWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -132,7 +132,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
@@ -154,7 +154,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         verify(exactly = 0) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
@@ -176,7 +176,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         verify(exactly = 0) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
@@ -186,7 +186,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -212,7 +212,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -242,7 +242,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -272,7 +272,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -292,7 +292,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googleRecordWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -318,7 +318,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -333,7 +333,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
@@ -343,7 +343,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googleRecordWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -358,7 +358,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
@@ -368,7 +368,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
         wrapper.consumeAndSave(
@@ -383,7 +383,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token, any())
+            mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
 
