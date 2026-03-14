@@ -29,7 +29,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":purchases"))
+    implementation(projects.purchases)
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)

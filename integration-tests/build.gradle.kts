@@ -49,7 +49,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":purchases"))
+    implementation(projects.purchases)
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.appcompat)
@@ -57,7 +57,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.multidex)
 
-    androidTestImplementation(project(":purchases"))
+    androidTestImplementation(projects.purchases)
     androidTestImplementation(libs.androidx.test.espresso.core)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)

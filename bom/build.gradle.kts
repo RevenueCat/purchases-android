@@ -20,14 +20,14 @@ if (
 
 dependencies {
     constraints {
-        api(project(":purchases"))
-        api(project(":ui:revenuecatui"))
-        api(project(":ui:debugview"))
-        api(project(":feature:amazon"))
+        api(projects.purchases)
+        api(projects.ui.revenuecatui)
+        api(projects.ui.debugview)
+        api(projects.feature.amazon)
         val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
         if (hasSamsungIapAar) {
             api(project(":feature:galaxy"))
         }
-        api(project(":feature:admob"))
+        api(projects.feature.admob)
     }
 }

@@ -98,10 +98,10 @@ baselineProfile {
 }
 
 dependencies {
-    implementation(project(":purchases"))
-    implementation(project(":feature:amazon"))
-    implementation(project(":ui:debugview"))
-    implementation(project(":ui:revenuecatui"))
+    implementation(projects.purchases)
+    implementation(projects.feature.amazon)
+    implementation(projects.ui.debugview)
+    implementation(projects.ui.revenuecatui)
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -121,7 +121,7 @@ dependencies {
     debugImplementation(libs.androidx.test.compose.manifest)
     debugImplementation(libs.leakcanary.android)
 
-    baselineProfile(project(":baselineprofile")) {
+    baselineProfile(projects.baselineprofile) {
         attributes {
             attribute(
                 Attribute.of("com.android.build.api.attributes.ProductFlavor:apis", String::class.java),

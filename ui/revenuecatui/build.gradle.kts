@@ -96,7 +96,7 @@ tasks.withType<KotlinCompile>().configureEach {
 }
 
 dependencies {
-    api(project(":purchases"))
+    api(projects.purchases)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
@@ -144,7 +144,7 @@ dependencies {
     androidTestImplementation(libs.mockk.agent)
     androidTestImplementation(libs.androidx.test.compose)
 
-    baselineProfile(project(":baselineprofile"))
+    baselineProfile(projects.baselineprofile)
 }
 
 tasks.dokkaHtmlPartial.configure {

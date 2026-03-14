@@ -24,7 +24,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":purchases"))
+    implementation(projects.purchases)
 
     implementation(libs.amazon.appstore.sdk)
 }
