@@ -895,7 +895,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     fun `consumeAndSave caches token when finishTransactions is false`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val wrapper = createWrapper(acknowledgePurchaseHandler = acknowledgePurchaseHandler)
-        every { deviceCache.addSuccessfullyPostedToken("token", isAutoRenewing = true) } returns Unit
+        every { deviceCache.addSuccessfullyPostedToken("token") } returns Unit
 
         wrapper.consumeAndSave(
             finishTransactions = false,
@@ -905,7 +905,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token", isAutoRenewing = true) }
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token") }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -913,7 +913,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     fun `consumeAndSave caches token for unknown product type`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val wrapper = createWrapper(acknowledgePurchaseHandler = acknowledgePurchaseHandler)
-        every { deviceCache.addSuccessfullyPostedToken("token", isAutoRenewing = true) } returns Unit
+        every { deviceCache.addSuccessfullyPostedToken("token") } returns Unit
 
         wrapper.consumeAndSave(
             finishTransactions = true,
@@ -923,7 +923,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token", isAutoRenewing = true) }
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token") }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -931,7 +931,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
     fun `consumeAndSave does nothing for pending purchases`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val wrapper = createWrapper(acknowledgePurchaseHandler = acknowledgePurchaseHandler)
-        every { deviceCache.addSuccessfullyPostedToken(any(), isAutoRenewing = any()) } returns Unit
+        every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
 
         wrapper.consumeAndSave(
             finishTransactions = true,
@@ -941,7 +941,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any(), isAutoRenewing = any()) }
+        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -952,7 +952,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>()
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
-        every { deviceCache.addSuccessfullyPostedToken(any(), isAutoRenewing = any()) } returns Unit
+        every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
         every {
             getOwnedListHandler.getOwnedList(
                 onSuccess = capture(ownedListSuccessSlot),
@@ -999,7 +999,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
         verify(exactly = 1) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
         assertThat(ackTransactionSlot.captured.purchaseToken).isEqualTo("token-sub")
-        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-sub", isAutoRenewing = true) }
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-sub") }
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -1008,7 +1008,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
-        every { deviceCache.addSuccessfullyPostedToken(any(), isAutoRenewing = any()) } returns Unit
+        every { deviceCache.addSuccessfullyPostedToken(any()) } returns Unit
         every {
             getOwnedListHandler.getOwnedList(
                 onSuccess = capture(ownedListSuccessSlot),
@@ -1042,7 +1042,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
         verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any(), isAutoRenewing = any()) }
+        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
     }
 
     private fun createWrapper(

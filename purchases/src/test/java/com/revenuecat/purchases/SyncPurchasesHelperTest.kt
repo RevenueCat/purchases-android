@@ -78,7 +78,7 @@ class SyncPurchasesHelperTest {
         assertThat(receivedCustomerInfo).isEqualTo(customerInfoMock)
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -121,7 +121,6 @@ class SyncPurchasesHelperTest {
                 initiationSource = any(),
                 onSuccess = any(),
                 onError = any(),
-                isAutoRenewing = any(),
             )
         }
     }
@@ -134,7 +133,6 @@ class SyncPurchasesHelperTest {
             every { purchaseToken } returns "test-purchase-token-1"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns null
-            every { isAutoRenewing } returns true
         }
         val purchase2 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-2")
@@ -142,7 +140,6 @@ class SyncPurchasesHelperTest {
             every { purchaseToken } returns "test-purchase-token-2"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns "test-marketplace"
-            every { isAutoRenewing } returns true
         }
         mockBillingQueryAllPurchasesSuccess(listOf(purchase1, purchase2))
 
@@ -155,7 +152,6 @@ class SyncPurchasesHelperTest {
                 initiationSource = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
-                isAutoRenewing = any(),
             )
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(mockk())
@@ -178,8 +174,7 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 initiationSource = initiationSource,
                 onSuccess = any(),
-                onError = any(),
-                isAutoRenewing = any(),
+                onError = any()
             )
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-2",
@@ -190,8 +185,7 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 initiationSource = initiationSource,
                 onSuccess = any(),
-                onError = any(),
-                isAutoRenewing = any(),
+                onError = any()
             )
         }
     }
@@ -204,7 +198,6 @@ class SyncPurchasesHelperTest {
             every { purchaseToken } returns "test-purchase-token-1"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns null
-            every { isAutoRenewing } returns true
         }
         val purchase2 = mockk<StoreTransaction>().apply {
             every { productIds } returns listOf("test-product-id-2")
@@ -212,13 +205,12 @@ class SyncPurchasesHelperTest {
             every { purchaseToken } returns "test-purchase-token-2"
             every { storeUserID } returns "test-store-user-id"
             every { marketplace } returns "test-marketplace"
-            every { isAutoRenewing } returns true
         }
         mockBillingQueryAllPurchasesSuccess(listOf(purchase1, purchase2))
 
         every {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), captureLambda(), any(),
+                any(), any(), any(), any(), any(), any(), captureLambda(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(testError)
@@ -243,8 +235,7 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 initiationSource = initiationSource,
                 onSuccess = any(),
-                onError = any(),
-                isAutoRenewing = any(),
+                onError = any()
             )
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-2",
@@ -255,8 +246,7 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 initiationSource = initiationSource,
                 onSuccess = any(),
-                onError = any(),
-                isAutoRenewing = any(),
+                onError = any()
             )
         }
     }

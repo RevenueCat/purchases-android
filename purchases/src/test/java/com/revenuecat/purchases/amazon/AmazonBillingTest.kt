@@ -577,7 +577,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
         } just Runs
 
         underTest.consumeAndSave(
@@ -600,7 +600,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
         }
     }
 
@@ -614,7 +614,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
         } just Runs
 
         underTest.consumeAndSave(
@@ -637,7 +637,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
         }
     }
 
@@ -651,7 +651,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
         } just Runs
 
         underTest.consumeAndSave(
@@ -674,7 +674,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
         }
     }
 

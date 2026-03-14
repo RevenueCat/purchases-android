@@ -241,7 +241,7 @@ internal class AmazonBilling(
             }
         }
 
-        cache.addSuccessfullyPostedToken(purchase.purchaseToken, purchase.isAutoRenewing)
+        cache.addSuccessfullyPostedToken(purchase.purchaseToken)
     }
 
     override fun findPurchaseInPurchaseHistory(

@@ -79,11 +79,11 @@ internal class SyncPurchasesHelper(
                             isRestore,
                             appUserID,
                             PostReceiptInitiationSource.RESTORE,
-                            onSuccess = {
+                            {
                                 log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASE_SYNCED.format(purchase) }
                                 handleLastPurchase(purchase, lastPurchase)
                             },
-                            onError = { error ->
+                            { error ->
                                 log(LogIntent.RC_ERROR) {
                                     PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
                                         .format(purchase, error)
@@ -91,7 +91,6 @@ internal class SyncPurchasesHelper(
                                 errors.add(error)
                                 handleLastPurchase(purchase, lastPurchase)
                             },
-                            isAutoRenewing = purchase.isAutoRenewing,
                         )
                     }
                 } else {
