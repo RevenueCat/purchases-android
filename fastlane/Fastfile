@@ -443,8 +443,8 @@ platform :android do
         UI.message("Attempt #{attempt} of #{max_retries}")
 
         gradle(
-          task: ":purchases:connectedDefaultsBc8DebugAndroidTest",
-          properties: { "minSdkVersion" => 21 }
+          task: ":purchases:connectedDefaultsBc8ReleaseAndroidTest",
+          properties: { "testBuildType" => "release", "minSdkVersion" => 21 }
         )
 
         success = true
@@ -483,8 +483,8 @@ platform :android do
     )
 
     gradle(
-      task: ":purchases:connectedCustomEntitlementComputationBc8DebugAndroidTest",
-      properties: { "minSdkVersion" => 21 }
+      task: ":purchases:connectedCustomEntitlementComputationBc8ReleaseAndroidTest",
+      properties: { "testBuildType" => "release", "minSdkVersion" => 21 }
     )
   end
 
