@@ -479,8 +479,8 @@ package com.revenuecat.purchases {
     method @Deprecated public void syncObserverModeAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price);
     method public void syncPurchases();
     method public void syncPurchases(optional com.revenuecat.purchases.interfaces.SyncPurchasesCallback? listener);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void trackCustomPaywallImpression();
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void trackCustomPaywallImpression(optional com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams params);
+    method public void trackCustomPaywallImpression();
+    method public void trackCustomPaywallImpression(optional com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams params);
     property @Deprecated @kotlin.jvm.Synchronized public final boolean allowSharingPlayStoreAccount;
     property @kotlin.jvm.Synchronized public final String appUserID;
     property public final com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? cachedVirtualCurrencies;
@@ -1620,7 +1620,7 @@ package com.revenuecat.purchases.models {
 
 package com.revenuecat.purchases.paywalls.events {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class CustomPaywallImpressionParams {
+  @dev.drewhamilton.poko.Poko public final class CustomPaywallImpressionParams {
     ctor public CustomPaywallImpressionParams();
     ctor public CustomPaywallImpressionParams(optional String? paywallId);
     ctor public CustomPaywallImpressionParams(optional String? paywallId, optional String? offeringId);
