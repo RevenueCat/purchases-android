@@ -581,7 +581,7 @@ jobs:
           cache-version: v1
       - android/create_avd:
           avd_name: test-purchases-integration
-          system_image: system-images;android-32;google_apis;x86_64
+          system_image: system-images;android-33;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-purchases-integration
@@ -607,7 +607,7 @@ jobs:
           cache-version: v1
       - android/create_avd:
           avd_name: test-cec-integration
-          system_image: system-images;android-32;google_apis;x86_64
+          system_image: system-images;android-33;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-cec-integration
@@ -684,7 +684,7 @@ jobs:
       - android/restore_build_cache
       - android/create_avd:
           avd_name: test-integration
-          system_image: system-images;android-32;google_apis;x86_64
+          system_image: system-images;android-33;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-integration
