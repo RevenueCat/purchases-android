@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offerings
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -24,6 +25,7 @@ import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
@@ -39,6 +41,9 @@ internal class OfferingsManager(
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
+
+    val cachedCurrentOfferingIdentifier: String?
+        get() = offeringsCache.cachedOfferings?.current?.identifier
 
     fun getOfferings(
         appUserID: String,
@@ -158,6 +163,10 @@ internal class OfferingsManager(
             }
             fetchAndCacheOfferings(appUserID, appInBackground)
         }
+    }
+
+    fun clearInMemoryOfferingsCache() {
+        offeringsCache.clearInMemoryOfferingsCache()
     }
 
     fun onAppForeground(appUserID: String) {

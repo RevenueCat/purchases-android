@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
@@ -17,6 +18,9 @@ public class PurchaseParams(public val builder: Builder) {
     public val isPersonalizedPrice: Boolean?
     public val oldProductId: String?
     public val googleReplacementMode: GoogleReplacementMode
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public val galaxyReplacementMode: GalaxyReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
@@ -39,6 +43,9 @@ public class PurchaseParams(public val builder: Builder) {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
         this.oldProductId = builder.oldProductId
         this.googleReplacementMode = builder.googleReplacementMode
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        this.galaxyReplacementMode = builder.galaxyReplacementMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingContext = builder.presentedOfferingContext
@@ -91,6 +98,11 @@ public class PurchaseParams(public val builder: Builder) {
         @get:JvmSynthetic
         internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
 
+        @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        @set:JvmSynthetic
+        @get:JvmSynthetic
+        internal var galaxyReplacementMode: GalaxyReplacementMode = GalaxyReplacementMode.default
+
         /*
          * Sets the data about the context in which an offering was presented.
          *
@@ -131,10 +143,21 @@ public class PurchaseParams(public val builder: Builder) {
          * The [GoogleReplacementMode] to use when replacing the given oldProductId. Defaults to
          * [GoogleReplacementMode.WITHOUT_PRORATION].
          *
-         * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
+         * Only applied for Play Store product changes. Ignored for Amazon Appstore and Galaxy Store purchases.
          */
         public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
             this.googleReplacementMode = googleReplacementMode
+        }
+
+        /*
+         * The [GalaxyReplacementMode] to use when replacing the given oldProductId. Defaults to
+         * [GalaxyReplacementMode.IMMEDIATE_WITHOUT_PRORATION].
+         *
+         * Only applied for Galaxy Store product changes. Ignored for Google Play and Amazon Appstore purchases.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        public fun galaxyReplacementMode(galaxyReplacementMode: GalaxyReplacementMode): Builder = apply {
+            this.galaxyReplacementMode = galaxyReplacementMode
         }
 
         /*
@@ -196,7 +219,7 @@ public class PurchaseParams(public val builder: Builder) {
             attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
         }
 
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
         private fun attachSubscriptionAddOns(addOns: List<GooglePurchasingData>) = apply {
             if (addOns.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }

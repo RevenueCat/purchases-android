@@ -191,9 +191,13 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
 
     // Combine the main stack with the stickyFooter and the background, or accumulate the encountered errors.
     return zipOrAccumulate(
-        first = styleFactory.create(config.stack, applyBottomWindowInsets = config.stickyFooter == null),
+        first = styleFactory.create(
+            config.stack,
+            applyBottomWindowInsets = config.stickyFooter == null,
+            applyHorizontalWindowInsets = true,
+        ),
         second = config.stickyFooter
-            ?.let { styleFactory.create(it, applyBottomWindowInsets = true) }
+            ?.let { styleFactory.create(it, applyBottomWindowInsets = true, applyHorizontalWindowInsets = true) }
             .orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
     ) { backendRootComponentResult, stickyFooterResult, background ->
@@ -310,6 +314,7 @@ internal fun Offering.toLegacyPaywallState(
     template: PaywallTemplate,
     shouldDisplayDismissButton: Boolean,
     storefrontCountryCode: String?,
+    validationWarning: PaywallWarning? = null,
 ): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -328,6 +333,7 @@ internal fun Offering.toLegacyPaywallState(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
+        validationWarning = validationWarning,
     )
 }
 
