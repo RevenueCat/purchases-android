@@ -62,6 +62,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.shadows.ShadowLooper
 import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration
@@ -140,6 +141,9 @@ class CustomerCenterViewModelTests {
 
     @After
     internal fun tearDown() {
+        // Drain all pending delayed tasks on the main looper (e.g. stateIn's WhileSubscribed timeout)
+        // to prevent leaked viewModelScope coroutines from affecting subsequent test classes.
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
         clearAllMocks()
     }
 
