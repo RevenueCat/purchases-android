@@ -950,5 +950,33 @@ class PostPendingTransactionsHelperTest {
         }
     }
 
+    @Test
+    fun `new purchases do not call addSuccessfullyPostedToken directly`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = listOf(transaction),
+            autoRenewingChanged = emptyList(),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, listOf(transaction))
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        // New purchases rely on billing.consumeAndSave to call addSuccessfullyPostedToken,
+        // not PostPendingTransactionsHelper directly
+        verify(exactly = 0) {
+            deviceCache.addSuccessfullyPostedToken(any(), any())
+        }
+    }
+
     // endregion
 }

@@ -66,6 +66,8 @@ internal class PostPendingTransactionsHelper(
                         .toSet()
                     val unchangedTokens = purchasesByHashedToken.minus(changedTokenHashes)
                     deviceCache.saveAutoRenewingStatus(unchangedTokens)
+                    val autoRenewingChangedTokens = autoRenewingChanged
+                        .map { it.purchaseToken }.toSet()
                     val transactionsToSync = (newPurchases + autoRenewingChanged).distinctBy {
                         it.purchaseToken
                     }
@@ -75,6 +77,7 @@ internal class PostPendingTransactionsHelper(
                         .toSet()
                     postTransactionsWithCompletion(
                         transactionsToSync,
+                        autoRenewingChangedTokens,
                         allowSharingPlayStoreAccount,
                         appUserID,
                         onNoTransactionsToSync = {
@@ -140,6 +143,7 @@ internal class PostPendingTransactionsHelper(
     @SuppressWarnings("LongParameterList")
     private fun postTransactionsWithCompletion(
         transactionsToSync: List<StoreTransaction>,
+        autoRenewingChangedTokens: Set<String>,
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
         onNoTransactionsToSync: (() -> Unit),
@@ -158,10 +162,12 @@ internal class PostPendingTransactionsHelper(
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 sdkOriginated = false,
                 transactionPostSuccess = { transaction, customerInfo ->
-                    deviceCache.addSuccessfullyPostedToken(
-                        transaction.purchaseToken,
-                        transaction.isAutoRenewing,
-                    )
+                    if (transaction.purchaseToken in autoRenewingChangedTokens) {
+                        deviceCache.addSuccessfullyPostedToken(
+                            transaction.purchaseToken,
+                            transaction.isAutoRenewing,
+                        )
+                    }
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)
                 },
