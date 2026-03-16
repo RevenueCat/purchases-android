@@ -125,6 +125,7 @@ internal class RevenueCatApiClient(
             connection.requestMethod = "GET"
             connection.setRequestProperty("Authorization", "Bearer $apiKey")
             connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("User-Agent", "purchases-codegen-gradle-plugin")
             connection.connectTimeout = CONNECTION_TIMEOUT_MS
             connection.readTimeout = CONNECTION_TIMEOUT_MS
 

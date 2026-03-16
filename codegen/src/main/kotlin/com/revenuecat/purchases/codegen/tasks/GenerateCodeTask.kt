@@ -7,10 +7,12 @@ import com.revenuecat.purchases.codegen.generator.EntitlementsGenerator
 import com.revenuecat.purchases.codegen.generator.OfferingsGenerator
 import com.revenuecat.purchases.codegen.generator.PackagesGenerator
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -21,6 +23,7 @@ import org.gradle.api.tasks.TaskAction
 public abstract class GenerateCodeTask : DefaultTask() {
 
     @get:Input
+    @get:Optional
     public abstract val packageName: Property<String>
 
     @get:Input
@@ -68,7 +71,12 @@ public abstract class GenerateCodeTask : DefaultTask() {
         outputDirectory.deleteRecursively()
         outputDirectory.mkdirs()
 
-        val pkg = packageName.get()
+        val pkg = packageName.orNull?.takeIf { it.isNotBlank() }
+            ?: throw GradleException(
+                "revenuecat.packageName must be configured in your build script. " +
+                    "Use a package you own (e.g. \"com.myapp.rc\") to keep generated code " +
+                    "out of the com.revenuecat.** ProGuard/R8 keep rule.",
+            )
         val style = namingStyle.get()
 
         if (generateEntitlements.get() && schema.entitlements.isNotEmpty()) {

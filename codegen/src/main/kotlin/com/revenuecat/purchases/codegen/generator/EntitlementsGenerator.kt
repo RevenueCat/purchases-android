@@ -60,7 +60,11 @@ internal class EntitlementsGenerator(
                             .addStatement("return this[%S]", entitlement.lookupKey)
                             .build(),
                     )
-                    .addKdoc("%L", entitlement.displayName)
+                    .addKdoc(
+                        "%L\n\nReflects your RevenueCat dashboard at build time. " +
+                            "Dashboard changes require a rebuild.",
+                        entitlement.displayName,
+                    )
                     .build(),
             )
 
@@ -73,7 +77,12 @@ internal class EntitlementsGenerator(
                             .addStatement("return this[%S]?.isActive == true", entitlement.lookupKey)
                             .build(),
                     )
-                    .addKdoc("Whether the %L entitlement is currently active.", entitlement.displayName)
+                    .addKdoc(
+                        "Whether the %L entitlement is currently active.\n\n" +
+                            "Reflects your RevenueCat dashboard at build time. " +
+                            "Dashboard changes require a rebuild.",
+                        entitlement.displayName,
+                    )
                     .build(),
             )
         }

@@ -36,7 +36,9 @@ internal class CustomerInfoExtGenerator(
                             .build(),
                     )
                     .addKdoc(
-                        "Whether the %L entitlement is currently active for this customer.",
+                        "Whether the %L entitlement is currently active for this customer.\n\n" +
+                            "Reflects your RevenueCat dashboard at build time. " +
+                            "Dashboard changes require a rebuild.",
                         entitlement.displayName,
                     )
                     .build(),

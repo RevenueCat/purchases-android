@@ -7,16 +7,28 @@ import javax.inject.Inject
 public abstract class RevenueCatExtension @Inject public constructor(objects: ObjectFactory) {
 
     private companion object {
-        private const val DEFAULT_CACHE_TTL_MINUTES = 60L
+        private const val DEFAULT_CACHE_TTL_MINUTES = 30L
     }
 
     public val apiKey: Property<String> = objects.property(String::class.java)
 
     public val projectId: Property<String> = objects.property(String::class.java)
 
+    /**
+     * The package name for generated code. **Must be set explicitly** to a package you own
+     * (e.g. `"com.myapp.rc"`). Avoid `com.revenuecat.*` packages — the RevenueCat SDK's
+     * ProGuard/R8 `-keep class com.revenuecat.**` rule would prevent the generated code from
+     * being minimized in release builds.
+     */
     public val packageName: Property<String> = objects.property(String::class.java)
-        .convention("com.revenuecat.generated")
 
+    /**
+     * How long (in minutes) the fetched schema is cached before the plugin re-fetches from the
+     * RevenueCat API. Defaults to 30 minutes.
+     *
+     * Set to `0` to force a fresh fetch on every build (useful in CI or when iterating on your
+     * RevenueCat dashboard).
+     */
     public val cacheTtlMinutes: Property<Long> = objects.property(Long::class.java)
         .convention(DEFAULT_CACHE_TTL_MINUTES)
 

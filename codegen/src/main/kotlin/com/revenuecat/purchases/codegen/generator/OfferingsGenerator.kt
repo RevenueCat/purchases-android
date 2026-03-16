@@ -60,7 +60,11 @@ internal class OfferingsGenerator(
                             .addStatement("return this.getOffering(%S)", offeringSchema.lookupKey)
                             .build(),
                     )
-                    .addKdoc("%L", offeringSchema.displayName)
+                    .addKdoc(
+                        "%L\n\nReflects your RevenueCat dashboard at build time. " +
+                            "Dashboard changes require a rebuild.",
+                        offeringSchema.displayName,
+                    )
                     .build(),
             )
         }

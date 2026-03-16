@@ -70,7 +70,12 @@ internal class PackagesGenerator(
                             .addStatement("return this.getPackage(%S)", pkg.lookupKey)
                             .build(),
                     )
-                    .addKdoc("%L package from %L offering.", pkg.displayName, offeringSchema.displayName)
+                    .addKdoc(
+                        "%L package from %L offering.\n\nReflects your RevenueCat dashboard " +
+                            "at build time. Dashboard changes require a rebuild.",
+                        pkg.displayName,
+                        offeringSchema.displayName,
+                    )
                     .build(),
             )
         }
