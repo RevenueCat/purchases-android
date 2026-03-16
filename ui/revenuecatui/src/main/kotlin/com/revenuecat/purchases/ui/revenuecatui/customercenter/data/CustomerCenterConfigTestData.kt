@@ -259,7 +259,7 @@ internal object CustomerCenterConfigTestData {
         isExpired = false,
         isTrial = false,
         isCancelled = true,
-        isLifetime = false,
+        isLifetime = true,
     )
 
     val fourVirtualCurrencies = VirtualCurrencies(

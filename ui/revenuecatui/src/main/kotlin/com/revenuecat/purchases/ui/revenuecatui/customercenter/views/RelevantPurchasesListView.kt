@@ -38,6 +38,7 @@ internal fun RelevantPurchasesListView(
     onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
     purchases: List<PurchaseInformation> = emptyList(),
+    purchasesWithActions: Set<PurchaseInformation> = emptySet(),
 ) {
     Column(
         modifier = modifier
@@ -53,6 +54,7 @@ internal fun RelevantPurchasesListView(
             localization = localization,
             totalPurchaseCount = purchases.size,
             onPurchaseSelect = onPurchaseSelect,
+            purchasesWithActions = purchasesWithActions,
         )
 
         if (nonSubscriptions.isNotEmpty()) {
@@ -75,6 +77,7 @@ internal fun RelevantPurchasesListView(
                 localization = localization,
                 totalPurchaseCount = purchases.size,
                 onPurchaseSelect = onPurchaseSelect,
+                purchasesWithActions = purchasesWithActions,
             )
         }
 
@@ -116,9 +119,10 @@ private fun PurchaseListSection(
     localization: CustomerCenterConfigData.Localization,
     totalPurchaseCount: Int,
     onPurchaseSelect: (PurchaseInformation) -> Unit,
+    purchasesWithActions: Set<PurchaseInformation>,
 ) {
     if (purchases.isNotEmpty()) {
-        purchases.forEachIndexed { index, info ->
+        purchases.forEachIndexed { index, purchase ->
             if (index > 0) {
                 Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.ITEMS_SPACING))
             }
@@ -130,15 +134,15 @@ private fun PurchaseListSection(
                 else -> ButtonPosition.MIDDLE
             }
             PurchaseInformationCardView(
-                purchaseInformation = info,
+                purchaseInformation = purchase,
                 localization = localization,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
                 position = position,
                 isDetailedView = totalPurchaseCount == 1,
-                onCardClick = if (totalPurchaseCount > 1) {
-                    { onPurchaseSelect(info) }
+                onCardClick = if (totalPurchaseCount > 1 && purchase in purchasesWithActions) {
+                    { onPurchaseSelect(purchase) }
                 } else {
                     null
                 },
