@@ -901,9 +901,9 @@ class PostPendingTransactionsHelperTest {
         verify(exactly = 1) {
             deviceCache.saveAutoRenewingStatus(emptyMap())
         }
-        // Instead, auto-renewing is saved per-transaction on post success
-        verify(exactly = 1) {
-            deviceCache.addSuccessfullyPostedToken(transaction.purchaseToken, transaction.isAutoRenewing)
+        // addSuccessfullyPostedToken is handled by billing.consumeAndSave, not here
+        verify(exactly = 0) {
+            deviceCache.addSuccessfullyPostedToken(any(), any())
         }
     }
 
@@ -951,7 +951,7 @@ class PostPendingTransactionsHelperTest {
     }
 
     @Test
-    fun `new purchases do not call addSuccessfullyPostedToken directly`() {
+    fun `synced transactions do not call addSuccessfullyPostedToken directly`() {
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
             productIds = listOf("product"),
@@ -971,8 +971,8 @@ class PostPendingTransactionsHelperTest {
 
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
 
-        // New purchases rely on billing.consumeAndSave to call addSuccessfullyPostedToken,
-        // not PostPendingTransactionsHelper directly
+        // addSuccessfullyPostedToken is handled by billing.consumeAndSave,
+        // not PostPendingTransactionsHelper
         verify(exactly = 0) {
             deviceCache.addSuccessfullyPostedToken(any(), any())
         }

@@ -60,14 +60,13 @@ internal class PostPendingTransactionsHelper(
                         purchasesByHashedToken,
                     )
                     // Save auto-renewing status only for tokens NOT being re-synced due to a
-                    // change. Changed tokens' status is saved per-transaction on post success,
-                    // so a failed post preserves the old cached value for retry on next sync.
+                    // change. Changed tokens' status will be updated via
+                    // billing.consumeAndSave on successful post. A failed post preserves
+                    // the old cached value for retry on next sync.
                     val changedTokenHashes = autoRenewingChanged.map { it.purchaseToken.sha1() }
                         .toSet()
                     val unchangedTokens = purchasesByHashedToken.minus(changedTokenHashes)
                     deviceCache.saveAutoRenewingStatus(unchangedTokens)
-                    val autoRenewingChangedTokens = autoRenewingChanged
-                        .map { it.purchaseToken }.toSet()
                     val transactionsToSync = (newPurchases + autoRenewingChanged).distinctBy {
                         it.purchaseToken
                     }
@@ -77,7 +76,6 @@ internal class PostPendingTransactionsHelper(
                         .toSet()
                     postTransactionsWithCompletion(
                         transactionsToSync,
-                        autoRenewingChangedTokens,
                         allowSharingPlayStoreAccount,
                         appUserID,
                         onNoTransactionsToSync = {
@@ -143,7 +141,6 @@ internal class PostPendingTransactionsHelper(
     @SuppressWarnings("LongParameterList")
     private fun postTransactionsWithCompletion(
         transactionsToSync: List<StoreTransaction>,
-        autoRenewingChangedTokens: Set<String>,
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
         onNoTransactionsToSync: (() -> Unit),
@@ -161,13 +158,7 @@ internal class PostPendingTransactionsHelper(
                 appUserID,
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 sdkOriginated = false,
-                transactionPostSuccess = { transaction, customerInfo ->
-                    if (transaction.purchaseToken in autoRenewingChangedTokens) {
-                        deviceCache.addSuccessfullyPostedToken(
-                            transaction.purchaseToken,
-                            transaction.isAutoRenewing,
-                        )
-                    }
+                transactionPostSuccess = { _, customerInfo ->
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)
                 },
