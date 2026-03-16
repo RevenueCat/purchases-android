@@ -1134,6 +1134,14 @@ workflows:
           matrix:
             parameters:
               backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+      # TEMP: Run integration tests on this branch to validate fix
+      - run-firebase-tests-purchases-integration-tests:
+          name: run-firebase-tests-purchases-integration-tests-temp
+          backend_environment: "production"
+          context:
+            - slack-secrets
+          requires:
+            - prepare-tests
       - run-firebase-tests:
           requires:
             - integration-tests-build
