@@ -26,4 +26,5 @@
     <string name="find_placement">Find Placement</string>
     <string name="purchases_completed_by">Purchases are completed by</string>
     <string name="my_app">My app</string>
+    <string name="restore_by_order_id">Restore by Order ID</string>
 </resources>
