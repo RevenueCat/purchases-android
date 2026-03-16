@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
@@ -2585,5 +2586,110 @@ class CustomerCenterViewModelTests {
         val currentState = model.state.value
         assertThat(currentState).isEqualTo(errorState)
         assertThat(currentState).isInstanceOf(CustomerCenterState.Error::class.java)
+    }
+
+    @Test
+    fun `refreshCustomerCenter uses FETCH_CURRENT not syncPurchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        clearMocks(purchases, answers = false, recordedCalls = true)
+
+        model.refreshCustomerCenter()
+
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
+    }
+
+    @Test
+    fun `onActivityResumed refreshes customer center after launching manage subscriptions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var customerCenterConfigCalls = 0
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers {
+            customerCenterConfigCalls++
+            configData
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialCalls = customerCenterConfigCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
+            every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && customerCenterConfigCalls <= initialCalls) {
+            Thread.sleep(25)
+        }
+        assertThat(customerCenterConfigCalls).isGreaterThan(initialCalls)
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
+    }
+
+    @Test
+    fun `onActivityStarted skips refresh when onActivityResumed will handle it`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var fetchCurrentCalls = 0
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } coAnswers {
+            fetchCurrentCalls++
+            customerInfo
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val callsAfterInitialLoad = fetchCurrentCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
+            every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        // Simulate lifecycle: stop -> start -> resume
+        model.onActivityStopped(isChangingConfigurations = false)
+        model.onActivityStarted()
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < callsAfterInitialLoad + 1) {
+            Thread.sleep(25)
+        }
+        // Only one additional refresh from onActivityResumed, none from onActivityStarted
+        assertThat(fetchCurrentCalls).isEqualTo(callsAfterInitialLoad + 1)
     }
 }
