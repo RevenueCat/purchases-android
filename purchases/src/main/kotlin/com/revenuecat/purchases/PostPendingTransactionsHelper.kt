@@ -6,7 +6,6 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
@@ -59,14 +58,6 @@ internal class PostPendingTransactionsHelper(
                     val autoRenewingChanged = deviceCache.getPurchasesWithAutoRenewingChange(
                         purchasesByHashedToken,
                     )
-                    // Save auto-renewing status only for tokens NOT being re-synced due to a
-                    // change. Changed tokens' status will be updated via
-                    // billing.consumeAndSave on successful post. A failed post preserves
-                    // the old cached value for retry on next sync.
-                    val changedTokenHashes = autoRenewingChanged.map { it.purchaseToken.sha1() }
-                        .toSet()
-                    val unchangedTokens = purchasesByHashedToken.minus(changedTokenHashes)
-                    deviceCache.saveAutoRenewingStatus(unchangedTokens)
                     val transactionsToSync = (newPurchases + autoRenewingChanged).distinctBy {
                         it.purchaseToken
                     }
