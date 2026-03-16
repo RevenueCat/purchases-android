@@ -877,7 +877,7 @@ class PostPendingTransactionsHelperTest {
     }
 
     @Test
-    fun `auto-renewing status is not eagerly saved for changed tokens`() {
+    fun `successfully posted auto-renewing change does not call addSuccessfullyPostedToken`() {
         val purchase = stubGooglePurchase(
             purchaseToken = "token",
             productIds = listOf("product"),
@@ -897,13 +897,9 @@ class PostPendingTransactionsHelperTest {
 
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
 
-        // Changed tokens are excluded from the eager save
-        verify(exactly = 1) {
-            deviceCache.saveAutoRenewingStatus(emptyMap())
-        }
-        // Instead, auto-renewing is saved per-transaction on post success
-        verify(exactly = 1) {
-            deviceCache.addSuccessfullyPostedToken(transaction.purchaseToken, transaction.isAutoRenewing)
+        // addSuccessfullyPostedToken is handled by billing.consumeAndSave, not here
+        verify(exactly = 0) {
+            deviceCache.addSuccessfullyPostedToken(any(), any())
         }
     }
 
@@ -940,11 +936,35 @@ class PostPendingTransactionsHelperTest {
 
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
 
-        // Changed token excluded from eager save
-        verify(exactly = 1) {
-            deviceCache.saveAutoRenewingStatus(emptyMap())
-        }
         // addSuccessfullyPostedToken NOT called since the post failed
+        verify(exactly = 0) {
+            deviceCache.addSuccessfullyPostedToken(any(), any())
+        }
+    }
+
+    @Test
+    fun `synced transactions do not call addSuccessfullyPostedToken directly`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = listOf(transaction),
+            autoRenewingChanged = emptyList(),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, listOf(transaction))
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        // addSuccessfullyPostedToken is handled by billing.consumeAndSave,
+        // not PostPendingTransactionsHelper
         verify(exactly = 0) {
             deviceCache.addSuccessfullyPostedToken(any(), any())
         }
