@@ -45,6 +45,8 @@ import kotlin.jvm.JvmSynthetic
  *   RevenueCat revenue tracking is called first, then forwarded to this listener.
  *   If `null` and an [OnPaidEventListener] is already set on this [AdView], the
  *   existing listener will be used as the delegate.
+ * @param adFormat The ad format to report to RevenueCat. Defaults to [AdFormat.BANNER].
+ *   Pass [AdFormat.MREC] when loading a medium rectangle (300×250) ad.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
