@@ -574,6 +574,8 @@ jobs:
         enum: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -598,6 +600,8 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
@@ -665,6 +669,8 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - run:
           name: Replace API_KEY
@@ -675,6 +681,7 @@ jobs:
           name: Prepare Keystore
           working_directory: integration-tests
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
+      - android/restore_build_cache
       - android/create_avd:
           avd_name: test-integration
           system_image: system-images;android-32;google_apis;x86_64
@@ -693,6 +700,7 @@ jobs:
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - android/save_build_cache
       - store_test_results:
           path: integration-tests/build/outputs/androidTest-results
 
@@ -1053,11 +1061,18 @@ workflows:
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
-      - run-integration-tests: *release-branches
+      - run-integration-tests:
+          <<: *release-branches
+          requires:
+            - prepare-tests
       - run-purchases-cec-integration-tests:
           <<: *release-branches
+          requires:
+            - prepare-tests
       - run-purchases-integration-tests:
           <<: *release-branches
+          requires:
+            - prepare-tests
           context:
             - slack-secrets
           matrix:
