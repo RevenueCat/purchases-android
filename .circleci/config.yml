@@ -54,9 +54,6 @@ parameters:
     type: enum
     enum: [internal, alpha, beta, production]
     default: alpha
-  run-firebase-tests:
-    type: boolean
-    default: false
 
 commands:
   install-sdkman:
@@ -1256,26 +1253,3 @@ workflows:
       equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
     jobs:
       - update-golden-requests-backend-integration-tests
-
-  manual-firebase-integration-tests:
-    when:
-      equal: [ true, << pipeline.parameters.run-firebase-tests >> ]
-    jobs:
-      - prepare-tests
-      - integration-tests-build:
-          requires:
-            - prepare-tests
-      - run-firebase-tests-purchases-integration-tests:
-          backend_environment: "production"
-          context:
-            - slack-secrets
-          requires:
-            - prepare-tests
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
-          context:
-            - slack-secrets
-          requires:
-            - prepare-tests
-      - run-firebase-tests:
-          requires:
-            - integration-tests-build
