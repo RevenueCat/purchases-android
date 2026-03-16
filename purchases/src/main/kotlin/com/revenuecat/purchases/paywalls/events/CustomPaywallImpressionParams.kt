@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.paywalls.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -11,7 +10,6 @@ import dev.drewhamilton.poko.Poko
  * If not provided, the SDK will use the current offering identifier from the cache.
  */
 @Poko
-@ExperimentalPreviewRevenueCatPurchasesAPI
 public class CustomPaywallImpressionParams @JvmOverloads constructor(
     public val paywallId: String? = null,
     public val offeringId: String? = null,

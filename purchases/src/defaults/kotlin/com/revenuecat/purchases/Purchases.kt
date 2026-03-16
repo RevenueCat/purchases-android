@@ -657,7 +657,6 @@ public class Purchases internal constructor(
      *
      * @param params Parameters for the custom paywall impression event.
      */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     @OptIn(InternalRevenueCatAPI::class)
     @JvmOverloads
     public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
