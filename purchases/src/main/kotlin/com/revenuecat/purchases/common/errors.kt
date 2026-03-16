@@ -40,11 +40,11 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidWebRedemptionToken(7849),
     BackendPurchaseBelongsToOtherUser(7852),
     BackendExpiredWebRedemptionToken(7853),
-    BackendOrderIdNotFound(8067),
-    BackendOrderNotEligible(8068),
-    BackendOrderIdPurchaseBelongsToAuthenticatedUser(8069),
-    BackendOrderIdRateLimitExceeded(8070),
-    BackendRestoreByOrderIdFeatureNotEnabled(8071), // WIP: Update final value
+    BackendOrderIdNotFound(8069),
+    BackendOrderNotEligible(8070),
+    BackendOrderIdPurchaseBelongsToAuthenticatedUser(8071),
+    BackendOrderIdRateLimitExceeded(8072),
+    BackendRestoreByOrderIdFeatureNotEnabled(8073), // WIP: Update final value
     ;
 
     companion object {

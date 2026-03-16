@@ -4,6 +4,10 @@ plugins {
     alias(libs.plugins.poko)
 }
 
+metalava {
+    filename.set("api.txt")
+}
+
 android {
     namespace = "com.revenuecat.purchases.galaxy"
 

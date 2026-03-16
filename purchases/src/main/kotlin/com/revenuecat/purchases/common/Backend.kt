@@ -174,7 +174,7 @@ internal class Backend(
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var restoreByOrderIdCallbacks = mutableMapOf<String, MutableList<RestoreByOrderIdCallback>>()
+    @Volatile var restoreByOrderIdCallbacks = mutableMapOf<List<String>, MutableList<RestoreByOrderIdCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var virtualCurrenciesCallbacks =
@@ -921,7 +921,7 @@ internal class Backend(
         onResultHandler: (RestoreByOrderIdListener.Result) -> Unit,
     ) {
         val endpoint = Endpoint.PostRestoreByOrderId(appUserID)
-        val path = endpoint.getPath()
+        val cacheKey = listOfNotNull(endpoint.getPath(), orderId)
         val body = mapOf("order_id" to orderId, APP_USER_ID to appUserID)
         val postFieldsToSign = listOf(APP_USER_ID to appUserID, "order_id" to orderId)
         val call = object : Dispatcher.AsyncCall() {
@@ -938,7 +938,7 @@ internal class Backend(
 
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
-                    restoreByOrderIdCallbacks.remove(path)
+                    restoreByOrderIdCallbacks.remove(cacheKey)
                 }?.forEach { callback ->
                     callback(RestoreByOrderIdListener.Result.Error(error))
                 }
@@ -946,7 +946,7 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
-                    restoreByOrderIdCallbacks.remove(path)
+                    restoreByOrderIdCallbacks.remove(cacheKey)
                 }?.forEach { callback ->
                     if (result.isSuccessful()) {
                         callback(
@@ -981,7 +981,7 @@ internal class Backend(
             restoreByOrderIdCallbacks.addCallback(
                 call,
                 dispatcher,
-                path,
+                cacheKey,
                 onResultHandler,
                 Delay.NONE,
             )
