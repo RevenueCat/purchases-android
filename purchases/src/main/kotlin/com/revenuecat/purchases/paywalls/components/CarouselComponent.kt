@@ -81,7 +81,7 @@ public class CarouselComponent(
         public val msTransitionTime: Int,
         @get:JvmSynthetic
         @SerialName("transition_type")
-        public val transitionType: TransitionType?,
+        public val transitionType: TransitionType? = null
     ) {
         @Serializable(with = CarouselTransitionTypeDeserializer::class)
         public enum class TransitionType {
