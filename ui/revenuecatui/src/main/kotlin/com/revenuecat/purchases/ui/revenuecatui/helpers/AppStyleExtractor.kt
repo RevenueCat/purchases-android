@@ -60,8 +60,9 @@ internal object AppStyleExtractor {
         extractProminentColors(bitmap, count)
     }
 
+    // Exposed internally for snapshot testing
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "ReturnCount")
-    private fun extractProminentColors(bitmap: Bitmap?, count: Int): List<Color> {
+    internal fun extractProminentColors(bitmap: Bitmap?, count: Int): List<Color> {
         if (bitmap == null) return emptyList()
         if (count <= 0) return emptyList()
 
