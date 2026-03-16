@@ -577,6 +577,9 @@ jobs:
       backend_environment:
         type: enum
         enum: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+      notify_slack:
+        type: boolean
+        default: false
     steps:
       - checkout
       - attach_workspace:
@@ -596,6 +599,8 @@ jobs:
           name: Build and run purchases integration tests
           command: |
             bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
+          environment:
+            NOTIFY_SLACK: << parameters.notify_slack >>
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
@@ -1067,19 +1072,14 @@ workflows:
           requires:
             - prepare-tests
       - run-integration-tests:
-          <<: *release-branches
           requires:
             - prepare-tests
       - run-purchases-cec-integration-tests:
-          <<: *release-branches
           requires:
             - prepare-tests
       - run-purchases-integration-tests:
-          <<: *release-branches
           requires:
             - prepare-tests
-          context:
-            - slack-secrets
           matrix:
             parameters:
               backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
@@ -1153,10 +1153,12 @@ workflows:
     jobs:
       - run-purchases-integration-tests:
           backend_environment: "load_shedder_us_east_1"
+          notify_slack: true
           context:
             - slack-secrets
       - run-purchases-integration-tests:
           backend_environment: "load_shedder_us_east_2"
+          notify_slack: true
           context:
             - slack-secrets
 
