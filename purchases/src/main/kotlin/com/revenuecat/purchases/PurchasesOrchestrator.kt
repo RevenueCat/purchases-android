@@ -73,13 +73,12 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.FontLoader
@@ -630,8 +629,7 @@ internal class PurchasesOrchestrator(
                     purchasingData,
                     presentedOfferingContext,
                     productId,
-                    googleReplacementMode,
-                    galaxyReplacementMode,
+                   replacementMode,
                     isPersonalizedPrice,
                     callback,
                 )
@@ -1524,8 +1522,7 @@ internal class PurchasesOrchestrator(
         purchasingData: PurchasingData,
         presentedOfferingContext: PresentedOfferingContext?,
         oldProductId: String,
-        googleReplacementMode: GoogleReplacementMode,
-        galaxyReplacementMode: GalaxyReplacementMode,
+        replacementMode: StoreReplacementMode,
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback,
     ) {
@@ -1560,7 +1557,7 @@ internal class PurchasesOrchestrator(
                     presentedOfferingContext?.offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$it"
                     }
-                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
+                } oldProductId: $oldProductId replacementMode $replacementMode",
             )
         }
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
@@ -1575,7 +1572,7 @@ internal class PurchasesOrchestrator(
                 // We also need to normalize oldProductId by stripping any basePlanId suffix
                 // (e.g., "productId:basePlanId" becomes "productId") to ensure the callback key matches the productId
                 // in the transaction returned by Google Play, which only contains the product ID without the base plan.
-                val productId = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
+                val productId = if (replacementMode == StoreReplacementMode.DEFERRED && store == Store.PLAY_STORE) {
                     if (oldProductId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
                         warnLog {
                             PurchaseStrings.DEFERRED_PRODUCT_CHANGE_WITH_BASE_PLAN_ID.format(oldProductId)
@@ -1593,11 +1590,6 @@ internal class PurchasesOrchestrator(
             }
         }
         userPurchasing?.let { appUserID ->
-            val replacementMode: ReplacementMode? = when (store) {
-                Store.PLAY_STORE -> googleReplacementMode
-                Store.GALAXY -> galaxyReplacementMode
-                else -> null
-            }
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
@@ -1619,7 +1611,7 @@ internal class PurchasesOrchestrator(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        replacementMode: ReplacementMode?,
+        replacementMode: StoreReplacementMode?,
         activity: Activity,
         appUserID: String,
         presentedOfferingContext: PresentedOfferingContext?,
