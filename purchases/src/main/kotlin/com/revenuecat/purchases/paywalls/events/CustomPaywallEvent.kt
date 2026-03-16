@@ -31,6 +31,7 @@ internal sealed class CustomPaywallEvent : FeatureEvent {
         @Poko
         internal class Data(
             val paywallId: String?,
+            val offeringId: String? = null,
         )
     }
 }
