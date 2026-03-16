@@ -17,6 +17,7 @@ internal class RevenueCatApiClient(
         private const val CONNECTION_TIMEOUT_MS = 30_000
         private const val HTTP_OK = 200
         private const val HTTP_TOO_MANY_REQUESTS = 429
+        private const val HTTP_INTERNAL_SERVER_ERROR = 500
     }
 
     internal fun fetchEntitlements(projectId: String): List<EntitlementSchema> {
@@ -141,7 +142,11 @@ internal class RevenueCatApiClient(
             }
             if (responseCode != HTTP_OK) {
                 val errorBody = connection.errorStream?.bufferedReader()?.readText() ?: ""
-                error("RevenueCat API returned HTTP $responseCode for $url: $errorBody")
+                val errorMessage = "RevenueCat API returned HTTP $responseCode for $url: $errorBody"
+                if (responseCode >= HTTP_INTERNAL_SERVER_ERROR) {
+                    throw IOException(errorMessage)
+                }
+                error(errorMessage)
             }
 
             return connection.inputStream.bufferedReader().readText()

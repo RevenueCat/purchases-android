@@ -132,14 +132,18 @@ class RevenueCatApiClientTest {
     }
 
     @Test
-    fun `fetchEntitlements handles 500 error without retrying`() {
+    fun `fetchEntitlements retries on 500 errors`() {
         server.enqueue(MockResponse().setResponseCode(500).setBody("Internal Server Error"))
+        server.enqueue(
+            MockResponse().setBody(
+                """{"items": [{"id": "ent_1", "lookup_key": "premium", "display_name": "Premium"}], "next_page": null}"""
+            )
+        )
 
-        assertFailsWith<RuntimeException> {
-            client.fetchEntitlements("proj_123")
-        }
+        val result = client.fetchEntitlements("proj_123")
 
-        assertEquals(1, server.requestCount)
+        assertEquals(1, result.size)
+        assertEquals(2, server.requestCount)
     }
 
     @Test
