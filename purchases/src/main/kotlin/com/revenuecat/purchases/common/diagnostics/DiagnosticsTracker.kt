@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -29,6 +30,8 @@ internal fun interface DiagnosticsEventTrackerListener {
  * This class is the entry point for all diagnostics tracking. It contains all information for all events
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
+
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,

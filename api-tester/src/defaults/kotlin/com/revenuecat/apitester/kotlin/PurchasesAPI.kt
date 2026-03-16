@@ -25,6 +25,7 @@ import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitRestoreResult
+import com.revenuecat.purchases.awaitSetAppstackAttributionParams
 import com.revenuecat.purchases.awaitStorefrontLocale
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
@@ -48,6 +49,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
@@ -132,6 +134,13 @@ private class PurchasesAPI {
 
         val locale: Locale? = purchases.storefrontLocale
         purchases.getStorefrontLocale(getStorefrontLocaleCallback)
+
+        // trackCustomPaywallImpression API
+        val defaultParams = CustomPaywallImpressionParams()
+        val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
+        purchases.trackCustomPaywallImpression()
+        purchases.trackCustomPaywallImpression(defaultParams)
+        purchases.trackCustomPaywallImpression(paramsWithId)
     }
 
     @Suppress("LongParameterList")
@@ -216,6 +225,8 @@ private class PurchasesAPI {
         var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
         val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
         val storefrontLocale: Locale = purchases.awaitStorefrontLocale()
+        var offeringsWithAppstackTargeting: Offerings =
+            purchases.awaitSetAppstackAttributionParams(mapOf("key" to "value"))
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
@@ -286,6 +297,17 @@ private class PurchasesAPI {
 
         val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
         purchases.setAppsFlyerConversionData(mapNullableKeyNullableInt)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun checkSetAppstackAttributionParams(purchases: Purchases) {
+        val callback = object : SyncAttributesAndOfferingsCallback {
+            override fun onSuccess(offerings: Offerings) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
+        val mapStringString: Map<String, String> = emptyMap()
+        purchases.setAppstackAttributionParams(mapStringString, callback)
     }
 
     @Suppress("ForbiddenComment")

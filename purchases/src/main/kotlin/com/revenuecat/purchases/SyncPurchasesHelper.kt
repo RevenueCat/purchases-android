@@ -17,6 +17,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import java.util.Date
 import kotlin.time.Duration
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class SyncPurchasesHelper(
     private val billing: BillingAbstract,
     private val identityManager: IdentityManager,
@@ -78,11 +79,11 @@ internal class SyncPurchasesHelper(
                             isRestore,
                             appUserID,
                             PostReceiptInitiationSource.RESTORE,
-                            {
+                            onSuccess = {
                                 log(LogIntent.PURCHASE) { PurchaseStrings.PURCHASE_SYNCED.format(purchase) }
                                 handleLastPurchase(purchase, lastPurchase)
                             },
-                            { error ->
+                            onError = { error ->
                                 log(LogIntent.RC_ERROR) {
                                     PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
                                         .format(purchase, error)
@@ -90,6 +91,7 @@ internal class SyncPurchasesHelper(
                                 errors.add(error)
                                 handleLastPurchase(purchase, lastPurchase)
                             },
+                            isAutoRenewing = purchase.isAutoRenewing,
                         )
                     }
                 } else {

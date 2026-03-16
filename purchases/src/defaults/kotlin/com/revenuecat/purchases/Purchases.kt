@@ -36,6 +36,8 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -105,6 +107,8 @@ public class Purchases internal constructor(
      * The storefront country code in ISO-3166-1 alpha2.
      * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
      * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     *
+     * Not supported for the Galaxy Store.
      */
     public val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
@@ -211,6 +215,8 @@ public class Purchases internal constructor(
     /**
      * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
      * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
      */
     public fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         purchasesOrchestrator.getStorefrontCountryCode(callback)
@@ -219,6 +225,8 @@ public class Purchases internal constructor(
     /**
      * This method will try to obtain the Store (Google/Amazon) locale.
      * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
@@ -641,6 +649,25 @@ public class Purchases internal constructor(
         purchasesOrchestrator.track(event)
     }
 
+    /**
+     * Tracks an impression for a custom paywall.
+     *
+     * Call this method when your custom (non-RevenueCat) paywall is displayed to a user.
+     * This enables RevenueCat to track paywall impressions for analytics.
+     *
+     * @param params Parameters for the custom paywall impression event.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @OptIn(InternalRevenueCatAPI::class)
+    @JvmOverloads
+    public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
+        purchasesOrchestrator.track(
+            CustomPaywallEvent.Impression(
+                data = CustomPaywallEvent.Impression.Data(paywallId = params.paywallId),
+            ),
+        )
+    }
+
     // Kept internal since it's not meant for public usage.
     internal fun getCustomerCenterConfigData(
         callback: GetCustomerCenterConfigCallback,
@@ -927,6 +954,28 @@ public class Purchases internal constructor(
      */
     public fun setAppsFlyerConversionData(data: Map<*, *>?) {
         purchasesOrchestrator.setAppsFlyerConversionData(data)
+    }
+
+    /**
+     * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
+     * fresh offerings so that Appstack-based targeting is applied before the callback returns.
+     *
+     * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+     * cached offerings will be returned instead.
+     *
+     * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate attributes.
+     * Note that this method will never unset any attributes. To unset an attribute, call the individual
+     * setter with a `null` value.
+     *
+     * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+     * @param callback Called with fresh [Offerings] (targeted with Appstack data) or a [PurchasesError].
+     */
+    public fun setAppstackAttributionParams(
+        data: Map<String, String>,
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        purchasesOrchestrator.setAppstackAttributionParams(data, callback)
     }
 
     // endregion
@@ -1227,6 +1276,7 @@ public class Purchases internal constructor(
          * @param configuration: the [PurchasesConfiguration] object you wish to use to configure [Purchases].
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         public fun configure(
             configuration: PurchasesConfiguration,

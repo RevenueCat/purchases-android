@@ -127,6 +127,38 @@ public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offering
 }
 
 /**
+ * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
+ * offerings so that Appstack-based targeting is applied before the coroutine returns.
+ *
+ * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+ * cached offerings will be returned instead.
+ *
+ * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
+ * The SDK will extract relevant attribution information and set the appropriate attributes.
+ * Note that this method will never unset any attributes. To unset an attribute, call the individual
+ * setter with a `null` value.
+ *
+ * Coroutine friendly version of [Purchases.setAppstackAttributionParams].
+ *
+ * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error syncing attributes or fetching offerings.
+ * @return [Offerings] targeted with Appstack attribution data.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String, String>): Offerings {
+    return suspendCoroutine { continuation ->
+        setAppstackAttributionParams(
+            data,
+            syncAttributesAndOfferingsListener(
+                onSuccess = continuation::resume,
+                onError = { continuation.resumeWithException(PurchasesException(it)) },
+            ),
+        )
+    }
+}
+
+/**
  * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
  * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
  *
@@ -201,6 +233,8 @@ public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
  * This method will try to obtain the Store (Google/Amazon) locale. **Note:** this locale only has a region set.
  * If there is any error, it will return null and log said error.
  * Coroutine friendly version of [Purchases.getStorefrontLocale].
+ *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always throw an error.
  *
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
  * @return The Store locale. **Note:** this locale only has a region set.

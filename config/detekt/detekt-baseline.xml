@@ -164,6 +164,7 @@
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
+    <ID>TooManyFunctions:coroutinesExtensions.kt$com.revenuecat.purchases.coroutinesExtensions.kt</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>
     <ID>ViewModelForwarding:AppInfoScreen.kt$LoginDialog(viewModel) { showLogInDialog = false }</ID>

@@ -227,6 +227,8 @@ public class PaywallView : CompatComposeView {
         val paywallOptions by remember {
             paywallOptionsState
         }
-        Paywall(paywallOptions)
+        RevenueCatTheme {
+            Paywall(paywallOptions)
+        }
     }
 }

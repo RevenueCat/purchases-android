@@ -42,7 +42,7 @@ version: 2.1
 orbs:
   android: circleci/android@3.1.0
   gcp-cli: circleci/gcp-cli@3.3.1
-  revenuecat: revenuecat/sdks-common-config@3.8.0
+  revenuecat: revenuecat/sdks-common-config@3.13.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -110,6 +110,9 @@ commands:
         type: string
     steps:
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -267,6 +270,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -348,6 +353,37 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test-galaxy:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
+      - run:
+          name: Compile API Tester with Galaxy Files
+          command: |
+            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
+      - run:
+          name: Run Galaxy Unit Tests
+          command: |
+            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            RESULTS_DIR="build/test-results-galaxy"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+      - store_test_results:
+          path: build/test-results-galaxy
+      - store_artifacts:
+          path: build/reports
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -392,7 +428,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.23.0-SNAPSHOT s3://purchases-docs/android/9.23.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.26.0-SNAPSHOT s3://purchases-docs/android/9.26.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -412,6 +448,10 @@ jobs:
       - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -444,6 +484,10 @@ jobs:
       - android/restore_build_cache:
           cache_prefix: v1a
       - prepare-signing-key
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -625,6 +669,9 @@ jobs:
           cache-version: v1
       - gcp-cli/install
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -649,6 +696,9 @@ jobs:
           cache-version: v1
       - gcp-cli/install
       - gcp-cli/setup:
+          # Use the version preinstalled in the gcp-cli executor image.
+          # Installing "latest" can trigger an uninstall/reinstall path that fails because sudo is unavailable.
+          skip_install: true
           gcloud_service_key: GCLOUD_SERVICE_KEY
           google_compute_zone: GOOGLE_COMPUTE_ZONE
           google_project_id: GOOGLE_PROJECT_ID
@@ -668,6 +718,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -771,6 +823,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - attach_workspace:
@@ -785,7 +839,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
           command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
@@ -828,6 +881,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - run:
@@ -837,7 +892,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Set GitHub token environment variable
           command: |
@@ -909,11 +963,12 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
@@ -1048,6 +1103,9 @@ workflows:
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+      - test-galaxy:
+          requires:
+            - prepare-tests
       - run-backend-integration-tests:
           requires:
             - prepare-tests
@@ -1085,6 +1143,7 @@ workflows:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
+            - test-galaxy
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester

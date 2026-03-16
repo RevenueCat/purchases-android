@@ -47,6 +47,7 @@ examples/paywall-tester/src/main/generated/baselineProfiles/
 .gradle/
 .gradletasknamecache
 build/
+.cursor/
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -139,6 +140,9 @@ purchases-android-snapshots
 
 # Kotlin Gradle plugin
 .kotlin
+
+# Store specific SDKs
+libs/samsung-iap-*.aar
 
 # Claude Code
 .claude/

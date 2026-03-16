@@ -20,4 +20,6 @@
     <string name="lifetime">Ömürlük</string>
     <string name="no_browser_cannot_open_link">Brauzer quraşdırılmayıb. Link açıla bilmədi.</string>
     <string name="cannot_open_link">Link səhvdir. Açıla bilmədi.</string>
+    <string name="revenuecatui_purchase">Satın al</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

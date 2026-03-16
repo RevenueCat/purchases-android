@@ -97,6 +97,12 @@ internal class StyleFactory(
     private val fontAliases: Map<FontAlias, FontSpec>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     private val offering: Offering,
+    /**
+     * When true, all overrides containing rule conditions are stripped from every component,
+     * rendering the "default paywall" with only base condition overrides applied. This is set
+     * when the paywall component tree contains any unsupported condition type.
+     */
+    private val stripRules: Boolean = false,
 ) {
 
     internal companion object {
@@ -399,6 +405,21 @@ internal class StyleFactory(
                 this
             }
 
+        @Suppress("UNCHECKED_CAST")
+        fun <T : ComponentStyle> T.applyHorizontalWindowInsetsIfNecessary(shouldApply: Boolean): T =
+            if (shouldApply) {
+                when (this) {
+                    is StackComponentStyle -> copy(applyHorizontalWindowInsets = true)
+                    is StickyFooterComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
+                    )
+
+                    else -> this
+                } as T
+            } else {
+                this
+            }
+
         private fun recordPackage(pkg: AvailablePackages.Info) {
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
@@ -419,10 +440,13 @@ internal class StyleFactory(
     /**
      * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
      * passed-in [component]).
+     * @param applyHorizontalWindowInsets Whether to apply horizontal window insets to the root of this tree (i.e. the
+     * passed-in [component]). Needed for landscape mode to avoid rendering behind camera cutouts.
      */
     fun create(
         component: PaywallComponent,
         applyBottomWindowInsets: Boolean = false,
+        applyHorizontalWindowInsets: Boolean = false,
     ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
         with(StyleFactoryScope()) {
             createInternal(component)
@@ -434,6 +458,9 @@ internal class StyleFactory(
                 }
                 .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
+                .map { componentStyle ->
+                    componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
+                }
                 .map { componentStyle ->
                     StyleResult(
                         componentStyle = componentStyle,
@@ -677,6 +704,7 @@ internal class StyleFactory(
             is ButtonComponent.Destination.Sheet ->
                 createStackComponentStyle(destination.stack)
                     .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
+                    .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
                     .map { stackComponentStyle ->
                         ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
                             id = destination.id,
@@ -714,7 +742,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            .toPresentedOverrides { partial ->
+            .toPresentedOverrides(stripRules) { partial ->
                 PresentedStackPartial(
                     from = partial,
                     aliases = colorAliases,
@@ -778,7 +806,7 @@ internal class StyleFactory(
             },
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            .toPresentedOverrides {
+            .toPresentedOverrides(stripRules) {
                 LocalizedTextPartial(
                     from = it,
                     using = localizations,
@@ -826,7 +854,7 @@ internal class StyleFactory(
     ): Result<ImageComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.overrides
-            .toPresentedOverrides {
+            .toPresentedOverrides(stripRules) {
                 it.source
                     ?.withLocalizedOverrides(it.overrideSourceLid)
                     .orSuccessfullyNull()
@@ -864,7 +892,7 @@ internal class StyleFactory(
     ): Result<VideoComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.fallbackSource?.withLocalizedOverrides(component.overrideSourceLid).orSuccessfullyNull(),
-        third = component.overrides?.toPresentedOverrides { videoPartial ->
+        third = component.overrides?.toPresentedOverrides(stripRules) { videoPartial ->
             videoPartial.source
                 ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
                 .orSuccessfullyNull()
@@ -920,7 +948,7 @@ internal class StyleFactory(
     ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
             first = component.overrides
-                .toPresentedOverrides { partial -> PresentedIconPartial(partial, colorAliases) }
+                .toPresentedOverrides(stripRules) { partial -> PresentedIconPartial(partial, colorAliases) }
                 .mapError { nonEmptyListOf(it) },
             second = component.color
                 ?.toColorStyles(aliases = colorAliases)
@@ -951,7 +979,7 @@ internal class StyleFactory(
         component: TimelineComponent,
     ): Result<TimelineComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
-            .toPresentedOverrides { partial -> Result.Success(PresentedTimelinePartial(partial)) }
+            .toPresentedOverrides(stripRules) { partial -> Result.Success(PresentedTimelinePartial(partial)) }
             .mapError { nonEmptyListOf(it) },
         second = component.items
             .map { createTimelineComponentItemStyle(it) }
@@ -979,7 +1007,7 @@ internal class StyleFactory(
         item: TimelineComponent.Item,
     ): Result<TimelineComponentStyle.ItemStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = item.overrides
-            .toPresentedOverrides { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
+            .toPresentedOverrides(stripRules) { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
         second = createTextComponentStyle(item.title),
         third = item.description?.let { createTextComponentStyle(it) }.orSuccessfullyNull(),
@@ -1015,7 +1043,7 @@ internal class StyleFactory(
         component: CarouselComponent,
     ): Result<CarouselComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
-            .toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
+            .toPresentedOverrides(stripRules) { partial -> PresentedCarouselPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
         second = component.pages
             .map { createStackComponentStyle(it) }
@@ -1091,7 +1119,9 @@ internal class StyleFactory(
 
             zipOrAccumulate(
                 first = component.overrides
-                    .toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                    .toPresentedOverrides(
+                        stripRules,
+                    ) { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
                     .mapError { nonEmptyListOf(it) },
                 second = createTabsComponentStyleTabs(component.tabs, control),
                 third = createBackgroundStyles(component.background, component.backgroundColor),
