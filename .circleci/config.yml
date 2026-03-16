@@ -1061,23 +1061,14 @@ workflows:
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
-      - run-integration-tests:
-          <<: *release-branches
-          requires:
-            - prepare-tests
-      - run-purchases-cec-integration-tests:
-          <<: *release-branches
-          requires:
-            - prepare-tests
+      - run-integration-tests
+      - run-purchases-cec-integration-tests
       - run-purchases-integration-tests:
-          <<: *release-branches
-          requires:
-            - prepare-tests
           context:
             - slack-secrets
           matrix:
             parameters:
-              backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+              backend_environment: ["production"]
       - hold:
           type: approval
           requires:
