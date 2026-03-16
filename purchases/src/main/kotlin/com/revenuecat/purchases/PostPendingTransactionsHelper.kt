@@ -59,9 +59,10 @@ internal class PostPendingTransactionsHelper(
                     val autoRenewingChanged = deviceCache.getPurchasesWithAutoRenewingChange(
                         purchasesByHashedToken,
                     )
-                    // Save auto-renewing status only for tokens NOT being re-synced due to a
-                    // change. Changed tokens' status is saved per-transaction on post success,
-                    // so a failed post preserves the old cached value for retry on next sync.
+                    // Populate isAutoRenewing for tokens migrated from the legacy
+                    // StringSet cache (which stored no metadata). Excludes tokens being
+                    // re-synced due to a change — those get updated via
+                    // billing.consumeAndSave on successful post.
                     val changedTokenHashes = autoRenewingChanged.map { it.purchaseToken.sha1() }
                         .toSet()
                     val unchangedTokens = purchasesByHashedToken.minus(changedTokenHashes)
@@ -157,11 +158,7 @@ internal class PostPendingTransactionsHelper(
                 appUserID,
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 sdkOriginated = false,
-                transactionPostSuccess = { transaction, customerInfo ->
-                    deviceCache.addSuccessfullyPostedToken(
-                        transaction.purchaseToken,
-                        transaction.isAutoRenewing,
-                    )
+                transactionPostSuccess = { _, customerInfo ->
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)
                 },
