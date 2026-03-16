@@ -665,7 +665,7 @@ public class Purchases internal constructor(
             CustomPaywallEvent.Impression(
                 data = CustomPaywallEvent.Impression.Data(
                     paywallId = params.paywallId,
-                    offeringId = purchasesOrchestrator.cachedCurrentOfferingIdentifier,
+                    offeringId = params.offeringId ?: purchasesOrchestrator.cachedCurrentOfferingIdentifier,
                 ),
             ),
         )
