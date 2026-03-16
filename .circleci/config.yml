@@ -1065,14 +1065,9 @@ workflows:
           <<: *release-branches
           requires:
             - prepare-tests
-      - run-purchases-cec-integration-tests:
-          <<: *release-branches
-          requires:
-            - prepare-tests
+      - run-purchases-cec-integration-tests
       - run-purchases-integration-tests:
           <<: *release-branches
-          requires:
-            - prepare-tests
           context:
             - slack-secrets
           matrix:
