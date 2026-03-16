@@ -510,6 +510,13 @@ internal class CustomerCenterViewModelImpl(
         if (!shouldResumeRestorePurchases(listener, "listener") ||
             !shouldResumeRestorePurchases(purchases.customerCenterListener, "purchases.customerCenterListener")
         ) {
+            _state.update { currentState ->
+                if (currentState is CustomerCenterState.Success) {
+                    currentState.copy(restorePurchasesState = null)
+                } else {
+                    currentState
+                }
+            }
             return
         }
         notifyListenersForRestoreStarted()

@@ -963,13 +963,30 @@ class CustomerCenterViewModelTests {
             listener = directListener
         )
 
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val missingPurchasePath = HelpPath(
+            id = "missing_purchase_id",
+            title = "Restore Purchases",
+            type = HelpPath.PathType.MISSING_PURCHASE
+        )
+        model.pathButtonPressed(mockk(relaxed = true), missingPurchasePath, null)
+
+        model.state.first {
+            it is CustomerCenterState.Success &&
+                it.restorePurchasesState == RestorePurchasesState.RESTORING
+        }
+
         model.restorePurchases()
+
+        val updatedState = model.state.value as CustomerCenterState.Success
 
         verify(exactly = 1) { directListener.onRestoreInitiated(any()) }
         verify(exactly = 0) { purchasesListener.onRestoreInitiated(any()) }
         coVerify(exactly = 0) { purchases.awaitRestore() }
         verify(exactly = 0) { directListener.onRestoreStarted() }
         verify(exactly = 0) { purchasesListener.onRestoreStarted() }
+        assertThat(updatedState.restorePurchasesState).isNull()
     }
 
     @Test
