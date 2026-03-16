@@ -47,6 +47,8 @@ internal class GetOwnedListHandler(
         )
 
         log(LogIntent.DEBUG) { GalaxyStrings.REQUESTING_OWNED_LIST }
+
+        // Note: getOwnedList() swallows all exceptions
         val requestWasDispatched = iapHelper.getOwnedList(
             onGetOwnedListListener = this,
         )
