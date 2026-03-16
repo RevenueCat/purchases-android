@@ -21,6 +21,7 @@ import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
 import com.revenuecat.purchases.customercenter.Resumable;
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
@@ -30,6 +31,9 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
+import androidx.annotation.OptIn;
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
+
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -38,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
 final class PurchasesAPI {
+    @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void check(
             final Purchases purchases,
             final WebPurchaseRedemption webPurchaseRedemption,
@@ -131,6 +136,12 @@ final class PurchasesAPI {
         purchases.getVirtualCurrencies(getVirtualCurrenciesCallback);
         purchases.invalidateVirtualCurrenciesCache();
         VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
+
+        // trackCustomPaywallImpression API
+        purchases.trackCustomPaywallImpression();
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams());
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall"));
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall", "my-offering"));
     }
 
     static void checkSyncAmazonPurchase(final Purchases purchases,
@@ -185,6 +196,19 @@ final class PurchasesAPI {
 
         Map<String, Integer> mapStringInt = new HashMap<>();
         purchases.setAppsFlyerConversionData(mapStringInt);
+    }
+
+    static void checkSetAppstackAttributionParams(final Purchases purchases) {
+        final SyncAttributesAndOfferingsCallback callback = new SyncAttributesAndOfferingsCallback() {
+            @Override
+            public void onSuccess(@NonNull Offerings offerings) {}
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {}
+        };
+
+        Map<String, String> mapStringString = new HashMap<>();
+        purchases.setAppstackAttributionParams(mapStringString, callback);
     }
 
     static void checkConfiguration(final Context context,

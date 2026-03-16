@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
@@ -61,6 +62,7 @@ internal interface RequestResponseListener {
     )
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList")
 internal class HTTPClient(
     private val appConfig: AppConfig,
@@ -291,7 +293,10 @@ internal class HTTPClient(
                 debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
             }
 
-            val timeout = timeoutManager.getTimeoutForRequest(endpoint, isFallbackURL)
+            val timeout = timeoutManager.getTimeoutForRequest(
+                isFallback = isFallbackURL,
+                fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
+            )
 
             connection = getConnection(httpRequest, timeout)
         } catch (e: MalformedURLException) {

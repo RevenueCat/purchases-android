@@ -1,5 +1,3 @@
-@file:OptIn(InternalRevenueCatAPI::class)
-
 package com.revenuecat.purchases
 
 import android.Manifest
@@ -68,6 +66,7 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
@@ -211,6 +210,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 purchasesStateProvider,
                 pendingTransactionsForPrepaidPlansEnabled,
+                configuration.galaxyBillingMode,
                 backend,
             )
 
@@ -348,6 +348,7 @@ internal class PurchasesFactory(
                 OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
+                uiPreviewMode = appConfig.uiPreviewMode,
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.identity
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -26,6 +27,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
     private val deviceCache: DeviceCache,
