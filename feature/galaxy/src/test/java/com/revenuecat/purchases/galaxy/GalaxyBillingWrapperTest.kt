@@ -55,6 +55,7 @@ import org.junit.Before
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.fail
 
@@ -271,7 +272,49 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `queryAllPurchases returns InvalidReceiptError when conversion fails`() {
+    fun `queryAllPurchases filters products when conversion fails`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+        wrapper.queryAllPurchases(
+            appUserID = "app_user",
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it },
+        )
+
+        val validOwnedProduct = createOwnedProductVo(
+            itemId = "valid_product",
+            purchaseId = "valid_token",
+            type = "subscription",
+            purchaseDate = "2024-02-01 00:00:00",
+        )
+        val invalidOwnedProduct = createOwnedProductVo(
+            itemId = "invalid_product",
+            purchaseId = "invalid_token",
+            type = "subscription",
+            purchaseDate = "invalid-date",
+        )
+        onSuccessSlot.captured.invoke(arrayListOf(validOwnedProduct, invalidOwnedProduct))
+
+        assertThat(receivedError).isNull()
+        val transactions = receivedTransactions ?: fail("Expected purchase history")
+        assertThat(transactions.map { it.purchaseToken }).containsExactly("valid_token")
+        assertThat(transactions.map { it.type }).containsExactly(ProductType.SUBS)
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryAllPurchases returns InvalidReceiptError when all conversions fail`() {
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
         val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         every {
@@ -290,8 +333,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         val invalidOwnedProduct = createOwnedProductVo(
-            itemId = "product",
-            purchaseId = "token",
+            itemId = "invalid_product",
+            purchaseId = "invalid_token",
             type = "subscription",
             purchaseDate = "invalid-date",
         )
@@ -299,7 +342,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
         assertThat(receivedError?.underlyingErrorMessage)
-            .contains(GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_DATE.format("invalid-date"))
+            .isEqualTo("No valid transactions were parsed for the getOwnedList query.")
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
 
@@ -507,6 +550,57 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
+    fun `queryPurchases filters products with invalid subscription end date`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val now = parseGalaxyDate("2024-02-10 00:00:00")
+        val activeSubscriptionEndDate = formatGalaxyDate(nowPlusDays(now, 7))
+        val wrapper = createWrapper(
+            getOwnedListHandler = getOwnedListHandler,
+            dateProvider = FixedDateProvider(now),
+        )
+
+        var receivedMap: Map<String, StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "app_user",
+            onSuccess = { receivedMap = it },
+            onError = { receivedError = it },
+        )
+
+        val activeOwnedProduct = createOwnedProductVo(
+            itemId = "active_product",
+            purchaseId = "active_token",
+            type = "subscription",
+            purchaseDate = "2024-02-01 00:00:00",
+        ).also {
+            every { it.subscriptionEndDate } returns activeSubscriptionEndDate
+        }
+        val invalidOwnedProduct = createOwnedProductVo(
+            itemId = "invalid_product",
+            purchaseId = "invalid_token",
+            type = "subscription",
+            purchaseDate = "2024-02-01 00:00:00",
+        ).also {
+            every { it.subscriptionEndDate } returns "INVALID-DATE"
+        }
+
+        onSuccessSlot.captured.invoke(arrayListOf(activeOwnedProduct, invalidOwnedProduct))
+
+        val purchases = receivedMap ?: fail("Expected purchases")
+        assertThat(receivedError).isNull()
+        assertThat(purchases.keys).containsExactly("active_token".sha1())
+        assertThat(purchases.values.map { it.purchaseToken }).containsExactly("active_token")
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
     fun `queryPurchases forwards errors from getOwnedList`() {
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
@@ -567,7 +661,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
         assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.InvalidReceiptError)
         assertThat(receivedError?.underlyingErrorMessage)
-            .contains(GalaxyStrings.ERROR_CANNOT_PARSE_PURCHASE_DATE.format("invalid-date"))
+            .isEqualTo("No valid transactions were parsed for the getOwnedList query.")
     }
 
     @OptIn(GalaxySerialOperation::class)
@@ -1071,6 +1165,14 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     private fun parseGalaxyDate(dateString: String): Date {
         return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).parse(dateString)!!
+    }
+
+    private fun formatGalaxyDate(date: Date): String {
+        return SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).format(date)
+    }
+
+    private fun nowPlusDays(now: Date, days: Long): Date {
+        return Date(now.time + TimeUnit.DAYS.toMillis(days))
     }
 
     private class FixedDateProvider(
