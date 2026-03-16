@@ -579,7 +579,7 @@ jobs:
           cache-version: v1
       - android/create_avd:
           avd_name: test-purchases-integration
-          system_image: system-images;android-34;google_apis;x86_64
+          system_image: system-images;android-32;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-purchases-integration
@@ -603,7 +603,7 @@ jobs:
           cache-version: v1
       - android/create_avd:
           avd_name: test-cec-integration
-          system_image: system-images;android-34;google_apis;x86_64
+          system_image: system-images;android-32;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-cec-integration
@@ -677,7 +677,7 @@ jobs:
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
       - android/create_avd:
           avd_name: test-integration
-          system_image: system-images;android-34;google_apis;x86_64
+          system_image: system-images;android-32;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-integration
@@ -689,7 +689,7 @@ jobs:
       - run:
           name: Run integration tests on emulator
           command: |
-            ./gradlew -p integration-tests connectedReleaseAndroidTest \
+            ./gradlew -p integration-tests connectedAndroidTest -PtestBuildType=release \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
