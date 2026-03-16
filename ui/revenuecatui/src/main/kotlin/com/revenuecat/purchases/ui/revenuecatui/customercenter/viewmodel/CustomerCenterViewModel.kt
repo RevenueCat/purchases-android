@@ -64,7 +64,6 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -203,7 +202,6 @@ internal class CustomerCenterViewModelImpl(
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
     private var wasBackgrounded = false
     private var shouldRefreshOnResume = false
-    private var activeRefreshJob: Job? = null
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -1049,20 +1047,14 @@ internal class CustomerCenterViewModelImpl(
         if (shouldRefreshOnResume) {
             shouldRefreshOnResume = false
             Logger.d("Refreshing Customer Center after returning from manage subscriptions")
-            val previousJob = activeRefreshJob
-            activeRefreshJob = viewModelScope.launch {
-                previousJob?.join()
-                refreshCustomerCenter()
-            }
+            launchRefreshIfPossible()
         }
     }
 
     private fun launchRefreshIfPossible() {
         val currentState = _state.value
         if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
-            val previousJob = activeRefreshJob
-            activeRefreshJob = viewModelScope.launch {
-                previousJob?.join()
+            viewModelScope.launch {
                 refreshCustomerCenter()
             }
         }
