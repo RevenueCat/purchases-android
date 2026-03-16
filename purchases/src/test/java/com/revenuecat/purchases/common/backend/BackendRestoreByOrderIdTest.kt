@@ -188,6 +188,49 @@ class BackendRestoreByOrderIdTest {
         }
     }
 
+    @Test
+    fun `given multiple postRestoreByOrderId calls for same user but different order IDs, both are triggered`() {
+        mockHttpResult(delayMs = 200)
+        val secondOrderId = "different-order-id"
+        val lock = CountDownLatch(2)
+        asyncBackend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = {
+                assertThat(it).isEqualTo(RestoreByOrderIdListener.Result.Success(expectedCustomerInfo))
+                lock.countDown()
+            },
+        )
+        asyncBackend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = secondOrderId,
+            onResultHandler = {
+                assertThat(it).isEqualTo(RestoreByOrderIdListener.Result.Success(expectedCustomerInfo))
+                lock.countDown()
+            },
+        )
+        lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostRestoreByOrderId(appUserID),
+                body = mapOf("order_id" to orderId, "app_user_id" to appUserID),
+                postFieldsToSign = listOf("app_user_id" to appUserID, "order_id" to orderId),
+                any(),
+            )
+        }
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostRestoreByOrderId(appUserID),
+                body = mapOf("order_id" to secondOrderId, "app_user_id" to appUserID),
+                postFieldsToSign = listOf("app_user_id" to appUserID, "order_id" to secondOrderId),
+                any(),
+            )
+        }
+    }
+
     private fun performPostAndExpectResult(expectedResult: RestoreByOrderIdListener.Result) {
         var receivedResult: RestoreByOrderIdListener.Result? = null
         backend.postRestoreByOrderId(
