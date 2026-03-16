@@ -140,6 +140,7 @@ final class PurchasesAPI {
         purchases.trackCustomPaywallImpression();
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams());
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall"));
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall", "my-offering"));
     }
 
     static void checkSyncAmazonPurchase(final Purchases purchases,
