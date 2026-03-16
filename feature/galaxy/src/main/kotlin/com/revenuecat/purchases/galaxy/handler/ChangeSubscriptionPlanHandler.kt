@@ -79,6 +79,7 @@ internal class ChangeSubscriptionPlanHandler(
 
         // changeSubscriptionPlan returns false if the request was not sent to server and was not processed.
         // When this happens, the onChangeSubscriptionPlanListener is never invoked.
+        // changeSubscriptionPlan() swallows all exceptions.
         val requestWasDispatched = iapHelper.changeSubscriptionPlan(
             oldItemId = oldProductId,
             newItemId = newProductId,

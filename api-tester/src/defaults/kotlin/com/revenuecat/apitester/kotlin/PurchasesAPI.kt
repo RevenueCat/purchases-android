@@ -141,9 +141,11 @@ private class PurchasesAPI {
         // trackCustomPaywallImpression API
         val defaultParams = CustomPaywallImpressionParams()
         val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
+        val paramsWithOffering = CustomPaywallImpressionParams(paywallId = "my-paywall", offeringId = "my-offering")
         purchases.trackCustomPaywallImpression()
         purchases.trackCustomPaywallImpression(defaultParams)
         purchases.trackCustomPaywallImpression(paramsWithId)
+        purchases.trackCustomPaywallImpression(paramsWithOffering)
     }
 
     @Suppress("LongParameterList")
