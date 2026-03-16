@@ -96,10 +96,10 @@ class BackendRestoreByOrderIdTest {
     }
 
     @Test
-    fun `postRestoreByOrderId returns RateLimitExceeded for backend code 8070`() {
+    fun `postRestoreByOrderId returns RateLimitExceeded for backend code 8072`() {
         val responseBody = """
             {
-                "code": 8070,
+                "code": 8072,
                 "message": "Rate limit exceeded."
             }
         """.trimIndent()
@@ -108,10 +108,10 @@ class BackendRestoreByOrderIdTest {
     }
 
     @Test
-    fun `postRestoreByOrderId returns OrderIdNotFound for backend code 8067`() {
+    fun `postRestoreByOrderId returns OrderIdNotFound for backend code 8069`() {
         val responseBody = """
             {
-                "code": 8067,
+                "code": 8069,
                 "message": "Order ID not found."
             }
         """.trimIndent()
@@ -120,10 +120,10 @@ class BackendRestoreByOrderIdTest {
     }
 
     @Test
-    fun `postRestoreByOrderId returns OrderNotEligible for backend code 8068`() {
+    fun `postRestoreByOrderId returns OrderNotEligible for backend code 8070`() {
         val responseBody = """
             {
-                "code": 8068,
+                "code": 8070,
                 "message": "Order is not eligible for restore."
             }
         """.trimIndent()
@@ -132,10 +132,10 @@ class BackendRestoreByOrderIdTest {
     }
 
     @Test
-    fun `postRestoreByOrderId returns FeatureNotEnabled for backend code 8071`() {
+    fun `postRestoreByOrderId returns FeatureNotEnabled for backend code 8073`() {
         val responseBody = """
             {
-                "code": 8071,
+                "code": 8073,
                 "message": "Feature not enabled."
             }
         """.trimIndent()
@@ -144,10 +144,10 @@ class BackendRestoreByOrderIdTest {
     }
 
     @Test
-    fun `postRestoreByOrderId returns PurchaseBelongsToAuthenticatedUser for backend code 8069`() {
+    fun `postRestoreByOrderId returns PurchaseBelongsToAuthenticatedUser for backend code 8071`() {
         val responseBody = """
             {
-                "code": 8069,
+                "code": 8071,
                 "message": "Purchase belongs to authenticated user."
             }
         """.trimIndent()
