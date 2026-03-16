@@ -39,8 +39,15 @@ internal object GalaxyStrings {
         "returned no purchase result. This is likely an issue with the Galaxy Store."
     const val ERROR_CANNOT_PARSE_PURCHASE_RESULT = "Could not parse the purchase result for a Galaxy Store purchase. " +
         "This is likely an issue with the Galaxy Store. Error: %s."
+
+    const val ERROR_CANNOT_PARSE_TRANSACTION = "Could not parse the transaction for a Galaxy Store purchase. " +
+        "This is likely an issue with the Galaxy Store. Error: %s."
+
     const val ERROR_CANNOT_PARSE_PURCHASE_DATE = "Could not parse purchase date for Galaxy Store purchase. Purchase " +
         "date string: %s"
+
+    const val ERROR_CANNOT_PARSE_SUBSCRIPTION_END_DATE = "Could not parse the subscription end date for Galaxy Store " +
+        "purchase. Error: %s"
 
     // Subscription Plan Changes
     const val ANOTHER_CHANGE_SUBSCRIPTION_PLAN_REQUEST_IN_FLIGHT = "Another subscription plan change request with " +

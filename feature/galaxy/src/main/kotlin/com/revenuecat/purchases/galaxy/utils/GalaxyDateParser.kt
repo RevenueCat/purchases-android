@@ -9,6 +9,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
+@Throws(IllegalArgumentException::class)
 internal fun String.parseDateFromGalaxyDateString(): Date {
     val formatter = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT).apply {
         timeZone = TimeZone.getDefault()
