@@ -371,6 +371,7 @@ public fun AdTracker.loadAndTrackBannerAd(
     placement: String? = null,
     adListener: AdListener? = null,
     onPaidEventListener: OnPaidEventListener? = null,
+    adFormat: AdFormat = AdFormat.BANNER,
 ) {
     loadAndTrackBannerAdInternal(
         adView = adView,
@@ -378,5 +379,6 @@ public fun AdTracker.loadAndTrackBannerAd(
         placement = placement,
         adListener = adListener,
         onPaidEventListener = onPaidEventListener,
+        adFormat = adFormat,
     )
 }

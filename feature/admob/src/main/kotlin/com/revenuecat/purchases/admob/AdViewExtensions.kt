@@ -53,6 +53,7 @@ public fun AdView.loadAndTrackAd(
     placement: String? = null,
     adListener: AdListener? = null,
     onPaidEventListener: OnPaidEventListener? = null,
+    adFormat: AdFormat = AdFormat.BANNER,
 ) {
     loadAndTrackBannerAdInternal(
         adView = this,
@@ -60,6 +61,7 @@ public fun AdView.loadAndTrackAd(
         adRequest = adRequest,
         adListener = adListener,
         onPaidEventListener = onPaidEventListener,
+        adFormat = adFormat,
     )
 }
 
@@ -69,6 +71,7 @@ internal fun loadAndTrackBannerAdInternal(
     placement: String? = null,
     adListener: AdListener? = null,
     onPaidEventListener: OnPaidEventListener? = null,
+    adFormat: AdFormat = AdFormat.BANNER,
 ) {
     val adUnitId = adView.adUnitId.orEmpty()
 
@@ -94,7 +97,7 @@ internal fun loadAndTrackBannerAdInternal(
 
     adView.onPaidEventListener = TrackingOnPaidEventListener(
         delegate = effectivePaidListener,
-        adFormat = AdFormat.BANNER,
+        adFormat = adFormat,
         placement = placement,
         adUnitId = adUnitId,
         responseInfoProvider = { adView.responseInfo },
@@ -102,7 +105,7 @@ internal fun loadAndTrackBannerAdInternal(
 
     adView.adListener = TrackingAdListener(
         delegate = effectiveAdListener,
-        adFormat = AdFormat.BANNER,
+        adFormat = adFormat,
         placement = placement,
         adUnitId = adUnitId,
         responseInfoProvider = { adView.responseInfo },
