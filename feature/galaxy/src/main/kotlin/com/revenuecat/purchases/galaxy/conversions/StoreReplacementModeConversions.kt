@@ -9,6 +9,7 @@ import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 
+@Throws(PurchasesException::class)
 internal fun StoreReplacementMode.toGalaxyReplacementMode(): HelperDefine.ProrationMode {
     return when (this) {
         StoreReplacementMode.WITHOUT_PRORATION -> HelperDefine.ProrationMode.INSTANT_NO_PRORATION

@@ -40,6 +40,7 @@ import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
@@ -336,32 +337,32 @@ internal class GalaxyBillingWrapper(
 
         val productId = galaxyPurchaseInfo.productId
 
-        if (replaceProductInfo != null) {
-            val galaxyReplacementMode = replaceProductInfo.replacementMode as? GalaxyReplacementMode
-                ?: GalaxyReplacementMode.default
-
-            serialRequestExecutor.executeSerially { finish ->
-                changeSubscriptionPlanHandler.changeSubscriptionPlan(
-                    appUserID = appUserID,
-                    oldPurchase = replaceProductInfo.oldPurchase,
-                    newProductId = productId,
-                    prorationMode = galaxyReplacementMode,
-                    onSuccess = { receipt ->
-                        handleReceipt(
-                            receipt = receipt,
-                            productId = productId,
-                            presentedOfferingContext = presentedOfferingContext,
-                            replacementMode = galaxyReplacementMode,
-                        )
-                        finish()
-                    },
-                    onError = { purchasesError ->
-                        onPurchaseError(error = purchasesError)
-                        finish()
-                    },
-                )
+        replaceProductInfo?.let { replaceInfo ->
+            (replaceInfo.replacementMode as? StoreReplacementMode)?.let { replacementMode ->
+                serialRequestExecutor.executeSerially { finish ->
+                    changeSubscriptionPlanHandler.changeSubscriptionPlan(
+                        appUserID = appUserID,
+                        oldPurchase = replaceInfo.oldPurchase,
+                        newProductId = productId,
+                        replacementMode = replacementMode,
+                        onSuccess = { receipt ->
+                            handleReceipt(
+                                receipt = receipt,
+                                productId = productId,
+                                presentedOfferingContext = presentedOfferingContext,
+                                // TODO: Send the replacementMode in here when handleReceipt() is updated
+                                replacementMode = null,
+                            )
+                            finish()
+                        },
+                        onError = { purchasesError ->
+                            onPurchaseError(error = purchasesError)
+                            finish()
+                        },
+                    )
+                }
+                return // Exits makePurchaseAsync
             }
-            return
         }
 
         serialRequestExecutor.executeSerially { finish ->
