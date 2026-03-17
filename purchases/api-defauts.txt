@@ -1208,23 +1208,23 @@ package com.revenuecat.purchases.models {
     property public final String token;
   }
 
-  public enum GoogleReplacementMode implements com.revenuecat.purchases.ReplacementMode {
-    method public int describeContents();
-    method public int getPlayBillingClientMode();
-    method public void writeToParcel(android.os.Parcel out, int flags);
-    property public final int playBillingClientMode;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_FULL_PRICE;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_PRORATED_PRICE;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode DEFERRED;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode WITHOUT_PRORATION;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode WITH_TIME_PRORATION;
-    field public static final com.revenuecat.purchases.models.GoogleReplacementMode.CREATOR CREATOR;
+  @Deprecated public enum GoogleReplacementMode implements com.revenuecat.purchases.ReplacementMode {
+    method @Deprecated public int describeContents();
+    method @Deprecated public int getPlayBillingClientMode();
+    method @Deprecated public void writeToParcel(android.os.Parcel out, int flags);
+    property @Deprecated public final int playBillingClientMode;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_FULL_PRICE;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_PRORATED_PRICE;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode DEFERRED;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode WITHOUT_PRORATION;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode WITH_TIME_PRORATION;
+    field @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode.CREATOR CREATOR;
   }
 
-  public static final class GoogleReplacementMode.CREATOR implements android.os.Parcelable.Creator<com.revenuecat.purchases.models.GoogleReplacementMode?> {
-    method public com.revenuecat.purchases.models.GoogleReplacementMode? createFromParcel(android.os.Parcel in);
-    method public com.revenuecat.purchases.models.GoogleReplacementMode? fromPlayBillingClientMode(@com.android.billingclient.api.BillingFlowParams.SubscriptionUpdateParams.ReplacementMode Integer? playBillingClientMode);
-    method public com.revenuecat.purchases.models.GoogleReplacementMode?[] newArray(int size);
+  @Deprecated public static final class GoogleReplacementMode.CREATOR implements android.os.Parcelable.Creator<com.revenuecat.purchases.models.GoogleReplacementMode?> {
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode? createFromParcel(android.os.Parcel in);
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode? fromPlayBillingClientMode(@com.android.billingclient.api.BillingFlowParams.SubscriptionUpdateParams.ReplacementMode Integer? playBillingClientMode);
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode?[] newArray(int size);
   }
 
   @dev.drewhamilton.poko.Poko public final class GoogleStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
