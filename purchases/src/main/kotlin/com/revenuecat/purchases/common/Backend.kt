@@ -292,7 +292,7 @@ internal class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to receiptInfo.storeUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "proration_mode" to receiptInfo.replacementMode?.backendName,
+            "proration_mode" to receiptInfo.replacementMode?.backendName(store = appConfig.store),
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
             "sdk_originated" to receiptInfo.sdkOriginated,
