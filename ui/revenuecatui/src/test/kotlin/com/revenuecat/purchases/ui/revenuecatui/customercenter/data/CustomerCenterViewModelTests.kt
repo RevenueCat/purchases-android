@@ -2927,6 +2927,7 @@ class CustomerCenterViewModelTests {
         // Should have popped back to Main since the purchase no longer exists
         assertThat(refreshedState.currentDestination)
             .isInstanceOf(CustomerCenterDestination.Main::class.java)
+        assertThat((refreshedState.currentDestination as CustomerCenterDestination.Main).title).isNull()
         assertThat(refreshedState.detailScreenPaths).isEmpty()
         assertThat(refreshedState.navigationButtonType)
             .isEqualTo(CustomerCenterState.NavigationButtonType.CLOSE)
