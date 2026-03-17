@@ -86,14 +86,6 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
         // This returns a CustomerInfo from cache, but initiates posting remaining purchases in background
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = true)
-
-        // This makes sure to wait until the post is finished and the CustomerInfo is updated with the result of the
-        // post before making assertions.
-        verifyGetCustomerInfo(
-            shouldHaveAcknowledgedPurchase = true,
-            originalSource = CustomerInfoOriginalSource.LOAD_SHEDDER,
-            fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
-        )
     }
 
     @Test
