@@ -102,6 +102,15 @@ internal data class PurchaseInformation(
             ).replace("{{ date }}", expirationDate)
         }
     }
+
+    fun findMatch(purchases: List<PurchaseInformation>): PurchaseInformation? {
+        val productId = product?.id
+        return if (productId != null) {
+            purchases.firstOrNull { it.product?.id == productId }
+        } else {
+            purchases.firstOrNull { it.product?.id == null && it.title == title && it.store == store }
+        }
+    }
 }
 
 private fun determinePrice(

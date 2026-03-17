@@ -1026,28 +1026,24 @@ internal class CustomerCenterViewModelImpl(
     ): CustomerCenterState.Success {
         if (!isRefresh || previousState !is CustomerCenterState.Success) return this
         val reconciledNavState = previousState.navigationState.reconcileWithPurchases(purchases)
-        return if (reconciledNavState != null) {
-            val reconciledDetailPaths = recomputeDetailScreenPathsIfNeeded(
-                reconciledNavState,
-                previousState.detailScreenPaths,
-            )
-            copy(
-                navigationState = reconciledNavState,
-                navigationButtonType = previousState.navigationButtonType,
-                restorePurchasesState = previousState.restorePurchasesState,
-                showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
-                detailScreenPaths = reconciledDetailPaths,
-            )
+        val navState = reconciledNavState ?: previousState.navigationState.popToMain()
+        val detailPaths = if (reconciledNavState != null) {
+            recomputeDetailScreenPathsIfNeeded(reconciledNavState, previousState.detailScreenPaths)
         } else {
-            // A purchase in the navigation stack no longer exists — pop to main
-            copy(
-                navigationState = previousState.navigationState.popToMain(),
-                navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
-                restorePurchasesState = previousState.restorePurchasesState,
-                showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
-                detailScreenPaths = emptyList(),
-            )
+            emptyList()
         }
+        val buttonType = if (reconciledNavState != null) {
+            previousState.navigationButtonType
+        } else {
+            CustomerCenterState.NavigationButtonType.CLOSE
+        }
+        return copy(
+            navigationState = navState,
+            navigationButtonType = buttonType,
+            restorePurchasesState = previousState.restorePurchasesState,
+            showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+            detailScreenPaths = detailPaths,
+        )
     }
 
     private fun CustomerCenterState.Success.recomputeDetailScreenPathsIfNeeded(
