@@ -848,7 +848,7 @@ class TextComponentViewTests {
         val countryWithoutDecimals = "MX"
         val textKey = LocalizationKey("key_selected")
         val textWithPriceVariable = LocalizationData.Text("Price: {{ product.price }}")
-        val expectedTextWithDecimals = "Price: $ 2.00"
+        val expectedTextWithDecimals = "Price: $2.00"
         val expectedTextWithoutDecimals = "Price: $1"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
