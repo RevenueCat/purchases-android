@@ -581,12 +581,12 @@ internal class CustomerCenterViewModelImpl(
         listenerName: String,
     ): Boolean {
         val shouldResume = suspendCoroutine { continuation ->
+            Logger.d("Restore Purchases Initiated… waiting for $listenerName to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
+                val detail = if (shouldResume) "will" else "will not"
+                Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
                 continuation.resume(shouldResume)
             } ?: continuation.resume(true)
-        }
-        if (!shouldResume) {
-            Logger.d("Restore cancelled $listenerName.onRestoreInitiated returned false")
         }
         return shouldResume
     }

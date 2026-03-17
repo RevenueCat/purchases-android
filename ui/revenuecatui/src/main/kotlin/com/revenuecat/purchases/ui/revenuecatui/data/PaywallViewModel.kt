@@ -331,13 +331,15 @@ internal class PaywallViewModelImpl(
             return
         }
         val shouldResume = suspendCoroutine { continuation ->
+            Logger.d("Restore Purchases Initiated… waiting for listener.onRestoreInitiated to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
+                val detail = if (shouldResume) "will" else "will not"
+                Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
                 continuation.resume(shouldResume)
             } ?: continuation.resume(true)
         }
 
         if (!shouldResume) {
-            Logger.d("Restore cancelled listener.onRestoreInitiated returned false")
             finishAction()
             return
         }
