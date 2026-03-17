@@ -67,6 +67,12 @@ internal data class CustomerCenterNavigationState(
                 }
                 is CustomerCenterDestination.PromotionalOffer -> {
                     val refreshedPurchase = destination.purchaseInformation?.findMatch(refreshedPurchases)
+                    if (destination.purchaseInformation != null && refreshedPurchase == null) {
+                        Logger.w(
+                            "PromotionalOffer's purchaseInformation could not be matched after " +
+                                "reconciliation. It will be set to null.",
+                        )
+                    }
                     newStack.push(destination.copy(purchaseInformation = refreshedPurchase))
                 }
                 else -> newStack.push(destination)

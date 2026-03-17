@@ -1,10 +1,16 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -375,6 +381,194 @@ class CustomerCenterNavigationStateTest {
             stateWithBoth.isBackwardTransition(feedbackDestination2, feedbackDestination1)
         ).isTrue()
     }
+
+    // region reconcileWithPurchases tests
+
+    @Test
+    fun `test reconcileWithPurchases updates SelectedPurchaseDetail when match found`() {
+        val storeProduct = TestStoreProduct(
+            "product_id",
+            "name",
+            "Title",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val originalPurchase = createTestPurchaseInformation(product = storeProduct)
+        val refreshedPurchase = createTestPurchaseInformation(product = storeProduct, isExpired = true)
+
+        val initialState = CustomerCenterNavigationState(
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
+        )
+        val stateWithDetail = initialState.push(
+            CustomerCenterDestination.SelectedPurchaseDetail(
+                purchaseInformation = originalPurchase,
+                title = "Detail",
+            ),
+        )
+
+        val result = stateWithDetail.reconcileWithPurchases(listOf(refreshedPurchase))
+
+        assertThat(result).isNotNull
+        val detail = result!!.currentDestination as CustomerCenterDestination.SelectedPurchaseDetail
+        assertThat(detail.purchaseInformation).isEqualTo(refreshedPurchase)
+    }
+
+    @Test
+    fun `test reconcileWithPurchases returns null when SelectedPurchaseDetail match not found`() {
+        val storeProductA = TestStoreProduct(
+            "product_a",
+            "name",
+            "Title A",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val storeProductB = TestStoreProduct(
+            "product_b",
+            "name",
+            "Title B",
+            "description",
+            Price("$2.99", 2_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val originalPurchase = createTestPurchaseInformation(product = storeProductA)
+        val unrelatedPurchase = createTestPurchaseInformation(product = storeProductB)
+
+        val initialState = CustomerCenterNavigationState(
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
+        )
+        val stateWithDetail = initialState.push(
+            CustomerCenterDestination.SelectedPurchaseDetail(
+                purchaseInformation = originalPurchase,
+                title = "Detail",
+            ),
+        )
+
+        val result = stateWithDetail.reconcileWithPurchases(listOf(unrelatedPurchase))
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `test reconcileWithPurchases updates PromotionalOffer purchaseInformation when match found`() {
+        val storeProduct = TestStoreProduct(
+            "product_id",
+            "name",
+            "Title",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val originalPurchase = createTestPurchaseInformation(product = storeProduct)
+        val refreshedPurchase = createTestPurchaseInformation(product = storeProduct, isExpired = true)
+
+        val initialState = CustomerCenterNavigationState(
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
+        )
+        val promoData = createMockPromotionalOffer()
+        val stateWithPromo = initialState.push(
+            CustomerCenterDestination.PromotionalOffer(
+                data = promoData,
+                purchaseInformation = originalPurchase,
+            ),
+        )
+
+        val result = stateWithPromo.reconcileWithPurchases(listOf(refreshedPurchase))
+
+        assertThat(result).isNotNull
+        val promo = result!!.currentDestination as CustomerCenterDestination.PromotionalOffer
+        assertThat(promo.purchaseInformation).isEqualTo(refreshedPurchase)
+    }
+
+    @Test
+    fun `test reconcileWithPurchases sets PromotionalOffer purchaseInformation to null when no match`() {
+        val storeProductA = TestStoreProduct(
+            "product_a",
+            "name",
+            "Title A",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val storeProductB = TestStoreProduct(
+            "product_b",
+            "name",
+            "Title B",
+            "description",
+            Price("$2.99", 2_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val originalPurchase = createTestPurchaseInformation(product = storeProductA)
+        val unrelatedPurchase = createTestPurchaseInformation(product = storeProductB)
+
+        val initialState = CustomerCenterNavigationState(
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
+        )
+        val promoData = createMockPromotionalOffer()
+        val stateWithPromo = initialState.push(
+            CustomerCenterDestination.PromotionalOffer(
+                data = promoData,
+                purchaseInformation = originalPurchase,
+            ),
+        )
+
+        val result = stateWithPromo.reconcileWithPurchases(listOf(unrelatedPurchase))
+
+        assertThat(result).isNotNull
+        val promo = result!!.currentDestination as CustomerCenterDestination.PromotionalOffer
+        assertThat(promo.purchaseInformation).isNull()
+    }
+
+    @Test
+    fun `test reconcileWithPurchases preserves other destinations unchanged`() {
+        val initialState = CustomerCenterNavigationState(
+            showingActivePurchasesScreen = true,
+            managementScreenTitle = "Test",
+        )
+        val feedbackSurvey = createMockFeedbackSurvey()
+        val feedbackDestination = CustomerCenterDestination.FeedbackSurvey(
+            data = FeedbackSurveyData(
+                feedbackSurvey = feedbackSurvey,
+                onAnswerSubmitted = {},
+            ),
+            title = "Feedback",
+        )
+        val stateWithFeedback = initialState.push(feedbackDestination)
+
+        val result = stateWithFeedback.reconcileWithPurchases(emptyList())
+
+        assertThat(result).isNotNull
+        assertThat(result!!.currentDestination).isEqualTo(feedbackDestination)
+        assertThat(result.backStack.size).isEqualTo(2)
+    }
+
+    private fun createTestPurchaseInformation(
+        product: TestStoreProduct? = null,
+        store: Store = Store.PLAY_STORE,
+        isSubscription: Boolean = true,
+        isExpired: Boolean = false,
+    ): PurchaseInformation {
+        return PurchaseInformation(
+            title = product?.title ?: "Test",
+            pricePaid = PriceDetails.Unknown,
+            expirationOrRenewal = null,
+            product = product,
+            store = store,
+            isSubscription = isSubscription,
+            managementURL = null,
+            isExpired = isExpired,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+    }
+
+    // endregion
 
     private fun createMockFeedbackSurvey(): CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey {
         return CustomerCenterConfigData.HelpPath.PathDetail.FeedbackSurvey(

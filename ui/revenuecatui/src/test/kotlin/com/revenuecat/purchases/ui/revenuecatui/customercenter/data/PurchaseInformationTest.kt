@@ -1163,6 +1163,162 @@ class PurchaseInformationTest {
         )
     }
 
+    // region findMatch tests
+
+    @Test
+    fun `test findMatch matches by productId when product is not null`() {
+        val storeProduct = TestStoreProduct(
+            "matching_product",
+            "name",
+            "Product Title",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val otherStoreProduct = TestStoreProduct(
+            "other_product",
+            "name",
+            "Other Title",
+            "description",
+            Price("$2.99", 2_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+
+        val purchaseInfo = createPurchaseInformation(
+            title = "Product Title",
+            product = storeProduct,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+        val matchingCandidate = createPurchaseInformation(
+            title = "Different Title",
+            product = storeProduct,
+            store = Store.APP_STORE,
+            isSubscription = false,
+        )
+        val nonMatchingCandidate = createPurchaseInformation(
+            title = "Product Title",
+            product = otherStoreProduct,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+
+        val result = purchaseInfo.findMatch(listOf(nonMatchingCandidate, matchingCandidate))
+        assertThat(result).isEqualTo(matchingCandidate)
+    }
+
+    @Test
+    fun `test findMatch falls back to title store and isSubscription when product is null`() {
+        val purchaseInfo = createPurchaseInformation(
+            title = "Subscription",
+            product = null,
+            store = Store.STRIPE,
+            isSubscription = true,
+        )
+        val matchingCandidate = createPurchaseInformation(
+            title = "Subscription",
+            product = null,
+            store = Store.STRIPE,
+            isSubscription = true,
+        )
+        val wrongSubscriptionType = createPurchaseInformation(
+            title = "Subscription",
+            product = null,
+            store = Store.STRIPE,
+            isSubscription = false,
+        )
+
+        val result = purchaseInfo.findMatch(listOf(wrongSubscriptionType, matchingCandidate))
+        assertThat(result).isEqualTo(matchingCandidate)
+    }
+
+    @Test
+    fun `test findMatch returns null when no match found`() {
+        val storeProduct = TestStoreProduct(
+            "product_a",
+            "name",
+            "Title A",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val otherStoreProduct = TestStoreProduct(
+            "product_b",
+            "name",
+            "Title B",
+            "description",
+            Price("$2.99", 2_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+
+        val purchaseInfo = createPurchaseInformation(
+            title = "Title A",
+            product = storeProduct,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+        val candidate = createPurchaseInformation(
+            title = "Title B",
+            product = otherStoreProduct,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+
+        val result = purchaseInfo.findMatch(listOf(candidate))
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `test findMatch with null product does not match candidate with product`() {
+        val storeProduct = TestStoreProduct(
+            "some_product",
+            "name",
+            "Title",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+
+        val purchaseInfo = createPurchaseInformation(
+            title = "Title",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+        val candidateWithProduct = createPurchaseInformation(
+            title = "Title",
+            product = storeProduct,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+
+        val result = purchaseInfo.findMatch(listOf(candidateWithProduct))
+        assertThat(result).isNull()
+    }
+
+    private fun createPurchaseInformation(
+        title: String?,
+        product: StoreProduct?,
+        store: Store,
+        isSubscription: Boolean,
+    ): PurchaseInformation {
+        return PurchaseInformation(
+            title = title,
+            pricePaid = PriceDetails.Unknown,
+            expirationOrRenewal = null,
+            product = product,
+            store = store,
+            isSubscription = isSubscription,
+            managementURL = null,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+    }
+
+    // endregion
+
     @Test
     fun `test lifetime purchase shows as lifetime`() {
         assertThat(CustomerCenterConfigTestData.purchaseInformationLifetime.isLifetime).isTrue()

@@ -108,7 +108,10 @@ internal data class PurchaseInformation(
         return if (productId != null) {
             purchases.firstOrNull { it.product?.id == productId }
         } else {
-            purchases.firstOrNull { it.product?.id == null && it.title == title && it.store == store }
+            purchases.firstOrNull {
+                it.product?.id == null && it.title == title && it.store == store &&
+                    it.isSubscription == isSubscription
+            }
         }
     }
 }
