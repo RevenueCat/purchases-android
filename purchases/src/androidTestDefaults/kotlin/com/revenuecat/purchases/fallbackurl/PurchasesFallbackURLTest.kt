@@ -160,7 +160,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
         val activeTransaction = StoreTransactionFactory.createStoreTransaction(
             skus = listOf(Constants.productIdToPurchase),
-            purchaseToken = Constants.googlePurchaseToken,
+            purchaseToken = "${Constants.googlePurchaseToken}-${java.util.UUID.randomUUID()}",
         )
         val activePurchases = mapOf(
             activeTransaction.purchaseToken.sha1() to activeTransaction,
