@@ -948,32 +948,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     restoreByOrderIdCallbacks.remove(cacheKey)
                 }?.forEach { callback ->
-                    if (result.isSuccessful()) {
-                        callback(
-                            RestoreByOrderIdListener.Result.Success(CustomerInfoFactory.buildCustomerInfo(result)),
-                        )
-                    } else {
-                        when (result.backendErrorCode) {
-                            BackendErrorCode.BackendOrderIdRateLimitExceeded.value -> {
-                                callback(RestoreByOrderIdListener.Result.RateLimitExceeded)
-                            }
-                            BackendErrorCode.BackendOrderIdNotFound.value -> {
-                                callback(RestoreByOrderIdListener.Result.OrderIdNotFound)
-                            }
-                            BackendErrorCode.BackendOrderNotEligible.value -> {
-                                callback(RestoreByOrderIdListener.Result.OrderNotEligible)
-                            }
-                            BackendErrorCode.BackendRestoreByOrderIdFeatureNotEnabled.value -> {
-                                callback(RestoreByOrderIdListener.Result.FeatureNotEnabled)
-                            }
-                            BackendErrorCode.BackendOrderIdPurchaseBelongsToAuthenticatedUser.value -> {
-                                callback(RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser)
-                            }
-                            else -> {
-                                callback(RestoreByOrderIdListener.Result.Error(result.toPurchasesError()))
-                            }
-                        }
-                    }
+                    callback(restoreByOrderIdResultFromResponse(result))
                 }
             }
         }
@@ -985,6 +960,31 @@ internal class Backend(
                 onResultHandler,
                 Delay.NONE,
             )
+        }
+    }
+
+    private fun restoreByOrderIdResultFromResponse(result: HTTPResult): RestoreByOrderIdListener.Result {
+        return try {
+            if (result.isSuccessful()) {
+                RestoreByOrderIdListener.Result.Success(CustomerInfoFactory.buildCustomerInfo(result))
+            } else {
+                when (result.backendErrorCode) {
+                    BackendErrorCode.BackendOrderIdRateLimitExceeded.value ->
+                        RestoreByOrderIdListener.Result.RateLimitExceeded
+                    BackendErrorCode.BackendOrderIdNotFound.value ->
+                        RestoreByOrderIdListener.Result.OrderIdNotFound
+                    BackendErrorCode.BackendOrderNotEligible.value ->
+                        RestoreByOrderIdListener.Result.OrderNotEligible
+                    BackendErrorCode.BackendRestoreByOrderIdFeatureNotEnabled.value ->
+                        RestoreByOrderIdListener.Result.FeatureNotEnabled
+                    BackendErrorCode.BackendOrderIdPurchaseBelongsToAuthenticatedUser.value ->
+                        RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser
+                    else ->
+                        RestoreByOrderIdListener.Result.Error(result.toPurchasesError())
+                }
+            }
+        } catch (e: JSONException) {
+            RestoreByOrderIdListener.Result.Error(e.toPurchasesError().also { errorLog(it) })
         }
     }
 

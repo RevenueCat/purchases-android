@@ -23,6 +23,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.IOException
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -96,6 +97,25 @@ class BackendRestoreByOrderIdTest {
     }
 
     @Test
+    fun `postRestoreByOrderId returns error for unknown backend error code`() {
+        val responseBody = """
+            {
+                "code": 9999,
+                "message": "Unknown error."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.ERROR, responseBody = responseBody)
+        performPostAndExpectResult(
+            RestoreByOrderIdListener.Result.Error(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownBackendError,
+                    "Backend Code: 9999 - Unknown error.",
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `postRestoreByOrderId returns RateLimitExceeded for backend code 8072`() {
         val responseBody = """
             {
@@ -153,6 +173,40 @@ class BackendRestoreByOrderIdTest {
         """.trimIndent()
         mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)
         performPostAndExpectResult(RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns error when performRequest throws IOException`() {
+        every {
+            httpClient.performRequest(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } throws IOException("Test network error")
+        var receivedResult: RestoreByOrderIdListener.Result? = null
+        backend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = { receivedResult = it },
+        )
+        assertThat(receivedResult).isInstanceOf(RestoreByOrderIdListener.Result.Error::class.java)
+        val error = (receivedResult as RestoreByOrderIdListener.Result.Error).error
+        assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns error on invalid JSON response`() {
+        mockHttpResult(responseBody = "{invalid json}")
+        var receivedResult: RestoreByOrderIdListener.Result? = null
+        backend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = { receivedResult = it },
+        )
+        assertThat(receivedResult).isInstanceOf(RestoreByOrderIdListener.Result.Error::class.java)
     }
 
     @Test
