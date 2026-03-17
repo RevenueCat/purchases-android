@@ -9,12 +9,13 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 internal data class ProductChangeInfo(
     val oldProductId: String,
-    val replacementMode: GoogleReplacementMode,
+    val replacementMode: StoreReplacementMode,
 )
 
 /**

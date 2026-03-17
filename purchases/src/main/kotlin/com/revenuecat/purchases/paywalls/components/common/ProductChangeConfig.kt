@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.components.common.serializers.DowngradeReplacementModeDeserializer
 import com.revenuecat.purchases.paywalls.components.common.serializers.UpgradeReplacementModeDeserializer
 import dev.drewhamilton.poko.Poko
@@ -26,7 +27,7 @@ public class ProductChangeConfig(
     @get:JvmSynthetic
     @Serializable(with = UpgradeReplacementModeDeserializer::class)
     @SerialName("upgrade_replacement_mode")
-    public val upgradeReplacementMode: GoogleReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+    public val upgradeReplacementMode: StoreReplacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
 
     /**
      * Replacement mode to use for downgrades (moving to a lower price per unit time).
@@ -35,5 +36,5 @@ public class ProductChangeConfig(
     @get:JvmSynthetic
     @Serializable(with = DowngradeReplacementModeDeserializer::class)
     @SerialName("downgrade_replacement_mode")
-    public val downgradeReplacementMode: GoogleReplacementMode = GoogleReplacementMode.DEFERRED,
+    public val downgradeReplacementMode: StoreReplacementMode = StoreReplacementMode.DEFERRED,
 )
