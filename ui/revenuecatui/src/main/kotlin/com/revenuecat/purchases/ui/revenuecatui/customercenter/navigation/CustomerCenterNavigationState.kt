@@ -50,6 +50,41 @@ internal data class CustomerCenterNavigationState(
         return copy(backStack = newStack)
     }
 
+    /**
+     * Reconciles the back stack with refreshed purchases.
+     * For each [CustomerCenterDestination.SelectedPurchaseDetail] in the stack, finds the matching
+     * purchase in [refreshedPurchases] by product ID. If found, replaces the destination's
+     * purchaseInformation with the refreshed one. If not found, pops to main since the purchase
+     * no longer exists.
+     *
+     * @return the reconciled navigation state, or null if any purchase in the stack was removed
+     * and the state should pop to main.
+     */
+    fun reconcileWithPurchases(
+        refreshedPurchases: List<com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation>,
+    ): CustomerCenterNavigationState? {
+        val newStack = ArrayDeque<CustomerCenterDestination>()
+        // backStack is a Deque where peek() returns the top (most recent) element.
+        // We iterate from bottom to top to preserve order when pushing onto the new stack.
+        val stackList = backStack.toList().reversed()
+        for (destination in stackList) {
+            when (destination) {
+                is CustomerCenterDestination.SelectedPurchaseDetail -> {
+                    val productId = destination.purchaseInformation.product?.id
+                    val refreshedPurchase = refreshedPurchases.firstOrNull { it.product?.id == productId }
+                    if (refreshedPurchase != null) {
+                        newStack.push(destination.copy(purchaseInformation = refreshedPurchase))
+                    } else {
+                        // Purchase no longer exists — signal to pop to main
+                        return null
+                    }
+                }
+                else -> newStack.push(destination)
+            }
+        }
+        return copy(backStack = newStack)
+    }
+
     fun isBackwardTransition(from: CustomerCenterDestination, to: CustomerCenterDestination): Boolean {
         // Simple rule: going to Main from any other screen is always backward
         if (to is CustomerCenterDestination.Main && from !is CustomerCenterDestination.Main) {

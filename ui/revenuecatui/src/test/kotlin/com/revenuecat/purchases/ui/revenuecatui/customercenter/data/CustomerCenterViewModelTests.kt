@@ -2758,4 +2758,177 @@ class CustomerCenterViewModelTests {
         // Only one additional refresh from onActivityResumed, none from onActivityStarted
         assertThat(fetchCurrentCalls).isEqualTo(callsAfterInitialLoad + 1)
     }
+
+    @Test
+    fun `refresh updates SelectedPurchaseDetail with refreshed purchase data`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val subscription = SubscriptionInfo(
+            productIdentifier = "productIdentifier",
+            purchaseDate = Date(),
+            originalPurchaseDate = null,
+            expiresDate = null,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://example.com/manage"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf("test_product_id" to subscription)
+        every { customerInfo.activeSubscriptions } returns setOf("test_product_id")
+
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "test_product_id"
+        every { mockProduct.id } returns "test_product_id"
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
+
+        val model = setupViewModel()
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+
+        // Select a purchase to navigate to detail screen
+        val originalPurchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
+            product = mockProduct,
+        )
+        model.selectPurchase(originalPurchase)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+                state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        // Now set up refreshed data: same product ID, but different expiration
+        val refreshedCustomerInfo = mockk<CustomerInfo>()
+        val refreshedSubscription = SubscriptionInfo(
+            productIdentifier = "productIdentifier",
+            purchaseDate = Date(),
+            originalPurchaseDate = null,
+            expiresDate = Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000),
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://example.com/manage"),
+        )
+
+        every { refreshedCustomerInfo.managementURL } returns null
+        every { refreshedCustomerInfo.activeSubscriptions } returns setOf("test_product_id")
+        every { refreshedCustomerInfo.entitlements } returns EntitlementInfos(emptyMap(), VerificationResult.VERIFIED)
+        every { refreshedCustomerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "test_product_id" to refreshedSubscription,
+        )
+        every { refreshedCustomerInfo.nonSubscriptionTransactions } returns emptyList()
+
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } returns refreshedCustomerInfo
+
+        // Trigger refresh
+        model.refreshCustomerCenter()
+
+        val refreshedState = model.state.first {
+            it is CustomerCenterState.Success && !it.isRefreshing
+        } as CustomerCenterState.Success
+
+        // Should still be on SelectedPurchaseDetail
+        assertThat(refreshedState.currentDestination)
+            .isInstanceOf(CustomerCenterDestination.SelectedPurchaseDetail::class.java)
+
+        val detail = refreshedState.currentDestination as CustomerCenterDestination.SelectedPurchaseDetail
+        // The purchase information should be the refreshed one (with expiration), not the original
+        assertThat(detail.purchaseInformation.expirationOrRenewal)
+            .isNotEqualTo(originalPurchase.expirationOrRenewal)
+        assertThat(detail.purchaseInformation.product?.id).isEqualTo("test_product_id")
+    }
+
+    @Test
+    fun `refresh pops to main when purchase no longer exists`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val subscription = SubscriptionInfo(
+            productIdentifier = "productIdentifier",
+            purchaseDate = Date(),
+            originalPurchaseDate = null,
+            expiresDate = null,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "monthly",
+            managementURL = Uri.parse("https://example.com/manage"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf("test_product_id" to subscription)
+        every { customerInfo.activeSubscriptions } returns setOf("test_product_id")
+
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "test_product_id"
+        every { mockProduct.id } returns "test_product_id"
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
+
+        val model = setupViewModel()
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+
+        // Select a purchase to navigate to detail screen
+        val originalPurchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
+            product = mockProduct,
+        )
+        model.selectPurchase(originalPurchase)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+                state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        // Now set up refreshed data: no subscriptions (purchase removed)
+        val refreshedCustomerInfo = mockk<CustomerInfo>()
+        every { refreshedCustomerInfo.managementURL } returns null
+        every { refreshedCustomerInfo.activeSubscriptions } returns setOf()
+        every { refreshedCustomerInfo.entitlements } returns EntitlementInfos(emptyMap(), VerificationResult.VERIFIED)
+        every { refreshedCustomerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+        every { refreshedCustomerInfo.nonSubscriptionTransactions } returns emptyList()
+
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } returns refreshedCustomerInfo
+
+        // Trigger refresh
+        model.refreshCustomerCenter()
+
+        val refreshedState = model.state.first {
+            it is CustomerCenterState.Success && !it.isRefreshing
+        } as CustomerCenterState.Success
+
+        // Should have popped back to Main since the purchase no longer exists
+        assertThat(refreshedState.currentDestination)
+            .isInstanceOf(CustomerCenterDestination.Main::class.java)
+        assertThat(refreshedState.detailScreenPaths).isEmpty()
+        assertThat(refreshedState.navigationButtonType)
+            .isEqualTo(CustomerCenterState.NavigationButtonType.CLOSE)
+    }
 }

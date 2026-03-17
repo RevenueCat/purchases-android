@@ -57,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -1024,13 +1025,45 @@ internal class CustomerCenterViewModelImpl(
         previousState: CustomerCenterState,
     ): CustomerCenterState.Success {
         if (!isRefresh || previousState !is CustomerCenterState.Success) return this
-        return copy(
-            navigationState = previousState.navigationState,
-            navigationButtonType = previousState.navigationButtonType,
-            restorePurchasesState = previousState.restorePurchasesState,
-            showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
-            detailScreenPaths = previousState.detailScreenPaths,
+        val reconciledNavState = previousState.navigationState.reconcileWithPurchases(purchases)
+        return if (reconciledNavState != null) {
+            val reconciledDetailPaths = recomputeDetailScreenPathsIfNeeded(
+                reconciledNavState,
+                previousState.detailScreenPaths,
+            )
+            copy(
+                navigationState = reconciledNavState,
+                navigationButtonType = previousState.navigationButtonType,
+                restorePurchasesState = previousState.restorePurchasesState,
+                showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+                detailScreenPaths = reconciledDetailPaths,
+            )
+        } else {
+            // A purchase in the navigation stack no longer exists — pop to main
+            copy(
+                navigationState = previousState.navigationState.popToMain(),
+                navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+                restorePurchasesState = previousState.restorePurchasesState,
+                showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+                detailScreenPaths = emptyList(),
+            )
+        }
+    }
+
+    private fun CustomerCenterState.Success.recomputeDetailScreenPathsIfNeeded(
+        reconciledNavState: CustomerCenterNavigationState,
+        previousDetailPaths: List<HelpPath>,
+    ): List<HelpPath> {
+        val currentDest = reconciledNavState.currentDestination
+            as? CustomerCenterDestination.SelectedPurchaseDetail
+        val screen = customerCenterConfigData.getManagementScreen()
+        if (currentDest == null || screen == null) return previousDetailPaths
+        val baseSupportedPaths = supportedPaths(
+            currentDest.purchaseInformation,
+            screen,
+            customerCenterConfigData.localization,
         )
+        return PathUtils.filterSubscriptionSpecificPaths(baseSupportedPaths)
     }
 
     override fun onActivityStopped(isChangingConfigurations: Boolean) {
