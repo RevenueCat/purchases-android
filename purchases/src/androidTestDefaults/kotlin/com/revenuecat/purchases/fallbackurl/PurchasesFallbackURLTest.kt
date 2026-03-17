@@ -2,6 +2,7 @@ package com.revenuecat.purchases.fallbackurl
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.ForceServerErrorStrategy
@@ -76,10 +77,14 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     fun postsPurchasePerformedOnFallbackURLWhenRecoveringToMainServer() = runTest {
         performPurchase()
 
-        verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = false)
+        verifyGetCustomerInfo(
+            shouldHaveAcknowledgedPurchase = false,
+            fetchPolicy = CacheFetchPolicy.CACHE_ONLY,
+        )
 
         forceServerErrorsStrategy = null
 
+        // This returns a CustomerInfo from cache, but initiates posting remaining purchases in background
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = true)
     }
 
@@ -91,6 +96,7 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
         verifyGetCustomerInfo(
             shouldHaveAcknowledgedPurchase = false,
             originalSource = CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
+            fetchPolicy = CacheFetchPolicy.CACHE_ONLY,
         )
 
         // Restart and recover connectivity to main server
@@ -117,8 +123,9 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
         shouldHaveAcknowledgedPurchase: Boolean,
         originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
         loadedFromCache: Boolean = false,
+        fetchPolicy: CacheFetchPolicy = CacheFetchPolicy.default(),
     ) {
-        val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+        val customerInfo = Purchases.sharedInstance.awaitCustomerInfo(fetchPolicy)
         assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
             entitlementsToVerify,
         )
@@ -145,7 +152,11 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
         val activeTransaction = StoreTransactionFactory.createStoreTransaction(
             skus = listOf(Constants.productIdToPurchase),
-            purchaseToken = Constants.googlePurchaseToken,
+            purchaseToken = if (Constants.googlePurchaseToken == "my-test-token") {
+                "${Constants.googlePurchaseToken}-${java.util.UUID.randomUUID()}"
+            } else {
+                Constants.googlePurchaseToken
+            },
         )
         val activePurchases = mapOf(
             activeTransaction.purchaseToken.sha1() to activeTransaction,
