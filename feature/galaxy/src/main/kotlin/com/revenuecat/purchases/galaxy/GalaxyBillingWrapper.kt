@@ -353,8 +353,7 @@ internal class GalaxyBillingWrapper(
                             receipt = receipt,
                             productId = productId,
                             presentedOfferingContext = presentedOfferingContext,
-                            // TODO: Send the replacementMode in here when handleReceipt() is updated
-                            replacementMode = null,
+                            replacementMode = replacementMode,
                         )
                         finish()
                     },
