@@ -1174,13 +1174,6 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.BillingFeature SUBSCRIPTIONS_UPDATE;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlinx.parcelize.Parcelize public enum GalaxyReplacementMode implements com.revenuecat.purchases.ReplacementMode {
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode DEFERRED;
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_NO_PRORATION;
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_PRORATED_CHARGE;
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_PRORATED_DATE;
-  }
-
   @dev.drewhamilton.poko.Poko public final class GoogleInstallmentsInfo implements com.revenuecat.purchases.models.InstallmentsInfo {
     ctor public GoogleInstallmentsInfo(int commitmentPaymentsCount, int renewalCommitmentPaymentsCount);
     method public int getCommitmentPaymentsCount();
