@@ -20,8 +20,8 @@ import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toStoreTransaction
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -76,13 +76,13 @@ class PostReceiptHelperTest {
         ProductType.SUBS,
         null,
         subscriptionOptionId,
-        replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE
+        replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE
     )
     private val mockPendingStoreTransaction = mockPendingPurchase.toStoreTransaction(
         ProductType.SUBS,
         null,
         subscriptionOptionId,
-        replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE
+        replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE
     )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
@@ -757,7 +757,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
+        assertThat(postedReceiptInfoSlot.captured.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
     }
 
     @Test
@@ -1475,7 +1475,7 @@ class PostReceiptHelperTest {
             ProductType.SUBS,
             null,
             subscriptionOptionId,
-            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
         )
 
         every { billing.consumeAndSave(
@@ -1528,7 +1528,7 @@ class PostReceiptHelperTest {
             ProductType.SUBS,
             null,
             subscriptionOptionId,
-            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
         )
 
         every { billing.consumeAndSave(
@@ -1734,7 +1734,7 @@ class PostReceiptHelperTest {
             ProductType.SUBS,
             PresentedOfferingContext("offering_id"),
             subscriptionOptionId,
-            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
         )
 
         paywallPresentedCache.receiveEvent(event)
@@ -2077,7 +2077,7 @@ class PostReceiptHelperTest {
             currency = "USD",
             period = Period(1, Period.Unit.YEAR, "P1Y"),
             pricingPhases = null,
-            replacementMode = GoogleReplacementMode.DEFERRED,
+            replacementMode = StoreReplacementMode.DEFERRED,
             platformProductIds = listOf(mapOf("product_id" to "cached-product")),
         )
         val cachedMetadata = LocalTransactionMetadata(
@@ -2165,7 +2165,7 @@ class PostReceiptHelperTest {
             ProductType.SUBS,
             null, // No presentedOfferingContext
             subscriptionOptionId,
-            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
         )
 
         // Create a paywall event with presentedOfferingContext
@@ -2219,7 +2219,7 @@ class PostReceiptHelperTest {
             ProductType.SUBS,
             null, // No presentedOfferingContext
             subscriptionOptionId,
-            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
         )
 
         // Don't add any paywall event to the cache (no paywall context available)
@@ -2255,7 +2255,7 @@ class PostReceiptHelperTest {
             ProductType.SUBS,
             transactionContext,
             subscriptionOptionId,
-            replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
         )
 
         // Create a paywall event with a different presentedOfferingContext

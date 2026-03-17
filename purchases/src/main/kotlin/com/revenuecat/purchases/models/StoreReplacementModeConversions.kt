@@ -2,7 +2,7 @@ package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.BillingFlowParams
 
-internal fun StoreReplacementMode.toGoogleBillingClientMode(): Int {
+internal fun StoreReplacementMode.toPlayBillingClientMode(): Int {
     return when (this) {
         StoreReplacementMode.WITHOUT_PRORATION ->
             BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITHOUT_PRORATION

@@ -26,7 +26,7 @@ class StoreReplacementModeConversionsTest {
 
         StoreReplacementMode.values().forEach { mode ->
             val expected = expectations[mode] ?: error("Missing expected mapping for $mode")
-            assertThat(mode.toGoogleBillingClientMode()).isEqualTo(expected)
+            assertThat(mode.toPlayBillingClientMode()).isEqualTo(expected)
         }
 
         assertThat(expectations.size).isEqualTo(StoreReplacementMode.values().size)
