@@ -5,6 +5,8 @@ import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.toGoogleReplacementMode
+import com.revenuecat.purchases.models.toStoreReplacementMode
+import com.revenuecat.purchases.models.toStoreReplacementMode
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -115,6 +117,7 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
         encoder.encodeStructure(descriptor) {
             val type = when (value) {
                 is GoogleReplacementMode -> "GoogleReplacementMode"
+                is StoreReplacementMode -> "StoreReplacementMode"
                 else -> throw SerializationException("Unknown ReplacementMode type: ${value::class.simpleName}")
             }
             encodeStringElement(descriptor, 0, type)
@@ -137,9 +140,17 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
             }
 
             when (type) {
+                "StoreReplacementMode" -> {
+                    try {
+                        StoreReplacementMode.valueOf(name)
+                    } catch (e: IllegalArgumentException) {
+                        throw SerializationException("Invalid StoreReplacementMode name: $name", e)
+                    }
+                }
                 "GoogleReplacementMode" -> {
                     try {
-                        GoogleReplacementMode.valueOf(name)
+                        // Parse GoogleReplacementMode to StoreReplacementMode
+                        GoogleReplacementMode.valueOf(name).toStoreReplacementMode()
                     } catch (e: IllegalArgumentException) {
                         throw SerializationException("Invalid GoogleReplacementMode name: $name", e)
                     }
