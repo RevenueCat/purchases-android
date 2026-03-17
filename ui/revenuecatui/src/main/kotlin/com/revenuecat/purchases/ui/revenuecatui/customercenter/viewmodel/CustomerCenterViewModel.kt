@@ -72,8 +72,8 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 import java.util.Date
 import java.util.Locale
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
@@ -580,14 +580,14 @@ internal class CustomerCenterViewModelImpl(
         listener: CustomerCenterListener?,
         listenerName: String,
     ): Boolean {
-        val shouldResume = suspendCoroutine { continuation ->
+        val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for $listenerName to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
-                val detail = if (shouldResume) "will" else "will not"
-                Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
                 continuation.resume(shouldResume)
             } ?: continuation.resume(true)
         }
+        val detail = if (shouldResume) "will" else "will not"
+        Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
         return shouldResume
     }
 
