@@ -25,6 +25,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.RestoreByOrderIdListener
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -91,6 +92,8 @@ internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> U
 internal typealias CreateSupportTicketCallback = Pair<(Boolean) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
+
+internal typealias RestoreByOrderIdCallback = (RestoreByOrderIdListener.Result) -> Unit
 
 internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit, (PurchasesError) -> Unit>
 
@@ -169,6 +172,9 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var restoreByOrderIdCallbacks = mutableMapOf<List<String>, MutableList<RestoreByOrderIdCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var virtualCurrenciesCallbacks =
@@ -906,6 +912,79 @@ internal class Backend(
                 onResultHandler,
                 Delay.NONE,
             )
+        }
+    }
+
+    fun postRestoreByOrderId(
+        appUserID: String,
+        orderId: String,
+        onResultHandler: (RestoreByOrderIdListener.Result) -> Unit,
+    ) {
+        val endpoint = Endpoint.PostRestoreByOrderId(appUserID)
+        val cacheKey = listOfNotNull(endpoint.getPath(), orderId)
+        val body = mapOf("order_id" to orderId, APP_USER_ID to appUserID)
+        val postFieldsToSign = listOf(APP_USER_ID to appUserID, "order_id" to orderId)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body,
+                    postFieldsToSign,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    restoreByOrderIdCallbacks.remove(cacheKey)
+                }?.forEach { callback ->
+                    callback(RestoreByOrderIdListener.Result.Error(error))
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    restoreByOrderIdCallbacks.remove(cacheKey)
+                }?.forEach { callback ->
+                    callback(restoreByOrderIdResultFromResponse(result))
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            restoreByOrderIdCallbacks.addCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onResultHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
+    private fun restoreByOrderIdResultFromResponse(result: HTTPResult): RestoreByOrderIdListener.Result {
+        return try {
+            if (result.isSuccessful()) {
+                RestoreByOrderIdListener.Result.Success(CustomerInfoFactory.buildCustomerInfo(result))
+            } else {
+                when (result.backendErrorCode) {
+                    BackendErrorCode.BackendOrderIdRateLimitExceeded.value ->
+                        RestoreByOrderIdListener.Result.RateLimitExceeded
+                    BackendErrorCode.BackendOrderIdNotFound.value ->
+                        RestoreByOrderIdListener.Result.OrderIdNotFound
+                    BackendErrorCode.BackendOrderNotEligible.value ->
+                        RestoreByOrderIdListener.Result.OrderNotEligible
+                    BackendErrorCode.BackendRestoreByOrderIdFeatureNotEnabled.value ->
+                        RestoreByOrderIdListener.Result.FeatureNotEnabled
+                    BackendErrorCode.BackendOrderIdPurchaseBelongsToAuthenticatedUser.value ->
+                        RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser
+                    else ->
+                        RestoreByOrderIdListener.Result.Error(result.toPurchasesError())
+                }
+            }
+        } catch (e: JSONException) {
+            RestoreByOrderIdListener.Result.Error(e.toPurchasesError().also { errorLog(it) })
         }
     }
 

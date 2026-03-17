@@ -40,6 +40,11 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidWebRedemptionToken(7849),
     BackendPurchaseBelongsToOtherUser(7852),
     BackendExpiredWebRedemptionToken(7853),
+    BackendOrderIdNotFound(8069),
+    BackendOrderNotEligible(8070),
+    BackendOrderIdPurchaseBelongsToAuthenticatedUser(8071),
+    BackendOrderIdRateLimitExceeded(8072),
+    BackendRestoreByOrderIdFeatureNotEnabled(8073), // WIP: Update final value
     ;
 
     companion object {
@@ -125,6 +130,11 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInvalidWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
         BackendErrorCode.BackendPurchaseBelongsToOtherUser -> PurchasesErrorCode.ProductAlreadyPurchasedError
         BackendErrorCode.BackendExpiredWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
+        BackendErrorCode.BackendOrderIdRateLimitExceeded -> PurchasesErrorCode.UnknownBackendError
+        BackendErrorCode.BackendOrderIdNotFound -> PurchasesErrorCode.UnknownBackendError
+        BackendErrorCode.BackendOrderNotEligible -> PurchasesErrorCode.UnknownBackendError
+        BackendErrorCode.BackendRestoreByOrderIdFeatureNotEnabled -> PurchasesErrorCode.UnknownBackendError
+        BackendErrorCode.BackendOrderIdPurchaseBelongsToAuthenticatedUser -> PurchasesErrorCode.UnknownBackendError
     }
 }
 

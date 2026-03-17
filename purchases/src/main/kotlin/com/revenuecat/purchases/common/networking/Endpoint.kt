@@ -95,6 +95,12 @@ internal sealed class Endpoint(
             return pathTemplate.format(Uri.encode(userId), productIds.joinToString("&id=") { Uri.encode(it) })
         }
     }
+    data class PostRestoreByOrderId(val userId: String) : Endpoint(
+        "/v1/subscribers/%s/restore_purchase_by_order_id",
+        "post_restore_by_order_id",
+    ) {
+        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+    }
 
     val supportsSignatureVerification: Boolean
         get() = when (this) {
@@ -105,6 +111,7 @@ internal sealed class Endpoint(
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            is PostRestoreByOrderId,
             ->
                 true
             is GetAmazonReceipt,
@@ -126,6 +133,7 @@ internal sealed class Endpoint(
             PostReceipt,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            is PostRestoreByOrderId,
             ->
                 true
             is GetAmazonReceipt,

@@ -1,0 +1,338 @@
+package com.revenuecat.purchases.common.backend
+
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.createCustomerInfo
+import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.interfaces.RestoreByOrderIdListener
+import com.revenuecat.purchases.utils.Responses
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import java.io.IOException
+import java.net.URL
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
+
+@RunWith(AndroidJUnit4::class)
+class BackendRestoreByOrderIdTest {
+
+    private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
+    private val appUserID = "test-user-id"
+    private val orderId = "test-order-id"
+
+    private lateinit var appConfig: AppConfig
+    private lateinit var httpClient: HTTPClient
+
+    private lateinit var backend: Backend
+    private lateinit var asyncBackend: Backend
+
+    private val expectedCustomerInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
+
+    @Before
+    fun setUp() {
+        appConfig = mockk<AppConfig>().apply {
+            every { baseURL } returns mockBaseURL
+            every { fallbackBaseURLs } returns emptyList()
+        }
+        httpClient = mockk()
+        val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
+
+        val asyncDispatcher1 = createAsyncDispatcher()
+        val asyncDispatcher2 = createAsyncDispatcher()
+
+        val asyncBackendHelper = BackendHelper("TEST_API_KEY", asyncDispatcher1, appConfig, httpClient)
+
+        backend = Backend(
+            appConfig,
+            SyncDispatcher(),
+            SyncDispatcher(),
+            httpClient,
+            backendHelper,
+        )
+
+        asyncBackend = Backend(
+            appConfig,
+            asyncDispatcher1,
+            asyncDispatcher2,
+            httpClient,
+            asyncBackendHelper,
+        )
+    }
+
+    @Test
+    fun `postRestoreByOrderId posts correctly`() {
+        mockHttpResult()
+        performPostAndExpectResult(RestoreByOrderIdListener.Result.Success(expectedCustomerInfo))
+    }
+
+    @Test
+    fun `postRestoreByOrderId errors propagate correctly`() {
+        mockHttpResult(responseCode = RCHTTPStatusCodes.ERROR)
+        performPostAndExpectResult(
+            RestoreByOrderIdListener.Result.Error(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownBackendError,
+                    "Backend Code: N/A - ",
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns error for unknown backend error code`() {
+        val responseBody = """
+            {
+                "code": 9999,
+                "message": "Unknown error."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.ERROR, responseBody = responseBody)
+        performPostAndExpectResult(
+            RestoreByOrderIdListener.Result.Error(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownBackendError,
+                    "Backend Code: 9999 - Unknown error.",
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns RateLimitExceeded for backend code 8072`() {
+        val responseBody = """
+            {
+                "code": 8072,
+                "message": "Rate limit exceeded."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.BAD_REQUEST, responseBody = responseBody)
+        performPostAndExpectResult(RestoreByOrderIdListener.Result.RateLimitExceeded)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns OrderIdNotFound for backend code 8069`() {
+        val responseBody = """
+            {
+                "code": 8069,
+                "message": "Order ID not found."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.NOT_FOUND, responseBody = responseBody)
+        performPostAndExpectResult(RestoreByOrderIdListener.Result.OrderIdNotFound)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns OrderNotEligible for backend code 8070`() {
+        val responseBody = """
+            {
+                "code": 8070,
+                "message": "Order is not eligible for restore."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.BAD_REQUEST, responseBody = responseBody)
+        performPostAndExpectResult(RestoreByOrderIdListener.Result.OrderNotEligible)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns FeatureNotEnabled for backend code 8073`() {
+        val responseBody = """
+            {
+                "code": 8073,
+                "message": "Feature not enabled."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)
+        performPostAndExpectResult(RestoreByOrderIdListener.Result.FeatureNotEnabled)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns PurchaseBelongsToAuthenticatedUser for backend code 8071`() {
+        val responseBody = """
+            {
+                "code": 8071,
+                "message": "Purchase belongs to authenticated user."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)
+        performPostAndExpectResult(RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns error when performRequest throws IOException`() {
+        every {
+            httpClient.performRequest(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } throws IOException("Test network error")
+        var receivedResult: RestoreByOrderIdListener.Result? = null
+        backend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = { receivedResult = it },
+        )
+        assertThat(receivedResult).isInstanceOf(RestoreByOrderIdListener.Result.Error::class.java)
+        val error = (receivedResult as RestoreByOrderIdListener.Result.Error).error
+        assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `postRestoreByOrderId returns error on invalid JSON response`() {
+        mockHttpResult(responseBody = "{invalid json}")
+        var receivedResult: RestoreByOrderIdListener.Result? = null
+        backend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = { receivedResult = it },
+        )
+        assertThat(receivedResult).isInstanceOf(RestoreByOrderIdListener.Result.Error::class.java)
+    }
+
+    @Test
+    fun `given multiple postRestoreByOrderId calls for same order ID and user, only one is triggered`() {
+        mockHttpResult(delayMs = 200)
+        val lock = CountDownLatch(2)
+        asyncBackend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = {
+                assertThat(it).isEqualTo(RestoreByOrderIdListener.Result.Success(expectedCustomerInfo))
+                lock.countDown()
+            },
+        )
+        asyncBackend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = {
+                assertThat(it).isEqualTo(RestoreByOrderIdListener.Result.Success(expectedCustomerInfo))
+                lock.countDown()
+            },
+        )
+        lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostRestoreByOrderId(appUserID),
+                body = mapOf("order_id" to orderId, "app_user_id" to appUserID),
+                postFieldsToSign = listOf("app_user_id" to appUserID, "order_id" to orderId),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple postRestoreByOrderId calls for same user but different order IDs, both are triggered`() {
+        mockHttpResult(delayMs = 200)
+        val secondOrderId = "different-order-id"
+        val lock = CountDownLatch(2)
+        asyncBackend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = {
+                assertThat(it).isEqualTo(RestoreByOrderIdListener.Result.Success(expectedCustomerInfo))
+                lock.countDown()
+            },
+        )
+        asyncBackend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = secondOrderId,
+            onResultHandler = {
+                assertThat(it).isEqualTo(RestoreByOrderIdListener.Result.Success(expectedCustomerInfo))
+                lock.countDown()
+            },
+        )
+        lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostRestoreByOrderId(appUserID),
+                body = mapOf("order_id" to orderId, "app_user_id" to appUserID),
+                postFieldsToSign = listOf("app_user_id" to appUserID, "order_id" to orderId),
+                any(),
+            )
+        }
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostRestoreByOrderId(appUserID),
+                body = mapOf("order_id" to secondOrderId, "app_user_id" to appUserID),
+                postFieldsToSign = listOf("app_user_id" to appUserID, "order_id" to secondOrderId),
+                any(),
+            )
+        }
+    }
+
+    private fun performPostAndExpectResult(expectedResult: RestoreByOrderIdListener.Result) {
+        var receivedResult: RestoreByOrderIdListener.Result? = null
+        backend.postRestoreByOrderId(
+            appUserID = appUserID,
+            orderId = orderId,
+            onResultHandler = { receivedResult = it },
+        )
+        assertThat(receivedResult).isEqualTo(expectedResult)
+    }
+
+    private fun mockHttpResult(
+        responseCode: Int = RCHTTPStatusCodes.SUCCESS,
+        responseBody: String = Responses.validFullPurchaserResponse,
+        delayMs: Long? = null,
+    ) {
+        every {
+            httpClient.performRequest(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } answers {
+            if (delayMs != null) {
+                Thread.sleep(delayMs)
+            }
+            HTTPResult(
+                responseCode,
+                responseBody,
+                HTTPResult.Origin.BACKEND,
+                requestDate = null,
+                VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        }
+    }
+
+    private fun createAsyncDispatcher(): Dispatcher {
+        return Dispatcher(
+            ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue(),
+            ),
+        )
+    }
+}

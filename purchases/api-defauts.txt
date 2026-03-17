@@ -1144,6 +1144,47 @@ package com.revenuecat.purchases.interfaces {
     property public final com.revenuecat.purchases.CustomerInfo customerInfo;
   }
 
+  public fun interface RestoreByOrderIdListener {
+    method public void handleResult(com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result result);
+  }
+
+  public abstract static class RestoreByOrderIdListener.Result {
+    method public final boolean isSuccess();
+    property public final boolean isSuccess;
+  }
+
+  @dev.drewhamilton.poko.Poko public static final class RestoreByOrderIdListener.Result.Error extends com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result {
+    ctor public RestoreByOrderIdListener.Result.Error(com.revenuecat.purchases.PurchasesError error);
+    method public com.revenuecat.purchases.PurchasesError getError();
+    property public final com.revenuecat.purchases.PurchasesError error;
+  }
+
+  public static final class RestoreByOrderIdListener.Result.FeatureNotEnabled extends com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result {
+    field public static final com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result.FeatureNotEnabled INSTANCE;
+  }
+
+  public static final class RestoreByOrderIdListener.Result.OrderIdNotFound extends com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result {
+    field public static final com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result.OrderIdNotFound INSTANCE;
+  }
+
+  public static final class RestoreByOrderIdListener.Result.OrderNotEligible extends com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result {
+    field public static final com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result.OrderNotEligible INSTANCE;
+  }
+
+  public static final class RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser extends com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result {
+    field public static final com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result.PurchaseBelongsToAuthenticatedUser INSTANCE;
+  }
+
+  public static final class RestoreByOrderIdListener.Result.RateLimitExceeded extends com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result {
+    field public static final com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result.RateLimitExceeded INSTANCE;
+  }
+
+  @dev.drewhamilton.poko.Poko public static final class RestoreByOrderIdListener.Result.Success extends com.revenuecat.purchases.interfaces.RestoreByOrderIdListener.Result {
+    ctor public RestoreByOrderIdListener.Result.Success(com.revenuecat.purchases.CustomerInfo customerInfo);
+    method public com.revenuecat.purchases.CustomerInfo getCustomerInfo();
+    property public final com.revenuecat.purchases.CustomerInfo customerInfo;
+  }
+
   public interface StorefrontProvider {
     method public String? getStorefront();
   }
