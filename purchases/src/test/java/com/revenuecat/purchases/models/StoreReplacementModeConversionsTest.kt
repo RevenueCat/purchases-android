@@ -49,4 +49,22 @@ class StoreReplacementModeConversionsTest {
 
         assertThat(expectations.size).isEqualTo(StoreReplacementMode.values().size)
     }
+
+    @Test
+    fun `all deprecated Google replacement modes map to store replacement modes`() {
+        val expectations = mapOf(
+            GoogleReplacementMode.WITHOUT_PRORATION to StoreReplacementMode.WITHOUT_PRORATION,
+            GoogleReplacementMode.WITH_TIME_PRORATION to StoreReplacementMode.WITH_TIME_PRORATION,
+            GoogleReplacementMode.CHARGE_FULL_PRICE to StoreReplacementMode.CHARGE_FULL_PRICE,
+            GoogleReplacementMode.CHARGE_PRORATED_PRICE to StoreReplacementMode.CHARGE_PRORATED_PRICE,
+            GoogleReplacementMode.DEFERRED to StoreReplacementMode.DEFERRED,
+        )
+
+        GoogleReplacementMode.values().forEach { mode ->
+            val expected = expectations[mode] ?: error("Missing expected mapping for $mode")
+            assertThat(mode.toStoreReplacementMode()).isEqualTo(expected)
+        }
+
+        assertThat(expectations.size).isEqualTo(GoogleReplacementMode.values().size)
+    }
 }

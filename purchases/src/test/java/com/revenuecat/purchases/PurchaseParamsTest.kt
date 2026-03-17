@@ -189,6 +189,33 @@ class PurchaseParamsTest {
         }
     }
 
+    // We can remove this test once we fully remove PurchaseParams.googleReplacementMode
+    @Test
+    fun `googleReplacementMode set on builder updates replacementMode in PurchaseParams`() {
+        val storeProduct = stubStoreProduct("abc")
+        val expectations = mapOf(
+            GoogleReplacementMode.WITHOUT_PRORATION to StoreReplacementMode.WITHOUT_PRORATION,
+            GoogleReplacementMode.WITH_TIME_PRORATION to StoreReplacementMode.WITH_TIME_PRORATION,
+            GoogleReplacementMode.CHARGE_FULL_PRICE to StoreReplacementMode.CHARGE_FULL_PRICE,
+            GoogleReplacementMode.CHARGE_PRORATED_PRICE to StoreReplacementMode.CHARGE_PRORATED_PRICE,
+            GoogleReplacementMode.DEFERRED to StoreReplacementMode.DEFERRED,
+        )
+
+        GoogleReplacementMode.values().forEach { googleReplacementMode ->
+            val purchaseParams = PurchaseParams.Builder(
+                mockk(),
+                storeProduct
+            )
+                .googleReplacementMode(googleReplacementMode)
+                .build()
+
+            val expectedStoreReplacementMode =
+                expectations[googleReplacementMode]
+                    ?: error("Missing expected store replacement mode for $googleReplacementMode")
+            assertThat(purchaseParams.replacementMode).isEqualTo(expectedStoreReplacementMode)
+        }
+    }
+
     // region Add-Ons
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test

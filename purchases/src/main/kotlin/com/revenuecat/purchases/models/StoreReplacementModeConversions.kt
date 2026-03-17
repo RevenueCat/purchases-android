@@ -26,3 +26,13 @@ internal fun StoreReplacementMode.toGoogleReplacementMode(): GoogleReplacementMo
         StoreReplacementMode.DEFERRED -> GoogleReplacementMode.DEFERRED
     }
 }
+
+internal fun GoogleReplacementMode.toStoreReplacementMode(): StoreReplacementMode {
+    return when (this) {
+        GoogleReplacementMode.WITHOUT_PRORATION -> StoreReplacementMode.WITHOUT_PRORATION
+        GoogleReplacementMode.WITH_TIME_PRORATION -> StoreReplacementMode.WITH_TIME_PRORATION
+        GoogleReplacementMode.CHARGE_FULL_PRICE -> StoreReplacementMode.CHARGE_FULL_PRICE
+        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> StoreReplacementMode.CHARGE_PRORATED_PRICE
+        GoogleReplacementMode.DEFERRED -> StoreReplacementMode.DEFERRED
+    }
+}

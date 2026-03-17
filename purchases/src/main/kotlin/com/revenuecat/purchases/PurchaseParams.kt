@@ -11,6 +11,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.toGoogleReplacementMode
+import com.revenuecat.purchases.models.toStoreReplacementMode
 import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
@@ -156,6 +157,7 @@ public class PurchaseParams(public val builder: Builder) {
          */
         public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
             this.googleReplacementMode = googleReplacementMode
+            this.replacementMode = googleReplacementMode.toStoreReplacementMode()
         }
 
         /**
