@@ -1,11 +1,9 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.toGoogleReplacementMode
-import com.revenuecat.purchases.models.toStoreReplacementMode
 import com.revenuecat.purchases.models.toStoreReplacementMode
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.serialization.KSerializer
@@ -57,15 +55,6 @@ private val StoreReplacementMode.galaxyName: String?
         StoreReplacementMode.DEFERRED -> "DEFERRED"
     }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-private val GalaxyReplacementMode.storeReplacementMode: StoreReplacementMode
-    get() = when (this) {
-        GalaxyReplacementMode.INSTANT_NO_PRORATION -> StoreReplacementMode.WITHOUT_PRORATION
-        GalaxyReplacementMode.INSTANT_PRORATED_DATE -> StoreReplacementMode.WITH_TIME_PRORATION
-        GalaxyReplacementMode.INSTANT_PRORATED_CHARGE -> StoreReplacementMode.CHARGE_PRORATED_PRICE
-        GalaxyReplacementMode.DEFERRED -> StoreReplacementMode.DEFERRED
-    }
-
 private val GoogleReplacementMode.storeReplacementMode: StoreReplacementMode
     get() = when (this) {
         GoogleReplacementMode.WITHOUT_PRORATION -> StoreReplacementMode.WITHOUT_PRORATION
@@ -78,13 +67,12 @@ private val GoogleReplacementMode.storeReplacementMode: StoreReplacementMode
 /**
  * Returns the backend name for this [ReplacementMode].
  * For [GoogleReplacementMode], this returns the legacy proration mode name.
- * For [GalaxyReplacementMode], this returns the enum name directly.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Deprecated("Use ReplacementMode.backendName(store: Store) instead")
 internal val ReplacementMode.backendName: String
     get() = when (this) {
         is GoogleReplacementMode -> this.asLegacyProrationMode.name
-        is GalaxyReplacementMode -> this.name
         else -> this.name
     }
 
@@ -93,13 +81,11 @@ internal fun ReplacementMode.backendName(store: Store): String? {
     return when (store) {
         Store.PLAY_STORE -> when (this) {
             is GoogleReplacementMode -> this.asLegacyProrationMode.name
-            is GalaxyReplacementMode -> this.storeReplacementMode.toGoogleReplacementMode().asLegacyProrationMode.name
             is StoreReplacementMode -> this.toGoogleReplacementMode().asLegacyProrationMode.name
             else -> null
         }
         Store.GALAXY -> when (this) {
             is GoogleReplacementMode -> this.storeReplacementMode.galaxyName
-            is GalaxyReplacementMode -> this.name
             is StoreReplacementMode -> this.galaxyName
             else -> null
         }

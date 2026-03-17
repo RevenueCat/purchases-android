@@ -27,7 +27,6 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
-import com.revenuecat.purchases.models.GalaxyReplacementMode;
 import com.revenuecat.purchases.models.GoogleReplacementMode;
 import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.StoreProduct;
@@ -110,14 +109,12 @@ final class PurchasesCommonAPI {
         };
         String oldProductId = "old";
         GoogleReplacementMode replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION;
-        GalaxyReplacementMode galaxyReplacementMode = GalaxyReplacementMode.INSTANT_PRORATED_CHARGE;
         Boolean isPersonalizedPrice = true;
 
         PurchaseParams.Builder purchaseProductBuilder = new PurchaseParams.Builder(activity, storeProduct);
         purchaseProductBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)
-                .galaxyReplacementMode(galaxyReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseProductParams = purchaseProductBuilder.build();
         purchases.purchase(purchaseProductParams, purchaseCallback);
@@ -126,7 +123,6 @@ final class PurchasesCommonAPI {
         purchaseOptionBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)
-                .galaxyReplacementMode(galaxyReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
@@ -135,7 +131,6 @@ final class PurchasesCommonAPI {
         purchasePackageBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)
-                .galaxyReplacementMode(galaxyReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);

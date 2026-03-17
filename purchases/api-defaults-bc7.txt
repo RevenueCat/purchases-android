@@ -1179,12 +1179,6 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_NO_PRORATION;
     enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_PRORATED_CHARGE;
     enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_PRORATED_DATE;
-    field public static final com.revenuecat.purchases.models.GalaxyReplacementMode.Companion Companion;
-  }
-
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static final class GalaxyReplacementMode.Companion {
-    method public com.revenuecat.purchases.models.GalaxyReplacementMode getDefault();
-    property public final com.revenuecat.purchases.models.GalaxyReplacementMode default;
   }
 
   @dev.drewhamilton.poko.Poko public final class GoogleInstallmentsInfo implements com.revenuecat.purchases.models.InstallmentsInfo {

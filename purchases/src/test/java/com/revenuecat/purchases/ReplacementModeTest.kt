@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.os.Parcel
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
 import org.assertj.core.api.Assertions.assertThat
@@ -24,23 +23,6 @@ class ReplacementModeTest {
             assertThat(mode.backendName).isEqualTo(expectations.getValue(mode))
         }
         assertThat(expectations.size).isEqualTo(GoogleReplacementMode.values().size)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `galaxy replacement modes use enum name for backend`() {
-        val expectations = mapOf(
-            GalaxyReplacementMode.INSTANT_PRORATED_DATE to "INSTANT_PRORATED_DATE",
-            GalaxyReplacementMode.INSTANT_PRORATED_CHARGE to "INSTANT_PRORATED_CHARGE",
-            GalaxyReplacementMode.INSTANT_NO_PRORATION to "INSTANT_NO_PRORATION",
-            GalaxyReplacementMode.DEFERRED to "DEFERRED",
-        )
-
-        GalaxyReplacementMode.values().forEach { mode ->
-            assertThat(expectations).containsKey(mode)
-            assertThat(mode.backendName).isEqualTo(expectations.getValue(mode))
-        }
-        assertThat(expectations.size).isEqualTo(GalaxyReplacementMode.values().size)
     }
 
     @Test
@@ -116,32 +98,6 @@ class ReplacementModeTest {
         }
         assertThat(playExpectations.size).isEqualTo(GoogleReplacementMode.values().size)
         assertThat(galaxyExpectations.size).isEqualTo(GoogleReplacementMode.values().size - 1)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Test
-    fun `galaxy replacement modes use store specific backend names`() {
-        val playExpectations = mapOf(
-            GalaxyReplacementMode.INSTANT_NO_PRORATION to "IMMEDIATE_WITHOUT_PRORATION",
-            GalaxyReplacementMode.INSTANT_PRORATED_DATE to "IMMEDIATE_WITH_TIME_PRORATION",
-            GalaxyReplacementMode.INSTANT_PRORATED_CHARGE to "IMMEDIATE_AND_CHARGE_PRORATED_PRICE",
-            GalaxyReplacementMode.DEFERRED to "DEFERRED",
-        )
-        val galaxyExpectations = mapOf(
-            GalaxyReplacementMode.INSTANT_PRORATED_DATE to "INSTANT_PRORATED_DATE",
-            GalaxyReplacementMode.INSTANT_PRORATED_CHARGE to "INSTANT_PRORATED_CHARGE",
-            GalaxyReplacementMode.INSTANT_NO_PRORATION to "INSTANT_NO_PRORATION",
-            GalaxyReplacementMode.DEFERRED to "DEFERRED",
-        )
-
-        GalaxyReplacementMode.values().forEach { mode ->
-            assertThat(playExpectations).containsKey(mode)
-            assertThat(mode.backendName(Store.PLAY_STORE)).isEqualTo(playExpectations.getValue(mode))
-            assertThat(galaxyExpectations).containsKey(mode)
-            assertThat(mode.backendName(Store.GALAXY)).isEqualTo(galaxyExpectations.getValue(mode))
-        }
-        assertThat(playExpectations.size).isEqualTo(GalaxyReplacementMode.values().size)
-        assertThat(galaxyExpectations.size).isEqualTo(GalaxyReplacementMode.values().size)
     }
 
     private class TestReplacementMode(
