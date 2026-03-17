@@ -1026,7 +1026,7 @@ internal class CustomerCenterViewModelImpl(
     ): CustomerCenterState.Success {
         if (!isRefresh || previousState !is CustomerCenterState.Success) return this
         val reconciledNavState = previousState.navigationState.reconcileWithPurchases(purchases)
-        val navState = reconciledNavState ?: previousState.navigationState.popToMain()
+        val navState = reconciledNavState ?: navigationState
         val detailPaths = if (reconciledNavState != null) {
             recomputeDetailScreenPathsIfNeeded(reconciledNavState, previousState.detailScreenPaths)
         } else {
