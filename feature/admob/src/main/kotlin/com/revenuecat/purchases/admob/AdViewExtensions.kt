@@ -45,8 +45,6 @@ import kotlin.jvm.JvmSynthetic
  *   RevenueCat revenue tracking is called first, then forwarded to this listener.
  *   If `null` and an [OnPaidEventListener] is already set on this [AdView], the
  *   existing listener will be used as the delegate.
- * @param adFormat The ad format to report to RevenueCat. Defaults to [AdFormat.BANNER].
- *   Pass [AdFormat.MREC] when loading a medium rectangle (300×250) ad.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
@@ -55,7 +53,6 @@ public fun AdView.loadAndTrackAd(
     placement: String? = null,
     adListener: AdListener? = null,
     onPaidEventListener: OnPaidEventListener? = null,
-    adFormat: AdFormat = AdFormat.BANNER,
 ) {
     loadAndTrackBannerAdInternal(
         adView = this,
@@ -63,7 +60,6 @@ public fun AdView.loadAndTrackAd(
         adRequest = adRequest,
         adListener = adListener,
         onPaidEventListener = onPaidEventListener,
-        adFormat = adFormat,
     )
 }
 
@@ -73,7 +69,6 @@ internal fun loadAndTrackBannerAdInternal(
     placement: String? = null,
     adListener: AdListener? = null,
     onPaidEventListener: OnPaidEventListener? = null,
-    adFormat: AdFormat = AdFormat.BANNER,
 ) {
     val adUnitId = adView.adUnitId.orEmpty()
 
@@ -99,7 +94,7 @@ internal fun loadAndTrackBannerAdInternal(
 
     adView.onPaidEventListener = TrackingOnPaidEventListener(
         delegate = effectivePaidListener,
-        adFormat = adFormat,
+        adFormat = AdFormat.BANNER,
         placement = placement,
         adUnitId = adUnitId,
         responseInfoProvider = { adView.responseInfo },
@@ -107,7 +102,7 @@ internal fun loadAndTrackBannerAdInternal(
 
     adView.adListener = TrackingAdListener(
         delegate = effectiveAdListener,
-        adFormat = adFormat,
+        adFormat = AdFormat.BANNER,
         placement = placement,
         adUnitId = adUnitId,
         responseInfoProvider = { adView.responseInfo },
