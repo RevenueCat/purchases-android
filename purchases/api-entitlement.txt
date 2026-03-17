@@ -306,14 +306,12 @@ package com.revenuecat.purchases {
   @dev.drewhamilton.poko.Poko public final class PurchaseParams {
     ctor public PurchaseParams(com.revenuecat.purchases.PurchaseParams.Builder builder);
     method public com.revenuecat.purchases.PurchaseParams.Builder getBuilder();
-    method public com.revenuecat.purchases.models.GalaxyReplacementMode getGalaxyReplacementMode();
-    method public com.revenuecat.purchases.models.GoogleReplacementMode getGoogleReplacementMode();
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode getGoogleReplacementMode();
     method public String? getOldProductId();
     method public com.revenuecat.purchases.models.StoreReplacementMode getReplacementMode();
     method public Boolean? isPersonalizedPrice();
     property public final com.revenuecat.purchases.PurchaseParams.Builder builder;
-    property public final com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode;
-    property public final com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode;
+    property @Deprecated public final com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode;
     property public final Boolean? isPersonalizedPrice;
     property public final String? oldProductId;
     property public final com.revenuecat.purchases.models.StoreReplacementMode replacementMode;
@@ -327,8 +325,7 @@ package com.revenuecat.purchases {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnSubscriptionOptions(java.util.List<? extends com.revenuecat.purchases.models.SubscriptionOption> addOnSubscriptionOptions);
     method public com.revenuecat.purchases.PurchaseParams build();
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder galaxyReplacementMode(com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode);
-    method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
+    method @Deprecated public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
     method public final com.revenuecat.purchases.PurchaseParams.Builder oldProductId(String oldProductId);
     method public final com.revenuecat.purchases.PurchaseParams.Builder presentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);

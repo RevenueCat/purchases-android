@@ -3,7 +3,6 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
@@ -20,10 +19,9 @@ public class PurchaseParams(public val builder: Builder) {
 
     public val isPersonalizedPrice: Boolean?
     public val oldProductId: String?
-    public val googleReplacementMode: GoogleReplacementMode
 
-    @ExperimentalPreviewRevenueCatPurchasesAPI
-    public val galaxyReplacementMode: GalaxyReplacementMode
+    @Deprecated("Use replacementMode instead")
+    public val googleReplacementMode: GoogleReplacementMode
 
     public val replacementMode: StoreReplacementMode
 
@@ -49,8 +47,6 @@ public class PurchaseParams(public val builder: Builder) {
         this.oldProductId = builder.oldProductId
         this.googleReplacementMode = builder.googleReplacementMode
         this.replacementMode = builder.replacementMode
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-        this.galaxyReplacementMode = builder.galaxyReplacementMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingContext = builder.presentedOfferingContext
@@ -102,16 +98,12 @@ public class PurchaseParams(public val builder: Builder) {
 
         @set:JvmSynthetic
         @get:JvmSynthetic
+        @Deprecated("Use replacementMode instead")
         internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
 
         @set:JvmSynthetic
         @get:JvmSynthetic
         internal var replacementMode: StoreReplacementMode = StoreReplacementMode.WITHOUT_PRORATION
-
-        @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
-        @set:JvmSynthetic
-        @get:JvmSynthetic
-        internal var galaxyReplacementMode: GalaxyReplacementMode = GalaxyReplacementMode.default
 
         /*
          * Sets the data about the context in which an offering was presented.
@@ -155,6 +147,7 @@ public class PurchaseParams(public val builder: Builder) {
          *
          * Only applied for Play Store product changes. Ignored for Amazon Appstore and Galaxy Store purchases.
          */
+        @Deprecated("Use .replacementMode() instead")
         public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
             this.googleReplacementMode = googleReplacementMode
             this.replacementMode = googleReplacementMode.toStoreReplacementMode()
@@ -172,17 +165,6 @@ public class PurchaseParams(public val builder: Builder) {
 
             // We can remove this once we fully remove PurchaseParams.googleReplacementMode
             this.googleReplacementMode = replacementMode.toGoogleReplacementMode()
-        }
-
-        /*
-         * The [GalaxyReplacementMode] to use when replacing the given oldProductId. Defaults to
-         * [GalaxyReplacementMode.IMMEDIATE_WITHOUT_PRORATION].
-         *
-         * Only applied for Galaxy Store product changes. Ignored for Google Play and Amazon Appstore purchases.
-         */
-        @ExperimentalPreviewRevenueCatPurchasesAPI
-        public fun galaxyReplacementMode(galaxyReplacementMode: GalaxyReplacementMode): Builder = apply {
-            this.galaxyReplacementMode = galaxyReplacementMode
         }
 
         /*
