@@ -882,6 +882,7 @@ package com.revenuecat.purchases.customercenter {
     method public default void onCustomActionSelected(String actionIdentifier, String? purchaseIdentifier);
     method public default void onFeedbackSurveyCompleted(String feedbackSurveyOptionId);
     method public default void onManagementOptionSelected(com.revenuecat.purchases.customercenter.CustomerCenterManagementOption action);
+    method public default void onPromotionalOfferSucceeded(com.revenuecat.purchases.CustomerInfo customerInfo, com.revenuecat.purchases.models.StoreTransaction transaction);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public default void onRestoreFailed(com.revenuecat.purchases.PurchasesError error);
     method public default void onRestoreStarted();
@@ -1495,7 +1496,7 @@ package com.revenuecat.purchases.models {
 
 package com.revenuecat.purchases.paywalls.events {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class CustomPaywallImpressionParams {
+  @dev.drewhamilton.poko.Poko public final class CustomPaywallImpressionParams {
     ctor public CustomPaywallImpressionParams();
     ctor public CustomPaywallImpressionParams(optional String? paywallId);
     ctor public CustomPaywallImpressionParams(optional String? paywallId, optional String? offeringId);

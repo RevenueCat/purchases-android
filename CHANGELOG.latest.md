@@ -1,6 +1,7 @@
-## RevenueCat SDK
-### ✨ New Features
-* Expose trackCustomPaywallImpression as experimental public API (#3199) via Rick (@rickvdl)
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* CC-628: Refresh Customer Center after returning from manage subscriptions (#3152) via Facundo Menzella (@facumenzella)
 
 ### 🔄 Other Changes
-* [EXTERNAL] Migrate deprecated kotlinOptions to compilerOptions (#3219) contributed by @AlexanderTalledo (#3223) via Toni Rico (@tonidero)
+* Remove experimental annotation from trackCustomPaywallImpression (#3241) via Rick (@rickvdl)

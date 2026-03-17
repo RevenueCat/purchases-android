@@ -7,6 +7,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -80,6 +81,13 @@ public class CustomerCenterView : CompatComposeView {
 
         override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
             customerCenterListener?.onCustomActionSelected(actionIdentifier, purchaseIdentifier)
+        }
+
+        override fun onPromotionalOfferSucceeded(
+            customerInfo: CustomerInfo,
+            transaction: StoreTransaction,
+        ) {
+            customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
         }
     }
     private val customerCenterOptions = CustomerCenterOptions.Builder()

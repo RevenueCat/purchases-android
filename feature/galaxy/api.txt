@@ -13,7 +13,7 @@ package com.revenuecat.purchases.galaxy {
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public abstract sealed class GalaxyPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public static final class GalaxyPurchasingData.Product extends com.revenuecat.purchases.galaxy.GalaxyPurchasingData {
+  @dev.drewhamilton.poko.Poko public static final class GalaxyPurchasingData.Product extends com.revenuecat.purchases.galaxy.GalaxyPurchasingData {
     ctor public GalaxyPurchasingData.Product(String productId, com.revenuecat.purchases.ProductType productType);
     method public String getProductId();
     method public com.revenuecat.purchases.ProductType getProductType();
