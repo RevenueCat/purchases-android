@@ -78,8 +78,6 @@ internal class CustomerInfoUpdateHandler constructor(
         }
         if (lastSent != customerInfo) {
             diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
-        }
-        if (lastSent != customerInfo) {
             if (lastSent != null) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER }
             } else {
@@ -107,9 +105,11 @@ internal class CustomerInfoUpdateHandler constructor(
     }
 
     private fun sendToSingleListener(listener: UpdatedCustomerInfoListener, customerInfo: CustomerInfo) {
-        diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
         synchronized(this@CustomerInfoUpdateHandler) {
-            this.lastSentCustomerInfo = customerInfo
+            if (lastSentCustomerInfo != customerInfo) {
+                diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
+                this.lastSentCustomerInfo = customerInfo
+            }
         }
         log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
         dispatch { listener.onReceived(customerInfo) }
