@@ -319,7 +319,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$ 2.00/year"
+                    "\$2.00/year"
                 )
 
                 Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED -> arrayOf(
@@ -330,7 +330,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$ 2.00/yr"
+                    "\$2.00/yr"
                 )
 
                 Variable.PRODUCT_PRICE_PER_DAY -> arrayOf(
@@ -713,7 +713,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00",
+                "\$200.00",
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
                 Args(
@@ -722,7 +722,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -731,7 +731,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
                 Args(
@@ -740,7 +740,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
                 Args(
@@ -749,7 +749,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
                 Args(
@@ -758,7 +758,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
                 Args(
@@ -767,7 +767,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
                 Args(
@@ -887,7 +887,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
                 Args(

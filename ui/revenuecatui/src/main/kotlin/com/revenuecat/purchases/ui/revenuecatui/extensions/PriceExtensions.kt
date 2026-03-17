@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.extensions
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.endsIn00Cents
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.getFormatted
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.getTruncatedFormatted
 import java.util.Locale
 
@@ -13,7 +14,7 @@ internal fun Price.localized(locale: Locale, showZeroDecimalPlacePrices: Boolean
     return if (showZeroDecimalPlacePrices && this.endsIn00Cents()) {
         this.getTruncatedFormatted(locale)
     } else {
-        this.formatted
+        this.getFormatted(locale)
     }
 }
 
