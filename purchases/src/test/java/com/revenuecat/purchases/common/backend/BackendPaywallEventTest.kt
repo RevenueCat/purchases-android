@@ -60,6 +60,30 @@ class BackendPaywallEventTest {
         )
     ).map { it.toBackendEvent() })
 
+    private val placementTargetingEventRequest = EventsRequest(listOf(
+        BackendStoredEvent.Paywalls(
+            BackendEvent.Paywalls(
+                id = "placement-id",
+                version = 1,
+                type = PaywallEventType.IMPRESSION.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallID = "paywallID",
+                paywallRevision = 5,
+                timestamp = 123456789,
+                displayMode = "full_screen",
+                darkMode = true,
+                localeIdentifier = "es_ES",
+                presentedOfferingContext = BackendEvent.PresentedOfferingContextBackend(
+                    placementIdentifier = "home_banner",
+                    targetingRevision = 3,
+                    targetingRuleId = "rule_abc123",
+                ),
+            )
+        )
+    ).map { it.toBackendEvent() })
+
     private val exitOfferEventRequest = EventsRequest(listOf(
         BackendStoredEvent.Paywalls(
             BackendEvent.Paywalls(
@@ -144,6 +168,44 @@ class BackendPaywallEventTest {
                         "\"display_mode\":\"footer\"," +
                         "\"dark_mode\":true," +
                         "\"locale\":\"en_US\"" +
+                    "}" +
+                "]" +
+            "}"
+        )
+    }
+
+    @Test
+    fun `postPaywallEvents posts events with placement and targeting correctly`() {
+        mockHttpResult()
+        backend.postEvents(
+            placementTargetingEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
+            onSuccessHandler = {},
+            onErrorHandler = { _, _ -> },
+        )
+        verifyCallWithBody(
+            "{" +
+                "\"events\":[" +
+                    "{" +
+                        "\"discriminator\":\"paywalls\"," +
+                        "\"id\":\"placement-id\"," +
+                        "\"version\":1," +
+                        "\"type\":\"paywall_impression\"," +
+                        "\"app_user_id\":\"appUserID\"," +
+                        "\"session_id\":\"sessionID\"," +
+                        "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
+                        "\"paywall_revision\":5," +
+                        "\"timestamp\":123456789," +
+                        "\"display_mode\":\"full_screen\"," +
+                        "\"dark_mode\":true," +
+                        "\"locale\":\"es_ES\"," +
+                        "\"presented_offering_context\":{" +
+                            "\"placement_identifier\":\"home_banner\"," +
+                            "\"targeting_revision\":3," +
+                            "\"targeting_rule_id\":\"rule_abc123\"" +
+                        "}" +
                     "}" +
                 "]" +
             "}"

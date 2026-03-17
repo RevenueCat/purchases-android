@@ -99,6 +99,8 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: PresentedOfferingContextBackend? = null,
         @SerialName("exit_offer_type")
         val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
@@ -150,6 +152,16 @@ internal sealed class BackendEvent : Event {
         @SerialName("resulting_product_id")
         val resultingProductIdentifier: String? = null,
     ) : BackendEvent()
+
+    @Serializable
+    data class PresentedOfferingContextBackend(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    )
 
     /**
      * Represents an event related to a custom paywall.
