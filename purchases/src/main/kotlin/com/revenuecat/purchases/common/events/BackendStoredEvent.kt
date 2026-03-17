@@ -86,6 +86,18 @@ internal fun PaywallEvent.toBackendStoredEvent(
         // WIP: We should implement support for these events in the backend.
         return null
     }
+    val context = data.presentedOfferingContext
+    val presentedContext = if (
+        context.placementIdentifier != null || context.targetingContext != null
+    ) {
+        BackendEvent.PresentedOfferingContextBackend(
+            placementIdentifier = context.placementIdentifier,
+            targetingRevision = context.targetingContext?.revision,
+            targetingRuleId = context.targetingContext?.ruleId,
+        )
+    } else {
+        null
+    }
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
             id = creationData.id.toString(),
@@ -100,6 +112,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+            presentedOfferingContext = presentedContext,
             exitOfferType = data.exitOfferType?.value,
             exitOfferingID = data.exitOfferingIdentifier,
             packageID = data.packageIdentifier,
