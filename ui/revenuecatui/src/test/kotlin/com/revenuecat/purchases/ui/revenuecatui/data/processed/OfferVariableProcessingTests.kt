@@ -13,8 +13,11 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import java.util.Date
@@ -322,6 +325,175 @@ class OfferVariableProcessingTests {
 
         assertThat(result).isEqualTo("$0.50")
     }
+
+    // region offer_price_per_* fallback when no discount phase exists
+
+    @Test
+    fun `offer price per day falls back to product price per day when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_day }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        // 1 month product at $10.00 -> ~$0.33/day
+        assertThat(result).isNotEmpty()
+        assertThat(result).isNotEqualTo("")
+    }
+
+    @Test
+    fun `offer price per week falls back to product price per week when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_week }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        // 1 month product at $10.00 -> ~$2.31/week
+        assertThat(result).isNotEmpty()
+        assertThat(result).isNotEqualTo("")
+    }
+
+    @Test
+    fun `offer price per month falls back to product price per month when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_month }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        // 1 month product at $10.00 -> $10.00/month
+        assertThat(result).isEqualTo("$10.00")
+    }
+
+    @Test
+    fun `offer price per year falls back to product price per year when no discount phases`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_year }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithNoDiscountPhases,
+        )
+
+        // 1 month product at $10.00 -> $120.00/year
+        assertThat(result).isNotEmpty()
+        assertThat(result).isNotEqualTo("")
+    }
+
+    // endregion
+
+    // region offer_end_date returns empty when no discount phase exists
+
+    @Test
+    fun `offer end date returns empty when no discount phase exists`() {
+        mockkObject(Logger)
+        every { Logger.w(any()) } returns Unit
+        try {
+            val result = processTemplate(
+                template = "{{ product.offer_end_date }}",
+                rcPackage = packageWithNoIntroOffer,
+                subscriptionOption = optionWithNoDiscountPhases,
+            )
+
+            assertThat(result).isEmpty()
+        } finally {
+            unmockkObject(Logger)
+        }
+    }
+
+    // endregion
+
+    // region offer_price_per_* canDisplay fallback
+
+    @Test
+    fun `offer price per month falls back to product when discount phase cannot display per month`() {
+        // A weekly discount phase cannot display per month (canDisplay returns false for MONTH
+        // when billing period is WEEK), so it should fall back to the product's price per month.
+        val weeklyDiscountPhase = mockk<PricingPhase> {
+            every { price } returns promoPrice
+            every { billingPeriod } returns Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W")
+            every { billingCycleCount } returns 1
+            every { recurrenceMode } returns RecurrenceMode.FINITE_RECURRING
+        }
+
+        val optionWithWeeklyDiscount = mockk<SubscriptionOption> {
+            every { freePhase } returns null
+            every { introPhase } returns weeklyDiscountPhase
+        }
+
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_month }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithWeeklyDiscount,
+        )
+
+        // Falls back to product's price per month ($10.00/month for a monthly product)
+        assertThat(result).isEqualTo("$10.00")
+    }
+
+    @Test
+    fun `offer price per year falls back to product when discount phase cannot display per year`() {
+        // A weekly discount phase cannot display per year (canDisplay returns false for YEAR
+        // when billing period is WEEK), so it should fall back to the product's price per year.
+        val weeklyDiscountPhase = mockk<PricingPhase> {
+            every { price } returns promoPrice
+            every { billingPeriod } returns Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W")
+            every { billingCycleCount } returns 1
+            every { recurrenceMode } returns RecurrenceMode.FINITE_RECURRING
+        }
+
+        val optionWithWeeklyDiscount = mockk<SubscriptionOption> {
+            every { freePhase } returns null
+            every { introPhase } returns weeklyDiscountPhase
+        }
+
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_year }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithWeeklyDiscount,
+        )
+
+        // Falls back to product's price per year
+        assertThat(result).isNotEmpty()
+        assertThat(result).isNotEqualTo("")
+    }
+
+    @Test
+    fun `offer price per day uses discount phase when it can display per day`() {
+        // A weekly discount phase CAN display per day (canDisplay returns true for DAY
+        // when billing period is WEEK), so it should use the discount phase's price per day.
+        val pricePerDayResult = Price(
+            amountMicros = 1_000_000,
+            currencyCode = "USD",
+            formatted = "$1.00",
+        )
+        val weeklyDiscountPhase = mockk<PricingPhase> {
+            every { price } returns Price(
+                amountMicros = 7_000_000,
+                currencyCode = "USD",
+                formatted = "$7.00",
+            )
+            every { billingPeriod } returns Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W")
+            every { billingCycleCount } returns 1
+            every { recurrenceMode } returns RecurrenceMode.FINITE_RECURRING
+            every { pricePerDay(any()) } returns pricePerDayResult
+        }
+
+        val optionWithWeeklyDiscount = mockk<SubscriptionOption> {
+            every { freePhase } returns null
+            every { introPhase } returns weeklyDiscountPhase
+        }
+
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_day }}",
+            rcPackage = packageWithNoIntroOffer,
+            subscriptionOption = optionWithWeeklyDiscount,
+        )
+
+        // Should use the discount phase's price per day ($7.00/week = $1.00/day)
+        assertThat(result).isEqualTo("$1.00")
+    }
+
+    // endregion
 
     // region Secondary offer fallback tests
 
