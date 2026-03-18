@@ -991,11 +991,6 @@ package com.revenuecat.purchases.customercenter {
     property public final String? purchaseIdentifier;
   }
 
-  public fun interface Resumable {
-    method public default operator void invoke(optional boolean shouldResume);
-    method public void resume(boolean shouldResume);
-  }
-
   public interface CustomerCenterListener {
     method public default void onCustomActionSelected(String actionIdentifier, String? purchaseIdentifier);
     method public default void onFeedbackSurveyCompleted(String feedbackSurveyOptionId);
@@ -1031,6 +1026,11 @@ package com.revenuecat.purchases.customercenter {
 
   public static final class CustomerCenterManagementOption.MissingPurchase implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
     field public static final com.revenuecat.purchases.customercenter.CustomerCenterManagementOption.MissingPurchase INSTANCE;
+  }
+
+  public fun interface Resumable {
+    method public default operator void invoke(optional boolean shouldResume);
+    method public void resume(boolean shouldResume);
   }
 
 }
