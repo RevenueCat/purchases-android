@@ -339,7 +339,7 @@ internal class GalaxyBillingWrapper(
         replaceProductInfo?.let { replaceInfo ->
             val replacementMode = when (val mode = replaceInfo.replacementMode) {
                 is StoreReplacementMode -> mode
-                else -> StoreReplacementMode.CHARGE_PRORATED_PRICE
+                else -> StoreReplacementMode.WITHOUT_PRORATION
             }
 
             serialRequestExecutor.executeSerially { finish ->

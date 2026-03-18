@@ -770,7 +770,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `makePurchaseAsync defaults to CHARGE_PRORATED_PRICE when replacement mode is not a StoreReplacementMode`() {
+    fun `makePurchaseAsync defaults to WITHOUT_PRORATION when replacement mode is not a StoreReplacementMode`() {
         val changeSubscriptionPlanHandler = mockk<ChangeSubscriptionPlanResponseListener>(relaxed = true)
         val wrapper = createWrapper(changeSubscriptionPlanHandler = changeSubscriptionPlanHandler)
         val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
@@ -815,7 +815,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
                 appUserID = "user",
                 oldPurchase = oldPurchase,
                 newProductId = storeProduct.id,
-                replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+                replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -838,12 +838,12 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesUpdated(capture(transactionsSlot)) }
         val transaction = transactionsSlot.captured.single()
         assertThat(transaction.productIds).containsExactly(storeProduct.id)
-        assertThat(transaction.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(transaction.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `makePurchaseAsync defaults to CHARGE_PRORATED_PRICE when replacement mode is null`() {
+    fun `makePurchaseAsync defaults to WITHOUT_PRORATION when replacement mode is null`() {
         val changeSubscriptionPlanHandler = mockk<ChangeSubscriptionPlanResponseListener>(relaxed = true)
         val wrapper = createWrapper(changeSubscriptionPlanHandler = changeSubscriptionPlanHandler)
         val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
@@ -888,7 +888,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
                 appUserID = "user",
                 oldPurchase = oldPurchase,
                 newProductId = storeProduct.id,
-                replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+                replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -911,7 +911,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) { purchasesUpdatedListener.onPurchasesUpdated(capture(transactionsSlot)) }
         val transaction = transactionsSlot.captured.single()
         assertThat(transaction.productIds).containsExactly(storeProduct.id)
-        assertThat(transaction.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(transaction.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(GalaxySerialOperation::class)
