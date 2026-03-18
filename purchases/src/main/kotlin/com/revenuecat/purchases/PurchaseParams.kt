@@ -135,7 +135,8 @@ public class PurchaseParams(public val builder: Builder) {
          * Note: When using [GoogleReplacementMode.DEFERRED], the product ID is used to match the purchase callback
          * with the transaction returned by Google Play.
          *
-         * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
+         * Product changes are only available in the Play Store and the Galaxy Store.
+         * Ignored for Amazon Appstore purchases.
          */
         public fun oldProductId(oldProductId: String): Builder = apply {
             this.oldProductId = oldProductId

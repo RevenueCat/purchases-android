@@ -112,7 +112,7 @@ public class PaywallPurchaseLogicParams internal constructor(
 
     /**
      * The replacement mode to use for this product change, as configured in the paywall.
-     * For Google Play, this will be a [com.revenuecat.purchases.models.GoogleReplacementMode].
+     * For Google Play, this will be a [com.revenuecat.purchases.models.StoreReplacementMode].
      * Null if this is a new purchase or the store does not support replacement modes.
      */
     public val replacementMode: ReplacementMode? get() = productChange?.replacementMode
