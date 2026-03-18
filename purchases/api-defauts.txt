@@ -793,7 +793,6 @@ package com.revenuecat.purchases.ads.events.types {
     method public String getAPP_OPEN();
     method public String getBANNER();
     method public String getINTERSTITIAL();
-    method public String getMREC();
     method public String getNATIVE();
     method public String getOTHER();
     method public String getREWARDED();
@@ -801,7 +800,6 @@ package com.revenuecat.purchases.ads.events.types {
     property public final String APP_OPEN;
     property public final String BANNER;
     property public final String INTERSTITIAL;
-    property public final String MREC;
     property public final String NATIVE;
     property public final String OTHER;
     property public final String REWARDED;
