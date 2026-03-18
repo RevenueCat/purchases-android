@@ -2,15 +2,12 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -85,6 +82,13 @@ public class CustomerCenterView : CompatComposeView {
         override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
             customerCenterListener?.onCustomActionSelected(actionIdentifier, purchaseIdentifier)
         }
+
+        override fun onPromotionalOfferSucceeded(
+            customerInfo: CustomerInfo,
+            transaction: StoreTransaction,
+        ) {
+            customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
+        }
     }
     private val customerCenterOptions = CustomerCenterOptions.Builder()
         .setListener(internalListener)
@@ -120,10 +124,7 @@ public class CustomerCenterView : CompatComposeView {
 
     @Composable
     override fun Content() {
-        val isDarkTheme = isSystemInDarkTheme()
-        val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
-
-        MaterialTheme(colorScheme = colorScheme) {
+        RevenueCatTheme {
             CustomerCenter(options = customerCenterOptions) {
                 dismiss()
             }
