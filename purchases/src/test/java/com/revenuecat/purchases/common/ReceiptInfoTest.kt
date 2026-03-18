@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.PricingPhaseSerializer
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
@@ -384,6 +385,36 @@ class ReceiptInfoTest {
         val decoded = json.decodeFromString<ReceiptInfo>(receiptInfoJson)
 
         assertThat(decoded.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+    }
+
+    @Test
+    fun `ReceiptInfo with GoogleReplacementMode serializes as StoreReplacementMode and deserializes to StoreReplacementMode`() {
+        val original = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 0.99,
+            currency = "USD",
+            period = null,
+            pricingPhases = null,
+            replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION,
+        )
+
+        val encoded = json.encodeToString(original)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "replacementMode":{
+                    "type":"StoreReplacementMode",
+                    "name":"WITH_TIME_PRORATION"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThat(encoded).isEqualTo(expectedJson)
+        assertThat(decoded.replacementMode).isEqualTo(StoreReplacementMode.WITH_TIME_PRORATION)
     }
 
     @Test

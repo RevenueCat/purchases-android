@@ -100,14 +100,15 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
     }
 
     override fun serialize(encoder: Encoder, value: ReplacementMode) {
+        // Always encode to StoreReplacementMode since GoogleReplacementMode is deprecated
         encoder.encodeStructure(descriptor) {
-            val type = when (value) {
-                is GoogleReplacementMode -> "GoogleReplacementMode"
-                is StoreReplacementMode -> "StoreReplacementMode"
+            val normalizedValue = when (value) {
+                is GoogleReplacementMode -> value.toStoreReplacementMode()
+                is StoreReplacementMode -> value
                 else -> throw SerializationException("Unknown ReplacementMode type: ${value::class.simpleName}")
             }
-            encodeStringElement(descriptor, 0, type)
-            encodeStringElement(descriptor, 1, value.name)
+            encodeStringElement(descriptor, 0, "StoreReplacementMode")
+            encodeStringElement(descriptor, 1, normalizedValue.name)
         }
     }
 
