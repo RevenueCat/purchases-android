@@ -885,6 +885,7 @@ package com.revenuecat.purchases.customercenter {
     method public default void onPromotionalOfferSucceeded(com.revenuecat.purchases.CustomerInfo customerInfo, com.revenuecat.purchases.models.StoreTransaction transaction);
     method public default void onRestoreCompleted(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public default void onRestoreFailed(com.revenuecat.purchases.PurchasesError error);
+    method public default void onRestoreInitiated(com.revenuecat.purchases.customercenter.Resumable resume);
     method public default void onRestoreStarted();
     method public default void onShowingManageSubscriptions();
   }
@@ -912,6 +913,11 @@ package com.revenuecat.purchases.customercenter {
 
   public static final class CustomerCenterManagementOption.MissingPurchase implements com.revenuecat.purchases.customercenter.CustomerCenterManagementOption {
     field public static final com.revenuecat.purchases.customercenter.CustomerCenterManagementOption.MissingPurchase INSTANCE;
+  }
+
+  public fun interface Resumable {
+    method public default operator void invoke(optional boolean shouldResume);
+    method public void resume(boolean shouldResume);
   }
 
 }
