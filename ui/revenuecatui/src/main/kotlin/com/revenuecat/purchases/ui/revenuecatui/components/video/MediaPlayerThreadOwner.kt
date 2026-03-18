@@ -9,6 +9,7 @@ import android.os.Looper
 import android.view.Surface
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("TooManyFunctions")
 internal class MediaPlayerThreadOwner(
@@ -29,6 +30,11 @@ internal class MediaPlayerThreadOwner(
         val audioSessionId: Int = 0,
     )
 
+    private data class PendingPlaybackState(
+        val isPlaying: Boolean,
+        val commandId: Long,
+    )
+
     private val appContext = context.applicationContext
     private val mainHandler = Handler(Looper.getMainLooper())
     private val workerThread = HandlerThread("RC-TextureVideoViewPlayer").apply { start() }
@@ -39,6 +45,10 @@ internal class MediaPlayerThreadOwner(
 
     @Volatile
     private var playbackSnapshot = PlaybackSnapshot()
+    private val playbackCommandId = AtomicLong(0)
+
+    @Volatile
+    private var pendingPlaybackState: PendingPlaybackState? = null
 
     private var looping = false
     private var currentSurface: Surface? = null
@@ -154,6 +164,7 @@ internal class MediaPlayerThreadOwner(
         onVideoSizeChanged: (videoWidth: Int, videoHeight: Int) -> Unit,
     ) {
         post {
+            clearPendingPlaybackState()
             val mediaPlayer = ensurePlayer()
             updatePlaybackSnapshot {
                 it.copy(
@@ -233,6 +244,7 @@ internal class MediaPlayerThreadOwner(
                             },
                         )
                     }
+                    clearPendingPlaybackState()
                     stopPositionTicker()
                 }
 
@@ -245,9 +257,18 @@ internal class MediaPlayerThreadOwner(
     }
 
     fun start() {
+        if (released || !playbackSnapshot.prepared) return
+        val commandId = markPendingPlaybackState(isPlaying = true)
         post {
-            if (!playbackSnapshot.prepared) return@post
-            val mediaPlayer = player ?: return@post
+            if (!playbackSnapshot.prepared) {
+                clearPendingPlaybackState(commandId)
+                return@post
+            }
+            val mediaPlayer = player
+            if (mediaPlayer == null) {
+                clearPendingPlaybackState(commandId)
+                return@post
+            }
             safely(execute = {
                 mediaPlayer.start()
                 updatePlaybackSnapshot { it.copy(isPlaying = true) }
@@ -255,13 +276,23 @@ internal class MediaPlayerThreadOwner(
             }, failureMessage = { e ->
                 "Could not start media player: ${e.message}"
             })
+            clearPendingPlaybackState(commandId)
         }
     }
 
     fun pause() {
+        if (released || !playbackSnapshot.prepared) return
+        val commandId = markPendingPlaybackState(isPlaying = false)
         post {
-            if (!playbackSnapshot.prepared) return@post
-            val mediaPlayer = player ?: return@post
+            if (!playbackSnapshot.prepared) {
+                clearPendingPlaybackState(commandId)
+                return@post
+            }
+            val mediaPlayer = player
+            if (mediaPlayer == null) {
+                clearPendingPlaybackState(commandId)
+                return@post
+            }
             safely(execute = {
                 if (mediaPlayer.isPlaying) {
                     mediaPlayer.pause()
@@ -278,6 +309,7 @@ internal class MediaPlayerThreadOwner(
             }, failureMessage = { e ->
                 "Could not pause media player: ${e.message}"
             })
+            clearPendingPlaybackState(commandId)
         }
     }
 
@@ -294,7 +326,7 @@ internal class MediaPlayerThreadOwner(
         }
     }
 
-    fun isPlaying(): Boolean = playbackSnapshot.isPlaying
+    fun isPlaying(): Boolean = pendingPlaybackState?.isPlaying ?: playbackSnapshot.isPlaying
 
     fun getDuration(): Int = playbackSnapshot.durationMs
 
@@ -305,6 +337,7 @@ internal class MediaPlayerThreadOwner(
     fun release() {
         if (released) return
         released = true
+        clearPendingPlaybackState()
         workerHandler.removeCallbacksAndMessages(null)
         workerHandler.post {
             updatePlaybackSnapshot {
@@ -382,6 +415,19 @@ internal class MediaPlayerThreadOwner(
 
     private inline fun updatePlaybackSnapshot(transform: (PlaybackSnapshot) -> PlaybackSnapshot) {
         playbackSnapshot = transform(playbackSnapshot)
+    }
+
+    private fun markPendingPlaybackState(isPlaying: Boolean): Long {
+        val commandId = playbackCommandId.incrementAndGet()
+        pendingPlaybackState = PendingPlaybackState(isPlaying = isPlaying, commandId = commandId)
+        return commandId
+    }
+
+    private fun clearPendingPlaybackState(commandId: Long? = null) {
+        val currentPendingState = pendingPlaybackState ?: return
+        if (commandId == null || currentPendingState.commandId == commandId) {
+            pendingPlaybackState = null
+        }
     }
 
     private inline fun <T> getPlayerValue(

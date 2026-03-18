@@ -184,6 +184,90 @@ class MediaPlayerThreadOwnerTests {
 
         owner.release()
     }
+
+    @Test
+    fun `isPlaying returns true immediately after start while worker command is blocked`() {
+        val prepareCompleted = CountDownLatch(1)
+        val startEntered = CountDownLatch(1)
+        val allowStartToFinish = CountDownLatch(1)
+
+        val mediaPlayer = createMockMediaPlayer(
+            onPrepareAsync = { player, preparedListener, _, _ ->
+                preparedListener?.onPrepared(player)
+                prepareCompleted.countDown()
+            },
+            onStart = {
+                startEntered.countDown()
+                allowStartToFinish.await(1000, TimeUnit.MILLISECONDS)
+            },
+        )
+
+        val owner = MediaPlayerThreadOwner(
+            context = appContext,
+            muteAudio = false,
+            playerFactory = { mediaPlayer },
+        )
+
+        owner.prepare(
+            uri = uri,
+            onPrepared = { _, _ -> },
+            onVideoSizeChanged = { _, _ -> },
+        )
+        assertThat(prepareCompleted.await(200, TimeUnit.MILLISECONDS)).isTrue()
+
+        owner.start()
+        assertThat(startEntered.await(200, TimeUnit.MILLISECONDS)).isTrue()
+
+        assertThat(owner.isPlaying()).isTrue()
+
+        allowStartToFinish.countDown()
+        owner.release()
+    }
+
+    @Test
+    fun `isPlaying returns false immediately after pause while worker command is blocked`() {
+        val prepareCompleted = CountDownLatch(1)
+        val startCalled = CountDownLatch(1)
+        val pauseEntered = CountDownLatch(1)
+        val allowPauseToFinish = CountDownLatch(1)
+
+        val mediaPlayer = createMockMediaPlayer(
+            onPrepareAsync = { player, preparedListener, _, _ ->
+                preparedListener?.onPrepared(player)
+                prepareCompleted.countDown()
+            },
+            onStart = { startCalled.countDown() },
+            onPause = {
+                pauseEntered.countDown()
+                allowPauseToFinish.await(1000, TimeUnit.MILLISECONDS)
+            },
+        )
+
+        val owner = MediaPlayerThreadOwner(
+            context = appContext,
+            muteAudio = false,
+            playerFactory = { mediaPlayer },
+        )
+
+        owner.prepare(
+            uri = uri,
+            onPrepared = { _, _ -> },
+            onVideoSizeChanged = { _, _ -> },
+        )
+        assertThat(prepareCompleted.await(200, TimeUnit.MILLISECONDS)).isTrue()
+
+        owner.start()
+        assertThat(startCalled.await(200, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(waitForCondition { owner.isPlaying() }).isTrue()
+
+        owner.pause()
+        assertThat(pauseEntered.await(200, TimeUnit.MILLISECONDS)).isTrue()
+
+        assertThat(owner.isPlaying()).isFalse()
+
+        allowPauseToFinish.countDown()
+        owner.release()
+    }
 }
 
 @Suppress("LongMethod", "LongParameterList")
@@ -302,4 +386,19 @@ private fun <T> capturedOrNull(slot: CapturingSlot<T>): T? {
 
 private fun recordThread(operationThreadIds: MutableList<Long>?) {
     operationThreadIds?.add(Thread.currentThread().id)
+}
+
+private fun waitForCondition(
+    timeoutMs: Long = 300,
+    pollIntervalMs: Long = 10,
+    condition: () -> Boolean,
+): Boolean {
+    val timeoutAt = System.currentTimeMillis() + timeoutMs
+    while (System.currentTimeMillis() <= timeoutAt) {
+        if (condition()) {
+            return true
+        }
+        Thread.sleep(pollIntervalMs)
+    }
+    return condition()
 }
