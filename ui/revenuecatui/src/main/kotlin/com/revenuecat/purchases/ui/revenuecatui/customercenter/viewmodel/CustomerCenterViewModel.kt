@@ -73,9 +73,9 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
 import java.util.Date
 import java.util.Locale
+import kotlin.coroutines.resume
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @Suppress("TooManyFunctions")
