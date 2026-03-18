@@ -3,7 +3,9 @@ package com.revenuecat.purchases
 import android.os.Parcelable
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
-import com.revenuecat.purchases.models.toGoogleReplacementMode
+import com.revenuecat.purchases.models.legacyPlayBackendName
+import com.revenuecat.purchases.models.storeBackendName
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import com.revenuecat.purchases.models.toStoreReplacementMode
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.serialization.KSerializer
@@ -27,44 +29,6 @@ public interface ReplacementMode : Parcelable {
 }
 
 /**
- * [GoogleReplacementMode] used to be `GoogleProrationMode`. The backend still expects these values, hence this enum.
- */
-private enum class LegacyProrationMode {
-    IMMEDIATE_WITHOUT_PRORATION,
-    IMMEDIATE_WITH_TIME_PRORATION,
-    IMMEDIATE_AND_CHARGE_FULL_PRICE,
-    IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
-    DEFERRED,
-}
-
-private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
-    get() = when (this) {
-        GoogleReplacementMode.WITHOUT_PRORATION -> LegacyProrationMode.IMMEDIATE_WITHOUT_PRORATION
-        GoogleReplacementMode.WITH_TIME_PRORATION -> LegacyProrationMode.IMMEDIATE_WITH_TIME_PRORATION
-        GoogleReplacementMode.CHARGE_FULL_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
-        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
-        GoogleReplacementMode.DEFERRED -> LegacyProrationMode.DEFERRED
-    }
-
-private val StoreReplacementMode.galaxyName: String?
-    get() = when (this) {
-        StoreReplacementMode.WITHOUT_PRORATION -> "INSTANT_NO_PRORATION"
-        StoreReplacementMode.WITH_TIME_PRORATION -> "INSTANT_PRORATED_DATE"
-        StoreReplacementMode.CHARGE_FULL_PRICE -> null // Unsupported by Galaxy Store
-        StoreReplacementMode.CHARGE_PRORATED_PRICE -> "INSTANT_PRORATED_CHARGE"
-        StoreReplacementMode.DEFERRED -> "DEFERRED"
-    }
-
-private val GoogleReplacementMode.storeReplacementMode: StoreReplacementMode
-    get() = when (this) {
-        GoogleReplacementMode.WITHOUT_PRORATION -> StoreReplacementMode.WITHOUT_PRORATION
-        GoogleReplacementMode.WITH_TIME_PRORATION -> StoreReplacementMode.WITH_TIME_PRORATION
-        GoogleReplacementMode.CHARGE_FULL_PRICE -> StoreReplacementMode.CHARGE_FULL_PRICE
-        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> StoreReplacementMode.CHARGE_PRORATED_PRICE
-        GoogleReplacementMode.DEFERRED -> StoreReplacementMode.DEFERRED
-    }
-
-/**
  * Returns the backend name for this [ReplacementMode].
  * For [GoogleReplacementMode], this returns the legacy proration mode name.
  */
@@ -72,25 +36,14 @@ private val GoogleReplacementMode.storeReplacementMode: StoreReplacementMode
 @Deprecated("Use ReplacementMode.backendName(store: Store) instead")
 internal val ReplacementMode.backendName: String
     get() = when (this) {
-        is GoogleReplacementMode -> this.asLegacyProrationMode.name
+        is GoogleReplacementMode -> this.toStoreReplacementMode().legacyPlayBackendName()
+        is StoreReplacementMode -> this.legacyPlayBackendName()
         else -> this.name
     }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun ReplacementMode.backendName(store: Store): String? {
-    return when (store) {
-        Store.PLAY_STORE -> when (this) {
-            is GoogleReplacementMode -> this.asLegacyProrationMode.name
-            is StoreReplacementMode -> this.toGoogleReplacementMode().asLegacyProrationMode.name
-            else -> null
-        }
-        Store.GALAXY -> when (this) {
-            is GoogleReplacementMode -> this.storeReplacementMode.galaxyName
-            is StoreReplacementMode -> this.galaxyName
-            else -> null
-        }
-        else -> null
-    }
+    return this.toStoreReplacementModeOrNull()?.storeBackendName(store)
 }
 
 internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
