@@ -5,8 +5,8 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.legacyPlayBackendName
 import com.revenuecat.purchases.models.storeBackendName
-import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import com.revenuecat.purchases.models.toStoreReplacementMode
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
