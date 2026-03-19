@@ -1,7 +1,8 @@
 package com.revenuecat.sample.admob.ui.ads
 
 import android.app.Activity
-import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -13,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
@@ -38,52 +39,51 @@ internal fun InterstitialAdContent(activity: Activity) {
 
     Text(
         text = "Status: $status",
-        style = MaterialTheme.typography.bodyMedium,
-        fontWeight = FontWeight.Medium,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
-    Button(
-        onClick = {
-            status = "Loading..."
-            Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
-                context = context,
-                adUnitId = Constants.AdMob.INTERSTITIAL_AD_UNIT_ID,
-                adRequest = AdRequest.Builder().build(),
-                placement = "home_interstitial",
-                loadCallback = object : InterstitialAdLoadCallback() {
-                    override fun onAdLoaded(ad: InterstitialAd) {
-                        interstitialAd = ad
-                        status = "Loaded - Ready to Show"
-                        Toast.makeText(context, "Interstitial loaded!", Toast.LENGTH_SHORT).show()
-                    }
-
-                    override fun onAdFailedToLoad(error: LoadAdError) {
-                        interstitialAd = null
-                        status = "Failed: ${error.message}"
-                        Toast.makeText(context, "Failed to load", Toast.LENGTH_SHORT).show()
-                    }
-                },
-            )
-        },
+    Row(
         modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Text("Load")
-    }
+        Button(
+            onClick = {
+                status = "Loading..."
+                Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
+                    context = context,
+                    adUnitId = Constants.AdMob.INTERSTITIAL_AD_UNIT_ID,
+                    adRequest = AdRequest.Builder().build(),
+                    placement = "home_interstitial",
+                    loadCallback = object : InterstitialAdLoadCallback() {
+                        override fun onAdLoaded(ad: InterstitialAd) {
+                            interstitialAd = ad
+                            status = "Loaded - Ready to Show"
+                        }
 
-    Button(
-        onClick = {
-            val ad = interstitialAd
-            if (ad != null) {
-                ad.show(activity)
+                        override fun onAdFailedToLoad(error: LoadAdError) {
+                            interstitialAd = null
+                            status = "Failed: ${error.message}"
+                        }
+                    },
+                )
+            },
+            modifier = Modifier.weight(1f),
+            enabled = !status.contains("Loading"),
+        ) {
+            Text("Load")
+        }
+
+        Button(
+            onClick = {
+                interstitialAd?.show(activity)
                 interstitialAd = null
                 status = "Shown - Load Again"
-            } else {
-                Toast.makeText(context, "No ad loaded yet", Toast.LENGTH_SHORT).show()
-            }
-        },
-        modifier = Modifier.fillMaxWidth(),
-        enabled = status.contains("Loaded"),
-    ) {
-        Text("Show")
+            },
+            modifier = Modifier.weight(1f),
+            enabled = interstitialAd != null,
+        ) {
+            Text("Show")
+        }
     }
 }

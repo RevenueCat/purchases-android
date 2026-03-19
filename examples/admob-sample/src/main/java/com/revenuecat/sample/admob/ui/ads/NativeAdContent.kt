@@ -5,7 +5,6 @@ import android.view.View
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -37,6 +36,7 @@ import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView
 internal fun NativeAdContent() {
     val context = LocalContext.current
     var nativeAdState by remember { mutableStateOf<NativeAd?>(null) }
+    var status by remember { mutableStateOf("Not Loaded") }
 
     DisposableEffect(Unit) {
         onDispose { nativeAdState?.destroy() }
@@ -53,8 +53,15 @@ internal fun NativeAdContent() {
         color = MaterialTheme.colorScheme.error,
     )
 
+    Text(
+        text = "Status: $status",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
     Button(
         onClick = {
+            status = "Loading..."
             AdLoader.Builder(context, Constants.AdMob.NATIVE_AD_UNIT_ID)
                 .forNativeAdWithTracking(
                     adUnitId = Constants.AdMob.NATIVE_AD_UNIT_ID,
@@ -62,12 +69,13 @@ internal fun NativeAdContent() {
                 ) { nativeAd ->
                     nativeAdState?.destroy()
                     nativeAdState = nativeAd
-                    Toast.makeText(context, "Native ad loaded!", Toast.LENGTH_SHORT).show()
+                    status = "Loaded"
                 }
                 .build()
                 .loadAd(AdRequest.Builder().build())
         },
         modifier = Modifier.fillMaxWidth(),
+        enabled = !status.contains("Loading"),
     ) {
         Text("Load")
     }
@@ -83,6 +91,7 @@ internal fun NativeAdContent() {
 internal fun NativeVideoAdContent() {
     val context = LocalContext.current
     var nativeVideoAdState by remember { mutableStateOf<NativeAd?>(null) }
+    var status by remember { mutableStateOf("Not Loaded") }
 
     DisposableEffect(Unit) {
         onDispose { nativeVideoAdState?.destroy() }
@@ -99,8 +108,15 @@ internal fun NativeVideoAdContent() {
         color = MaterialTheme.colorScheme.error,
     )
 
+    Text(
+        text = "Status: $status",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
     Button(
         onClick = {
+            status = "Loading..."
             AdLoader.Builder(context, Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID)
                 .forNativeAdWithTracking(
                     adUnitId = Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID,
@@ -108,12 +124,13 @@ internal fun NativeVideoAdContent() {
                 ) { nativeAd ->
                     nativeVideoAdState?.destroy()
                     nativeVideoAdState = nativeAd
-                    Toast.makeText(context, "Native video ad loaded!", Toast.LENGTH_SHORT).show()
+                    status = "Loaded"
                 }
                 .build()
                 .loadAd(AdRequest.Builder().build())
         },
         modifier = Modifier.fillMaxWidth(),
+        enabled = !status.contains("Loading"),
     ) {
         Text("Load")
     }
