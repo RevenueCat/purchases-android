@@ -43,7 +43,7 @@ import com.revenuecat.sample.vanilla.R
 import com.revenuecat.sample.vanilla.data.Constants
 import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView
 
-@Suppress("MultipleEmitters")
+@Suppress("MultipleEmitters", "LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun NativeAdContent() {
@@ -171,7 +171,7 @@ internal fun NativeAdContent() {
     }
 }
 
-@Suppress("MultipleEmitters")
+@Suppress("MultipleEmitters", "LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun NativeVideoAdContent() {
@@ -314,12 +314,11 @@ private fun NativeAdView(nativeAd: NativeAd) {
             .fillMaxWidth()
             .padding(vertical = 8.dp),
         factory = { context ->
-            val adView = LayoutInflater.from(context)
+            LayoutInflater.from(context)
                 .inflate(R.layout.native_ad_layout, null) as AdMobNativeAdView
-
+        },
+        update = { adView ->
             populateNativeAdView(nativeAd, adView)
-
-            adView
         },
     )
 }

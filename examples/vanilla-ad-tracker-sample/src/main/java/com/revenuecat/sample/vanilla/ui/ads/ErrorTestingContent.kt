@@ -24,6 +24,8 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.sample.vanilla.data.Constants
 import kotlinx.coroutines.delay
 
+private const val STATUS_DISMISS_DELAY_MS = 5_000L
+
 @Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
@@ -33,7 +35,7 @@ internal fun ErrorTestingContent() {
 
     if (status.isNotEmpty()) {
         LaunchedEffect(status) {
-            delay(5_000)
+            delay(STATUS_DISMISS_DELAY_MS)
             status = ""
         }
     }

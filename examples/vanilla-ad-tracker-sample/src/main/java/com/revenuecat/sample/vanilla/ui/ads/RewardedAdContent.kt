@@ -64,7 +64,8 @@ internal fun RewardedAdContent(activity: Activity) {
                     Constants.AdMob.REWARDED_AD_UNIT_ID,
                     AdRequest.Builder().build(),
                     object : RewardedAdLoadCallback() {
-                        override fun onAdLoaded(ad: RewardedAd) {
+                        @Suppress("LongMethod")
+                    override fun onAdLoaded(ad: RewardedAd) {
                             val responseInfo = ad.responseInfo
                             val adTracker = Purchases.sharedInstance.adTracker
                             adTracker.trackAdLoaded(
