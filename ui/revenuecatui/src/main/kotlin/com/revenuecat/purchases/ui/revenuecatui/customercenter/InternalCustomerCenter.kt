@@ -508,13 +508,16 @@ private fun CustomerCenterNavHost(
             }
 
             is CustomerCenterDestination.SelectedPurchaseDetail -> {
-                SelectedPurchaseDetailView(
-                    contactEmail = customerCenterState.customerCenterConfigData.support.email,
-                    localization = customerCenterState.customerCenterConfigData.localization,
-                    purchaseInformation = destination.purchaseInformation,
-                    supportedPaths = customerCenterState.detailScreenPaths,
-                    onAction = onAction,
-                )
+                val purchase = customerCenterState.selectedPurchase
+                if (purchase != null) {
+                    SelectedPurchaseDetailView(
+                        contactEmail = customerCenterState.customerCenterConfigData.support.email,
+                        localization = customerCenterState.customerCenterConfigData.localization,
+                        purchaseInformation = purchase,
+                        supportedPaths = customerCenterState.detailScreenPaths,
+                        onAction = onAction,
+                    )
+                }
             }
 
             is CustomerCenterDestination.VirtualCurrencyBalances -> {

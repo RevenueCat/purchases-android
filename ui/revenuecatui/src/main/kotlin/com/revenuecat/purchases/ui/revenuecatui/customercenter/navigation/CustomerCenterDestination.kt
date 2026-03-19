@@ -4,7 +4,7 @@ import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseKey
 
 internal enum class CustomerCenterAnimationType {
     SLIDE_HORIZONTAL,
@@ -29,13 +29,13 @@ internal sealed class CustomerCenterDestination {
 
     data class PromotionalOffer(
         val data: PromotionalOfferData,
-        val purchaseInformation: PurchaseInformation?,
+        val purchaseKey: PurchaseKey?,
     ) : CustomerCenterDestination() {
         override val title: String? = null
     }
 
     data class SelectedPurchaseDetail(
-        val purchaseInformation: PurchaseInformation,
+        val purchaseKey: PurchaseKey,
         override val title: String,
     ) : CustomerCenterDestination()
 

@@ -1272,4 +1272,138 @@ class PurchaseInformationTest {
         }
         every { dateFormatter.format(twoDaysAgo, any()) } returns "1 Oct 2063"
     }
+
+    // region PurchaseKey tests
+
+    @Test
+    fun `test key returns ByProductId when product is present`() {
+        val product = TestStoreProduct(
+            "product_id",
+            "name",
+            "Title",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val purchase = createPurchaseInformation(
+            title = "Title",
+            product = product,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+
+        val key = purchase.key
+        assertThat(key).isInstanceOf(PurchaseKey.ByProductId::class.java)
+        assertThat((key as PurchaseKey.ByProductId).productId).isEqualTo("product_id")
+    }
+
+    @Test
+    fun `test key returns ByAttributes when product is null`() {
+        val purchase = createPurchaseInformation(
+            title = "Subscription",
+            product = null,
+            store = Store.STRIPE,
+            isSubscription = true,
+        )
+
+        val key = purchase.key
+        assertThat(key).isInstanceOf(PurchaseKey.ByAttributes::class.java)
+        val attrKey = key as PurchaseKey.ByAttributes
+        assertThat(attrKey.title).isEqualTo("Subscription")
+        assertThat(attrKey.store).isEqualTo(Store.STRIPE)
+        assertThat(attrKey.isSubscription).isTrue()
+    }
+
+    @Test
+    fun `test findByKey matches by product ID`() {
+        val product = TestStoreProduct(
+            "matching_product",
+            "name",
+            "Product Title",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val purchase = createPurchaseInformation(
+            title = "Product Title",
+            product = product,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+        val key = PurchaseKey.ByProductId("matching_product")
+
+        val result = listOf(purchase).findByKey(key)
+        assertThat(result).isEqualTo(purchase)
+    }
+
+    @Test
+    fun `test findByKey matches by attributes`() {
+        val purchase = createPurchaseInformation(
+            title = "Subscription",
+            product = null,
+            store = Store.STRIPE,
+            isSubscription = true,
+        )
+        val key = PurchaseKey.ByAttributes("Subscription", Store.STRIPE, true)
+
+        val result = listOf(purchase).findByKey(key)
+        assertThat(result).isEqualTo(purchase)
+    }
+
+    @Test
+    fun `test findByKey returns null when no match`() {
+        val purchase = createPurchaseInformation(
+            title = "Title",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+        val key = PurchaseKey.ByAttributes("Different Title", Store.PLAY_STORE, true)
+
+        val result = listOf(purchase).findByKey(key)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `test findByKey distinguishes subscription from non-subscription`() {
+        val subscription = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+        val otp = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = false,
+        )
+        val key = PurchaseKey.ByAttributes("Product", Store.PLAY_STORE, false)
+
+        val result = listOf(subscription, otp).findByKey(key)
+        assertThat(result).isEqualTo(otp)
+    }
+
+    // endregion
+
+    private fun createPurchaseInformation(
+        title: String?,
+        product: StoreProduct?,
+        store: Store,
+        isSubscription: Boolean,
+    ): PurchaseInformation {
+        return PurchaseInformation(
+            title = title,
+            pricePaid = PriceDetails.Unknown,
+            expirationOrRenewal = null,
+            product = product,
+            store = store,
+            isSubscription = isSubscription,
+            managementURL = null,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+    }
 }

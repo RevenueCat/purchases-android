@@ -102,6 +102,14 @@ internal data class PurchaseInformation(
             ).replace("{{ date }}", expirationDate)
         }
     }
+
+    /**
+     * A stable key that identifies this purchase across refreshes.
+     * Used by navigation destinations to reference a purchase without holding the full object.
+     */
+    val key: PurchaseKey
+        get() = product?.id?.let { PurchaseKey.ByProductId(it) }
+            ?: PurchaseKey.ByAttributes(title, store, isSubscription)
 }
 
 private fun determinePrice(
@@ -230,6 +238,23 @@ private fun determineLifetimeStatus(
 
     return isPromotionalLifetime || isNonSubscriptionWithEntitlement
 }
+
+/**
+ * A stable key that identifies a purchase across data refreshes.
+ * Navigation destinations store this instead of the full [PurchaseInformation],
+ * so the canonical [PurchaseInformation] list remains the single source of truth.
+ */
+internal sealed class PurchaseKey {
+    data class ByProductId(val productId: String) : PurchaseKey()
+    data class ByAttributes(
+        val title: String?,
+        val store: Store,
+        val isSubscription: Boolean,
+    ) : PurchaseKey()
+}
+
+internal fun List<PurchaseInformation>.findByKey(key: PurchaseKey): PurchaseInformation? =
+    firstOrNull { it.key == key }
 
 internal sealed class PriceDetails {
     object Free : PriceDetails()

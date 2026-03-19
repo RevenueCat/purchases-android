@@ -43,6 +43,28 @@ internal sealed class CustomerCenterState(
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination
+
+        /**
+         * Resolves the purchase for the currently selected detail screen, if any.
+         * Returns null if the current destination is not a purchase detail, or if the
+         * purchase no longer exists in the refreshed list.
+         */
+        val selectedPurchase: PurchaseInformation?
+            get() = when (val dest = currentDestination) {
+                is CustomerCenterDestination.SelectedPurchaseDetail ->
+                    purchases.findByKey(dest.purchaseKey)
+                else -> null
+            }
+
+        /**
+         * Resolves the purchase associated with the current promotional offer, if any.
+         */
+        val promotionalOfferPurchase: PurchaseInformation?
+            get() = when (val dest = currentDestination) {
+                is CustomerCenterDestination.PromotionalOffer ->
+                    dest.purchaseKey?.let { purchases.findByKey(it) }
+                else -> null
+            }
     }
 }
 
