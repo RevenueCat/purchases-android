@@ -1,3 +1,5 @@
+@file:Suppress("LongMethod")
+
 package com.revenuecat.sample.vanilla.ui.ads
 
 import android.app.Activity
@@ -64,7 +66,8 @@ internal fun RewardedAdContent(activity: Activity) {
                     Constants.AdMob.REWARDED_AD_UNIT_ID,
                     AdRequest.Builder().build(),
                     object : RewardedAdLoadCallback() {
-                        @Suppress("LongMethod") override fun onAdLoaded(ad: RewardedAd) {
+                        @Suppress("LongMethod")
+                        override fun onAdLoaded(ad: RewardedAd) {
                             val responseInfo = ad.responseInfo
                             val adTracker = Purchases.sharedInstance.adTracker
                             adTracker.trackAdLoaded(
