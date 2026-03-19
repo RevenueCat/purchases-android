@@ -20,8 +20,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -66,6 +68,11 @@ internal fun NativeAdContent() {
                 .forNativeAdWithTracking(
                     adUnitId = Constants.AdMob.NATIVE_AD_UNIT_ID,
                     placement = "home_native",
+                    adListener = object : AdListener() {
+                        override fun onAdFailedToLoad(error: LoadAdError) {
+                            status = "Failed: ${error.message}"
+                        }
+                    },
                 ) { nativeAd ->
                     nativeAdState?.destroy()
                     nativeAdState = nativeAd
@@ -121,6 +128,11 @@ internal fun NativeVideoAdContent() {
                 .forNativeAdWithTracking(
                     adUnitId = Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID,
                     placement = "home_native_video",
+                    adListener = object : AdListener() {
+                        override fun onAdFailedToLoad(error: LoadAdError) {
+                            status = "Failed: ${error.message}"
+                        }
+                    },
                 ) { nativeAd ->
                     nativeVideoAdState?.destroy()
                     nativeVideoAdState = nativeAd

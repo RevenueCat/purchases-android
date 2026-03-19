@@ -19,6 +19,8 @@ import com.revenuecat.purchases.admob.loadAndTrackInterstitialAd
 import com.revenuecat.sample.admob.data.Constants
 import kotlinx.coroutines.delay
 
+private const val ERROR_FEEDBACK_DURATION_MS = 5_000L
+
 @Suppress("MultipleEmitters")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
@@ -28,7 +30,7 @@ internal fun ErrorTestingContent() {
 
     LaunchedEffect(showFeedback) {
         if (showFeedback) {
-            delay(5_000)
+            delay(ERROR_FEEDBACK_DURATION_MS)
             showFeedback = false
         }
     }
