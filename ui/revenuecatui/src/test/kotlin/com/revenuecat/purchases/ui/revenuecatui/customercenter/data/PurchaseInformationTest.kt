@@ -1248,7 +1248,9 @@ class PurchaseInformationTest {
             isTrial = isTrial,
             managementURL = managementURL,
             price = price,
-            isSandbox = isSandbox
+            isSandbox = isSandbox,
+            purchaseDate = null,
+            storeTransactionId = null,
         )
     }
 
@@ -1262,7 +1264,9 @@ class PurchaseInformationTest {
             productIdentifier = productIdentifier,
             store = store,
             price = price,
-            isSandbox = isSandbox
+            isSandbox = isSandbox,
+            purchaseDate = null,
+            storeTransactionId = null,
         )
     }
 
@@ -1271,5 +1275,180 @@ class PurchaseInformationTest {
             every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
         }
         every { dateFormatter.format(twoDaysAgo, any()) } returns "1 Oct 2063"
+    }
+
+    // region PurchaseKey tests
+
+    @Test
+    fun `test key includes storeTransactionId productIdentifier and purchaseDate`() {
+        val date = Date(1_700_000_000_000L)
+        val purchase = createPurchaseInformation(
+            title = "Title",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+            productIdentifier = "my_product",
+            purchaseDate = date,
+            storeTransactionId = "txn_123",
+        )
+
+        val key = purchase.key
+        assertThat(key.storeTransactionId).isEqualTo("txn_123")
+        assertThat(key.productIdentifier).isEqualTo("my_product")
+        assertThat(key.purchaseDate).isEqualTo(date)
+    }
+
+    @Test
+    fun `test key falls back to StoreProduct id when no productIdentifier`() {
+        val product = TestStoreProduct(
+            "product_id",
+            "name",
+            "Title",
+            "description",
+            Price("$1.99", 1_990_000, "US"),
+            Period(1, Period.Unit.MONTH, "P1M"),
+        )
+        val purchase = createPurchaseInformation(
+            title = "Title",
+            product = product,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+        )
+
+        val key = purchase.key
+        assertThat(key.productIdentifier).isEqualTo("product_id")
+        assertThat(key.purchaseDate).isNull()
+        assertThat(key.storeTransactionId).isNull()
+    }
+
+    @Test
+    fun `test findByKey matches by all key fields`() {
+        val date = Date(1_700_000_000_000L)
+        val purchase = createPurchaseInformation(
+            title = "Subscription",
+            product = null,
+            store = Store.APP_STORE,
+            isSubscription = true,
+            productIdentifier = "com.app.monthly",
+            purchaseDate = date,
+            storeTransactionId = "txn_abc",
+        )
+        val key = PurchaseKey(
+            storeTransactionId = "txn_abc",
+            productIdentifier = "com.app.monthly",
+            purchaseDate = date,
+        )
+
+        val result = listOf(purchase).findByKey(key)
+        assertThat(result).isEqualTo(purchase)
+    }
+
+    @Test
+    fun `test findByKey returns null when no match`() {
+        val purchase = createPurchaseInformation(
+            title = "Title",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+            productIdentifier = "product_a",
+        )
+        val key = PurchaseKey(
+            storeTransactionId = null,
+            productIdentifier = "product_b",
+            purchaseDate = null,
+        )
+
+        val result = listOf(purchase).findByKey(key)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `test findByKey distinguishes purchases with same product ID but different purchaseDate`() {
+        val date1 = Date(1_700_000_000_000L)
+        val date2 = Date(1_700_100_000_000L)
+        val purchase1 = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = false,
+            productIdentifier = "same_product",
+            purchaseDate = date1,
+        )
+        val purchase2 = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = false,
+            productIdentifier = "same_product",
+            purchaseDate = date2,
+        )
+        val key = PurchaseKey(
+            storeTransactionId = null,
+            productIdentifier = "same_product",
+            purchaseDate = date2,
+        )
+
+        val result = listOf(purchase1, purchase2).findByKey(key)
+        assertThat(result).isEqualTo(purchase2)
+    }
+
+    @Test
+    fun `test findByKey distinguishes purchases with same product ID and date but different transaction ID`() {
+        val date = Date(1_700_000_000_000L)
+        val purchase1 = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = false,
+            productIdentifier = "same_product",
+            purchaseDate = date,
+            storeTransactionId = "txn_first",
+        )
+        val purchase2 = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = false,
+            productIdentifier = "same_product",
+            purchaseDate = date,
+            storeTransactionId = "txn_second",
+        )
+        val key = PurchaseKey(
+            storeTransactionId = "txn_second",
+            productIdentifier = "same_product",
+            purchaseDate = date,
+        )
+
+        val result = listOf(purchase1, purchase2).findByKey(key)
+        assertThat(result).isEqualTo(purchase2)
+    }
+
+    // endregion
+
+    private fun createPurchaseInformation(
+        title: String?,
+        product: StoreProduct?,
+        store: Store,
+        isSubscription: Boolean,
+        productIdentifier: String? = null,
+        purchaseDate: Date? = null,
+        storeTransactionId: String? = null,
+    ): PurchaseInformation {
+        return PurchaseInformation(
+            title = title,
+            pricePaid = PriceDetails.Unknown,
+            expirationOrRenewal = null,
+            product = product,
+            store = store,
+            isSubscription = isSubscription,
+            managementURL = null,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+            productIdentifier = productIdentifier,
+            purchaseDate = purchaseDate,
+            storeTransactionId = storeTransactionId,
+        )
     }
 }

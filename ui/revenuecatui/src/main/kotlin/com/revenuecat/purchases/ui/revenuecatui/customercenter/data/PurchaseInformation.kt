@@ -11,6 +11,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
+import java.util.Date
 import java.util.Locale
 
 @Suppress("LongParameterList")
@@ -41,6 +42,20 @@ internal data class PurchaseInformation(
      * This is true for promotional lifetime purchases or non-subscription purchases attached to an entitlement.
      */
     val isLifetime: Boolean,
+    /**
+     * The RevenueCat product identifier. Always available regardless of store.
+     */
+    val productIdentifier: String? = null,
+    /**
+     * The date when this purchase was made. Used together with [productIdentifier]
+     * and [storeTransactionId] to uniquely identify a purchase across data refreshes.
+     */
+    val purchaseDate: Date? = null,
+    /**
+     * The store transaction ID, if available. Nullable on [com.revenuecat.purchases.SubscriptionInfo]
+     * and [com.revenuecat.purchases.models.Transaction].
+     */
+    val storeTransactionId: String? = null,
 ) {
 
     constructor(
@@ -66,6 +81,9 @@ internal data class PurchaseInformation(
         isTrial = determineTrialStatus(entitlementInfo, transaction),
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
         isLifetime = determineLifetimeStatus(entitlementInfo, transaction),
+        productIdentifier = transaction.productIdentifier,
+        purchaseDate = transaction.purchaseDate,
+        storeTransactionId = transaction.storeTransactionId,
     )
 
     fun renewalString(
@@ -102,6 +120,18 @@ internal data class PurchaseInformation(
             ).replace("{{ date }}", expirationDate)
         }
     }
+
+    /**
+     * A stable key that identifies this purchase across refreshes.
+     * Uses storeTransactionId + productIdentifier + purchaseDate to uniquely identify a purchase
+     * even when multiple purchases share the same product ID (e.g. consumables).
+     */
+    val key: PurchaseKey
+        get() = PurchaseKey(
+            storeTransactionId = storeTransactionId,
+            productIdentifier = productIdentifier ?: product?.id ?: title.orEmpty(),
+            purchaseDate = purchaseDate,
+        )
 }
 
 private fun determinePrice(
@@ -230,6 +260,22 @@ private fun determineLifetimeStatus(
 
     return isPromotionalLifetime || isNonSubscriptionWithEntitlement
 }
+
+/**
+ * A stable key that identifies a purchase across data refreshes.
+ * Uses storeTransactionId + productIdentifier + purchaseDate to uniquely identify a purchase
+ * even when multiple purchases share the same product ID (e.g. consumables).
+ * Navigation destinations store this instead of the full [PurchaseInformation],
+ * so the canonical [PurchaseInformation] list remains the single source of truth.
+ */
+internal data class PurchaseKey(
+    val storeTransactionId: String?,
+    val productIdentifier: String,
+    val purchaseDate: Date?,
+)
+
+internal fun List<PurchaseInformation>.findByKey(key: PurchaseKey): PurchaseInformation? =
+    firstOrNull { it.key == key }
 
 internal sealed class PriceDetails {
     object Free : PriceDetails()

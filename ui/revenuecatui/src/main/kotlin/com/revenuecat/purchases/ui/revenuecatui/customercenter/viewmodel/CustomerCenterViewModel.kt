@@ -54,9 +54,11 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurv
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.findByKey
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -164,6 +166,8 @@ internal sealed class TransactionDetails(
     open val store: Store,
     open val price: Price?,
     open val isSandbox: Boolean,
+    open val purchaseDate: Date?,
+    open val storeTransactionId: String?,
 ) {
 
     @Immutable
@@ -178,7 +182,9 @@ internal sealed class TransactionDetails(
         val managementURL: Uri?,
         override val price: Price?,
         override val isSandbox: Boolean,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
+        override val purchaseDate: Date?,
+        override val storeTransactionId: String?,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseDate, storeTransactionId)
 
     @Immutable
     data class NonSubscription(
@@ -186,7 +192,9 @@ internal sealed class TransactionDetails(
         override val store: Store,
         override val price: Price?,
         override val isSandbox: Boolean,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
+        override val purchaseDate: Date?,
+        override val storeTransactionId: String?,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseDate, storeTransactionId)
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
@@ -296,7 +304,7 @@ internal class CustomerCenterViewModelImpl(
 
                     currentState.copy(
                         navigationState = currentState.navigationState.push(
-                            CustomerCenterDestination.SelectedPurchaseDetail(purchase, screen.title),
+                            CustomerCenterDestination.SelectedPurchaseDetail(purchase.key, screen.title),
                         ),
                         navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                         detailScreenPaths = detailSupportedPaths,
@@ -431,17 +439,9 @@ internal class CustomerCenterViewModelImpl(
 
     private fun handleCancelPath(context: Context, purchaseInformation: PurchaseInformation? = null) {
         val currentState = _state.value as? CustomerCenterState.Success ?: return
-        val purchaseInfo = purchaseInformation ?: when (val destination = currentState.currentDestination) {
-            is CustomerCenterDestination.SelectedPurchaseDetail -> destination.purchaseInformation
-            else -> {
-                // If we're on the main screen and there's only one purchase, use that purchase
-                if (currentState.purchases.size == 1) {
-                    currentState.purchases.first()
-                } else {
-                    null
-                }
-            }
-        }
+        val purchaseInfo = purchaseInformation
+            ?: currentState.selectedPurchase
+            ?: if (currentState.purchases.size == 1) currentState.purchases.first() else null
 
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
@@ -750,6 +750,8 @@ internal class CustomerCenterViewModelImpl(
                     store = it.store,
                     price = it.price,
                     isSandbox = it.isSandbox,
+                    purchaseDate = it.purchaseDate,
+                    storeTransactionId = it.storeTransactionId,
                 )
 
                 else -> null
@@ -851,7 +853,7 @@ internal class CustomerCenterViewModelImpl(
                         originalPath,
                         pricingPhasesDescription,
                     ),
-                    purchaseInformation = purchaseInformation,
+                    purchaseKey = purchaseInformation?.key,
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(promotionalOfferDestination),
@@ -901,12 +903,7 @@ internal class CustomerCenterViewModelImpl(
         context: Context,
         originalPath: HelpPath,
     ) {
-        val purchaseInfo = (_state.value as? CustomerCenterState.Success).let { currentState ->
-            when (val destination = currentState?.currentDestination) {
-                is CustomerCenterDestination.PromotionalOffer -> destination.purchaseInformation
-                else -> null
-            }
-        }
+        val purchaseInfo = (_state.value as? CustomerCenterState.Success)?.promotionalOfferPurchase
 
         // Continue with the original action and remove the promotional offer data
         mainPathAction(originalPath, context, purchaseInfo)
@@ -1046,13 +1043,52 @@ internal class CustomerCenterViewModelImpl(
         previousState: CustomerCenterState,
     ): CustomerCenterState.Success {
         if (!isRefresh || previousState !is CustomerCenterState.Success) return this
-        return copy(
-            navigationState = previousState.navigationState,
-            navigationButtonType = previousState.navigationButtonType,
-            restorePurchasesState = previousState.restorePurchasesState,
-            showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
-            detailScreenPaths = previousState.detailScreenPaths,
-        )
+
+        // Carry over the previous navigation state, then check if the selected purchase
+        // still exists in the refreshed list. Since destinations only hold a PurchaseKey
+        // (not the full PurchaseInformation), the UI will automatically resolve fresh data
+        // from the canonical purchases list.
+        val prevNavState = previousState.navigationState
+        val prevDest = prevNavState.currentDestination
+
+        val purchaseStillExists = when (prevDest) {
+            is CustomerCenterDestination.SelectedPurchaseDetail ->
+                purchases.findByKey(prevDest.purchaseKey) != null
+            else -> true
+        }
+
+        return if (purchaseStillExists) {
+            val detailPaths = recomputeDetailScreenPathsIfNeeded(
+                prevNavState,
+                previousState.detailScreenPaths,
+            )
+            copy(
+                navigationState = prevNavState,
+                navigationButtonType = previousState.navigationButtonType,
+                restorePurchasesState = previousState.restorePurchasesState,
+                showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+                detailScreenPaths = detailPaths,
+            )
+        } else {
+            // Purchase was removed — reset to main screen
+            copy(
+                restorePurchasesState = previousState.restorePurchasesState,
+                showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+            )
+        }
+    }
+
+    private fun CustomerCenterState.Success.recomputeDetailScreenPathsIfNeeded(
+        navState: CustomerCenterNavigationState,
+        previousDetailPaths: List<HelpPath>,
+    ): List<HelpPath> {
+        val detailKey = (navState.currentDestination as? CustomerCenterDestination.SelectedPurchaseDetail)
+            ?.purchaseKey
+        val purchase = detailKey?.let { purchases.findByKey(it) }
+        val screen = customerCenterConfigData.getManagementScreen()
+        if (purchase == null || screen == null) return previousDetailPaths
+        val baseSupportedPaths = supportedPaths(purchase, screen, customerCenterConfigData.localization)
+        return PathUtils.filterSubscriptionSpecificPaths(baseSupportedPaths)
     }
 
     override fun onActivityStopped(isChangingConfigurations: Boolean) {
@@ -1443,5 +1479,7 @@ internal class CustomerCenterViewModelImpl(
         managementURL = managementURL,
         price = price,
         isSandbox = isSandbox,
+        purchaseDate = purchaseDate,
+        storeTransactionId = storeTransactionId,
     )
 }

@@ -68,7 +68,7 @@ class CustomerCenterNavigationStateTest {
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
             data = promotionalOffer,
-            purchaseInformation = null
+            purchaseKey = null
         )
 
         val stateAfterPushing = initialState.push(feedbackDestination).push(promoDestination)
@@ -129,7 +129,7 @@ class CustomerCenterNavigationStateTest {
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
             data = promotionalOffer,
-            purchaseInformation = null
+            purchaseKey = null
         )
 
         val nestedState = initialState
@@ -181,7 +181,7 @@ class CustomerCenterNavigationStateTest {
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
             data = promotionalOffer,
-            purchaseInformation = null
+            purchaseKey = null
         )
 
         val stateWithMultipleScreens = navigationState
@@ -230,7 +230,7 @@ class CustomerCenterNavigationStateTest {
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
             data = promotionalOffer,
-            purchaseInformation = null
+            purchaseKey = null
         )
 
         val stateWithBothScreens = navigationState
@@ -262,7 +262,7 @@ class CustomerCenterNavigationStateTest {
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
             data = promotionalOffer,
-            purchaseInformation = null
+            purchaseKey = null
         )
 
         // Only add feedback to stack, promo is not in stack
@@ -323,7 +323,7 @@ class CustomerCenterNavigationStateTest {
         val promotionalOffer = createMockPromotionalOffer()
         val promoDestination = CustomerCenterDestination.PromotionalOffer(
             data = promotionalOffer,
-            purchaseInformation = null
+            purchaseKey = null
         )
         val anotherMain = CustomerCenterDestination.Main(showingActivePurchasesScreen = true, managementScreenTitle = "Another Main")
 
