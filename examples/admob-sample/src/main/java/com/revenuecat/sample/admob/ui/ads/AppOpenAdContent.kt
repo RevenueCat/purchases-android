@@ -75,9 +75,12 @@ internal fun AppOpenAdContent(activity: Activity) {
 
         Button(
             onClick = {
-                appOpenAd?.show(activity)
-                appOpenAd = null
-                status = "Shown - Load Again"
+                val ad = appOpenAd
+                if (ad != null) {
+                    ad.show(activity)
+                    appOpenAd = null
+                    status = "Shown - Load Again"
+                }
             },
             modifier = Modifier.weight(1f),
             enabled = appOpenAd != null,

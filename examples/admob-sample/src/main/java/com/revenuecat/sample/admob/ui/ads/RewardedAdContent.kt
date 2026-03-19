@@ -77,11 +77,18 @@ internal fun RewardedAdContent(activity: Activity) {
 
         Button(
             onClick = {
-                rewardedAd?.show(activity) { reward ->
-                    Toast.makeText(context, "Earned reward: ${reward.amount} ${reward.type}", Toast.LENGTH_SHORT).show()
+                val ad = rewardedAd
+                if (ad != null) {
+                    ad.show(activity) { reward ->
+                        Toast.makeText(
+                            context,
+                            "Earned reward: ${reward.amount} ${reward.type}",
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    }
+                    rewardedAd = null
+                    status = "Shown - Load Again"
                 }
-                rewardedAd = null
-                status = "Shown - Load Again"
             },
             modifier = Modifier.weight(1f),
             enabled = rewardedAd != null,

@@ -76,9 +76,12 @@ internal fun InterstitialAdContent(activity: Activity) {
 
         Button(
             onClick = {
-                interstitialAd?.show(activity)
-                interstitialAd = null
-                status = "Shown - Load Again"
+                val ad = interstitialAd
+                if (ad != null) {
+                    ad.show(activity)
+                    interstitialAd = null
+                    status = "Shown - Load Again"
+                }
             },
             modifier = Modifier.weight(1f),
             enabled = interstitialAd != null,
