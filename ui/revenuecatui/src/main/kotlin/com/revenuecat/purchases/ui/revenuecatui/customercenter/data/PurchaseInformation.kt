@@ -42,6 +42,10 @@ internal data class PurchaseInformation(
      */
     val isLifetime: Boolean,
     /**
+     * The RevenueCat product identifier. Always available regardless of store.
+     */
+    val productIdentifier: String? = null,
+    /**
      * A stable identifier from the transaction (e.g. store transaction ID) that persists across
      * data refreshes. Used to uniquely identify this purchase in navigation state.
      */
@@ -71,6 +75,7 @@ internal data class PurchaseInformation(
         isTrial = determineTrialStatus(entitlementInfo, transaction),
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
         isLifetime = determineLifetimeStatus(entitlementInfo, transaction),
+        productIdentifier = transaction.productIdentifier,
         stableId = transaction.stableId,
     )
 
@@ -114,12 +119,13 @@ internal data class PurchaseInformation(
      * Used by navigation destinations to reference a purchase without holding the full object.
      * Prefers the transaction's stable ID (store transaction ID) when available, since it uniquely
      * identifies a purchase even when multiple purchases share the same product ID.
+     * Falls back to productIdentifier for subscriptions without a transaction ID.
      */
     val key: PurchaseKey
         get() = when {
             stableId != null -> PurchaseKey.ByStableId(stableId)
-            product?.id != null -> PurchaseKey.ByProductId(product!!.id)
-            else -> PurchaseKey.ByAttributes(title, store, isSubscription)
+            productIdentifier != null -> PurchaseKey.ByProductId(productIdentifier)
+            else -> PurchaseKey.ByProductId(product?.id ?: title.orEmpty())
         }
 }
 
@@ -259,15 +265,8 @@ internal sealed class PurchaseKey {
     /** Preferred: uses the store transaction ID, which is unique per purchase. */
     data class ByStableId(val stableId: String) : PurchaseKey()
 
-    /** Fallback when no transaction ID: uses the Play Store product ID. */
+    /** Fallback when no transaction ID: uses the product identifier. */
     data class ByProductId(val productId: String) : PurchaseKey()
-
-    /** Last resort for non-Play Store purchases without a product or transaction ID. */
-    data class ByAttributes(
-        val title: String?,
-        val store: Store,
-        val isSubscription: Boolean,
-    ) : PurchaseKey()
 }
 
 internal fun List<PurchaseInformation>.findByKey(key: PurchaseKey): PurchaseInformation? =

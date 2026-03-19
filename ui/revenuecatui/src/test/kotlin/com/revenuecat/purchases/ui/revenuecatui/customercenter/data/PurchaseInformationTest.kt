@@ -1293,7 +1293,37 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test key returns ByProductId when no stableId but product is present`() {
+    fun `test key prefers stableId over productIdentifier`() {
+        val purchase = createPurchaseInformation(
+            title = "Title",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = true,
+            productIdentifier = "my_product",
+            stableId = "txn_123",
+        )
+
+        val key = purchase.key
+        assertThat(key).isInstanceOf(PurchaseKey.ByStableId::class.java)
+    }
+
+    @Test
+    fun `test key returns ByProductId with productIdentifier when no stableId`() {
+        val purchase = createPurchaseInformation(
+            title = "Title",
+            product = null,
+            store = Store.APP_STORE,
+            isSubscription = true,
+            productIdentifier = "com.app.monthly",
+        )
+
+        val key = purchase.key
+        assertThat(key).isInstanceOf(PurchaseKey.ByProductId::class.java)
+        assertThat((key as PurchaseKey.ByProductId).productId).isEqualTo("com.app.monthly")
+    }
+
+    @Test
+    fun `test key returns ByProductId with StoreProduct id as last resort`() {
         val product = TestStoreProduct(
             "product_id",
             "name",
@@ -1315,23 +1345,6 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test key returns ByAttributes when no stableId and no product`() {
-        val purchase = createPurchaseInformation(
-            title = "Subscription",
-            product = null,
-            store = Store.STRIPE,
-            isSubscription = true,
-        )
-
-        val key = purchase.key
-        assertThat(key).isInstanceOf(PurchaseKey.ByAttributes::class.java)
-        val attrKey = key as PurchaseKey.ByAttributes
-        assertThat(attrKey.title).isEqualTo("Subscription")
-        assertThat(attrKey.store).isEqualTo(Store.STRIPE)
-        assertThat(attrKey.isSubscription).isTrue()
-    }
-
-    @Test
     fun `test findByKey matches by stableId`() {
         val purchase = createPurchaseInformation(
             title = "Title",
@@ -1347,36 +1360,15 @@ class PurchaseInformationTest {
     }
 
     @Test
-    fun `test findByKey matches by product ID`() {
-        val product = TestStoreProduct(
-            "matching_product",
-            "name",
-            "Product Title",
-            "description",
-            Price("$1.99", 1_990_000, "US"),
-            Period(1, Period.Unit.MONTH, "P1M"),
-        )
-        val purchase = createPurchaseInformation(
-            title = "Product Title",
-            product = product,
-            store = Store.PLAY_STORE,
-            isSubscription = true,
-        )
-        val key = PurchaseKey.ByProductId("matching_product")
-
-        val result = listOf(purchase).findByKey(key)
-        assertThat(result).isEqualTo(purchase)
-    }
-
-    @Test
-    fun `test findByKey matches by attributes`() {
+    fun `test findByKey matches by productIdentifier`() {
         val purchase = createPurchaseInformation(
             title = "Subscription",
             product = null,
-            store = Store.STRIPE,
+            store = Store.APP_STORE,
             isSubscription = true,
+            productIdentifier = "com.app.monthly",
         )
-        val key = PurchaseKey.ByAttributes("Subscription", Store.STRIPE, true)
+        val key = PurchaseKey.ByProductId("com.app.monthly")
 
         val result = listOf(purchase).findByKey(key)
         assertThat(result).isEqualTo(purchase)
@@ -1389,8 +1381,9 @@ class PurchaseInformationTest {
             product = null,
             store = Store.PLAY_STORE,
             isSubscription = true,
+            productIdentifier = "product_a",
         )
-        val key = PurchaseKey.ByAttributes("Different Title", Store.PLAY_STORE, true)
+        val key = PurchaseKey.ByProductId("product_b")
 
         val result = listOf(purchase).findByKey(key)
         assertThat(result).isNull()
@@ -1398,26 +1391,20 @@ class PurchaseInformationTest {
 
     @Test
     fun `test findByKey distinguishes purchases with same product ID but different stableId`() {
-        val product = TestStoreProduct(
-            "same_product",
-            "name",
-            "Product",
-            "description",
-            Price("$1.99", 1_990_000, "US"),
-            Period(1, Period.Unit.MONTH, "P1M"),
-        )
         val purchase1 = createPurchaseInformation(
             title = "Product",
-            product = product,
+            product = null,
             store = Store.PLAY_STORE,
             isSubscription = false,
+            productIdentifier = "same_product",
             stableId = "txn_first",
         )
         val purchase2 = createPurchaseInformation(
             title = "Product",
-            product = product,
+            product = null,
             store = Store.PLAY_STORE,
             isSubscription = false,
+            productIdentifier = "same_product",
             stableId = "txn_second",
         )
         val key = PurchaseKey.ByStableId("txn_second")
@@ -1433,6 +1420,7 @@ class PurchaseInformationTest {
         product: StoreProduct?,
         store: Store,
         isSubscription: Boolean,
+        productIdentifier: String? = null,
         stableId: String? = null,
     ): PurchaseInformation {
         return PurchaseInformation(
@@ -1447,6 +1435,7 @@ class PurchaseInformationTest {
             isTrial = false,
             isCancelled = false,
             isLifetime = false,
+            productIdentifier = productIdentifier,
             stableId = stableId,
         )
     }
