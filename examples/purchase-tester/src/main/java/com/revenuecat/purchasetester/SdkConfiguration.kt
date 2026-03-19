@@ -18,4 +18,5 @@ data class SdkConfiguration(
     val apiKey: String,
     val proxyUrl: String?,
     val store: Store,
+    val appUserId: String?,
 )
