@@ -164,8 +164,6 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
                 rewardedInterstitialAd?.show(activity) { reward ->
                     Toast.makeText(context, "Earned reward: ${reward.amount} ${reward.type}", Toast.LENGTH_SHORT).show()
                 }
-                rewardedInterstitialAd = null
-                status = "Shown - Load Again"
             },
             modifier = Modifier.weight(1f),
             enabled = rewardedInterstitialAd != null,
