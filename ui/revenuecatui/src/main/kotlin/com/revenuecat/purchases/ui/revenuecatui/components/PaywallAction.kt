@@ -12,6 +12,9 @@ import dev.drewhamilton.poko.Poko
  */
 internal sealed interface PaywallAction {
     sealed interface Internal : PaywallAction {
+        data class NavigateToPage(val pageId: String) : Internal
+        object Close : Internal
+
         @Poko
         class NavigateTo(@get:JvmSynthetic val destination: Destination) : Internal {
             sealed interface Destination {

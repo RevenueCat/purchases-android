@@ -50,6 +50,9 @@ internal data class ButtonComponentStyle(
             val packageParam: String?,
         ) : Action
 
+        data class NavigateToPage(val pageId: String) : Action
+        object Close : Action
+
         @Poko
         class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action {
             sealed interface Destination {

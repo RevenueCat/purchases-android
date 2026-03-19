@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:Suppress("MagicNumber")
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
@@ -9,11 +10,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -28,8 +31,10 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
+import com.revenuecat.purchases.paywalls.components.properties.Dimension.Horizontal
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertical
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.END
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
@@ -41,15 +46,23 @@ import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.nav.NavHostComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.NavHostComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.PageStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -62,6 +75,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
 import java.util.Date
 
+// POC flag — flip to true to force any paywall into a multi-page flow for testing
+private const val DEBUG_FORCE_MULTI_PAGE = true
+
 @Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
@@ -71,6 +87,17 @@ internal fun LoadedPaywallComponents(
 ) {
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
+
+    if (DEBUG_FORCE_MULTI_PAGE) {
+        val navHostStyle = remember { createDebugNavHost() }
+        NavHostComponentView(
+            navHostStyle = navHostStyle,
+            state = state,
+            clickHandler = clickHandler,
+            modifier = modifier,
+        )
+        return
+    }
 
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
@@ -113,6 +140,12 @@ private suspend fun handleClick(
     when (action) {
         is PaywallAction.External -> externalClickHandler(action)
         is PaywallAction.Internal -> when (action) {
+            is PaywallAction.Internal.NavigateToPage -> {
+                // Only handled by NavHostComponentView
+            }
+            is PaywallAction.Internal.Close -> {
+                externalClickHandler(PaywallAction.External.NavigateBack)
+            }
             is PaywallAction.Internal.NavigateTo -> when (action.destination) {
                 is PaywallAction.Internal.NavigateTo.Destination.Sheet ->
                     state.sheet.show(action.destination.sheet, state) {
@@ -155,6 +188,404 @@ private fun SimpleSheetState.show(
         onDismiss = {
             state.resetToDefaultPackage()
         },
+    )
+}
+
+@Suppress("LongMethod")
+private fun createDebugNavHost(): NavHostComponentStyle {
+    val white = ColorStyles(light = ColorStyle.Solid(Color.White))
+    val black = ColorStyles(light = ColorStyle.Solid(Color.Black))
+    val darkGray = ColorStyles(light = ColorStyle.Solid(Color(0xFF555555)))
+    val mediumGray = ColorStyles(light = ColorStyle.Solid(Color(0xFF666666)))
+    val accentGreen = ColorStyles(light = ColorStyle.Solid(Color(0xFF2D6A4F)))
+    val accentGreenBg = BackgroundStyles.Color(color = accentGreen)
+
+    fun navButton(text: String, action: ButtonComponentStyle.Action): ButtonComponentStyle {
+        return ButtonComponentStyle(
+            stackComponentStyle = previewStackComponentStyle(
+                children = listOf(
+                    previewTextComponentStyle(
+                        text = text,
+                        color = white,
+                        fontWeight = FontWeight.BOLD,
+                        size = Size(width = Fit, height = Fit),
+                    ),
+                ),
+                size = Size(width = Fill, height = Fit),
+                background = accentGreenBg,
+                padding = androidx.compose.foundation.layout.PaddingValues(
+                    horizontal = 24.dp,
+                    vertical = 12.dp,
+                ),
+                border = null,
+                shape = Shape.Pill,
+            ),
+            action = action,
+        )
+    }
+
+    val whiteBg = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White)))
+    val closeButtonBg = BackgroundStyles.Color(
+        color = ColorStyles(light = ColorStyle.Solid(Color(0x1A000000))),
+    )
+
+    fun headerBar(showBack: Boolean): StackComponentStyle {
+        val children = mutableListOf<ComponentStyle>()
+        if (showBack) {
+            children.add(
+                ButtonComponentStyle(
+                    stackComponentStyle = previewStackComponentStyle(
+                        children = listOf(
+                            previewTextComponentStyle(
+                                text = "\u2039",
+                                color = black,
+                                fontWeight = FontWeight.REGULAR,
+                                fontSize = 24,
+                                size = Size(width = Fit, height = Fit),
+                            ),
+                        ),
+                        dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                        size = Size(width = Fixed(32u), height = Fixed(32u)),
+                        background = closeButtonBg,
+                        padding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                        border = null,
+                        shape = Shape.Pill,
+                    ),
+                    action = ButtonComponentStyle.Action.NavigateBack,
+                ),
+            )
+        } else {
+            // Invisible spacer to keep close button right-aligned
+            children.add(
+                previewTextComponentStyle(
+                    text = "",
+                    size = Size(width = Fixed(32u), height = Fixed(32u)),
+                ),
+            )
+        }
+        // Flexible spacer
+        children.add(
+            previewTextComponentStyle(
+                text = "",
+                size = Size(width = Fill, height = Fit),
+            ),
+        )
+        children.add(
+            ButtonComponentStyle(
+                stackComponentStyle = previewStackComponentStyle(
+                    children = listOf(
+                        previewTextComponentStyle(
+                            text = "\u2715",
+                            color = mediumGray,
+                            fontWeight = FontWeight.REGULAR,
+                            fontSize = 14,
+                            size = Size(width = Fit, height = Fit),
+                        ),
+                    ),
+                    dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                    size = Size(width = Fixed(32u), height = Fixed(32u)),
+                    background = closeButtonBg,
+                    padding = androidx.compose.foundation.layout.PaddingValues(0.dp),
+                    border = null,
+                    shape = Shape.Pill,
+                ),
+                action = ButtonComponentStyle.Action.Close,
+            ),
+        )
+        return previewStackComponentStyle(
+            children = children,
+            dimension = Horizontal(
+                alignment = VerticalAlignment.CENTER,
+                distribution = FlexDistribution.START,
+            ),
+            size = Size(width = Fill, height = Fit),
+            background = whiteBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(
+                horizontal = 16.dp,
+                vertical = 8.dp,
+            ),
+            border = null,
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0)),
+        )
+    }
+
+    val noBorderRect = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0))
+    val lightGrayBg = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color(0xFFF5F5F5))))
+
+    fun testimonialCard(quote: String, author: String): StackComponentStyle {
+        return previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "\u201C$quote\u201D",
+                    color = darkGray,
+                    fontSize = 14,
+                    textAlign = LEADING,
+                    horizontalAlignment = LEADING,
+                    size = Size(width = Fill, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "\u2014 $author",
+                    color = black,
+                    fontWeight = FontWeight.SEMI_BOLD,
+                    fontSize = 13,
+                    textAlign = LEADING,
+                    horizontalAlignment = LEADING,
+                    size = Size(width = Fill, height = Fit),
+                ),
+            ),
+            dimension = Vertical(alignment = LEADING, distribution = START),
+            size = Size(width = Fill, height = Fit),
+            spacing = 8.dp,
+            background = lightGrayBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(20.dp),
+            border = null,
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 12.0)),
+        )
+    }
+
+    // Page 1: Intro — "Unlock Elevate"
+    val page1 = PageStyle(
+        stickyHeader = headerBar(showBack = false),
+        stack = previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Unlock Elevate",
+                    color = black,
+                    fontWeight = FontWeight.MEDIUM,
+                    fontSize = 32,
+                    size = Size(width = Fill, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "\$6.99 / month",
+                    color = darkGray,
+                    fontSize = 16,
+                    size = Size(width = Fill, height = Fit),
+                ),
+                previewTextComponentStyle(
+                    text = "Elevate has been a game-changer for my memory. " +
+                        "My short-term recall has improved, and I feel sharper every day!",
+                    color = darkGray,
+                    fontSize = 14,
+                    textAlign = LEADING,
+                    horizontalAlignment = LEADING,
+                    size = Size(width = Fill, height = Fit),
+                    margin = Padding(top = 16.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
+                ),
+                previewTextComponentStyle(
+                    text = "\u2014 Jackie E",
+                    color = black,
+                    fontWeight = FontWeight.SEMI_BOLD,
+                    fontSize = 13,
+                    textAlign = LEADING,
+                    horizontalAlignment = LEADING,
+                    size = Size(width = Fill, height = Fit),
+                ),
+            ),
+            dimension = Vertical(alignment = CENTER, distribution = START),
+            size = Size(width = Fill, height = Fit),
+            spacing = 8.dp,
+            background = whiteBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(
+                horizontal = 40.dp,
+                vertical = 24.dp,
+            ),
+            border = null,
+            shape = noBorderRect,
+        ),
+        stickyFooter = previewStackComponentStyle(
+            children = listOf(
+                navButton("Start your FREE week", ButtonComponentStyle.Action.NavigateToPage("page_2")),
+                previewTextComponentStyle(
+                    text = "No payment due now",
+                    color = darkGray,
+                    fontSize = 12,
+                    size = Size(width = Fill, height = Fit),
+                ),
+            ),
+            dimension = Vertical(alignment = CENTER, distribution = START),
+            size = Size(width = Fill, height = Fit),
+            spacing = 8.dp,
+            background = whiteBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            border = null,
+            shape = noBorderRect,
+        ),
+        background = whiteBg,
+    )
+
+    // Page 2: Social Proof — testimonials
+    val page2 = PageStyle(
+        stickyHeader = headerBar(showBack = true),
+        stack = previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "What our users say",
+                    color = black,
+                    fontWeight = FontWeight.MEDIUM,
+                    fontSize = 28,
+                    size = Size(width = Fill, height = Fit),
+                ),
+                testimonialCard(
+                    quote = "Elevate has been a game-changer for my memory. My short-term " +
+                        "recall has improved, and I feel sharper every day!",
+                    author = "Jackie E",
+                ),
+                testimonialCard(
+                    quote = "Rather than scrolling aimlessly, I turn to Elevate. It has " +
+                        "broadened my vocabulary and boosted my short-term memory!",
+                    author = "Melissa R",
+                ),
+                testimonialCard(
+                    quote = "After playing Elevate just 5 minutes a day, I dropped " +
+                        "'literally' and 'like' from my sentences. My conversations " +
+                        "feel so much sharper now.",
+                    author = "Rosangela B",
+                ),
+            ),
+            dimension = Vertical(alignment = CENTER, distribution = START),
+            size = Size(width = Fill, height = Fit),
+            spacing = 16.dp,
+            background = whiteBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(
+                horizontal = 24.dp,
+                vertical = 16.dp,
+            ),
+            border = null,
+            shape = noBorderRect,
+        ),
+        stickyFooter = previewStackComponentStyle(
+            children = listOf(
+                navButton("View Plans", ButtonComponentStyle.Action.NavigateToPage("page_3")),
+            ),
+            size = Size(width = Fill, height = Fit),
+            background = whiteBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            border = null,
+            shape = noBorderRect,
+        ),
+        background = whiteBg,
+    )
+
+    // Page 3: Pricing — choose a plan
+    val page3 = PageStyle(
+        stickyHeader = headerBar(showBack = true),
+        stack = previewStackComponentStyle(
+            children = listOf(
+                // Yearly plan card
+                previewStackComponentStyle(
+                    children = listOf(
+                        previewTextComponentStyle(
+                            text = "BEST DEAL - 58% OFF",
+                            color = ColorStyles(light = ColorStyle.Solid(Color.White)),
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 11,
+                            size = Size(width = Fit, height = Fit),
+                        ),
+                    ),
+                    size = Size(width = Fit, height = Fit),
+                    background = accentGreenBg,
+                    padding = androidx.compose.foundation.layout.PaddingValues(
+                        horizontal = 8.dp,
+                        vertical = 4.dp,
+                    ),
+                    border = null,
+                    shape = Shape.Pill,
+                ),
+                previewStackComponentStyle(
+                    children = listOf(
+                        previewTextComponentStyle(
+                            text = "Yearly Plan",
+                            color = black,
+                            fontWeight = FontWeight.SEMI_BOLD,
+                            fontSize = 18,
+                            textAlign = LEADING,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit),
+                        ),
+                        previewTextComponentStyle(
+                            text = "7 days free, then 12 mo for \$44.99",
+                            color = darkGray,
+                            fontSize = 14,
+                            textAlign = LEADING,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = LEADING, distribution = START),
+                    size = Size(width = Fill, height = Fit),
+                    spacing = 4.dp,
+                    background = lightGrayBg,
+                    padding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                    border = BorderStyles(
+                        width = 2.dp,
+                        colors = accentGreen,
+                    ),
+                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 12.0)),
+                ),
+                // Monthly plan card
+                previewStackComponentStyle(
+                    children = listOf(
+                        previewTextComponentStyle(
+                            text = "Monthly Plan",
+                            color = black,
+                            fontWeight = FontWeight.SEMI_BOLD,
+                            fontSize = 18,
+                            textAlign = LEADING,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit),
+                        ),
+                        previewTextComponentStyle(
+                            text = "\$6.99 / month",
+                            color = darkGray,
+                            fontSize = 14,
+                            textAlign = LEADING,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = LEADING, distribution = START),
+                    size = Size(width = Fill, height = Fit),
+                    spacing = 4.dp,
+                    background = lightGrayBg,
+                    padding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                    border = null,
+                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 12.0)),
+                ),
+                previewTextComponentStyle(
+                    text = "Cancel anytime",
+                    color = darkGray,
+                    fontSize = 12,
+                    size = Size(width = Fill, height = Fit),
+                ),
+            ),
+            dimension = Vertical(alignment = CENTER, distribution = START),
+            size = Size(width = Fill, height = Fit),
+            spacing = 12.dp,
+            background = whiteBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(24.dp),
+            border = null,
+            shape = noBorderRect,
+        ),
+        stickyFooter = previewStackComponentStyle(
+            children = listOf(
+                navButton("Continue", ButtonComponentStyle.Action.PurchasePackage(rcPackage = null)),
+            ),
+            size = Size(width = Fill, height = Fit),
+            background = whiteBg,
+            padding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            border = null,
+            shape = noBorderRect,
+        ),
+        background = whiteBg,
+    )
+
+    return NavHostComponentStyle(
+        startPage = "page_1",
+        pages = mapOf(
+            "page_1" to page1,
+            "page_2" to page2,
+            "page_3" to page3,
+        ),
     )
 }
 

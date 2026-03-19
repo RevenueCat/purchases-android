@@ -52,6 +52,7 @@ internal class ButtonComponentState(
         style.action.toPaywallAction(localeId)
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun ButtonComponentStyle.Action.toPaywallAction(localeId: LocaleId): PaywallAction =
         when (this) {
             is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.External.NavigateBack
@@ -71,6 +72,11 @@ internal class ButtonComponentState(
                 is ButtonComponentStyle.Action.NavigateTo.Destination.Sheet ->
                     PaywallAction.Internal.NavigateTo(PaywallAction.Internal.NavigateTo.Destination.Sheet(destination))
             }
+
+            is ButtonComponentStyle.Action.NavigateToPage ->
+                PaywallAction.Internal.NavigateToPage(pageId = pageId)
+
+            is ButtonComponentStyle.Action.Close -> PaywallAction.Internal.Close
 
             is ButtonComponentStyle.Action.PurchasePackage ->
                 PaywallAction.External.PurchasePackage(
