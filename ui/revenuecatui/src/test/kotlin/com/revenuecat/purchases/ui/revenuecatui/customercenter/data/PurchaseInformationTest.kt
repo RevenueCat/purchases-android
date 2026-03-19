@@ -1250,6 +1250,7 @@ class PurchaseInformationTest {
             price = price,
             isSandbox = isSandbox,
             purchaseDate = null,
+            storeTransactionId = null,
         )
     }
 
@@ -1265,6 +1266,7 @@ class PurchaseInformationTest {
             price = price,
             isSandbox = isSandbox,
             purchaseDate = null,
+            storeTransactionId = null,
         )
     }
 
@@ -1278,7 +1280,7 @@ class PurchaseInformationTest {
     // region PurchaseKey tests
 
     @Test
-    fun `test key uses productIdentifier and purchaseDate`() {
+    fun `test key includes storeTransactionId productIdentifier and purchaseDate`() {
         val date = Date(1_700_000_000_000L)
         val purchase = createPurchaseInformation(
             title = "Title",
@@ -1287,9 +1289,11 @@ class PurchaseInformationTest {
             isSubscription = true,
             productIdentifier = "my_product",
             purchaseDate = date,
+            storeTransactionId = "txn_123",
         )
 
         val key = purchase.key
+        assertThat(key.storeTransactionId).isEqualTo("txn_123")
         assertThat(key.productIdentifier).isEqualTo("my_product")
         assertThat(key.purchaseDate).isEqualTo(date)
     }
@@ -1314,10 +1318,11 @@ class PurchaseInformationTest {
         val key = purchase.key
         assertThat(key.productIdentifier).isEqualTo("product_id")
         assertThat(key.purchaseDate).isNull()
+        assertThat(key.storeTransactionId).isNull()
     }
 
     @Test
-    fun `test findByKey matches by productIdentifier and purchaseDate`() {
+    fun `test findByKey matches by all key fields`() {
         val date = Date(1_700_000_000_000L)
         val purchase = createPurchaseInformation(
             title = "Subscription",
@@ -1326,8 +1331,13 @@ class PurchaseInformationTest {
             isSubscription = true,
             productIdentifier = "com.app.monthly",
             purchaseDate = date,
+            storeTransactionId = "txn_abc",
         )
-        val key = PurchaseKey(productIdentifier = "com.app.monthly", purchaseDate = date)
+        val key = PurchaseKey(
+            storeTransactionId = "txn_abc",
+            productIdentifier = "com.app.monthly",
+            purchaseDate = date,
+        )
 
         val result = listOf(purchase).findByKey(key)
         assertThat(result).isEqualTo(purchase)
@@ -1342,7 +1352,11 @@ class PurchaseInformationTest {
             isSubscription = true,
             productIdentifier = "product_a",
         )
-        val key = PurchaseKey(productIdentifier = "product_b", purchaseDate = null)
+        val key = PurchaseKey(
+            storeTransactionId = null,
+            productIdentifier = "product_b",
+            purchaseDate = null,
+        )
 
         val result = listOf(purchase).findByKey(key)
         assertThat(result).isNull()
@@ -1368,7 +1382,42 @@ class PurchaseInformationTest {
             productIdentifier = "same_product",
             purchaseDate = date2,
         )
-        val key = PurchaseKey(productIdentifier = "same_product", purchaseDate = date2)
+        val key = PurchaseKey(
+            storeTransactionId = null,
+            productIdentifier = "same_product",
+            purchaseDate = date2,
+        )
+
+        val result = listOf(purchase1, purchase2).findByKey(key)
+        assertThat(result).isEqualTo(purchase2)
+    }
+
+    @Test
+    fun `test findByKey distinguishes purchases with same product ID and date but different transaction ID`() {
+        val date = Date(1_700_000_000_000L)
+        val purchase1 = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = false,
+            productIdentifier = "same_product",
+            purchaseDate = date,
+            storeTransactionId = "txn_first",
+        )
+        val purchase2 = createPurchaseInformation(
+            title = "Product",
+            product = null,
+            store = Store.PLAY_STORE,
+            isSubscription = false,
+            productIdentifier = "same_product",
+            purchaseDate = date,
+            storeTransactionId = "txn_second",
+        )
+        val key = PurchaseKey(
+            storeTransactionId = "txn_second",
+            productIdentifier = "same_product",
+            purchaseDate = date,
+        )
 
         val result = listOf(purchase1, purchase2).findByKey(key)
         assertThat(result).isEqualTo(purchase2)
@@ -1383,6 +1432,7 @@ class PurchaseInformationTest {
         isSubscription: Boolean,
         productIdentifier: String? = null,
         purchaseDate: Date? = null,
+        storeTransactionId: String? = null,
     ): PurchaseInformation {
         return PurchaseInformation(
             title = title,
@@ -1398,6 +1448,7 @@ class PurchaseInformationTest {
             isLifetime = false,
             productIdentifier = productIdentifier,
             purchaseDate = purchaseDate,
+            storeTransactionId = storeTransactionId,
         )
     }
 }

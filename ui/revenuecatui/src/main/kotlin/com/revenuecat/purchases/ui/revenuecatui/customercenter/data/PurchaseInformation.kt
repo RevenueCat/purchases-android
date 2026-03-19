@@ -48,9 +48,14 @@ internal data class PurchaseInformation(
     val productIdentifier: String? = null,
     /**
      * The date when this purchase was made. Used together with [productIdentifier]
-     * to uniquely identify a purchase across data refreshes.
+     * and [storeTransactionId] to uniquely identify a purchase across data refreshes.
      */
     val purchaseDate: Date? = null,
+    /**
+     * The store transaction ID, if available. Nullable on [com.revenuecat.purchases.SubscriptionInfo]
+     * and [com.revenuecat.purchases.models.Transaction].
+     */
+    val storeTransactionId: String? = null,
 ) {
 
     constructor(
@@ -78,6 +83,7 @@ internal data class PurchaseInformation(
         isLifetime = determineLifetimeStatus(entitlementInfo, transaction),
         productIdentifier = transaction.productIdentifier,
         purchaseDate = transaction.purchaseDate,
+        storeTransactionId = transaction.storeTransactionId,
     )
 
     fun renewalString(
@@ -117,11 +123,12 @@ internal data class PurchaseInformation(
 
     /**
      * A stable key that identifies this purchase across refreshes.
-     * Uses productIdentifier + purchaseDate, which together uniquely identify a purchase
+     * Uses storeTransactionId + productIdentifier + purchaseDate to uniquely identify a purchase
      * even when multiple purchases share the same product ID (e.g. consumables).
      */
     val key: PurchaseKey
         get() = PurchaseKey(
+            storeTransactionId = storeTransactionId,
             productIdentifier = productIdentifier ?: product?.id ?: title.orEmpty(),
             purchaseDate = purchaseDate,
         )
@@ -256,12 +263,13 @@ private fun determineLifetimeStatus(
 
 /**
  * A stable key that identifies a purchase across data refreshes.
- * Uses productIdentifier + purchaseDate, which together uniquely identify a purchase
+ * Uses storeTransactionId + productIdentifier + purchaseDate to uniquely identify a purchase
  * even when multiple purchases share the same product ID (e.g. consumables).
  * Navigation destinations store this instead of the full [PurchaseInformation],
  * so the canonical [PurchaseInformation] list remains the single source of truth.
  */
 internal data class PurchaseKey(
+    val storeTransactionId: String?,
     val productIdentifier: String,
     val purchaseDate: Date?,
 )
