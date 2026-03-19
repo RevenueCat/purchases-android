@@ -16,6 +16,7 @@ import org.robolectric.RobolectricTestRunner
 import java.util.Collections
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.system.measureTimeMillis
 
 @RunWith(RobolectricTestRunner::class)
@@ -25,11 +26,17 @@ class MediaPlayerThreadOwnerTests {
     private val uri = Uri.parse("https://example.com/video.mp4")
 
     @Test
-    fun `release does not block caller when player release blocks`() {
+    fun `release does not block caller and releases handed off surface exactly once`() {
         val setDataSourceCalled = CountDownLatch(1)
         val releaseStarted = CountDownLatch(1)
         val allowReleaseToFinish = CountDownLatch(1)
         val releaseCompleted = CountDownLatch(1)
+        val handedOffSurfaceReleaseCount = AtomicInteger(0)
+        val handedOffSurface = mockk<Surface>(relaxed = true).also { surface ->
+            every { surface.release() } answers {
+                handedOffSurfaceReleaseCount.incrementAndGet()
+            }
+        }
 
         val mediaPlayer = createMockMediaPlayer(
             onSetDataSource = { _, _ -> setDataSourceCalled.countDown() },
@@ -58,7 +65,7 @@ class MediaPlayerThreadOwnerTests {
         assertThat(setDataSourceCalled.await(200, TimeUnit.MILLISECONDS)).isTrue()
 
         val elapsedMs = measureTimeMillis {
-            owner.release()
+            owner.release(surfaceToRelease = handedOffSurface)
         }
 
         assertThat(elapsedMs).isLessThan(100L)
@@ -66,6 +73,7 @@ class MediaPlayerThreadOwnerTests {
 
         allowReleaseToFinish.countDown()
         assertThat(releaseCompleted.await(200, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(handedOffSurfaceReleaseCount.get()).isEqualTo(1)
     }
 
     @Test
@@ -137,6 +145,11 @@ class MediaPlayerThreadOwnerTests {
         val allowDetachToFinish = CountDownLatch(1)
         val clearSurfaceReturned = CountDownLatch(1)
         val events = Collections.synchronizedList(mutableListOf<String>())
+        val handedOffSurface = mockk<Surface>(relaxed = true).also { surface ->
+            every { surface.release() } answers {
+                events.add("surface-released")
+            }
+        }
 
         val mediaPlayer = createMockMediaPlayer(
             onPrepareAsync = { player, preparedListener, _, _ ->
@@ -167,7 +180,7 @@ class MediaPlayerThreadOwnerTests {
         assertThat(prepareCompleted.await(200, TimeUnit.MILLISECONDS)).isTrue()
 
         val detachCaller = Thread {
-            owner.clearSurfaceBlocking()
+            owner.clearSurfaceBlocking(surfaceToRelease = handedOffSurface)
             events.add("caller-returned")
             clearSurfaceReturned.countDown()
         }
@@ -180,7 +193,60 @@ class MediaPlayerThreadOwnerTests {
         allowDetachToFinish.countDown()
 
         assertThat(clearSurfaceReturned.await(200, TimeUnit.MILLISECONDS)).isTrue()
-        assertThat(events).containsExactly("detach-started", "detach-finished", "caller-returned")
+        assertThat(events).containsExactly("detach-started", "detach-finished", "surface-released", "caller-returned")
+
+        owner.release()
+    }
+
+    @Test
+    fun `clearSurfaceBlocking times out and releases handed off surface asynchronously`() {
+        val prepareCompleted = CountDownLatch(1)
+        val detachStarted = CountDownLatch(1)
+        val allowDetachToFinish = CountDownLatch(1)
+        val handedOffSurfaceReleased = CountDownLatch(1)
+        val handedOffSurface = mockk<Surface>(relaxed = true).also { surface ->
+            every { surface.release() } answers {
+                handedOffSurfaceReleased.countDown()
+            }
+        }
+
+        val mediaPlayer = createMockMediaPlayer(
+            onPrepareAsync = { player, preparedListener, _, _ ->
+                preparedListener?.onPrepared(player)
+                prepareCompleted.countDown()
+            },
+            onSetSurface = { surface ->
+                if (surface == null) {
+                    detachStarted.countDown()
+                    allowDetachToFinish.await(5, TimeUnit.SECONDS)
+                }
+            },
+        )
+
+        val owner = MediaPlayerThreadOwner(
+            context = appContext,
+            muteAudio = false,
+            playerFactory = { mediaPlayer },
+        )
+
+        owner.prepare(
+            uri = uri,
+            onPrepared = { _, _ -> },
+            onVideoSizeChanged = { _, _ -> },
+        )
+        assertThat(prepareCompleted.await(200, TimeUnit.MILLISECONDS)).isTrue()
+
+        val elapsedMs = measureTimeMillis {
+            owner.clearSurfaceBlocking(surfaceToRelease = handedOffSurface)
+        }
+
+        assertThat(detachStarted.await(200, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(elapsedMs).isGreaterThanOrEqualTo(900L)
+        assertThat(elapsedMs).isLessThan(2_500L)
+        assertThat(handedOffSurfaceReleased.await(100, TimeUnit.MILLISECONDS)).isFalse()
+
+        allowDetachToFinish.countDown()
+        assertThat(handedOffSurfaceReleased.await(500, TimeUnit.MILLISECONDS)).isTrue()
 
         owner.release()
     }

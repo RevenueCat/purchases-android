@@ -9,6 +9,7 @@ import android.os.Looper
 import android.view.Surface
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 @Suppress("TooManyFunctions")
@@ -20,6 +21,7 @@ internal class MediaPlayerThreadOwner(
 
     private companion object {
         const val POSITION_POLL_INTERVAL_MS = 250L
+        const val DETACH_SURFACE_AWAIT_TIMEOUT_MS = 1_000L
     }
 
     private data class PlaybackSnapshot(
@@ -93,50 +95,59 @@ internal class MediaPlayerThreadOwner(
     }
 
     /**
-     * Detaches the current [Surface] from [MediaPlayer] and waits until that detach has run on the
-     * player worker thread.
+     * Detaches the current [Surface] from [MediaPlayer] and optionally releases [surfaceToRelease]
+     * once detach has run on the worker thread.
      *
-     * This blocking is intentional and narrowly scoped. `TextureVideoView` may need to call
-     * `Surface.release()` immediately from callbacks such as `onSurfaceTextureDestroyed`, but doing
-     * that before `MediaPlayer.setSurface(null)` has executed creates an ordering race:
+     * This is primarily used by `TextureVideoView` to preserve ordering when a `SurfaceTexture`
+     * is destroyed: the player must process `setSurface(null)` before the associated [Surface] is
+     * released, or some devices can throw native rendering errors.
      *
-     * 1. the [Surface] is released on the caller thread
-     * 2. the player is still rendering until the worker thread later processes `setSurface(null)`
-     *
-     * During that gap, some devices will hit native rendering errors because the player can still
-     * attempt to dequeue buffers from a surface that has already been disconnected from its
-     * `SurfaceTexture`.
-     *
-     * Waiting here preserves the required ordering invariant: `MediaPlayer.setSurface(null)` must
-     * finish first, and only then may the caller release the corresponding [Surface].
-     *
-     * This is intentionally not a synchronous full player teardown. Only the surface detach is
-     * awaited here; [release] still performs the heavier player release asynchronously.
-     *
-     * If this method is called from the worker thread, it executes inline to avoid deadlocking by
-     * posting to the same looper and waiting on itself.
+     * The wait is bounded to avoid indefinite main-thread stalls. If the timeout is reached, this
+     * method returns and the release will complete asynchronously on the worker thread.
      */
-    fun clearSurfaceBlocking() {
-        if (released) return
-
+    fun clearSurfaceBlocking(surfaceToRelease: Surface? = null) {
         if (Looper.myLooper() == workerThread.looper) {
-            setSurfaceInternal(null)
+            detachAndReleaseSurface(surfaceToRelease)
             return
         }
 
         val detached = CountDownLatch(1)
         val posted = workerHandler.post {
             try {
-                if (!released) {
-                    setSurfaceInternal(null)
-                }
+                detachAndReleaseSurface(surfaceToRelease)
             } finally {
                 detached.countDown()
             }
         }
 
-        if (posted) {
-            detached.await()
+        if (!posted) {
+            // Looper is already shutting down. Detach can no longer be scheduled, but we still
+            // own the provided surface and must release it to avoid leaking native resources.
+            releaseSurface(surfaceToRelease)
+            Logger.w(
+                "TextureVideoView: Could not post surface detach to worker thread. " +
+                    "Released provided surface locally.",
+            )
+            return
+        }
+
+        try {
+            val detachedInTime = detached.await(
+                DETACH_SURFACE_AWAIT_TIMEOUT_MS,
+                TimeUnit.MILLISECONDS,
+            )
+            if (!detachedInTime) {
+                Logger.w(
+                    "TextureVideoView: Timed out waiting for surface detach on worker thread. " +
+                        "Surface release will complete asynchronously on the worker thread.",
+                )
+            }
+        } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            Logger.w(
+                "TextureVideoView: Interrupted while waiting for surface detach. " +
+                    "Surface release will complete asynchronously on the worker thread.",
+            )
         }
     }
 
@@ -334,31 +345,37 @@ internal class MediaPlayerThreadOwner(
 
     fun getAudioSessionId(): Int = playbackSnapshot.audioSessionId
 
-    fun release() {
-        if (released) return
+    fun release(surfaceToRelease: Surface? = null) {
+        if (released) {
+            releaseSurface(surfaceToRelease)
+            return
+        }
         released = true
         clearPendingPlaybackState()
-        workerHandler.removeCallbacksAndMessages(null)
         workerHandler.post {
-            updatePlaybackSnapshot {
-                it.copy(
-                    prepared = false,
-                    isPlaying = false,
-                )
+            try {
+                updatePlaybackSnapshot {
+                    it.copy(
+                        prepared = false,
+                        isPlaying = false,
+                    )
+                }
+                val mediaPlayer = player
+                player = null
+                currentSurface = null
+                stopPositionTicker()
+                safely(execute = {
+                    mediaPlayer?.setSurface(null)
+                })
+                releaseSurface(surfaceToRelease)
+                safely(execute = {
+                    mediaPlayer?.release()
+                }, failureMessage = { e ->
+                    "Could not release media player: ${e.message}"
+                })
+            } finally {
+                workerThread.quitSafely()
             }
-            val mediaPlayer = player
-            player = null
-            currentSurface = null
-            stopPositionTicker()
-            safely(execute = {
-                mediaPlayer?.setSurface(null)
-            })
-            safely(execute = {
-                mediaPlayer?.release()
-            }, failureMessage = { e ->
-                "Could not release media player: ${e.message}"
-            })
-            workerThread.quitSafely()
         }
     }
 
@@ -390,6 +407,19 @@ internal class MediaPlayerThreadOwner(
             mediaPlayer.setSurface(surface)
         }, failureMessage = { e ->
             "Could not set media surface: ${e.message}"
+        })
+    }
+
+    private fun detachAndReleaseSurface(surfaceToRelease: Surface?) {
+        setSurfaceInternal(null)
+        releaseSurface(surfaceToRelease)
+    }
+
+    private fun releaseSurface(surfaceToRelease: Surface?) {
+        safely(execute = {
+            surfaceToRelease?.release()
+        }, failureMessage = { e ->
+            "Could not release media surface: ${e.message}"
         })
     }
 

@@ -111,7 +111,10 @@ private class TextureVideoView @JvmOverloads constructor(
         texture.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
             override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
                 if (released) return
-                releaseAttachedSurface()
+                // Defensive cleanup in case a stale surface is still held.
+                takeAttachedSurface()?.let { staleSurface ->
+                    playerOwner.clearSurfaceBlocking(staleSurface)
+                }
                 attachedSurface = Surface(st)
                 playerOwner.setSurface(attachedSurface)
                 if (!viewTreeObserverListening) {
@@ -132,6 +135,7 @@ private class TextureVideoView @JvmOverloads constructor(
                 applySizing()
 
             override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
+                val surfaceToDetach = takeAttachedSurface()
                 if (!released) {
                     // snapshot play state & position to resume after recreation
                     resumePlayWhenReady = isPlaying
@@ -140,9 +144,8 @@ private class TextureVideoView @JvmOverloads constructor(
                     if (prepared) {
                         pause()
                     }
-                    playerOwner.clearSurfaceBlocking()
+                    playerOwner.clearSurfaceBlocking(surfaceToDetach)
                 }
-                releaseAttachedSurface()
                 return true // we release the surface
             }
 
@@ -236,9 +239,7 @@ private class TextureVideoView @JvmOverloads constructor(
         prepareRequestId += 1
         controller?.hide()
         controller = null
-        playerOwner.clearSurfaceBlocking()
-        releaseAttachedSurface()
-        playerOwner.release()
+        playerOwner.release(surfaceToRelease = takeAttachedSurface())
         if (viewTreeObserverListening) {
             viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
             viewTreeObserverListening = false
@@ -286,9 +287,10 @@ private class TextureVideoView @JvmOverloads constructor(
         }
     }
 
-    private fun releaseAttachedSurface() {
-        attachedSurface?.release()
+    private fun takeAttachedSurface(): Surface? {
+        val previousSurface = attachedSurface
         attachedSurface = null
+        return previousSurface
     }
 
     private fun applySizing() {
