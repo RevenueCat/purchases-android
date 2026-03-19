@@ -41,6 +41,11 @@ internal data class PurchaseInformation(
      * This is true for promotional lifetime purchases or non-subscription purchases attached to an entitlement.
      */
     val isLifetime: Boolean,
+    /**
+     * A stable identifier from the transaction (e.g. store transaction ID) that persists across
+     * data refreshes. Used to uniquely identify this purchase in navigation state.
+     */
+    val stableId: String? = null,
 ) {
 
     constructor(
@@ -66,6 +71,7 @@ internal data class PurchaseInformation(
         isTrial = determineTrialStatus(entitlementInfo, transaction),
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
         isLifetime = determineLifetimeStatus(entitlementInfo, transaction),
+        stableId = transaction.stableId,
     )
 
     fun renewalString(
@@ -106,10 +112,15 @@ internal data class PurchaseInformation(
     /**
      * A stable key that identifies this purchase across refreshes.
      * Used by navigation destinations to reference a purchase without holding the full object.
+     * Prefers the transaction's stable ID (store transaction ID) when available, since it uniquely
+     * identifies a purchase even when multiple purchases share the same product ID.
      */
     val key: PurchaseKey
-        get() = product?.id?.let { PurchaseKey.ByProductId(it) }
-            ?: PurchaseKey.ByAttributes(title, store, isSubscription)
+        get() = when {
+            stableId != null -> PurchaseKey.ByStableId(stableId)
+            product?.id != null -> PurchaseKey.ByProductId(product!!.id)
+            else -> PurchaseKey.ByAttributes(title, store, isSubscription)
+        }
 }
 
 private fun determinePrice(
@@ -245,7 +256,13 @@ private fun determineLifetimeStatus(
  * so the canonical [PurchaseInformation] list remains the single source of truth.
  */
 internal sealed class PurchaseKey {
+    /** Preferred: uses the store transaction ID, which is unique per purchase. */
+    data class ByStableId(val stableId: String) : PurchaseKey()
+
+    /** Fallback when no transaction ID: uses the Play Store product ID. */
     data class ByProductId(val productId: String) : PurchaseKey()
+
+    /** Last resort for non-Play Store purchases without a product or transaction ID. */
     data class ByAttributes(
         val title: String?,
         val store: Store,
