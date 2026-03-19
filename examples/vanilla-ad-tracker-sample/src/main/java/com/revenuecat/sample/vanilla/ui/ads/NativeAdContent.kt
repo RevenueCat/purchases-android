@@ -81,17 +81,18 @@ internal fun NativeAdContent() {
             AdLoader.Builder(context, Constants.AdMob.NATIVE_AD_UNIT_ID)
                 .forNativeAd { nativeAd ->
                     latestResponseInfo = nativeAd.responseInfo
-                    val responseInfo = latestResponseInfo ?: return@forNativeAd
-                    adTracker.trackAdLoaded(
-                        AdLoadedData(
-                            networkName = responseInfo.mediationAdapterClassName,
-                            mediatorName = AdMediatorName.AD_MOB,
-                            adFormat = AdFormat.NATIVE,
-                            placement = "home_native",
-                            adUnitId = Constants.AdMob.NATIVE_AD_UNIT_ID,
-                            impressionId = responseInfo.responseId.orEmpty(),
-                        ),
-                    )
+                    latestResponseInfo?.let { responseInfo ->
+                        adTracker.trackAdLoaded(
+                            AdLoadedData(
+                                networkName = responseInfo.mediationAdapterClassName,
+                                mediatorName = AdMediatorName.AD_MOB,
+                                adFormat = AdFormat.NATIVE,
+                                placement = "home_native",
+                                adUnitId = Constants.AdMob.NATIVE_AD_UNIT_ID,
+                                impressionId = responseInfo.responseId.orEmpty(),
+                            ),
+                        )
+                    }
                     nativeAd.setOnPaidEventListener { adValue ->
                         val ri = latestResponseInfo ?: return@setOnPaidEventListener
                         adTracker.trackAdRevenue(
@@ -209,17 +210,18 @@ internal fun NativeVideoAdContent() {
             AdLoader.Builder(context, Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID)
                 .forNativeAd { nativeAd ->
                     latestResponseInfo = nativeAd.responseInfo
-                    val responseInfo = latestResponseInfo ?: return@forNativeAd
-                    adTracker.trackAdLoaded(
-                        AdLoadedData(
-                            networkName = responseInfo.mediationAdapterClassName,
-                            mediatorName = AdMediatorName.AD_MOB,
-                            adFormat = AdFormat.NATIVE,
-                            placement = "home_native_video",
-                            adUnitId = Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID,
-                            impressionId = responseInfo.responseId.orEmpty(),
-                        ),
-                    )
+                    latestResponseInfo?.let { responseInfo ->
+                        adTracker.trackAdLoaded(
+                            AdLoadedData(
+                                networkName = responseInfo.mediationAdapterClassName,
+                                mediatorName = AdMediatorName.AD_MOB,
+                                adFormat = AdFormat.NATIVE,
+                                placement = "home_native_video",
+                                adUnitId = Constants.AdMob.NATIVE_VIDEO_AD_UNIT_ID,
+                                impressionId = responseInfo.responseId.orEmpty(),
+                            ),
+                        )
+                    }
                     nativeAd.setOnPaidEventListener { adValue ->
                         val ri = latestResponseInfo ?: return@setOnPaidEventListener
                         adTracker.trackAdRevenue(
