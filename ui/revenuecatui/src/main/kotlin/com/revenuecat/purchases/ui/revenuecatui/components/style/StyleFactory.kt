@@ -640,8 +640,8 @@ internal class StyleFactory(
                 Result.Success(
                     ButtonComponentStyle.Action.WebCheckout(
                         rcPackage = rcPackage,
-                        autoDismiss = method.autoDismiss ?: true,
-                        openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                        autoDismiss = false,
+                        openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
                     ),
                 )
             }
@@ -649,8 +649,8 @@ internal class StyleFactory(
             is PurchaseButtonComponent.Method.WebProductSelection -> {
                 Result.Success(
                     ButtonComponentStyle.Action.WebProductSelection(
-                        autoDismiss = method.autoDismiss ?: true,
-                        openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                        autoDismiss = false,
+                        openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
                     ),
                 )
             }
@@ -660,8 +660,8 @@ internal class StyleFactory(
             ).map { urls ->
                 ButtonComponentStyle.Action.CustomWebCheckout(
                     urls = urls,
-                    autoDismiss = method.autoDismiss ?: true,
-                    openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                    autoDismiss = false,
+                    openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
                     rcPackage = rcPackage,
                     packageParam = method.customUrl.packageParam,
                 )

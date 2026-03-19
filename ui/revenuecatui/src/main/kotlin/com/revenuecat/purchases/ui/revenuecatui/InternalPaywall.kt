@@ -18,7 +18,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -54,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
+import com.revenuecat.purchases.ui.revenuecatui.composables.WebCheckoutBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
@@ -108,6 +112,8 @@ internal fun InternalPaywall(
     }
 
     // V2 Paywalls set custom fonts on the dashboard, so we don't want to use FontProvider here to set the fonts.
+    var webCheckoutUrl by remember { mutableStateOf<String?>(null) }
+
     AnimatedVisibility(
         visible = state is PaywallState.Loaded.Components,
         enter = fadeIn(animationSpec = defaultAnimation()),
@@ -117,7 +123,10 @@ internal fun InternalPaywall(
             viewModel.trackPaywallImpressionIfNeeded()
             LoadedPaywallComponents(
                 state = state,
-                clickHandler = rememberPaywallActionHandler(viewModel),
+                clickHandler = rememberPaywallActionHandler(
+                    viewModel = viewModel,
+                    onWebCheckout = { url -> webCheckoutUrl = url },
+                ),
             )
         } else {
             Logger.e(
@@ -125,6 +134,13 @@ internal fun InternalPaywall(
                     "from being loaded to a different state. This should not happen.",
             )
         }
+    }
+
+    webCheckoutUrl?.let { url ->
+        WebCheckoutBottomSheet(
+            url = url,
+            onDismiss = { webCheckoutUrl = null },
+        )
     }
 
     when (state) {
@@ -266,10 +282,13 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
 }
 
 @Composable
-private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction.External) -> Unit {
+private fun rememberPaywallActionHandler(
+    viewModel: PaywallViewModel,
+    onWebCheckout: (String) -> Unit = {},
+): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
-    return remember(viewModel) {
+    return remember(viewModel, onWebCheckout) {
         {
                 action ->
             when (action) {
@@ -291,11 +310,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                         Logger.e("Web checkout URL cannot be found, not launching web checkout.")
                     } else {
                         viewModel.invalidateCustomerInfoCache()
-                        context.handleUrlDestination(url, action.openMethod)
-                        if (action.autoDismiss) {
-                            Logger.d("Auto-dismissing paywall after launching web checkout.")
-                            viewModel.closePaywall()
-                        }
+                        onWebCheckout(url)
                     }
                 }
 
