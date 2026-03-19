@@ -3,7 +3,7 @@ package com.revenuecat.purchases.galaxy.listener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
-import com.revenuecat.purchases.models.GalaxyReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.samsung.android.sdk.iap.lib.listener.OnChangeSubscriptionPlanListener
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
@@ -22,7 +22,7 @@ internal interface ChangeSubscriptionPlanResponseListener : OnChangeSubscription
         appUserID: String,
         oldPurchase: StoreTransaction,
         newProductId: String,
-        prorationMode: GalaxyReplacementMode,
+        replacementMode: StoreReplacementMode,
         onSuccess: (PurchaseVo) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

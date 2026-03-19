@@ -9,9 +9,9 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
 import com.revenuecat.purchases.galaxy.constants.GalaxyErrorCode
-import com.revenuecat.purchases.galaxy.conversions.toSamsungProrationMode
+import com.revenuecat.purchases.galaxy.conversions.toGalaxyReplacementMode
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
-import com.revenuecat.purchases.models.GalaxyReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
@@ -59,7 +59,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("old"),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE,
+            replacementMode = StoreReplacementMode.WITH_TIME_PRORATION,
             onSuccess = unexpectedOnSuccess,
             onError = unexpectedOnError,
         )
@@ -69,7 +69,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("other-old"),
             newProductId = "newer",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = unexpectedOnSuccess,
             onError = { receivedError = it },
         )
@@ -96,7 +96,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId(null),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE,
+            replacementMode = StoreReplacementMode.WITH_TIME_PRORATION,
             onSuccess = unexpectedOnSuccess,
             onError = { receivedError = it },
         )
@@ -136,7 +136,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("old"),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = unexpectedOnSuccess,
             onError = { receivedError = it },
         )
@@ -159,7 +159,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("old"),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = mockk(relaxed = true),
             onError = unexpectedOnError,
         )
@@ -182,7 +182,7 @@ class ChangeSubscriptionPlanHandlerTest {
     fun `changeSubscriptionPlan dispatches request with expected args and forwards success`() {
         val oldProductId = "old-sku"
         val newProductId = "new-sku"
-        val prorationMode = GalaxyReplacementMode.INSTANT_PRORATED_CHARGE
+        val replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE
         val obfuscatedAccountIdSlot = slot<String>()
         val prorationModeSlot = slot<HelperDefine.ProrationMode>()
         every {
@@ -201,7 +201,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId(oldProductId),
             newProductId = newProductId,
-            prorationMode = prorationMode,
+            replacementMode = replacementMode,
             onSuccess = onSuccess,
             onError = unexpectedOnError,
         )
@@ -223,14 +223,14 @@ class ChangeSubscriptionPlanHandlerTest {
                 onChangeSubscriptionPlanListener = changeSubscriptionPlanHandler,
             )
         }
-        assertThat(prorationModeSlot.captured).isEqualTo(prorationMode.toSamsungProrationMode())
+        assertThat(prorationModeSlot.captured).isEqualTo(replacementMode.toGalaxyReplacementMode())
         assertThat(obfuscatedAccountIdSlot.captured).isEqualTo("user".sha256())
 
         changeSubscriptionPlanHandler.changeSubscriptionPlan(
             appUserID = "user",
             oldPurchase = transactionWithProductId(oldProductId),
             newProductId = "next",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = onSuccess,
             onError = unexpectedOnError,
         )
@@ -265,7 +265,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("old"),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = unexpectedOnSuccess,
             onError = { receivedError = it },
         )
@@ -283,7 +283,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("old"),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = mockk(relaxed = true),
             onError = unexpectedOnError,
         )
@@ -318,7 +318,7 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("old"),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = unexpectedOnSuccess,
             onError = { receivedError = it },
         )
@@ -336,11 +336,86 @@ class ChangeSubscriptionPlanHandlerTest {
             appUserID = "user",
             oldPurchase = transactionWithProductId("old"),
             newProductId = "new",
-            prorationMode = GalaxyReplacementMode.INSTANT_NO_PRORATION,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
             onSuccess = mockk(relaxed = true),
             onError = unexpectedOnError,
         )
         verify(exactly = 2) {
+            iapHelperProvider.changeSubscriptionPlan(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        }
+    }
+
+    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `changeSubscriptionPlan errors when replacement mode is unsupported`() {
+        var receivedError: PurchasesError? = null
+
+        changeSubscriptionPlanHandler.changeSubscriptionPlan(
+            appUserID = "user",
+            oldPurchase = transactionWithProductId("old"),
+            newProductId = "new",
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
+            onSuccess = unexpectedOnSuccess,
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+        assertThat(receivedError?.underlyingErrorMessage)
+            .isEqualTo(GalaxyStrings.CHARGE_FULL_PRICE_NOT_SUPPORTED)
+        verify(exactly = 0) {
+            iapHelperProvider.changeSubscriptionPlan(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        }
+    }
+
+    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class,
+        InternalRevenueCatAPI::class
+    )
+    @Test
+    fun `changeSubscriptionPlan allows supported request after unsupported replacement mode error`() {
+        every {
+            iapHelperProvider.changeSubscriptionPlan(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        } returns true
+
+        changeSubscriptionPlanHandler.changeSubscriptionPlan(
+            appUserID = "user",
+            oldPurchase = transactionWithProductId("old"),
+            newProductId = "new",
+            replacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
+            onSuccess = unexpectedOnSuccess,
+            onError = mockk(relaxed = true),
+        )
+
+        changeSubscriptionPlanHandler.changeSubscriptionPlan(
+            appUserID = "user",
+            oldPurchase = transactionWithProductId("old"),
+            newProductId = "new",
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
+            onSuccess = mockk(relaxed = true),
+            onError = unexpectedOnError,
+        )
+
+        verify(exactly = 1) {
             iapHelperProvider.changeSubscriptionPlan(
                 any(),
                 any(),

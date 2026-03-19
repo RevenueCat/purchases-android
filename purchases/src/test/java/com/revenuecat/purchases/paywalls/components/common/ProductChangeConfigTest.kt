@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.utils.serializers.EmptyObjectToNullSerializer
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -30,8 +31,8 @@ class ProductChangeConfigTest(
                 Args(
                     json = """{"upgrade_replacement_mode": "charge_prorated_price"}""",
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
-                        downgradeReplacementMode = GoogleReplacementMode.DEFERRED,
+                        upgradeReplacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+                        downgradeReplacementMode = StoreReplacementMode.DEFERRED,
                     ),
                 ),
             ),
@@ -45,8 +46,8 @@ class ProductChangeConfigTest(
                         }
                     """.trimIndent(),
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
-                        downgradeReplacementMode = GoogleReplacementMode.DEFERRED,
+                        upgradeReplacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+                        downgradeReplacementMode = StoreReplacementMode.DEFERRED,
                     ),
                 ),
             ),
@@ -60,8 +61,8 @@ class ProductChangeConfigTest(
                         }
                     """.trimIndent(),
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
-                        downgradeReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION,
+                        upgradeReplacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
+                        downgradeReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION,
                     ),
                 ),
             ),
@@ -75,8 +76,8 @@ class ProductChangeConfigTest(
                         }
                     """.trimIndent(),
                     expected = ProductChangeConfig(
-                        upgradeReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION,
-                        downgradeReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION,
+                        upgradeReplacementMode = StoreReplacementMode.WITHOUT_PRORATION,
+                        downgradeReplacementMode = StoreReplacementMode.WITHOUT_PRORATION,
                     ),
                 ),
             ),
@@ -102,8 +103,8 @@ class ProductChangeConfigTest(
         val json = """{"play_store_product_change_mode": {"upgrade_replacement_mode": "charge_full_price"}}"""
         val wrapper = JsonTools.json.decodeFromString<Wrapper>(json)
         assert(wrapper.productChangeConfig != null)
-        assert(wrapper.productChangeConfig!!.upgradeReplacementMode == GoogleReplacementMode.CHARGE_FULL_PRICE)
-        assert(wrapper.productChangeConfig!!.downgradeReplacementMode == GoogleReplacementMode.DEFERRED)
+        assert(wrapper.productChangeConfig!!.upgradeReplacementMode == StoreReplacementMode.CHARGE_FULL_PRICE)
+        assert(wrapper.productChangeConfig!!.downgradeReplacementMode == StoreReplacementMode.DEFERRED)
     }
 
     @Test
