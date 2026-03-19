@@ -166,7 +166,7 @@ internal sealed class TransactionDetails(
     open val store: Store,
     open val price: Price?,
     open val isSandbox: Boolean,
-    open val stableId: String?,
+    open val purchaseDate: Date?,
 ) {
 
     @Immutable
@@ -181,8 +181,8 @@ internal sealed class TransactionDetails(
         val managementURL: Uri?,
         override val price: Price?,
         override val isSandbox: Boolean,
-        override val stableId: String?,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox, stableId)
+        override val purchaseDate: Date?,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseDate)
 
     @Immutable
     data class NonSubscription(
@@ -190,8 +190,8 @@ internal sealed class TransactionDetails(
         override val store: Store,
         override val price: Price?,
         override val isSandbox: Boolean,
-        override val stableId: String?,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox, stableId)
+        override val purchaseDate: Date?,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseDate)
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
@@ -747,7 +747,7 @@ internal class CustomerCenterViewModelImpl(
                     store = it.store,
                     price = it.price,
                     isSandbox = it.isSandbox,
-                    stableId = it.transactionIdentifier,
+                    purchaseDate = it.purchaseDate,
                 )
 
                 else -> null
@@ -1475,6 +1475,6 @@ internal class CustomerCenterViewModelImpl(
         managementURL = managementURL,
         price = price,
         isSandbox = isSandbox,
-        stableId = storeTransactionId,
+        purchaseDate = purchaseDate,
     )
 }

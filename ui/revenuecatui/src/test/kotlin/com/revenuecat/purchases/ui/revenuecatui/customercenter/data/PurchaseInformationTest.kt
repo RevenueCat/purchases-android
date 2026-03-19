@@ -1249,7 +1249,7 @@ class PurchaseInformationTest {
             managementURL = managementURL,
             price = price,
             isSandbox = isSandbox,
-            stableId = null,
+            purchaseDate = null,
         )
     }
 
@@ -1264,7 +1264,7 @@ class PurchaseInformationTest {
             store = store,
             price = price,
             isSandbox = isSandbox,
-            stableId = null,
+            purchaseDate = null,
         )
     }
 
@@ -1278,52 +1278,24 @@ class PurchaseInformationTest {
     // region PurchaseKey tests
 
     @Test
-    fun `test key returns ByStableId when stableId is present`() {
-        val purchase = createPurchaseInformation(
-            title = "Title",
-            product = null,
-            store = Store.PLAY_STORE,
-            isSubscription = true,
-            stableId = "txn_123",
-        )
-
-        val key = purchase.key
-        assertThat(key).isInstanceOf(PurchaseKey.ByStableId::class.java)
-        assertThat((key as PurchaseKey.ByStableId).stableId).isEqualTo("txn_123")
-    }
-
-    @Test
-    fun `test key prefers stableId over productIdentifier`() {
+    fun `test key uses productIdentifier and purchaseDate`() {
+        val date = Date(1_700_000_000_000L)
         val purchase = createPurchaseInformation(
             title = "Title",
             product = null,
             store = Store.PLAY_STORE,
             isSubscription = true,
             productIdentifier = "my_product",
-            stableId = "txn_123",
+            purchaseDate = date,
         )
 
         val key = purchase.key
-        assertThat(key).isInstanceOf(PurchaseKey.ByStableId::class.java)
+        assertThat(key.productIdentifier).isEqualTo("my_product")
+        assertThat(key.purchaseDate).isEqualTo(date)
     }
 
     @Test
-    fun `test key returns ByProductId with productIdentifier when no stableId`() {
-        val purchase = createPurchaseInformation(
-            title = "Title",
-            product = null,
-            store = Store.APP_STORE,
-            isSubscription = true,
-            productIdentifier = "com.app.monthly",
-        )
-
-        val key = purchase.key
-        assertThat(key).isInstanceOf(PurchaseKey.ByProductId::class.java)
-        assertThat((key as PurchaseKey.ByProductId).productId).isEqualTo("com.app.monthly")
-    }
-
-    @Test
-    fun `test key returns ByProductId with StoreProduct id as last resort`() {
+    fun `test key falls back to StoreProduct id when no productIdentifier`() {
         val product = TestStoreProduct(
             "product_id",
             "name",
@@ -1340,35 +1312,22 @@ class PurchaseInformationTest {
         )
 
         val key = purchase.key
-        assertThat(key).isInstanceOf(PurchaseKey.ByProductId::class.java)
-        assertThat((key as PurchaseKey.ByProductId).productId).isEqualTo("product_id")
+        assertThat(key.productIdentifier).isEqualTo("product_id")
+        assertThat(key.purchaseDate).isNull()
     }
 
     @Test
-    fun `test findByKey matches by stableId`() {
-        val purchase = createPurchaseInformation(
-            title = "Title",
-            product = null,
-            store = Store.PLAY_STORE,
-            isSubscription = true,
-            stableId = "txn_456",
-        )
-        val key = PurchaseKey.ByStableId("txn_456")
-
-        val result = listOf(purchase).findByKey(key)
-        assertThat(result).isEqualTo(purchase)
-    }
-
-    @Test
-    fun `test findByKey matches by productIdentifier`() {
+    fun `test findByKey matches by productIdentifier and purchaseDate`() {
+        val date = Date(1_700_000_000_000L)
         val purchase = createPurchaseInformation(
             title = "Subscription",
             product = null,
             store = Store.APP_STORE,
             isSubscription = true,
             productIdentifier = "com.app.monthly",
+            purchaseDate = date,
         )
-        val key = PurchaseKey.ByProductId("com.app.monthly")
+        val key = PurchaseKey(productIdentifier = "com.app.monthly", purchaseDate = date)
 
         val result = listOf(purchase).findByKey(key)
         assertThat(result).isEqualTo(purchase)
@@ -1383,21 +1342,23 @@ class PurchaseInformationTest {
             isSubscription = true,
             productIdentifier = "product_a",
         )
-        val key = PurchaseKey.ByProductId("product_b")
+        val key = PurchaseKey(productIdentifier = "product_b", purchaseDate = null)
 
         val result = listOf(purchase).findByKey(key)
         assertThat(result).isNull()
     }
 
     @Test
-    fun `test findByKey distinguishes purchases with same product ID but different stableId`() {
+    fun `test findByKey distinguishes purchases with same product ID but different purchaseDate`() {
+        val date1 = Date(1_700_000_000_000L)
+        val date2 = Date(1_700_100_000_000L)
         val purchase1 = createPurchaseInformation(
             title = "Product",
             product = null,
             store = Store.PLAY_STORE,
             isSubscription = false,
             productIdentifier = "same_product",
-            stableId = "txn_first",
+            purchaseDate = date1,
         )
         val purchase2 = createPurchaseInformation(
             title = "Product",
@@ -1405,9 +1366,9 @@ class PurchaseInformationTest {
             store = Store.PLAY_STORE,
             isSubscription = false,
             productIdentifier = "same_product",
-            stableId = "txn_second",
+            purchaseDate = date2,
         )
-        val key = PurchaseKey.ByStableId("txn_second")
+        val key = PurchaseKey(productIdentifier = "same_product", purchaseDate = date2)
 
         val result = listOf(purchase1, purchase2).findByKey(key)
         assertThat(result).isEqualTo(purchase2)
@@ -1421,7 +1382,7 @@ class PurchaseInformationTest {
         store: Store,
         isSubscription: Boolean,
         productIdentifier: String? = null,
-        stableId: String? = null,
+        purchaseDate: Date? = null,
     ): PurchaseInformation {
         return PurchaseInformation(
             title = title,
@@ -1436,7 +1397,7 @@ class PurchaseInformationTest {
             isCancelled = false,
             isLifetime = false,
             productIdentifier = productIdentifier,
-            stableId = stableId,
+            purchaseDate = purchaseDate,
         )
     }
 }
