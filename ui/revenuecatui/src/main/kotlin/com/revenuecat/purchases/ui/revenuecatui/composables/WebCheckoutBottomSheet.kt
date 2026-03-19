@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.graphics.Bitmap
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -20,10 +22,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -39,14 +37,6 @@ internal fun WebCheckoutBottomSheet(
     val sheetHeight = screenHeight / 2
     var isLoading by remember { mutableStateOf(true) }
 
-    val consumeScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-                return available.copy(x = 0f)
-            }
-        }
-    }
-
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -55,8 +45,7 @@ internal fun WebCheckoutBottomSheet(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(sheetHeight)
-                .nestedScroll(consumeScrollConnection),
+                .height(sheetHeight),
         ) {
             WebCheckoutWebView(
                 url = url,
@@ -75,6 +64,16 @@ internal fun WebCheckoutBottomSheet(
     }
 }
 
+private class NestedScrollWebView(context: Context) : WebView(context) {
+    @SuppressLint("ClickableViewAccessibility")
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            parent?.requestDisallowInterceptTouchEvent(true)
+        }
+        return super.onTouchEvent(event)
+    }
+}
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun WebCheckoutWebView(
@@ -84,7 +83,7 @@ private fun WebCheckoutWebView(
 ) {
     AndroidView(
         factory = { context ->
-            WebView(context).apply {
+            NestedScrollWebView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT,
