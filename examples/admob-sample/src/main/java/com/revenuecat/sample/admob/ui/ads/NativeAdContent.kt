@@ -76,7 +76,7 @@ internal fun NativeAdContent() {
                 ) { nativeAd ->
                     nativeAdState?.destroy()
                     nativeAdState = nativeAd
-                    status = "Loaded"
+                    status = "Shown - Load Again"
                 }
                 .build()
                 .loadAd(AdRequest.Builder().build())
@@ -136,7 +136,7 @@ internal fun NativeVideoAdContent() {
                 ) { nativeAd ->
                     nativeVideoAdState?.destroy()
                     nativeVideoAdState = nativeAd
-                    status = "Loaded"
+                    status = "Shown - Load Again"
                 }
                 .build()
                 .loadAd(AdRequest.Builder().build())

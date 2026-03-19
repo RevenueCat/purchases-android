@@ -146,7 +146,7 @@ Purchases.sharedInstance.adTracker.loadAndTrackBannerAd(
 )
 ```
 
-All other formats (interstitial, app open, rewarded, rewarded interstitial, native) have a single entry point each — see the per-format composables in `ui/ads/`.
+All other formats (interstitial, app open, rewarded, rewarded interstitial, native) also have an equivalent `adTracker.loadAndTrack*()` entry point — this sample demonstrates the extension-style variant for each.
 
 ---
 
@@ -206,7 +206,7 @@ AdMob test ads may not always trigger `OnPaidEventListener` events. Revenue trac
 
 ### Build errors about `@ExperimentalPreviewRevenueCatPurchasesAPI`
 
-Make sure you have the latest RevenueCat SDK (9.19.4 or later) and the module-level opt-in configured in `build.gradle.kts`. See the [Experimental API Notice](#experimental-api-notice) section.
+Make sure you have the latest RevenueCat SDK and the module-level opt-in configured in `build.gradle.kts`. See the [Experimental API Notice](#experimental-api-notice) section.
 
 ---
 
