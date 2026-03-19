@@ -961,7 +961,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `makePurchaseAsync errors when purchasing OTP`() {
+    fun `makePurchaseAsync does not return unsupported error when purchasing OTP`() {
         val purchasesUpdatedListener = mockk<BillingAbstract.PurchasesUpdatedListener>(relaxed = true)
         val wrapper = createWrapper()
         wrapper.purchasesUpdatedListener = purchasesUpdatedListener
@@ -977,11 +977,8 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         val errorSlot = slot<PurchasesError>()
-        verify(exactly = 1) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
-        assertThat(errorSlot.captured.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(errorSlot.captured.underlyingErrorMessage).isEqualTo(GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED)
-
-        verify(exactly = 0) { purchaseHandlerMock.purchase(any(), any(), any(), any()) }
+        verify(exactly = 0) { purchasesUpdatedListener.onPurchasesFailedToUpdate(capture(errorSlot)) }
+        verify(exactly = 1) { purchaseHandlerMock.purchase(any(), any(), any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)

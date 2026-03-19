@@ -324,15 +324,6 @@ internal class GalaxyBillingWrapper(
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
-        if (galaxyPurchaseInfo.productType == ProductType.INAPP) {
-            val error = PurchasesError(
-                PurchasesErrorCode.UnsupportedError,
-                GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED,
-            )
-            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED }
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-            return
-        }
 
         val productId = galaxyPurchaseInfo.productId
 
