@@ -51,7 +51,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private var activeSubscriptions: Set<String> = setOf()
 
     private lateinit var dataStoreUtils: DataStoreUtils
-    private var isPlayStore: Boolean = true
+    private var store: Store = Store.GOOGLE
     private var packageCardAdapter: PackageCardAdapter? = null
     private var isAddOnPurchaseUpgrade: Boolean = false
 
@@ -74,7 +74,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         lifecycleScope.launch {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
-                isPlayStore = sdkConfiguration.store == Store.GOOGLE
+                store = sdkConfiguration.store
             }.collect()
         }
 
@@ -141,7 +141,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             offering.availablePackages,
             activeSubscriptions,
             this,
-            isPlayStore,
+            store,
         )
         binding.offeringDetailsPackagesRecycler.adapter = packageCardAdapter
 
