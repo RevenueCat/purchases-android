@@ -86,7 +86,6 @@ private class TextureVideoView @JvmOverloads constructor(
     private var prepared = false
     private var released = false
     private var uri: Uri? = null
-    private var looping = false
     private var autoStart = true
     private var scaleType = ScaleType.FIT
     private var firstFrameRendered = false
@@ -214,7 +213,6 @@ private class TextureVideoView @JvmOverloads constructor(
     }
 
     fun setLooping(loop: Boolean) {
-        looping = loop
         if (!released) {
             playerOwner.setLooping(loop)
         }
