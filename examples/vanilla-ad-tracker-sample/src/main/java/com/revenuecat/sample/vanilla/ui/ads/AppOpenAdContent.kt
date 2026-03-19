@@ -63,8 +63,7 @@ internal fun AppOpenAdContent(activity: Activity) {
                     Constants.AdMob.APP_OPEN_AD_UNIT_ID,
                     AdRequest.Builder().build(),
                     object : AppOpenAd.AppOpenAdLoadCallback() {
-                        @Suppress("LongMethod")
-                    override fun onAdLoaded(ad: AppOpenAd) {
+                        @Suppress("LongMethod") override fun onAdLoaded(ad: AppOpenAd) {
                             val responseInfo = ad.responseInfo
                             val adTracker = Purchases.sharedInstance.adTracker
                             adTracker.trackAdLoaded(

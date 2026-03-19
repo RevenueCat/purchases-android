@@ -64,8 +64,7 @@ internal fun InterstitialAdContent(activity: Activity) {
                     Constants.AdMob.INTERSTITIAL_AD_UNIT_ID,
                     AdRequest.Builder().build(),
                     object : InterstitialAdLoadCallback() {
-                        @Suppress("LongMethod")
-                    override fun onAdLoaded(ad: InterstitialAd) {
+                        @Suppress("LongMethod") override fun onAdLoaded(ad: InterstitialAd) {
                             val responseInfo = ad.responseInfo
                             val adTracker = Purchases.sharedInstance.adTracker
                             adTracker.trackAdLoaded(
