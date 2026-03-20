@@ -282,6 +282,81 @@ class PaywallEventSerializationTests {
     }
 
     @Test
+    fun `round trip serialization with placement only preserves placement in backend event`() {
+        val eventWithPlacementOnly = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                    date = Date(1699270688884)
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext(
+                        offeringIdentifier = "offeringID",
+                        placementIdentifier = "placementID",
+                        targetingContext = null,
+                    ),
+                    paywallRevision = 5,
+                    sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                    displayMode = "footer",
+                    localeIdentifier = "es_ES",
+                    darkMode = true
+                ),
+                type = PaywallEventType.IMPRESSION,
+            ),
+            userID = "testAppUserId",
+        )
+        val eventString = PaywallStoredEvent.json.encodeToString(eventWithPlacementOnly)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        val context = backendEvent.presentedOfferingContext
+        assertThat(context).isNotNull
+        assertThat(context?.placementIdentifier).isEqualTo("placementID")
+        assertThat(context?.targetingRevision).isNull()
+        assertThat(context?.targetingRuleId).isNull()
+    }
+
+    @Test
+    fun `round trip serialization with targeting only preserves targeting in backend event`() {
+        val eventWithTargetingOnly = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                    date = Date(1699270688884)
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext(
+                        offeringIdentifier = "offeringID",
+                        placementIdentifier = null,
+                        targetingContext = PresentedOfferingContext.TargetingContext(
+                            revision = 7,
+                            ruleId = "targetingRuleID",
+                        ),
+                    ),
+                    paywallRevision = 5,
+                    sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                    displayMode = "footer",
+                    localeIdentifier = "es_ES",
+                    darkMode = true
+                ),
+                type = PaywallEventType.IMPRESSION,
+            ),
+            userID = "testAppUserId",
+        )
+        val eventString = PaywallStoredEvent.json.encodeToString(eventWithTargetingOnly)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        val context = backendEvent.presentedOfferingContext
+        assertThat(context).isNotNull
+        assertThat(context?.placementIdentifier).isNull()
+        assertThat(context?.targetingRevision).isEqualTo(7)
+        assertThat(context?.targetingRuleId).isEqualTo("targetingRuleID")
+    }
+
+    @Test
     fun `old format with purchase error fields can be decoded`() {
         val oldFormatJson = """
             {
