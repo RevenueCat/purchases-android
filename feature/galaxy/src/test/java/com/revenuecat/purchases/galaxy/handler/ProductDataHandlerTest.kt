@@ -254,13 +254,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         val capturedListener = slot<OnGetProductsDetailsListener>()
         every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
 
-        val capturedPromotionEligibilityListener = slot<OnGetPromotionEligibilityListener>()
-        every {
-            iapHelperProvider.getPromotionEligibility(
-                any(),
-                capture(capturedPromotionEligibilityListener))
-        } returns true
-
         val productIds = setOf("iap")
         val requestedProduct = createProductVo(itemId = "iap", type = "item")
         val extraProduct = createProductVo(itemId = "extra", type = "item")
@@ -278,14 +271,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
         }
         capturedListener.captured.onGetProducts(successErrorVo, arrayListOf(requestedProduct, extraProduct))
-
-        capturedPromotionEligibilityListener.captured.onGetPromotionEligibility(
-            successErrorVo,
-            arrayListOf(
-                createPromotionEligibilityVo(itemId = "iap", pricing = "None"),
-                createPromotionEligibilityVo(itemId = "extra", pricing = "None"),
-            ),
-        )
 
         assertThat(receivedProducts).isNotNull
         assertThat(receivedProducts!!.map { it.id }).containsExactly("iap")
@@ -373,8 +358,8 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         var receivedError: PurchasesError? = null
 
         productDataHandler.getProductDetails(
-            productIds = setOf("iap"),
-            productType = ProductType.INAPP,
+            productIds = setOf("subscription"),
+            productType = ProductType.SUBS,
             onReceive = unexpectedOnReceive,
             onError = { receivedError = it },
         )
@@ -382,7 +367,10 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
         val successErrorVo = mockk<ErrorVo> {
             every { errorCode } returns GalaxyErrorCode.IAP_ERROR_NONE.code
         }
-        capturedListener.captured.onGetProducts(successErrorVo, arrayListOf(createProductVo(itemId = "iap")))
+        capturedListener.captured.onGetProducts(
+            successErrorVo,
+            arrayListOf(createProductVo(itemId = "subscription", type = "subscription")),
+        )
 
         val promotionError = PurchasesError(
             code = PurchasesErrorCode.StoreProblemError,
@@ -407,17 +395,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
     fun `missing products are logged`() {
         val capturedListener = slot<OnGetProductsDetailsListener>()
         every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
-
-        val promotionEligibilityListener = mockk<PromotionEligibilityResponseListener>()
-        val capturedPromotionOnSuccess = slot<(List<com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo>) -> Unit>()
-        every {
-            promotionEligibilityListener.getPromotionEligibilities(any(), capture(capturedPromotionOnSuccess), any())
-        } returns Unit
-
-        productDataHandler = ProductDataHandler(
-            iapHelper = iapHelperProvider,
-            promotionEligibilityResponseListener = promotionEligibilityListener,
-        )
 
         val previousLogHandler = currentLogHandler
         val previousLogLevel = Config.logLevel
@@ -448,9 +425,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
                 successErrorVo,
                 arrayListOf(createProductVo(itemId = "iap", type = "item")),
             )
-            capturedPromotionOnSuccess.captured.invoke(
-                listOf(createPromotionEligibilityVo(itemId = "iap", pricing = "None")),
-            )
         } finally {
             currentLogHandler = previousLogHandler
             Config.logLevel = previousLogLevel
@@ -469,17 +443,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
     fun `no missing products warning logged when all products are returned`() {
         val capturedListener = slot<OnGetProductsDetailsListener>()
         every { iapHelperProvider.getProductsDetails(any(), capture(capturedListener)) } returns Unit
-
-        val promotionEligibilityListener = mockk<PromotionEligibilityResponseListener>()
-        val capturedPromotionOnSuccess = slot<(List<com.samsung.android.sdk.iap.lib.vo.PromotionEligibilityVo>) -> Unit>()
-        every {
-            promotionEligibilityListener.getPromotionEligibilities(any(), capture(capturedPromotionOnSuccess), any())
-        } returns Unit
-
-        productDataHandler = ProductDataHandler(
-            iapHelper = iapHelperProvider,
-            promotionEligibilityResponseListener = promotionEligibilityListener,
-        )
 
         val previousLogHandler = currentLogHandler
         val previousLogLevel = Config.logLevel
@@ -511,12 +474,6 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
                 arrayListOf(
                     createProductVo(itemId = "iap", type = "item"),
                     createProductVo(itemId = "sub", type = "item"),
-                ),
-            )
-            capturedPromotionOnSuccess.captured.invoke(
-                listOf(
-                    createPromotionEligibilityVo(itemId = "iap", pricing = "None"),
-                    createPromotionEligibilityVo(itemId = "sub", pricing = "None"),
                 ),
             )
         } finally {
