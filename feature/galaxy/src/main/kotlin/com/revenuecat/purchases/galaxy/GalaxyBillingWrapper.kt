@@ -484,19 +484,19 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
-                    val activeOwnedProducts = ownedProducts
-                        .filter {
-                            // TO DO: Find out what this returns for OTPs when we support OTPs
-                            try {
-                                it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
-                            } catch (e: IllegalArgumentException) {
-                                val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_SUBSCRIPTION_END_DATE
-                                    .format(e.message)
-                                log(LogIntent.GALAXY_ERROR) { errorMessage }
-                                false
-                            }
-                        }
-                    val storeTransactions = activeOwnedProducts
+
+                    // getOwnedList returns:
+                    // Items that were purchased with a single charge to the user's payment method. They are either
+                    // consumable or non-consumable:
+                    //    - Consumable items that have not yet been used and not yet reported as consumed
+                    //       -Non-consumable items
+                    //       -Subscriptions currently in a free trial or an active subscription period
+                    // Includes canceled subscriptions until their active subscription period has ended
+                    //    If the subscription price is changed, includes information such as new price, renewal date,
+                    //    and user consent
+                    //
+                    // Therefore, we don't need to check if the subscription is active here
+                    val storeTransactions = ownedProducts
                         .mapNotNull {
                             try {
                                 it.toStoreTransaction(purchaseState = PurchaseState.PURCHASED)
@@ -510,7 +510,7 @@ internal class GalaxyBillingWrapper(
                         storeTransaction.purchaseToken.sha1()
                     }
 
-                    if (activeOwnedProducts.isNotEmpty() && purchasesMap.isEmpty()) {
+                    if (ownedProducts.isNotEmpty() && purchasesMap.isEmpty()) {
                         val error = PurchasesError(
                             code = PurchasesErrorCode.InvalidReceiptError,
                             underlyingErrorMessage = "No valid transactions were parsed for the getOwnedList query.",
