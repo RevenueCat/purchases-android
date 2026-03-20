@@ -9,10 +9,13 @@ import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.toBackendEvent
+import com.revenuecat.purchases.common.events.toBackendStoredEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
@@ -33,6 +36,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
+import java.util.Date
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -401,6 +406,44 @@ class BackendPaywallEventTest {
                 requestHeaders = any(),
             )
         }
+    }
+
+    @Test
+    fun `toBackendStoredEvent preserves placement and targeting from PresentedOfferingContext`() {
+        val paywallEvent = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                date = Date(1699270688884)
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywallID",
+                presentedOfferingContext = PresentedOfferingContext(
+                    offeringIdentifier = "offeringID",
+                    placementIdentifier = "home_banner",
+                    targetingContext = PresentedOfferingContext.TargetingContext(
+                        revision = 3,
+                        ruleId = "rule_abc123",
+                    ),
+                ),
+                paywallRevision = 5,
+                sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                displayMode = "footer",
+                localeIdentifier = "es_ES",
+                darkMode = true
+            ),
+            type = PaywallEventType.IMPRESSION,
+        )
+
+        val storedEvent = paywallEvent.toBackendStoredEvent("testAppUserId")
+        assertThat(storedEvent).isNotNull
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Paywalls::class.java)
+
+        val backendEvent = (storedEvent as BackendStoredEvent.Paywalls).event
+        assertThat(backendEvent.offeringID).isEqualTo("offeringID")
+        assertThat(backendEvent.presentedOfferingContext).isNotNull
+        assertThat(backendEvent.presentedOfferingContext?.placementIdentifier).isEqualTo("home_banner")
+        assertThat(backendEvent.presentedOfferingContext?.targetingRevision).isEqualTo(3)
+        assertThat(backendEvent.presentedOfferingContext?.targetingRuleId).isEqualTo("rule_abc123")
     }
 
     private fun verifyCallWithBody(body: String) {
