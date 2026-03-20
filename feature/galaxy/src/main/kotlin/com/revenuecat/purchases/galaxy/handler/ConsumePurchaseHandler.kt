@@ -64,11 +64,11 @@ internal class ConsumePurchaseHandler(
         )
 
         if (!requestWasDispatched) {
-            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST }
+            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_CONSUME_REQUEST }
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
-                    underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST,
+                    underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_CONSUME_REQUEST,
                 ),
             )
             clearInFlightRequest()

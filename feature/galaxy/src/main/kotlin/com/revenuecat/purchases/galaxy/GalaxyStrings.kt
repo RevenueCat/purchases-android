@@ -101,6 +101,9 @@ internal object GalaxyStrings {
     const val ANOTHER_CONSUME_REQUEST_IN_FLIGHT = "Another consume purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
 
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_CONSUME_REQUEST = "The Galaxy Store did not accept the consume " +
+        "IAP request for processing."
+
     const val CONSUME_REQUEST_ERRORED = "An error occurred while consuming product with token %s with the " +
         "Galaxy Store. Error: %s"
 
