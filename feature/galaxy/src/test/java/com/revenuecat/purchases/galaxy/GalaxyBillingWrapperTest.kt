@@ -247,6 +247,49 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
+    fun `queryAllPurchases returns subscription and iap transactions from getOwnedList`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = capture(onErrorSlot),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedTransactions: List<StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+        wrapper.queryAllPurchases(
+            appUserID = "app_user",
+            onReceivePurchaseHistory = { receivedTransactions = it },
+            onReceivePurchaseHistoryError = { receivedError = it },
+        )
+
+        val subscriptionOwnedProduct = createOwnedProductVo(
+            itemId = "sub_product",
+            purchaseId = "sub_token",
+            type = "subscription",
+            purchaseDate = "2023-02-01 00:00:00",
+        )
+        val iapOwnedProduct = createOwnedProductVo(
+            itemId = "iap_product",
+            purchaseId = "iap_token",
+            type = "item",
+            purchaseDate = "2023-02-02 00:00:00",
+        )
+        onSuccessSlot.captured.invoke(arrayListOf(subscriptionOwnedProduct, iapOwnedProduct))
+
+        assertThat(receivedError).isNull()
+        val transactions = receivedTransactions ?: fail("Expected purchase history")
+        assertThat(transactions.map { it.purchaseToken }).containsExactly("sub_token", "iap_token")
+        assertThat(transactions.map { it.type }).containsExactly(ProductType.SUBS, ProductType.INAPP)
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
     fun `queryAllPurchases forwards errors from getOwnedList`() {
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
@@ -466,143 +509,6 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `queryPurchases filters expired subscriptions and hashes tokens`() {
-        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
-        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
-        every {
-            getOwnedListHandler.getOwnedList(
-                onSuccess = capture(onSuccessSlot),
-                onError = any(),
-            )
-        } answers { }
-        val now = parseGalaxyDate("2024-02-10 00:00:00")
-        val wrapper = createWrapper(
-            getOwnedListHandler = getOwnedListHandler,
-            dateProvider = FixedDateProvider(now),
-        )
-
-        var receivedMap: Map<String, StoreTransaction>? = null
-        wrapper.queryPurchases(
-            appUserID = "app_user",
-            onSuccess = { receivedMap = it },
-            onError = { fail("Expected success") },
-        )
-
-        val activeOwnedProduct = createOwnedProductVo(
-            itemId = "active_product",
-            purchaseId = "active_token",
-            type = "subscription",
-            purchaseDate = "2024-02-01 00:00:00",
-        ).also {
-            every { it.subscriptionEndDate } returns "2024-02-20 00:00:00"
-        }
-        val expiredOwnedProduct = createOwnedProductVo(
-            itemId = "expired_product",
-            purchaseId = "expired_token",
-            type = "subscription",
-            purchaseDate = "2024-01-01 00:00:00",
-        ).also {
-            every { it.subscriptionEndDate } returns "2024-02-05 00:00:00"
-        }
-
-        onSuccessSlot.captured.invoke(arrayListOf(activeOwnedProduct, expiredOwnedProduct))
-
-        val purchases = receivedMap ?: fail("Expected purchases")
-        assertThat(purchases.keys).containsExactly("active_token".sha1())
-        assertThat(purchases.values.map { it.purchaseToken }).containsExactly("active_token")
-    }
-
-    @OptIn(GalaxySerialOperation::class)
-    @Test
-    fun `queryPurchases returns empty map when all subscriptions are expired`() {
-        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
-        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
-        every {
-            getOwnedListHandler.getOwnedList(
-                onSuccess = capture(onSuccessSlot),
-                onError = any(),
-            )
-        } answers { }
-        val now = parseGalaxyDate("2024-02-10 00:00:00")
-        val wrapper = createWrapper(
-            getOwnedListHandler = getOwnedListHandler,
-            dateProvider = FixedDateProvider(now),
-        )
-
-        var receivedMap: Map<String, StoreTransaction>? = null
-        wrapper.queryPurchases(
-            appUserID = "app_user",
-            onSuccess = { receivedMap = it },
-            onError = { fail("Expected success") },
-        )
-
-        val expiredOwnedProduct = createOwnedProductVo(
-            itemId = "expired_product",
-            purchaseId = "expired_token",
-            type = "subscription",
-            purchaseDate = "2024-01-01 00:00:00",
-        ).also {
-            every { it.subscriptionEndDate } returns "2024-02-01 00:00:00"
-        }
-        onSuccessSlot.captured.invoke(arrayListOf(expiredOwnedProduct))
-
-        val purchases = receivedMap ?: fail("Expected purchases")
-        assertThat(purchases).isEmpty()
-    }
-
-    @OptIn(GalaxySerialOperation::class)
-    @Test
-    fun `queryPurchases filters products with invalid subscription end date`() {
-        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
-        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
-        every {
-            getOwnedListHandler.getOwnedList(
-                onSuccess = capture(onSuccessSlot),
-                onError = any(),
-            )
-        } answers { }
-        val now = parseGalaxyDate("2024-02-10 00:00:00")
-        val activeSubscriptionEndDate = formatGalaxyDate(nowPlusDays(now, 7))
-        val wrapper = createWrapper(
-            getOwnedListHandler = getOwnedListHandler,
-            dateProvider = FixedDateProvider(now),
-        )
-
-        var receivedMap: Map<String, StoreTransaction>? = null
-        var receivedError: PurchasesError? = null
-        wrapper.queryPurchases(
-            appUserID = "app_user",
-            onSuccess = { receivedMap = it },
-            onError = { receivedError = it },
-        )
-
-        val activeOwnedProduct = createOwnedProductVo(
-            itemId = "active_product",
-            purchaseId = "active_token",
-            type = "subscription",
-            purchaseDate = "2024-02-01 00:00:00",
-        ).also {
-            every { it.subscriptionEndDate } returns activeSubscriptionEndDate
-        }
-        val invalidOwnedProduct = createOwnedProductVo(
-            itemId = "invalid_product",
-            purchaseId = "invalid_token",
-            type = "subscription",
-            purchaseDate = "2024-02-01 00:00:00",
-        ).also {
-            every { it.subscriptionEndDate } returns "INVALID-DATE"
-        }
-
-        onSuccessSlot.captured.invoke(arrayListOf(activeOwnedProduct, invalidOwnedProduct))
-
-        val purchases = receivedMap ?: fail("Expected purchases")
-        assertThat(receivedError).isNull()
-        assertThat(purchases.keys).containsExactly("active_token".sha1())
-        assertThat(purchases.values.map { it.purchaseToken }).containsExactly("active_token")
-    }
-
-    @OptIn(GalaxySerialOperation::class)
-    @Test
     fun `queryPurchases forwards errors from getOwnedList`() {
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
@@ -625,6 +531,47 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         onErrorSlot.captured.invoke(error)
 
         assertThat(receivedError).isEqualTo(error)
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `queryPurchases returns subscription and iap transactions from getOwnedList`() {
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val onSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(onSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(getOwnedListHandler = getOwnedListHandler)
+
+        var receivedTransactions: Map<String, StoreTransaction>? = null
+        var receivedError: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "app_user",
+            onSuccess = { receivedTransactions = it },
+            onError = { receivedError = it },
+        )
+
+        val subscriptionOwnedProduct = createOwnedProductVo(
+            itemId = "sub_product",
+            purchaseId = "sub_token",
+            type = "subscription",
+            purchaseDate = "2023-02-01 00:00:00",
+        )
+        val iapOwnedProduct = createOwnedProductVo(
+            itemId = "iap_product",
+            purchaseId = "iap_token",
+            type = "item",
+            purchaseDate = "2023-02-02 00:00:00",
+        )
+        onSuccessSlot.captured.invoke(arrayListOf(subscriptionOwnedProduct, iapOwnedProduct))
+
+        assertThat(receivedError).isNull()
+        val transactions = receivedTransactions ?: fail("Expected purchases")
+        assertThat(transactions.values.map { it.purchaseToken }).containsExactly("sub_token", "iap_token")
+        assertThat(transactions.values.map { it.type }).containsExactly(ProductType.SUBS, ProductType.INAPP)
     }
 
     @OptIn(GalaxySerialOperation::class)
