@@ -99,6 +99,8 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: PresentedOfferingContextBackend? = null,
         @SerialName("exit_offer_type")
         val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
@@ -112,6 +114,31 @@ internal sealed class BackendEvent : Event {
         @SerialName("error_message")
         val errorMessage: String? = null,
     ) : BackendEvent()
+
+    @Serializable
+    data class PresentedOfferingContextBackend(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    ) {
+        companion object {
+            fun fromContext(
+                context: com.revenuecat.purchases.PresentedOfferingContext,
+            ): PresentedOfferingContextBackend? {
+                if (context.placementIdentifier == null && context.targetingContext == null) {
+                    return null
+                }
+                return PresentedOfferingContextBackend(
+                    placementIdentifier = context.placementIdentifier,
+                    targetingRevision = context.targetingContext?.revision,
+                    targetingRuleId = context.targetingContext?.ruleId,
+                )
+            }
+        }
+    }
 
     /**
      * Represents an event related to a custom paywall.
