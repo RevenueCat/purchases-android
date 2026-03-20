@@ -123,7 +123,22 @@ internal sealed class BackendEvent : Event {
         val targetingRevision: Int? = null,
         @SerialName("targeting_rule_id")
         val targetingRuleId: String? = null,
-    )
+    ) {
+        companion object {
+            fun fromContext(
+                context: com.revenuecat.purchases.PresentedOfferingContext,
+            ): PresentedOfferingContextBackend? {
+                if (context.placementIdentifier == null && context.targetingContext == null) {
+                    return null
+                }
+                return PresentedOfferingContextBackend(
+                    placementIdentifier = context.placementIdentifier,
+                    targetingRevision = context.targetingContext?.revision,
+                    targetingRuleId = context.targetingContext?.ruleId,
+                )
+            }
+        }
+    }
 
     /**
      * Represents an event related to a custom paywall.
