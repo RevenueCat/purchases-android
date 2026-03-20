@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
@@ -55,5 +56,11 @@ internal class MockPurchasesType(
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         // No-op for mock - return success to simulate success
         return CreateSupportTicketResult(success = true)
+    }
+    override fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        // No-op for mock
+    }
+    override fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        // No-op for mock
     }
 }
