@@ -23,18 +23,6 @@ internal data class PaywallStoredEvent(
     @OptIn(InternalRevenueCatAPI::class)
     fun toBackendEvent(): BackendEvent.Paywalls {
         val backendComponentFields = event.componentInteraction.toBackendComponentFields()
-        val context = event.data.presentedOfferingContext
-        val presentedContext = if (
-            context.placementIdentifier != null || context.targetingContext != null
-        ) {
-            BackendEvent.PresentedOfferingContextBackend(
-                placementIdentifier = context.placementIdentifier,
-                targetingRevision = context.targetingContext?.revision,
-                targetingRuleId = context.targetingContext?.ruleId,
-            )
-        } else {
-            null
-        }
         return BackendEvent.Paywalls(
             id = event.creationData.id.toString(),
             version = BackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,
@@ -48,7 +36,9 @@ internal data class PaywallStoredEvent(
             displayMode = event.data.displayMode,
             darkMode = event.data.darkMode,
             localeIdentifier = event.data.localeIdentifier,
-            presentedOfferingContext = presentedContext,
+            presentedOfferingContext = BackendEvent.PresentedOfferingContextBackend.fromContext(
+                event.data.presentedOfferingContext,
+            ),
             exitOfferType = event.data.exitOfferType?.value,
             exitOfferingID = event.data.exitOfferingIdentifier,
             packageID = event.data.packageIdentifier,
