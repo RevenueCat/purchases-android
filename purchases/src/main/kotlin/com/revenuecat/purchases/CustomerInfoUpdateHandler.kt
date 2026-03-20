@@ -41,14 +41,14 @@ internal class CustomerInfoUpdateHandler constructor(
     private var lastSentCustomerInfo: CustomerInfo? = null
 
     fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
-        synchronized(this@CustomerInfoUpdateHandler) {
-            listeners.add(listener)
-        }
         log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
         if (!appConfig.customEntitlementComputation) {
             getCachedCustomerInfo(identityManager.currentAppUserID)?.let { cachedInfo ->
                 sendToSingleListener(listener, cachedInfo)
             }
+        }
+        synchronized(this@CustomerInfoUpdateHandler) {
+            listeners.add(listener)
         }
     }
 
@@ -105,12 +105,6 @@ internal class CustomerInfoUpdateHandler constructor(
     }
 
     private fun sendToSingleListener(listener: UpdatedCustomerInfoListener, customerInfo: CustomerInfo) {
-        synchronized(this@CustomerInfoUpdateHandler) {
-            if (lastSentCustomerInfo != customerInfo) {
-                diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
-                this.lastSentCustomerInfo = customerInfo
-            }
-        }
         log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
         dispatch { listener.onReceived(customerInfo) }
     }
