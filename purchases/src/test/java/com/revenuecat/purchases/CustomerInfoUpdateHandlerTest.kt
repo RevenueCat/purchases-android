@@ -322,5 +322,31 @@ class CustomerInfoUpdateHandlerTest {
         verify(exactly = 0) { addedListener.onReceived(newCustomerInfo) }
     }
 
+    @Test
+    fun `adding a new listener does not cause double delivery to existing listeners`() {
+        // Simulate: notifyListeners(newInfo) has already run, so lastSentCustomerInfo = newInfo.
+        // Then a second listener is added while the cache still holds an older value.
+        // The existing listener must NOT receive newInfo a second time.
+        val existingListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(existingListener)
+        // existingListener received mockInfo (initial cached delivery)
+
+        val newInfo = mockk<CustomerInfo>()
+        every { deviceCache.cacheCustomerInfo(appUserId, newInfo) } just Runs
+        customerInfoUpdateHandler.notifyListeners(newInfo)
+        // existingListener received newInfo; lastSentCustomerInfo = newInfo
+
+        // Cache still returns the older mockInfo (e.g. not yet updated)
+        every { deviceCache.getCachedCustomerInfo(appUserId) } returns mockInfo
+
+        val newListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(newListener)
+        // newListener should receive the stale mockInfo as its initial delivery
+        // but existingListener must NOT receive newInfo again
+
+        verify(exactly = 1) { newListener.onReceived(mockInfo) }
+        verify(exactly = 1) { existingListener.onReceived(newInfo) } // exactly once, not twice
+    }
+
     // endregion
 }
