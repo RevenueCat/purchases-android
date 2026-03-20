@@ -849,6 +849,7 @@ class TextComponentViewTests {
         val textKey = LocalizationKey("key_selected")
         val textWithPriceVariable = LocalizationData.Text("Price: {{ product.price }}")
         val expectedTextWithDecimals = "Price: $2.00"
+        val expectedTextWithDecimalsNl = "Price: US$\u00a02,00"
         val expectedTextWithoutDecimals = "Price: $1"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
@@ -941,7 +942,7 @@ class TextComponentViewTests {
         onNodeWithTag("country-nl")
             .assertIsDisplayed()
             .onChild()
-            .assertTextEquals(expectedTextWithDecimals)
+            .assertTextEquals(expectedTextWithDecimalsNl)
 
         onNodeWithTag("country-mx")
             .assertIsDisplayed()

@@ -1088,7 +1088,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥20,000/year"
+                "￥20,000/year"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
@@ -1098,7 +1098,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥20,000/yr"
+                "￥20,000/yr"
             ),
             // storefrontCountryCode different from device locale. We should always prefer the storefront country when
             // formatting calculated prices, to avoid discrepancies with prices coming from the store directly.

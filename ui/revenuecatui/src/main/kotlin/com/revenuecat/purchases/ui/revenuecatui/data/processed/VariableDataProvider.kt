@@ -285,20 +285,15 @@ internal fun Price.endsIn00Cents(): Boolean {
 
 /**
  * Returns price formatted for the given locale using the price's currency code.
- * Uses BigDecimal to avoid floating-point precision issues, and truncates (rounds down)
- * to match the behavior of [com.revenuecat.purchases.utils.PriceFactory].
+ * Uses BigDecimal arithmetic to avoid floating-point precision issues.
  */
 internal fun Price.getFormatted(locale: Locale = Locale.getDefault()): String {
     val currency = Currency.getInstance(currencyCode)
     val digits = currency.defaultFractionDigits.coerceAtLeast(0)
-    val numberFormat = (NumberFormat.getCurrencyInstance(locale) as java.text.DecimalFormat).apply {
+    val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
         this.currency = currency
         maximumFractionDigits = digits
         minimumFractionDigits = digits
-        val symbols = decimalFormatSymbols
-        symbols.currency = currency
-        symbols.currencySymbol = currency.getSymbol(locale)
-        decimalFormatSymbols = symbols
     }
     val amount = java.math.BigDecimal.valueOf(amountMicros)
         .divide(java.math.BigDecimal.valueOf(MICRO_MULTIPLIER.toLong()), digits, java.math.RoundingMode.DOWN)
@@ -313,22 +308,6 @@ internal fun Price.getTruncatedFormatted(locale: Locale = Locale.getDefault()): 
     val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
         currency = Currency.getInstance(currencyCode)
         maximumFractionDigits = 0
-    }
-    val amount = amountMicros / MICRO_MULTIPLIER
-    return numberFormat.format(amount)
-}
-
-/**
- * Returns the price formatted for the given locale, preserving the appropriate decimal places
- * for the currency.
- */
-internal fun Price.getFormatted(locale: Locale): String {
-    val currency = Currency.getInstance(currencyCode)
-    val digits = currency.defaultFractionDigits.coerceAtLeast(0)
-    val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
-        this.currency = currency
-        maximumFractionDigits = digits
-        minimumFractionDigits = digits
     }
     val amount = amountMicros / MICRO_MULTIPLIER
     return numberFormat.format(amount)
