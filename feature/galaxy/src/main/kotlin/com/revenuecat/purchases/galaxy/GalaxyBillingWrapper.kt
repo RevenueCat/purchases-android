@@ -23,11 +23,13 @@ import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
 import com.revenuecat.purchases.galaxy.handler.AcknowledgePurchaseHandler
 import com.revenuecat.purchases.galaxy.handler.ChangeSubscriptionPlanHandler
+import com.revenuecat.purchases.galaxy.handler.ConsumePurchaseHandler
 import com.revenuecat.purchases.galaxy.handler.GetOwnedListHandler
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.handler.PurchaseHandler
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
 import com.revenuecat.purchases.galaxy.listener.ChangeSubscriptionPlanResponseListener
+import com.revenuecat.purchases.galaxy.listener.ConsumePurchaseResponseListener
 import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
@@ -72,6 +74,10 @@ internal class GalaxyBillingWrapper(
         AcknowledgePurchaseHandler(
             iapHelper = iapHelper,
             context = context,
+        ),
+    private val consumePurchaseHandler: ConsumePurchaseResponseListener =
+        ConsumePurchaseHandler(
+            iapHelper = iapHelper
         ),
     private val getOwnedListHandler: GetOwnedListResponseListener =
         GetOwnedListHandler(
@@ -188,27 +194,90 @@ internal class GalaxyBillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        if (!finishTransactions || purchase.type == ProductType.UNKNOWN) {
-            // Here, we hard-code isAutoRenewing to true because we only support subscriptions for now.
-            // We will need to update this when we add support for one time purchases.
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken, isAutoRenewing = true)
+        if (purchase.type == ProductType.UNKNOWN) {
+            log(LogIntent.GALAXY_WARNING) {
+                GalaxyStrings.WARNING_CANNOT_ACKNOWLEDGE_OR_CONSUME_UNKNOWN_PRODUCT_TYPE
+            }
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken, isAutoRenewing = purchase.isAutoRenewing)
+            return
+        }
+
+        if (!finishTransactions) {
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken, isAutoRenewing = purchase.isAutoRenewing)
             return
         }
 
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return
 
-        if (purchase.type == ProductType.SUBS) {
-            acknowledgePurchase(
-                storeTransaction = purchase,
-                // Here, we hard-code isAutoRenewing to true because we only support subscriptions for now.
-                // We will need to update this when we add support for one time purchases.
-                onAcknowledged = { token ->
-                    deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = true)
+        when (purchase.type) {
+            ProductType.SUBS -> {
+                acknowledgePurchase(
+                    storeTransaction = purchase,
+                    // Here, we hard-code isAutoRenewing to true because we only support subscriptions for now.
+                    // We will need to update this when we add support for one time purchases.
+                    onAcknowledged = { token ->
+                        deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = true)
+                    },
+                )
+            }
+            ProductType.INAPP -> {
+                if(shouldConsume) {
+                    consumePurchase(
+                        storeTransaction = purchase,
+                        onConsumed = { token ->
+                            deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = false)
+                        }
+                    )
+                } else {
+                    // acknowledge (non-consumable purchase)
+                    acknowledgePurchase(
+                        storeTransaction = purchase,
+                        onAcknowledged = { token ->
+                            deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = false)
+                        }
+                    )
+                }
+            }
+            ProductType.UNKNOWN -> {}  // Shouldn't be run due to being caught above
+        }
+    }
+
+
+    @OptIn(GalaxySerialOperation::class)
+    internal fun consumePurchase(
+        storeTransaction: StoreTransaction,
+        onConsumed: (purchaseToken: String) -> Unit,
+    ) {
+        serialRequestExecutor.executeSerially { finish ->
+            consumePurchaseHandler.consumePurchase(
+                transaction = storeTransaction,
+                onSuccess = { consumptionResult ->
+                    val resultStatus = GalaxyConsumeOrAcknowledgeStatusCode.fromCode(
+                        code = consumptionResult.statusCode,
+                    )
+
+                    if (resultStatus == null) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.CONSUME_REQUEST_RETURNED_UNKNOWN_STATUS_CODE
+                                .format(consumptionResult.statusCode)
+                        }
+                    } else if (resultStatus != GalaxyConsumeOrAcknowledgeStatusCode.SUCCESS) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.CONSUME_REQUEST_RETURNED_ERROR_STATUS_CODE
+                                .format(
+                                    consumptionResult.statusCode,
+                                    consumptionResult.statusString,
+                                )
+                        }
+                    } else {
+                        onConsumed(storeTransaction.purchaseToken)
+                    }
+
+                    finish()
                 },
+                onError = { _ -> finish() }
             )
-        } else {
-            log(LogIntent.GALAXY_WARNING) { GalaxyStrings.WARNING_CANNOT_CONSUME_NON_SUBS_PRODUCT_TYPES }
         }
     }
 
