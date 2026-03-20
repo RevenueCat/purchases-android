@@ -19,7 +19,7 @@ import java.util.ArrayList
 
 internal class ConsumePurchaseHandler(
     private val iapHelper: IAPHelperProvider,
-): ConsumePurchaseResponseListener {
+) : ConsumePurchaseResponseListener {
 
     @get:Synchronized
     private var inFlightRequest: Request? = null
@@ -78,7 +78,7 @@ internal class ConsumePurchaseHandler(
 
     override fun onConsumePurchasedItems(
         error: ErrorVo,
-        consumptionResults: ArrayList<ConsumeVo?>
+        consumptionResults: ArrayList<ConsumeVo?>,
     ) {
         super.onConsumePurchasedItems(error, consumptionResults)
         if (error.isError()) {
@@ -90,7 +90,7 @@ internal class ConsumePurchaseHandler(
 
     private fun handleSuccessfulConsumptionRequest(consumptionResults: ArrayList<ConsumeVo?>) {
         val nonNullConsumptionResults = consumptionResults.mapNotNull { it }
-        if(nonNullConsumptionResults.isEmpty()) {
+        if (nonNullConsumptionResults.isEmpty()) {
             log(LogIntent.GALAXY_ERROR) {
                 GalaxyStrings.CONSUME_REQUEST_RETURNED_SUCCESS_BUT_NO_CONSUMPTION_RESULTS
             }
@@ -102,7 +102,7 @@ internal class ConsumePurchaseHandler(
             clearInFlightRequest()
             onError?.invoke(purchasesError)
             return
-        } else if(nonNullConsumptionResults.count() > 1) {
+        } else if (nonNullConsumptionResults.count() > 1) {
             log(LogIntent.GALAXY_ERROR) {
                 GalaxyStrings.CONSUME_REQUEST_RETURNED_MORE_THAN_ONE_RESULT
             }

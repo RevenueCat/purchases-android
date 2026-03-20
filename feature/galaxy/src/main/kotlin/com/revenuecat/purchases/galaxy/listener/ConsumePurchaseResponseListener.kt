@@ -8,7 +8,7 @@ import com.samsung.android.sdk.iap.lib.vo.ConsumeVo
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import java.util.ArrayList
 
-internal interface ConsumePurchaseResponseListener: OnConsumePurchasedItemsListener {
+internal interface ConsumePurchaseResponseListener : OnConsumePurchasedItemsListener {
     override fun onConsumePurchasedItems(error: ErrorVo, consumptionResults: ArrayList<ConsumeVo?>) {
         /* intentionally ignored. Use ConsumePurchaseHandler instead */
     }

@@ -77,7 +77,7 @@ internal class GalaxyBillingWrapper(
         ),
     private val consumePurchaseHandler: ConsumePurchaseResponseListener =
         ConsumePurchaseHandler(
-            iapHelper = iapHelper
+            iapHelper = iapHelper,
         ),
     private val getOwnedListHandler: GetOwnedListResponseListener =
         GetOwnedListHandler(
@@ -188,6 +188,7 @@ internal class GalaxyBillingWrapper(
         }
     }
 
+    @Suppress("ReturnCount")
     override fun consumeAndSave(
         finishTransactions: Boolean,
         purchase: StoreTransaction,
@@ -222,12 +223,12 @@ internal class GalaxyBillingWrapper(
                 )
             }
             ProductType.INAPP -> {
-                if(shouldConsume) {
+                if (shouldConsume) {
                     consumePurchase(
                         storeTransaction = purchase,
                         onConsumed = { token ->
                             deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = false)
-                        }
+                        },
                     )
                 } else {
                     // acknowledge (non-consumable purchase)
@@ -235,14 +236,13 @@ internal class GalaxyBillingWrapper(
                         storeTransaction = purchase,
                         onAcknowledged = { token ->
                             deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = false)
-                        }
+                        },
                     )
                 }
             }
-            ProductType.UNKNOWN -> {}  // Shouldn't be run due to being caught above
+            ProductType.UNKNOWN -> {} // Shouldn't be run due to being caught above
         }
     }
-
 
     @OptIn(GalaxySerialOperation::class)
     internal fun consumePurchase(
@@ -276,7 +276,7 @@ internal class GalaxyBillingWrapper(
 
                     finish()
                 },
-                onError = { _ -> finish() }
+                onError = { _ -> finish() },
             )
         }
     }
