@@ -140,6 +140,47 @@ class PaywallEventSerializationTests {
     }
 
     @Test
+    fun `round trip serialization preserves placement and targeting in backend event`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(impressionEvent)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        val context = backendEvent.presentedOfferingContext
+        assertThat(context).isNotNull
+        assertThat(context?.placementIdentifier).isEqualTo("placementID")
+        assertThat(context?.targetingRevision).isEqualTo(5)
+        assertThat(context?.targetingRuleId).isEqualTo("ruleID")
+    }
+
+    @Test
+    fun `round trip serialization without placement produces null backend context`() {
+        val eventWithoutPlacement = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                    date = Date(1699270688884)
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                    paywallRevision = 5,
+                    sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                    displayMode = "footer",
+                    localeIdentifier = "es_ES",
+                    darkMode = true
+                ),
+                type = PaywallEventType.IMPRESSION,
+            ),
+            userID = "testAppUserId",
+        )
+        val eventString = PaywallStoredEvent.json.encodeToString(eventWithoutPlacement)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        assertThat(backendEvent.presentedOfferingContext).isNull()
+    }
+
+    @Test
     fun `can decode old cached event with offeringIdentifier string field`() {
         // Old format with "offeringIdentifier" as a string field instead of "presentedOfferingContext" object
         val oldFormatJson = """
