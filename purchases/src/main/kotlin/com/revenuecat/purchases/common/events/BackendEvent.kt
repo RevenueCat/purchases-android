@@ -100,7 +100,7 @@ internal sealed class BackendEvent : Event {
         @SerialName("locale")
         val localeIdentifier: String,
         @SerialName("presented_offering_context")
-        val presentedOfferingContext: PresentedOfferingContextBackend? = null,
+        val presentedOfferingContext: PresentedOfferingContextData? = null,
         @SerialName("exit_offer_type")
         val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
@@ -154,7 +154,7 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     @Serializable
-    data class PresentedOfferingContextBackend(
+    data class PresentedOfferingContextData(
         @SerialName("placement_identifier")
         val placementIdentifier: String? = null,
         @SerialName("targeting_revision")
@@ -165,11 +165,11 @@ internal sealed class BackendEvent : Event {
         companion object {
             fun fromContext(
                 context: com.revenuecat.purchases.PresentedOfferingContext,
-            ): PresentedOfferingContextBackend? {
+            ): PresentedOfferingContextData? {
                 if (context.placementIdentifier == null && context.targetingContext == null) {
                     return null
                 }
-                return PresentedOfferingContextBackend(
+                return PresentedOfferingContextData(
                     placementIdentifier = context.placementIdentifier,
                     targetingRevision = context.targetingContext?.revision,
                     targetingRuleId = context.targetingContext?.ruleId,
