@@ -80,7 +80,7 @@ class BackendPaywallEventTest {
                 displayMode = "full_screen",
                 darkMode = true,
                 localeIdentifier = "es_ES",
-                presentedOfferingContext = BackendEvent.PresentedOfferingContextBackend(
+                presentedOfferingContext = BackendEvent.PresentedOfferingContextData(
                     placementIdentifier = "home_banner",
                     targetingRevision = 3,
                     targetingRuleId = "rule_abc123",
