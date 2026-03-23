@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
@@ -164,7 +165,7 @@ internal sealed class BackendEvent : Event {
     ) {
         companion object {
             fun fromContext(
-                context: com.revenuecat.purchases.PresentedOfferingContext,
+                context: PresentedOfferingContext,
             ): PresentedOfferingContextData? {
                 if (context.placementIdentifier == null && context.targetingContext == null) {
                     return null

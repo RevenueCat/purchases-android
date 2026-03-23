@@ -440,10 +440,25 @@ class BackendPaywallEventTest {
 
         val backendEvent = (storedEvent as BackendStoredEvent.Paywalls).event
         assertThat(backendEvent.offeringID).isEqualTo("offeringID")
-        assertThat(backendEvent.presentedOfferingContext).isNotNull
-        assertThat(backendEvent.presentedOfferingContext?.placementIdentifier).isEqualTo("home_banner")
-        assertThat(backendEvent.presentedOfferingContext?.targetingRevision).isEqualTo(3)
-        assertThat(backendEvent.presentedOfferingContext?.targetingRuleId).isEqualTo("rule_abc123")
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                placementIdentifier = "home_banner",
+                targetingRevision = 3,
+                targetingRuleId = "rule_abc123",
+            )
+        )
+    }
+
+    @Test
+    fun `old stored BackendStoredEvent without presentedOfferingContext deserializes correctly`() {
+        val oldJson = """
+            {"discriminator":"paywalls","event":{"discriminator":"paywalls","id":"test-id","version":1,"type":"paywall_impression","app_user_id":"appUserID","session_id":"sessionID","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":123456789,"display_mode":"full_screen","dark_mode":true,"locale":"es_ES"}}
+        """.trimIndent()
+        val deserialized = JsonProvider.defaultJson.decodeFromString<BackendStoredEvent>(oldJson)
+        assertThat(deserialized).isInstanceOf(BackendStoredEvent.Paywalls::class.java)
+        val event = (deserialized as BackendStoredEvent.Paywalls).event
+        assertThat(event.presentedOfferingContext).isNull()
+        assertThat(event.offeringID).isEqualTo("offeringID")
     }
 
     private fun verifyCallWithBody(body: String) {
