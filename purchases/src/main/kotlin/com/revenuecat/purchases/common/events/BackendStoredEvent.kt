@@ -100,7 +100,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
-            presentedOfferingContext = BackendEvent.PresentedOfferingContextBackend.fromContext(
+            presentedOfferingContext = BackendEvent.PresentedOfferingContextData.fromContext(
                 data.presentedOfferingContext,
             ),
             exitOfferType = data.exitOfferType?.value,

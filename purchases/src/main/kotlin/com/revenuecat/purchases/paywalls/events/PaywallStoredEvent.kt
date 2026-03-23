@@ -35,7 +35,7 @@ internal data class PaywallStoredEvent(
             displayMode = event.data.displayMode,
             darkMode = event.data.darkMode,
             localeIdentifier = event.data.localeIdentifier,
-            presentedOfferingContext = BackendEvent.PresentedOfferingContextBackend.fromContext(
+            presentedOfferingContext = BackendEvent.PresentedOfferingContextData.fromContext(
                 event.data.presentedOfferingContext,
             ),
             exitOfferType = event.data.exitOfferType?.value,
