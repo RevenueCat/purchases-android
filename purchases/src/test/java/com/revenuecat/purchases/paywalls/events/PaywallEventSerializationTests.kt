@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import kotlinx.serialization.encodeToString
@@ -145,11 +146,13 @@ class PaywallEventSerializationTests {
         val decodedEvent = PaywallStoredEvent.fromString(eventString)
         val backendEvent = decodedEvent.toBackendEvent()
 
-        val context = backendEvent.presentedOfferingContext
-        assertThat(context).isNotNull
-        assertThat(context?.placementIdentifier).isEqualTo("placementID")
-        assertThat(context?.targetingRevision).isEqualTo(5)
-        assertThat(context?.targetingRuleId).isEqualTo("ruleID")
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                placementIdentifier = "placementID",
+                targetingRevision = 5,
+                targetingRuleId = "ruleID",
+            )
+        )
     }
 
     @Test
@@ -312,11 +315,11 @@ class PaywallEventSerializationTests {
         val decodedEvent = PaywallStoredEvent.fromString(eventString)
         val backendEvent = decodedEvent.toBackendEvent()
 
-        val context = backendEvent.presentedOfferingContext
-        assertThat(context).isNotNull
-        assertThat(context?.placementIdentifier).isEqualTo("placementID")
-        assertThat(context?.targetingRevision).isNull()
-        assertThat(context?.targetingRuleId).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                placementIdentifier = "placementID",
+            )
+        )
     }
 
     @Test
@@ -351,11 +354,12 @@ class PaywallEventSerializationTests {
         val decodedEvent = PaywallStoredEvent.fromString(eventString)
         val backendEvent = decodedEvent.toBackendEvent()
 
-        val context = backendEvent.presentedOfferingContext
-        assertThat(context).isNotNull
-        assertThat(context?.placementIdentifier).isNull()
-        assertThat(context?.targetingRevision).isEqualTo(7)
-        assertThat(context?.targetingRuleId).isEqualTo("targetingRuleID")
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                targetingRevision = 7,
+                targetingRuleId = "targetingRuleID",
+            )
+        )
     }
 
     @Test
