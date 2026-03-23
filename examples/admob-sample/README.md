@@ -26,8 +26,7 @@ The adapter library automatically tracks these RevenueCat ad events for all ad f
 
 ### Key Files
 
-- `HomeScreen.kt` - Compose UI with list + detail navigation per ad format; calls `Purchases.sharedInstance.adTracker` for load-and-track
-- `BannerAdView.kt` - Composable wrapper for banner ads using `adView.loadAndTrackAd(...)`
+- `HomeScreen.kt` - Compose UI with list + detail navigation per ad format
 - `MainApplication.kt` - RevenueCat and AdMob SDK initialization
 - `Constants.kt` - Ad unit IDs and configuration
 
@@ -46,16 +45,6 @@ kotlinOptions {
     )
 }
 ```
-
----
-
-## Requirements
-
-- **Android Studio** Hedgehog or later
-- **Android API 26+** (Android 8.0 Oreo or higher)
-- **Kotlin 2.0.21**
-- **RevenueCat SDK 9.19.4** or later
-- **Google Mobile Ads SDK 24.9.0**
 
 ---
 
@@ -130,7 +119,34 @@ The `purchases-android-admob` adapter library sits between AdMob and RevenueCat,
 └────────────────────────┘
 ```
 
-The sample calls `Purchases.sharedInstance.adTracker.loadAndTrack*()` from Compose — no wrapper needed. The adapter handles all event mapping internally.
+The adapter exposes extension functions that wrap AdMob's load calls and wire up all tracking automatically. The sample uses these throughout — no manual tracker calls needed.
+
+---
+
+## API Variants
+
+Some formats have two equivalent entry points in the adapter. Both produce identical tracking — choose whichever fits your code style.
+
+### Banner
+
+**Extension on `AdView`** (used in this sample):
+```kotlin
+adView.loadAndTrackAd(
+    adRequest = AdRequest.Builder().build(),
+    placement = "home_banner",
+)
+```
+
+**Via `adTracker`** (alternative):
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackBannerAd(
+    adView = adView,
+    adRequest = AdRequest.Builder().build(),
+    placement = "home_banner",
+)
+```
+
+All other formats (interstitial, app open, rewarded, rewarded interstitial, native) also have an equivalent `adTracker.loadAndTrack*()` entry point — this sample demonstrates the extension-style variant for each.
 
 ---
 
@@ -190,7 +206,7 @@ AdMob test ads may not always trigger `OnPaidEventListener` events. Revenue trac
 
 ### Build errors about `@ExperimentalPreviewRevenueCatPurchasesAPI`
 
-Make sure you have the latest RevenueCat SDK (9.19.4 or later) and the module-level opt-in configured in `build.gradle.kts`. See the [Experimental API Notice](#experimental-api-notice) section.
+Make sure you have the latest RevenueCat SDK and the module-level opt-in configured in `build.gradle.kts`. See the [Experimental API Notice](#experimental-api-notice) section.
 
 ---
 
