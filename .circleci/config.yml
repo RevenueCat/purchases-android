@@ -1127,6 +1127,13 @@ workflows:
               - deploy
               - docs-deploy
           <<: *release-tags
+      - revenuecat/merge-release-pr:
+          repo_name: purchases-android
+          requires:
+            - publish-purchase-tester-release
+            - publish-paywall-tester-release
+            - publish-rct-tester-release
+          <<: *release-tags
 
   on-main-branch:
     when:
