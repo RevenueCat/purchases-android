@@ -1,6 +1,5 @@
 package com.revenuecat.sample.admob.ui.ads
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -24,6 +23,11 @@ internal fun ErrorTestingContent() {
         text = "Uses invalid ad unit ID to trigger and track ad load failure.",
         style = MaterialTheme.typography.bodySmall,
     )
+    Text(
+        text = "Check Logcat for failure tracking after clicking.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.error,
+    )
 
     Button(
         onClick = {
@@ -33,11 +37,6 @@ internal fun ErrorTestingContent() {
                 adRequest = AdRequest.Builder().build(),
                 placement = "error_test",
             )
-            Toast.makeText(
-                context,
-                "Loading with invalid ID - check logs for failure tracking",
-                Toast.LENGTH_LONG,
-            ).show()
         },
         modifier = Modifier.fillMaxWidth(),
     ) {

@@ -24,6 +24,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -84,6 +85,10 @@ class CustomerCenterViewModelTests {
         customerInfo = mockk()
         configData = mockk()
         customerCenterListener = mockk(relaxed = true)
+        every { customerCenterListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         screens = mapOf(
             Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
@@ -843,6 +848,14 @@ class CustomerCenterViewModelTests {
         // Create two separate listeners to verify they're both called
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -868,6 +881,14 @@ class CustomerCenterViewModelTests {
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -893,6 +914,14 @@ class CustomerCenterViewModelTests {
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -913,6 +942,39 @@ class CustomerCenterViewModelTests {
         // Then both listeners should be notified with the correct error
         verify(exactly = 1) { directListener.onRestoreFailed(error) }
         verify(exactly = 1) { purchasesListener.onRestoreFailed(error) }
+    }
+
+    @Test
+    fun `restorePurchases does not continue when onRestoreInitiated returns false`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(false)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.restorePurchases()
+
+        verify(exactly = 1) { directListener.onRestoreInitiated(any()) }
+        verify(exactly = 0) { purchasesListener.onRestoreInitiated(any()) }
+        coVerify(exactly = 0) { purchases.awaitRestore() }
+        verify(exactly = 0) { directListener.onRestoreStarted() }
+        verify(exactly = 0) { purchasesListener.onRestoreStarted() }
     }
 
     @Test

@@ -148,7 +148,7 @@ class AdTrackerTest {
             data = AdRevenueData(
                 networkName = "Network",
                 mediatorName = AdMediatorName.AD_MOB,
-                adFormat = AdFormat.MREC,
+                adFormat = AdFormat.OTHER,
                 placement = "placement",
                 adUnitId = "ad-unit",
                 impressionId = "impression",

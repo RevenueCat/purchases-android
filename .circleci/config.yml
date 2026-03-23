@@ -398,7 +398,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.27.0-SNAPSHOT s3://purchases-docs/android/9.27.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.28.0-SNAPSHOT s3://purchases-docs/android/9.28.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -600,7 +600,7 @@ jobs:
           command: |
             bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
           environment:
-            NOTIFY_SLACK: << parameters.notify_slack >>
+            NOTIFY_SLACK: "<< parameters.notify_slack >>"
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results

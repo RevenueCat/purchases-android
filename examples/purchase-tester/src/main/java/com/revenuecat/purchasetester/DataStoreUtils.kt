@@ -19,6 +19,7 @@ class DataStoreUtils(
     private val proxyUrlKey = stringPreferencesKey("last_proxy_url_key")
     private val useAmazonKey = booleanPreferencesKey("last_use_amazon_key")
     private val storeKey = stringPreferencesKey("last_store_key")
+    private val appUserIdKey = stringPreferencesKey("last_app_user_id_key")
 
     suspend fun saveSdkConfig(
         sdkConfiguration: SdkConfiguration,
@@ -32,6 +33,11 @@ class DataStoreUtils(
             }
             preferences[useAmazonKey] = sdkConfiguration.store == Store.AMAZON
             preferences[storeKey] = sdkConfiguration.store.name
+            if (sdkConfiguration.appUserId == null) {
+                preferences.remove(appUserIdKey)
+            } else {
+                preferences[appUserIdKey] = sdkConfiguration.appUserId
+            }
         }
     }
 
@@ -43,6 +49,7 @@ class DataStoreUtils(
                 apiKey = preferences[apiKeyKey] ?: "",
                 proxyUrl = preferences[proxyUrlKey],
                 store = storedStore ?: fallbackStore,
+                appUserId = preferences[appUserIdKey],
             )
         }
     }
