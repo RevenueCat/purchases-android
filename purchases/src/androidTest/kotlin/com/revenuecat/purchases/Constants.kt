@@ -1,17 +1,30 @@
 package com.revenuecat.purchases
 
+import androidx.test.platform.app.InstrumentationRegistry
+
 object Constants {
-    const val apiKey = "REVENUECAT_API_KEY"
-    const val proxyUrl = "NO_PROXY_URL"
-    const val googlePurchaseToken = "GOOGLE_PURCHASE_TOKEN"
-    const val productIdToPurchase = "PRODUCT_ID_TO_PURCHASE"
-    const val basePlanIdToPurchase = "BASE_PLAN_ID_TO_PURCHASE"
+    private val args by lazy { InstrumentationRegistry.getArguments() }
+
+    val apiKey: String get() = args.getString("REVENUECAT_API_KEY")?.takeIf { it.isNotEmpty() }
+        ?: "REVENUECAT_API_KEY"
+    val proxyUrl: String get() = args.getString("TEST_PROXY_URL")?.takeIf { it.isNotEmpty() }
+        ?: "NO_PROXY_URL"
+    val googlePurchaseToken: String get() = args.getString("GOOGLE_PURCHASE_TOKEN")?.takeIf { it.isNotEmpty() }
+        ?: "GOOGLE_PURCHASE_TOKEN"
+    val productIdToPurchase: String get() = args.getString("PRODUCT_ID_TO_PURCHASE")?.takeIf { it.isNotEmpty() }
+        ?: "PRODUCT_ID_TO_PURCHASE"
+    val basePlanIdToPurchase: String get() = args.getString("BASE_PLAN_ID_TO_PURCHASE")?.takeIf { it.isNotEmpty() }
+        ?: "BASE_PLAN_ID_TO_PURCHASE"
 
     // comma separated list of active entitlements to verify
-    const val activeEntitlementIdsToVerify = "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
+    val activeEntitlementIdsToVerify: String get() =
+        args.getString("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")?.takeIf { it.isNotEmpty() }
+            ?: "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
 
-    private const val backendEnvironmentString = "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
-    val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
+    private val backendEnvironmentString: String get() =
+        args.getString("TEST_BACKEND_ENVIRONMENT")?.takeIf { it.isNotEmpty() }
+            ?: "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
+    val backendEnvironment: BackendEnvironment get() = BackendEnvironment.valueForString(backendEnvironmentString)
 
     enum class BackendEnvironment {
         PRODUCTION,

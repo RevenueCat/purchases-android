@@ -22,6 +22,7 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Rule
@@ -34,8 +35,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
-// To run these tests in Android Studio, you need to remove the test exclusion in the
-// common module build.gradle and change the API KEY in Constants.kt
+// To run these tests locally, set REVENUECAT_API_KEY and LOAD_SHEDDER_API_KEY in local.properties
 @RunWith(AndroidJUnit4::class)
 internal abstract class BaseBackendIntegrationTest {
 
@@ -46,13 +46,15 @@ internal abstract class BaseBackendIntegrationTest {
         @BeforeClass
         @JvmStatic
         fun setupClass() {
-            if (!canRunIntegrationTests()) {
-                error("You need to set required constants in Constants.kt")
-            }
+            Assume.assumeTrue(
+                "Skipping backend integration tests: API keys not configured. " +
+                    "Set REVENUECAT_API_KEY and LOAD_SHEDDER_API_KEY in local.properties to run these tests.",
+                canRunIntegrationTests(),
+            )
         }
 
-        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY"
-            && Constants.loadShedderApiKey != "LOAD_SHEDDER_API_KEY"
+        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
+            Constants.loadShedderApiKey != "LOAD_SHEDDER_API_KEY"
     }
 
     @get:Rule

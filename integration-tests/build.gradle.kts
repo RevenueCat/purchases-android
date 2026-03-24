@@ -1,5 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.revenuecat.android.application)
+}
+
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
+}
+
+fun resolveProperty(name: String, default: String = ""): String {
+    return (project.findProperty(name) as? String)?.takeIf { it.isNotEmpty() }
+        ?: localProperties.getProperty(name, default)
 }
 
 fun obtainTestBuildType(): String {
@@ -26,6 +40,7 @@ android {
         missingDimensionStrategy("billingclient", "bc8")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments["REVENUECAT_API_KEY"] = resolveProperty("REVENUECAT_API_KEY")
         multiDexEnabled = true
     }
     signingConfigs {

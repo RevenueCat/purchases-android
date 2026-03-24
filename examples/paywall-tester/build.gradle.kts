@@ -1,7 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.baselineprofile)
+}
+
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -30,6 +39,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField("String", "PAYWALL_TESTER_API_KEY_A",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A", "")}\"")
+        buildConfigField("String", "PAYWALL_TESTER_API_KEY_B",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B", "")}\"")
+        buildConfigField("String", "PAYWALL_TESTER_API_KEY_A_LABEL",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A_LABEL", "")}\"")
+        buildConfigField("String", "PAYWALL_TESTER_API_KEY_B_LABEL",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B_LABEL", "")}\"")
     }
 
     signingConfigs {
@@ -69,6 +87,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
         viewBinding = true
     }

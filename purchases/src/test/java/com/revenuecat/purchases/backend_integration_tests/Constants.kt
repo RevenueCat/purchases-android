@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 object Constants {
-    const val apiKey = "REVENUECAT_API_KEY"
-    const val loadShedderApiKey = "LOAD_SHEDDER_API_KEY"
+    val apiKey: String = System.getProperty("REVENUECAT_API_KEY")?.takeIf { it.isNotEmpty() }
+        ?: "REVENUECAT_API_KEY"
+    val loadShedderApiKey: String = System.getProperty("LOAD_SHEDDER_API_KEY")?.takeIf { it.isNotEmpty() }
+        ?: "LOAD_SHEDDER_API_KEY"
 }
