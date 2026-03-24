@@ -13,10 +13,12 @@ val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
-// Resolves a property: Gradle -P flags (CI) take priority, then local.properties
+// Resolves a property: Gradle -P flags (CI) take priority, then local.properties.
+// Empty string from -P flags is treated as a valid value (e.g. empty ACTIVE_ENTITLEMENT_IDS_TO_VERIFY).
 fun resolveProperty(name: String, default: String = ""): String {
-    return (project.findProperty(name) as? String)?.takeIf { it.isNotEmpty() }
-        ?: localProperties.getProperty(name, default)
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+    return localProperties.getProperty(name) ?: default
 }
 
 // For instrumentation tests: resolves the right property based on TEST_BACKEND_ENVIRONMENT.
@@ -24,7 +26,8 @@ fun resolveProperty(name: String, default: String = ""): String {
 // This function picks the right prefix based on the configured environment.
 fun resolveTestProperty(name: String, default: String = ""): String {
     // CI passes generic (non-prefixed) names via -P flags — check those first
-    (project.findProperty(name) as? String)?.takeIf { it.isNotEmpty() }?.let { return it }
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
 
     // For local dev: determine prefix from TEST_BACKEND_ENVIRONMENT
     val env = resolveProperty("TEST_BACKEND_ENVIRONMENT", "production")

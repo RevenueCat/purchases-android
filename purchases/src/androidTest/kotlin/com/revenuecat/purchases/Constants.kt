@@ -5,21 +5,18 @@ import androidx.test.platform.app.InstrumentationRegistry
 object Constants {
     private val args by lazy { InstrumentationRegistry.getArguments() }
 
-    val apiKey: String get() = args.getString("REVENUECAT_API_KEY")?.takeIf { it.isNotEmpty() }
-        ?: "REVENUECAT_API_KEY"
-    val proxyUrl: String get() = args.getString("TEST_PROXY_URL")?.takeIf { it.isNotEmpty() }
-        ?: "NO_PROXY_URL"
-    val googlePurchaseToken: String get() = args.getString("GOOGLE_PURCHASE_TOKEN")?.takeIf { it.isNotEmpty() }
-        ?: "GOOGLE_PURCHASE_TOKEN"
-    val productIdToPurchase: String get() = args.getString("PRODUCT_ID_TO_PURCHASE")?.takeIf { it.isNotEmpty() }
-        ?: "PRODUCT_ID_TO_PURCHASE"
-    val basePlanIdToPurchase: String get() = args.getString("BASE_PLAN_ID_TO_PURCHASE")?.takeIf { it.isNotEmpty() }
-        ?: "BASE_PLAN_ID_TO_PURCHASE"
+    // Instrumentation args are always set by build.gradle.kts (even to empty).
+    // Use the value as-is; empty means "not configured" for required fields,
+    // or "intentionally empty" for optional fields like activeEntitlementIdsToVerify.
+    val apiKey: String get() = args.getString("REVENUECAT_API_KEY") ?: ""
+    val proxyUrl: String get() = args.getString("TEST_PROXY_URL") ?: ""
+    val googlePurchaseToken: String get() = args.getString("GOOGLE_PURCHASE_TOKEN") ?: ""
+    val productIdToPurchase: String get() = args.getString("PRODUCT_ID_TO_PURCHASE") ?: ""
+    val basePlanIdToPurchase: String get() = args.getString("BASE_PLAN_ID_TO_PURCHASE") ?: ""
 
-    // comma separated list of active entitlements to verify
+    // comma separated list of active entitlements to verify (empty means none expected)
     val activeEntitlementIdsToVerify: String get() =
-        args.getString("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")?.takeIf { it.isNotEmpty() }
-            ?: "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
+        args.getString("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY") ?: ""
 
     private val backendEnvironmentString: String get() =
         args.getString("TEST_BACKEND_ENVIRONMENT")?.takeIf { it.isNotEmpty() }
