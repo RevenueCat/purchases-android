@@ -23,7 +23,7 @@ object Constants {
 
     private val backendEnvironmentString: String get() =
         args.getString("TEST_BACKEND_ENVIRONMENT")?.takeIf { it.isNotEmpty() }
-            ?: "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
+            ?: "production"
     val backendEnvironment: BackendEnvironment get() = BackendEnvironment.valueForString(backendEnvironmentString)
 
     enum class BackendEnvironment {
