@@ -40,14 +40,26 @@ android {
             useSupportLibrary = true
         }
 
-        buildConfigField("String", "PAYWALL_TESTER_API_KEY_A",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A", "")}\"")
-        buildConfigField("String", "PAYWALL_TESTER_API_KEY_B",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B", "")}\"")
-        buildConfigField("String", "PAYWALL_TESTER_API_KEY_A_LABEL",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A_LABEL", "")}\"")
-        buildConfigField("String", "PAYWALL_TESTER_API_KEY_B_LABEL",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B_LABEL", "")}\"")
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_A",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A", "")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_B",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B", "")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_A_LABEL",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A_LABEL", "")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_B_LABEL",
+            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B_LABEL", "")}\"",
+        )
     }
 
     signingConfigs {
