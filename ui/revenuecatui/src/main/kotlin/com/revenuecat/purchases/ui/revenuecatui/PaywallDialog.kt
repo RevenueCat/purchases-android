@@ -27,7 +27,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
@@ -139,16 +138,15 @@ private fun PaywallDialogContent(
 
     PaywallDialogScaffold(
         handleCloseRequest = viewModel::closePaywall,
-        paywallOptions = paywallOptions,
-        viewModel = viewModel,
-    )
+    ) {
+        InternalPaywall(paywallOptions, viewModel)
+    }
 }
 
 @Composable
 private fun PaywallDialogScaffold(
     handleCloseRequest: () -> Unit,
-    paywallOptions: PaywallOptions,
-    viewModel: PaywallViewModel,
+    content: @Composable () -> Unit,
 ) {
     val dialogBottomPadding = if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
@@ -186,7 +184,7 @@ private fun PaywallDialogScaffold(
                     ) { padding(paddingValues) }
                     .padding(bottom = if (shouldApplyDialogBottomPadding) dialogBottomPadding else 0.dp),
             ) {
-                InternalPaywall(paywallOptions, viewModel)
+                content()
             }
         }
     }
