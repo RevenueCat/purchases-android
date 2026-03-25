@@ -13,6 +13,12 @@ val localProperties = Properties().apply {
     }
 }
 
+fun resolveProperty(name: String, default: String = ""): String {
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+    return localProperties.getProperty(name) ?: default
+}
+
 android {
     namespace = "com.revenuecat.paywallstester"
 
@@ -43,22 +49,22 @@ android {
         buildConfigField(
             "String",
             "PAYWALL_TESTER_API_KEY_A",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A", "")}\"",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_A")}\"",
         )
         buildConfigField(
             "String",
             "PAYWALL_TESTER_API_KEY_B",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B", "")}\"",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_B")}\"",
         )
         buildConfigField(
             "String",
             "PAYWALL_TESTER_API_KEY_A_LABEL",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_A_LABEL", "")}\"",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_A_LABEL")}\"",
         )
         buildConfigField(
             "String",
             "PAYWALL_TESTER_API_KEY_B_LABEL",
-            "\"${localProperties.getProperty("PAYWALL_TESTER_API_KEY_B_LABEL", "")}\"",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_B_LABEL")}\"",
         )
     }
 

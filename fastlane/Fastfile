@@ -397,7 +397,13 @@ platform :android do
     build_bundle(
       build_task: 'examples:paywall-tester:bundleBc8',
       env_prefix: 'PAYWALL_TESTER',
-      gradle_properties_prefix: 'paywallTester'
+      gradle_properties_prefix: 'paywallTester',
+      extra_properties: {
+        "PAYWALL_TESTER_API_KEY_A" => ENV['PAYWALLS_V2_ALPHA_API_KEY'] || '',
+        "PAYWALL_TESTER_API_KEY_B" => ENV['PAYWALLS_V2_TEMPLATE_REPO_API_KEY'] || '',
+        "PAYWALL_TESTER_API_KEY_A_LABEL" => "Paywalls V2 Alpha",
+        "PAYWALL_TESTER_API_KEY_B_LABEL" => "Official Paywalls V2 Template Repo",
+      }
     )
   end
 
