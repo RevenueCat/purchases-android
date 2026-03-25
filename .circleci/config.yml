@@ -683,11 +683,6 @@ jobs:
           at: .
       - install-sdkman
       - run:
-          name: Replace API_KEY
-          working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
-          command: |
-            sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
-      - run:
           name: Prepare Keystore
           working_directory: integration-tests
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
