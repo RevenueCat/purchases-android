@@ -27,6 +27,10 @@ fun obtainTestBuildType(): String {
 }
 
 android {
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.revenuecat.purchases.integrationtests"
         minSdk = 21
@@ -40,8 +44,10 @@ android {
         missingDimensionStrategy("billingclient", "bc8")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        testInstrumentationRunnerArguments["REVENUECAT_API_KEY"] = resolveProperty("REVENUECAT_API_KEY")
         multiDexEnabled = true
+
+        buildConfigField("String", "REVENUECAT_API_KEY",
+            "\"${resolveProperty("REVENUECAT_API_KEY")}\"")
     }
     signingConfigs {
         create("release") {

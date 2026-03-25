@@ -2,10 +2,10 @@ package com.revenuecat.purchases.integrationtests
 
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.integrationtests.BuildConfig
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -27,10 +27,7 @@ class IntegrationTest {
     fun setup() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity {
-            val apiKey = InstrumentationRegistry.getArguments()
-                .getString("REVENUECAT_API_KEY")?.takeIf { key -> key.isNotEmpty() }
-                ?: "REVENUECAT_API_KEY"
-            val builder = PurchasesConfiguration.Builder(it, apiKey).appUserID("integrationTest")
+            val builder = PurchasesConfiguration.Builder(it, BuildConfig.REVENUECAT_API_KEY).appUserID("integrationTest")
             Purchases.configure(builder.build())
         }
     }
