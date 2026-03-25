@@ -73,6 +73,23 @@ platform :android do
       CUSTOM_ENTITLEMENT_COMPUTATION_BASE_PLAN_ID_TO_PURCHASE
     ]
 
+    # Check that the 1Password CLI is installed
+    unless system('which op > /dev/null 2>&1')
+      UI.user_error!(
+        "1Password CLI (op) is not installed.\n" \
+        "Install it with: brew install 1password-cli\n" \
+        "More info: https://developer.1password.com/docs/cli/get-started/"
+      )
+    end
+
+    # Check that the user is signed in
+    unless system('op account list > /dev/null 2>&1')
+      UI.user_error!(
+        "Not signed in to 1Password CLI.\n" \
+        "Sign in with: op signin"
+      )
+    end
+
     UI.message("Fetching secrets from 1Password item '#{op_item}' in vault '#{op_vault}'...")
 
     # Read existing local.properties to preserve non-secret entries (e.g. sdk.dir)
