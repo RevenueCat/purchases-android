@@ -46,8 +46,11 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
 
-        buildConfigField("String", "REVENUECAT_API_KEY",
-            "\"${resolveProperty("REVENUECAT_API_KEY")}\"")
+        buildConfigField(
+            "String",
+            "REVENUECAT_API_KEY",
+            "\"${resolveProperty("REVENUECAT_API_KEY")}\"",
+        )
     }
     signingConfigs {
         create("release") {

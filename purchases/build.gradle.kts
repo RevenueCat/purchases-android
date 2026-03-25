@@ -114,7 +114,10 @@ android {
         unitTests.all {
             // Pass test keys as JVM system properties for backend integration tests
             it.systemProperty("BACKEND_INTEGRATION_API_KEY", resolveProperty("BACKEND_INTEGRATION_API_KEY"))
-            it.systemProperty("BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY", resolveProperty("BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY"))
+            it.systemProperty(
+                "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY",
+                resolveProperty("BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY"),
+            )
         }
     }
 }

@@ -5,7 +5,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.purchases.integrationtests.BuildConfig
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -27,7 +26,10 @@ class IntegrationTest {
     fun setup() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity {
-            val builder = PurchasesConfiguration.Builder(it, BuildConfig.REVENUECAT_API_KEY).appUserID("integrationTest")
+            val builder = PurchasesConfiguration.Builder(
+                it,
+                BuildConfig.REVENUECAT_API_KEY,
+            ).appUserID("integrationTest")
             Purchases.configure(builder.build())
         }
     }
