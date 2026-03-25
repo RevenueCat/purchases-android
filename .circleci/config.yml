@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.13.0
+  revenuecat: revenuecat/sdks-common-config@3.16.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -398,7 +398,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.27.0 s3://purchases-docs/android/9.27.0 --delete
+          command: aws s3 sync ~/project/docs/9.28.0-SNAPSHOT s3://purchases-docs/android/9.28.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -1126,6 +1126,13 @@ workflows:
           requires:
               - deploy
               - docs-deploy
+          <<: *release-tags
+      - revenuecat/merge-release-pr:
+          repo_name: purchases-android
+          requires:
+            - publish-purchase-tester-release
+            - publish-paywall-tester-release
+            - publish-rct-tester-release
           <<: *release-tags
 
   on-main-branch:
