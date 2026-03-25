@@ -34,7 +34,7 @@ object Constants {
                 return when (backendEnvironmentString) {
                     "load_shedder_us_east_1" -> LOAD_SHEDDER_US_EAST_1
                     "load_shedder_us_east_2" -> LOAD_SHEDDER_US_EAST_2
-                    "production" -> PRODUCTION
+                    "production", "custom_entitlement_computation" -> PRODUCTION
                     else -> error("Expected valid backend_environment value. Got $backendEnvironmentString")
                 }
             }
