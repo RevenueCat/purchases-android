@@ -14,6 +14,8 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPerPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
@@ -286,17 +288,36 @@ internal fun Price.endsIn00Cents(): Boolean {
 /**
  * Returns price formatted for the given locale using the price's currency code.
  * Uses BigDecimal arithmetic to avoid floating-point precision issues.
+ *
+ * Preserves the decimal precision of [Price.formatted] — the store-provided string — rather than
+ * always applying [Currency.defaultFractionDigits]. This avoids showing "$1,000.00" when the store
+ * already formatted the price as "$1,000". We only change locale (symbol position, separators),
+ * not the number of fraction digits.
+ *
+ * Until we re-format all price variables (including [Price.formatted] itself) through this path,
+ * keeping the store's precision is the safer choice to avoid inconsistencies on the same paywall.
  */
 internal fun Price.getFormatted(locale: Locale = Locale.getDefault()): String {
     val currency = Currency.getInstance(currencyCode)
-    val digits = currency.defaultFractionDigits.coerceAtLeast(0)
+    // Detect how many decimal digits the store used in Price.formatted.
+    // The regex matches a separator followed by exactly defaultFractionDigits digits, optionally
+    // followed by non-digit chars (e.g. a trailing currency symbol like "1,00 $").
+    // This distinguishes "$2.00" (2 digits → keep) from "$1,000" (3 digits after comma → drop).
+    val defaultDigits = currency.defaultFractionDigits.coerceAtLeast(0)
+    val digits = if (defaultDigits > 0 &&
+        Regex("[.,]\\d{$defaultDigits}[^\\d]*$").containsMatchIn(formatted)
+    ) {
+        defaultDigits
+    } else {
+        0
+    }
     val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
         this.currency = currency
         maximumFractionDigits = digits
         minimumFractionDigits = digits
     }
-    val amount = java.math.BigDecimal.valueOf(amountMicros)
-        .divide(java.math.BigDecimal.valueOf(MICRO_MULTIPLIER.toLong()), digits, java.math.RoundingMode.DOWN)
+    val amount = BigDecimal.valueOf(amountMicros)
+        .divide(BigDecimal.valueOf(MICRO_MULTIPLIER.toLong()), digits, RoundingMode.DOWN)
     return numberFormat.format(amount)
 }
 

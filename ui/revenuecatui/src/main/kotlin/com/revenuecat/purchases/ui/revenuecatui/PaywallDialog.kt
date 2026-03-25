@@ -25,9 +25,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
@@ -43,6 +42,7 @@ private object UIDialogConstants {
  * This dialog will be shown as a full screen dialog in compact devices and a normal dialog otherwise.
  * @param paywallDialogOptions The options to configure the PaywallDialog and what to do on dismissal.
  */
+@Suppress("LongMethod")
 @Composable
 public fun PaywallDialog(
     paywallDialogOptions: PaywallDialogOptions,
@@ -71,6 +71,7 @@ public fun PaywallDialog(
     }
 
     val dismissDialog: () -> Unit = {
+        Logger.d("Paywalls: PaywallDialog dismissDialog called, invoking host dismissRequest")
         currentDialogOffering = null
         shouldDisplayDialog = false
         paywallDialogOptions.dismissRequest?.invoke()
@@ -99,7 +100,10 @@ public fun PaywallDialog(
             paywallDialogOptions = paywallDialogOptions,
             offeringSelection = offeringSelection,
             onDismissRequest = { exitOffering ->
+                val offeringId = (exitOffering as? OfferingSelection.OfferingType)?.offeringType?.identifier
+                Logger.d("Paywalls: PaywallDialog onDismissRequest called, exitOffering=$offeringId")
                 if (exitOffering != null) {
+                    Logger.d("Paywalls: PaywallDialog - setting pendingExitOffering, will show exit offering dialog")
                     pendingExitOffering = exitOffering
                     currentDialogOffering = null
                 } else {
@@ -120,10 +124,7 @@ private fun PaywallDialogContent(
         buildPaywallOptions(
             paywallDialogOptions = paywallDialogOptions,
             offeringSelection = offeringSelection,
-            dismissRequest = { onDismissRequest(null) },
-            dismissRequestWithExitOffering = { exitOffering, _ ->
-                onDismissRequest(exitOffering?.let { OfferingSelection.OfferingType(it) })
-            },
+            dismissRequest = {},
         )
     }
 
@@ -136,17 +137,31 @@ private fun PaywallDialogContent(
         viewModel.preloadExitOffering()
     }
 
-    PaywallDialogScaffold(
-        handleCloseRequest = viewModel::closePaywall,
-    ) {
-        InternalPaywall(paywallOptions, viewModel)
+    val purchaseCompleted by viewModel.purchaseCompleted
+    val preloadedExitOffering by viewModel.preloadedExitOffering
+
+    val handleCloseRequest: () -> Unit = {
+        Logger.d(
+            "Paywalls: PaywallDialogContent handleCloseRequest fired. " +
+                "purchaseCompleted=$purchaseCompleted, exitOffering=${preloadedExitOffering?.identifier}",
+        )
+        val exitOffering = if (!purchaseCompleted && preloadedExitOffering != null) {
+            OfferingSelection.OfferingType(preloadedExitOffering!!)
+        } else {
+            null
+        }
+        onDismissRequest(exitOffering)
     }
+
+    val paywallOptionsWithDismiss = paywallOptions.copy(dismissRequest = handleCloseRequest)
+
+    PaywallDialogScaffold(handleCloseRequest, paywallOptionsWithDismiss)
 }
 
 @Composable
 private fun PaywallDialogScaffold(
     handleCloseRequest: () -> Unit,
-    content: @Composable () -> Unit,
+    paywallOptions: PaywallOptions,
 ) {
     val dialogBottomPadding = if (Build.VERSION.SDK_INT > Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
         WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
@@ -155,7 +170,10 @@ private fun PaywallDialogScaffold(
         0.dp
     }
 
-    BackHandler(onBack = handleCloseRequest)
+    BackHandler(onBack = {
+        Logger.d("Paywalls: PaywallDialogScaffold BackHandler triggered")
+        handleCloseRequest()
+    })
 
     Dialog(
         onDismissRequest = handleCloseRequest,
@@ -184,7 +202,7 @@ private fun PaywallDialogScaffold(
                     ) { padding(paddingValues) }
                     .padding(bottom = if (shouldApplyDialogBottomPadding) dialogBottomPadding else 0.dp),
             ) {
-                content()
+                Paywall(paywallOptions)
             }
         }
     }
@@ -194,7 +212,6 @@ private fun buildPaywallOptions(
     paywallDialogOptions: PaywallDialogOptions,
     offeringSelection: OfferingSelection,
     dismissRequest: () -> Unit,
-    dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
 ): PaywallOptions {
     return PaywallOptions.Builder(dismissRequest = dismissRequest)
         .setOfferingSelection(offeringSelection)
@@ -202,7 +219,6 @@ private fun buildPaywallOptions(
         .setFontProvider(paywallDialogOptions.fontProvider)
         .setListener(paywallDialogOptions.listener)
         .setPurchaseLogic(paywallDialogOptions.purchaseLogic)
-        .setDismissRequestWithExitOffering(dismissRequestWithExitOffering)
         .setCustomVariables(paywallDialogOptions.customVariables)
         .build()
 }

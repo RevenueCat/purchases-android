@@ -35,7 +35,7 @@ internal fun Package.getPackageInfoForTest(
         PackageType.THREE_MONTH -> "Subscribe for $23.99/3 mths"
         PackageType.SIX_MONTH -> "Subscribe for $39.99/6 mths"
         PackageType.WEEKLY -> "Subscribe for $1.99/wk"
-        PackageType.LIFETIME -> "Subscribe for $1,000.00"
+        PackageType.LIFETIME -> "Subscribe for $1,000"
         else -> error("Unknown package type $packageType")
     }
     val callToActionWithIntroOffer = when(packageType) {
@@ -55,7 +55,7 @@ internal fun Package.getPackageInfoForTest(
         PackageType.THREE_MONTH -> "$23.99/3 mths ($7.99/mth)"
         PackageType.SIX_MONTH -> "$39.99/6 mths ($6.66/mth)"
         PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
-        PackageType.LIFETIME -> "$1,000.00"
+        PackageType.LIFETIME -> "$1,000"
         else -> error("Unknown package type $packageType")
     }
     val offerDetailsWithIntroOffer = when(packageType) {
@@ -65,7 +65,7 @@ internal fun Package.getPackageInfoForTest(
         PackageType.THREE_MONTH -> "$23.99/3 mths ($7.99/mth) after 2 weeks trial"
         PackageType.SIX_MONTH -> "$39.99/6 mths ($6.66/mth) after  trial"
         PackageType.WEEKLY -> "$1.99/wk ($7.96/mth) after  trial"
-        PackageType.LIFETIME -> "$1,000.00 after  trial"
+        PackageType.LIFETIME -> "$1,000 after  trial"
         else -> error("Unknown package type $packageType")
     }
     val offerBadge = when(packageType) {

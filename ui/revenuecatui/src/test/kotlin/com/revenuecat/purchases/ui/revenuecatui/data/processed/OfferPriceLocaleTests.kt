@@ -77,8 +77,7 @@ class OfferPriceLocaleTests {
         )
 
         // Should be US formatted ($ before number) not the pre-formatted German style ($ after number)
-        assertThat(result).startsWith("$")
-        assertThat(result).contains("1")
+        assertThat(result).isEqualTo("$1.00")
     }
 
     @Test
@@ -92,9 +91,8 @@ class OfferPriceLocaleTests {
             currencyLocale = Locale.GERMANY,
         )
 
-        // Should be German formatted ($ after number)
-        assertThat(result).endsWith("$")
-        assertThat(result).contains("1")
+        // Should be German formatted: comma decimal separator, currency symbol after number
+        assertThat(result).isEqualTo("1,00 $")
     }
 
     @Test
@@ -132,8 +130,7 @@ class OfferPriceLocaleTests {
         )
 
         // Should be US formatted ($ before number)
-        assertThat(result).startsWith("$")
-        assertThat(result).contains("0.50")
+        assertThat(result).isEqualTo("$0.50")
     }
 
     @Test

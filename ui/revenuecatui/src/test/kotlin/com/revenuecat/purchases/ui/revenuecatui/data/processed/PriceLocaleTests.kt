@@ -84,16 +84,18 @@ class PriceLocaleTests {
     }
 
     @Test
-    fun `getFormatted ignores pre-formatted value and uses locale`() {
-        // Price pre-formatted in a very wrong way
+    fun `getFormatted uses locale for symbol and separators but preserves decimal precision from formatted`() {
+        // Price with no recognisable decimal pattern in Price.formatted.
+        // getFormatted re-formats with the correct locale but uses the decimal precision
+        // detected from Price.formatted — since "WRONG FORMAT!!!" has no decimal group,
+        // digits defaults to 0 and the result has no fractional part.
         val price = Price(
             amountMicros = 5_000_000,
             currencyCode = "USD",
             formatted = "WRONG FORMAT!!!",
         )
 
-        // Should still format correctly based on locale
         val formatted = price.getFormatted(Locale.US)
-        assertThat(formatted).isEqualTo("$5.00")
+        assertThat(formatted).isEqualTo("$5")
     }
 }
