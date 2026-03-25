@@ -12,9 +12,9 @@ This file provides guidance to AI coding agents when working with code in this r
 # Run unit tests
 ./gradlew test
 
-# Run unit tests with backend integration tests
-# (requires REVENUECAT_API_KEY and LOAD_SHEDDER_API_KEY in local.properties; tests self-skip if not set)
-./gradlew test
+# Run only backend integration tests
+# (requires BACKEND_INTEGRATION_API_KEY and BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY in local.properties; tests self-skip if not set)
+./gradlew :purchases:testDefaultsBc8DebugUnitTest --tests "com.revenuecat.purchases.backend_integration_tests.*"
 
 # Run unit tests for specific modules (flavor format: {apis}{billingclient}{buildType})
 ./gradlew :purchases:testDefaultsBc8DebugUnitTest
