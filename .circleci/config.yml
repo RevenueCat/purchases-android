@@ -695,6 +695,7 @@ jobs:
           avd_name: test-integration
           post_emulator_launch_assemble_command: >-
             ./gradlew -p integration-tests assembleRelease assembleAndroidTest -PtestBuildType=release
+            -PREVENUECAT_API_KEY=$API_KEY
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
@@ -702,6 +703,7 @@ jobs:
           name: Run integration tests on emulator
           command: |
             ./gradlew -p integration-tests connectedAndroidTest -PtestBuildType=release \
+            -PREVENUECAT_API_KEY=$API_KEY \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
