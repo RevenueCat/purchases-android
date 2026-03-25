@@ -48,13 +48,14 @@ internal abstract class BaseBackendIntegrationTest {
         fun setupClass() {
             Assume.assumeTrue(
                 "Skipping backend integration tests: API keys not configured. " +
-                    "Set REVENUECAT_API_KEY and LOAD_SHEDDER_API_KEY in local.properties to run these tests.",
+                    "Set BACKEND_INTEGRATION_API_KEY and BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY in local.properties " +
+                    "to run these tests.",
                 canRunIntegrationTests(),
             )
         }
 
-        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
-            Constants.loadShedderApiKey != "LOAD_SHEDDER_API_KEY"
+        private fun canRunIntegrationTests() = Constants.apiKey != "BACKEND_INTEGRATION_API_KEY" &&
+            Constants.loadShedderApiKey != "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY"
     }
 
     @get:Rule

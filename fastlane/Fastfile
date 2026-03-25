@@ -401,8 +401,12 @@ platform :android do
 
   desc "Run backend integration tests"
   lane :run_backend_integration_tests do |options|
+    UI.user_error!("REVENUECAT_API_KEY environment variable is not set") if ENV['REVENUECAT_API_KEY'].to_s.empty?
+    UI.user_error!("LOAD_SHEDDER_REVENUECAT_API_KEY environment variable is not set") if ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'].to_s.empty?
+
     gradle(
       task: ':purchases:testDefaultsBc8DebugUnitTest',
+      flags: '--tests "com.revenuecat.purchases.backend_integration_tests.*"',
       properties: {
         "minSdkVersion" => 21,
         "BACKEND_INTEGRATION_API_KEY" => ENV['REVENUECAT_API_KEY'],
