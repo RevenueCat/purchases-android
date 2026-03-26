@@ -182,34 +182,6 @@ commands:
 
 jobs:
 
-  # TEMPORARY: test merge queue support - remove after testing
-  test-merge-queue-job:
-    docker:
-      - image: cimg/ruby:3.2.0
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - revenuecat/setup-git-credentials
-      - revenuecat/trust-github-key
-      - run:
-          name: Debug - check Gemfile.lock plugin ref
-          command: head -10 Gemfile.lock
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v2-test
-      - run:
-          name: Debug - check installed plugin version
-          command: bundle show fastlane-plugin-revenuecat_internal
-      - run:
-          name: Merge release PR via merge queue
-          command: |
-            set -euo pipefail
-            echo "Running merge_pr with use_merge_queue:true"
-            bundle exec fastlane run merge_pr \
-                repo_name:"purchases-android" \
-                branch:"release/9.28.0" \
-                merge_method:"SQUASH" \
-                use_merge_queue:true
-
   assemble-magic-weather-compose-sample-app:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -1242,4 +1214,7 @@ workflows:
     when:
       equal: [ test_merge_queue, << pipeline.parameters.action >> ]
     jobs:
-      - test-merge-queue-job
+      - revenuecat/merge-release-pr:
+          repo_name: purchases-android
+          version: "9.28.0"
+          use_merge_queue: true
