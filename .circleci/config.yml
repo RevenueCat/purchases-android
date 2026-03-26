@@ -198,9 +198,7 @@ jobs:
           cache-version: v2-test
       - run:
           name: Debug - check installed plugin version
-          command: |
-            bundle show fastlane-plugin-revenuecat_internal
-            bundle exec ruby -e "require 'fastlane'; puts Fastlane::Actions::MergePrAction.available_options.map(&:key).inspect"
+          command: bundle show fastlane-plugin-revenuecat_internal
       - run:
           name: Merge release PR via merge queue
           command: |
