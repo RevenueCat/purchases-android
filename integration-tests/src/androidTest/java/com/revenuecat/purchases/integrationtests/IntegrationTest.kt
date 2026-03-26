@@ -26,7 +26,10 @@ class IntegrationTest {
     fun setup() {
         val scenario = activityScenarioRule.scenario
         scenario.onActivity {
-            val builder = PurchasesConfiguration.Builder(it, "REVENUECAT_API_KEY").appUserID("integrationTest")
+            val builder = PurchasesConfiguration.Builder(
+                it,
+                BuildConfig.REVENUECAT_API_KEY,
+            ).appUserID("integrationTest")
             Purchases.configure(builder.build())
         }
     }
