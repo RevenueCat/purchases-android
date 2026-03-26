@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.offlineentitlements
+package com.revenuecat.purchases.integration.production.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
@@ -14,7 +14,7 @@ import org.junit.runner.RunWith
 
 @Suppress("TooManyFunctions")
 @RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
+open class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
@@ -44,9 +44,9 @@ class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEnt
 }
 
 @RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOfflineEntitlementsIntegrationTest() {
+open class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOfflineEntitlementsIntegrationTest() {
 
-    override val initialActivePurchasesToUse = initialActivePurchases
+    override val initialActivePurchasesToUse get() = initialActivePurchases
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
     @Before

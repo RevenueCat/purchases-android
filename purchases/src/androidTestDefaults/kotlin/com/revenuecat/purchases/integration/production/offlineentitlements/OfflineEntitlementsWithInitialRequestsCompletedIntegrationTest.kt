@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.offlineentitlements
+package com.revenuecat.purchases.integration.production.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
@@ -70,10 +70,10 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
 }
 
 @RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
+open class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
-    override val initialActivePurchasesToUse: Map<String, StoreTransaction> = initialActivePurchases
+    override val initialActivePurchasesToUse: Map<String, StoreTransaction> get() = initialActivePurchases
 
     @Test
     fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
@@ -123,13 +123,11 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
 }
 
 @RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
+open class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     @Test
     fun doesNotEnterOfflineEntitlementsModeIfCachedCustomerInfoAndCustomerInfoRequestReturns500() {
-        // It would fail in load shedder, since it fails to try to cache an initial CustomerInfo
-        // without making a purchase
         confirmProductionBackendEnvironment()
 
         ensureBlockFinishes { latch ->

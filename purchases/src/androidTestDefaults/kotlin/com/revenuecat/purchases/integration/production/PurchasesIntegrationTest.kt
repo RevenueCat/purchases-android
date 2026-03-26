@@ -1,8 +1,15 @@
-package com.revenuecat.purchases
+package com.revenuecat.purchases.integration.production
 
 import android.content.Context
 import android.os.StrictMode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.BasePurchasesIntegrationTest
+import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.Constants
+import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.HTTPClient
@@ -13,10 +20,15 @@ import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
+import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import com.revenuecat.purchases.interfaces.StorefrontProvider
+import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
 import io.mockk.every
@@ -40,7 +52,9 @@ import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
 @RunWith(AndroidJUnit4::class)
-class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
+open class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
+
+    override val environmentConfig get() = Constants.production
 
     @Before
     fun setup() {
@@ -199,8 +213,6 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGetVirtualCurrenciesWithBalancesOfZero() {
-        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
-        // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
@@ -210,7 +222,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             appUserID = appUserIDWith0BalanceCurrencies,
             onError = { error -> fail("should have been able to login. Error: $error") },
             onSuccess = { _, created ->
-                assertThat(created).isFalse() // This user should already exist
+                assertThat(created).isFalse()
 
                 Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
 
@@ -230,8 +242,6 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
-        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
-        // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
@@ -241,7 +251,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             appUserID = appUserIDWith0BalanceCurrencies,
             onError = { error -> fail("should have been able to login. Error: $error") },
             onSuccess = { _, created ->
-                assertThat(created).isFalse() // This user should already exist
+                assertThat(created).isFalse()
 
                 Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
 
@@ -261,8 +271,6 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
-        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
-        // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
 
         val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
@@ -272,7 +280,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             appUserID = newAppUserID,
             onError = { error -> fail("should have been able to login. Error: $error") },
             onSuccess = { _, created ->
-                assertThat(created).isTrue() // This user should be new
+                assertThat(created).isTrue()
 
                 Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
 
@@ -292,8 +300,6 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testCachedVirtualCurrencies() {
-        // Virtual Currencies aren't supported by the load shedder yet, so we don't want to run
-        // VC tests in the load shedder integration tests
         confirmProductionBackendEnvironment()
 
         val appUserID = "integrationTestUserWithAllBalancesNonZero"
@@ -303,7 +309,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             appUserID = appUserID,
             onError = { error -> fail("should have been able to login. Error: $error") },
             onSuccess = { _, created ->
-                assertThat(created).isFalse() // This user should be already exist
+                assertThat(created).isFalse()
 
                 Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
 
@@ -370,7 +376,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         }
     }
 
-    private fun verifyCustomerInfoHasPurchase(customerInfo: CustomerInfo) {
+    private fun verifyCustomerInfoHasPurchase(customerInfo: com.revenuecat.purchases.CustomerInfo) {
         assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
         val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
         val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
@@ -434,7 +440,6 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     // endregion
 
     // region reachability
-    // These tests are to verify that the other tests can reach the RC servers.
 
     @OptIn(DelicateCoroutinesApi::class)
     @Test

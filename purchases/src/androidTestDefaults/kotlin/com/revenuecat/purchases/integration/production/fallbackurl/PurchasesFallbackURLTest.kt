@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.fallbackurl
+package com.revenuecat.purchases.integration.production.fallbackurl
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
@@ -25,8 +25,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
+open class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
+    override val environmentConfig get() = Constants.production
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failExceptFallbackUrls
 
     @get:Rule
@@ -84,7 +85,6 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
         forceServerErrorsStrategy = null
 
-        // This returns a CustomerInfo from cache, but initiates posting remaining purchases in background
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = true)
     }
 
@@ -92,24 +92,20 @@ class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     fun postsPurchasePerformedOnFallbackURLWhenRecoveringAfterRestartToMainServer() = runTest {
         val activePurchases = performPurchase()
 
-        // Should have entitlements using offline entitlement
         verifyGetCustomerInfo(
             shouldHaveAcknowledgedPurchase = false,
             originalSource = CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
             fetchPolicy = CacheFetchPolicy.CACHE_ONLY,
         )
 
-        // Restart and recover connectivity to main server
         simulateSdkRestart(
             activity,
             forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail,
             initialActivePurchases = activePurchases,
         )
 
-        // Restore purchases since purchase won't be moved to new user when syncing unsynced purchases.
         Purchases.sharedInstance.awaitRestore()
 
-        // Check that active purchases are synced.
         verifyGetCustomerInfo(
             shouldHaveAcknowledgedPurchase = true,
             originalSource = expectedCustomerInfoOriginalSource,

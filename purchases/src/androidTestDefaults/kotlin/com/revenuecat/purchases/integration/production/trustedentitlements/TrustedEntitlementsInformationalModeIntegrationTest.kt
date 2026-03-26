@@ -1,8 +1,9 @@
-package com.revenuecat.purchases.trustedentitlements
+package com.revenuecat.purchases.integration.production.trustedentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.PurchaseParams
@@ -21,7 +22,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
+open class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
+
+    override val environmentConfig get() = Constants.production
 
     @Before
     fun setup() {

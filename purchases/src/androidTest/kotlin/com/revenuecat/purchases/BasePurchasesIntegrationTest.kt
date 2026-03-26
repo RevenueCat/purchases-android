@@ -18,7 +18,7 @@ import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Assume.assumeTrue
-import org.junit.BeforeClass
+import org.junit.Before
 import org.junit.Rule
 import java.net.URL
 import java.util.Date
@@ -32,19 +32,12 @@ import kotlin.time.Duration.Companion.seconds
 
 open class BasePurchasesIntegrationTest {
 
-    companion object {
-        @BeforeClass
-        @JvmStatic
-        fun setupClass() {
-            if (!canRunIntegrationTests()) {
-                error("You need to set required constants in Constants.kt")
-            }
-        }
-
-        private fun canRunIntegrationTests() = Constants.apiKey.isNotEmpty() &&
-            Constants.googlePurchaseToken.isNotEmpty() &&
-            Constants.productIdToPurchase.isNotEmpty()
-    }
+    /**
+     * Override in subclasses to target a specific backend environment.
+     * Defaults to production.
+     */
+    open val environmentConfig: Constants.EnvironmentConfig
+        get() = Constants.production
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
@@ -55,11 +48,11 @@ open class BasePurchasesIntegrationTest {
     protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
-    protected val proxyUrl = Constants.proxyUrl.takeIf { it.isNotEmpty() }
+    protected val proxyUrl get() = Constants.proxyUrl.takeIf { it.isNotEmpty() }
 
     internal lateinit var mockBillingAbstract: BillingAbstract
 
-    internal val expectedCustomerInfoOriginalSource = if (
+    internal val expectedCustomerInfoOriginalSource get() = if (
         Constants.backendEnvironment == Constants.BackendEnvironment.PRODUCTION
     ) {
         CustomerInfoOriginalSource.MAIN
@@ -93,10 +86,19 @@ open class BasePurchasesIntegrationTest {
         }
     }
 
-    protected val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
+    protected val entitlementsToVerify get() = Constants.activeEntitlementIdsToVerify
         .split(",")
         .map { it.trim() }
         .filter { it.isNotEmpty() }
+
+    @Before
+    fun setActiveEnvironment() {
+        Constants.activeConfig = environmentConfig
+        assumeTrue(
+            "Environment ${environmentConfig.backendEnvironment} is not configured — skipping.",
+            environmentConfig.isConfigured,
+        )
+    }
 
     @After
     fun tearDown() {

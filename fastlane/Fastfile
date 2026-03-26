@@ -529,28 +529,22 @@ platform :android do
       UI.user_error!("Invalid backend_environment parameter. Must be 'production', 'load_shedder_us_east_1' or 'load_shedder_us_east_2'")
     end
 
-    if backend_environment == 'production'
-      api_key = ENV['REVENUECAT_API_KEY']
-      google_purchase_token = ENV['GOOGLE_PURCHASE_TOKEN']
-      product_id_to_purchase = ENV['PRODUCT_ID_TO_PURCHASE']
-      base_plan_id_to_purchase = ENV['BASE_PLAN_ID_TO_PURCHASE']
-      active_entitlements_to_verify = ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
-    else # loadshedder
-      api_key = ENV['LOAD_SHEDDER_REVENUECAT_API_KEY']
-      google_purchase_token = ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN']
-      product_id_to_purchase = ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
-      base_plan_id_to_purchase = ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
-      active_entitlements_to_verify = ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
-    end
+    # Map backend_environment to package filter and Gradle properties
+    package_filter = case backend_environment
+                     when 'production'
+                       'com.revenuecat.purchases.integration.production'
+                     when 'load_shedder_us_east_1'
+                       'com.revenuecat.purchases.integration.loadshedder.useast1'
+                     when 'load_shedder_us_east_2'
+                       'com.revenuecat.purchases.integration.loadshedder.useast2'
+                     end
 
-    test_properties = purchases_integration_test_properties(
-      api_key: api_key,
-      google_purchase_token: google_purchase_token,
-      product_id_to_purchase: product_id_to_purchase,
-      base_plan_id_to_purchase: base_plan_id_to_purchase,
-      active_entitlements_to_verify: active_entitlements_to_verify,
-      backend_environment: backend_environment
-    )
+    if backend_environment == 'production'
+      test_properties = purchases_production_test_properties
+    else # loadshedder
+      test_properties = purchases_load_shedder_test_properties
+    end
+    test_properties["TEST_PACKAGE_FILTER"] = package_filter
 
     max_retries = 3
     success = false
@@ -591,16 +585,16 @@ platform :android do
 
   desc "Build and run purchases module custom entitlement computation integration tests on emulator"
   lane :run_custom_entitlement_computation_integration_tests do |options|
-    test_properties = purchases_integration_test_properties(
-      api_key: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_REVENUECAT_API_KEY'],
-      google_purchase_token: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_GOOGLE_PURCHASE_TOKEN'],
-      product_id_to_purchase: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_PRODUCT_ID_TO_PURCHASE'],
-      base_plan_id_to_purchase: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_BASE_PLAN_ID_TO_PURCHASE'],
+    test_properties = {
+      "CUSTOM_ENTITLEMENT_COMPUTATION_REVENUECAT_API_KEY" => ENV['CUSTOM_ENTITLEMENT_COMPUTATION_REVENUECAT_API_KEY'],
+      "CUSTOM_ENTITLEMENT_COMPUTATION_GOOGLE_PURCHASE_TOKEN" => ENV['CUSTOM_ENTITLEMENT_COMPUTATION_GOOGLE_PURCHASE_TOKEN'],
+      "CUSTOM_ENTITLEMENT_COMPUTATION_PRODUCT_ID_TO_PURCHASE" => ENV['CUSTOM_ENTITLEMENT_COMPUTATION_PRODUCT_ID_TO_PURCHASE'],
+      "CUSTOM_ENTITLEMENT_COMPUTATION_BASE_PLAN_ID_TO_PURCHASE" => ENV['CUSTOM_ENTITLEMENT_COMPUTATION_BASE_PLAN_ID_TO_PURCHASE'],
       # We default to empty active entitlements since we are using an expired token for these integration tests.
       # So no active entitlements will be returned by our servers.
-      active_entitlements_to_verify: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
-      backend_environment: 'production'
-    )
+      "CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY" =>
+        ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
+    }
 
     gradle(
       task: ":purchases:connectedCustomEntitlementComputationBc8ReleaseAndroidTest",
@@ -608,17 +602,28 @@ platform :android do
     )
   end
 
-  def purchases_integration_test_properties(api_key:, google_purchase_token:, product_id_to_purchase:,
-                                              base_plan_id_to_purchase:, active_entitlements_to_verify: '',
-                                              proxy_url: nil, backend_environment: 'production')
+  def purchases_production_test_properties
     props = {
-      "REVENUECAT_API_KEY" => api_key,
-      "GOOGLE_PURCHASE_TOKEN" => google_purchase_token,
-      "PRODUCT_ID_TO_PURCHASE" => product_id_to_purchase,
-      "BASE_PLAN_ID_TO_PURCHASE" => base_plan_id_to_purchase,
-      "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY" => active_entitlements_to_verify,
-      "TEST_BACKEND_ENVIRONMENT" => backend_environment,
+      "REVENUECAT_API_KEY" => ENV['REVENUECAT_API_KEY'],
+      "GOOGLE_PURCHASE_TOKEN" => ENV['GOOGLE_PURCHASE_TOKEN'],
+      "PRODUCT_ID_TO_PURCHASE" => ENV['PRODUCT_ID_TO_PURCHASE'],
+      "BASE_PLAN_ID_TO_PURCHASE" => ENV['BASE_PLAN_ID_TO_PURCHASE'],
+      "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY" => ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
     }
+    proxy_url = ENV['TEST_PROXY_URL']
+    props["TEST_PROXY_URL"] = proxy_url unless proxy_url.nil?
+    props
+  end
+
+  def purchases_load_shedder_test_properties
+    props = {
+      "LOAD_SHEDDER_REVENUECAT_API_KEY" => ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
+      "LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN" => ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
+      "LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE" => ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
+      "LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE" => ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE'],
+      "LOAD_SHEDDER_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY" => ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
+    }
+    proxy_url = ENV['TEST_PROXY_URL']
     props["TEST_PROXY_URL"] = proxy_url unless proxy_url.nil?
     props
   end

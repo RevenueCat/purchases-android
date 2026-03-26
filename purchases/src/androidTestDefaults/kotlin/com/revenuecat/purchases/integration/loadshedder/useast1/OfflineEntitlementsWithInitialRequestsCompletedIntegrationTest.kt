@@ -1,0 +1,15 @@
+package com.revenuecat.purchases.integration.loadshedder.useast1
+
+import com.revenuecat.purchases.Constants
+import com.revenuecat.purchases.integration.production.offlineentitlements.OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest
+import com.revenuecat.purchases.integration.production.offlineentitlements.OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest
+
+class LoadShedderUsEast1OfflineEntitlementsWithInitialRequestsAndInitialPurchasesTest :
+    OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest() {
+    override val environmentConfig get() = Constants.loadShedderUsEast1
+}
+
+class LoadShedderUsEast1OfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTest :
+    OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest() {
+    override val environmentConfig get() = Constants.loadShedderUsEast1
+}
