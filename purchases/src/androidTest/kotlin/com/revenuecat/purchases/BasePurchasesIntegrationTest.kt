@@ -41,9 +41,9 @@ open class BasePurchasesIntegrationTest {
             }
         }
 
-        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
-            Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
-            Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
+        private fun canRunIntegrationTests() = Constants.apiKey.isNotEmpty() &&
+            Constants.googlePurchaseToken.isNotEmpty() &&
+            Constants.productIdToPurchase.isNotEmpty()
     }
 
     @get:Rule
@@ -55,7 +55,7 @@ open class BasePurchasesIntegrationTest {
     protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
-    protected val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
+    protected val proxyUrl = Constants.proxyUrl.takeIf { it.isNotEmpty() }
 
     internal lateinit var mockBillingAbstract: BillingAbstract
 

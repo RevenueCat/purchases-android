@@ -12,8 +12,9 @@ This file provides guidance to AI coding agents when working with code in this r
 # Run unit tests
 ./gradlew test
 
-# Run unit tests with backend integration tests
-./gradlew test -PRUN_INTEGRATION_TESTS=true
+# Run only backend integration tests
+# (requires BACKEND_INTEGRATION_API_KEY and BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY in local.properties; tests self-skip if not set)
+./gradlew :purchases:testDefaultsBc8DebugUnitTest --tests "com.revenuecat.purchases.backend_integration_tests.*"
 
 # Run unit tests for specific modules (flavor format: {apis}{billingclient}{buildType})
 ./gradlew :purchases:testDefaultsBc8DebugUnitTest
@@ -127,14 +128,15 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 - **Unit Tests**: `src/test/` directories
 - **Instrumentation Tests**: `src/androidTest/` directories
 - **Integration Tests**: `/integration-tests/` module
-- **Backend Integration Tests**: `src/test/.../backend_integration_tests/` (enabled with `-PRUN_INTEGRATION_TESTS=true`)
+- **Backend Integration Tests**: `src/test/.../backend_integration_tests/` (requires `BACKEND_INTEGRATION_API_KEY` and `BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY` in `local.properties`; tests self-skip if not set)
 
 ## Development Workflow
 
 ### Environment Setup
 1. Install sdkman and run `sdk env install` in project root
 2. Run `bundle exec fastlane setup_dev` to link pre-commit hooks
-3. Pre-commit hooks automatically run detekt on commits
+3. Run `bundle exec fastlane setup_local_properties` to populate `local.properties` with integration test secrets from 1Password (requires `op` CLI)
+4. Pre-commit hooks automatically run detekt on commits
 
 ### Code Quality
 - **Lint**: Android lint for static code analysis (`./gradlew lint`)
@@ -172,9 +174,11 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 ## Development Notes
 
 ### Backend Integration Testing
-- Enable with `-PRUN_INTEGRATION_TESTS=true`
-- Uses real API keys and tokens from environment variables
+- Set `BACKEND_INTEGRATION_API_KEY` and `BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY` in `local.properties` to run locally
+- Tests self-skip when API keys are not configured
+- On CI, keys are passed via Gradle `-P` flags from Fastlane
 - Located in `backend_integration_tests` packages
+- See `local.properties.example` for all configurable properties
 
 ### Sample Applications
 - **MagicWeather**: Standard sample app
