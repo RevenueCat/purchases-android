@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.Constants
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
@@ -213,6 +214,7 @@ open class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGetVirtualCurrenciesWithBalancesOfZero() {
+        // Virtual Currencies aren't supported by the load shedder yet
         confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesEqualTo0"
@@ -242,6 +244,7 @@ open class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGetVirtualCurrenciesWithBalancesWithSomeNonZeroValues() {
+        // Virtual Currencies aren't supported by the load shedder yet
         confirmProductionBackendEnvironment()
 
         val appUserIDWith0BalanceCurrencies = "integrationTestUserWithAllBalancesNonZero"
@@ -271,6 +274,7 @@ open class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testGettingVirtualCurrenciesForNewUserReturnsVCsWith0Balance() {
+        // Virtual Currencies aren't supported by the load shedder yet
         confirmProductionBackendEnvironment()
 
         val newAppUserID = "integrationTestUser_${UUID.randomUUID()}"
@@ -300,6 +304,7 @@ open class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun testCachedVirtualCurrencies() {
+        // Virtual Currencies aren't supported by the load shedder yet
         confirmProductionBackendEnvironment()
 
         val appUserID = "integrationTestUserWithAllBalancesNonZero"
@@ -376,7 +381,7 @@ open class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         }
     }
 
-    private fun verifyCustomerInfoHasPurchase(customerInfo: com.revenuecat.purchases.CustomerInfo) {
+    private fun verifyCustomerInfoHasPurchase(customerInfo: CustomerInfo) {
         assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
         val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
         val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"

@@ -21,6 +21,7 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
         initialActiveTransaction.purchaseToken.sha1() to initialActiveTransaction,
     )
 
+    // Hack until we get a running token for production API tests. After that, we can just use "entitlementsToVerify"
     private val expectedEntitlements get() = entitlementsToVerify.ifEmpty { listOf("pro_cat") }
 
     // region helpers

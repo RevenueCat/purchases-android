@@ -85,6 +85,7 @@ open class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
         forceServerErrorsStrategy = null
 
+        // This returns a CustomerInfo from cache, but initiates posting remaining purchases in background
         verifyGetCustomerInfo(shouldHaveAcknowledgedPurchase = true)
     }
 
@@ -92,20 +93,24 @@ open class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
     fun postsPurchasePerformedOnFallbackURLWhenRecoveringAfterRestartToMainServer() = runTest {
         val activePurchases = performPurchase()
 
+        // Should have entitlements using offline entitlement
         verifyGetCustomerInfo(
             shouldHaveAcknowledgedPurchase = false,
             originalSource = CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS,
             fetchPolicy = CacheFetchPolicy.CACHE_ONLY,
         )
 
+        // Restart and recover connectivity to main server
         simulateSdkRestart(
             activity,
             forceServerErrorsStrategy = ForceServerErrorStrategy.doNotFail,
             initialActivePurchases = activePurchases,
         )
 
+        // Restore purchases since purchase won't be moved to new user when syncing unsynced purchases.
         Purchases.sharedInstance.awaitRestore()
 
+        // Check that active purchases are synced.
         verifyGetCustomerInfo(
             shouldHaveAcknowledgedPurchase = true,
             originalSource = expectedCustomerInfoOriginalSource,
