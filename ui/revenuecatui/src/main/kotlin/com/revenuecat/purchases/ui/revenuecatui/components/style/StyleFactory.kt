@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
@@ -573,19 +574,33 @@ internal class StyleFactory(
                     // visually become "selected" if its tab control parent is.
                     tabControlIndex = null,
                 ) {
+                    val packageOfferEligibility = offerEligibility
+
+                    val presentedOverridesResult = component.overrides
+                        .toPresentedOverrides(stripRules) { partial ->
+                            PresentedPackagePartial(from = partial)
+                        }
+                        .mapError { nonEmptyListOf(it) }
+
                     val (stackComponentStyleResult, purchaseButtons) = withCount(
                         predicate = { it is PurchaseButtonComponent },
                     ) {
                         createStackComponentStyle(component.stack)
                     }
 
-                    stackComponentStyleResult.map { stack ->
+                    zipOrAccumulate(
+                        first = presentedOverridesResult,
+                        second = stackComponentStyleResult,
+                    ) { presentedOverrides, stack ->
                         PackageComponentStyle(
                             stackComponentStyle = stack,
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
                             isSelectable = purchaseButtons == 0,
                             resolvedOffer = resolvedOffer,
+                            visible = component.visible ?: DEFAULT_VISIBILITY,
+                            overrides = presentedOverrides,
+                            offerEligibility = packageOfferEligibility,
                         )
                     }
                 }

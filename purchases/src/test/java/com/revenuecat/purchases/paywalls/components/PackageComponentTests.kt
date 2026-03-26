@@ -187,6 +187,87 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
                     )
                 ),
             ),
+            arrayOf(
+                "visible = true",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "visible": true,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        visible = true,
+                    )
+                ),
+            ),
+            arrayOf(
+                "visible = false",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "visible": false,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        visible = false,
+                    )
+                ),
+            ),
+            arrayOf(
+                "overrides with visible = false",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "overrides": [
+                            {
+                              "conditions": [{"type": "intro_offer"}],
+                              "properties": {"visible": false}
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        overrides = listOf(
+                            com.revenuecat.purchases.paywalls.components.common.ComponentOverride(
+                                conditions = listOf(
+                                    com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition.IntroOffer
+                                ),
+                                properties = PartialPackageComponent(visible = false),
+                            )
+                        ),
+                    )
+                ),
+            ),
         )
     }
 
