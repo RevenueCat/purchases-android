@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.integration.production.offlineentitlements
+package com.revenuecat.purchases.integration.offlineentitlements
 
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
@@ -10,8 +10,6 @@ import io.mockk.every
 import org.assertj.core.api.Assertions
 
 abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
-
-    override val environmentConfig get() = Constants.production
 
     private val initialActiveTransaction get() = StoreTransactionFactory.createStoreTransaction(
         skus = listOf(Constants.productIdToPurchase),

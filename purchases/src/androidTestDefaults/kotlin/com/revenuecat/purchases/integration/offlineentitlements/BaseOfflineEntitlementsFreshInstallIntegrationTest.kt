@@ -1,6 +1,5 @@
-package com.revenuecat.purchases.integration.production.offlineentitlements
+package com.revenuecat.purchases.integration.offlineentitlements
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -10,11 +9,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@Suppress("TooManyFunctions")
-@RunWith(AndroidJUnit4::class)
-open class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
+abstract class BaseOfflineEntitlementsFreshInstallNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
 
@@ -43,8 +39,7 @@ open class OfflineEntitlementsFreshInstallIntegrationNoPurchasesTest : BaseOffli
     }
 }
 
-@RunWith(AndroidJUnit4::class)
-open class OfflineEntitlementsFreshInstallInitialPurchasesIntegrationTest : BaseOfflineEntitlementsIntegrationTest() {
+abstract class BaseOfflineEntitlementsFreshInstallInitialPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
 
     override val initialActivePurchasesToUse get() = initialActivePurchases
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll

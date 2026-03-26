@@ -1,9 +1,7 @@
-package com.revenuecat.purchases.integration.production.trustedentitlements
+package com.revenuecat.purchases.integration.trustedentitlements
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.CacheFetchPolicy
-import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.PurchaseParams
@@ -19,12 +17,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-open class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
-
-    override val environmentConfig get() = Constants.production
+abstract class BaseTrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
     fun setup() {

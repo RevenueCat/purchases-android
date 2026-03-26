@@ -1,9 +1,7 @@
-package com.revenuecat.purchases.integration.production.cachedofferings
+package com.revenuecat.purchases.integration.cachedofferings
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
-import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -19,13 +17,9 @@ import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 import java.net.URL
 
-@RunWith(AndroidJUnit4::class)
-open class CachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
-
-    override val environmentConfig get() = Constants.production
+abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()

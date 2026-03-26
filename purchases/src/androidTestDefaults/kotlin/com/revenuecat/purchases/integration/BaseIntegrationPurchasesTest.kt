@@ -1,8 +1,7 @@
-package com.revenuecat.purchases.integration.production
+package com.revenuecat.purchases.integration
 
 import android.content.Context
 import android.os.StrictMode
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.Constants
@@ -44,7 +43,6 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 import java.net.URL
 import java.net.UnknownHostException
 import java.util.UUID
@@ -52,10 +50,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 @Suppress("TooManyFunctions")
-@RunWith(AndroidJUnit4::class)
-open class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
-
-    override val environmentConfig get() = Constants.production
+abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
 
     @Before
     fun setup() {

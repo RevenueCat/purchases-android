@@ -30,14 +30,14 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-open class BasePurchasesIntegrationTest {
+abstract class BasePurchasesIntegrationTest {
 
     /**
-     * Override in subclasses to target a specific backend environment.
-     * Defaults to production.
+     * Must be overridden in every concrete test subclass to specify which backend
+     * environment to run against. There is no default — this forces each test class
+     * to explicitly declare its target environment.
      */
-    open val environmentConfig: Constants.EnvironmentConfig
-        get() = Constants.production
+    abstract val environmentConfig: Constants.EnvironmentConfig
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()

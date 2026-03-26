@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.integration.loadshedder.useast2
+package com.revenuecat.purchases.integration.production.cachedofferings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Constants
@@ -6,6 +6,6 @@ import com.revenuecat.purchases.integration.cachedofferings.BaseCachedOfferingsU
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class LoadShedderUsEast2CachedOfferingsUsageIntegrationTest : BaseCachedOfferingsUsageIntegrationTest() {
-    override val environmentConfig get() = Constants.loadShedderUsEast2
+class ProductionCachedOfferingsUsageIntegrationTest : BaseCachedOfferingsUsageIntegrationTest() {
+    override val environmentConfig get() = Constants.production
 }

@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.integration.loadshedder.useast1
+package com.revenuecat.purchases.integration.production.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Constants
@@ -7,13 +7,13 @@ import com.revenuecat.purchases.integration.offlineentitlements.BaseOfflineEntit
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class LoadShedderUsEast1OfflineEntitlementsWithInitialRequestsAndInitialPurchasesTest :
+class ProductionOfflineEntitlementsWithInitialRequestsAndInitialPurchasesTest :
     BaseOfflineEntitlementsWithInitialRequestsAndInitialPurchasesTest() {
-    override val environmentConfig get() = Constants.loadShedderUsEast1
+    override val environmentConfig get() = Constants.production
 }
 
 @RunWith(AndroidJUnit4::class)
-class LoadShedderUsEast1OfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTest :
+class ProductionOfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTest :
     BaseOfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTest() {
-    override val environmentConfig get() = Constants.loadShedderUsEast1
+    override val environmentConfig get() = Constants.production
 }
