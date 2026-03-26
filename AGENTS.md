@@ -100,6 +100,12 @@ This is a multi-module Android project with clear separation of concerns:
 - **MVVM Pattern**: ViewModels with Jetpack Compose UI
 - **Main Components**: `PaywallViewModel`, `CustomerCenterViewModel`
 
+#### Custom Icons in `:ui:revenuecatui`
+The module avoids a runtime dependency on `material-icons-extended` by defining
+custom inline icon vectors in `icons/` using `materialIcon`/`materialPath`.
+Do NOT import pre-built icons via `Icons.Filled.*` etc. — add a new file to
+`icons/` following the pattern in `CircleOutlined.kt` instead.
+
 ### Product Flavors
 The `purchases` module has 2 flavor dimensions:
 - **`apis`**: `defaults` (standard) or `customEntitlementComputation` (custom entitlement computation variant)
