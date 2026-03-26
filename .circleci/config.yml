@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.16.0
+  revenuecat: revenuecat/sdks-common-config@3.17.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -1118,6 +1118,7 @@ workflows:
           <<: *release-tags
       - revenuecat/merge-release-pr:
           repo_name: purchases-android
+          use_merge_queue: true
           requires:
             - publish-purchase-tester-release
             - publish-paywall-tester-release
