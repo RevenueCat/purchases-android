@@ -41,13 +41,13 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.16.0
+  revenuecat: revenuecat/sdks-common-config@dev:d80b4228f8053eab034e0f4ab432d75073a9ac4f
   codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests, test_merge_queue]
     default: default
   paywall_tester_track:
     type: enum
@@ -1208,3 +1208,13 @@ workflows:
       equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
     jobs:
       - update-golden-requests-backend-integration-tests
+
+  # TEMPORARY: test merge queue support - remove after testing
+  test-merge-queue:
+    when:
+      equal: [ test_merge_queue, << pipeline.parameters.action >> ]
+    jobs:
+      - revenuecat/merge-release-pr:
+          repo_name: purchases-android
+          version: "9.28.0"
+          use_merge_queue: true
