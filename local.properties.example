@@ -27,8 +27,9 @@
 ## ──────────────────────────────────────────────
 ## Instrumentation Tests
 ## All environment keys are passed to instrumentation tests simultaneously.
-## Each test class selects its environment. Tests self-skip when their
-## environment keys are not configured. Set all keys below to run all tests.
+## Each test class selects its environment. Tests fail if their required
+## environment keys are missing. Set all keys below to run all tests, or
+## use -PTEST_PACKAGE_FILTER to run only a specific environment's tests.
 ## ──────────────────────────────────────────────
 #TEST_PROXY_URL=https://your-proxy
 
