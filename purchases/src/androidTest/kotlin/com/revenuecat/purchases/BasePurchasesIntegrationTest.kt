@@ -99,7 +99,8 @@ open class BasePurchasesIntegrationTest {
             "Missing API key for $env. Set the corresponding property in local.properties or pass it via -P flag."
         }
         require(environmentConfig.googlePurchaseToken.isNotEmpty()) {
-            "Missing Google purchase token for $env. Set the corresponding property in local.properties or pass it via -P flag."
+            "Missing Google purchase token for $env. " +
+                "Set the corresponding property in local.properties or pass it via -P flag."
         }
         require(environmentConfig.productIdToPurchase.isNotEmpty()) {
             "Missing product ID for $env. Set the corresponding property in local.properties or pass it via -P flag."
