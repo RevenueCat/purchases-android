@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@dev:d80b4228f8053eab034e0f4ab432d75073a9ac4f
+  revenuecat: revenuecat/sdks-common-config@dev:69dd66145987233dd7e24b26ecdfe7236d2797bc
   codecov: codecov/codecov@3.2.4
 
 parameters:
