@@ -24,8 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ui.revenuecatui.icons.CheckCircle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
+import com.revenuecat.purchases.ui.revenuecatui.icons.CheckCircle
 import com.revenuecat.purchases.ui.revenuecatui.icons.CircleOutlined
 
 @Suppress("LongParameterList")
