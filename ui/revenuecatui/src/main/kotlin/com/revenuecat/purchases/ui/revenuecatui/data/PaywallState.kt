@@ -246,6 +246,100 @@ internal sealed interface PaywallState {
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
+            /**
+             * Maps each package uniqueId to its most recently reported visibility state.
+             * Absence means the package hasn't rendered yet (visibility is unknown).
+             * Uses [mutableStateMapOf] so reads inside [derivedStateOf] / composables react to changes.
+             */
+            private val packageVisibility = mutableStateMapOf<String, Boolean>()
+
+            /**
+             * Tracks packages that have been visible **at least once** during this session.
+             * Used to distinguish between two categories of "selected package becomes hidden":
+             *  - Never visible → hidden (e.g. intro_offer hides the default from the first frame):
+             *    the selection is stale and should be reconciled to the first visible alternative.
+             *  - Was visible → user selected it → now hidden (e.g. selected_package override):
+             *    the hiding is intentional; the selection must not be changed.
+             */
+            private val packagesEverVisible = mutableSetOf<String>()
+
+            /**
+             * Called by [PackageComponentView] whenever a package's visibility changes.
+             *
+             * Invariants maintained:
+             *  - When a package that has **never been visible** is the initial selection and
+             *    becomes hidden, selection is reconciled to the first visible alternative so that
+             *    purchase / pricing state never references an invisible package.
+             *  - When a package that **was previously visible** becomes hidden (e.g. because a
+             *    [ComponentOverride.Condition.SelectedPackage] override fires after the user
+             *    tapped it), the selection is intentionally preserved.
+             *  - A package with unknown visibility (not yet rendered) is never evicted — we wait
+             *    for its [LaunchedEffect] to fire.
+             */
+            fun setPackageVisible(uniqueId: String, isVisible: Boolean) {
+                packageVisibility[uniqueId] = isVisible
+                if (isVisible) {
+                    packagesEverVisible.add(uniqueId)
+                    // Auto-select the first visible package only when there was an intended default
+                    // that fell to null (e.g. it was hidden by a dynamic override before the user
+                    // could interact). When initialSelectedPackageUniqueId is null the paywall has
+                    // no intended default and selection should stay null.
+                    if (selectedPackageUniqueId == null && initialSelectedPackageUniqueId != null) {
+                        selectedPackageUniqueId = uniqueId
+                    }
+                } else {
+                    // Only reconcile if this package was NEVER visible before it became hidden
+                    // while selected. If it was previously visible (packagesEverVisible contains it),
+                    // the hiding is user-triggered (e.g. selected_package override) and must not
+                    // disturb the selection.
+                    if (selectedPackageUniqueId == uniqueId && !packagesEverVisible.contains(uniqueId)) {
+                        selectedPackageUniqueId = findFirstVisiblePackageUniqueId(excluding = uniqueId)
+                    }
+                }
+            }
+
+            /**
+             * Called by [PackageComponentView.DisposableEffect] when the composable leaves the
+             * composition (e.g. a tab switch). Removes the visibility record so the package is
+             * treated as **unknown** rather than hidden — preventing [reconcileSelectedIfHidden]
+             * from evicting it when the same package is about to re-enter.
+             *
+             * [packagesEverVisible] is intentionally **not** cleared so that the historical
+             * "was ever visible" guard survives tab round-trips.
+             */
+            fun clearPackageVisible(uniqueId: String) {
+                packageVisibility.remove(uniqueId)
+            }
+
+            /**
+             * If the currently selected package is **known** to be hidden (it has reported
+             * `isVisible = false`), replaces the selection with the first visible alternative.
+             * Packages that have not yet reported their visibility are left alone — their
+             * [LaunchedEffect] will call [setPackageVisible] and trigger reconciliation then.
+             */
+            private fun reconcileSelectedIfHidden() {
+                val current = selectedPackageUniqueId ?: return
+                if (packageVisibility[current] == false) {
+                    selectedPackageUniqueId = findFirstVisiblePackageUniqueId(excluding = current)
+                }
+            }
+
+            /**
+             * Returns the first visible package uniqueId, searching the same bucket as [excluding]
+             * first and then the other bucket as a fallback so that outside-tabs packages can
+             * reclaim selection when every in-tab package is hidden (and vice versa).
+             */
+            private fun findFirstVisiblePackageUniqueId(excluding: String): String? {
+                val (sameBucket, crossBucket) = if (packagesOutsideTabsUniqueIds.contains(excluding)) {
+                    packages.packagesOutsideTabs to packages.packagesByTab[selectedTabIndex].orEmpty()
+                } else {
+                    packages.packagesByTab[selectedTabIndex].orEmpty() to packages.packagesOutsideTabs
+                }
+                return (sameBucket + crossBucket)
+                    .firstOrNull { it.uniqueId != excluding && packageVisibility[it.uniqueId] == true }
+                    ?.uniqueId
+            }
+
             val selectedPackageInfo by derivedStateOf {
                 selectedPackageUniqueId?.let { uniqueId ->
                     findPackageInfoByUniqueId(uniqueId)?.let { info ->
@@ -307,6 +401,9 @@ internal sealed interface PaywallState {
                                     "This could be caused by not having any package marked as selected by default.",
                             )
                         }
+                    // The new tab's packages may not have rendered yet; reconcile only if the
+                    // candidate's visibility is already known to be false.
+                    reconcileSelectedIfHidden()
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
@@ -328,6 +425,9 @@ internal sealed interface PaywallState {
                     packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
                         ?: initialSelectedPackageOutsideTabs
                         ?: selectedPackageByTab[selectedTabIndex]
+                // The sheet may have been dismissed while an override was hiding the default package.
+                // Reconcile immediately if visibility is already known; otherwise LaunchedEffect will fix it.
+                reconcileSelectedIfHidden()
             }
 
             private fun LocaleList.toLocaleId(): LocaleId {

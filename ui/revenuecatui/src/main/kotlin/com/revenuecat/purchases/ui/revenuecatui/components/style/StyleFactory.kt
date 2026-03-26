@@ -567,7 +567,10 @@ internal class StyleFactory(
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
-                        isSelectedByDefault = component.isSelectedByDefault,
+                        // A statically hidden package must never drive the initial selection, even if
+                        // isSelectedByDefault is true. Dynamic override visibility is reconciled at
+                        // runtime via PackageComponentView reporting visibility to PaywallState.
+                        isSelectedByDefault = component.isSelectedByDefault && component.visible != false,
                         resolvedOffer = resolvedOffer,
                     ),
                     // If a tab control contains a package, which is already an edge case, the package should not
