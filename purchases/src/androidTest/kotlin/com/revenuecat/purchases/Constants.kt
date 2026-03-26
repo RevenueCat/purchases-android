@@ -75,10 +75,6 @@ object Constants {
         val activeEntitlementIdsToVerify: String,
         val backendEnvironment: BackendEnvironment,
     ) {
-        val isConfigured: Boolean get() = apiKey.isNotEmpty() &&
-            googlePurchaseToken.isNotEmpty() &&
-            productIdToPurchase.isNotEmpty()
-
         companion object {
             fun unconfigured() = EnvironmentConfig(
                 apiKey = "",
