@@ -593,8 +593,7 @@ platform :android do
       # We default to empty active entitlements since we are using an expired token for these integration tests.
       # So no active entitlements will be returned by our servers.
       "CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY" =>
-        ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY'] ||
-        ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
+        ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY'] || '',
     }
 
     gradle(
