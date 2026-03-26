@@ -64,7 +64,6 @@ internal fun DefaultProductCell(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        // Test: import androidx.compose.material.icons.filled.CheckCircle should trigger Danger
         Icon(
             imageVector = if (isSelected) Icons.Filled.CheckCircle else CircleOutlined,
             contentDescription = null,
