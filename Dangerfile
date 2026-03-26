@@ -13,8 +13,8 @@ revenuecatui_kt.each do |file|
 
   diff.patch.each_line do |line|
     next unless line.start_with?("+") && !line.start_with?("+++")
-    if line.match?(/import androidx\.compose\.material\.icons\./) &&
-       !line.match?(/import androidx\.compose\.material\.icons\.material(Icon|Path)/)
+    if line.match?(/^\+\s*import androidx\.compose\.material\.icons\./) &&
+       !line.match?(/^\+\s*import androidx\.compose\.material\.icons\.material(Icon|Path)/)
       warn(
         "`#{file}` adds a direct material-icons import (`#{line.sub(/^\+/, '').strip}`). " \
         "`:ui:revenuecatui` avoids the `material-icons` runtime dependency — " \
