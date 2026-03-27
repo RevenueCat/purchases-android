@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.fallbackurl
+package com.revenuecat.purchases.integration.fallbackurl
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
@@ -25,7 +25,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 
-class PurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
+abstract class BasePurchasesFallbackURLTest : BasePurchasesIntegrationTest() {
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failExceptFallbackUrls
 

@@ -1,6 +1,5 @@
-package com.revenuecat.purchases.trustedentitlements
+package com.revenuecat.purchases.integration.trustedentitlements
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -18,10 +17,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
-class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
+abstract class BaseTrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
     fun setup() {

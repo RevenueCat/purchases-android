@@ -21,24 +21,6 @@ fun resolveProperty(name: String, default: String = ""): String {
     return localProperties.getProperty(name) ?: default
 }
 
-// For instrumentation tests: resolves the right property based on TEST_BACKEND_ENVIRONMENT.
-// local.properties stores ALL variants with prefixed names (e.g. LOAD_SHEDDER_REVENUECAT_API_KEY).
-// This function picks the right prefix based on the configured environment.
-fun resolveTestProperty(name: String, default: String = ""): String {
-    // CI passes generic (non-prefixed) names via -P flags — check those first
-    val projectProp = project.findProperty(name) as? String
-    if (projectProp != null) return projectProp
-
-    // For local dev: determine prefix from TEST_BACKEND_ENVIRONMENT
-    val env = resolveProperty("TEST_BACKEND_ENVIRONMENT", "production")
-    val prefix = when {
-        env.startsWith("load_shedder") -> "LOAD_SHEDDER_"
-        env == "custom_entitlement_computation" -> "CUSTOM_ENTITLEMENT_COMPUTATION_"
-        else -> "" // production uses unprefixed names
-    }
-    return localProperties.getProperty("$prefix$name", default)
-}
-
 android {
     namespace = "com.revenuecat.purchases.api"
 
@@ -98,16 +80,54 @@ android {
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )
 
-        // Instrumentation test configuration from local.properties / Gradle -P flags
-        testInstrumentationRunnerArguments["REVENUECAT_API_KEY"] = resolveTestProperty("REVENUECAT_API_KEY")
-        testInstrumentationRunnerArguments["GOOGLE_PURCHASE_TOKEN"] = resolveTestProperty("GOOGLE_PURCHASE_TOKEN")
-        testInstrumentationRunnerArguments["PRODUCT_ID_TO_PURCHASE"] = resolveTestProperty("PRODUCT_ID_TO_PURCHASE")
-        testInstrumentationRunnerArguments["BASE_PLAN_ID_TO_PURCHASE"] =
-            resolveTestProperty("BASE_PLAN_ID_TO_PURCHASE")
-        testInstrumentationRunnerArguments["ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
-            resolveTestProperty("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
-        testInstrumentationRunnerArguments["TEST_BACKEND_ENVIRONMENT"] = resolveProperty("TEST_BACKEND_ENVIRONMENT")
+        // Instrumentation test configuration — all environments passed so tests can run against any/all backends.
+        // Each test class selects its environment via BasePurchasesIntegrationTest.environmentConfig.
+
+        // Production environment
+        testInstrumentationRunnerArguments["PRODUCTION_REVENUECAT_API_KEY"] =
+            resolveProperty("REVENUECAT_API_KEY")
+        testInstrumentationRunnerArguments["PRODUCTION_GOOGLE_PURCHASE_TOKEN"] =
+            resolveProperty("GOOGLE_PURCHASE_TOKEN")
+        testInstrumentationRunnerArguments["PRODUCTION_PRODUCT_ID_TO_PURCHASE"] =
+            resolveProperty("PRODUCT_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["PRODUCTION_BASE_PLAN_ID_TO_PURCHASE"] =
+            resolveProperty("BASE_PLAN_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["PRODUCTION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
+            resolveProperty("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
+
+        // Load Shedder environment (shared keys for US-East-1 and US-East-2)
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_REVENUECAT_API_KEY"] =
+            resolveProperty("LOAD_SHEDDER_REVENUECAT_API_KEY")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN"] =
+            resolveProperty("LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE"] =
+            resolveProperty("LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE"] =
+            resolveProperty("LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
+            resolveProperty("LOAD_SHEDDER_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
+
+        // Custom Entitlement Computation environment
+        testInstrumentationRunnerArguments["CEC_REVENUECAT_API_KEY"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_REVENUECAT_API_KEY")
+        testInstrumentationRunnerArguments["CEC_GOOGLE_PURCHASE_TOKEN"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_GOOGLE_PURCHASE_TOKEN")
+        testInstrumentationRunnerArguments["CEC_PRODUCT_ID_TO_PURCHASE"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_PRODUCT_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["CEC_BASE_PLAN_ID_TO_PURCHASE"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_BASE_PLAN_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["CEC_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
+
+        // Shared
         testInstrumentationRunnerArguments["TEST_PROXY_URL"] = resolveProperty("TEST_PROXY_URL")
+
+        // Optional package filter for running a subset of tests (used by CI).
+        // e.g. -PTEST_PACKAGE_FILTER=com.revenuecat.purchases.integration.production
+        val testPackageFilter = resolveProperty("TEST_PACKAGE_FILTER")
+        if (testPackageFilter.isNotEmpty()) {
+            testInstrumentationRunnerArguments["package"] = testPackageFilter
+        }
     }
 
     testOptions {
