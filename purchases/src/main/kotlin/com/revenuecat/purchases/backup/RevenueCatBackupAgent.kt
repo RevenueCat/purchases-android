@@ -28,9 +28,9 @@ private const val REVENUECAT_PREFS_BACKUP_KEY = "revenuecat_prefs_backup"
  * files, please make sure you add the SharedPreferences file `com_revenuecat_purchases_preferences` to your auto backup
  * configuration. See https://developer.android.com/identity/data/autobackup.
  */
-class RevenueCatBackupAgent : BackupAgentHelper() {
-    companion object {
-        const val REVENUECAT_PREFS_FILE_NAME = "com_revenuecat_purchases_preferences"
+public class RevenueCatBackupAgent : BackupAgentHelper() {
+    public companion object {
+        public const val REVENUECAT_PREFS_FILE_NAME: String = "com_revenuecat_purchases_preferences"
     }
 
     override fun onCreate() {

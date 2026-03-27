@@ -32,7 +32,8 @@ class ErrorsTest {
             parcel.recycle()
         }
         assertThat(readBundle).isNotNull
-        val serializedException = readBundle!!.getSerializable("exception", PurchasesException::class.java)
+        @Suppress("DEPRECATION")
+        val serializedException = readBundle!!.getSerializable("exception") as PurchasesException
         assertThat(serializedException!!.code).isEqualTo(purchasesException.code)
         assertThat(serializedException.underlyingErrorMessage).isEqualTo(purchasesException.underlyingErrorMessage)
     }

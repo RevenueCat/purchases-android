@@ -57,6 +57,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = any(),
+                pendingTransactionsTokens = any(),
                 onNoTransactionsToSync = captureLambda(),
                 onError = any(),
                 onSuccess = any()
@@ -64,6 +65,8 @@ class PostPendingTransactionsHelperTest {
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
+
+        every { deviceCache.addSuccessfullyPostedToken(any(), any()) } just Runs
 
         changeBillingConnected()
         changeAutoSyncEnabled(true)
@@ -98,6 +101,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = any(),
                 appUserID = any(),
                 initiationSource = any(),
+                sdkOriginated = any(),
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -153,6 +157,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -279,6 +284,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -329,6 +335,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = capture(successSlot),
                 transactionPostError = capture(errorSlot)
             )
@@ -353,6 +360,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -362,7 +370,10 @@ class PostPendingTransactionsHelperTest {
                     lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfo!!)
                 }
             } ?: run {
-                lambda<SuccessfulPurchaseCallback>().captured.invoke(mockk(), customerInfo!!)
+                lambda<SuccessfulPurchaseCallback>().captured.invoke(
+                    mockk(relaxed = true),
+                    customerInfo!!,
+                )
             }
         }
     }
@@ -379,7 +390,8 @@ class PostPendingTransactionsHelperTest {
 
     private fun mockSuccessfulQueryPurchases(
         purchasesByHashedToken: Map<String, StoreTransaction>,
-        notInCache: List<StoreTransaction>
+        notInCache: List<StoreTransaction>,
+        autoRenewingChanged: List<StoreTransaction> = emptyList(),
     ) {
         every {
             deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
@@ -387,6 +399,12 @@ class PostPendingTransactionsHelperTest {
         every {
             deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
         } returns notInCache
+        every {
+            deviceCache.getPurchasesWithAutoRenewingChange(purchasesByHashedToken)
+        } returns autoRenewingChanged
+        every {
+            deviceCache.saveAutoRenewingStatus(any())
+        } just Runs
 
         every {
             billing.queryPurchases(
@@ -429,6 +447,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = any(),
                 onNoTransactionsToSync = captureLambda(),
                 onError = any(),
                 onSuccess = any()
@@ -448,6 +467,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = any()
@@ -462,6 +482,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = captureLambda()
@@ -485,6 +506,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = captureLambda(),
                 onSuccess = any()
@@ -516,6 +538,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = captureLambda()
@@ -532,6 +555,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -541,6 +565,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = any()
@@ -563,6 +588,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = captureLambda()
             )
@@ -575,6 +601,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = captureLambda()
@@ -589,6 +616,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = any(),
                 onSuccess = any()
@@ -611,6 +639,7 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 transactionPostSuccess = any(),
                 transactionPostError = captureLambda()
             )
@@ -623,6 +652,7 @@ class PostPendingTransactionsHelperTest {
             postReceiptHelper.postRemainingCachedTransactionMetadata(
                 appUserID = any(),
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = emptySet(),
                 onNoTransactionsToSync = any(),
                 onError = captureLambda(),
                 onSuccess = any()
@@ -632,6 +662,312 @@ class PostPendingTransactionsHelperTest {
         }
 
         syncAndAssertResult(SyncPendingPurchaseResult.Error(regularTransactionError))
+    }
+
+    @Test
+    fun `pending transaction tokens are correctly passed to postRemainingCachedTransactionMetadata`() {
+        val purchasedPurchase = stubGooglePurchase(
+            purchaseToken = "purchasedToken",
+            productIds = listOf("product1"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val activePurchasedPurchase = purchasedPurchase.toStoreTransaction(ProductType.SUBS)
+
+        val pendingPurchase1 = stubGooglePurchase(
+            purchaseToken = "pendingToken1",
+            productIds = listOf("product2"),
+            purchaseState = Purchase.PurchaseState.PENDING,
+        )
+        val activePendingPurchase1 = pendingPurchase1.toStoreTransaction(ProductType.SUBS)
+
+        val pendingPurchase2 = stubGooglePurchase(
+            purchaseToken = "pendingToken2",
+            productIds = listOf("product3"),
+            purchaseState = Purchase.PurchaseState.PENDING,
+        )
+        val activePendingPurchase2 = pendingPurchase2.toStoreTransaction(ProductType.SUBS)
+
+        val allPurchases = listOf(activePurchasedPurchase, activePendingPurchase1, activePendingPurchase2)
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(
+                purchasedPurchase.purchaseToken.sha1() to activePurchasedPurchase,
+                pendingPurchase1.purchaseToken.sha1() to activePendingPurchase1,
+                pendingPurchase2.purchaseToken.sha1() to activePendingPurchase2,
+            ),
+            notInCache = allPurchases
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, allPurchases)
+
+        val pendingTokensSlot = slot<Set<String>>()
+        every {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = capture(pendingTokensSlot),
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = captureLambda(),
+            )
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(customerInfoMock)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postReceiptHelper.postRemainingCachedTransactionMetadata(
+                appUserID = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                pendingTransactionsTokens = setOf("pendingToken1", "pendingToken2"),
+                onNoTransactionsToSync = any(),
+                onError = any(),
+                onSuccess = any(),
+            )
+        }
+
+        // Verify that only the pending transaction tokens are passed
+        assertThat(pendingTokensSlot.captured).containsExactlyInAnyOrder("pendingToken1", "pendingToken2")
+        assertThat(pendingTokensSlot.captured).doesNotContain("purchasedToken")
+    }
+
+    // endregion
+
+    // region auto-renewing change detection
+
+    @Test
+    fun `when auto-renewing status changes, transaction is synced`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = listOf(transaction),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock)
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        verify(exactly = 1) {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = listOf(transaction),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                transactionPostSuccess = any(),
+                transactionPostError = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `when auto-renewing status changes and there are new purchases, both are synced`() {
+        val existingPurchase = stubGooglePurchase(
+            purchaseToken = "existing-token",
+            productIds = listOf("product1"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val existingTransaction = existingPurchase.toStoreTransaction(ProductType.SUBS)
+
+        val newPurchase = stubGooglePurchase(
+            purchaseToken = "new-token",
+            productIds = listOf("product2"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val newTransaction = newPurchase.toStoreTransaction(ProductType.SUBS)
+
+        val purchasesByHash = mapOf(
+            existingPurchase.purchaseToken.sha1() to existingTransaction,
+            newPurchase.purchaseToken.sha1() to newTransaction,
+        )
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = listOf(newTransaction),
+            autoRenewingChanged = listOf(existingTransaction),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        val transactionsSlot = slot<List<StoreTransaction>>()
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = capture(transactionsSlot),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                transactionPostSuccess = captureLambda(),
+                transactionPostError = any(),
+            )
+        } answers {
+            val captured = transactionsSlot.captured
+            captured.forEach { transaction ->
+                lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfoMock)
+            }
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Success(customerInfoMock))
+
+        assertThat(transactionsSlot.captured).hasSize(2)
+        assertThat(transactionsSlot.captured).containsExactlyInAnyOrder(newTransaction, existingTransaction)
+    }
+
+    @Test
+    fun `when no auto-renewing changes and no new purchases, no transactions synced`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = emptyList(),
+        )
+
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+
+        verify(exactly = 0) {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = any(),
+                allowSharingPlayStoreAccount = any(),
+                appUserID = any(),
+                initiationSource = any(),
+                sdkOriginated = any(),
+                transactionPostSuccess = any(),
+                transactionPostError = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `auto-renewing status is saved for unchanged tokens`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = emptyList(),
+        )
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        verify(exactly = 1) {
+            deviceCache.saveAutoRenewingStatus(purchasesByHash)
+        }
+    }
+
+    @Test
+    fun `successfully posted auto-renewing change does not call addSuccessfullyPostedToken`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = listOf(transaction),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, listOf(transaction))
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        // addSuccessfullyPostedToken is handled by billing.consumeAndSave, not here
+        verify(exactly = 0) {
+            deviceCache.addSuccessfullyPostedToken(any(), any())
+        }
+    }
+
+    @Test
+    fun `failed post of changed auto-renewing does not update cache`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = emptyList(),
+            autoRenewingChanged = listOf(transaction),
+        )
+
+        val error = PurchasesError(PurchasesErrorCode.NetworkError)
+        every {
+            postTransactionWithProductDetailsHelper.postTransactions(
+                transactions = any(),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                transactionPostSuccess = any(),
+                transactionPostError = captureLambda(),
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(transaction, error)
+        }
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        // addSuccessfullyPostedToken NOT called since the post failed
+        verify(exactly = 0) {
+            deviceCache.addSuccessfullyPostedToken(any(), any())
+        }
+    }
+
+    @Test
+    fun `synced transactions do not call addSuccessfullyPostedToken directly`() {
+        val purchase = stubGooglePurchase(
+            purchaseToken = "token",
+            productIds = listOf("product"),
+            purchaseState = Purchase.PurchaseState.PURCHASED,
+        )
+        val transaction = purchase.toStoreTransaction(ProductType.SUBS)
+        val purchasesByHash = mapOf(purchase.purchaseToken.sha1() to transaction)
+
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = purchasesByHash,
+            notInCache = listOf(transaction),
+            autoRenewingChanged = emptyList(),
+        )
+
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock, listOf(transaction))
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        // addSuccessfullyPostedToken is handled by billing.consumeAndSave,
+        // not PostPendingTransactionsHelper
+        verify(exactly = 0) {
+            deviceCache.addSuccessfullyPostedToken(any(), any())
+        }
     }
 
     // endregion

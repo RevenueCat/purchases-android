@@ -2,15 +2,13 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -20,18 +18,22 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
  */
 public class CustomerCenterView : CompatComposeView {
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init()
     }
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr,
+    ) {
         init()
     }
 
     /**
      * Constructor for programmatic use.
      */
-    constructor(
+    public constructor(
         context: Context,
         dismissHandler: (() -> Unit)? = null,
     ) : this(
@@ -41,7 +43,7 @@ public class CustomerCenterView : CompatComposeView {
     )
 
     @JvmOverloads
-    constructor(
+    public constructor(
         context: Context,
         customerCenterListener: CustomerCenterListener? = null,
         dismissHandler: (() -> Unit)? = null,
@@ -54,6 +56,10 @@ public class CustomerCenterView : CompatComposeView {
     private var dismissHandler: (() -> Unit)? = null
     private var customerCenterListener: CustomerCenterListener? = null
     private val internalListener = object : CustomerCenterListener {
+        override fun onRestoreInitiated(resume: Resumable) {
+            customerCenterListener?.onRestoreInitiated(resume) ?: resume()
+        }
+
         override fun onRestoreStarted() {
             customerCenterListener?.onRestoreStarted()
         }
@@ -81,6 +87,13 @@ public class CustomerCenterView : CompatComposeView {
         override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
             customerCenterListener?.onCustomActionSelected(actionIdentifier, purchaseIdentifier)
         }
+
+        override fun onPromotionalOfferSucceeded(
+            customerInfo: CustomerInfo,
+            transaction: StoreTransaction,
+        ) {
+            customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
+        }
     }
     private val customerCenterOptions = CustomerCenterOptions.Builder()
         .setListener(internalListener)
@@ -89,7 +102,7 @@ public class CustomerCenterView : CompatComposeView {
     /**
      * Sets a dismiss handler for when the customer center is closed.
      */
-    fun setDismissHandler(dismissHandler: (() -> Unit)?) {
+    public fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
     }
 
@@ -97,7 +110,7 @@ public class CustomerCenterView : CompatComposeView {
      * Sets a [CustomerCenterListener] that will receive callbacks for this instance of the Customer Center.
      * If not provided, callbacks fall back to the listener configured on [com.revenuecat.purchases.Purchases].
      */
-    fun setCustomerCenterListener(customerCenterListener: CustomerCenterListener?) {
+    public fun setCustomerCenterListener(customerCenterListener: CustomerCenterListener?) {
         this.customerCenterListener = customerCenterListener
     }
 
@@ -116,10 +129,7 @@ public class CustomerCenterView : CompatComposeView {
 
     @Composable
     override fun Content() {
-        val isDarkTheme = isSystemInDarkTheme()
-        val colorScheme = if (isDarkTheme) darkColorScheme() else lightColorScheme()
-
-        MaterialTheme(colorScheme = colorScheme) {
+        RevenueCatTheme {
             CustomerCenter(options = customerCenterOptions) {
                 dismiss()
             }

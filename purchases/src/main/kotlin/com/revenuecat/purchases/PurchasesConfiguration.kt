@@ -1,19 +1,19 @@
 package com.revenuecat.purchases
 
 import android.content.Context
-import com.revenuecat.purchases.PurchasesConfiguration.Builder
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import java.util.concurrent.ExecutorService
 
 /**
  * Holds parameters to initialize the SDK. Create an instance of this class using the [Builder] and pass it to
  * [Purchases.configure].
  */
-open class PurchasesConfiguration(builder: Builder) {
+public open class PurchasesConfiguration(builder: Builder) {
 
-    val context: Context
-    val apiKey: String
-    val appUserID: String?
+    public val context: Context
+    public val apiKey: String
+    public val appUserID: String?
 
     @Deprecated(
         "observerMode is being deprecated in favor of purchasesAreCompletedBy.",
@@ -22,21 +22,24 @@ open class PurchasesConfiguration(builder: Builder) {
             "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
         ),
     )
-    val observerMode: Boolean
+    public val observerMode: Boolean
         get() = when (purchasesAreCompletedBy) {
             PurchasesAreCompletedBy.REVENUECAT -> false
             PurchasesAreCompletedBy.MY_APP -> true
         }
-    val purchasesAreCompletedBy: PurchasesAreCompletedBy
-    val showInAppMessagesAutomatically: Boolean
-    val service: ExecutorService?
-    val store: Store
-    val diagnosticsEnabled: Boolean
-    val dangerousSettings: DangerousSettings
-    val verificationMode: EntitlementVerificationMode
-    val pendingTransactionsForPrepaidPlansEnabled: Boolean
-    val automaticDeviceIdentifierCollectionEnabled: Boolean
-    val preferredUILocaleOverride: String?
+    public val purchasesAreCompletedBy: PurchasesAreCompletedBy
+    public val showInAppMessagesAutomatically: Boolean
+    public val service: ExecutorService?
+    public val store: Store
+    public val diagnosticsEnabled: Boolean
+    public val dangerousSettings: DangerousSettings
+    public val verificationMode: EntitlementVerificationMode
+    public val pendingTransactionsForPrepaidPlansEnabled: Boolean
+    public val automaticDeviceIdentifierCollectionEnabled: Boolean
+    public val preferredUILocaleOverride: String?
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public val galaxyBillingMode: GalaxyBillingMode
 
     init {
         this.context =
@@ -58,12 +61,16 @@ open class PurchasesConfiguration(builder: Builder) {
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        this.galaxyBillingMode = builder.galaxyBillingMode
     }
 
     internal fun copy(
         appUserID: String? = this.appUserID,
         service: ExecutorService? = this.service,
     ): PurchasesConfiguration {
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         var builder = Builder(context, apiKey)
             .appUserID(appUserID)
             .purchasesAreCompletedBy(purchasesAreCompletedBy)
@@ -77,6 +84,7 @@ open class PurchasesConfiguration(builder: Builder) {
                 automaticDeviceIdentifierCollectionEnabled,
             )
             .preferredUILocaleOverride(preferredUILocaleOverride)
+            .galaxyBillingMode(galaxyBillingMode)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -84,7 +92,7 @@ open class PurchasesConfiguration(builder: Builder) {
     }
 
     @SuppressWarnings("TooManyFunctions")
-    open class Builder(
+    public open class Builder(
         @get:JvmSynthetic internal val context: Context,
         @get:JvmSynthetic internal val apiKey: String,
     ) {
@@ -122,10 +130,15 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic
         internal var preferredUILocaleOverride: String? = null
 
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        @set:JvmSynthetic
+        @get:JvmSynthetic
+        internal var galaxyBillingMode: GalaxyBillingMode = GalaxyBillingMode.PRODUCTION
+
         /**
          * A unique id for identifying the user
          */
-        fun appUserID(appUserID: String?) = apply {
+        public fun appUserID(appUserID: String?): Builder = apply {
             this.appUserID = appUserID
         }
 
@@ -136,7 +149,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * If this setting is disabled, you can show the snackbar by calling
          * [Purchases.showInAppMessagesIfNeeded]
          */
-        fun showInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean) = apply {
+        public fun showInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean): Builder = apply {
             this.showInAppMessagesAutomatically = showInAppMessagesAutomatically
         }
 
@@ -153,7 +166,7 @@ open class PurchasesConfiguration(builder: Builder) {
                 "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
             ),
         )
-        fun observerMode(observerMode: Boolean) = apply {
+        public fun observerMode(observerMode: Boolean): Builder = apply {
             purchasesAreCompletedBy(
                 if (observerMode) {
                     PurchasesAreCompletedBy.MY_APP
@@ -176,7 +189,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * [revenuecat.com](https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions)
          * and [developer.android.com](https://developer.android.com/google/play/billing/integrate#process).
          */
-        fun purchasesAreCompletedBy(purchasesAreCompletedBy: PurchasesAreCompletedBy) = apply {
+        public fun purchasesAreCompletedBy(purchasesAreCompletedBy: PurchasesAreCompletedBy): Builder = apply {
             this.purchasesAreCompletedBy = purchasesAreCompletedBy
         }
 
@@ -184,7 +197,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * Executor service for performing backend operations. This can be used if you want to share an executor between
          * Purchases and your own code. If not passed in, one will be created.
          */
-        fun service(service: ExecutorService) = apply {
+        public fun service(service: ExecutorService): Builder = apply {
             this.service = service
         }
 
@@ -192,7 +205,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * The store in which to make purchases. See [Store] for supported stores.
          * @see Store
          */
-        fun store(store: Store) = apply {
+        public fun store(store: Store): Builder = apply {
             this.store = store
         }
 
@@ -202,7 +215,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * No personal identifiable information will be collected.
          * The default value is false.
          */
-        fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
+        public fun diagnosticsEnabled(diagnosticsEnabled: Boolean): Builder = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
         }
 
@@ -228,7 +241,7 @@ open class PurchasesConfiguration(builder: Builder) {
         )
         @JvmSynthetic
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
+        public fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean): Builder = apply {
             if (enabled) {
                 this.verificationMode = EntitlementVerificationMode.INFORMATIONAL
                 this.diagnosticsEnabled = true
@@ -251,14 +264,14 @@ open class PurchasesConfiguration(builder: Builder) {
          *
          * Default mode is disabled. Please see https://rev.cat/trusted-entitlements for more info.
          */
-        fun entitlementVerificationMode(verificationMode: EntitlementVerificationMode) = apply {
+        public fun entitlementVerificationMode(verificationMode: EntitlementVerificationMode): Builder = apply {
             this.verificationMode = verificationMode
         }
 
         /**
          * Only use a Dangerous Setting if suggested by RevenueCat support team.
          */
-        fun dangerousSettings(dangerousSettings: DangerousSettings) = apply {
+        public fun dangerousSettings(dangerousSettings: DangerousSettings): Builder = apply {
             this.dangerousSettings = dangerousSettings
         }
 
@@ -267,7 +280,9 @@ open class PurchasesConfiguration(builder: Builder) {
          * in Google Play). Note that entitlements are not granted until payment is done.
          * Default is disabled.
          */
-        fun pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled: Boolean) = apply {
+        public fun pendingTransactionsForPrepaidPlansEnabled(
+            pendingTransactionsForPrepaidPlansEnabled: Boolean,
+        ): Builder = apply {
             this.pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled
         }
 
@@ -282,7 +297,9 @@ open class PurchasesConfiguration(builder: Builder) {
          *
          * Default is enabled.
          */
-        fun automaticDeviceIdentifierCollectionEnabled(automaticDeviceIdentifierCollectionEnabled: Boolean) = apply {
+        public fun automaticDeviceIdentifierCollectionEnabled(
+            automaticDeviceIdentifierCollectionEnabled: Boolean,
+        ): Builder = apply {
             this.automaticDeviceIdentifierCollectionEnabled = automaticDeviceIdentifierCollectionEnabled
         }
 
@@ -296,19 +313,29 @@ open class PurchasesConfiguration(builder: Builder) {
          * **Note:** This only affects UI components from the RevenueCatUI module and requires
          * importing RevenueCatUI in your project.
          */
-        fun preferredUILocaleOverride(localeString: String?) = apply {
+        public fun preferredUILocaleOverride(localeString: String?): Builder = apply {
             this.preferredUILocaleOverride = localeString
+        }
+
+        /**
+         * The billing mode used by the Galaxy Store. Only applicable if using the Galaxy Store.
+         * @see GalaxyBillingMode
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        public fun galaxyBillingMode(galaxyBillingMode: GalaxyBillingMode): Builder = apply {
+            this.galaxyBillingMode = galaxyBillingMode
         }
 
         /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
-        open fun build(): PurchasesConfiguration {
+        public open fun build(): PurchasesConfiguration {
             return PurchasesConfiguration(this)
         }
     }
 
-    override fun equals(other: Any?): Boolean {
+    @Suppress("CyclomaticComplexMethod")
+    public override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
@@ -326,10 +353,13 @@ open class PurchasesConfiguration(builder: Builder) {
         if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
 
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        if (galaxyBillingMode != other.galaxyBillingMode) return false
+
         return true
     }
 
-    override fun hashCode(): Int {
+    public override fun hashCode(): Int {
         var result = apiKey.hashCode()
         result = 31 * result + (appUserID?.hashCode() ?: 0)
         result = 31 * result + purchasesAreCompletedBy.hashCode()
@@ -341,6 +371,9 @@ open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
         result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
+
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        result = 31 * result + (galaxyBillingMode.hashCode())
         return result
     }
 }

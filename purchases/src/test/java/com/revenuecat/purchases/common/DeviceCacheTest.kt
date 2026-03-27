@@ -355,72 +355,67 @@ class DeviceCacheTest {
 
     @Test
     fun `getting sent tokens works`() {
-        val tokens = setOf("token1", "token2")
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns tokens
+        mockTokenMap(tokenMapJson("token1" to null, "token2" to true))
         val sentTokens = cache.getPreviouslySentHashedTokens()
-        assertThat(sentTokens).isEqualTo(tokens)
+        assertThat(sentTokens).isEqualTo(setOf("token1", "token2"))
     }
 
     @Test
     fun `token is hashed then added`() {
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "token2")
-        val sha1 = "token3".sha1()
-        every {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2", sha1))
-        } returns mockEditor
-        every {
-            mockEditor.apply()
-        } just runs
+        mockTokenMap(tokenMapJson("token1" to null, "token2" to true))
+        every { mockEditor.apply() } just runs
 
         cache.addSuccessfullyPostedToken("token3")
+        val sha1 = "token3".sha1()
         verify {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2", sha1))
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.has("token1") && obj.has("token2") && obj.has(sha1)
+            })
+        }
+    }
+
+    @Test
+    fun `addSuccessfullyPostedToken does not overwrite existing token`() {
+        val sha1 = "token1".sha1()
+        mockTokenMap(tokenMapJson(sha1 to true))
+        cache.addSuccessfullyPostedToken("token1")
+        verify(exactly = 0) {
+            mockEditor.putString(cache.tokensCacheKey, any())
         }
     }
 
     @Test
     fun `if token is not active anymore, remove it from database`() {
-        every {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token3"))
-        } returns mockEditor
-        every {
-            mockEditor.apply()
-        } just runs
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "token2", "token3")
+        mockTokenMap(tokenMapJson("token1" to null, "token2" to true, "token3" to false))
+        every { mockEditor.apply() } just runs
+
         cache.cleanPreviouslySentTokens(setOf("token3", "token4"))
         verify {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token3"))
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 1 && obj.has("token3")
+            })
         }
     }
 
     @Test
     fun `if all tokens are active, do not remove any`() {
-        every {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2"))
-        } returns mockEditor
-        every {
-            mockEditor.apply()
-        } just runs
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "token2")
+        mockTokenMap(tokenMapJson("token1" to null, "token2" to true))
+        every { mockEditor.apply() } just runs
+
         cache.cleanPreviouslySentTokens(setOf("token1", "token2"))
         verify {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2"))
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 2 && obj.has("token1") && obj.has("token2")
+            })
         }
     }
 
     @Test
     fun `getting the tokens not in cache returns all the active tokens that have not been sent`() {
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "hash2", "token3")
+        mockTokenMap(tokenMapJson("token1" to null, "hash2" to true, "token3" to false))
         val activeSub = mockk<StoreTransaction>(relaxed = true).also {
             every { it.type } returns ProductType.SUBS
         }
@@ -526,9 +521,10 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `getPreviouslySentHashedTokens returns an emptySet if there's a ClassCastException when calling getStringSet`() {
+    fun `getPreviouslySentHashedTokens returns emptySet if ClassCastException on legacy migration`() {
+        mockString(cache.tokensCacheKey, null)
         every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
+            mockPrefs.getStringSet(cache.legacyTokensCacheKey, any())
         } throws ClassCastException("java.lang.String cannot be cast to java.util.Set")
         val sentTokens = cache.getPreviouslySentHashedTokens()
         assertThat(sentTokens).isEmpty()
@@ -892,6 +888,316 @@ class DeviceCacheTest {
         assertThat(vcs).`as`("cached VirtualCurrencies is null when JSONException is thrown").isNull()
     }
     // endregion virtualCurrencies
+
+    // region auto-renewing status
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange returns empty when auto-renewing is null (unknown)`() {
+        mockTokenMap(tokenMapJson("hash1" to null))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange detects change from true to false`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).containsExactly(transaction)
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange detects change from false to true`() {
+        mockTokenMap(tokenMapJson("hash1" to false))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns true
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).containsExactly(transaction)
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange returns empty when status unchanged`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns true
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange ignores tokens not in cache`() {
+        mockTokenMap(tokenMapJson("hash2" to true))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `getPurchasesWithAutoRenewingChange returns empty when transaction isAutoRenewing is null`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns null
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `saveAutoRenewingStatus updates existing tokens only`() {
+        mockTokenMap(tokenMapJson("hash1" to null, "hash2" to true))
+        every { mockEditor.apply() } just runs
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction, "hash3" to transaction))
+        verify {
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 2 &&
+                    verifyTokenEntry(obj, "hash1", false) &&
+                    verifyTokenEntry(obj, "hash2", true)
+            })
+        }
+    }
+
+    @Test
+    fun `saveAutoRenewingStatus does not overwrite non-null cached value with null`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns null
+        }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
+        verify(exactly = 0) {
+            mockEditor.putString(cache.tokensCacheKey, any())
+        }
+    }
+
+    // endregion auto-renewing status
+
+    // region legacy token migration
+
+    @Test
+    fun `migrates legacy StringSet tokens to unified JSON map with null auto-renewing`() {
+        mockString(cache.tokensCacheKey, null)
+        every {
+            mockPrefs.getStringSet(cache.legacyTokensCacheKey, null)
+        } returns setOf("hash1", "hash2")
+        every { mockEditor.apply() } just runs
+        every { mockEditor.remove(any()) } returns mockEditor
+
+        val sentTokens = cache.getPreviouslySentHashedTokens()
+
+        assertThat(sentTokens).containsExactlyInAnyOrder("hash1", "hash2")
+        verify {
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 2 &&
+                    verifyTokenEntry(obj, "hash1", null) &&
+                    verifyTokenEntry(obj, "hash2", null)
+            })
+        }
+        verify { mockEditor.remove(cache.legacyTokensCacheKey) }
+    }
+
+    @Test
+    fun `does not migrate if new key already exists`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        val sentTokens = cache.getPreviouslySentHashedTokens()
+
+        assertThat(sentTokens).containsExactly("hash1")
+        verify(exactly = 0) { mockPrefs.getStringSet(cache.legacyTokensCacheKey, any()) }
+    }
+
+    @Test
+    fun `returns empty when neither legacy nor new key exists`() {
+        mockString(cache.tokensCacheKey, null)
+        every { mockPrefs.getStringSet(cache.legacyTokensCacheKey, null) } returns null
+
+        val sentTokens = cache.getPreviouslySentHashedTokens()
+        assertThat(sentTokens).isEmpty()
+    }
+
+    @Test
+    fun `migrated tokens with null auto-renewing are not detected as changed`() {
+        // After migration, tokens have null isAutoRenewing — they should NOT trigger change detection
+        mockTokenMap(tokenMapJson("hash1" to null))
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns true
+        }
+        val result = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(result).isEmpty()
+    }
+
+    @Test
+    fun `migrated tokens get auto-renewing populated after saveAutoRenewingStatus`() {
+        // Simulates: migration gave null, then saveAutoRenewingStatus populates the value
+        mockTokenMap(tokenMapJson("hash1" to null))
+        every { mockEditor.apply() } just runs
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns true
+        }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
+        verify {
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 1 && verifyTokenEntry(obj, "hash1", true)
+            })
+        }
+    }
+
+    @Test
+    fun `cleanPreviouslySentTokens preserves auto-renewing values`() {
+        mockTokenMap(tokenMapJson("hash1" to true, "hash2" to false, "hash3" to null))
+        every { mockEditor.apply() } just runs
+
+        cache.cleanPreviouslySentTokens(setOf("hash1", "hash3"))
+        verify {
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 2 &&
+                    verifyTokenEntry(obj, "hash1", true) &&
+                    verifyTokenEntry(obj, "hash3", null)
+            })
+        }
+    }
+
+    @Test
+    fun `addSuccessfullyPostedToken updates auto-renewing for existing token`() {
+        val sha1 = "token1".sha1()
+        mockTokenMap(tokenMapJson(sha1 to null))
+        every { mockEditor.apply() } just runs
+
+        cache.addSuccessfullyPostedToken("token1", false)
+        verify {
+            mockEditor.putString(cache.tokensCacheKey, match { json ->
+                val obj = JSONObject(json)
+                obj.length() == 1 && verifyTokenEntry(obj, sha1, false)
+            })
+        }
+    }
+
+    @Test
+    fun `addSuccessfullyPostedToken does not overwrite with same value`() {
+        val sha1 = "token1".sha1()
+        mockTokenMap(tokenMapJson(sha1 to true))
+        cache.addSuccessfullyPostedToken("token1", true)
+        verify(exactly = 0) {
+            mockEditor.putString(cache.tokensCacheKey, any())
+        }
+    }
+
+    // endregion legacy token migration
+
+    // region in-memory token cache
+
+    @Test
+    fun `getTokenMap caches result in memory and avoids repeated deserialization`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+
+        cache.getPreviouslySentHashedTokens()
+        cache.getPreviouslySentHashedTokens()
+
+        verify(exactly = 1) {
+            mockPrefs.getString(cache.tokensCacheKey, isNull())
+        }
+    }
+
+    @Test
+    fun `addSuccessfullyPostedToken updates in-memory cache`() {
+        mockTokenMap(tokenMapJson())
+        every { mockEditor.apply() } just runs
+
+        cache.addSuccessfullyPostedToken("token1", true)
+
+        // Clear the mock so SharedPreferences would return null if called
+        every { mockPrefs.getString(cache.tokensCacheKey, isNull()) } returns null
+
+        val sentTokens = cache.getPreviouslySentHashedTokens()
+        assertThat(sentTokens).contains("token1".sha1())
+    }
+
+    @Test
+    fun `cleanPreviouslySentTokens updates in-memory cache`() {
+        mockTokenMap(tokenMapJson("hash1" to true, "hash2" to false))
+        every { mockEditor.apply() } just runs
+
+        cache.cleanPreviouslySentTokens(setOf("hash1"))
+
+        // Clear the mock so SharedPreferences would return null if called
+        every { mockPrefs.getString(cache.tokensCacheKey, isNull()) } returns null
+
+        val sentTokens = cache.getPreviouslySentHashedTokens()
+        assertThat(sentTokens).containsExactly("hash1")
+    }
+
+    @Test
+    fun `saveAutoRenewingStatus updates in-memory cache`() {
+        mockTokenMap(tokenMapJson("hash1" to true))
+        every { mockEditor.apply() } just runs
+
+        val transaction = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.isAutoRenewing } returns false
+        }
+        cache.saveAutoRenewingStatus(mapOf("hash1" to transaction))
+
+        // Clear the mock so SharedPreferences would return null if called
+        every { mockPrefs.getString(cache.tokensCacheKey, isNull()) } returns null
+
+        // Should still detect the change from the in-memory cache
+        val changed = cache.getPurchasesWithAutoRenewingChange(mapOf("hash1" to transaction))
+        assertThat(changed).isEmpty() // false == false, no change
+    }
+
+    // endregion in-memory token cache
+
+    private fun mockTokenMap(json: String) {
+        mockString(cache.tokensCacheKey, json)
+    }
+
+    /**
+     * Builds a token map JSON string in the new nested format.
+     * Example: tokenMapJson("hash1" to true, "hash2" to null, "hash3" to false)
+     * produces: {"hash1":{"isAutoRenewing":true},"hash2":{"isAutoRenewing":null},"hash3":{"isAutoRenewing":false}}
+     */
+    private fun tokenMapJson(vararg entries: Pair<String, Boolean?>): String {
+        val obj = JSONObject()
+        for ((key, value) in entries) {
+            obj.put(key, JSONObject().apply {
+                put("isAutoRenewing", value ?: JSONObject.NULL)
+            })
+        }
+        return obj.toString()
+    }
+
+    private fun verifyTokenEntry(obj: JSONObject, key: String, expectedAutoRenewing: Boolean?): Boolean {
+        if (!obj.has(key)) return false
+        val entry = obj.getJSONObject(key)
+        return if (expectedAutoRenewing == null) {
+            entry.isNull("isAutoRenewing")
+        } else {
+            entry.getBoolean("isAutoRenewing") == expectedAutoRenewing
+        }
+    }
 
     private fun mockString(key: String, value: String?) {
         every {

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -9,19 +10,21 @@ import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
 
-internal data class ProductEntitlementMapping(
+@Suppress("ForbiddenPublicDataClass")
+@InternalRevenueCatAPI
+public data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
-    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
     val loadedFromCache: Boolean = false,
 ) {
-    companion object {
+    public companion object {
         private const val PRODUCT_ENTITLEMENT_MAPPING_KEY = "product_entitlement_mapping"
         private const val PRODUCT_ID_KEY = "product_identifier"
         private const val BASE_PLAN_ID_KEY = "base_plan_id"
         private const val ENTITLEMENTS_KEY = "entitlements"
         private const val ORIGINAL_SOURCE_KEY = "rc_original_source"
 
-        fun fromJson(
+        internal fun fromJson(
             json: JSONObject,
             loadedFromCache: Boolean = false,
         ): ProductEntitlementMapping {
@@ -49,20 +52,22 @@ internal data class ProductEntitlementMapping(
             return ProductEntitlementMapping(mappings, originalSource, loadedFromCache)
         }
 
-        fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
+        internal fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
             val jsonCopy = json.copy(deep = false)
             val jsonWithSource = jsonCopy.put(ORIGINAL_SOURCE_KEY, httpResult.originalDataSource.name)
             return fromJson(jsonWithSource, loadedFromCache = false)
         }
     }
 
-    data class Mapping(
+    @Suppress("ForbiddenPublicDataClass")
+    @InternalRevenueCatAPI
+    public data class Mapping(
         val productIdentifier: String,
         val basePlanId: String?,
         val entitlements: List<String>,
     )
 
-    fun toJson() = JSONObject().apply {
+    internal fun toJson() = JSONObject().apply {
         val mappingsObjects = mappings.mapValues { (_, value) ->
             JSONObject().apply {
                 put(PRODUCT_ID_KEY, value.productIdentifier)

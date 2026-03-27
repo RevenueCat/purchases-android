@@ -1,9 +1,10 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 @Suppress("unused", "UNUSED_VARIABLE")
@@ -13,7 +14,8 @@ private class PaywallOptionsAPI {
         offering: Offering?,
         listener: PaywallListener?,
         fontProvider: FontProvider?,
-        purchaseLogic: PurchaseLogic?,
+        purchaseLogic: PaywallPurchaseLogic?,
+        customVariables: Map<String, CustomVariableValue>,
     ) {
         val options: PaywallOptions = PaywallOptions.Builder(dismissRequest = {})
             .setOffering(offering)
@@ -21,10 +23,12 @@ private class PaywallOptionsAPI {
             .setShouldDisplayDismissButton(true)
             .setFontProvider(fontProvider)
             .setPurchaseLogic(purchaseLogic)
+            .setCustomVariables(customVariables)
             .build()
         val listener2: PaywallListener? = options.listener
         val fontProvider2: FontProvider? = options.fontProvider
         val dismissRequest: () -> Unit = options.dismissRequest
-        val purchaseLogic2: PurchaseLogic? = options.purchaseLogic
+        val purchaseLogic2: PaywallPurchaseLogic? = options.purchaseLogic
+        val customVariables2: Map<String, CustomVariableValue> = options.customVariables
     }
 }

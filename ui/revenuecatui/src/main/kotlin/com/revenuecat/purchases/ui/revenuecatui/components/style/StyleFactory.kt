@@ -63,16 +63,21 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderSt
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PromoOfferResolver
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatten
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
@@ -92,6 +97,12 @@ internal class StyleFactory(
     private val fontAliases: Map<FontAlias, FontSpec>,
     private val variableLocalizations: NonEmptyMap<LocaleId, NonEmptyMap<VariableLocalizationKey, String>>,
     private val offering: Offering,
+    /**
+     * When true, all overrides containing rule conditions are stripped from every component,
+     * rendering the "default paywall" with only base condition overrides applied. This is set
+     * when the paywall component tree contains any unsupported condition type.
+     */
+    private val stripRules: Boolean = false,
 ) {
 
     internal companion object {
@@ -244,6 +255,10 @@ internal class StyleFactory(
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
             get() = packageInfo?.pkg
+        val resolvedOffer: ResolvedOffer?
+            get() = packageInfo?.resolvedOffer
+        val offerEligibility: OfferEligibility?
+            get() = packageInfo?.let { calculateOfferEligibility(it.resolvedOffer, it.pkg) }
 
         private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
         private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
@@ -390,6 +405,21 @@ internal class StyleFactory(
                 this
             }
 
+        @Suppress("UNCHECKED_CAST")
+        fun <T : ComponentStyle> T.applyHorizontalWindowInsetsIfNecessary(shouldApply: Boolean): T =
+            if (shouldApply) {
+                when (this) {
+                    is StackComponentStyle -> copy(applyHorizontalWindowInsets = true)
+                    is StickyFooterComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
+                    )
+
+                    else -> this
+                } as T
+            } else {
+                this
+            }
+
         private fun recordPackage(pkg: AvailablePackages.Info) {
             val currentTabIndex = tabIndex
             if (currentTabIndex == null) {
@@ -410,10 +440,13 @@ internal class StyleFactory(
     /**
      * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
      * passed-in [component]).
+     * @param applyHorizontalWindowInsets Whether to apply horizontal window insets to the root of this tree (i.e. the
+     * passed-in [component]). Needed for landscape mode to avoid rendering behind camera cutouts.
      */
     fun create(
         component: PaywallComponent,
         applyBottomWindowInsets: Boolean = false,
+        applyHorizontalWindowInsets: Boolean = false,
     ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
         with(StyleFactoryScope()) {
             createInternal(component)
@@ -425,6 +458,9 @@ internal class StyleFactory(
                 }
                 .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
+                .map { componentStyle ->
+                    componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
+                }
                 .map { componentStyle ->
                     StyleResult(
                         componentStyle = componentStyle,
@@ -520,10 +556,18 @@ internal class StyleFactory(
                     Logger.w(error.message)
                     return Result.Success(null)
                 }
+
+                // Resolve Play Store offer if configured
+                val resolvedOffer = PromoOfferResolver.resolve(
+                    rcPackage = rcPackage,
+                    offerConfig = component.playStoreOffer,
+                )
+
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
                         isSelectedByDefault = component.isSelectedByDefault,
+                        resolvedOffer = resolvedOffer,
                     ),
                     // If a tab control contains a package, which is already an edge case, the package should not
                     // visually become "selected" if its tab control parent is.
@@ -541,6 +585,7 @@ internal class StyleFactory(
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
                             isSelectable = purchaseButtons == 0,
+                            resolvedOffer = resolvedOffer,
                         )
                     }
                 }
@@ -577,12 +622,18 @@ internal class StyleFactory(
     ): Result<ButtonComponentStyle.Action, NonEmptyList<PaywallValidationError>> {
         if (method == null) {
             return Result.Success(
-                ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
+                ButtonComponentStyle.Action.PurchasePackage(
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                ),
             )
         }
         return when (method) {
             is PurchaseButtonComponent.Method.InAppCheckout -> Result.Success(
-                ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
+                ButtonComponentStyle.Action.PurchasePackage(
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                ),
             )
 
             is PurchaseButtonComponent.Method.WebCheckout -> {
@@ -619,7 +670,10 @@ internal class StyleFactory(
             is PurchaseButtonComponent.Method.Unknown -> {
                 Logger.e("Unknown purchase button method. Defaulting to purchasing current/default package.")
                 Result.Success(
-                    ButtonComponentStyle.Action.PurchasePackage(rcPackage = rcPackage),
+                    ButtonComponentStyle.Action.PurchasePackage(
+                        rcPackage = rcPackage,
+                        resolvedOffer = resolvedOffer,
+                    ),
                 )
             }
         }
@@ -650,6 +704,7 @@ internal class StyleFactory(
             is ButtonComponent.Destination.Sheet ->
                 createStackComponentStyle(destination.stack)
                     .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
+                    .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
                     .map { stackComponentStyle ->
                         ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
                             id = destination.id,
@@ -687,7 +742,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
-            .toPresentedOverrides { partial ->
+            .toPresentedOverrides(stripRules) { partial ->
                 PresentedStackPartial(
                     from = partial,
                     aliases = colorAliases,
@@ -722,7 +777,9 @@ internal class StyleFactory(
             badge = badge,
             scrollOrientation = component.overflow?.toOrientation(component.dimension),
             rcPackage = rcPackage,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             countdownDate = countdownDate,
             countFrom = countFrom,
             overrides = presentedOverrides,
@@ -734,10 +791,22 @@ internal class StyleFactory(
         component: TextComponent,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Get our texts from the localization dictionary.
-        first = localizations.stringForAllLocales(component.text),
+        first = localizations.stringForAllLocales(component.text)
+            .flatMapError { errors ->
+                val lidExistsInAnyLocale = localizations.any { (_, dict) -> dict.containsKey(component.text) }
+                // If the lid exists in some locales but not all, it's a real localization/translation
+                // issue, so we propagate the error. If it exists in NO locales, it's an orphan text_lid
+                // from a frontend bug (e.g. a badge added only in an override state).
+                if (lidExistsInAnyLocale) {
+                    Result.Error(errors)
+                } else {
+                    Logger.w("Missing text for text_lid '${component.text.value}', using empty string.")
+                    Result.Success(localizations.mapValues { "" })
+                }
+            },
         second = component.overrides
             // Map all overrides to PresentedOverrides.
-            .toPresentedOverrides {
+            .toPresentedOverrides(stripRules) {
                 LocalizedTextPartial(
                     from = it,
                     using = localizations,
@@ -770,7 +839,9 @@ internal class StyleFactory(
             padding = component.padding.toPaddingValues(),
             margin = component.margin.toPaddingValues(),
             rcPackage = rcPackage,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             countdownDate = countdownDate,
             countFrom = countFrom,
             variableLocalizations = variableLocalizations,
@@ -783,7 +854,7 @@ internal class StyleFactory(
     ): Result<ImageComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.overrides
-            .toPresentedOverrides {
+            .toPresentedOverrides(stripRules) {
                 it.source
                     ?.withLocalizedOverrides(it.overrideSourceLid)
                     .orSuccessfullyNull()
@@ -808,7 +879,9 @@ internal class StyleFactory(
             overlay = overlay,
             contentScale = component.fitMode.toContentScale(),
             rcPackage = rcPackage,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
         )
@@ -819,7 +892,7 @@ internal class StyleFactory(
     ): Result<VideoComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.source.withLocalizedOverrides(component.overrideSourceLid),
         second = component.fallbackSource?.withLocalizedOverrides(component.overrideSourceLid).orSuccessfullyNull(),
-        third = component.overrides?.toPresentedOverrides { videoPartial ->
+        third = component.overrides?.toPresentedOverrides(stripRules) { videoPartial ->
             videoPartial.source
                 ?.withLocalizedOverrides(videoPartial.overrideSourceLid)
                 .orSuccessfullyNull()
@@ -856,7 +929,9 @@ internal class StyleFactory(
             padding = component.padding?.toPaddingValues() ?: PaddingValues(),
             margin = component.margin?.toPaddingValues() ?: PaddingValues(),
             rcPackage = rcPackage,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides ?: emptyList(),
             showControls = component.showControls,
             autoplay = component.autoplay,
@@ -873,7 +948,7 @@ internal class StyleFactory(
     ): Result<IconComponentStyle, NonEmptyList<PaywallValidationError>> =
         zipOrAccumulate(
             first = component.overrides
-                .toPresentedOverrides { partial -> PresentedIconPartial(partial, colorAliases) }
+                .toPresentedOverrides(stripRules) { partial -> PresentedIconPartial(partial, colorAliases) }
                 .mapError { nonEmptyListOf(it) },
             second = component.color
                 ?.toColorStyles(aliases = colorAliases)
@@ -893,7 +968,9 @@ internal class StyleFactory(
                 margin = component.margin.toPaddingValues(),
                 iconBackground = background,
                 rcPackage = rcPackage,
+                resolvedOffer = resolvedOffer,
                 tabIndex = tabControlIndex,
+                offerEligibility = offerEligibility,
                 overrides = presentedOverrides,
             )
         }
@@ -902,7 +979,7 @@ internal class StyleFactory(
         component: TimelineComponent,
     ): Result<TimelineComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
-            .toPresentedOverrides { partial -> Result.Success(PresentedTimelinePartial(partial)) }
+            .toPresentedOverrides(stripRules) { partial -> Result.Success(PresentedTimelinePartial(partial)) }
             .mapError { nonEmptyListOf(it) },
         second = component.items
             .map { createTimelineComponentItemStyle(it) }
@@ -919,7 +996,9 @@ internal class StyleFactory(
             margin = component.margin.toPaddingValues(),
             items = items,
             rcPackage = rcPackage,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
     }
@@ -928,7 +1007,7 @@ internal class StyleFactory(
         item: TimelineComponent.Item,
     ): Result<TimelineComponentStyle.ItemStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = item.overrides
-            .toPresentedOverrides { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
+            .toPresentedOverrides(stripRules) { partial -> PresentedTimelineItemPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
         second = createTextComponentStyle(item.title),
         third = item.description?.let { createTextComponentStyle(it) }.orSuccessfullyNull(),
@@ -953,7 +1032,9 @@ internal class StyleFactory(
             icon = icon,
             connector = connectorStyle,
             rcPackage = rcPackage,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
     }
@@ -962,7 +1043,7 @@ internal class StyleFactory(
         component: CarouselComponent,
     ): Result<CarouselComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = component.overrides
-            .toPresentedOverrides { partial -> PresentedCarouselPartial(partial, colorAliases) }
+            .toPresentedOverrides(stripRules) { partial -> PresentedCarouselPartial(partial, colorAliases) }
             .mapError { nonEmptyListOf(it) },
         second = component.pages
             .map { createStackComponentStyle(it) }
@@ -990,7 +1071,9 @@ internal class StyleFactory(
             loop = component.loop ?: false,
             autoAdvance = component.autoAdvance,
             rcPackage = rcPackage,
+            resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
+            offerEligibility = offerEligibility,
             overrides = presentedOverrides,
         )
     }
@@ -1036,7 +1119,9 @@ internal class StyleFactory(
 
             zipOrAccumulate(
                 first = component.overrides
-                    .toPresentedOverrides { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                    .toPresentedOverrides(
+                        stripRules,
+                    ) { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
                     .mapError { nonEmptyListOf(it) },
                 second = createTabsComponentStyleTabs(component.tabs, control),
                 third = createBackgroundStyles(component.background, component.backgroundColor),

@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -41,6 +42,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -109,10 +112,11 @@ internal object TestData {
         )
     }
 
+    private const val TEMPLATE_1_ID = "Template1"
     val offeringWithNoPaywall = Offering(
-        identifier = "Template1",
+        identifier = TEMPLATE_1_ID,
         availablePackages = listOf(
-            Packages.monthly,
+            Packages.monthly.copy(TEMPLATE_1_ID),
         ),
         metadata = mapOf(),
         paywall = null,
@@ -120,9 +124,9 @@ internal object TestData {
     )
 
     val template1Offering = Offering(
-        identifier = "Template1",
+        identifier = TEMPLATE_1_ID,
         availablePackages = listOf(
-            Packages.monthly,
+            Packages.monthly.copy(TEMPLATE_1_ID),
         ),
         metadata = mapOf(),
         paywall = template1,
@@ -130,9 +134,9 @@ internal object TestData {
     )
 
     val template1OfferingNoFooter = Offering(
-        identifier = "Template1",
+        identifier = TEMPLATE_1_ID,
         availablePackages = listOf(
-            Packages.monthly,
+            Packages.monthly.copy(TEMPLATE_1_ID),
         ),
         metadata = mapOf(),
         paywall = template1.copy(
@@ -145,77 +149,83 @@ internal object TestData {
         serverDescription = "",
     )
 
+    private const val TEMPLATE_2_ID = "Template2"
     val template2Offering = Offering(
-        identifier = "Template2",
+        identifier = TEMPLATE_2_ID,
         availablePackages = listOf(
-            Packages.weekly,
-            Packages.monthly,
-            Packages.annual,
-            Packages.lifetime,
+            Packages.weekly.copy(TEMPLATE_2_ID),
+            Packages.monthly.copy(TEMPLATE_2_ID),
+            Packages.annual.copy(TEMPLATE_2_ID),
+            Packages.lifetime.copy(TEMPLATE_2_ID),
         ),
         metadata = mapOf(),
         paywall = template2,
         serverDescription = "",
     )
 
+    private const val TEMPLATE_3_ID = "Template3"
     val template3Offering = Offering(
-        identifier = "Template3",
+        identifier = TEMPLATE_3_ID,
         availablePackages = listOf(
-            Packages.monthly,
+            Packages.monthly.copy(TEMPLATE_3_ID),
         ),
         metadata = mapOf(),
         paywall = template3,
         serverDescription = "",
     )
 
+    private const val TEMPLATE_4_ID = "Template4"
     val template4Offering = Offering(
-        identifier = "Template4",
+        identifier = TEMPLATE_4_ID,
         availablePackages = listOf(
-            Packages.monthly,
-            Packages.semester,
-            Packages.annual,
-            Packages.weekly,
+            Packages.monthly.copy(TEMPLATE_4_ID),
+            Packages.semester.copy(TEMPLATE_4_ID),
+            Packages.annual.copy(TEMPLATE_4_ID),
+            Packages.weekly.copy(TEMPLATE_4_ID),
         ),
         metadata = mapOf(),
         paywall = template4,
         serverDescription = "",
     )
 
+    private const val TEMPLATE_5_ID = "Template5"
     val template5Offering = Offering(
-        identifier = "Template5",
+        identifier = TEMPLATE_5_ID,
         availablePackages = listOf(
-            Packages.monthly,
-            Packages.annual,
+            Packages.monthly.copy(TEMPLATE_5_ID),
+            Packages.annual.copy(TEMPLATE_5_ID),
         ),
         metadata = mapOf(),
         paywall = template5,
         serverDescription = "",
     )
 
+    private const val TEMPLATE_7_ID = "Template7"
     val template7Offering = Offering(
-        identifier = "Template7",
+        identifier = TEMPLATE_7_ID,
         availablePackages = listOf(
-            Packages.monthly,
-            Packages.annual,
-            Packages.bimonthly,
-            Packages.quarterly,
-            Packages.semester,
-            Packages.lifetime,
+            Packages.monthly.copy(TEMPLATE_7_ID),
+            Packages.annual.copy(TEMPLATE_7_ID),
+            Packages.bimonthly.copy(TEMPLATE_7_ID),
+            Packages.quarterly.copy(TEMPLATE_7_ID),
+            Packages.semester.copy(TEMPLATE_7_ID),
+            Packages.lifetime.copy(TEMPLATE_7_ID),
         ),
         metadata = mapOf(),
         paywall = template7,
         serverDescription = "",
     )
 
+    private const val TEMPLATE_7_CUSTOM_PACKAGE_ID = "Template7CustomPackage"
     val template7CustomPackageOffering = Offering(
-        identifier = "Template7CustomPackage",
+        identifier = TEMPLATE_7_CUSTOM_PACKAGE_ID,
         availablePackages = listOf(
-            Packages.monthly,
-            Packages.annual,
-            Packages.bimonthly,
-            Packages.quarterly,
-            Packages.semester,
-            Packages.lifetime,
+            Packages.monthly.copy(TEMPLATE_7_CUSTOM_PACKAGE_ID),
+            Packages.annual.copy(TEMPLATE_7_CUSTOM_PACKAGE_ID),
+            Packages.bimonthly.copy(TEMPLATE_7_CUSTOM_PACKAGE_ID),
+            Packages.quarterly.copy(TEMPLATE_7_CUSTOM_PACKAGE_ID),
+            Packages.semester.copy(TEMPLATE_7_CUSTOM_PACKAGE_ID),
+            Packages.lifetime.copy(TEMPLATE_7_CUSTOM_PACKAGE_ID),
         ),
         metadata = mapOf(),
         paywall = template7CustomPackages,
@@ -413,6 +423,17 @@ internal object TestData {
             stack = StackComponent(components = emptyList()),
         )
     }
+
+    fun Package.copy(offeringId: String): Package {
+        val presentedOfferingContext = PresentedOfferingContext(offeringId)
+        return Package(
+            identifier = this.identifier,
+            packageType = this.packageType,
+            product = this.product.copyWithPresentedOfferingContext(presentedOfferingContext),
+            presentedOfferingContext = presentedOfferingContext,
+            webCheckoutURL = this.webCheckoutURL,
+        )
+    }
 }
 
 internal class MockResourceProvider(
@@ -491,6 +512,7 @@ internal class MockResourceProvider(
 internal class MockViewModel(
     mode: PaywallMode = PaywallMode.default,
     offering: Offering,
+    validationWarning: PaywallWarning? = null,
     private val allowsPurchases: Boolean = false,
     private val shouldErrorOnUnsupportedMethods: Boolean = true,
 ) : ViewModel(), PaywallViewModel {
@@ -518,6 +540,7 @@ internal class MockViewModel(
                 template = validated.template,
                 shouldDisplayDismissButton = false,
                 storefrontCountryCode = "US",
+                validationWarning = validationWarning,
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validated,
@@ -565,12 +588,12 @@ internal class MockViewModel(
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         selectPackageCallCount++
         selectPackageCallParams.add(packageToSelect)
-        unsupportedMethod()
+        loadedLegacyState()?.selectPackage(packageToSelect) ?: unsupportedMethod()
     }
 
     var closePaywallCallCount = 0
         private set
-    override fun closePaywall() {
+    override fun closePaywall(result: PaywallResult?) {
         closePaywallCallCount++
     }
 
@@ -594,9 +617,12 @@ internal class MockViewModel(
         private set
     var purchaseSelectedPackageParams = mutableListOf<Activity?>()
         private set
+    var purchaseSelectedPackageIdentifiers = mutableListOf<String?>()
+        private set
     override fun purchaseSelectedPackage(activity: Activity?) {
         purchaseSelectedPackageCallCount++
         purchaseSelectedPackageParams.add(activity)
+        purchaseSelectedPackageIdentifiers.add(loadedLegacyState()?.selectedPackage?.value?.rcPackage?.identifier)
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {
@@ -608,7 +634,7 @@ internal class MockViewModel(
         private set
     var handlePackagePurchaseParams = mutableListOf<Pair<Activity, Package?>>()
         private set
-    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
         handlePackagePurchaseCount++
         handlePackagePurchaseParams.add(activity to pkg)
         if (allowsPurchases) {

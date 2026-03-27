@@ -21,7 +21,7 @@ import androidx.compose.ui.Modifier
 * For more information, see the [Customer Center docs](https://www.revenuecat.com/docs/tools/customer-center).
 */
 @Composable
-fun CustomerCenter(
+public fun CustomerCenter(
     modifier: Modifier = Modifier,
     options: CustomerCenterOptions = CustomerCenterOptions.Builder().build(),
     onDismiss: () -> Unit,

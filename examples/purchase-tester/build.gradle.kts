@@ -1,10 +1,20 @@
+import java.util.Properties
+
 plugins {
-    id("revenuecat-android-application")
+    alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.androidx.navigation.safeargs)
+}
+
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
 }
 
 android {
     buildFeatures {
+        buildConfig = true
         viewBinding = true
     }
 
@@ -35,6 +45,12 @@ android {
             "String",
             "SUPPORTED_STORES",
             "\"${project.properties["purchaseTesterSupportedStores"]}\"",
+        )
+
+        buildConfigField(
+            "String",
+            "REVENUECAT_API_KEY",
+            "\"${localProperties.getProperty("PURCHASE_TESTER_API_KEY", "")}\"",
         )
     }
 
@@ -74,6 +90,18 @@ android {
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+    val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
+    if (hasSamsungIapAar) {
+        implementation(project(":feature:galaxy"))
+    }
+
+    val samsungIapVersion = libs.versions.samsungIap.get()
+    val samsungIapAar = file("libs/samsung-iap-$samsungIapVersion.aar")
+    val samsungIapAarRoot = rootProject.file("libs/samsung-iap-$samsungIapVersion.aar")
+    when {
+        samsungIapAar.exists() -> implementation(files(samsungIapAar))
+        samsungIapAarRoot.exists() -> implementation(files(samsungIapAarRoot))
+    }
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
@@ -83,4 +111,6 @@ dependencies {
     implementation(libs.androidx.navigation.fragment)
     implementation(libs.androidx.navigation.ui)
     implementation(libs.google.blockstore)
+
+    debugImplementation(libs.leakcanary.android)
 }

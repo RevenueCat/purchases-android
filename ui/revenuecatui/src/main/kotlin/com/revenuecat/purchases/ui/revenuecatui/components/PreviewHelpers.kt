@@ -166,6 +166,8 @@ internal fun previewStackComponentStyle(
     shadow: ShadowStyles? = null,
     badge: BadgeStyle? = null,
     scrollOrientation: Orientation? = null,
+    countdownDate: Date? = null,
+    countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
 ): StackComponentStyle {
     return StackComponentStyle(
         children = children,
@@ -183,8 +185,8 @@ internal fun previewStackComponentStyle(
         scrollOrientation = scrollOrientation,
         rcPackage = null,
         tabIndex = null,
-        countdownDate = null,
-        countFrom = CountdownComponent.CountFrom.DAYS,
+        countdownDate = countdownDate,
+        countFrom = countFrom,
         overrides = emptyList(),
     )
 }
@@ -205,6 +207,8 @@ internal fun previewTextComponentStyle(
     padding: Padding = zero,
     margin: Padding = zero,
     tabIndex: Int? = null,
+    countdownDate: Date? = null,
+    countFrom: CountdownComponent.CountFrom = CountdownComponent.CountFrom.DAYS,
     overrides: List<PresentedOverride<LocalizedTextPartial>> = emptyList(),
 ): TextComponentStyle {
     val weight = fontWeight.toFontWeight()
@@ -224,8 +228,8 @@ internal fun previewTextComponentStyle(
         margin = margin.toPaddingValues(),
         rcPackage = null,
         tabIndex = tabIndex,
-        countdownDate = null,
-        countFrom = CountdownComponent.CountFrom.DAYS,
+        countdownDate = countdownDate,
+        countFrom = countFrom,
         variableLocalizations = nonEmptyMapOf(localeId to variableLocalizationKeysForEnUs()),
         overrides = overrides,
     )

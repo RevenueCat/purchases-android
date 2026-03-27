@@ -17,7 +17,8 @@ internal class AmazonBackend(
 ) {
 
     @get:Synchronized @set:Synchronized
-    @Volatile var postAmazonReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostAmazonReceiptCallback>>()
+    @Volatile var postAmazonReceiptCallbacks =
+        mutableMapOf<CallbackCacheKey, MutableList<PostAmazonReceiptCallback>>()
 
     fun getAmazonReceiptData(
         receiptId: String,

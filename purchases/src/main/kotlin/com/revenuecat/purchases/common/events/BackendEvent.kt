@@ -71,6 +71,10 @@ internal sealed class BackendEvent : Event {
      * @property localeIdentifier The locale identifier of the device.
      * @property exitOfferType The type of exit offer shown. Only for exit offer events.
      * @property exitOfferingID The offering ID of the exit offer shown. Only for exit offer events.
+     * @property packageID The package ID of the purchase attempted. Only for purchase attempt events.
+     * @property productID The product ID of the purchase attempted. Only for purchase attempt events.
+     * @property errorCode The error code if an error occurred. Only for purchase attempt error events.
+     * @property errorMessage The error message if an error occurred. Only for purchase attempt error events.
      */
     @Serializable
     @SerialName("paywalls")
@@ -99,6 +103,42 @@ internal sealed class BackendEvent : Event {
         val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
         val exitOfferingID: String? = null,
+        @SerialName("package_id")
+        val packageID: String? = null,
+        @SerialName("product_id")
+        val productID: String? = null,
+        @SerialName("error_code")
+        val errorCode: Int? = null,
+        @SerialName("error_message")
+        val errorMessage: String? = null,
+    ) : BackendEvent()
+
+    /**
+     * Represents an event related to a custom paywall.
+     *
+     * @property id Unique identifier for the event.
+     * @property version Version number of the event schema.
+     * @property type Type of the event.
+     * @property appUserID The app user identifier associated with this event.
+     * @property appSessionID The session ID of the app session when this event occurred.
+     * @property timestamp Unix timestamp representing when the event occurred.
+     * @property paywallID The identifier of the custom paywall.
+     */
+    @Serializable
+    @SerialName("custom_paywall_event")
+    data class CustomPaywall(
+        val id: String,
+        val version: Int,
+        val type: String,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String? = null,
+        val timestamp: Long,
+        @SerialName("paywall_id")
+        val paywallID: String? = null,
+        @SerialName("offering_id")
+        val offeringID: String? = null,
     ) : BackendEvent()
 
     @Serializable
@@ -110,9 +150,11 @@ internal sealed class BackendEvent : Event {
         @SerialName("timestamp_ms")
         val timestamp: Long,
         @SerialName("network_name")
-        val networkName: String,
+        val networkName: String? = null,
         @SerialName("mediator_name")
         val mediatorName: String,
+        @SerialName("ad_format")
+        val adFormat: String? = null,
         val placement: String?,
         @SerialName("ad_unit_id")
         val adUnitId: String,
@@ -152,5 +194,10 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the ad event schema.
          */
         const val AD_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the custom paywall event schema.
+         */
+        const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
     }
 }

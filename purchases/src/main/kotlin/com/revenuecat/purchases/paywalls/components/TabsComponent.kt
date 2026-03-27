@@ -23,14 +23,14 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("tab_control_button")
 @Immutable
-class TabControlButtonComponent(
+public class TabControlButtonComponent(
     @get:JvmSynthetic
     @SerialName("tab_index")
-    val tabIndex: Int,
+    public val tabIndex: Int,
     @SerialName("tab_id")
-    val tabId: String,
+    public val tabId: String,
     @get:JvmSynthetic
-    val stack: StackComponent,
+    public val stack: StackComponent,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
@@ -38,88 +38,88 @@ class TabControlButtonComponent(
 @Serializable
 @SerialName("tab_control_toggle")
 @Immutable
-class TabControlToggleComponent(
+public class TabControlToggleComponent(
     @get:JvmSynthetic
     @SerialName("default_value")
-    val defaultValue: Boolean,
+    public val defaultValue: Boolean,
     @get:JvmSynthetic
     @SerialName("thumb_color_on")
-    val thumbColorOn: ColorScheme,
+    public val thumbColorOn: ColorScheme,
     @get:JvmSynthetic
     @SerialName("thumb_color_off")
-    val thumbColorOff: ColorScheme,
+    public val thumbColorOff: ColorScheme,
     @get:JvmSynthetic
     @SerialName("track_color_on")
-    val trackColorOn: ColorScheme,
+    public val trackColorOn: ColorScheme,
     @get:JvmSynthetic
     @SerialName("track_color_off")
-    val trackColorOff: ColorScheme,
+    public val trackColorOff: ColorScheme,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
 @Serializable
 @SerialName("tab_control")
-object TabControlComponent : PaywallComponent
+public object TabControlComponent : PaywallComponent
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
 @SerialName("tabs")
 @Immutable
-class TabsComponent(
+public class TabsComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
-    val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit),
     @get:JvmSynthetic
-    val padding: Padding = Padding.zero,
+    public val padding: Padding = Padding.zero,
     @get:JvmSynthetic
-    val margin: Padding = Padding.zero,
+    public val margin: Padding = Padding.zero,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
-    val background: Background? = null,
+    public val background: Background? = null,
     @get:JvmSynthetic
-    val shape: Shape? = null,
+    public val shape: Shape? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
     @get:JvmSynthetic
-    val control: TabControl,
+    public val control: TabControl,
     @get:JvmSynthetic
-    val tabs: List<Tab>,
+    public val tabs: List<Tab>,
     @get:JvmSynthetic
     @SerialName("default_tab_id")
-    val defaultTabId: String? = null,
+    public val defaultTabId: String? = null,
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
+    public val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
 ) : PaywallComponent {
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class Tab(
+    public class Tab(
         @get:JvmSynthetic
-        val id: String,
+        public val id: String,
         @get:JvmSynthetic
-        val stack: StackComponent,
+        public val stack: StackComponent,
     )
 
     @InternalRevenueCatAPI
     @Serializable
-    sealed interface TabControl {
+    public sealed interface TabControl {
         @InternalRevenueCatAPI
         @Poko
         @Serializable
         @SerialName("buttons")
-        class Buttons(@get:JvmSynthetic val stack: StackComponent) : TabControl
+        public class Buttons(@get:JvmSynthetic public val stack: StackComponent) : TabControl
 
         @InternalRevenueCatAPI
         @Poko
         @Serializable
         @SerialName("toggle")
-        class Toggle(@get:JvmSynthetic val stack: StackComponent) : TabControl
+        public class Toggle(@get:JvmSynthetic public val stack: StackComponent) : TabControl
     }
 }
 
@@ -127,24 +127,24 @@ class TabsComponent(
 @Poko
 @Serializable
 @Immutable
-class PartialTabsComponent(
+public class PartialTabsComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = true,
+    public val visible: Boolean? = true,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
     @get:JvmSynthetic
     @SerialName("background_color")
-    val backgroundColor: ColorScheme? = null,
+    public val backgroundColor: ColorScheme? = null,
     @get:JvmSynthetic
-    val background: Background? = null,
+    public val background: Background? = null,
     @get:JvmSynthetic
-    val shape: Shape? = null,
+    public val shape: Shape? = null,
     @get:JvmSynthetic
-    val border: Border? = null,
+    public val border: Border? = null,
     @get:JvmSynthetic
-    val shadow: Shadow? = null,
+    public val shadow: Shadow? = null,
 ) : PartialComponent

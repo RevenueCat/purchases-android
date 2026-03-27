@@ -28,7 +28,7 @@ import androidx.compose.ui.Modifier
     ),
 )
 @Composable
-fun PaywallFooter(
+public fun PaywallFooter(
     options: PaywallOptions,
     condensed: Boolean = false,
     mainContent: @Composable ((PaddingValues) -> Unit)? = null,
@@ -48,7 +48,7 @@ fun PaywallFooter(
  * the paywall.
  */
 @Composable
-fun OriginalTemplatePaywallFooter(
+public fun OriginalTemplatePaywallFooter(
     options: PaywallOptions,
     condensed: Boolean = false,
     mainContent: @Composable ((PaddingValues) -> Unit)? = null,

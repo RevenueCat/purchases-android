@@ -172,18 +172,30 @@ class BackgroundTests {
             val sizeDp = with(LocalDensity.current) { imageSizePx.toDp() }
 
             // Act
-            Text(
-                text = "Hello",
+            // Image backgrounds with overlays are rendered in two layers:
+            // 1. The image is applied via the background modifier
+            // 2. The overlay is rendered as a separate Box layer (matching WithOptionalBackgroundOverlay)
+            val imageStyle = backgroundStyle as BackgroundStyle.Image
+            Box(
                 modifier = Modifier
                     .requiredSize(sizeDp)
                     .background(backgroundStyle)
-                    .semantics { testTag = "text" },
-                color = textColor,
-            )
+                    .semantics { testTag = "box" }
+            ) {
+                // Overlay layer - rendered behind content but in front of image
+                imageStyle.colorOverlay?.let { overlay ->
+                    Box(modifier = Modifier.matchParentSize().background(color = overlay))
+                }
+                // Content layer
+                Text(
+                    text = "Hello",
+                    color = textColor,
+                )
+            }
         }
 
         // Assert
-        onNodeWithTag("text")
+        onNodeWithTag("box")
             .assertIsDisplayed()
             // The overlay should cover the entire background, as it is fully opaque.
             .assertNoPixelColorEquals(unexpectedColor.color)

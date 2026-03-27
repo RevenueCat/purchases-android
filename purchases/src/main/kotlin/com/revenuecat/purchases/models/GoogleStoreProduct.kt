@@ -1,13 +1,14 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import dev.drewhamilton.poko.Poko
 import java.util.Locale
 
 @Poko
-class GoogleStoreProduct
+public class GoogleStoreProduct
 @JvmOverloads
 @Deprecated(
     "Replaced with constructor that takes a presentedOfferingContext",
@@ -24,12 +25,12 @@ constructor(
      * For subscriptions, this is the high-level productId set up for a subscription in the Play Console,
      * unique to an entitlement.
      */
-    val productId: String,
+    public val productId: String,
 
     /**
      * The basePlanId for subscription products. Null for INAPP.
      */
-    val basePlanId: String?,
+    public val basePlanId: String?,
 
     /**
      * Type of product. One of [ProductType].
@@ -91,7 +92,7 @@ constructor(
     /**
      * The [ProductDetails] object returned from BillingClient that was used to construct this product.
      */
-    val productDetails: ProductDetails,
+    public val productDetails: ProductDetails,
 
     /**
      * The offering ID this `GoogleStoreProduct` was returned from.
@@ -148,7 +149,7 @@ constructor(
                 "period, subscriptionOptions, defaultOption, productDetails, presentedOfferingIdentifier)",
         ),
     )
-    constructor(
+    public constructor(
         productId: String,
         basePlanId: String?,
         type: ProductType,
@@ -235,6 +236,7 @@ constructor(
      * Creates a copy of this `GoogleStoreProduct` with the specified `offeringId` set on itself and its
      * `defaultOption`/`subscriptionOptions`.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     @Deprecated(
         "Use copyWithPresentedOfferingContext instead",
         ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),
@@ -292,5 +294,5 @@ constructor(
  * `basePlanId`
  * `productDetails`
  */
-val StoreProduct.googleProduct: GoogleStoreProduct?
+public val StoreProduct.googleProduct: GoogleStoreProduct?
     get() = this as? GoogleStoreProduct

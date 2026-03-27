@@ -9,11 +9,11 @@ import androidx.compose.ui.text.font.FontFamily
  * This can't be used when launching the paywall as an activity since the fonts are not parcelable/serializable.
  * Use [FontResourceProvider] instead.
  */
-interface FontProvider {
+public interface FontProvider {
     /**
      * Returns the font to be used for the given [TypographyType]. If null is returned, the default font will be used.
      * @param type the [TypographyType] for which the font is being requested.
      * @return the `FontFamily` to be used for the given [TypographyType].
      */
-    fun getFont(type: TypographyType): FontFamily?
+    public fun getFont(type: TypographyType): FontFamily?
 }

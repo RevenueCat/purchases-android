@@ -6,18 +6,20 @@ import dev.drewhamilton.poko.Poko
 /**
  * Data for tracking when a user opens/clicks on an ad.
  *
- * @property networkName The name of the ad network.
+ * @property networkName The name of the ad network, or null if unknown.
  * @property mediatorName The name of the ad mediator. See [AdMediatorName] for common values.
+ * @property adFormat The format of the ad. See [AdFormat] for common values.
  * @property placement The placement of the ad, if available.
  * @property adUnitId The ad unit ID.
  * @property impressionId The impression ID.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
-class AdOpenedData(
-    val networkName: String,
-    val mediatorName: AdMediatorName,
-    val placement: String?,
-    val adUnitId: String,
-    val impressionId: String,
+public class AdOpenedData(
+    public val networkName: String?,
+    public val mediatorName: AdMediatorName,
+    public val adFormat: AdFormat,
+    public val placement: String?,
+    public val adUnitId: String,
+    public val impressionId: String,
 )

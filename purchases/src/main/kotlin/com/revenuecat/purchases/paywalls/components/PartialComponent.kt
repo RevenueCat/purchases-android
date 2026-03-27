@@ -8,4 +8,4 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  */
 @InternalRevenueCatAPI
 @Stable
-sealed interface PartialComponent
+public sealed interface PartialComponent

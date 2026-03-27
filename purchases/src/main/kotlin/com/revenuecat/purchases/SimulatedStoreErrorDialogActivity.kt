@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import com.revenuecat.purchases.common.errorLog
 
 internal class SimulatedStoreErrorDialogActivity : Activity() {
 
@@ -58,11 +59,11 @@ internal class SimulatedStoreErrorDialogActivity : Activity() {
                     "before releasing. Visit https://rev.cat/sdk-test-store to learn more.",
             )
         } else {
-            throw IllegalStateException(
-                "SimulatedStoreErrorDialogActivity was not launched through the SDK. " +
-                    "Please use the SDK methods to open the SimulatedStoreErrorDialogActivity. " +
-                    "This might happen on some Google automated testing, but shouldn't happen to users.",
-            )
+            errorLog {
+                "SimulatedStoreErrorDialogActivity was launched incorrectly. " +
+                    "This activity is only meant to be launched internally by the SDK."
+            }
+            finish()
         }
     }
 

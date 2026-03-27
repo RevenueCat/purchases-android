@@ -1,5 +1,7 @@
 package com.revenuecat.purchases
 
+import android.content.Context
+import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import kotlin.coroutines.resume
@@ -21,7 +23,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitOfferings(): Offerings {
+public suspend fun Purchases.awaitOfferings(): Offerings {
     return suspendCoroutine { continuation ->
         getOfferingsWith(
             onSuccess = continuation::resume,
@@ -44,7 +46,7 @@ suspend fun Purchases.awaitOfferings(): Offerings {
  * or a [Result] containing [PurchasesException] if it fails.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
+public suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
     suspendCoroutine { continuation ->
         getOfferingsWith(
             onSuccess = { continuation.resume(Result.success(it)) },
@@ -70,7 +72,7 @@ suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseResult {
+public suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseResult {
     return suspendCoroutine { continuation ->
         purchase(
             purchaseParams = purchaseParams,
@@ -103,7 +105,7 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
  * [PurchasesException] if it fails.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
+public suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
     return suspendCoroutine { continuation ->
         purchase(
             purchaseParams = purchaseParams,
@@ -133,7 +135,7 @@ suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Resul
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitGetProducts(
+public suspend fun Purchases.awaitGetProducts(
     productIds: List<String>,
     type: ProductType? = null,
 ): List<StoreProduct> {
@@ -162,7 +164,7 @@ suspend fun Purchases.awaitGetProducts(
  * Not found products will be ignored.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitGetProductsResult(
+public suspend fun Purchases.awaitGetProductsResult(
     productIds: List<String>,
     type: ProductType? = null,
 ): Result<List<StoreProduct>> {
@@ -198,7 +200,7 @@ suspend fun Purchases.awaitGetProductsResult(
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitRestore(): CustomerInfo {
+public suspend fun Purchases.awaitRestore(): CustomerInfo {
     return suspendCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { continuation.resume(it) },
@@ -224,7 +226,7 @@ suspend fun Purchases.awaitRestore(): CustomerInfo {
  * or a [Result] containing [PurchasesException] if it fails.
  */
 @JvmSynthetic
-suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
+public suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
     return suspendCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { customerInfo ->
@@ -245,11 +247,37 @@ suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
  * @return The Store country code in ISO-3166-1 alpha2.
  */
-suspend fun Purchases.awaitStorefrontCountryCode(): String {
+public suspend fun Purchases.awaitStorefrontCountryCode(): String {
     return suspendCoroutine { continuation ->
         getStorefrontCountryCodeWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.
+ * Calling from an Amazon-configured app will return true.
+ *
+ * Check if billing is supported for the current Play user (meaning IN-APP purchases are supported)
+ * and optionally, whether all features in the list of specified feature types are supported. This method is
+ * asynchronous since it requires a connected BillingClient.
+ * @param context A context object that will be used to connect to the billing client
+ * @param features A list of feature types to check for support. Feature types must be one of [BillingFeature]
+ *                 By default, is an empty list and no specific feature support will be checked.
+ * @return the result of the check
+ */
+@JvmSynthetic
+public suspend fun Purchases.Companion.awaitCanMakePayments(
+    context: Context,
+    features: List<BillingFeature> = listOf(),
+): Boolean {
+    return suspendCoroutine { continuation ->
+        canMakePayments(
+            context = context,
+            features = features,
+            callback = { continuation.resume(it) },
         )
     }
 }

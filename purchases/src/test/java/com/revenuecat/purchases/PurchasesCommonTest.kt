@@ -17,6 +17,7 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -803,7 +804,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, sdkOriginated = true, captureLambda(), any(),
             )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
@@ -834,6 +835,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -872,7 +874,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, sdkOriginated = true, captureLambda(), any(),
             )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
@@ -936,6 +938,58 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 any(),
                 any(),
                 storeProduct.defaultOption!!.purchasingData,
+                expectedReplaceProductInfo,
+                any(),
+                any()
+            )
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `upgrade uses galaxyReplacementMode when store is Galaxy`() {
+        buildPurchases(anonymous = false, store = Store.GALAXY)
+
+        val productId = "galaxy_gold"
+        val oldSubId = "oldGalaxySubId"
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                onCompletion = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE
+        val upgradePurchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            storeProduct
+        )
+            .oldProductId(oldSubId)
+            .galaxyReplacementMode(replacementMode)
+            .build()
+
+        purchases.purchaseWith(
+            upgradePurchaseParams,
+            onError = { _, _ ->
+            },
+        ) { _, _ -> }
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            replacementMode,
+        )
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                storeProduct.purchasingData,
                 expectedReplaceProductInfo,
                 any(),
                 any()
@@ -1182,6 +1236,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                     isRestore = false,
                     appUserID = appUserId,
                     initiationSource = initiationSource,
+                    sdkOriginated = false,
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -1200,6 +1255,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1210,10 +1266,162 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
             mockEventsManager.flushEvents(Delay.NONE)
+        }
+    }
+
+    @Test
+    fun `SDK-originated purchase has sdkOriginated set to true`() {
+        val productId = "test_product"
+        val storeProduct = mockStoreProduct(listOf(productId), listOf(productId), ProductType.SUBS)
+        val purchase = getMockedStoreTransaction(
+            productId = productId,
+            purchaseToken = "token",
+            productType = ProductType.SUBS
+        )
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockInfo)
+        }
+
+        val purchaseParams = getPurchaseParams(storeProduct.first().subscriptionOptions!!.first())
+        purchases.purchaseWith(
+            purchaseParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `SDK-originated multi-line purchase with different order of product Ids in resulting StoreTransaction has sdkOriginated set to true`() {
+        val productId = "test_product"
+        val productId2 = "another_product"
+        val storeProduct = mockStoreProduct(listOf(productId2, productId), listOf(productId2, productId), ProductType.SUBS)
+        val purchase = getMockedStoreTransaction(
+            productIds = listOf(productId2, productId),
+            purchaseToken = "token",
+            productType = ProductType.SUBS
+        )
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+        mockQueryingProductDetails(productId2, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockInfo)
+        }
+
+        // Purchasing second product (index 1), so the callbacks are keyed by that product ID.
+        val purchaseParams = getPurchaseParams(storeProduct[1].subscriptionOptions!!.first())
+        purchases.purchaseWith(
+            purchaseParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `non-SDK-originated purchase has sdkOriginated set to false`() {
+        val productId = "test_product"
+        mockQueryingProductDetails(productId, ProductType.INAPP)
+
+        val purchase = getMockedStoreTransaction(
+            productId = productId,
+            purchaseToken = "token",
+            productType = ProductType.INAPP
+        )
+
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockk())
+        }
+
+        // Trigger purchase updated without calling purchaseWith first,
+        // simulating a purchase that came from outside the SDK
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                onSuccess = any(),
+                onError = any()
+            )
         }
     }
 
@@ -1229,6 +1437,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1742,6 +1951,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2410,6 +2620,61 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     // endregion
 
+    // region overridePreferredUILocale
+
+    @Test
+    fun `overridePreferredUILocale clears cache before fetching`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+
+        assertThat(result).isTrue
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache()
+            mockOfferingsManager.getOfferings(appUserId, any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns false if locale unchanged`() {
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(null)
+
+        assertThat(result).isFalse
+        verify(exactly = 0) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 0) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale skips cache clear and fetch when rate limited`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result1 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+        val result2 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("es_ES")
+        val result3 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("de_DE")
+
+        assertThat(result1).isTrue
+        assertThat(result2).isTrue
+        assertThat(result3).isFalse
+        verify(exactly = 2) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 2) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns true even when fetch fails`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "test error")
+        mockOfferingsManagerGetOfferings(error)
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("ja_JP")
+
+        assertThat(result).isTrue
+        verify(exactly = 1) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+    }
+
+    // endregion
+
     // region restoring
 
     @Test
@@ -2430,6 +2695,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = true,
                 appUserID = randomAppUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -2454,6 +2720,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )

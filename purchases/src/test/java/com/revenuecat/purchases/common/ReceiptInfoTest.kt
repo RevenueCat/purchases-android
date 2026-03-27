@@ -28,7 +28,6 @@ import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
@@ -681,5 +680,32 @@ class ReceiptInfoTest {
                 )
                 .isTrue()
         }
+    }
+
+    @Test
+    fun `ReceiptInfo serializes with sdkOriginated true`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 4.99,
+            currency = "USD",
+            sdkOriginated = true
+        )
+
+        val encoded = json.encodeToString(receiptInfo)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        // language=JSON
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":4.99,
+                "currency":"USD",
+                "sdkOriginated":true
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThat(encoded).isEqualTo(expectedJson)
+        assertThat(decoded).isEqualTo(receiptInfo)
+        assertThat(decoded.sdkOriginated).isTrue
     }
 }

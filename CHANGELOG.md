@@ -1,3 +1,300 @@
+## 9.28.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix: Crash on fallback paywall due to missing dependency  (#3283) via Jacob Rakidzich (@JZDesign)
+### Paywallv2
+#### 🐞 Bugfixes
+* PW-1152 Fix PaywallDialog dismissal after first toggle interaction (#3277) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* feat: configure API keys and test variables via local.properties (#3271) via Toni Rico (@tonidero)
+
+## 9.28.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* [EXTERNAL] fix: ensure activity is attached before showing in-app messages (#3274) contributed by @matteinn (#3275) via Toni Rico (@tonidero)
+* Ensure MediaPlayer has dedicated thread owner that is not the main thread (#3148) via Jacob Rakidzich (@JZDesign)
+* Fix heartbeat monitor and Slack notifications for nightly integration tests (#3259) via Rick (@rickvdl)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Feat: Restore gating in paywalls UI (#3171) via Jacob Rakidzich (@JZDesign)
+
+### 🔄 Other Changes
+* security: pin GitHub Actions to SHA hashes (#3272) via Alfonso Embid-Desmet (@alfondotnet)
+* Bump activesupport from 8.0.2 to 8.0.4.1 (#3270) via dependabot[bot] (@dependabot[bot])
+* Merge release PR after deploy (#3269) via Antonio Pallares (@ajpallares)
+* Require PR approval before release tagging (#3268) via Antonio Pallares (@ajpallares)
+* Bump json from 2.18.1 to 2.19.2 (#3261) via dependabot[bot] (@dependabot[bot])
+* feat(ads): update admob sample app (#3264) via Peter Porfy (@peterporfy)
+* feat(ads): add vanilla-ad-tracker-sample (#3263) via Peter Porfy (@peterporfy)
+* [Purchase Tester]: Persist appUserId on login screen across app launches (#3266) via Will Taylor (@fire-at-will)
+
+## 9.27.0
+## RevenueCat SDK
+### ✨ New Features
+* Add onPromotionalOfferSuccess to CustomerCenterListener (#3185) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* Set null as a default value for transitionType of the carousel component (#3245) via Monika Mateska (@MonikaMateska)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Offer variables fall back to product values when no discount phase (#3087) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* fix(ads): remove mrec ad format (#3243) via Peter Porfy (@peterporfy)
+* Fix flaky PurchasesFallbackURLTest (#3250) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `3e8c384` to `9a6911b` (#3251) via dependabot[bot] (@dependabot[bot])
+
+## 9.26.1
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* CC-628: Refresh Customer Center after returning from manage subscriptions (#3152) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Remove experimental annotation from trackCustomPaywallImpression (#3241) via Rick (@rickvdl)
+
+## 9.26.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix & Standardize Galaxy Date Parsing Edge Cases (#3216) via Will Taylor (@fire-at-will)
+* Fix addSuccessfullyPostedToken for new purchases in PostPendingTransactionsHelper (#3239) via Facundo Menzella (@facumenzella)
+* [Galaxy]: Fix race condition when fetching Galaxy products (#3213) via Will Taylor (@fire-at-will)
+* Fixes double padding in PaywallActivity on Android 15+ when `edgeToEdge` parameter is false (#3227) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix bold text not rendering in Markdown lists (#3228) via Cesar de la Vega (@vegaro)
+* Fix: Clear in-memory offerings cache on locale override to prevent stale paywall data (#3225) via Antonio Pallares (@ajpallares)
+### Paywallv2
+#### ✨ New Features
+* Feature: Update default paywall (#3133) via Jacob Rakidzich (@JZDesign)
+#### 🐞 Bugfixes
+* Fix V2 paywall safe area in landscape mode (#3221) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Run integration tests on all branches (#3242) via Toni Rico (@tonidero)
+* Migrate Firebase Test Lab jobs to CircleCI emulators (#3238) via Toni Rico (@tonidero)
+* Run metalava on galaxy module in test-galaxy job (#3235) via Will Taylor (@fire-at-will)
+* Add offering_id to custom paywall impression event (#3230) via Rick (@rickvdl)
+* Cache isAutoRenewing to detect subscription changes without syncPurchases (#3198) via Facundo Menzella (@facumenzella)
+* Bump fastlane-plugin-revenuecat_internal from `e146447` to `3e8c384` (#3233) via dependabot[bot] (@dependabot[bot])
+
+## 9.25.0
+## RevenueCat SDK
+### ✨ New Features
+* Expose trackCustomPaywallImpression as experimental public API (#3199) via Rick (@rickvdl)
+
+### 🔄 Other Changes
+* [EXTERNAL] Migrate deprecated kotlinOptions to compilerOptions (#3219) contributed by @AlexanderTalledo (#3223) via Toni Rico (@tonidero)
+
+## 9.24.0
+## RevenueCat SDK
+### ✨ New Features
+* [EXPERIMENTAL]: Beta Galaxy Store Support (#2903) via Will Taylor (@fire-at-will)
+### 🐞 Bugfixes
+* Skip installation on GCP CLI in run-firebase-test (#3218) via Will Taylor (@fire-at-will)
+* Fix reduced timeouts being used for HTTP requests when a proxy URL is configured (#3188) via Rick (@rickvdl)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix missing ripple effect in View-based paywall wrappers (#3206) via Toni Rico (@tonidero)
+### Paywallv2
+#### ✨ New Features
+* Rules v0 Integration branch (#3117) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* [Galaxy]: Add promotionEligibilities comment (#3214) via Will Taylor (@fire-at-will)
+* [EXTERNAL] Migrate deprecated buildDir to layout API (#3202) contributed by @AlexanderTalledo (#3212) via Toni Rico (@tonidero)
+* Remove automatic Claude code review workflow (#3211) via Cesar de la Vega (@vegaro)
+* Remove unused convention plugin (#3195) via Toni Rico (@tonidero)
+* [EXTERNAL] Integrate convention plugins into Version Catalogs (#3181) contributed by @AlexanderTalledo (#3194) via Toni Rico (@tonidero)
+* [EXTERNAL] Migrate androidx cardview dependency to version catalogs (#3192) contributed by @AlenxanderTalledo (#3193) via Toni Rico (@tonidero)
+* Improve AdMob adapter test coverage (#3204) via Pol Miro (@polmiro)
+* Bump fastlane-plugin-revenuecat_internal from `f5c099b` to `e146447` (#3197) via dependabot[bot] (@dependabot[bot])
+* Fix integration tests (#3196) via Toni Rico (@tonidero)
+
+## 9.23.1
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix default value for `productChangeConfig` (#3153) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add elapsed_millis to FLUSH_COMPLETED debug event (#3184) via Toni Rico (@tonidero)
+* Add priority flush with rate limiting and queuing (#3179) via Rick (@rickvdl)
+* Bypass billing in preview mode (#3162) via Monika Mateska (@MonikaMateska)
+
+## 9.23.0
+## RevenueCat SDK
+### ✨ New Features
+* [CIA-5346] Appstack integration to android sdk (#3150) via Damian Rubio (@DamianRubio)
+* Create `PaywallPurchaseContext` to `PurchaseLogic` for product changes and offers (#3129) via Cesar de la Vega (@vegaro)
+* [EXTERNAL] feat: introduce awaitCanMakePayments (#3136) contributed by @TheRogue76 (#3141) via Toni Rico (@tonidero)
+### 🐞 Bugfixes
+* Fix missing uiPreviewMode mock in integration test (#3164) via Rick (@rickvdl)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix: Low res video only on first paywall view (#3120) via Jacob Rakidzich (@JZDesign)
+### Customer Center
+#### 🐞 Bugfixes
+* Fix cancellation URI in Customer Center (#3151) via Cesar de la Vega (@vegaro)
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix PaywallResult.Cancelled for successful MY_APP purchases (#3138) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add internal trackCustomPaywallImpression method (#3167) via Rick (@rickvdl)
+* Bump fastlane-plugin-revenuecat_internal from `8cd957f` to `f5c099b` (#3176) via dependabot[bot] (@dependabot[bot])
+* Update sdks-common-config orb to 3.13.0 (#3173) via Antonio Pallares (@ajpallares)
+* Add FLUSH_COMPLETED and FLUSH_SKIPPED_NO_EVENTS debug events (#3166) via Toni Rico (@tonidero)
+* Add `paywall_tester_track` parameter to `manual-paywall-tester-release` (#3169) via Cesar de la Vega (@vegaro)
+* Return mock CustomerInfo in preview mode (#3161) via Monika Mateska (@MonikaMateska)
+* Disable attribution, diagnostics, and caching in preview mode (#3160) via Monika Mateska (@MonikaMateska)
+* Add X-UI-Preview-Mode header to HTTP requests in preview mode (#3159) via Monika Mateska (@MonikaMateska)
+* Paywall Tester - Helper to clear paywall file cache (#3154) via Jacob Rakidzich (@JZDesign)
+* Use fixed user ID and block login/logout in preview mode (#3158) via Monika Mateska (@MonikaMateska)
+* Bump fastlane-plugin-revenuecat_internal from `afc9219` to `ea6276c` (#3122) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.232.1 to 2.232.2 (#3155) via dependabot[bot] (@dependabot[bot])
+* Add uiPreviewMode flag to DangerousSettings (#3144) via Monika Mateska (@MonikaMateska)
+
+## 9.22.2
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Gracefully handle orphan `text_lid` instead of falling back to legacy paywall (#3101) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add PR labels to AGENTS.md (#3139) via Toni Rico (@tonidero)
+* Pass custom PurchaseLogic to PaywallActivityLauncher in RCTTester (#3137) via Toni Rico (@tonidero)
+* Add .claude/ to .gitignore and guardrails to AGENTS.md (#3123) via Facundo Menzella (@facumenzella)
+
+## 9.22.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix PaywallActivity not dismissing after purchase/restore with MY_APP (#3124) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency com.google.android.gms:play-services-ads to v23.6.0 (#3125) via RevenueCat Git Bot (@RCGitBot)
+
+### 🔄 Other Changes
+* Avoids consuming purchases by default (#3003) via JayShortway (@JayShortway)
+* Bump nokogiri from 1.19.0 to 1.19.1 (#3121) via dependabot[bot] (@dependabot[bot])
+* Add CI lane to publish RCT Tester to internal Google Play testing track (#3116) via Rick (@rickvdl)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3118) via RevenueCat Git Bot (@RCGitBot)
+* Capture AdMob responseInfo at load time in ad callbacks (#3115) via Pol Miro (@polmiro)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3114) via RevenueCat Git Bot (@RCGitBot)
+* Fix deployment of bc7 library flavors (#3107) via Toni Rico (@tonidero)
+* Adjust tracker entrypoints (#3105) via Pol Miro (@polmiro)
+* Enable Renovate for google-mobile-ads (play-services-ads) (#3103) via Pol Miro (@polmiro)
+
+## 9.22.0
+## RevenueCat SDK
+### ✨ New Features
+* Add PurchaseLogic support to PaywallView (#3099) via Rick (@rickvdl)
+
+### 🔄 Other Changes
+* Add debugEventListener to track internal SDK debug events (#3100) via Toni Rico (@tonidero)
+* Add AdMob adapter library with example app (#3097) via Pol Miro (@polmiro)
+* RCT Tester app: Implement purchase logic for communicating with billing client directly (#3094) via Rick (@rickvdl)
+* Add explicit public visibility modifiers to API declarations (#3088) via Jaewoong Eum (@skydoves)
+* Bump fastlane-plugin-revenuecat_internal from `e6454e3` to `afc9219` (#3098) via dependabot[bot] (@dependabot[bot])
+* RCT Tester app: Properly handle purchasesAreCompletedBy myApp by acknowledging purchases through billing client (#3093) via Rick (@rickvdl)
+* RCT Tester app: Add initial app (#3083) via Rick (@rickvdl)
+* [EXPERIMENTAL] Support `PaywallListener` and `PurchaseLogic` when using PaywallActivity (#3084) via Toni Rico (@tonidero)
+* Bump faraday from 1.10.4 to 1.10.5 (#3095) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.232.0 to 2.232.1 (#3089) via dependabot[bot] (@dependabot[bot])
+* Add CLAUDE.md and AGENTS.md (#3082) via Cesar de la Vega (@vegaro)
+
+## 9.21.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Send `PresentedOfferingContext` info when `PurchasesAreCompletedBy.MY_APP` and using paywalls (#3078) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add customVariables support to all PaywallActivityLauncher methods and PaywallView (#3075) via Facundo Menzella (@facumenzella)
+* Add support for promotional offers in paywalls (#3063) via Cesar de la Vega (@vegaro)
+* Add support for product changes in paywalls (#3062) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Bump fastlane from 2.231.1 to 2.232.0 (#3080) via dependabot[bot] (@dependabot[bot])
+
+## 9.20.2
+## RevenueCatUI SDK
+### Customer Center
+#### 🐞 Bugfixes
+* CC-628: Refresh Customer Center UI after subscription cancellation (#3061) via Facundo Menzella (@facumenzella)
+### Paywallv2
+#### 🐞 Bugfixes
+* Improve carousel performance with videos (#3070) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Make networkName nullable in ad event data types (#3076) via Pol Miro (@polmiro)
+* Remove networkName from AdFailedToLoad event (#3074) via Pol Miro (@polmiro)
+
+## 9.20.1
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Video's fallback image has double border (#3071) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Rename `MultipleIntroOffers` override to `MultiplePhaseOffers` (#3069) via Cesar de la Vega (@vegaro)
+* Add LeakCanary (#3068) via Rick (@rickvdl)
+* Avoid posting stored metadata in pending transactions (#3065) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3066) via RevenueCat Git Bot (@RCGitBot)
+
+## 9.20.0
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add custom variables support for v2 paywalls (#3020) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* [AUTOMATIC] Update golden test files for backend integration tests (#3060) via RevenueCat Git Bot (@RCGitBot)
+* Add loading placeholder for the customer center (#3053) via Jaewoong Eum (@skydoves)
+
+## 9.19.4
+### 🔄 Other Changes
+* Add internal API to debug tracked events (#3054) via Toni Rico (@tonidero)
+* [ADS-1] feat: add ad_format to AdTracker events (#3050) via Peter Porfy (@peterporfy)
+
+## 9.19.3
+## RevenueCat SDK
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency gradle to v8.14.4 (#3048) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Fix gradient overlay to cover full viewport instead of image bounds (#3017) via Facundo Menzella (@facumenzella)
+* [MON-1823] Fix paywall price variables not showing on initial load (#3044) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Add `payload_version` to POST /receipt (#3045) via Toni Rico (@tonidero)
+
+## 9.19.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Make sure countdown component works when there's no package context (#3036) via Cesar de la Vega (@vegaro)
+* Fix paywall data misattributions (#3032) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Add `sdk_originated` to POST /receipt (#3034) via Toni Rico (@tonidero)
+* Finish activities instead of crashing when not launched through SDK (#3040) via Antonio Pallares (@ajpallares)
+* Bump fastlane from 2.231.0 to 2.231.1 (#3035) via dependabot[bot] (@dependabot[bot])
+* Update CLAUDE code review workflow reference (#3030) via Cesar de la Vega (@vegaro)
+* Bump fastlane from 2.230.0 to 2.231.0 (#3028) via dependabot[bot] (@dependabot[bot])
+* Ignore new headers in golden backend test snapshots (#3029) via Toni Rico (@tonidero)
+* Add Claude Code GitHub Workflow (#3011) via Cesar de la Vega (@vegaro)
+* Send `paywall_id` in paywall events (#3018) via Toni Rico (@tonidero)
+* Add retry mechanism to purchases integration tests (#3024) via Toni Rico (@tonidero)
+
 ## 9.19.1
 ## RevenueCat SDK
 ### 🐞 Bugfixes

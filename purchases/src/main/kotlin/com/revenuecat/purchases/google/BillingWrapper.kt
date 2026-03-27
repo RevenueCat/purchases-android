@@ -21,6 +21,7 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.NoCoreLibraryDesugaringException
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -85,6 +86,7 @@ import kotlin.math.min
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
@@ -477,32 +479,36 @@ internal class BillingWrapper(
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
         val isInAppProduct = purchase.type == ProductType.INAPP
 
+        val addToken = { token: String ->
+            deviceCache.addSuccessfullyPostedToken(token, purchase.isAutoRenewing)
+        }
+
         if (isInAppProduct) {
             if (finishTransactions && shouldConsume) {
                 consumePurchase(
                     purchase.purchaseToken,
                     initiationSource,
-                    onConsumed = deviceCache::addSuccessfullyPostedToken,
+                    onConsumed = addToken,
                 )
             } else if (finishTransactions && !alreadyAcknowledged) {
                 log(LogIntent.PURCHASE) { PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND }
                 acknowledge(
                     purchase.purchaseToken,
                     initiationSource,
-                    onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                    onAcknowledged = addToken,
                 )
             } else {
-                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                addToken(purchase.purchaseToken)
             }
         } else {
             if (finishTransactions && !alreadyAcknowledged) {
                 acknowledge(
                     purchase.purchaseToken,
                     initiationSource,
-                    onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                    onAcknowledged = addToken,
                 )
             } else {
-                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                addToken(purchase.purchaseToken)
             }
         }
     }
@@ -840,6 +846,10 @@ internal class BillingWrapper(
                 }
                 if (activity.isDestroyed) {
                     debugLog { "Activity is destroyed, not showing Google Play in-app message." }
+                    return@withConnectedClient
+                }
+                if (activity.window?.peekDecorView()?.windowToken == null) {
+                    debugLog { "Activity is not attached to a window, not showing Google Play in-app message." }
                     return@withConnectedClient
                 }
                 showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->

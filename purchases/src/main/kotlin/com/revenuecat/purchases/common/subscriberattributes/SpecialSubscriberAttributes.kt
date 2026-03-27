@@ -24,6 +24,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
      */
     ADJUST_ID("\$adjustId"),
     APPSFLYER_ID("\$appsflyerId"),
+    APPSTACK_ID("\$appstackId"),
     FB_ANON_ID("\$fbAnonId"),
     MPARTICLE_ID("\$mparticleId"),
     ONESIGNAL_ID("\$onesignalId"),
@@ -70,9 +71,12 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
         object AmazonAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.AMAZON_AD_ID.value)
     }
 
-    sealed class AttributionIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
+    sealed class AttributionIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(
+        backendKey.value,
+    ) {
         object Adjust : AttributionIds(ReservedSubscriberAttribute.ADJUST_ID)
         object AppsFlyer : AttributionIds(ReservedSubscriberAttribute.APPSFLYER_ID)
+        object Appstack : AttributionIds(ReservedSubscriberAttribute.APPSTACK_ID)
         object Facebook : AttributionIds(ReservedSubscriberAttribute.FB_ANON_ID)
         object Mparticle : AttributionIds(ReservedSubscriberAttribute.MPARTICLE_ID)
         object CleverTap : AttributionIds(ReservedSubscriberAttribute.CLEVER_TAP_ID)
@@ -83,7 +87,9 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
         object SolarEngineVisitorId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_VISITOR_ID)
     }
 
-    sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
+    sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(
+        backendKey.value,
+    ) {
         object MixpanelDistinctId : IntegrationIds(ReservedSubscriberAttribute.MIXPANEL_DISTINCT_ID)
         object OneSignal : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_ID)
         object OneSignalUserId : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_USER_ID)

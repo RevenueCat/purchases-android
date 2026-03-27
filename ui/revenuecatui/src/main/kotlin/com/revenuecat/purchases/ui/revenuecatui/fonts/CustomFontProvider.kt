@@ -8,6 +8,6 @@ import androidx.compose.ui.text.font.FontFamily
  * @param fontFamily the [FontFamily] to be used for all text styles.
  */
 @Immutable
-class CustomFontProvider(private val fontFamily: FontFamily) : FontProvider {
-    override fun getFont(type: TypographyType) = fontFamily
+public class CustomFontProvider(private val fontFamily: FontFamily) : FontProvider {
+    override fun getFont(type: TypographyType): FontFamily = fontFamily
 }

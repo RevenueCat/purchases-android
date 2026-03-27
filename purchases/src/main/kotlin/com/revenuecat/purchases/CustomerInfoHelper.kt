@@ -7,15 +7,18 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
+import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.utils.Result
+import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
@@ -30,6 +33,7 @@ private data class CustomerInfoDataResult(
     val hadUnsyncedPurchasesBefore: Boolean? = null,
 )
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
@@ -38,6 +42,7 @@ internal class CustomerInfoHelper(
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val uiPreviewMode: Boolean = false,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
@@ -50,6 +55,12 @@ internal class CustomerInfoHelper(
         trackDiagnostics: Boolean = false,
         callback: ReceiveCustomerInfoCallback? = null,
     ) {
+        if (uiPreviewMode) {
+            callback?.let { cb ->
+                dispatch { cb.onReceived(createPreviewCustomerInfo()) }
+            }
+            return
+        }
         debugLog { CustomerInfoStrings.RETRIEVING_CUSTOMER_INFO.format(fetchPolicy) }
         trackGetCustomerInfoStartedIfNeeded(trackDiagnostics)
         val startTime = dateProvider.now
@@ -312,6 +323,35 @@ internal class CustomerInfoHelper(
             handler.post(action)
         } else {
             action()
+        }
+    }
+
+    companion object {
+        internal fun createPreviewCustomerInfo(): CustomerInfo {
+            val now = Date()
+            return CustomerInfo(
+                entitlements = EntitlementInfos(
+                    all = emptyMap(),
+                    verification = VerificationResult.NOT_REQUESTED,
+                ),
+                allExpirationDatesByProduct = emptyMap(),
+                allPurchaseDatesByProduct = emptyMap(),
+                requestDate = now,
+                schemaVersion = CUSTOMER_INFO_SCHEMA_VERSION,
+                firstSeen = now,
+                originalAppUserId = IdentityManager.UI_PREVIEW_MODE_APP_USER_ID,
+                managementURL = null,
+                originalPurchaseDate = null,
+                jsonObject = JSONObject().apply {
+                    put(
+                        "subscriber",
+                        JSONObject().apply {
+                            put("subscriptions", JSONObject())
+                            put("non_subscriptions", JSONObject())
+                        },
+                    )
+                },
+            )
         }
     }
 }

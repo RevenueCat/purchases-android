@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">Inicieu la vostra prova de {{ sub_offer_duration }} i després {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">No hi ha cap navegador instal·lat. No s\'ha pogut obrir l\'enllaç.</string>
     <string name="cannot_open_link">Enllaç no vàlid. No s’ha pogut obrir.</string>
+    <string name="revenuecatui_purchase">Comprar</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

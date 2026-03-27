@@ -5,6 +5,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
@@ -23,6 +24,8 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PricingPhase
@@ -48,6 +51,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
@@ -60,6 +64,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.shadows.ShadowLooper
 import java.util.Date
 import java.util.Locale
 import kotlin.time.Duration
@@ -80,6 +85,10 @@ class CustomerCenterViewModelTests {
         customerInfo = mockk()
         configData = mockk()
         customerCenterListener = mockk(relaxed = true)
+        every { customerCenterListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         screens = mapOf(
             Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
@@ -138,6 +147,9 @@ class CustomerCenterViewModelTests {
 
     @After
     internal fun tearDown() {
+        // Drain all pending delayed tasks on the main looper (e.g. stateIn's WhileSubscribed timeout)
+        // to prevent leaked viewModelScope coroutines from affecting subsequent test classes.
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
         clearAllMocks()
     }
 
@@ -836,6 +848,14 @@ class CustomerCenterViewModelTests {
         // Create two separate listeners to verify they're both called
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -861,6 +881,14 @@ class CustomerCenterViewModelTests {
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -886,6 +914,14 @@ class CustomerCenterViewModelTests {
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -906,6 +942,39 @@ class CustomerCenterViewModelTests {
         // Then both listeners should be notified with the correct error
         verify(exactly = 1) { directListener.onRestoreFailed(error) }
         verify(exactly = 1) { purchasesListener.onRestoreFailed(error) }
+    }
+
+    @Test
+    fun `restorePurchases does not continue when onRestoreInitiated returns false`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(false)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.restorePurchases()
+
+        verify(exactly = 1) { directListener.onRestoreInitiated(any()) }
+        verify(exactly = 0) { purchasesListener.onRestoreInitiated(any()) }
+        coVerify(exactly = 0) { purchases.awaitRestore() }
+        verify(exactly = 0) { directListener.onRestoreStarted() }
+        verify(exactly = 0) { purchasesListener.onRestoreStarted() }
     }
 
     @Test
@@ -944,7 +1013,8 @@ class CustomerCenterViewModelTests {
         every { customerInfo.activeSubscriptions } returns setOf("test_product_id")
 
         // Create a mock product that will be returned from awaitGetProduct
-        val mockProduct = mockk<StoreProduct>(relaxed = true)
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "test_product_id"
         every { mockProduct.id } returns "test_product_id"
         coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
 
@@ -968,7 +1038,9 @@ class CustomerCenterViewModelTests {
         val initialState = model.state.first { it is CustomerCenterState.Success } as CustomerCenterState.Success
 
         // First, select a purchase to navigate to the detail view
-        val purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+        val purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
+            product = mockProduct,
+        )
         model.selectPurchase(purchaseInformation)
 
         // Wait for the navigation to complete
@@ -1195,6 +1267,68 @@ class CustomerCenterViewModelTests {
         // Verify the purchase was attempted and loadCustomerCenter was called
         coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
         coVerify(exactly = 2) { purchases.awaitCustomerCenterConfigData() } // Once for initial load, once for reload
+    }
+
+    @Test
+    fun `notifyListenersForPromotionalOfferSucceeded calls both listeners`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val storeTransaction = mockk<com.revenuecat.purchases.models.StoreTransaction>(relaxed = true)
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(storeTransaction, customerInfo)
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        model.state.first { it is CustomerCenterState.Success }
+
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        verify(exactly = 1) { directListener.onPromotionalOfferSucceeded(customerInfo, storeTransaction) }
+        verify(exactly = 1) { purchasesListener.onPromotionalOfferSucceeded(customerInfo, storeTransaction) }
+    }
+
+    @Test
+    fun `notifyListenersForPromotionalOfferSucceeded not called on purchase failure`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(error)
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        model.state.first { it is CustomerCenterState.Success }
+
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        verify(exactly = 0) { directListener.onPromotionalOfferSucceeded(any(), any()) }
+        verify(exactly = 0) { purchasesListener.onPromotionalOfferSucceeded(any(), any()) }
     }
 
     @Test
@@ -2078,7 +2212,7 @@ class CustomerCenterViewModelTests {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
-        every { purchases.syncPurchases() } just Runs
+        coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
         coEvery { purchases.awaitGetVirtualCurrencies() } returns mockk()
         every { purchases.invalidateVirtualCurrenciesCache() } just Runs
@@ -2387,6 +2521,69 @@ class CustomerCenterViewModelTests {
         verify { purchasesListener.onCustomActionSelected("general_action", null) }
     }
 
+    @Test
+    fun `cancel path strips base plan from product ID in Play Store URL`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.paywall_tester"
+
+        val intentSlot = slot<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "paywall_tester.subs"
+        every { mockProduct.id } returns "paywall_tester.subs:monthly"
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
+
+        val purchaseInfo = PurchaseInformation(
+            title = "Basic",
+            pricePaid = PriceDetails.Paid("\$4.99"),
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
+            store = Store.PLAY_STORE,
+            managementURL = null,
+            product = mockProduct,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+        model.selectPurchase(purchaseInfo)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        model.pathButtonPressed(
+            context,
+            HelpPath(
+                id = "test_id",
+                title = "Cancel",
+                type = HelpPath.PathType.CANCEL
+            ),
+            purchaseInfo
+        )
+
+        assertThat(intentSlot.captured.data.toString())
+            .isEqualTo("https://play.google.com/store/account/subscriptions?sku=paywall_tester.subs&package=com.revenuecat.paywall_tester")
+    }
+
     private fun createMockPurchaseInformation(productId: String): PurchaseInformation {
         val mockProduct = mockk<StoreProduct>()
         every { mockProduct.id } returns productId
@@ -2517,5 +2714,110 @@ class CustomerCenterViewModelTests {
         val currentState = model.state.value
         assertThat(currentState).isEqualTo(errorState)
         assertThat(currentState).isInstanceOf(CustomerCenterState.Error::class.java)
+    }
+
+    @Test
+    fun `refreshCustomerCenter uses FETCH_CURRENT not syncPurchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        clearMocks(purchases, answers = false, recordedCalls = true)
+
+        model.refreshCustomerCenter()
+
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
+    }
+
+    @Test
+    fun `onActivityResumed refreshes customer center after launching manage subscriptions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var customerCenterConfigCalls = 0
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers {
+            customerCenterConfigCalls++
+            configData
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialCalls = customerCenterConfigCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
+            every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && customerCenterConfigCalls <= initialCalls) {
+            Thread.sleep(25)
+        }
+        assertThat(customerCenterConfigCalls).isGreaterThan(initialCalls)
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
+    }
+
+    @Test
+    fun `onActivityStarted skips refresh when onActivityResumed will handle it`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var fetchCurrentCalls = 0
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } coAnswers {
+            fetchCurrentCalls++
+            customerInfo
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val callsAfterInitialLoad = fetchCurrentCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
+            every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        // Simulate lifecycle: stop -> start -> resume
+        model.onActivityStopped(isChangingConfigurations = false)
+        model.onActivityStarted()
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < callsAfterInitialLoad + 1) {
+            Thread.sleep(25)
+        }
+        // Only one additional refresh from onActivityResumed, none from onActivityStarted
+        assertThat(fetchCurrentCalls).isEqualTo(callsAfterInitialLoad + 1)
     }
 }

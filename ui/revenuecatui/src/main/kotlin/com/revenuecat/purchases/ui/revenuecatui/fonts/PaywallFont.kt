@@ -16,72 +16,72 @@ import kotlinx.parcelize.TypeParceler
  * Represents a font. You can create either a [GoogleFont] or a [ResourceFont].
  */
 @Stable
-sealed class PaywallFont : Parcelable {
+public sealed class PaywallFont : Parcelable {
     /**
      * Represents a downloadable Google Font.
      */
     @Parcelize
     @Poko
     @Immutable
-    class GoogleFont(
+    public class GoogleFont(
         /**
          * Name of the Google font you want to use.
          */
-        val fontName: String,
+        public val fontName: String,
         /**
          * Provider of the Google font.
          */
-        val fontProvider: GoogleFontProvider,
+        public val fontProvider: GoogleFontProvider,
         /**
          * The weight of the font. The system uses this to match a font to a font request.
          */
         @TypeParceler<FontWeight, FontWeightParceler>()
-        val fontWeight: FontWeight = FontWeight.Normal,
+        public val fontWeight: FontWeight = FontWeight.Normal,
         /**
          * The style of the font, normal or italic. The system uses this to match a font to a font request.
          * We use int instead of [FontStyle] because [FontStyle] is not compatible with Java.
          */
-        val fontStyle: Int = FontStyle.Normal.value,
+        public val fontStyle: Int = FontStyle.Normal.value,
     ) : PaywallFont()
 
     @Parcelize
     @Poko
     @Immutable
-    class ResourceFont(
+    public class ResourceFont(
         /**
          * The resource ID of the font file in font resources.
          */
         @FontRes
-        val resourceId: Int,
+        public val resourceId: Int,
         /**
          * The weight of the font. The system uses this to match a font to a font request.
          */
         @TypeParceler<FontWeight, FontWeightParceler>()
-        val fontWeight: FontWeight = FontWeight.Normal,
+        public val fontWeight: FontWeight = FontWeight.Normal,
         /**
          * The style of the font, normal or italic. The system uses this to match a font to a font request.
          * We use int instead of [FontStyle] because [FontStyle] is not compatible with Java.
          */
-        val fontStyle: Int = FontStyle.Normal.value,
+        public val fontStyle: Int = FontStyle.Normal.value,
     ) : PaywallFont()
 
     @Parcelize
     @Poko
     @Immutable
-    class AssetFont(
+    public class AssetFont(
         /**
          * Full path starting from the assets directory (i.e. dir/myfont.ttf for assets/dir/myfont.ttf).
          */
-        val path: String,
+        public val path: String,
         /**
          * The weight of the font. The system uses this to match a font to a font request.
          */
         @TypeParceler<FontWeight, FontWeightParceler>()
-        val fontWeight: FontWeight = FontWeight.Normal,
+        public val fontWeight: FontWeight = FontWeight.Normal,
         /**
          * The style of the font, normal or italic. The system uses this to match a font to a font request.
          * We use int instead of [FontStyle] because [FontStyle] is not compatible with Java.
          */
-        val fontStyle: Int = FontStyle.Normal.value,
+        public val fontStyle: Int = FontStyle.Normal.value,
     ) : PaywallFont()
 }
