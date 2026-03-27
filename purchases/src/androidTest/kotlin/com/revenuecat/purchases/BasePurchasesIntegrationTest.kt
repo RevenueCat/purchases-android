@@ -93,16 +93,17 @@ abstract class BasePurchasesIntegrationTest {
 
     @Before
     fun setActiveEnvironment() {
-        Constants.activeConfig = environmentConfig
-        val env = environmentConfig.backendEnvironment
-        require(environmentConfig.apiKey.isNotEmpty()) {
+        val config = environmentConfig
+        Constants.activeConfig = config
+        val env = config.backendEnvironment
+        require(config.apiKey.isNotEmpty()) {
             "Missing API key for $env. Set the corresponding property in local.properties or pass it via -P flag."
         }
-        require(environmentConfig.googlePurchaseToken.isNotEmpty()) {
+        require(config.googlePurchaseToken.isNotEmpty()) {
             "Missing Google purchase token for $env. " +
                 "Set the corresponding property in local.properties or pass it via -P flag."
         }
-        require(environmentConfig.productIdToPurchase.isNotEmpty()) {
+        require(config.productIdToPurchase.isNotEmpty()) {
             "Missing product ID for $env. Set the corresponding property in local.properties or pass it via -P flag."
         }
     }
