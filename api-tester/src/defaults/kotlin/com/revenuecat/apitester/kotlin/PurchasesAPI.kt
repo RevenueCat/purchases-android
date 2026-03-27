@@ -32,6 +32,7 @@ import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
@@ -49,6 +50,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
@@ -138,9 +140,11 @@ private class PurchasesAPI {
         // trackCustomPaywallImpression API
         val defaultParams = CustomPaywallImpressionParams()
         val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
+        val paramsWithOffering = CustomPaywallImpressionParams(paywallId = "my-paywall", offeringId = "my-offering")
         purchases.trackCustomPaywallImpression()
         purchases.trackCustomPaywallImpression(defaultParams)
         purchases.trackCustomPaywallImpression(paramsWithId)
+        purchases.trackCustomPaywallImpression(paramsWithOffering)
     }
 
     @Suppress("LongParameterList")
@@ -355,6 +359,9 @@ private class PurchasesAPI {
 
     fun checkCustomerCenter() {
         val customerInfoListener: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onRestoreInitiated(resume: Resumable) {
+            }
+
             override fun onRestoreStarted() {
             }
         }
@@ -371,6 +378,9 @@ private class PurchasesAPI {
             override fun onRestoreFailed(error: PurchasesError) {
             }
 
+            override fun onRestoreInitiated(resume: Resumable) {
+            }
+
             override fun onRestoreStarted() {
             }
 
@@ -384,6 +394,12 @@ private class PurchasesAPI {
                         val uri: Uri = action.uri
                     }
                 }
+            }
+
+            override fun onPromotionalOfferSucceeded(
+                customerInfo: CustomerInfo,
+                transaction: StoreTransaction,
+            ) {
             }
         }
         sharedInstance.customerCenterListener = object : CustomerCenterListener {}

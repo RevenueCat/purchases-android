@@ -317,6 +317,7 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
             appSessionID = appSessionID,
             timestamp = creationData.date.time,
             paywallID = data.paywallId,
+            offeringID = data.offeringId,
         ),
     )
 }

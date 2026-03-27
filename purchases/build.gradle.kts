@@ -13,6 +13,32 @@ val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
+// Resolves a property: Gradle -P flags (CI) take priority, then local.properties.
+// Empty string from -P flags is treated as a valid value (e.g. empty ACTIVE_ENTITLEMENT_IDS_TO_VERIFY).
+fun resolveProperty(name: String, default: String = ""): String {
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+    return localProperties.getProperty(name) ?: default
+}
+
+// For instrumentation tests: resolves the right property based on TEST_BACKEND_ENVIRONMENT.
+// local.properties stores ALL variants with prefixed names (e.g. LOAD_SHEDDER_REVENUECAT_API_KEY).
+// This function picks the right prefix based on the configured environment.
+fun resolveTestProperty(name: String, default: String = ""): String {
+    // CI passes generic (non-prefixed) names via -P flags — check those first
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+
+    // For local dev: determine prefix from TEST_BACKEND_ENVIRONMENT
+    val env = resolveProperty("TEST_BACKEND_ENVIRONMENT", "production")
+    val prefix = when {
+        env.startsWith("load_shedder") -> "LOAD_SHEDDER_"
+        env == "custom_entitlement_computation" -> "CUSTOM_ENTITLEMENT_COMPUTATION_"
+        else -> "" // production uses unprefixed names
+    }
+    return localProperties.getProperty("$prefix$name", default)
+}
+
 android {
     namespace = "com.revenuecat.purchases.api"
 
@@ -71,15 +97,27 @@ android {
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )
+
+        // Instrumentation test configuration from local.properties / Gradle -P flags
+        testInstrumentationRunnerArguments["REVENUECAT_API_KEY"] = resolveTestProperty("REVENUECAT_API_KEY")
+        testInstrumentationRunnerArguments["GOOGLE_PURCHASE_TOKEN"] = resolveTestProperty("GOOGLE_PURCHASE_TOKEN")
+        testInstrumentationRunnerArguments["PRODUCT_ID_TO_PURCHASE"] = resolveTestProperty("PRODUCT_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["BASE_PLAN_ID_TO_PURCHASE"] =
+            resolveTestProperty("BASE_PLAN_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
+            resolveTestProperty("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
+        testInstrumentationRunnerArguments["TEST_BACKEND_ENVIRONMENT"] = resolveProperty("TEST_BACKEND_ENVIRONMENT")
+        testInstrumentationRunnerArguments["TEST_PROXY_URL"] = resolveProperty("TEST_PROXY_URL")
     }
 
     testOptions {
         unitTests.all {
-            if (project.hasProperty("RUN_INTEGRATION_TESTS")) {
-                it.include("com/revenuecat/purchases/backend_integration_tests/**")
-            } else {
-                it.exclude("com/revenuecat/purchases/backend_integration_tests/**")
-            }
+            // Pass test keys as JVM system properties for backend integration tests
+            it.systemProperty("BACKEND_INTEGRATION_API_KEY", resolveProperty("BACKEND_INTEGRATION_API_KEY"))
+            it.systemProperty(
+                "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY",
+                resolveProperty("BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY"),
+            )
         }
     }
 }

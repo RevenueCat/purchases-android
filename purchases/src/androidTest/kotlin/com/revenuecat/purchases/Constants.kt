@@ -1,17 +1,27 @@
 package com.revenuecat.purchases
 
+import androidx.test.platform.app.InstrumentationRegistry
+
 object Constants {
-    const val apiKey = "REVENUECAT_API_KEY"
-    const val proxyUrl = "NO_PROXY_URL"
-    const val googlePurchaseToken = "GOOGLE_PURCHASE_TOKEN"
-    const val productIdToPurchase = "PRODUCT_ID_TO_PURCHASE"
-    const val basePlanIdToPurchase = "BASE_PLAN_ID_TO_PURCHASE"
+    private val args by lazy { InstrumentationRegistry.getArguments() }
 
-    // comma separated list of active entitlements to verify
-    const val activeEntitlementIdsToVerify = "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"
+    // Instrumentation args are always set by build.gradle.kts (even to empty).
+    // Use the value as-is; empty means "not configured" for required fields,
+    // or "intentionally empty" for optional fields like activeEntitlementIdsToVerify.
+    val apiKey: String get() = args.getString("REVENUECAT_API_KEY") ?: ""
+    val proxyUrl: String get() = args.getString("TEST_PROXY_URL") ?: ""
+    val googlePurchaseToken: String get() = args.getString("GOOGLE_PURCHASE_TOKEN") ?: ""
+    val productIdToPurchase: String get() = args.getString("PRODUCT_ID_TO_PURCHASE") ?: ""
+    val basePlanIdToPurchase: String get() = args.getString("BASE_PLAN_ID_TO_PURCHASE") ?: ""
 
-    private const val backendEnvironmentString = "TEST_BACKEND_ENVIRONMENT_INTEGRATION_TESTS"
-    val backendEnvironment: BackendEnvironment = BackendEnvironment.valueForString(backendEnvironmentString)
+    // comma separated list of active entitlements to verify (empty means none expected)
+    val activeEntitlementIdsToVerify: String get() =
+        args.getString("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY") ?: ""
+
+    private val backendEnvironmentString: String get() =
+        args.getString("TEST_BACKEND_ENVIRONMENT")?.takeIf { it.isNotEmpty() }
+            ?: "production"
+    val backendEnvironment: BackendEnvironment get() = BackendEnvironment.valueForString(backendEnvironmentString)
 
     enum class BackendEnvironment {
         PRODUCTION,
@@ -24,7 +34,7 @@ object Constants {
                 return when (backendEnvironmentString) {
                     "load_shedder_us_east_1" -> LOAD_SHEDDER_US_EAST_1
                     "load_shedder_us_east_2" -> LOAD_SHEDDER_US_EAST_2
-                    "production" -> PRODUCTION
+                    "production", "custom_entitlement_computation" -> PRODUCTION
                     else -> error("Expected valid backend_environment value. Got $backendEnvironmentString")
                 }
             }
