@@ -132,7 +132,7 @@ internal fun InternalPaywall(
                 )
             } else {
                 Logger.e(
-                    "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
+                    "State is not loaded while transitioning animation. This may happen if state changes " +
                         "from being loaded to a different state. This should not happen.",
                 )
             }

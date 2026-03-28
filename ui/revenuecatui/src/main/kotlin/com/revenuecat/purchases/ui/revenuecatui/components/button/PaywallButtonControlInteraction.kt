@@ -5,7 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 
 /**
- * Maps non-purchase button actions to `component_value` strings (parity with iOS `ButtonComponentViewModel.Action`).
+ * Maps non-purchase button actions to `component_value` strings.
  */
 internal data class ButtonControlInteraction(
     val value: String,
@@ -42,7 +42,6 @@ private fun ButtonComponentStyle.Action.NavigateTo.Destination.controlInteractio
 
 /**
  * True for purchase / web checkout actions — these must not emit `paywall_control_interaction`
- * (parity with iOS `PurchaseButtonComponentView`).
  */
 internal fun ButtonComponentStyle.Action.isPurchaseRelated(): Boolean =
     when (this) {

@@ -122,7 +122,7 @@ internal fun CarouselComponentView(
             snapshotFlow { pagerState.currentPage }.collect { page ->
                 if (page != previousPage) {
                     if (skipProgrammaticPageTracking.getAndSet(false)) {
-                        // Auto-advance scroll; do not emit control interaction (parity with iOS).
+                        // Auto-advance scroll; do not emit control interaction.
                     } else {
                         val logicalPage = page % pageCount
                         controlInteractionTracker.track(

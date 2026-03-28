@@ -92,11 +92,11 @@ private object Template7UIConstants {
 }
 
 /**
- * `component_value` for Template 7 tier control interaction (spec: display name if available, else tier id).
+ * `component_value` for Template 7 tier control interaction).
  */
 @JvmSynthetic
 internal fun tierSelectorControlInteractionValue(tier: TemplateConfiguration.TierInfo): String =
-    tier.name.takeUnless { it.isBlank() } ?: tier.id
+    tier.name.takeUnless { it.isBlank() } ?: ""
 
 @Composable
 internal fun Template7(
