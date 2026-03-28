@@ -23,6 +23,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -569,6 +570,22 @@ internal class MockViewModel(
         trackExitOfferParams.add(Pair(exitOfferType, exitOfferingIdentifier))
     }
 
+    var trackControlInteractionCallCount = 0
+        private set
+    val trackControlInteractionParams = mutableListOf<MockTrackControlInteractionParams>()
+
+    override fun trackControlInteraction(
+        componentType: PaywallControlType,
+        componentName: String?,
+        componentValue: String,
+        componentUrl: String?,
+    ) {
+        trackControlInteractionCallCount++
+        trackControlInteractionParams.add(
+            MockTrackControlInteractionParams(componentType, componentName, componentValue, componentUrl),
+        )
+    }
+
     var refreshStateIfLocaleChangedCallCount = 0
         private set
     override fun refreshStateIfLocaleChanged() {
@@ -711,3 +728,10 @@ internal class MockViewModel(
         private const val MILLIS_2025_01_25 = 1737763200000
     }
 }
+
+internal data class MockTrackControlInteractionParams(
+    val componentType: PaywallControlType,
+    val componentName: String?,
+    val componentValue: String,
+    val componentUrl: String?,
+)

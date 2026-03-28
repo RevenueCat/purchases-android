@@ -111,6 +111,14 @@ internal sealed class BackendEvent : Event {
         val errorCode: Int? = null,
         @SerialName("error_message")
         val errorMessage: String? = null,
+        @SerialName("component_type")
+        val componentType: String? = null,
+        @SerialName("component_name")
+        val componentName: String? = null,
+        @SerialName("component_value")
+        val componentValue: String? = null,
+        @SerialName("component_url")
+        val componentUrl: String? = null,
     ) : BackendEvent()
 
     /**

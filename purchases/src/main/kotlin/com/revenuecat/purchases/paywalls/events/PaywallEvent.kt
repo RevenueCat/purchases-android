@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.nullable
@@ -57,7 +58,46 @@ public enum class PaywallEventType(public val value: String) {
      * An exit offer will be shown to the user.
      */
     EXIT_OFFER("paywall_exit_offer"),
+
+    /**
+     * User interacted with a paywall control (tabs, carousel, non-purchase button, etc.).
+     */
+    CONTROL_INTERACTION("paywall_control_interaction"),
 }
+
+/**
+ * Control categories for [PaywallEventType.CONTROL_INTERACTION]. Wire values match iOS `ControlType`.
+ */
+@InternalRevenueCatAPI
+@Serializable
+public enum class PaywallControlType {
+    @SerialName("tab")
+    TAB,
+
+    @SerialName("switch")
+    SWITCH,
+
+    @SerialName("carousel")
+    CAROUSEL,
+
+    @SerialName("button")
+    BUTTON,
+
+    @SerialName("text")
+    TEXT,
+}
+
+/**
+ * Payload for [PaywallEventType.CONTROL_INTERACTION].
+ */
+@InternalRevenueCatAPI
+@Serializable
+public data class PaywallControlInteractionData(
+    public val componentType: PaywallControlType,
+    public val componentName: String? = null,
+    public val componentValue: String,
+    public val componentUrl: String? = null,
+)
 
 /**
  * Types of exit offers. Meant for RevenueCatUI use.
@@ -80,6 +120,7 @@ public data class PaywallEvent(
     public val creationData: CreationData,
     public val data: Data,
     public val type: PaywallEventType,
+    public val controlInteraction: PaywallControlInteractionData? = null,
 ) : FeatureEvent {
 
     override val isPriorityEvent: Boolean get() = type == PaywallEventType.IMPRESSION
@@ -280,4 +321,13 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             errorMessage = errorMessage,
         )
     }
+}
+
+@InternalRevenueCatAPI
+internal fun PaywallControlType.toWireString(): String = when (this) {
+    PaywallControlType.TAB -> "tab"
+    PaywallControlType.SWITCH -> "switch"
+    PaywallControlType.CAROUSEL -> "carousel"
+    PaywallControlType.BUTTON -> "button"
+    PaywallControlType.TEXT -> "text"
 }

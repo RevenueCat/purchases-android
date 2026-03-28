@@ -44,7 +44,9 @@ import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallVie
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallControlInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
@@ -76,6 +78,12 @@ internal fun InternalPaywall(
 
     val state = viewModel.state.collectAsStateWithLifecycle().value
 
+    val controlInteractionTracker = remember(viewModel) {
+        PaywallControlInteractionTracker { type, name, value, url ->
+            viewModel.trackControlInteraction(type, name, value, url)
+        }
+    }
+
     PaywallTheme(fontProvider = options.fontProvider) {
         AnimatedVisibility(
             visible = state is PaywallState.Loading || state is PaywallState.Error,
@@ -90,40 +98,42 @@ internal fun InternalPaywall(
         }
     }
 
-    PaywallTheme(fontProvider = options.fontProvider) {
+    CompositionLocalProvider(LocalPaywallControlInteractionTracker provides controlInteractionTracker) {
+        PaywallTheme(fontProvider = options.fontProvider) {
+            AnimatedVisibility(
+                visible = state is PaywallState.Loaded.Legacy,
+                enter = fadeIn(animationSpec = defaultAnimation()),
+                exit = fadeOut(animationSpec = defaultAnimation()),
+            ) {
+                if (state is PaywallState.Loaded.Legacy) {
+                    LoadedPaywall(state = state, viewModel = viewModel)
+                } else {
+                    Logger.e(
+                        "State is not loaded while transitioning animation. This may happen if state changes from " +
+                            "being loaded to a different state. This should not happen.",
+                    )
+                }
+            }
+        }
+
+        // V2 Paywalls set custom fonts on the dashboard, so we don't want to use FontProvider here to set the fonts.
         AnimatedVisibility(
-            visible = state is PaywallState.Loaded.Legacy,
+            visible = state is PaywallState.Loaded.Components,
             enter = fadeIn(animationSpec = defaultAnimation()),
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
-            if (state is PaywallState.Loaded.Legacy) {
-                LoadedPaywall(state = state, viewModel = viewModel)
+            if (state is PaywallState.Loaded.Components) {
+                viewModel.trackPaywallImpressionIfNeeded()
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                )
             } else {
                 Logger.e(
-                    "State is not loaded while transitioning animation. This may happen if state changes from " +
-                        "being loaded to a different state. This should not happen.",
+                    "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
+                        "from being loaded to a different state. This should not happen.",
                 )
             }
-        }
-    }
-
-    // V2 Paywalls set custom fonts on the dashboard, so we don't want to use FontProvider here to set the fonts.
-    AnimatedVisibility(
-        visible = state is PaywallState.Loaded.Components,
-        enter = fadeIn(animationSpec = defaultAnimation()),
-        exit = fadeOut(animationSpec = defaultAnimation()),
-    ) {
-        if (state is PaywallState.Loaded.Components) {
-            viewModel.trackPaywallImpressionIfNeeded()
-            LoadedPaywallComponents(
-                state = state,
-                clickHandler = rememberPaywallActionHandler(viewModel),
-            )
-        } else {
-            Logger.e(
-                "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
-                    "from being loaded to a different state. This should not happen.",
-            )
         }
     }
 

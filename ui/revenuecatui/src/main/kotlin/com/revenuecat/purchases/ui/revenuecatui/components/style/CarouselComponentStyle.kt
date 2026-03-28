@@ -80,6 +80,8 @@ internal data class CarouselComponentStyle(
     override val offerEligibility: OfferEligibility? = null,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedCarouselPartial>>,
+    @get:JvmSynthetic
+    val componentName: String? = null,
 ) : ComponentStyle, PackageContext {
     @Immutable
     data class PageControlStyles(

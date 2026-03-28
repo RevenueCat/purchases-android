@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
@@ -22,6 +24,8 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -79,6 +83,12 @@ internal interface PaywallViewModel {
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
     fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String)
+    fun trackControlInteraction(
+        componentType: PaywallControlType,
+        componentName: String?,
+        componentValue: String,
+        componentUrl: String? = null,
+    )
     fun closePaywall(result: PaywallResult? = null)
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
@@ -322,6 +332,31 @@ internal class PaywallViewModelImpl(
             creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
             data = exitOfferEventData,
             type = PaywallEventType.EXIT_OFFER,
+        )
+        purchases.track(event)
+    }
+
+    override fun trackControlInteraction(
+        componentType: PaywallControlType,
+        componentName: String?,
+        componentValue: String,
+        componentUrl: String?,
+    ) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking paywall control interaction")
+            return
+        }
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = eventData,
+            type = PaywallEventType.CONTROL_INTERACTION,
+            controlInteraction = PaywallControlInteractionData(
+                componentType = componentType,
+                componentName = componentName,
+                componentValue = componentValue,
+                componentUrl = componentUrl,
+            ),
         )
         purchases.track(event)
     }
