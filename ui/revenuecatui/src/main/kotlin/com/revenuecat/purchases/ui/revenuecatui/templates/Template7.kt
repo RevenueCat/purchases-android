@@ -91,6 +91,13 @@ private object Template7UIConstants {
     const val headerAspectRatio = 2f
 }
 
+/**
+ * `component_value` for Template 7 tier control interaction (spec: display name if available, else tier id).
+ */
+@JvmSynthetic
+internal fun tierSelectorControlInteractionValue(tier: TemplateConfiguration.TierInfo): String =
+    tier.name.takeUnless { it.isBlank() } ?: tier.id
+
 @Composable
 internal fun Template7(
     state: PaywallState.Loaded.Legacy,
@@ -119,7 +126,7 @@ internal fun Template7(
         viewModel.trackControlInteraction(
             componentType = PaywallControlType.TAB,
             componentName = PaywallLegacyControlInteraction.TIER_SELECTOR_NAME,
-            componentValue = tier.name,
+            componentValue = tierSelectorControlInteractionValue(tier),
         )
         selectedTier = tier
         state.selectPackage(tier.defaultPackage)

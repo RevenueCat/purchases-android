@@ -23,7 +23,7 @@ internal val LocalPaywallControlInteractionTracker =
     }
 
 /**
- * V1 template footer / tier control `§component_name` constants (aligned with iOS `PaywallControlInteraction`).
+ * V1 template footer / tier control `component_name` constants (aligned with iOS `PaywallControlInteraction`).
  */
 internal object PaywallLegacyControlInteraction {
     const val ALL_PLANS_BUTTON_NAME = "all_plans_button"

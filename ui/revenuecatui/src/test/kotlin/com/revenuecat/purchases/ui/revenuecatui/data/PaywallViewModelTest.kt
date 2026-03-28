@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
@@ -31,6 +33,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
@@ -49,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyControlInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
@@ -1276,6 +1280,127 @@ class PaywallViewModelTest {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
         verifyEventTracked(PaywallEventType.IMPRESSION, 1)
+    }
+
+    @Test
+    fun `trackControlInteraction restore matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackControlInteraction(
+            componentType = PaywallControlType.BUTTON,
+            componentName = PaywallLegacyControlInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyControlInteraction.Value.RESTORE_PURCHASES,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CONTROL_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.controlInteraction)
+                    assertThat(ci.componentType).isEqualTo(PaywallControlType.BUTTON)
+                    assertThat(ci.componentName).isEqualTo("restore_button")
+                    assertThat(ci.componentValue).isEqualTo("restore_purchases")
+                    assertThat(ci.componentUrl).isNull()
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackControlInteraction all plans matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackControlInteraction(
+            componentType = PaywallControlType.BUTTON,
+            componentName = PaywallLegacyControlInteraction.ALL_PLANS_BUTTON_NAME,
+            componentValue = PaywallLegacyControlInteraction.Value.TOGGLE_ALL_PLANS,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CONTROL_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.controlInteraction)
+                    assertThat(ci.componentName).isEqualTo("all_plans_button")
+                    assertThat(ci.componentValue).isEqualTo("toggle_all_plans")
+                    assertThat(ci.componentUrl).isNull()
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackControlInteraction terms link matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val url = "https://example.com/terms"
+        model.trackControlInteraction(
+            componentType = PaywallControlType.BUTTON,
+            componentName = PaywallLegacyControlInteraction.TERMS_LINK_NAME,
+            componentValue = PaywallLegacyControlInteraction.Value.NAVIGATE_TO_TERMS,
+            componentUrl = url,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CONTROL_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.controlInteraction)
+                    assertThat(ci.componentName).isEqualTo("terms_link")
+                    assertThat(ci.componentValue).isEqualTo("navigate_to_terms")
+                    assertThat(ci.componentUrl).isEqualTo(url)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackControlInteraction privacy link matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val url = "https://example.com/privacy"
+        model.trackControlInteraction(
+            componentType = PaywallControlType.BUTTON,
+            componentName = PaywallLegacyControlInteraction.PRIVACY_LINK_NAME,
+            componentValue = PaywallLegacyControlInteraction.Value.NAVIGATE_TO_PRIVACY_POLICY,
+            componentUrl = url,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CONTROL_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.controlInteraction)
+                    assertThat(ci.componentName).isEqualTo("privacy_link")
+                    assertThat(ci.componentValue).isEqualTo("navigate_to_privacy_policy")
+                    assertThat(ci.componentUrl).isEqualTo(url)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackControlInteraction tier selector matches legacy spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackControlInteraction(
+            componentType = PaywallControlType.TAB,
+            componentName = PaywallLegacyControlInteraction.TIER_SELECTOR_NAME,
+            componentValue = "Premium",
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.CONTROL_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.controlInteraction)
+                    assertThat(ci.componentType).isEqualTo(PaywallControlType.TAB)
+                    assertThat(ci.componentName).isEqualTo("tier_selector")
+                    assertThat(ci.componentValue).isEqualTo("Premium")
+                    assertThat(ci.componentUrl).isNull()
+                },
+            )
+        }
     }
 
     @Test

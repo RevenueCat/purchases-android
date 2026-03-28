@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -47,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyControlInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
@@ -188,6 +190,11 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
                     viewModel.purchaseSelectedPackage(activity)
                 },
                 onRestore = {
+                    viewModel.trackControlInteraction(
+                        componentType = PaywallControlType.BUTTON,
+                        componentName = PaywallLegacyControlInteraction.RESTORE_BUTTON_NAME,
+                        componentValue = PaywallLegacyControlInteraction.Value.RESTORE_PURCHASES,
+                    )
                     viewModel.restorePurchases()
                 },
             )
