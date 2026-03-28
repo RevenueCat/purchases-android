@@ -292,11 +292,11 @@ private fun EnableAutoAdvance(
         while (true) {
             delay(autoAdvance.msTimePerPage.toLong())
             if (pagerState.isScrollInProgress) continue
-            val nextPage = if (shouldLoop) {
-                pagerState.currentPage + 1
-            } else {
-                (pagerState.currentPage + 1) % pageCount
-            }
+            val nextPage = nextAutoAdvanceTargetPage(
+                shouldLoop = shouldLoop,
+                pageCount = pageCount,
+                currentPage = pagerState.currentPage,
+            ) ?: continue
             try {
                 pagerState.animateScrollToPage(
                     page = nextPage,
@@ -308,6 +308,25 @@ private fun EnableAutoAdvance(
                 // Do nothing, so we continue scrolling on the next loop
             }
         }
+    }
+}
+
+/**
+ * Next pager index for carousel auto-advance, or `null` when no scroll should run
+ * (empty carousel, or non-loop already on the last page).
+ */
+internal fun nextAutoAdvanceTargetPage(
+    shouldLoop: Boolean,
+    pageCount: Int,
+    currentPage: Int,
+): Int? {
+    if (pageCount <= 0) return null
+    return if (shouldLoop) {
+        currentPage + 1
+    } else if (currentPage >= pageCount - 1) {
+        null
+    } else {
+        currentPage + 1
     }
 }
 
