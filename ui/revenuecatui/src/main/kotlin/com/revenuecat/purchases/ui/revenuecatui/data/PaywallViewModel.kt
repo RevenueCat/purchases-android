@@ -195,9 +195,7 @@ internal class PaywallViewModelImpl(
     }
 
     override fun closePaywall(result: PaywallResult?) {
-        val purchased = _purchaseCompleted.value
-        val exitOfferingId = _preloadedExitOffering.value?.identifier
-        Logger.d("Paywalls: closePaywall. purchased=$purchased, exitOffering=$exitOfferingId")
+        Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value) {
             _preloadedExitOffering.value
@@ -205,20 +203,13 @@ internal class PaywallViewModelImpl(
             null
         }
         if (exitOffering != null) {
-            Logger.d(
-                "Paywalls: Close paywall - showing exit offering '${exitOffering.identifier}' instead of dismissing",
-            )
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
-        } else {
-            Logger.d("Paywalls: Close paywall - no exit offering, calling dismissRequest")
         }
         paywallPresentationData = null
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
-            Logger.d("Paywalls: Close paywall - using dismissRequestWithExitOffering")
             dismissWithExitOffering(exitOffering, result)
         } else {
-            Logger.d("Paywalls: Close paywall - calling dismissRequest")
             options.dismissRequest()
         }
     }
@@ -227,7 +218,6 @@ internal class PaywallViewModelImpl(
         viewModelScope.launch {
             try {
                 val currentState = _state.value
-                Logger.d("Paywalls: preloadExitOffering called, currentState=${currentState::class.simpleName}")
                 val currentOffering = when (currentState) {
                     is PaywallState.Loaded.Legacy -> currentState.offering
                     is PaywallState.Loaded.Components -> currentState.offering
@@ -236,10 +226,6 @@ internal class PaywallViewModelImpl(
 
                 val exitOfferingId = currentOffering?.paywallComponents
                     ?.data?.exitOffers?.dismiss?.offeringId
-                Logger.d(
-                    "Paywalls: preloadExitOffering - " +
-                        "offering='${currentOffering?.identifier}', exitOfferingId='$exitOfferingId'",
-                )
                 _preloadedExitOffering.value = if (exitOfferingId != null) {
                     val offerings = purchases.awaitOfferings()
                     offerings[exitOfferingId].also { exitOffering ->
@@ -248,12 +234,9 @@ internal class PaywallViewModelImpl(
                                 "Exit offering with ID '$exitOfferingId' not found in available offerings. " +
                                     "Exit offer will not be displayed.",
                             )
-                        } else {
-                            Logger.d("Paywalls: preloadExitOffering - loaded '${exitOffering.identifier}'")
                         }
                     }
                 } else {
-                    Logger.d("Paywalls: preloadExitOffering - no exit offering configured")
                     null
                 }
             } catch (e: PurchasesException) {
