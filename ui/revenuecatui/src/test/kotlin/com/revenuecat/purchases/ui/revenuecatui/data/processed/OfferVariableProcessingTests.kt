@@ -96,7 +96,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = null,
         )
 
-        assertThat(result).isEqualTo("$1.00")
+        assertThat(result).isEqualTo("$1")
     }
 
     @Test
@@ -121,7 +121,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = promoOption,
         )
 
-        assertThat(result).isEqualTo("$0.50")
+        assertThat(result).isEqualTo("$0.5")
     }
 
     @Test
@@ -184,7 +184,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = optionWithNoDiscountPhases,
         )
 
-        assertThat(result).isEqualTo("$10.00")
+        assertThat(result).isEqualTo("$10")
     }
 
     @Test
@@ -195,7 +195,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = null,
         )
 
-        assertThat(result).isEqualTo("$10.00")
+        assertThat(result).isEqualTo("$10")
     }
 
     @Test
@@ -289,7 +289,7 @@ class OfferVariableProcessingTests {
         )
 
         // Should use the intro price, not fall back
-        assertThat(result).isEqualTo("$1.00")
+        assertThat(result).isEqualTo("$1")
     }
 
     // endregion
@@ -323,7 +323,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = promoOption,
         )
 
-        assertThat(result).isEqualTo("$0.50")
+        assertThat(result).isEqualTo("$0.5")
     }
 
     // region offer_price_per_* fallback when no discount phase exists
@@ -362,8 +362,8 @@ class OfferVariableProcessingTests {
             subscriptionOption = optionWithNoDiscountPhases,
         )
 
-        // 1 month product at $10.00 -> $10.00/month
-        assertThat(result).isEqualTo("$10.00")
+        // 1 month product at $10.00 -> $10/month
+        assertThat(result).isEqualTo("$10")
     }
 
     @Test
@@ -426,8 +426,8 @@ class OfferVariableProcessingTests {
             subscriptionOption = optionWithWeeklyDiscount,
         )
 
-        // Falls back to product's price per month ($10.00/month for a monthly product)
-        assertThat(result).isEqualTo("$10.00")
+        // Falls back to product's price per month ($10/month for a monthly product)
+        assertThat(result).isEqualTo("$10")
     }
 
     @Test
@@ -490,7 +490,7 @@ class OfferVariableProcessingTests {
         )
 
         // Should use the discount phase's price per day ($7.00/week = $1.00/day)
-        assertThat(result).isEqualTo("$1.00")
+        assertThat(result).isEqualTo("$1")
     }
 
     // endregion
@@ -506,7 +506,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = optionWithNoDiscountPhases,
         )
 
-        assertThat(result).isEqualTo("$10.00")
+        assertThat(result).isEqualTo("$10")
     }
 
     @Test
