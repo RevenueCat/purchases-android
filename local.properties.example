@@ -26,28 +26,28 @@
 
 ## ──────────────────────────────────────────────
 ## Instrumentation Tests
-## Set TEST_BACKEND_ENVIRONMENT to select which set of keys to use:
-##   production (default), load_shedder_us_east_1,
-##   load_shedder_us_east_2, custom_entitlement_computation
+## All environment keys are passed to instrumentation tests simultaneously.
+## Each test class selects its environment. Tests fail if their required
+## environment keys are missing. Set all keys below to run all tests, or
+## use -PTEST_PACKAGE_FILTER to run only a specific environment's tests.
 ## ──────────────────────────────────────────────
-#TEST_BACKEND_ENVIRONMENT=production
 #TEST_PROXY_URL=https://your-proxy
 
-## Production environment keys (used when TEST_BACKEND_ENVIRONMENT=production or omitted)
+## Production environment keys
 #REVENUECAT_API_KEY=your_key
 #GOOGLE_PURCHASE_TOKEN=your_token
 #PRODUCT_ID_TO_PURCHASE=your_product_id
 #BASE_PLAN_ID_TO_PURCHASE=your_base_plan_id
 #ACTIVE_ENTITLEMENT_IDS_TO_VERIFY=entitlement1,entitlement2
 
-## Load shedder environment keys (used when TEST_BACKEND_ENVIRONMENT=load_shedder_*)
+## Load shedder environment keys (shared for US-East-1 and US-East-2)
 #LOAD_SHEDDER_REVENUECAT_API_KEY=your_key
 #LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN=your_token
 #LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE=your_product_id
 #LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE=your_base_plan_id
 #LOAD_SHEDDER_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY=entitlement1,entitlement2
 
-## Custom entitlement computation keys (used when TEST_BACKEND_ENVIRONMENT=custom_entitlement_computation)
+## Custom entitlement computation keys
 #CUSTOM_ENTITLEMENT_COMPUTATION_REVENUECAT_API_KEY=your_key
 #CUSTOM_ENTITLEMENT_COMPUTATION_GOOGLE_PURCHASE_TOKEN=your_token
 #CUSTOM_ENTITLEMENT_COMPUTATION_PRODUCT_ID_TO_PURCHASE=your_product_id

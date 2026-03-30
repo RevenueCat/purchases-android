@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.offlineentitlements
+package com.revenuecat.purchases.integration.offlineentitlements
 
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
@@ -10,16 +10,17 @@ import io.mockk.every
 import org.assertj.core.api.Assertions
 
 abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
-    private val initialActiveTransaction = StoreTransactionFactory.createStoreTransaction(
+
+    private val initialActiveTransaction get() = StoreTransactionFactory.createStoreTransaction(
         skus = listOf(Constants.productIdToPurchase),
         purchaseToken = Constants.googlePurchaseToken,
     )
-    protected val initialActivePurchases = mapOf(
+    protected val initialActivePurchases get() = mapOf(
         initialActiveTransaction.purchaseToken.sha1() to initialActiveTransaction,
     )
 
     // Hack until we get a running token for production API tests. After that, we can just use "entitlementsToVerify"
-    private val expectedEntitlements = entitlementsToVerify.ifEmpty { listOf("pro_cat") }
+    private val expectedEntitlements get() = entitlementsToVerify.ifEmpty { listOf("pro_cat") }
 
     // region helpers
 

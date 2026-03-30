@@ -1,6 +1,5 @@
-package com.revenuecat.purchases.offlineentitlements
+package com.revenuecat.purchases.integration.offlineentitlements
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoOriginalSource
@@ -25,7 +24,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 
 abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest :
     BaseOfflineEntitlementsIntegrationTest() {
@@ -69,11 +67,10 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
     // endregion helpers
 }
 
-@RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
+abstract class BaseOfflineEntitlementsWithInitialRequestsAndInitialPurchasesTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
-    override val initialActivePurchasesToUse: Map<String, StoreTransaction> = initialActivePurchases
+    override val initialActivePurchasesToUse: Map<String, StoreTransaction> get() = initialActivePurchases
 
     @Test
     fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
@@ -122,8 +119,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
     }
 }
 
-@RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
+abstract class BaseOfflineEntitlementsWithInitialRequestsAndNoInitialPurchasesTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     @Test
