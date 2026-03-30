@@ -130,7 +130,7 @@ class OfferPriceLocaleTests {
         )
 
         // Should be US formatted ($ before number)
-        assertThat(result).isEqualTo("$0.5")
+        assertThat(result).isEqualTo("$0.50")
     }
 
     @Test

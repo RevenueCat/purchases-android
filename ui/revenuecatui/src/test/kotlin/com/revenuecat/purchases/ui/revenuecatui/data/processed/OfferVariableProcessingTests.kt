@@ -121,7 +121,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = promoOption,
         )
 
-        assertThat(result).isEqualTo("$0.5")
+        assertThat(result).isEqualTo("$0.50")
     }
 
     @Test
@@ -323,7 +323,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = promoOption,
         )
 
-        assertThat(result).isEqualTo("$0.5")
+        assertThat(result).isEqualTo("$0.50")
     }
 
     // region offer_price_per_* fallback when no discount phase exists

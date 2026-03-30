@@ -266,12 +266,12 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes sub_price_per_week`() {
-        expectVariablesResult("{{ sub_price_per_week }}", "$1.3")
+        expectVariablesResult("{{ sub_price_per_week }}", "$1.30")
     }
 
     @Test
     fun `process variables processes sub_price_per_week in other locales`() {
-        expectVariablesResult("{{ sub_price_per_week }}", "1,3 US$", esLocale)
+        expectVariablesResult("{{ sub_price_per_week }}", "1,30 US$", esLocale)
     }
 
     // endregion

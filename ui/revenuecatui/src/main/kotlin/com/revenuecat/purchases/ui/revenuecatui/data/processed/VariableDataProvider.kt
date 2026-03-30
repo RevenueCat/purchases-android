@@ -289,16 +289,17 @@ internal fun Price.endsIn00Cents(): Boolean {
  * Returns price formatted for the given locale using the price's currency code.
  * Uses BigDecimal arithmetic to avoid floating-point precision issues.
  *
- * Sets [minimumFractionDigits] to 0 so that round numbers display without trailing zeros
- * (e.g. "$1" instead of "$1.00"), while non-round prices still show their cents (e.g. "$1.99").
+ * Whole-unit prices (e.g. $1.00, $10.00) display without trailing zeros ("$1", "$10").
+ * Prices with a non-zero fractional part (e.g. $1.30, $1.99) keep their full decimal places.
  */
 internal fun Price.getFormatted(locale: Locale = Locale.getDefault()): String {
     val currency = Currency.getInstance(currencyCode)
     val maxFractionDigits = currency.defaultFractionDigits.coerceAtLeast(0)
+    val minFractionDigits = if (amountMicros % MICRO_MULTIPLIER.toLong() == 0L) 0 else maxFractionDigits
     val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
         this.currency = currency
         maximumFractionDigits = maxFractionDigits
-        minimumFractionDigits = 0
+        minimumFractionDigits = minFractionDigits
     }
     val amount = BigDecimal.valueOf(amountMicros)
         .divide(BigDecimal.valueOf(MICRO_MULTIPLIER.toLong()), maxFractionDigits, RoundingMode.DOWN)
