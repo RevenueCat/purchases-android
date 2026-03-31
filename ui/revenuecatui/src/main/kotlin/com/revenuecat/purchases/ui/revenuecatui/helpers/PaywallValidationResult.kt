@@ -37,6 +37,7 @@ internal sealed interface PaywallValidationResult {
 
     data class Components(
         val stack: ComponentStyle,
+        val header: ComponentStyle?,
         val stickyFooter: ComponentStyle?,
         val background: BackgroundStyles,
         /**

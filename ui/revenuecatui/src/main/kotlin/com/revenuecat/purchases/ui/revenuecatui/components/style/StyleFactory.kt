@@ -11,6 +11,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -482,6 +483,7 @@ internal class StyleFactory(
             is PackageComponent -> createPackageComponentStyle(component)
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
             is StackComponent -> createStackComponentStyle(component)
+            is HeaderComponent -> createHeaderComponentStyle(component)
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component)
             is IconComponent -> createIconComponentStyle(component)
@@ -514,6 +516,16 @@ internal class StyleFactory(
                     endStackComponentStyle = endStack,
                     fallbackStackComponentStyle = fallbackStack,
                 )
+            }
+        }
+
+    private fun StyleFactoryScope.createHeaderComponentStyle(
+        component: HeaderComponent,
+    ): Result<HeaderComponentStyle, NonEmptyList<PaywallValidationError>> =
+        // tabControlIndex is null because a header cannot be _inside_ a tab control.
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
+            createStackComponentStyle(component.stack).map {
+                HeaderComponentStyle(stackComponentStyle = it)
             }
         }
 

@@ -29,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
 import com.revenuecat.purchases.paywalls.components.TabControlComponent
@@ -1270,6 +1271,7 @@ class TabsComponentViewTests {
                 is PurchaseButtonComponent -> queue.add(current.stack)
                 is ButtonComponent -> queue.add(current.stack)
                 is PackageComponent -> queue.add(current.stack)
+                is HeaderComponent -> queue.add(current.stack)
                 is StickyFooterComponent -> queue.add(current.stack)
                 is CarouselComponent -> queue.addAll(current.pages)
                 is TabControlButtonComponent -> queue.add(current.stack)
