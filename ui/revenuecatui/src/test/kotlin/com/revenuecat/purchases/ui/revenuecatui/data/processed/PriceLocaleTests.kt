@@ -84,8 +84,8 @@ class PriceLocaleTests {
     }
 
     @Test
-    fun `getFormatted shows round numbers without trailing zeros`() {
-        // Round dollar amount: minimumFractionDigits = 0 means no trailing ".00"
+    fun `getFormatted uses locale default fraction digits`() {
+        // USD has 2 decimal places, so $5.00 should show as "$5.00" in en_US locale
         val price = Price(
             amountMicros = 5_000_000,
             currencyCode = "USD",
@@ -93,6 +93,6 @@ class PriceLocaleTests {
         )
 
         val formatted = price.getFormatted(Locale.US)
-        assertThat(formatted).isEqualTo("$5")
+        assertThat(formatted).isEqualTo("\$5.00")
     }
 }
