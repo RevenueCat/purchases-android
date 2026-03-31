@@ -16,7 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @InternalRevenueCatAPI
 @Serializable(with = PaywallComponentSerializer::class)
-sealed interface PaywallComponent
+public sealed interface PaywallComponent
 
 @InternalRevenueCatAPI
 internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {

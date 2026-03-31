@@ -1,7 +1,22 @@
+import java.util.Properties
+
 plugins {
-    id("revenuecat-android-application")
+    alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.baselineprofile)
+}
+
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
+}
+
+fun resolveProperty(name: String, default: String = ""): String {
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+    return localProperties.getProperty(name) ?: default
 }
 
 android {
@@ -30,6 +45,27 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_A",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_A")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_B",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_B")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_A_LABEL",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_A_LABEL")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_B_LABEL",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_B_LABEL")}\"",
+        )
     }
 
     signingConfigs {
@@ -69,6 +105,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
         viewBinding = true
     }
@@ -119,6 +156,7 @@ dependencies {
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
+    debugImplementation(libs.leakcanary.android)
 
     baselineProfile(project(":baselineprofile")) {
         attributes {

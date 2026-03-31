@@ -4,6 +4,9 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
+import android.os.IBinder
+import android.view.View
+import android.view.Window
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
@@ -201,6 +204,18 @@ class BillingWrapperTest {
     @After
     fun tearDown() {
         clearAllMocks()
+    }
+
+    private fun mockAttachedActivity(): Activity {
+        val activity = mockk<Activity>()
+        val window = mockk<Window>()
+        val decorView = mockk<View>()
+        every { activity.isFinishing } returns false
+        every { activity.isDestroyed } returns false
+        every { activity.window } returns window
+        every { window.peekDecorView() } returns decorView
+        every { decorView.windowToken } returns mockk<IBinder>()
+        return activity
     }
 
     @Test
@@ -1518,7 +1533,7 @@ class BillingWrapperTest {
 
     @Test
     fun `showing inapp messages calls show inapp messages correctly`() {
-        val activity = mockk<Activity>()
+        val activity = mockAttachedActivity()
         every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
 
         wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
@@ -1530,7 +1545,7 @@ class BillingWrapperTest {
 
     @Test
     fun `showing inapp messages handles inapp messages listener response correctly when no messages`() {
-        val activity = mockk<Activity>()
+        val activity = mockAttachedActivity()
         val listenerSlot = slot<InAppMessageResponseListener>()
         every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
 
@@ -1549,7 +1564,7 @@ class BillingWrapperTest {
 
     @Test
     fun `showing inapp messages handles inapp messages listener response correctly when subscription updated`() {
-        val activity = mockk<Activity>()
+        val activity = mockAttachedActivity()
         val listenerSlot = slot<InAppMessageResponseListener>()
         every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
 
@@ -1566,6 +1581,85 @@ class BillingWrapperTest {
             )
         }
         assertThat(subscriptionStatusChanged).isTrue
+    }
+
+    @Test
+    fun `showing inapp messages does not show inapp messages when the Activity is finishing`() {
+        val activity = mockk<Activity>()
+        every { activity.isFinishing } returns true
+        every { activity.isDestroyed } returns false
+        every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
+    fun `showing inapp messages does not show inapp messages when the Activity is destroyed`() {
+        val activity = mockk<Activity>()
+        every { activity.isFinishing } returns false
+        every { activity.isDestroyed } returns true
+        every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
+    fun `showing inapp messages does not show inapp messages when activity is not attached to window because window is null`() {
+        val activity = mockk<Activity>()
+        every { activity.isFinishing } returns false
+        every { activity.isDestroyed } returns false
+        every { activity.window } returns null
+        every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
+    fun `showing inapp messages does not show inapp messages when activity is not attached to window because decor view is null`() {
+        val activity = mockk<Activity>()
+        val window = mockk<Window>()
+        every { activity.isFinishing } returns false
+        every { activity.isDestroyed } returns false
+        every { activity.window } returns window
+        every { window.peekDecorView() } returns null
+        every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
+    fun `showing inapp messages does not show inapp messages when activity is not attached to window because window token is null`() {
+        val activity = mockk<Activity>()
+        val window = mockk<Window>()
+        val decorView = mockk<View>()
+        every { activity.isFinishing } returns false
+        every { activity.isDestroyed } returns false
+        every { activity.window } returns window
+        every { window.peekDecorView() } returns decorView
+        every { decorView.windowToken } returns null
+        every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        verify(exactly = 0) { mockClient.showInAppMessages(activity, any(), any()) }
     }
 
     // endregion inapp messages

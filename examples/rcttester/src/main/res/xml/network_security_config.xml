@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!-- Allow user-installed certificates (like Charles Proxy) -->
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <!-- Trust preinstalled CAs -->
+            <certificates src="system" />
+            <!-- Trust user-installed CAs (e.g., Charles Proxy certificate) -->
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    
+    <!-- For debug builds, you can also trust all certificates (NOT recommended for production) -->
+    <!-- Uncomment the following if you need to trust all certificates in debug builds -->
+    <!--
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+    -->
+</network-security-config>

@@ -1,4 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>RevenueCat/renovate"]
+  "extends": ["github>RevenueCat/renovate"],
+  "packageRules": [
+    {
+      "matchPackageNames": ["com.google.android.gms:play-services-ads"],
+      "matchManagers": ["gradle"],
+      "enabled": true,
+      "groupName": "google-mobile-ads"
+    }
+  ]
 }

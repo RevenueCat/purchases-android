@@ -8,6 +8,7 @@ import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import dev.drewhamilton.poko.Poko
 
 @Immutable
@@ -28,7 +29,10 @@ internal data class ButtonComponentStyle(
          * @param rcPackage The package that will be purchased by this button. Will purchase the globally-selected
          * package if this is null.
          */
-        data class PurchasePackage(val rcPackage: Package?) : Action
+        data class PurchasePackage(
+            val rcPackage: Package?,
+            val resolvedOffer: ResolvedOffer? = null,
+        ) : Action
         data class WebCheckout(
             val rcPackage: Package?,
             val autoDismiss: Boolean,

@@ -37,9 +37,11 @@ import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
@@ -70,8 +72,10 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import java.util.Locale
+import kotlin.coroutines.resume
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @Suppress("TooManyFunctions")
@@ -104,6 +108,14 @@ internal interface CustomerCenterViewModel {
 
     @InternalRevenueCatAPI
     suspend fun loadCustomerCenter()
+
+    /**
+     * Refreshes the Customer Center data while keeping the current Success state visible.
+     * Shows a subtle loading indicator instead of the full loading screen.
+     * Used when returning from external screens (e.g., manage subscriptions).
+     */
+    suspend fun refreshCustomerCenter()
+
     fun openURL(
         context: Context,
         url: String,
@@ -128,6 +140,22 @@ internal interface CustomerCenterViewModel {
     fun showCreateSupportTicket()
 
     fun dismissSupportTicketSuccessSnackbar()
+
+    /**
+     * Called when the activity is stopped. Used to track if the user backgrounded the app.
+     * @param isChangingConfigurations true if the stop is due to a configuration change (e.g., rotation)
+     */
+    fun onActivityStopped(isChangingConfigurations: Boolean)
+
+    /**
+     * Called when the activity is started. Triggers a refresh if the user is returning from background.
+     */
+    fun onActivityStarted()
+
+    /**
+     * Called when the activity resumes. Used to refresh after returning from external subscription management.
+     */
+    fun onActivityResumed()
 }
 
 @Stable
@@ -175,12 +203,20 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
+    private var wasBackgrounded = false
+    private var shouldRefreshOnResume = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
     override val state = _state
         .onStart {
-            loadCustomerCenter()
+            val currentState = _state.value
+            if (currentState is CustomerCenterState.NotLoaded ||
+                currentState is CustomerCenterState.Loading ||
+                currentState is CustomerCenterState.Error
+            ) {
+                loadCustomerCenter()
+            }
         }
         .stateIn(
             scope = viewModelScope,
@@ -409,18 +445,25 @@ internal class CustomerCenterViewModelImpl(
 
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
-                startGoogleProductCancellation(context, purchaseInfo.product.id)
+                startGoogleProductCancellation(context, purchaseInfo.product)
             purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
             else -> Logger.e("No product or management URL available for cancel path")
         }
     }
 
-    private fun startGoogleProductCancellation(context: Context, productId: String) {
+    private fun startGoogleProductCancellation(context: Context, product: StoreProduct) {
+        val googleProduct = product as? GoogleStoreProduct
+        if (googleProduct == null) {
+            Logger.e("Expected GoogleStoreProduct for Play Store cancellation")
+            return
+        }
+        shouldRefreshOnResume = true
         notifyListenersForManageSubscription()
-        showManageSubscriptions(context, productId)
+        showManageSubscriptions(context, googleProduct.productId)
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
+        shouldRefreshOnResume = true
         notifyListenersForManageSubscription()
         openURL(
             context,
@@ -479,6 +522,11 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun restorePurchases() {
+        if (!shouldResumeRestorePurchases(listener, "listener") ||
+            !shouldResumeRestorePurchases(purchases.customerCenterListener, "purchases.customerCenterListener")
+        ) {
+            return
+        }
         notifyListenersForRestoreStarted()
 
         _state.update { currentState ->
@@ -526,6 +574,21 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
         }
+    }
+
+    private suspend fun shouldResumeRestorePurchases(
+        listener: CustomerCenterListener?,
+        listenerName: String,
+    ): Boolean {
+        val shouldResume = suspendCancellableCoroutine { continuation ->
+            Logger.d("Restore Purchases Initiated… waiting for $listenerName to proceed.")
+            listener?.onRestoreInitiated { shouldResume ->
+                continuation.resume(shouldResume)
+            } ?: continuation.resume(true)
+        }
+        val detail = if (shouldResume) "will" else "will not"
+        Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
+        return shouldResume
     }
 
     private fun supportedPaths(
@@ -817,7 +880,11 @@ internal class CustomerCenterViewModelImpl(
         }
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
-            purchases.awaitPurchase(purchaseParams)
+            val result = purchases.awaitPurchase(purchaseParams)
+            notifyListenersForPromotionalOfferSucceeded(
+                result.customerInfo,
+                result.storeTransaction,
+            )
 
             // Reload customer center data to refresh the UI with the latest subscription information
             // It will also go back to main screen
@@ -904,8 +971,20 @@ internal class CustomerCenterViewModelImpl(
 
     @InternalRevenueCatAPI
     override suspend fun loadCustomerCenter() {
+        loadCustomerCenter(isRefresh = false)
+    }
+
+    override suspend fun refreshCustomerCenter() {
+        loadCustomerCenter(isRefresh = true)
+    }
+
+    private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
-            if (state !is CustomerCenterState.Loading) {
+            if (isRefresh && state is CustomerCenterState.Success) {
+                // For refresh, keep Success state but set isRefreshing flag
+                state.copy(isRefreshing = true)
+            } else if (state !is CustomerCenterState.Loading) {
+                // For initial load, show full loading screen
                 CustomerCenterState.Loading
             } else {
                 state
@@ -913,7 +992,11 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            val purchaseInformationList = loadPurchases(dateFormatter, locale, customerCenterConfigData.localization)
+            val purchaseInformationList = loadPurchases(
+                dateFormatter = dateFormatter,
+                locale = locale,
+                localization = customerCenterConfigData.localization,
+            )
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
                 purchases.awaitGetVirtualCurrencies()
@@ -937,15 +1020,69 @@ internal class CustomerCenterViewModelImpl(
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
+                isRefreshing = false,
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
-            _state.update {
+            _state.update { currentState ->
                 successState.copy(mainScreenPaths = mainScreenPaths)
+                    .preservingUIStateIfRefresh(isRefresh, currentState)
             }
         } catch (e: PurchasesException) {
-            _state.update {
-                CustomerCenterState.Error(e.error)
+            _state.update { currentState ->
+                if (isRefresh && currentState is CustomerCenterState.Success) {
+                    // On error during refresh, keep the existing state but clear isRefreshing
+                    Logger.e("Error refreshing Customer Center data, keeping existing state", e)
+                    currentState.copy(isRefreshing = false)
+                } else {
+                    CustomerCenterState.Error(e.error)
+                }
+            }
+        }
+    }
+
+    private fun CustomerCenterState.Success.preservingUIStateIfRefresh(
+        isRefresh: Boolean,
+        previousState: CustomerCenterState,
+    ): CustomerCenterState.Success {
+        if (!isRefresh || previousState !is CustomerCenterState.Success) return this
+        return copy(
+            navigationState = previousState.navigationState,
+            navigationButtonType = previousState.navigationButtonType,
+            restorePurchasesState = previousState.restorePurchasesState,
+            showSupportTicketSuccessSnackbar = previousState.showSupportTicketSuccessSnackbar,
+            detailScreenPaths = previousState.detailScreenPaths,
+        )
+    }
+
+    override fun onActivityStopped(isChangingConfigurations: Boolean) {
+        if (!isChangingConfigurations) {
+            wasBackgrounded = true
+        }
+    }
+
+    override fun onActivityStarted() {
+        if (wasBackgrounded) {
+            wasBackgrounded = false
+            if (!shouldRefreshOnResume) {
+                launchRefreshIfPossible()
+            }
+        }
+    }
+
+    override fun onActivityResumed() {
+        if (shouldRefreshOnResume) {
+            shouldRefreshOnResume = false
+            Logger.d("Refreshing Customer Center after returning from manage subscriptions")
+            launchRefreshIfPossible()
+        }
+    }
+
+    private fun launchRefreshIfPossible() {
+        val currentState = _state.value
+        if (currentState is CustomerCenterState.Success && !currentState.isRefreshing) {
+            viewModelScope.launch {
+                refreshCustomerCenter()
             }
         }
     }
@@ -1219,6 +1356,14 @@ internal class CustomerCenterViewModelImpl(
             customActionData.actionIdentifier,
             customActionData.purchaseIdentifier,
         )
+    }
+
+    private fun notifyListenersForPromotionalOfferSucceeded(
+        customerInfo: CustomerInfo,
+        transaction: StoreTransaction,
+    ) {
+        listener?.onPromotionalOfferSucceeded(customerInfo, transaction)
+        purchases.customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
     }
 
     override fun showPaywall(context: Context) {

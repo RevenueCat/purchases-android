@@ -19,6 +19,7 @@ import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -72,6 +73,7 @@ class PaywallComponentDataValidationTests {
         const val EXPECTED_TEXT_EN = "Hello, world!"
 
         val paywallComponents = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -117,6 +119,7 @@ class PaywallComponentDataValidationTests {
             put(LocaleId("es_ES"), mapOf(LocalizationKey("key") to LocalizationData.Text("valor")))
         }
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -150,6 +153,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -220,6 +224,7 @@ class PaywallComponentDataValidationTests {
                 LocaleId(args.variableLocalizationsLocale) to variableLocalizationKeysForEnUs()
             )
             val data = PaywallComponentsData(
+                id = "paywall_id",
                 templateName = "template",
                 assetBaseURL = URL("https://assets.pawwalls.com"),
                 componentsConfig = ComponentsConfig(
@@ -260,6 +265,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -323,6 +329,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -450,6 +457,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -555,6 +563,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -629,6 +638,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -696,6 +706,7 @@ class PaywallComponentDataValidationTests {
         val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -763,6 +774,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -827,6 +839,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -880,6 +893,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -949,6 +963,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1002,6 +1017,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1043,6 +1059,7 @@ class PaywallComponentDataValidationTests {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1077,5 +1094,150 @@ class PaywallComponentDataValidationTests {
 
         // Assert
         assertNull(validated.errors)
+    }
+
+    @Test
+    fun `Should render default paywall and strip rule overrides when unsupported condition is present`() {
+        // Arrange - text has a base override (Compact), a rule override (SelectedPackage), and an Unsupported override.
+        // When an unsupported condition is detected, rule and unsupported overrides should be stripped,
+        // but the base override (Compact) should survive.
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = localizationKey,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                overrides = listOf(
+                                    ComponentOverride(
+                                        conditions = listOf(ComponentOverride.Condition.Compact),
+                                        properties = PartialTextComponent(visible = false),
+                                    ),
+                                    ComponentOverride(
+                                        conditions = listOf(
+                                            ComponentOverride.Condition.SelectedPackage(
+                                                operator = ComponentOverride.ArrayOperator.IN,
+                                                packages = listOf("monthly"),
+                                            ),
+                                        ),
+                                        properties = PartialTextComponent(visible = true),
+                                    ),
+                                    ComponentOverride(
+                                        conditions = listOf(ComponentOverride.Condition.Unsupported),
+                                        properties = PartialTextComponent(visible = false),
+                                    ),
+                                ),
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        ),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    localizationKey to LocalizationData.Text(EXPECTED_TEXT_EN),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val testOffering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = testOffering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert - should render as Components (default paywall), not Legacy (fallback)
+        check(validated is PaywallValidationResult.Components)
+        val stack = validated.stack as StackComponentStyle
+        val textStyle = stack.children[0] as TextComponentStyle
+        // Only the base override (Compact) should remain; rule (SelectedPackage) and Unsupported are stripped
+        assertEquals(1, textStyle.overrides.size)
+        assertEquals(listOf(ComponentOverride.Condition.Compact), textStyle.overrides[0].conditions)
+    }
+
+    @Test
+    fun `Should render components paywall normally when all conditions are recognized`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            TextComponent(
+                                text = localizationKey,
+                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                overrides = listOf(
+                                    ComponentOverride(
+                                        conditions = listOf(ComponentOverride.Condition.Compact),
+                                        properties = PartialTextComponent(visible = false),
+                                    ),
+                                    ComponentOverride(
+                                        conditions = listOf(
+                                            ComponentOverride.Condition.SelectedPackage(
+                                                operator = ComponentOverride.ArrayOperator.IN,
+                                                packages = listOf("monthly"),
+                                            ),
+                                        ),
+                                        properties = PartialTextComponent(visible = true),
+                                    ),
+                                    ComponentOverride(
+                                        conditions = listOf(
+                                            ComponentOverride.Condition.Variable(
+                                                operator = ComponentOverride.EqualityOperator.EQUALS,
+                                                variable = "plan",
+                                                value = JsonPrimitive("premium"),
+                                            ),
+                                        ),
+                                        properties = PartialTextComponent(visible = true),
+                                    ),
+                                ),
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        ),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(
+                    localizationKey to LocalizationData.Text(EXPECTED_TEXT_EN),
+                ),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val testOffering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = testOffering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert - should be Components (not fallback), no errors, and all 3 overrides are preserved
+        check(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val stack = validated.stack as StackComponentStyle
+        val textStyle = stack.children[0] as TextComponentStyle
+        assertEquals(3, textStyle.overrides.size)
     }
 }

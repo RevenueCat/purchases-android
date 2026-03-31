@@ -1,2 +1,9 @@
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix: Crash on fallback paywall due to missing dependency  (#3283) via Jacob Rakidzich (@JZDesign)
+### Paywallv2
+#### 🐞 Bugfixes
+* PW-1152 Fix PaywallDialog dismissal after first toggle interaction (#3277) via Facundo Menzella (@facumenzella)
+
 ### 🔄 Other Changes
-* Add AIDL to query purchase history inapp products (#2872) via Toni Rico (@tonidero)
+* feat: configure API keys and test variables via local.properties (#3271) via Toni Rico (@tonidero)

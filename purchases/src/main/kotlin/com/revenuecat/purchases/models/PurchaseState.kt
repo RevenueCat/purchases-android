@@ -1,5 +1,5 @@
 package com.revenuecat.purchases.models
 
-enum class PurchaseState {
+public enum class PurchaseState {
     UNSPECIFIED_STATE, PURCHASED, PENDING
 }

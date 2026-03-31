@@ -9,15 +9,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Stable
 @JvmSynthetic
@@ -25,20 +26,23 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 internal fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TimelineComponentState =
-    rememberUpdatedTimelineComponentState(
-        style = style,
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-    )
+): TimelineComponentState = rememberUpdatedTimelineComponentState(
+    style = style,
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
+    customVariablesProvider = { paywallState.mergedCustomVariables },
+)
 
 @Stable
 @JvmSynthetic
 @Composable
 private fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
-    selectedPackageProvider: () -> Package?,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
+    selectedOfferEligibilityProvider: () -> OfferEligibility,
+    customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -46,13 +50,13 @@ private fun rememberUpdatedTimelineComponentState(
         TimelineComponentState(
             initialWindowSize = windowSize,
             style = style,
-            selectedPackageProvider = selectedPackageProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            customVariablesProvider = customVariablesProvider,
         )
     }.apply {
-        update(
-            windowSize = windowSize,
-        )
+        update(windowSize = windowSize)
     }
 }
 
@@ -60,31 +64,35 @@ private fun rememberUpdatedTimelineComponentState(
 internal class TimelineComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TimelineComponentStyle,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+    private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
-    private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
-        }
-    }
 
-    private val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
-    }
+    private val packageAwareDelegate = PackageAwareDelegate(
+        style = style,
+        selectedPackageInfoProvider = selectedPackageInfoProvider,
+        selectedTabIndexProvider = selectedTabIndexProvider,
+        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+    )
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val componentState =
+            if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            packageAwareDelegate.offerEligibility,
+            componentState,
+            conditionContext = ConditionContext(
+                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                customVariables = customVariablesProvider(),
+            ),
+        )
     }
 
     @get:JvmSynthetic
@@ -113,13 +121,20 @@ internal class TimelineComponentState(
 
     @get:JvmSynthetic
     val items by derivedStateOf {
-        style.items.map { ItemState(initialWindowSize, it, selectedPackageProvider, selectedTabIndexProvider) }
+        style.items.map { itemStyle ->
+            ItemState(
+                initialWindowSize = windowSize,
+                style = itemStyle,
+                selectedPackageInfoProvider = selectedPackageInfoProvider,
+                selectedTabIndexProvider = selectedTabIndexProvider,
+                selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+                customVariablesProvider = customVariablesProvider,
+            )
+        }
     }
 
     @JvmSynthetic
-    fun update(
-        windowSize: WindowWidthSizeClass? = null,
-    ) {
+    fun update(windowSize: WindowWidthSizeClass? = null) {
         if (windowSize != null) this.windowSize = windowSize
     }
 
@@ -127,31 +142,35 @@ internal class TimelineComponentState(
     class ItemState(
         initialWindowSize: WindowWidthSizeClass,
         private val style: TimelineComponentStyle.ItemStyle,
-        private val selectedPackageProvider: () -> Package?,
+        private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
         private val selectedTabIndexProvider: () -> Int,
+        private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+        private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
     ) {
 
         private var windowSize by mutableStateOf(initialWindowSize)
-        private val selected by derivedStateOf {
-            if (style.rcPackage != null) {
-                style.rcPackage.identifier == selectedPackageProvider()?.identifier
-            } else if (style.tabIndex != null) {
-                style.tabIndex == selectedTabIndexProvider()
-            } else {
-                false
-            }
-        }
 
-        private val applicablePackage by derivedStateOf {
-            style.rcPackage ?: selectedPackageProvider()
-        }
+        private val packageAwareDelegate = PackageAwareDelegate(
+            style = style,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
+            selectedTabIndexProvider = selectedTabIndexProvider,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+        )
 
         private val presentedPartial by derivedStateOf {
             val windowCondition = ScreenCondition.from(windowSize)
-            val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-            val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+            val componentState =
+                if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-            style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+            style.overrides.buildPresentedPartial(
+                windowCondition,
+                packageAwareDelegate.offerEligibility,
+                componentState,
+                conditionContext = ConditionContext(
+                    selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                    customVariables = customVariablesProvider(),
+                ),
+            )
         }
 
         @get:JvmSynthetic

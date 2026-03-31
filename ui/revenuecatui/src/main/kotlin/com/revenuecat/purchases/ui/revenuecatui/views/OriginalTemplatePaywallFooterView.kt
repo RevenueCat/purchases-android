@@ -20,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 /**
  * View that wraps the [OriginalTemplatePaywallFooter] Composable to display the Paywall Footer
@@ -31,15 +32,15 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
         "OriginalTemplatePaywallFooterView",
     ),
 )
-open class PaywallFooterView(
+public open class PaywallFooterView(
     context: Context,
     attrs: AttributeSet?,
     defStyleAttr: Int,
 ) : OriginalTemplatePaywallFooterView(context, attrs, defStyleAttr) {
-    constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
+    public constructor(context: Context, attrs: AttributeSet?) : this(context, attrs, 0)
 
     @JvmOverloads
-    constructor(
+    public constructor(
         context: Context,
         offering: Offering? = null,
         listener: PaywallListener? = null,
@@ -53,13 +54,17 @@ open class PaywallFooterView(
  * View that wraps the [OriginalTemplatePaywallFooter] Composable to display the Paywall Footer
  * through XML layouts and the View system.
  */
-open class OriginalTemplatePaywallFooterView : FrameLayout {
+public open class OriginalTemplatePaywallFooterView : FrameLayout {
 
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
+    public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
     }
 
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
+    public constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
+        context,
+        attrs,
+        defStyleAttr,
+    ) {
         init(context, attrs)
     }
 
@@ -67,7 +72,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
      * Constructor when creating the view programmatically.
      */
     @JvmOverloads
-    constructor(
+    public constructor(
         context: Context,
         offering: Offering? = null,
         listener: PaywallListener? = null,
@@ -94,6 +99,9 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var internalListener: PaywallListener = object : PaywallListener {
+        override fun onRestoreInitiated(resume: Resumable) {
+            listener?.onRestoreInitiated(resume) ?: resume()
+        }
         override fun onPurchaseStarted(rcPackage: Package) { listener?.onPurchaseStarted(rcPackage) }
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
             listener?.onPurchaseCompleted(customerInfo, storeTransaction)
@@ -117,7 +125,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
      * @note The listener callbacks will **not** be called when the app is handling purchase and restore logic itself,
      * ie when Purchases has been configured with purchasesAreCompletedBy as PurchasesAreCompletedBy.MY_APP.
      */
-    fun setPaywallListener(listener: PaywallListener?) {
+    public fun setPaywallListener(listener: PaywallListener?) {
         this.listener = listener
     }
 
@@ -125,7 +133,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
      * Sets a dismiss handler which will be called when the user successfully purchases or if there is an error
      * loading the offerings and the user clicks through the error dialog.
      */
-    fun setDismissHandler(dismissHandler: (() -> Unit)?) {
+    public fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
     }
 
@@ -135,7 +143,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
     @Deprecated(
         "You should set the offering on the constructor instead.",
     )
-    fun setOfferingId(offeringId: String?) {
+    public fun setOfferingId(offeringId: String?) {
         val offeringSelection = if (offeringId == null) {
             OfferingSelection.None
         } else {
@@ -148,7 +156,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
     }
 
     @InternalRevenueCatAPI
-    fun setOfferingIdAndPresentedOfferingContext(
+    public fun setOfferingIdAndPresentedOfferingContext(
         offeringId: String?,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
@@ -168,7 +176,7 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
      * Sets the font provider to be used for the Paywall. If not set, the default one will be used.
      * Only available for original template paywalls. Ignored for V2 Paywalls.
      */
-    fun setFontProvider(fontProvider: FontProvider?) {
+    public fun setFontProvider(fontProvider: FontProvider?) {
         paywallOptions = paywallOptions.copy(fontProvider = fontProvider)
     }
 
@@ -186,10 +194,12 @@ open class OriginalTemplatePaywallFooterView : FrameLayout {
                     val paywallOptions by remember {
                         paywallOptionsState
                     }
-                    OriginalTemplatePaywallFooter(
-                        options = paywallOptions,
-                        condensed = initialCondensed,
-                    )
+                    RevenueCatTheme {
+                        OriginalTemplatePaywallFooter(
+                            options = paywallOptions,
+                            condensed = initialCondensed,
+                        )
+                    }
                 }
             },
         )

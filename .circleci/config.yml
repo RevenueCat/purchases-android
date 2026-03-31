@@ -41,15 +41,18 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  gcp-cli: circleci/gcp-cli@3.3.1
-  revenuecat: revenuecat/sdks-common-config@3.8.0
+  revenuecat: revenuecat/sdks-common-config@3.17.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
     default: default
+  paywall_tester_track:
+    type: enum
+    enum: [internal, alpha, beta, production]
+    default: alpha
 
 commands:
   install-sdkman:
@@ -98,37 +101,6 @@ commands:
             echo $GPG_SIGNING_KEY_PW_NEW | gpg --batch --pinentry-mode=loopback --passphrase-fd 0 \
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
-  run-firebase-tests:
-    parameters:
-      app_apk_path:
-        type: string
-      test_apk_path:
-        type: string
-    steps:
-      - gcp-cli/setup:
-          gcloud_service_key: GCLOUD_SERVICE_KEY
-          google_compute_zone: GOOGLE_COMPUTE_ZONE
-          google_project_id: GOOGLE_PROJECT_ID
-      - run:
-          name: Test with Firebase Test Lab
-          command: >
-            gcloud firebase test android run --type instrumentation \
-              --app <<parameters.app_apk_path>> \
-              --test <<parameters.test_apk_path>> \
-              --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait \
-              --timeout 2m \
-              --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
-      - run:
-          name: Copy test results data
-          command: |
-            mkdir -p ~/gsutil/
-            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
-          when: always
-      - store_artifacts:
-          path: ~/gsutil/
-      - store_test_results:
-          path: ~/gsutil/
-
   build-paywall-tester:
     steps:
       - android/accept_licenses
@@ -139,19 +111,29 @@ commands:
           working_directory: examples/paywall-tester
           command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
       - run:
-          name: Replace API_KEY
-          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
-          command: |
-            sed -i 's/"API_KEY_A_LABEL"/"Paywalls V2 Alpha"/' Constants.kt
-            sed -i s/\"API_KEY_A\"/\"$PAYWALLS_V2_ALPHA_API_KEY\"/ Constants.kt
-            sed -i 's/"API_KEY_B_LABEL"/"Official Paywalls V2 Template Repo"/' Constants.kt
-            sed -i s/\"API_KEY_B\"/\"$PAYWALLS_V2_TEMPLATE_REPO_API_KEY\"/ Constants.kt
-      - run:
           name: Create app bundle
           command: |
             bundle exec fastlane android build_paywall_tester_bundle
       - store_artifacts:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
+      - android/save_gradle_cache
+      - android/save_build_cache
+
+  build-rct-tester:
+    steps:
+      - android/accept_licenses
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/rcttester
+          command: echo $RCT_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_rct_tester_bundle
+      - store_artifacts:
+          path: examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
 
@@ -224,11 +206,29 @@ jobs:
           command: bundle exec fastlane android build_custom_entitlement_computation_sample
       - android/save_build_cache
 
+  assemble-admob-integration-sample-app:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept_licenses
+      - android-dependencies
+      - android/restore_build_cache
+      - run:
+          name: Build sample app
+          command: bundle exec fastlane android build_admob_integration_sample
+      - android/save_build_cache
+
   prepare-tests:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -310,6 +310,42 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test-galaxy:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
+      - run:
+          name: Validate Galaxy API Signature with Metalava
+          command: |
+            ./gradlew :feature:galaxy:metalavaGenerateSignatureBc8Release --no-daemon
+            git diff --exit-code -- feature/galaxy/api.txt
+      - run:
+          name: Compile API Tester with Galaxy Files
+          command: |
+            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
+      - run:
+          name: Run Galaxy Unit Tests
+          command: |
+            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          command: |
+            RESULTS_DIR="build/test-results-galaxy"
+            mkdir -p $RESULTS_DIR
+            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+      - store_test_results:
+          path: build/test-results-galaxy
+      - store_artifacts:
+          path: build/reports
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -354,7 +390,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.17.0-SNAPSHOT s3://purchases-docs/android/9.17.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/9.29.0-SNAPSHOT s3://purchases-docs/android/9.29.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -374,6 +410,10 @@ jobs:
       - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -406,6 +446,10 @@ jobs:
       - android/restore_build_cache:
           cache_prefix: v1a
       - prepare-signing-key
+      - run:
+          name: Download Samsung IAP SDK AAR
+          command: |
+            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -493,118 +537,99 @@ jobs:
           command: |
             bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
 
-  integration-tests-build:
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-sdkman
-      - run:
-          name: Replace API_KEY
-          working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
-          command: |
-            sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
-      - android/restore_build_cache
-      - run:
-          name: Prepare Keystore
-          working_directory: integration-tests
-          command: echo $RELEASE_KEYSTORE | base64 -d > keystore
-      - run:
-          name: Assemble Release APK
-          command: |
-            ./gradlew -p integration-tests assembleRelease \
-            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
-            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
-            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
-      - run:
-          name: Assemble AndroidTest APK
-          command: |
-            ./gradlew -p integration-tests assembleAndroidTest -PtestBuildType=release \
-            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
-            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
-            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
-      - android/save_build_cache
-      - persist_to_workspace:
-          root: .
-          paths:
-            - integration-tests/build/outputs/apk/release/integration-tests-release.apk
-            - integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk
-
-  purchases-integration-tests-build:
+  assemble-rct-tester-release:
     <<: *android-executor
     steps:
       - checkout
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - android/restore_build_cache
-      - run:
-          name: Create purchases integration tests apks
-          command: |
-            bundle exec fastlane android build_default_purchases_integration_tests
-      - android/save_build_cache
-      - persist_to_workspace:
-          root: .
-          paths:
-            - purchases/test_artifacts/integrationTest-app.apk
-            - purchases/test_artifacts/integrationTest-test.apk
+      - build-rct-tester
 
-  run-firebase-tests-purchases-integration-tests:
-    description: "Run purchases module integration tests for Android in Firebase. Accepts backend_environment parameter: 'production' or 'load_shedder_us_east_1' or 'load_shedder_us_east_2'"
+  publish-rct-tester-release:
     <<: *android-executor
+    parameters:
+      track:
+        type: string
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - build-rct-tester
+      - run:
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_rct_tester aab_path:'examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab' track:'<< parameters.track >>'
+
+  run-purchases-integration-tests:
+    description: "Run purchases module integration tests on CircleCI emulator. Accepts backend_environment parameter: 'production' or 'load_shedder_us_east_1' or 'load_shedder_us_east_2'"
+    <<: *android-machine-emulator
     parameters:
       backend_environment:
         type: enum
         enum: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+      notify_slack:
+        type: boolean
+        default: false
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - gcp-cli/install
-      - gcp-cli/setup:
-          gcloud_service_key: GCLOUD_SERVICE_KEY
-          google_compute_zone: GOOGLE_COMPUTE_ZONE
-          google_project_id: GOOGLE_PROJECT_ID
+      - android/create_avd:
+          avd_name: test-purchases-integration
+          system_image: system-images;android-33;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-purchases-integration
+          post_emulator_launch_assemble_command: ""
       - android/restore_build_cache
       - run:
           name: Build and run purchases integration tests
           command: |
             bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
+          environment:
+            NOTIFY_SLACK: "<< parameters.notify_slack >>"
       - android/save_build_cache
-      - store_artifacts:
-          path: ~/gsutil/
       - store_test_results:
-          path: ~/gsutil/
+          path: purchases/build/outputs/androidTest-results
 
-  run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
-    description: "Run purchases module integration tests in the custom entitlement computation flavor for Android in Firebase."
-    <<: *android-executor
+  run-purchases-cec-integration-tests:
+    description: "Run purchases module custom entitlement computation integration tests on CircleCI emulator."
+    <<: *android-machine-emulator
     steps:
       - checkout
+      - attach_workspace:
+          at: .
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - gcp-cli/install
-      - gcp-cli/setup:
-          gcloud_service_key: GCLOUD_SERVICE_KEY
-          google_compute_zone: GOOGLE_COMPUTE_ZONE
-          google_project_id: GOOGLE_PROJECT_ID
+      - android/create_avd:
+          avd_name: test-cec-integration
+          system_image: system-images;android-33;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-cec-integration
+          post_emulator_launch_assemble_command: ""
       - android/restore_build_cache
       - run:
           name: Build and run custom entitlement computation integration tests
           command: |
             bundle exec fastlane android run_custom_entitlement_computation_integration_tests
       - android/save_build_cache
-      - store_artifacts:
-          path: ~/gsutil/
       - store_test_results:
-          path: ~/gsutil/
+          path: purchases/build/outputs/androidTest-results
 
   emerge_purchases_ui_snapshot_tests:
     description: "Emerge purchases ui snapshot tests"
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - install-sdkman
@@ -623,16 +648,60 @@ jobs:
             bundle exec fastlane android emerge_purchases_ui_snapshot_tests
       - android/save_build_cache
 
-  run-firebase-tests:
-    description: "Run integration tests for Android in Firebase. Variant latestDependencies"
-    executor: gcp-cli/google
+  emerge_size_analysis_tests:
+    description: "Emerge size analysis tests"
+    <<: *android-executor
     steps:
       - checkout
       - attach_workspace:
           at: .
-      - run-firebase-tests:
-          app_apk_path: integration-tests/build/outputs/apk/release/integration-tests-release.apk
-          test_apk_path: integration-tests/build/outputs/apk/androidTest/release/integration-tests-release-androidTest.apk
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - prepare-signing-key
+      - android/restore_gradle_cache
+      - run:
+          name: Upload size testing app to emerge
+          command: |
+            bundle exec fastlane android emerge_sdk_size_tests
+      - android/save_build_cache
+
+  run-integration-tests:
+    description: "Run integration tests for Android on CircleCI emulator"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-sdkman
+      - run:
+          name: Prepare Keystore
+          working_directory: integration-tests
+          command: echo $RELEASE_KEYSTORE | base64 -d > keystore
+      - android/restore_build_cache
+      - android/create_avd:
+          avd_name: test-integration
+          system_image: system-images;android-33;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-integration
+          post_emulator_launch_assemble_command: >-
+            ./gradlew -p integration-tests assembleRelease assembleAndroidTest -PtestBuildType=release
+            -PREVENUECAT_API_KEY=$API_KEY
+            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS
+            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD
+            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - run:
+          name: Run integration tests on emulator
+          command: |
+            ./gradlew -p integration-tests connectedAndroidTest -PtestBuildType=release \
+            -PREVENUECAT_API_KEY=$API_KEY \
+            -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
+            -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
+            -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
+      - android/save_build_cache
+      - store_test_results:
+          path: integration-tests/build/outputs/androidTest-results
 
   run-backend-integration-tests:
     description: "Run backend integration tests. All variants"
@@ -690,6 +759,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - attach_workspace:
@@ -704,7 +775,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
           command: bundle exec fastlane android record_paparazzi_screenshots gradle_module:ui:revenuecatui
@@ -747,6 +817,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - run:
@@ -756,7 +828,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
-      - revenuecat/setup-git-credentials
       - run:
           name: Set GitHub token environment variable
           command: |
@@ -828,11 +899,12 @@ jobs:
       - image: cimg/ruby:3.2.0
     steps:
       - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - revenuecat/setup-git-credentials
       - run:
           name: Update paywall templates
           command: bundle exec fastlane android update_paywall_preview_resources_submodule
@@ -898,6 +970,7 @@ workflows:
       - assemble-custom-entitlement-computation-sample-app:
           requires:
             - deploy-snapshot
+      - assemble-admob-integration-sample-app
 
   build-test-deploy:
     when:
@@ -957,7 +1030,16 @@ workflows:
       - assemble-paywall-tester-release:
           requires:
             - prepare-tests
+      - assemble-rct-tester-release:
+          requires:
+            - prepare-tests
+      - assemble-admob-integration-sample-app:
+          requires:
+            - prepare-tests
       - test_dokka_hide_internal:
+          requires:
+            - prepare-tests
+      - test-galaxy:
           requires:
             - prepare-tests
       - run-backend-integration-tests:
@@ -972,28 +1054,31 @@ workflows:
       - emerge_purchases_ui_snapshot_tests:
           requires:
             - prepare-tests
+      - emerge_size_analysis_tests:
+          requires:
+            - prepare-tests
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
-      - integration-tests-build: *release-branches
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
-          <<: *release-branches
-      - run-firebase-tests-purchases-integration-tests:
-          <<: *release-branches
-          context:
-            - slack-secrets
+      - run-integration-tests:
+          requires:
+            - prepare-tests
+      - run-purchases-cec-integration-tests:
+          requires:
+            - prepare-tests
+      - run-purchases-integration-tests:
+          requires:
+            - prepare-tests
           matrix:
             parameters:
               backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
-      - run-firebase-tests:
-          requires:
-            - integration-tests-build
       - hold:
           type: approval
           requires:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
+            - test-galaxy
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester
@@ -1001,9 +1086,9 @@ workflows:
             - run-backend-integration-tests
             - run-maestro-e2e-tests
             - run-revenuecatui-ui-tests
-            - run-firebase-tests
-            - run-firebase-tests-purchases-integration-tests
-            - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
+            - run-integration-tests
+            - run-purchases-integration-tests
+            - run-purchases-cec-integration-tests
             - verify-compatibility
           <<: *release-branches
       - revenuecat/tag-current-branch:
@@ -1025,6 +1110,20 @@ workflows:
               - deploy
               - docs-deploy
           <<: *release-tags
+      - publish-rct-tester-release:
+          track: "alpha"
+          requires:
+              - deploy
+              - docs-deploy
+          <<: *release-tags
+      - revenuecat/merge-release-pr:
+          repo_name: purchases-android
+          use_merge_queue: true
+          requires:
+            - publish-purchase-tester-release
+            - publish-paywall-tester-release
+            - publish-rct-tester-release
+          <<: *release-tags
 
   on-main-branch:
     when:
@@ -1037,6 +1136,8 @@ workflows:
       - prepare-next-version
       - publish-paywall-tester-release:
           track: "internal"
+      - publish-rct-tester-release:
+          track: "internal"
       - record-and-push-paywall-template-screenshots:
           context:
             - paywall-rendering-validation-pr-rw
@@ -1047,12 +1148,14 @@ workflows:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
-      - run-firebase-tests-purchases-integration-tests:
+      - run-purchases-integration-tests:
           backend_environment: "load_shedder_us_east_1"
+          notify_slack: true
           context:
             - slack-secrets
-      - run-firebase-tests-purchases-integration-tests:
+      - run-purchases-integration-tests:
           backend_environment: "load_shedder_us_east_2"
+          notify_slack: true
           context:
             - slack-secrets
 
@@ -1075,6 +1178,13 @@ workflows:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
         - publish-paywall-tester-release:
+            track: << pipeline.parameters.paywall_tester_track >>
+
+  manual-rct-tester-release:
+    when:
+      equal: [ rct_tester_release, << pipeline.parameters.action >> ]
+    jobs:
+        - publish-rct-tester-release:
             track: "alpha"
 
   update-paywall-templates:

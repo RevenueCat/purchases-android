@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
+import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -43,23 +44,23 @@ import java.util.Date
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
 @Poko
-class EntitlementInfo(
-    val identifier: String,
-    val isActive: Boolean,
-    val willRenew: Boolean,
-    val periodType: PeriodType,
-    val latestPurchaseDate: Date,
-    val originalPurchaseDate: Date,
-    val expirationDate: Date?,
-    val store: Store,
-    val productIdentifier: String,
-    val productPlanIdentifier: String?,
-    val isSandbox: Boolean,
-    val unsubscribeDetectedAt: Date?,
-    val billingIssueDetectedAt: Date?,
-    val ownershipType: OwnershipType,
+public class EntitlementInfo(
+    public val identifier: String,
+    public val isActive: Boolean,
+    public val willRenew: Boolean,
+    public val periodType: PeriodType,
+    public val latestPurchaseDate: Date,
+    public val originalPurchaseDate: Date,
+    public val expirationDate: Date?,
+    public val store: Store,
+    public val productIdentifier: String,
+    public val productPlanIdentifier: String?,
+    public val isSandbox: Boolean,
+    public val unsubscribeDetectedAt: Date?,
+    public val billingIssueDetectedAt: Date?,
+    public val ownershipType: OwnershipType,
     private val jsonObject: JSONObject,
-    val verification: VerificationResult = VerificationResult.NOT_REQUESTED,
+    public val verification: VerificationResult = VerificationResult.NOT_REQUESTED,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     @Deprecated(
@@ -72,7 +73,7 @@ class EntitlementInfo(
             "com.revenuecat.purchases.VerificationResult",
         ),
     )
-    constructor(
+    public constructor(
         identifier: String,
         isActive: Boolean,
         willRenew: Boolean,
@@ -179,7 +180,7 @@ class EntitlementInfo(
  * Enum of supported stores
  */
 @Serializable(with = StoreSerializer::class)
-enum class Store {
+public enum class Store {
     /**
      * For entitlements granted via Apple App Store.
      */
@@ -234,6 +235,11 @@ enum class Store {
      * For entitlements granted via RevenueCat's Test Store.
      */
     TEST_STORE,
+
+    /**
+     * For entitlement granted via the Galaxy store.
+     */
+    GALAXY,
     ;
 
     internal val stringValue: String
@@ -249,11 +255,20 @@ enum class Store {
             EXTERNAL -> "external"
             PADDLE -> "paddle"
             TEST_STORE -> "test_store"
+            GALAXY -> "galaxy"
+        }
+
+    @get:JvmSynthetic
+    internal val managementUrl: String?
+        get() = when (this) {
+            PLAY_STORE -> Constants.GOOGLE_PLAY_MANAGEMENT_URL
+            GALAXY -> Constants.GALAXY_STORE_MANAGEMENT_URL
+            else -> null
         }
 
     internal companion object {
         @JvmSynthetic
-        fun fromString(text: String): Store {
+        public fun fromString(text: String): Store {
             return when (text) {
                 "app_store" -> APP_STORE
                 "mac_app_store" -> MAC_APP_STORE
@@ -265,6 +280,7 @@ enum class Store {
                 "external" -> EXTERNAL
                 "paddle" -> PADDLE
                 "test_store" -> TEST_STORE
+                "galaxy" -> GALAXY
                 else -> UNKNOWN_STORE
             }
         }
@@ -280,7 +296,7 @@ internal object StoreSerializer : EnumDeserializerWithDefault<Store>(
  * Enum of supported period types for an entitlement.
  */
 @Serializable
-enum class PeriodType {
+public enum class PeriodType {
     /**
      * If the entitlement is not under an introductory or trial period.
      */
@@ -310,7 +326,7 @@ enum class PeriodType {
  * Enum of supported ownership types for an entitlement.
  */
 @Serializable
-enum class OwnershipType {
+public enum class OwnershipType {
     /**
      * The purchase was made directly by this user.
      */

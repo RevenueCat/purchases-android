@@ -11,28 +11,28 @@ import kotlinx.serialization.Serializable
 @Poko
 @Immutable
 @Serializable
-class Size(
-    @get:JvmSynthetic val width: SizeConstraint,
-    @get:JvmSynthetic val height: SizeConstraint,
+public class Size(
+    @get:JvmSynthetic public val width: SizeConstraint,
+    @get:JvmSynthetic public val height: SizeConstraint,
 )
 
 @InternalRevenueCatAPI
 @Stable
 @Serializable(with = SizeConstraintDeserializer::class)
-sealed interface SizeConstraint {
+public sealed interface SizeConstraint {
     // SerialNames are handled by the SizeConstraintDeserializer.
 
     @Serializable
-    object Fit : SizeConstraint
+    public object Fit : SizeConstraint
 
     @Serializable
-    object Fill : SizeConstraint
+    public object Fill : SizeConstraint
 
     @Poko
     @Immutable
     @Serializable
-    class Fixed(
-        @get:JvmSynthetic val value: UInt,
+    public class Fixed(
+        @get:JvmSynthetic public val value: UInt,
     ) : SizeConstraint
 }
 

@@ -6,12 +6,32 @@ import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.IconComponent
+import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PaywallComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
+import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
+import com.revenuecat.purchases.paywalls.components.TabControlComponent
+import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
+import com.revenuecat.purchases.paywalls.components.TabsComponent
+import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
@@ -148,6 +168,17 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     val fontAliases: Map<FontAlias, FontSpec> =
         paywallComponents.uiConfig.app.fonts.determineFontSpecs(resourceProvider)
 
+    // Check if any component in the tree has an unsupported condition. If so, strip all rule-based
+    // overrides across the entire paywall, rendering the "default paywall" with only base overrides.
+    val config = paywallComponents.data.componentsConfig.base
+    val stripRules = config.containsUnsupportedCondition()
+    if (stripRules) {
+        Logger.w(
+            "Unsupported paywall rule encountered. " +
+                "Rendering paywall without conditional overrides.",
+        )
+    }
+
     // Create the StyleFactory to recursively create and validate all ComponentStyles.
     val styleFactory = StyleFactory(
         localizations = localizations,
@@ -155,14 +186,18 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         fontAliases = fontAliases,
         variableLocalizations = variableLocalizations,
         offering = this,
+        stripRules = stripRules,
     )
-    val config = paywallComponents.data.componentsConfig.base
 
     // Combine the main stack with the stickyFooter and the background, or accumulate the encountered errors.
     return zipOrAccumulate(
-        first = styleFactory.create(config.stack, applyBottomWindowInsets = config.stickyFooter == null),
+        first = styleFactory.create(
+            config.stack,
+            applyBottomWindowInsets = config.stickyFooter == null,
+            applyHorizontalWindowInsets = true,
+        ),
         second = config.stickyFooter
-            ?.let { styleFactory.create(it, applyBottomWindowInsets = true) }
+            ?.let { styleFactory.create(it, applyBottomWindowInsets = true, applyHorizontalWindowInsets = true) }
             .orSuccessfullyNull(),
         third = config.background.toBackgroundStyles(aliases = colorAliases),
     ) { backendRootComponentResult, stickyFooterResult, background ->
@@ -279,6 +314,7 @@ internal fun Offering.toLegacyPaywallState(
     template: PaywallTemplate,
     shouldDisplayDismissButton: Boolean,
     storefrontCountryCode: String?,
+    validationWarning: PaywallWarning? = null,
 ): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -297,6 +333,7 @@ internal fun Offering.toLegacyPaywallState(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
+        validationWarning = validationWarning,
     )
 }
 
@@ -306,6 +343,8 @@ internal fun Offering.toComponentsPaywallState(
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
     purchases: PurchasesType,
+    customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -323,6 +362,8 @@ internal fun Offering.toComponentsPaywallState(
         storefrontCountryCode = storefrontCountryCode,
         dateProvider = dateProvider,
         packages = validationResult.packages,
+        customVariables = customVariables,
+        defaultCustomVariables = defaultCustomVariables,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         purchases = purchases,
     )
@@ -388,3 +429,68 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
 
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
     get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
+
+/**
+ * Recursively checks whether any component override in the paywall config contains an
+ * [ComponentOverride.Condition.Unsupported] condition.
+ */
+@JvmSynthetic
+internal fun PaywallComponentsConfig.containsUnsupportedCondition(): Boolean =
+    stack.containsUnsupportedCondition() || stickyFooter?.stack?.containsUnsupportedCondition() == true
+
+@JvmSynthetic
+internal fun StackComponent.containsUnsupportedCondition(): Boolean =
+    overrides.hasUnsupportedCondition() || components.any { it.containsUnsupportedCondition() }
+
+@Suppress("CyclomaticComplexMethod")
+@JvmSynthetic
+internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (this) {
+    is StackComponent -> containsUnsupportedCondition()
+    is TextComponent -> overrides.hasUnsupportedCondition()
+    is ImageComponent -> overrides.hasUnsupportedCondition()
+    is VideoComponent -> overrides?.hasUnsupportedCondition() == true
+    is IconComponent -> overrides.hasUnsupportedCondition()
+    is ButtonComponent -> stack.containsUnsupportedCondition() ||
+        (action as? ButtonComponent.Action.NavigateTo)?.destination.let { destination ->
+            when (destination) {
+                is ButtonComponent.Destination.Sheet -> destination.stack.containsUnsupportedCondition()
+                is ButtonComponent.Destination.CustomerCenter,
+                is ButtonComponent.Destination.PrivacyPolicy,
+                is ButtonComponent.Destination.Terms,
+                is ButtonComponent.Destination.Url,
+                is ButtonComponent.Destination.Unknown,
+                null,
+                -> false
+            }
+        }
+    is PackageComponent -> stack.containsUnsupportedCondition()
+    is PurchaseButtonComponent -> stack.containsUnsupportedCondition()
+    is StickyFooterComponent -> stack.containsUnsupportedCondition()
+    is CarouselComponent -> overrides.hasUnsupportedCondition() ||
+        pages.any { it.containsUnsupportedCondition() }
+    is TabsComponent -> overrides.hasUnsupportedCondition() ||
+        tabs.any { it.stack.containsUnsupportedCondition() } ||
+        control.let {
+            when (it) {
+                is TabsComponent.TabControl.Buttons -> it.stack.containsUnsupportedCondition()
+                is TabsComponent.TabControl.Toggle -> it.stack.containsUnsupportedCondition()
+            }
+        }
+    is TimelineComponent -> overrides.hasUnsupportedCondition() ||
+        items.any {
+            it.overrides.hasUnsupportedCondition() ||
+                it.title.overrides.hasUnsupportedCondition() ||
+                it.description?.overrides?.hasUnsupportedCondition() == true ||
+                it.icon.overrides.hasUnsupportedCondition()
+        }
+    is CountdownComponent -> countdownStack.containsUnsupportedCondition() ||
+        endStack?.containsUnsupportedCondition() == true ||
+        fallback?.containsUnsupportedCondition() == true
+    is TabControlButtonComponent -> stack.containsUnsupportedCondition()
+    is TabControlToggleComponent -> false
+    is TabControlComponent -> false
+}
+
+@JvmSynthetic
+internal fun List<ComponentOverride<*>>.hasUnsupportedCondition(): Boolean =
+    any { override -> override.conditions.any { it is ComponentOverride.Condition.Unsupported } }

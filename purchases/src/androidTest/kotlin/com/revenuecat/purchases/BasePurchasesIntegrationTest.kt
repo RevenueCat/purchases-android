@@ -18,7 +18,7 @@ import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Assume.assumeTrue
-import org.junit.BeforeClass
+import org.junit.Before
 import org.junit.Rule
 import java.net.URL
 import java.util.Date
@@ -30,21 +30,14 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-open class BasePurchasesIntegrationTest {
+abstract class BasePurchasesIntegrationTest {
 
-    companion object {
-        @BeforeClass
-        @JvmStatic
-        fun setupClass() {
-            if (!canRunIntegrationTests()) {
-                error("You need to set required constants in Constants.kt")
-            }
-        }
-
-        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
-            Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
-            Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
-    }
+    /**
+     * Must be overridden in every concrete test subclass to specify which backend
+     * environment to run against. There is no default — this forces each test class
+     * to explicitly declare its target environment.
+     */
+    abstract val environmentConfig: Constants.EnvironmentConfig
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
@@ -55,11 +48,11 @@ open class BasePurchasesIntegrationTest {
     protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
-    protected val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
+    protected val proxyUrl get() = Constants.proxyUrl.takeIf { it.isNotEmpty() }
 
     internal lateinit var mockBillingAbstract: BillingAbstract
 
-    internal val expectedCustomerInfoOriginalSource = if (
+    internal val expectedCustomerInfoOriginalSource get() = if (
         Constants.backendEnvironment == Constants.BackendEnvironment.PRODUCTION
     ) {
         CustomerInfoOriginalSource.MAIN
@@ -78,6 +71,8 @@ open class BasePurchasesIntegrationTest {
 
     private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
+    private val transactionMetadataSharedPrefsNameTemplate =
+        "com.revenuecat.purchases.transaction_metadata.%s"
 
     internal open var forceServerErrorsStrategy: ForceServerErrorStrategy? = null
     internal var forceServerErrorStrategyDelegate: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
@@ -91,16 +86,34 @@ open class BasePurchasesIntegrationTest {
         }
     }
 
-    protected val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
+    protected val entitlementsToVerify get() = Constants.activeEntitlementIdsToVerify
         .split(",")
         .map { it.trim() }
         .filter { it.isNotEmpty() }
+
+    @Before
+    fun setActiveEnvironment() {
+        val config = environmentConfig
+        Constants.activeConfig = config
+        val env = config.backendEnvironment
+        require(config.apiKey.isNotEmpty()) {
+            "Missing API key for $env. Set the corresponding property in local.properties or pass it via -P flag."
+        }
+        require(config.googlePurchaseToken.isNotEmpty()) {
+            "Missing Google purchase token for $env. " +
+                "Set the corresponding property in local.properties or pass it via -P flag."
+        }
+        require(config.productIdToPurchase.isNotEmpty()) {
+            "Missing product ID for $env. Set the corresponding property in local.properties or pass it via -P flag."
+        }
+    }
 
     @After
     fun tearDown() {
         _activity = null
         forceServerErrorsStrategy = null
         Purchases.resetSingleton()
+        leakcanary.LeakAssertions.assertNoLeaks()
     }
 
     // region helpers
@@ -220,6 +233,10 @@ open class BasePurchasesIntegrationTest {
         ).edit().clear().commit()
         context.getSharedPreferences(
             diagnosticsSharedPreferencesNameTemplate.format(context.packageName),
+            Context.MODE_PRIVATE,
+        ).edit().clear().commit()
+        context.getSharedPreferences(
+            transactionMetadataSharedPrefsNameTemplate.format(Constants.apiKey),
             Context.MODE_PRIVATE,
         ).edit().clear().commit()
     }
