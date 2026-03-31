@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import uniffi.purchases_core.add
+import uniffi.purchases_core.performOperation
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -44,6 +45,9 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import uniffi.purchases_core.OperationMode
 import java.net.URL
 import java.util.Locale
 
@@ -1287,6 +1291,20 @@ public class Purchases internal constructor(
             // Call Rust add() function to verify integration
             val rustResult = add(2uL, 3uL)
             infoLog { "Rust add(2, 3) = $rustResult" }
+            GlobalScope.launch {
+                val successResult = performOperation(OperationMode.SUCCESS)
+                errorLog { "Operation result in Rust: $successResult" }
+                try {
+                    val failureResult = performOperation(OperationMode.ERROR)
+                } catch (e: Exception) {
+                    errorLog(e) { "Error performing operation in Rust" }
+                }
+                try {
+                    val timeoutResult = performOperation(OperationMode.TIMEOUT)
+                } catch (e: Exception) {
+                    errorLog(e) { "Timeout performing operation in Rust" }
+                }
+            }
 
             if (isConfigured) {
                 if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
