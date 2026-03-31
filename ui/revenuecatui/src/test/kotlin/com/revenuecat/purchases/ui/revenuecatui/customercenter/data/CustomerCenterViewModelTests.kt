@@ -2587,10 +2587,129 @@ class CustomerCenterViewModelTests {
     private fun createMockPurchaseInformation(productId: String): PurchaseInformation {
         val mockProduct = mockk<StoreProduct>()
         every { mockProduct.id } returns productId
-        
+
         return mockk<PurchaseInformation>().apply {
             every { product } returns mockProduct
         }
+    }
+
+    @Test
+    fun `cancel path for Amazon store tries deep link first`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        val amazonManagementUrl = Uri.parse("https://www.amazon.com/gp/mas/your-account/myapps/yoursubscriptions")
+        val purchaseInfo = PurchaseInformation(
+            title = "Basic",
+            pricePaid = PriceDetails.Paid("\$4.99"),
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
+            store = Store.AMAZON,
+            managementURL = amazonManagementUrl,
+            product = null,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+        model.selectPurchase(purchaseInfo)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        model.pathButtonPressed(
+            context,
+            HelpPath(
+                id = "test_id",
+                title = "Cancel",
+                type = HelpPath.PathType.CANCEL
+            ),
+            purchaseInfo
+        )
+
+        assertThat(intentSlot.captured.data.toString())
+            .isEqualTo("amzn://apps/library/subscriptions")
+    }
+
+    @Test
+    fun `cancel path for Amazon store falls back to management URL when deep link fails`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = mutableListOf<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } throws
+            android.content.ActivityNotFoundException() andThen Unit
+
+        val amazonManagementUrl = Uri.parse("https://www.amazon.com/gp/mas/your-account/myapps/yoursubscriptions")
+        val purchaseInfo = PurchaseInformation(
+            title = "Basic",
+            pricePaid = PriceDetails.Paid("\$4.99"),
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
+            store = Store.AMAZON,
+            managementURL = amazonManagementUrl,
+            product = null,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+        model.selectPurchase(purchaseInfo)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        model.pathButtonPressed(
+            context,
+            HelpPath(
+                id = "test_id",
+                title = "Cancel",
+                type = HelpPath.PathType.CANCEL
+            ),
+            purchaseInfo
+        )
+
+        // First call was the deep link attempt, second is the fallback
+        assertThat(intentSlot).hasSize(2)
+        assertThat(intentSlot[0].data.toString())
+            .isEqualTo("amzn://apps/library/subscriptions")
+        assertThat(intentSlot[1].data.toString())
+            .isEqualTo("https://www.amazon.com/gp/mas/your-account/myapps/yoursubscriptions")
     }
 
     @Test
