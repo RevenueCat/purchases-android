@@ -73,6 +73,7 @@ internal fun LoadedPaywallComponents(
     state.update(localeList = configuration.locales)
 
     val style = state.stack
+    val headerComponentStyle = state.header
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
@@ -82,6 +83,15 @@ internal fun LoadedPaywallComponents(
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
             Column {
+                headerComponentStyle?.let {
+                    ComponentView(
+                        style = it,
+                        state = state,
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                    )
+                }
                 ComponentView(
                     style = style,
                     state = state,
