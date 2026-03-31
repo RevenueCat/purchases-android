@@ -14,6 +14,8 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPerPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
@@ -50,7 +52,7 @@ internal class VariableDataProvider(
         return if (showZeroDecimalPlacePrices && pricePerDay.endsIn00Cents()) {
             pricePerDay.getTruncatedFormatted(locale)
         } else {
-            pricePerDay.formatted
+            pricePerDay.getFormatted(locale)
         }
     }
 
@@ -64,7 +66,7 @@ internal class VariableDataProvider(
         return if (showZeroDecimalPlacePrices && pricePerWeek.endsIn00Cents()) {
             pricePerWeek.getTruncatedFormatted(locale)
         } else {
-            pricePerWeek.formatted
+            pricePerWeek.getFormatted(locale)
         }
     }
 
@@ -77,7 +79,7 @@ internal class VariableDataProvider(
         return if (showZeroDecimalPlacePrices && pricePerMonth.endsIn00Cents()) {
             pricePerMonth.getTruncatedFormatted(locale)
         } else {
-            pricePerMonth.formatted
+            pricePerMonth.getFormatted(locale)
         }
     }
 
@@ -90,7 +92,7 @@ internal class VariableDataProvider(
         return if (showZeroDecimalPlacePrices && pricePerYear.endsIn00Cents()) {
             pricePerYear.getTruncatedFormatted(locale)
         } else {
-            pricePerYear.formatted
+            pricePerYear.getFormatted(locale)
         }
     }
 
@@ -101,10 +103,12 @@ internal class VariableDataProvider(
     ): String? {
         val firstIntroPrice = getFirstIntroOfferToApply(rcPackage)?.price ?: return null
 
-        return if (showZeroDecimalPlacePrices && firstIntroPrice.endsIn00Cents()) {
+        return if (firstIntroPrice.amountMicros == 0L) {
+            firstIntroPrice.formatted
+        } else if (showZeroDecimalPlacePrices && firstIntroPrice.endsIn00Cents()) {
             firstIntroPrice.getTruncatedFormatted(locale)
         } else {
-            firstIntroPrice.formatted
+            firstIntroPrice.getFormatted(locale)
         }
     }
 
@@ -113,13 +117,14 @@ internal class VariableDataProvider(
         locale: Locale,
         showZeroDecimalPlacePrices: Boolean,
     ): String? {
-        // always round if rounding on
         val secondIntroPrice = getSecondIntroOfferToApply(rcPackage)?.price ?: return null
 
-        return if (showZeroDecimalPlacePrices && secondIntroPrice.endsIn00Cents()) {
+        return if (secondIntroPrice.amountMicros == 0L) {
+            secondIntroPrice.formatted
+        } else if (showZeroDecimalPlacePrices && secondIntroPrice.endsIn00Cents()) {
             secondIntroPrice.getTruncatedFormatted(locale)
         } else {
-            secondIntroPrice.formatted
+            secondIntroPrice.getFormatted(locale)
         }
     }
 
@@ -278,6 +283,23 @@ internal fun Price.endsIn00Cents(): Boolean {
     val normalPrice = amountMicros / MICRO_MULTIPLIER
     val roundedPrice = Math.round(normalPrice * 100) / 100.0
     return roundedPrice * 100 % 100 == 0.0
+}
+
+/**
+ * Returns price formatted for the given locale using the price's currency code.
+ * Uses BigDecimal arithmetic to avoid floating-point precision issues.
+ */
+internal fun Price.getFormatted(locale: Locale = Locale.getDefault()): String {
+    val currency = Currency.getInstance(currencyCode)
+    val fractionDigits = currency.defaultFractionDigits.coerceAtLeast(0)
+    val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
+        this.currency = currency
+        maximumFractionDigits = fractionDigits
+        minimumFractionDigits = fractionDigits
+    }
+    val amount = BigDecimal.valueOf(amountMicros)
+        .divide(BigDecimal.valueOf(MICRO_MULTIPLIER.toLong()), fractionDigits, RoundingMode.DOWN)
+    return numberFormat.format(amount)
 }
 
 /**
