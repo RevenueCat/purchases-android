@@ -294,6 +294,8 @@ internal fun Price.getFormatted(locale: Locale = Locale.getDefault()): String {
     val fractionDigits = currency.defaultFractionDigits.coerceAtLeast(0)
     val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
         this.currency = currency
+        maximumFractionDigits = fractionDigits
+        minimumFractionDigits = fractionDigits
     }
     val amount = BigDecimal.valueOf(amountMicros)
         .divide(BigDecimal.valueOf(MICRO_MULTIPLIER.toLong()), fractionDigits, RoundingMode.DOWN)

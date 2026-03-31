@@ -96,6 +96,40 @@ class OfferPriceLocaleTests {
     }
 
     @Test
+    fun `product_offer_price keeps localized free string for free offers regardless of locale`() {
+        val freePricingPhase = mockk<PricingPhase> {
+            every { price } returns Price(amountMicros = 0, currencyCode = "USD", formatted = "Kostenlos")
+            every { billingPeriod } returns Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W")
+            every { billingCycleCount } returns 1
+            every { recurrenceMode } returns RecurrenceMode.FINITE_RECURRING
+        }
+
+        val freeOption = mockk<SubscriptionOption> {
+            every { freePhase } returns freePricingPhase
+            every { introPhase } returns null
+        }
+
+        val template = "{{ product.offer_price }}"
+
+        val resultUs = processTemplate(
+            template = template,
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeOption,
+            currencyLocale = Locale.US,
+        )
+
+        val resultDe = processTemplate(
+            template = template,
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeOption,
+            currencyLocale = Locale.GERMANY,
+        )
+
+        assertThat(resultUs).isEqualTo("free")
+        assertThat(resultDe).isEqualTo("free")
+    }
+
+    @Test
     fun `secondary_offer_price uses currencyLocale`() {
         val freePricingPhase = mockk<PricingPhase> {
             every { price } returns Price(amountMicros = 0, currencyCode = "USD", formatted = "Free")

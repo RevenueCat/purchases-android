@@ -65,6 +65,27 @@ class PriceLocaleTests {
     }
 
     @Test
+    fun `getFormatted uses currency fraction digits even when locale default differs`() {
+        val jpyPrice = Price(
+            amountMicros = 1000_000_000, // ¥1000
+            currencyCode = "JPY",
+            formatted = "¥1,000",
+        )
+        val kwdPrice = Price(
+            amountMicros = 1_234_000, // KWD 1.234
+            currencyCode = "KWD",
+            formatted = "KWD1.234",
+        )
+
+        val jpyFormattedInUsLocale = jpyPrice.getFormatted(Locale.US)
+        assertThat(jpyFormattedInUsLocale).doesNotContain(".")
+        assertThat(jpyFormattedInUsLocale).contains("1,000")
+
+        val kwdFormattedInUsLocale = kwdPrice.getFormatted(Locale.US)
+        assertThat(kwdFormattedInUsLocale).endsWith(".234")
+    }
+
+    @Test
     fun `getFormatted handles EUR currency with correct symbol`() {
         val eurPrice = Price(
             amountMicros = 5_000_000, // €5.00
