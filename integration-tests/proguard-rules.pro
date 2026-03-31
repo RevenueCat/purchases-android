@@ -20,3 +20,5 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -keep class com.revenuecat.purchases.** { *; }
+-dontwarn javax.lang.model.element.Modifier
+-dontwarn com.google.errorprone.annotations.IncompatibleModifiers
