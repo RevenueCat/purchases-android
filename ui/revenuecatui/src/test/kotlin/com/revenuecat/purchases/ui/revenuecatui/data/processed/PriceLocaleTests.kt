@@ -22,13 +22,11 @@ class PriceLocaleTests {
 
         // Format with US locale - currency symbol before number
         val usFormatted = price.getFormatted(Locale.US)
-        assertThat(usFormatted).startsWith("$")
-        assertThat(usFormatted).contains("10")
+        assertThat(usFormatted).isEqualTo("$10.00")
 
         // Format with German locale - currency symbol after number
         val deFormatted = price.getFormatted(Locale.GERMANY)
-        assertThat(deFormatted).endsWith("$")
-        assertThat(deFormatted).contains("10")
+        assertThat(deFormatted).isEqualTo("10,00\u00A0$")
     }
 
     @Test
@@ -41,12 +39,11 @@ class PriceLocaleTests {
 
         // US uses period as decimal separator
         val usFormatted = price.getFormatted(Locale.US)
-        assertThat(usFormatted).contains(".")
-        assertThat(usFormatted).doesNotContain(",")
+        assertThat(usFormatted).isEqualTo("$10.99")
 
         // Germany uses comma as decimal separator
         val deFormatted = price.getFormatted(Locale.GERMANY)
-        assertThat(deFormatted).contains(",")
+        assertThat(deFormatted).isEqualTo("10,99\u00A0$")
     }
 
     @Test
@@ -59,9 +56,7 @@ class PriceLocaleTests {
         )
 
         val jpFormatted = jpyPrice.getFormatted(Locale.JAPAN)
-        // Should not have decimal places for JPY
-        assertThat(jpFormatted).doesNotContain(".")
-        assertThat(jpFormatted).contains("1,000") // thousands separator
+        assertThat(jpFormatted).isEqualTo("￥1,000")
     }
 
     @Test
@@ -78,11 +73,10 @@ class PriceLocaleTests {
         )
 
         val jpyFormattedInUsLocale = jpyPrice.getFormatted(Locale.US)
-        assertThat(jpyFormattedInUsLocale).doesNotContain(".")
-        assertThat(jpyFormattedInUsLocale).contains("1,000")
+        assertThat(jpyFormattedInUsLocale).isEqualTo("¥1,000")
 
         val kwdFormattedInUsLocale = kwdPrice.getFormatted(Locale.US)
-        assertThat(kwdFormattedInUsLocale).endsWith(".234")
+        assertThat(kwdFormattedInUsLocale).isEqualTo("KWD1.234")
     }
 
     @Test
@@ -95,13 +89,11 @@ class PriceLocaleTests {
 
         // Format with German locale
         val deFormatted = eurPrice.getFormatted(Locale.GERMANY)
-        assertThat(deFormatted).contains("€")
-        assertThat(deFormatted).contains("5")
+        assertThat(deFormatted).isEqualTo("5,00\u00A0€")
 
         // Format with French locale
         val frFormatted = eurPrice.getFormatted(Locale.FRANCE)
-        assertThat(frFormatted).contains("€")
-        assertThat(frFormatted).contains("5")
+        assertThat(frFormatted).isEqualTo("5,00\u00A0€")
     }
 
     @Test
