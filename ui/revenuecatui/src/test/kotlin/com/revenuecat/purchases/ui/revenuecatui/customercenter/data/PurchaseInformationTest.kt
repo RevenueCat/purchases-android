@@ -416,6 +416,76 @@ class PurchaseInformationTest {
     }
 
     @Test
+    fun `test product title takes priority over entitlement identifier for promotional`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val entitlementInfo = createEntitlementInfo(
+            isActive = true,
+            willRenew = false,
+            store = Store.PROMOTIONAL,
+            productIdentifier = "rc_promo_pro_cat_yearly",
+            expirationDate = expiresDate,
+            ownershipType = OwnershipType.UNKNOWN
+        )
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
+            store = Store.PROMOTIONAL,
+            productIdentifier = "rc_promo_pro_cat_yearly",
+            expiresDate = expiresDate,
+            managementURL = null,
+        )
+        val storeProduct = TestStoreProduct(
+            "rc_promo_pro_cat_yearly",
+            "name",
+            "Pro Access",
+            "description",
+            Price("$0.00", 0, "US"),
+            Period(1, Period.Unit.YEAR, "P1Y")
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = entitlementInfo,
+            subscribedProduct = storeProduct,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        // Product title takes priority over entitlement identifier
+        assertThat(purchaseInformation.title).isEqualTo("Pro Access")
+    }
+
+    @Test
+    fun `test promotional without entitlement falls back to type label`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val transaction = createTransactionDetails(
+            isActive = true,
+            willRenew = false,
+            store = Store.PROMOTIONAL,
+            productIdentifier = "rc_promo_some_product",
+            expiresDate = expiresDate,
+            managementURL = null,
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        // No entitlement, promotional guard skipped. Falls through to subscription type label
+        assertThat(purchaseInformation.title).isEqualTo("Subscription")
+    }
+
+    @Test
     fun `test PurchaseInformation with stripe entitlement`() {
         val expiresDate = oneDayAgo
         setupDateFormatter(expiresDate, "3 Oct 2063")

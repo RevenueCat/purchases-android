@@ -133,20 +133,20 @@ private fun determineTitle(
     transaction: TransactionDetails,
     localization: CustomerCenterConfigData.Localization,
 ): String {
-    if (transaction.store == Store.PROMOTIONAL && entitlementInfo != null) {
-        return entitlementInfo.identifier
-    }
-
     return subscribedProduct?.title
-        ?: when (transaction) {
-            is TransactionDetails.Subscription ->
-                localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_SUBSCRIPTION,
-                )
-            is TransactionDetails.NonSubscription ->
-                localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_ONE_TIME_PURCHASE,
-                )
+        ?: if (transaction.store == Store.PROMOTIONAL && entitlementInfo != null) {
+            entitlementInfo.identifier
+        } else {
+            when (transaction) {
+                is TransactionDetails.Subscription ->
+                    localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_SUBSCRIPTION,
+                    )
+                is TransactionDetails.NonSubscription ->
+                    localization.commonLocalizedString(
+                        CustomerCenterConfigData.Localization.CommonLocalizedString.TYPE_ONE_TIME_PURCHASE,
+                    )
+            }
         }
 }
 
