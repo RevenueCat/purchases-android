@@ -56,6 +56,7 @@ metalava = "0.4.0-alpha03"
 mockk = "1.13.11"
 mockwebserver = "4.2.0"
 multidex = "2.0.1"
+# Can't use alpha04 because it requires higher Kotlin version than we're using
 paparrazzi = "2.0.0-alpha02"
 poko = "0.17.2"
 testJUnit = "1.2.1"
