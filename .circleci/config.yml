@@ -1098,6 +1098,16 @@ workflows:
       - deploy:
           <<: *release-tags
           context: maven-central-publishing
+      - revenuecat/await-maven-central-package:
+          coordinates: |
+            com.revenuecat.purchases:purchases:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-ui:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-store-amazon:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-store-galaxy:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-admob:<< pipeline.git.tag >>
+          requires:
+            - deploy
+          <<: *release-tags
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:
@@ -1120,6 +1130,7 @@ workflows:
           repo_name: purchases-android
           use_merge_queue: true
           requires:
+            - revenuecat/await-maven-central-package
             - publish-purchase-tester-release
             - publish-paywall-tester-release
             - publish-rct-tester-release
