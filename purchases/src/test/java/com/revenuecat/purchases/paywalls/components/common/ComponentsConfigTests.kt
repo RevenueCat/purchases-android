@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -279,6 +280,190 @@ internal class ComponentsConfigTests {
                             background = Background.Color(
                                 value = ColorScheme(
                                     light = ColorInfo.Alias(ColorAlias("primary"))
+                                )
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "header present",
+                    Args(
+                        json = """
+                        {
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
+                          "header": {
+                            "type": "header",
+                            "stack": {
+                              "type": "stack",
+                              "components": [
+                                {
+                                  "color": {
+                                    "light": {
+                                      "type": "alias",
+                                      "value": "primary"
+                                    }
+                                  },
+                                  "components": [],
+                                  "id": "xmpgCrN9Rb",
+                                  "name": "Text",
+                                  "text_lid": "7bkohQjzIE",
+                                  "type": "text"
+                                }
+                              ]
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = PaywallComponentsConfig(
+                            stack = StackComponent(
+                                components = emptyList(),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("primary"))
+                                )
+                            ),
+                            header = HeaderComponent(
+                                stack = StackComponent(
+                                    components = listOf(
+                                        TextComponent(
+                                            text = LocalizationKey("7bkohQjzIE"),
+                                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        )
+                                    ),
+                                )
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "header absent",
+                    Args(
+                        json = """
+                        {
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = PaywallComponentsConfig(
+                            stack = StackComponent(
+                                components = emptyList(),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("primary"))
+                                )
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "header null",
+                    Args(
+                        json = """
+                        {
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
+                          "header": null
+                        }
+                        """.trimIndent(),
+                        expected = PaywallComponentsConfig(
+                            stack = StackComponent(
+                                components = emptyList(),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("primary"))
+                                )
+                            )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "header and sticky footer present",
+                    Args(
+                        json = """
+                        {
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
+                          "header": {
+                            "type": "header",
+                            "stack": {
+                              "type": "stack",
+                              "components": []
+                            }
+                          },
+                          "sticky_footer": {
+                            "type": "sticky_footer",
+                            "stack": {
+                              "type": "stack",
+                              "components": []
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = PaywallComponentsConfig(
+                            stack = StackComponent(
+                                components = emptyList(),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias(ColorAlias("primary"))
+                                )
+                            ),
+                            header = HeaderComponent(
+                                stack = StackComponent(
+                                    components = emptyList(),
+                                )
+                            ),
+                            stickyFooter = StickyFooterComponent(
+                                stack = StackComponent(
+                                    components = emptyList(),
                                 )
                             )
                         )

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -58,6 +59,7 @@ internal fun FakePaywallState(
     ),
     defaultLocaleIdentifier: LocaleId = LocaleId("en_US"),
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    header: HeaderComponent? = null,
     stickyFooter: StickyFooterComponent? = null,
 ): PaywallState.Loaded.Components {
     val packageComponents = packages.map { pkg ->
@@ -75,6 +77,7 @@ internal fun FakePaywallState(
             base = PaywallComponentsConfig(
                 stack = StackComponent(components = components + packageComponents),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                header = header,
                 stickyFooter = stickyFooter,
             ),
         ),

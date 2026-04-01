@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
@@ -73,10 +74,12 @@ internal class ContainsUnsupportedConditionTests {
 
     private fun config(
         stack: StackComponent,
+        header: HeaderComponent? = null,
         stickyFooter: StickyFooterComponent? = null,
     ) = PaywallComponentsConfig(
         stack = stack,
         background = Background.Color(color),
+        header = header,
         stickyFooter = stickyFooter,
     )
 
@@ -113,6 +116,18 @@ internal class ContainsUnsupportedConditionTests {
             ),
         )
         assertTrue(config(stack = emptyStack(), stickyFooter = footer).containsUnsupportedCondition())
+    }
+
+    @Test
+    fun `Config detects unsupported in header`() {
+        val header = HeaderComponent(
+            stack = emptyStack(
+                components = listOf(
+                    textComponent(overrides = listOf(unsupportedOverride)),
+                ),
+            ),
+        )
+        assertTrue(config(stack = emptyStack(), header = header).containsUnsupportedCondition())
     }
 
     // endregion
@@ -337,6 +352,23 @@ internal class ContainsUnsupportedConditionTests {
             ),
         )
         val stack = emptyStack(components = listOf(footer))
+        assertTrue(stack.containsUnsupportedCondition())
+    }
+
+    // endregion
+
+    // region HeaderComponent
+
+    @Test
+    fun `HeaderComponent detects unsupported in its stack`() {
+        val header = HeaderComponent(
+            stack = emptyStack(
+                components = listOf(
+                    textComponent(overrides = listOf(unsupportedOverride)),
+                ),
+            ),
+        )
+        val stack = emptyStack(components = listOf(header))
         assertTrue(stack.containsUnsupportedCondition())
     }
 
