@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.17.0
+  revenuecat: revenuecat/sdks-common-config@dev:58de5778d14634ea320136f64701d91abf2a0420
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -979,6 +979,15 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
+      # DEBUG JOB
+      - revenuecat/await-maven-central-package:
+          name: debug-await-maven-central-package
+          coordinates: |
+            com.revenuecat.purchases:purchases:10.0.0
+            com.revenuecat.purchases:purchases-ui:10.0.0
+            com.revenuecat.purchases:purchases-store-amazon:10.0.0
+            com.revenuecat.purchases:purchases-store-galaxy:10.0.0
+            com.revenuecat.purchases:purchases-admob:10.0.0
       - prepare-tests
       - test:
           name: test_defaults_bc8_debug
