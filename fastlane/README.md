@@ -15,6 +15,16 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## Android
 
+### android setup_local_properties
+
+```sh
+[bundle exec] fastlane android setup_local_properties
+```
+
+Fetch integration test secrets from 1Password and write them to local.properties
+
+Requires the 1Password CLI (op) to be installed and signed in
+
 ### android test
 
 ```sh

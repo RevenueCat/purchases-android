@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.13.0
+  revenuecat: revenuecat/sdks-common-config@3.17.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -110,14 +110,6 @@ commands:
           name: Prepare Keystore
           working_directory: examples/paywall-tester
           command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
-      - run:
-          name: Replace API_KEY
-          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
-          command: |
-            sed -i 's/"API_KEY_A_LABEL"/"Paywalls V2 Alpha"/' Constants.kt
-            sed -i s/\"API_KEY_A\"/\"$PAYWALLS_V2_ALPHA_API_KEY\"/ Constants.kt
-            sed -i 's/"API_KEY_B_LABEL"/"Official Paywalls V2 Template Repo"/' Constants.kt
-            sed -i s/\"API_KEY_B\"/\"$PAYWALLS_V2_TEMPLATE_REPO_API_KEY\"/ Constants.kt
       - run:
           name: Create app bundle
           command: |
@@ -398,7 +390,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.27.0 s3://purchases-docs/android/9.27.0 --delete
+          command: aws s3 sync ~/project/docs/9.29.0-SNAPSHOT s3://purchases-docs/android/9.29.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -683,11 +675,6 @@ jobs:
           at: .
       - install-sdkman
       - run:
-          name: Replace API_KEY
-          working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
-          command: |
-            sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
-      - run:
           name: Prepare Keystore
           working_directory: integration-tests
           command: echo $RELEASE_KEYSTORE | base64 -d > keystore
@@ -700,6 +687,7 @@ jobs:
           avd_name: test-integration
           post_emulator_launch_assemble_command: >-
             ./gradlew -p integration-tests assembleRelease assembleAndroidTest -PtestBuildType=release
+            -PREVENUECAT_API_KEY=$API_KEY
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
@@ -707,6 +695,7 @@ jobs:
           name: Run integration tests on emulator
           command: |
             ./gradlew -p integration-tests connectedAndroidTest -PtestBuildType=release \
+            -PREVENUECAT_API_KEY=$API_KEY \
             -PreleaseKeyAlias=$RELEASE_KEY_ALIAS \
             -PreleaseKeystorePassword=$RELEASE_KEYSTORE_PASSWORD \
             -PreleaseKeyPassword=$RELEASE_KEY_PASSWORD
@@ -1126,6 +1115,14 @@ workflows:
           requires:
               - deploy
               - docs-deploy
+          <<: *release-tags
+      - revenuecat/merge-release-pr:
+          repo_name: purchases-android
+          use_merge_queue: true
+          requires:
+            - publish-purchase-tester-release
+            - publish-paywall-tester-release
+            - publish-rct-tester-release
           <<: *release-tags
 
   on-main-branch:
