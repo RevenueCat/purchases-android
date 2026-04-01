@@ -26,10 +26,11 @@ internal fun secondaryDiscountPhase(subscriptionOption: SubscriptionOption?, rcP
 
 internal fun resolveOfferPrice(
     discountPhase: PricingPhase?,
+    locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
     productFallback: () -> String?,
 ): String? =
-    discountPhase?.productOfferPrice(localizedVariableKeys) ?: productFallback()
+    discountPhase?.productOfferPrice(locale, localizedVariableKeys) ?: productFallback()
 
 internal fun resolveOfferPeriod(
     discountPhase: PricingPhase?,
@@ -39,39 +40,41 @@ internal fun resolveOfferPeriod(
     discountPhase?.let(discountValue) ?: productFallback()
 
 internal fun PricingPhase.productOfferPrice(
+    locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
 ): String? =
     if (price.amountMicros == 0L) {
         localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.FREE_PRICE)
     } else {
-        price.formatted
+        price.getFormatted(locale)
     }
 
 internal fun PricingPhase.productOfferPricePerDay(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
 ): String? =
-    productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.DAY) { pricePerDay(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.DAY) { pricePerDay(locale) }
 
 internal fun PricingPhase.productOfferPricePerWeek(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
 ): String? =
-    productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.WEEK) { pricePerWeek(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.WEEK) { pricePerWeek(locale) }
 
 internal fun PricingPhase.productOfferPricePerMonth(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
 ): String? =
-    productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.MONTH) { pricePerMonth(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.MONTH) { pricePerMonth(locale) }
 
 internal fun PricingPhase.productOfferPricePerYear(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
 ): String? =
-    productOfferPricePerPeriod(localizedVariableKeys, Period.Unit.YEAR) { pricePerYear(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.YEAR) { pricePerYear(locale) }
 
 internal fun PricingPhase.productOfferPricePerPeriod(
+    locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
     unit: Period.Unit,
     calculatePrice: PricingPhase.() -> Price,
@@ -82,7 +85,7 @@ internal fun PricingPhase.productOfferPricePerPeriod(
             if (offerPrice.amountMicros == 0L) {
                 localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.FREE_PRICE)
             } else {
-                offerPrice.formatted
+                offerPrice.getFormatted(locale)
             }
         }
 

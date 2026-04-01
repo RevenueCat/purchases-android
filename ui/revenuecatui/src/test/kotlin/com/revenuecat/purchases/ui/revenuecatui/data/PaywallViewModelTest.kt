@@ -197,6 +197,10 @@ class PaywallViewModelTest {
                 val resume = secondArg<Resumable>()
                 resume(true)
             }
+            every { onRestoreInitiated(any()) } answers {
+                val resume = invocation.args[0] as Resumable
+                resume(true)
+            }
         }
 
         dismissInvoked = false
@@ -1043,6 +1047,24 @@ class PaywallViewModelTest {
             listener.onRestoreCompleted(customerInfo)
         }
 
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `restorePurchases cancelled when onRestoreInitiated returns false`() {
+        val model = create()
+        every { listener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(false)
+        }
+
+        model.restorePurchases()
+
+        coVerify(exactly = 0) { purchases.awaitRestore() }
+        verify(exactly = 0) { listener.onRestoreStarted() }
+        verify(exactly = 0) { listener.onRestoreCompleted(any()) }
+        verify(exactly = 0) { listener.onRestoreError(any()) }
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isFalse
     }

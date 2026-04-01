@@ -20,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 /**
  * View that wraps the [OriginalTemplatePaywallFooter] Composable to display the Paywall Footer
@@ -98,6 +99,9 @@ public open class OriginalTemplatePaywallFooterView : FrameLayout {
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var internalListener: PaywallListener = object : PaywallListener {
+        override fun onRestoreInitiated(resume: Resumable) {
+            listener?.onRestoreInitiated(resume) ?: resume()
+        }
         override fun onPurchaseStarted(rcPackage: Package) { listener?.onPurchaseStarted(rcPackage) }
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
             listener?.onPurchaseCompleted(customerInfo, storeTransaction)

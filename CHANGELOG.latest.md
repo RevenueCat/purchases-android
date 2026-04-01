@@ -1,7 +1,9 @@
 ## RevenueCatUI SDK
-### Customer Center
+### 🐞 Bugfixes
+* Fix: Crash on fallback paywall due to missing dependency  (#3283) via Jacob Rakidzich (@JZDesign)
+### Paywallv2
 #### 🐞 Bugfixes
-* CC-628: Refresh Customer Center after returning from manage subscriptions (#3152) via Facundo Menzella (@facumenzella)
+* PW-1152 Fix PaywallDialog dismissal after first toggle interaction (#3277) via Facundo Menzella (@facumenzella)
 
 ### 🔄 Other Changes
-* Remove experimental annotation from trackCustomPaywallImpression (#3241) via Rick (@rickvdl)
+* feat: configure API keys and test variables via local.properties (#3271) via Toni Rico (@tonidero)

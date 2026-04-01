@@ -55,6 +55,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.URI
 import java.net.URISyntaxException
 import java.util.Date
@@ -328,6 +329,20 @@ internal class PaywallViewModelImpl(
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     override suspend fun handleRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) {
+            return
+        }
+        val shouldResume = suspendCancellableCoroutine { continuation ->
+            Logger.d("Restore Purchases Initiated… waiting for listener.onRestoreInitiated to proceed.")
+            listener?.onRestoreInitiated { shouldResume ->
+                continuation.resume(shouldResume)
+            } ?: continuation.resume(true)
+        }
+
+        val detail = if (shouldResume) "will" else "will not"
+        Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
+
+        if (!shouldResume) {
+            finishAction()
             return
         }
         try {
