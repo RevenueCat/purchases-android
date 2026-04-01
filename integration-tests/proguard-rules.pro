@@ -20,5 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 -keep class com.revenuecat.purchases.** { *; }
+
+# Needed due to robolectric update
 -dontwarn javax.lang.model.element.Modifier
 -dontwarn com.google.errorprone.annotations.IncompatibleModifiers
