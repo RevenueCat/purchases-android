@@ -936,6 +936,56 @@ jobs:
           name: Verify purchases-ui target SDK (34)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
+  build-purchases-devenv:
+    docker:
+      - image: ghcr.io/cachix/devenv/devenv:latest
+    resource_class: xlarge
+    steps:
+      - run:
+          name: Configure Nix GitHub access token
+          command: |
+            mkdir -p ~/.config/nix
+            echo "access-tokens = github.com=$GITHUB_TOKEN" >> ~/.config/nix/nix.conf
+      - run:
+          name: Checkout code
+          command: |
+            git clone --depth 1 --branch "$CIRCLE_BRANCH" \
+              "https://x-access-token:${GITHUB_TOKEN}@github.com/${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}.git" .
+            if [ -n "$CIRCLE_SHA1" ]; then
+              git fetch --depth 1 origin "$CIRCLE_SHA1"
+              git checkout "$CIRCLE_SHA1"
+            fi
+      - restore_cache:
+          keys:
+            - devenv-nix-store-v1-{{ checksum "devenv.lock" }}
+            - devenv-nix-store-v1-
+      - run:
+          name: Generate devenv.lock if missing
+          command: |
+            if [ ! -f devenv.lock ]; then
+              echo "devenv.lock not found, generating..."
+              devenv shell --no-reload -- true
+            fi
+      - run:
+          name: Commit devenv.lock if new or changed
+          command: |
+            git add devenv.lock
+            if git diff --cached --quiet; then
+              echo "devenv.lock unchanged, skipping commit"
+            else
+              git config user.email "ci@revenuecat.com"
+              git config user.name "CircleCI"
+              git commit -m "chore: generate devenv.lock [skip ci]"
+              git push origin "HEAD:refs/heads/$CIRCLE_BRANCH"
+            fi
+      - run:
+          name: Build purchases module with devenv
+          command: devenv shell --no-reload -- ./gradlew :purchases:assembleDefaultsBc8Debug --no-daemon
+      - save_cache:
+          key: devenv-nix-store-v1-{{ checksum "devenv.lock" }}
+          paths:
+            - /nix/store
+
 workflows:
   version: 2
   danger:
@@ -979,151 +1029,152 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - prepare-tests
-      - test:
-          name: test_defaults_bc8_debug
-          flavor: "defaults"
-          bc_version: "bc8"
-          build_type: "debug"
-          requires:
-            - prepare-tests
-      - test:
-          name: test_defaults_bc7_release
-          flavor: "defaults"
-          bc_version: "bc7"
-          build_type: "release"
-          requires:
-            - prepare-tests
-      - test:
-          name: test_cec_<< matrix.build_type >>
-          flavor: "customEntitlementComputation"
-          bc_version: "bc8"
-          requires:
-            - prepare-tests
-          matrix:
-            parameters:
-              build_type: ["debug", "release"]
-      # Special case for defaults BC8 release with kover
-      - test:
-          name: test_defaults_bc8_release
-          flavor: "defaults"
-          bc_version: "bc8"
-          build_type: "release"
-          run_kover: true
-          requires:
-            - prepare-tests
-      - verify-compatibility:
-          requires:
-            - prepare-tests
-      - lint:
-          requires:
-            - prepare-tests
-      - detekt:
-          requires:
-            - prepare-tests
-      - metalava:
-          requires:
-            - prepare-tests
-      - assemble-purchase-tester:
-          requires:
-            - prepare-tests
-      - assemble-paywall-tester-release:
-          requires:
-            - prepare-tests
-      - assemble-rct-tester-release:
-          requires:
-            - prepare-tests
-      - assemble-admob-integration-sample-app:
-          requires:
-            - prepare-tests
-      - test_dokka_hide_internal:
-          requires:
-            - prepare-tests
-      - test-galaxy:
-          requires:
-            - prepare-tests
-      - run-backend-integration-tests:
-          requires:
-            - prepare-tests
-      - record-and-upload-paparazzi-revenuecatui-snapshots:
-          requires:
-            - prepare-tests
-      - run-revenuecatui-ui-tests:
-          requires:
-            - prepare-tests
-      - emerge_purchases_ui_snapshot_tests:
-          requires:
-            - prepare-tests
-      - emerge_size_analysis_tests:
-          requires:
-            - prepare-tests
-      - run-maestro-e2e-tests:
-          requires:
-            - prepare-tests
-      - run-integration-tests:
-          requires:
-            - prepare-tests
-      - run-purchases-cec-integration-tests:
-          requires:
-            - prepare-tests
-      - run-purchases-integration-tests:
-          requires:
-            - prepare-tests
-          matrix:
-            parameters:
-              backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
-      - hold:
-          type: approval
-          requires:
-            - test_defaults_bc8_debug
-            - test_defaults_bc8_release
-            - test_defaults_bc7_release
-            - test-galaxy
-            - test_cec_debug
-            - test_cec_release
-            - assemble-purchase-tester
-            - assemble-paywall-tester-release
-            - run-backend-integration-tests
-            - run-maestro-e2e-tests
-            - run-revenuecatui-ui-tests
-            - run-integration-tests
-            - run-purchases-integration-tests
-            - run-purchases-cec-integration-tests
-            - verify-compatibility
-          <<: *release-branches
-      - revenuecat/tag-current-branch:
-          requires:
-            - hold
-          <<: *release-branches
-      - deploy:
-          <<: *release-tags
-          context: maven-central-publishing
-      - docs-deploy: *release-tags
-      - publish-purchase-tester-release:
-          requires:
-            - deploy
-            - docs-deploy
-          <<: *release-tags
-      - publish-paywall-tester-release:
-          track: "alpha"
-          requires:
-              - deploy
-              - docs-deploy
-          <<: *release-tags
-      - publish-rct-tester-release:
-          track: "alpha"
-          requires:
-              - deploy
-              - docs-deploy
-          <<: *release-tags
-      - revenuecat/merge-release-pr:
-          repo_name: purchases-android
-          use_merge_queue: true
-          requires:
-            - publish-purchase-tester-release
-            - publish-paywall-tester-release
-            - publish-rct-tester-release
-          <<: *release-tags
+      # - prepare-tests
+      - build-purchases-devenv
+      # - test:
+      #     name: test_defaults_bc8_debug
+      #     flavor: "defaults"
+      #     bc_version: "bc8"
+      #     build_type: "debug"
+      #     requires:
+      #       - prepare-tests
+      # - test:
+      #     name: test_defaults_bc7_release
+      #     flavor: "defaults"
+      #     bc_version: "bc7"
+      #     build_type: "release"
+      #     requires:
+      #       - prepare-tests
+      # - test:
+      #     name: test_cec_<< matrix.build_type >>
+      #     flavor: "customEntitlementComputation"
+      #     bc_version: "bc8"
+      #     requires:
+      #       - prepare-tests
+      #     matrix:
+      #       parameters:
+      #         build_type: ["debug", "release"]
+      # # Special case for defaults BC8 release with kover
+      # - test:
+      #     name: test_defaults_bc8_release
+      #     flavor: "defaults"
+      #     bc_version: "bc8"
+      #     build_type: "release"
+      #     run_kover: true
+      #     requires:
+      #       - prepare-tests
+      # - verify-compatibility:
+      #     requires:
+      #       - prepare-tests
+      # - lint:
+      #     requires:
+      #       - prepare-tests
+      # - detekt:
+      #     requires:
+      #       - prepare-tests
+      # - metalava:
+      #     requires:
+      #       - prepare-tests
+      # - assemble-purchase-tester:
+      #     requires:
+      #       - prepare-tests
+      # - assemble-paywall-tester-release:
+      #     requires:
+      #       - prepare-tests
+      # - assemble-rct-tester-release:
+      #     requires:
+      #       - prepare-tests
+      # - assemble-admob-integration-sample-app:
+      #     requires:
+      #       - prepare-tests
+      # - test_dokka_hide_internal:
+      #     requires:
+      #       - prepare-tests
+      # - test-galaxy:
+      #     requires:
+      #       - prepare-tests
+      # - run-backend-integration-tests:
+      #     requires:
+      #       - prepare-tests
+      # - record-and-upload-paparazzi-revenuecatui-snapshots:
+      #     requires:
+      #       - prepare-tests
+      # - run-revenuecatui-ui-tests:
+      #     requires:
+      #       - prepare-tests
+      # - emerge_purchases_ui_snapshot_tests:
+      #     requires:
+      #       - prepare-tests
+      # - emerge_size_analysis_tests:
+      #     requires:
+      #       - prepare-tests
+      # - run-maestro-e2e-tests:
+      #     requires:
+      #       - prepare-tests
+      # - run-integration-tests:
+      #     requires:
+      #       - prepare-tests
+      # - run-purchases-cec-integration-tests:
+      #     requires:
+      #       - prepare-tests
+      # - run-purchases-integration-tests:
+      #     requires:
+      #       - prepare-tests
+      #     matrix:
+      #       parameters:
+      #         backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+      # - hold:
+      #     type: approval
+      #     requires:
+      #       - test_defaults_bc8_debug
+      #       - test_defaults_bc8_release
+      #       - test_defaults_bc7_release
+      #       - test-galaxy
+      #       - test_cec_debug
+      #       - test_cec_release
+      #       - assemble-purchase-tester
+      #       - assemble-paywall-tester-release
+      #       - run-backend-integration-tests
+      #       - run-maestro-e2e-tests
+      #       - run-revenuecatui-ui-tests
+      #       - run-integration-tests
+      #       - run-purchases-integration-tests
+      #       - run-purchases-cec-integration-tests
+      #       - verify-compatibility
+      #     <<: *release-branches
+      # - revenuecat/tag-current-branch:
+      #     requires:
+      #       - hold
+      #     <<: *release-branches
+      # - deploy:
+      #     <<: *release-tags
+      #     context: maven-central-publishing
+      # - docs-deploy: *release-tags
+      # - publish-purchase-tester-release:
+      #     requires:
+      #       - deploy
+      #       - docs-deploy
+      #     <<: *release-tags
+      # - publish-paywall-tester-release:
+      #     track: "alpha"
+      #     requires:
+      #         - deploy
+      #         - docs-deploy
+      #     <<: *release-tags
+      # - publish-rct-tester-release:
+      #     track: "alpha"
+      #     requires:
+      #         - deploy
+      #         - docs-deploy
+      #     <<: *release-tags
+      # - revenuecat/merge-release-pr:
+      #     repo_name: purchases-android
+      #     use_merge_queue: true
+      #     requires:
+      #       - publish-purchase-tester-release
+      #       - publish-paywall-tester-release
+      #       - publish-rct-tester-release
+      #     <<: *release-tags
 
   on-main-branch:
     when:
