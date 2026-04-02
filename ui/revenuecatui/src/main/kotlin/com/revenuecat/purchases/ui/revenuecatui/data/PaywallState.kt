@@ -89,6 +89,7 @@ internal sealed interface PaywallState {
         @Stable
         class Components(
             val stack: ComponentStyle,
+            val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
             /**
