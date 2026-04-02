@@ -39,6 +39,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
@@ -50,6 +51,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyControlInteraction
 import java.net.URL
 
 @Composable
@@ -114,7 +116,14 @@ private fun Footer(
                 color = color,
                 childModifier = childModifier,
                 R.string.all_plans,
-                action = allPlansTapped,
+                action = {
+                    viewModel.trackControlInteraction(
+                        componentType = PaywallControlType.BUTTON,
+                        componentName = PaywallLegacyControlInteraction.ALL_PLANS_BUTTON_NAME,
+                        componentValue = PaywallLegacyControlInteraction.Value.TOGGLE_ALL_PLANS,
+                    )
+                    allPlansTapped()
+                },
             )
 
             if (configuration.displayRestorePurchases ||
@@ -131,7 +140,14 @@ private fun Footer(
                 childModifier = childModifier,
                 R.string.restore_purchases,
                 R.string.restore,
-            ) { viewModel.restorePurchases() }
+            ) {
+                viewModel.trackControlInteraction(
+                    componentType = PaywallControlType.BUTTON,
+                    componentName = PaywallLegacyControlInteraction.RESTORE_BUTTON_NAME,
+                    componentValue = PaywallLegacyControlInteraction.Value.RESTORE_PURCHASES,
+                )
+                viewModel.restorePurchases()
+            }
 
             if (configuration.termsOfServiceURL != null || configuration.privacyURL != null) {
                 Separator(color = color)
@@ -145,6 +161,13 @@ private fun Footer(
                 R.string.terms_and_conditions,
                 R.string.terms,
             ) {
+                val urlString = it.toString()
+                viewModel.trackControlInteraction(
+                    componentType = PaywallControlType.BUTTON,
+                    componentName = PaywallLegacyControlInteraction.TERMS_LINK_NAME,
+                    componentValue = PaywallLegacyControlInteraction.Value.NAVIGATE_TO_TERMS,
+                    componentUrl = urlString,
+                )
                 openURL(context, it)
             }
 
@@ -160,6 +183,13 @@ private fun Footer(
                 R.string.privacy_policy,
                 R.string.privacy,
             ) {
+                val urlString = it.toString()
+                viewModel.trackControlInteraction(
+                    componentType = PaywallControlType.BUTTON,
+                    componentName = PaywallLegacyControlInteraction.PRIVACY_LINK_NAME,
+                    componentValue = PaywallLegacyControlInteraction.Value.NAVIGATE_TO_PRIVACY_POLICY,
+                    componentUrl = urlString,
+                )
                 openURL(context, it)
             }
         }

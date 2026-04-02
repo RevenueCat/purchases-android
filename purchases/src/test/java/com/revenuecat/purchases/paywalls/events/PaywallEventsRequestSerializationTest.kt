@@ -66,4 +66,57 @@ class PaywallEventsRequestSerializationTest {
         val decodedRequest = JsonProvider.defaultJson.decodeFromString<EventsRequest>(requestString)
         Assertions.assertThat(decodedRequest).isEqualTo(request)
     }
+
+    @Test
+    fun `can encode paywall control interaction event with component fields`() {
+        val controlRequest = EventsRequest(
+            listOf(
+                BackendStoredEvent.Paywalls(
+                    BackendEvent.Paywalls(
+                        id = "cid",
+                        version = 1,
+                        type = PaywallEventType.CONTROL_INTERACTION.value,
+                        appUserID = "user",
+                        sessionID = "sess",
+                        offeringID = "off",
+                        paywallID = "pw",
+                        paywallRevision = 1,
+                        timestamp = 100L,
+                        displayMode = "fullscreen",
+                        darkMode = false,
+                        localeIdentifier = "en_US",
+                        componentType = "button",
+                        componentName = "restore_cta",
+                        componentValue = "restore_purchases",
+                        componentUrl = null,
+                    ),
+                ),
+            ).map { it.toBackendEvent() },
+        )
+        val requestString = JsonProvider.defaultJson.encodeToString(controlRequest)
+        Assertions.assertThat(requestString).isEqualTo(
+            "{" +
+                "\"events\":[" +
+                    "{" +
+                        "\"discriminator\":\"paywalls\"," +
+                        "\"id\":\"cid\"," +
+                        "\"version\":1," +
+                        "\"type\":\"paywall_control_interaction\"," +
+                        "\"app_user_id\":\"user\"," +
+                        "\"session_id\":\"sess\"," +
+                        "\"offering_id\":\"off\"," +
+                        "\"paywall_id\":\"pw\"," +
+                        "\"paywall_revision\":1," +
+                        "\"timestamp\":100," +
+                        "\"display_mode\":\"fullscreen\"," +
+                        "\"dark_mode\":false," +
+                        "\"locale\":\"en_US\"," +
+                        "\"component_type\":\"button\"," +
+                        "\"component_name\":\"restore_cta\"," +
+                        "\"component_value\":\"restore_purchases\"" +
+                    "}" +
+                "]" +
+            "}",
+        )
+    }
 }

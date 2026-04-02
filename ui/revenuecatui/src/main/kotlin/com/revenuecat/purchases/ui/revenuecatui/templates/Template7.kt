@@ -53,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -77,6 +78,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyControlInteraction
 import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
@@ -88,6 +90,13 @@ private object Template7UIConstants {
     val discountPadding = 8.dp
     const val headerAspectRatio = 2f
 }
+
+/**
+ * `component_value` for Template 7 tier control interaction).
+ */
+@JvmSynthetic
+internal fun tierSelectorControlInteractionValue(tier: TemplateConfiguration.TierInfo): String =
+    tier.name.takeUnless { it.isBlank() } ?: ""
 
 @Composable
 internal fun Template7(
@@ -113,6 +122,16 @@ internal fun Template7(
 
     val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
+    val onTierSelected: (TemplateConfiguration.TierInfo) -> Unit = { tier ->
+        viewModel.trackControlInteraction(
+            componentType = PaywallControlType.TAB,
+            componentName = PaywallLegacyControlInteraction.TIER_SELECTOR_NAME,
+            componentValue = tierSelectorControlInteractionValue(tier),
+        )
+        selectedTier = tier
+        state.selectPackage(tier.defaultPackage)
+    }
+
     Column(
         Modifier.background(colorForTier.background),
     ) {
@@ -122,10 +141,8 @@ internal fun Template7(
                 viewModel,
                 allTiers,
                 selectedTier,
-            ) {
-                selectedTier = it
-                state.selectPackage(selectedTier.defaultPackage)
-            }
+                onTierSelected,
+            )
         } else {
             Template7PortraitContent(
                 state,
@@ -133,10 +150,8 @@ internal fun Template7(
                 packageSelectorVisible,
                 allTiers,
                 selectedTier,
-            ) {
-                selectedTier = it
-                state.selectPackage(selectedTier.defaultPackage)
-            }
+                onTierSelected,
+            )
         }
 
         PurchaseButton(state, viewModel, colors = colorForTier)

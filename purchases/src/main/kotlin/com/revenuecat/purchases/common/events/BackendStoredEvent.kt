@@ -7,6 +7,7 @@ import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEv
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.toWireString
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -106,6 +107,10 @@ internal fun PaywallEvent.toBackendStoredEvent(
             productID = data.productIdentifier,
             errorCode = data.errorCode,
             errorMessage = data.errorMessage,
+            componentType = controlInteraction?.componentType?.toWireString(),
+            componentName = controlInteraction?.componentName,
+            componentValue = controlInteraction?.componentValue,
+            componentUrl = controlInteraction?.componentUrl,
         ),
     )
 }

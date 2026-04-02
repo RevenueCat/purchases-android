@@ -37,6 +37,14 @@ internal data class PaywallStoredEvent(
             localeIdentifier = event.data.localeIdentifier,
             exitOfferType = event.data.exitOfferType?.value,
             exitOfferingID = event.data.exitOfferingIdentifier,
+            packageID = event.data.packageIdentifier,
+            productID = event.data.productIdentifier,
+            errorCode = event.data.errorCode,
+            errorMessage = event.data.errorMessage,
+            componentType = event.controlInteraction?.componentType?.toWireString(),
+            componentName = event.controlInteraction?.componentName,
+            componentValue = event.controlInteraction?.componentValue,
+            componentUrl = event.controlInteraction?.componentUrl,
         )
     }
 

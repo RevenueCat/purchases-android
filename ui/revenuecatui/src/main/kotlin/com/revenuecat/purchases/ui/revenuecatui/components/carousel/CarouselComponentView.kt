@@ -23,6 +23,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
@@ -61,8 +63,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.ui.unit.lerp as lerpUnit
 
 @Suppress("LongMethod")
@@ -99,8 +103,39 @@ internal fun CarouselComponentView(
         }
     }
 
+    val skipProgrammaticPageTracking = remember { AtomicBoolean(false) }
+
     carouselState.autoAdvance?.let { autoAdvance ->
-        EnableAutoAdvance(autoAdvance, pagerState, carouselState.loop, pageCount)
+        EnableAutoAdvance(
+            autoAdvance,
+            pagerState,
+            carouselState.loop,
+            pageCount,
+            skipProgrammaticPageTracking,
+        )
+    }
+
+    val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
+    if (pageCount > 0) {
+        LaunchedEffect(pagerState, pageCount, style.componentName, controlInteractionTracker) {
+            var previousPage = pagerState.currentPage
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                if (page != previousPage) {
+                    if (skipProgrammaticPageTracking.getAndSet(false)) {
+                        // Auto-advance scroll; do not emit control interaction.
+                    } else {
+                        val logicalPage = page % pageCount
+                        controlInteractionTracker.track(
+                            componentType = PaywallControlType.CAROUSEL,
+                            componentName = style.componentName,
+                            componentValue = logicalPage.toString(),
+                            componentUrl = null,
+                        )
+                    }
+                    previousPage = page
+                }
+            }
+        }
     }
 
     Column(
@@ -287,16 +322,18 @@ private fun EnableAutoAdvance(
     pagerState: PagerState,
     shouldLoop: Boolean,
     pageCount: Int,
+    skipProgrammaticPageTracking: AtomicBoolean,
 ) {
     LaunchedEffect(Unit) {
         while (true) {
             delay(autoAdvance.msTimePerPage.toLong())
             if (pagerState.isScrollInProgress) continue
-            val nextPage = if (shouldLoop) {
-                pagerState.currentPage + 1
-            } else {
-                (pagerState.currentPage + 1) % pageCount
-            }
+            val nextPage = nextAutoAdvanceTargetPage(
+                shouldLoop = shouldLoop,
+                pageCount = pageCount,
+                currentPage = pagerState.currentPage,
+            ) ?: continue
+            skipProgrammaticPageTracking.set(true)
             try {
                 pagerState.animateScrollToPage(
                     page = nextPage,
@@ -305,9 +342,29 @@ private fun EnableAutoAdvance(
                     ),
                 )
             } catch (_: CancellationException) {
+                skipProgrammaticPageTracking.set(false)
                 // Do nothing, so we continue scrolling on the next loop
             }
         }
+    }
+}
+
+/**
+ * Next pager index for carousel auto-advance, or `null` when no scroll should run
+ * (empty carousel, or non-loop already on the last page).
+ */
+internal fun nextAutoAdvanceTargetPage(
+    shouldLoop: Boolean,
+    pageCount: Int,
+    currentPage: Int,
+): Int? {
+    if (pageCount <= 0) return null
+    return if (shouldLoop) {
+        currentPage + 1
+    } else if (currentPage >= pageCount - 1) {
+        null
+    } else {
+        currentPage + 1
     }
 }
 
