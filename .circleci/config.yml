@@ -958,7 +958,6 @@ jobs:
       - restore_cache:
           keys:
             - devenv-nix-store-v1-{{ checksum "devenv.lock" }}
-            - devenv-nix-store-v1-
       - run:
           name: Generate devenv.lock if missing
           command: |
@@ -978,6 +977,9 @@ jobs:
               git commit -m "chore: generate devenv.lock [skip ci]"
               git push origin "HEAD:refs/heads/$CIRCLE_BRANCH"
             fi
+      - run:
+          name: Build devenv shell
+          command: devenv shell --no-reload -- true
       - run:
           name: Build purchases module with devenv
           command: devenv shell --no-reload -- ./gradlew :purchases:assembleDefaultsBc8Debug --no-daemon
