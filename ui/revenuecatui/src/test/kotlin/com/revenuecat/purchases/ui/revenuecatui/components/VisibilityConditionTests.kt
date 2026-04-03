@@ -17,6 +17,7 @@ import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
+import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PartialTimelineComponent
@@ -1959,6 +1960,348 @@ class VisibilityConditionTests {
         // Tab 1 text is always visible
         onNodeWithText(tab1TextValue).assertIsDisplayed()
     }
+
+    // endregion
+
+    // region Package visibility
+
+    /**
+     * PackageComponent with visible=false is hidden.
+     */
+    @Test
+    fun `Package hidden when visible is false`(): Unit = with(composeTestRule) {
+        val monthlyPkg = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = false,
+            visible = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = monthlyLabelKey, color = textColor)),
+            ),
+        )
+
+        val data = PaywallComponentsData(
+            id = "pkg_visible_false",
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(monthlyPkg)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        val offering = Offering(
+            identifier = "pkg-visible-false",
+            serverDescription = "Package visible=false test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val pkgStyle = factory.create(monthlyPkg).getOrThrow().componentStyle as PackageComponentStyle
+
+        setContent {
+            PackageComponentView(style = pkgStyle, state = state, clickHandler = { })
+        }
+
+        onNodeWithText(monthlyLabelValue).assertDoesNotExist()
+    }
+
+    /**
+     * PackageComponent with visible=true is shown.
+     */
+    @Test
+    fun `Package visible when visible is true`(): Unit = with(composeTestRule) {
+        val monthlyPkg = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = false,
+            visible = true,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = monthlyLabelKey, color = textColor)),
+            ),
+        )
+
+        val data = PaywallComponentsData(
+            id = "pkg_visible_true",
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(monthlyPkg)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        val offering = Offering(
+            identifier = "pkg-visible-true",
+            serverDescription = "Package visible=true test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val pkgStyle = factory.create(monthlyPkg).getOrThrow().componentStyle as PackageComponentStyle
+
+        setContent {
+            PackageComponentView(style = pkgStyle, state = state, clickHandler = { })
+        }
+
+        onNodeWithText(monthlyLabelValue).assertIsDisplayed()
+    }
+
+    /**
+     * PackageComponent hidden via override with selected_package condition.
+     * Selecting a specific package hides this package component.
+     */
+    @Test
+    fun `Package hidden by selected_package override`(): Unit = with(composeTestRule) {
+        val monthlyPkg = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = monthlyLabelKey, color = textColor)),
+            ),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(
+                        ComponentOverride.Condition.SelectedPackage(
+                            operator = ComponentOverride.ArrayOperator.IN,
+                            packages = listOf(TestData.Packages.monthly.identifier),
+                        ),
+                    ),
+                    properties = PartialPackageComponent(visible = false),
+                ),
+            ),
+        )
+        val annualPkg = PackageComponent(
+            packageId = TestData.Packages.annual.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = annualLabelKey, color = textColor)),
+            ),
+        )
+
+        val data = PaywallComponentsData(
+            id = "pkg_override_test",
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(monthlyPkg, annualPkg)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        val offering = Offering(
+            identifier = "pkg-override-test",
+            serverDescription = "Package override test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val monthlyStyle = factory.create(monthlyPkg).getOrThrow().componentStyle as PackageComponentStyle
+        val annualStyle = factory.create(annualPkg).getOrThrow().componentStyle as PackageComponentStyle
+
+        setContent {
+            Column {
+                PackageComponentView(
+                    style = monthlyStyle,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("monthly"),
+                )
+                PackageComponentView(
+                    style = annualStyle,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("annual"),
+                )
+            }
+        }
+
+        // No package selected — monthly is visible
+        onNodeWithText(monthlyLabelValue).assertIsDisplayed()
+
+        // Select monthly — monthly package hides itself via override
+        state.update(TestData.Packages.monthly.identifier)
+        onNodeWithText(monthlyLabelValue).assertDoesNotExist()
+
+        // Select annual — monthly is visible again
+        state.update(TestData.Packages.annual.identifier)
+        onNodeWithText(monthlyLabelValue).assertIsDisplayed()
+    }
+
+    // endregion
+
+    // region Package visibility — selection reconciliation
+
+    /**
+     * A statically hidden package (visible=false) is never the initial selection, even when
+     * isSelectedByDefault=true — the StyleFactory suppresses it. The visible alternative is
+     * rendered but not automatically selected (no other package is marked as default).
+     */
+    @Test
+    fun `Statically hidden default is not selected`(): Unit = with(composeTestRule) {
+        // Monthly is the intended default but is statically hidden.
+        val monthlyPkg = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = true,
+            visible = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = monthlyLabelKey, color = textColor)),
+            ),
+        )
+        val annualPkg = PackageComponent(
+            packageId = TestData.Packages.annual.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = annualLabelKey, color = textColor)),
+            ),
+        )
+
+        val data = PaywallComponentsData(
+            id = "hidden_default_not_selected",
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(monthlyPkg, annualPkg)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        val offering = Offering(
+            identifier = "hidden-default-not-selected",
+            serverDescription = "Statically hidden default test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val monthlyStyle = factory.create(monthlyPkg).getOrThrow().componentStyle as PackageComponentStyle
+        val annualStyle = factory.create(annualPkg).getOrThrow().componentStyle as PackageComponentStyle
+
+        setContent {
+            Column {
+                PackageComponentView(style = monthlyStyle, state = state, clickHandler = { })
+                PackageComponentView(style = annualStyle, state = state, clickHandler = { })
+            }
+        }
+
+        // Monthly is invisible — it must not be rendered at all.
+        onNodeWithText(monthlyLabelValue).assertDoesNotExist()
+        // Annual is visible.
+        onNodeWithText(annualLabelValue).assertIsDisplayed()
+        // Monthly must not be selected (purchase state must not reference an invisible package).
+        assertTrue(
+            "Monthly must not be selected when statically hidden",
+            state.selectedPackageInfo?.rcPackage?.identifier != TestData.Packages.monthly.identifier,
+        )
+    }
+
+    /**
+     * When a dynamic override hides the currently selected package (via a variable condition),
+     * the first visible alternative should be auto-selected so purchase state remains consistent.
+     */
+    @Test
+    fun `Dynamic override hides selected package — first visible alternative is auto-selected`(): Unit =
+        with(composeTestRule) {
+            // Monthly is default-selected and hides itself when a custom variable is set.
+            val hideMonthlyKey = "hide_monthly"
+            val monthlyPkg = PackageComponent(
+                packageId = TestData.Packages.monthly.identifier,
+                isSelectedByDefault = true,
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = monthlyLabelKey, color = textColor)),
+                ),
+                overrides = listOf(
+                    ComponentOverride(
+                        conditions = listOf(
+                            ComponentOverride.Condition.Variable(
+                                operator = ComponentOverride.EqualityOperator.EQUALS,
+                                variable = hideMonthlyKey,
+                                value = JsonPrimitive(true),
+                            ),
+                        ),
+                        properties = PartialPackageComponent(visible = false),
+                    ),
+                ),
+            )
+            val annualPkg = PackageComponent(
+                packageId = TestData.Packages.annual.identifier,
+                isSelectedByDefault = false,
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = annualLabelKey, color = textColor)),
+                ),
+            )
+
+            val data = PaywallComponentsData(
+                id = "dynamic_hidden_default",
+                templateName = "components",
+                assetBaseURL = URL("https://assets.pawwalls.com"),
+                componentsConfig = ComponentsConfig(
+                    base = PaywallComponentsConfig(
+                        stack = StackComponent(components = listOf(monthlyPkg, annualPkg)),
+                        background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                        stickyFooter = null,
+                    ),
+                ),
+                componentsLocalizations = localizations,
+                defaultLocaleIdentifier = localeId,
+            )
+            val offering = Offering(
+                identifier = "dynamic-hidden-default",
+                serverDescription = "Dynamic hidden default test",
+                metadata = emptyMap(),
+                availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+                paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+            )
+            val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+            // Set the custom variable so the variable condition fires and hides monthly.
+            val state = offering.toComponentsPaywallState(
+                validated,
+                customVariables = mapOf(hideMonthlyKey to CustomVariableValue.Boolean(true)),
+            )
+            val factory = StyleFactory(localizations = localizations, offering = offering)
+            val monthlyStyle = factory.create(monthlyPkg).getOrThrow().componentStyle as PackageComponentStyle
+            val annualStyle = factory.create(annualPkg).getOrThrow().componentStyle as PackageComponentStyle
+
+            setContent {
+                Column {
+                    PackageComponentView(style = monthlyStyle, state = state, clickHandler = { })
+                    PackageComponentView(style = annualStyle, state = state, clickHandler = { })
+                }
+            }
+
+            // Monthly is hidden by the variable condition — annual should be auto-selected.
+            onNodeWithText(monthlyLabelValue).assertDoesNotExist()
+            onNodeWithText(annualLabelValue).assertIsDisplayed()
+            assertTrue(
+                "Annual should be auto-selected when monthly is hidden by variable override",
+                state.selectedPackageInfo?.rcPackage?.identifier == TestData.Packages.annual.identifier,
+            )
+        }
 
     // endregion
 }
