@@ -26,43 +26,74 @@ internal class CustomerInfoUpdateHandler constructor(
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
+    @Deprecated("Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead")
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
         @Synchronized get
         set(value) {
             synchronized(this@CustomerInfoUpdateHandler) {
                 field = value
             }
-            afterSetListener(value)
+            afterSetLegacyListener(value)
         }
 
+    private val listeners = mutableListOf<UpdatedCustomerInfoListener>()
+
     private var lastSentCustomerInfo: CustomerInfo? = null
+
+    fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
+        if (!appConfig.customEntitlementComputation) {
+            getCachedCustomerInfo(identityManager.currentAppUserID)?.let { cachedInfo ->
+                sendToSingleListener(listener, cachedInfo)
+            }
+        }
+        synchronized(this@CustomerInfoUpdateHandler) {
+            listeners.add(listener)
+        }
+    }
+
+    fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        synchronized(this@CustomerInfoUpdateHandler) {
+            listeners.remove(listener)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    fun removeAllListeners() {
+        synchronized(this@CustomerInfoUpdateHandler) {
+            listeners.clear()
+            updatedCustomerInfoListener = null
+        }
+    }
 
     fun cacheAndNotifyListeners(customerInfo: CustomerInfo) {
         deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, customerInfo)
         notifyListeners(customerInfo)
     }
 
+    @Suppress("DEPRECATION")
     fun notifyListeners(customerInfo: CustomerInfo) {
-        synchronized(this@CustomerInfoUpdateHandler) { updatedCustomerInfoListener to lastSentCustomerInfo }
-            .let { (listener, lastSentCustomerInfo) ->
-                if (lastSentCustomerInfo != customerInfo) {
-                    diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
-                }
-                if (listener != null && lastSentCustomerInfo != customerInfo) {
-                    if (lastSentCustomerInfo != null) {
-                        log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER }
-                    } else {
-                        log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
-                    }
-                    synchronized(this@CustomerInfoUpdateHandler) {
-                        this.lastSentCustomerInfo = customerInfo
-                    }
-                    dispatch { listener.onReceived(customerInfo) }
-                }
+        val (legacyListener, addedListeners, lastSent) = synchronized(this@CustomerInfoUpdateHandler) {
+            Triple(updatedCustomerInfoListener, listeners.toList(), lastSentCustomerInfo)
+        }
+        if (lastSent != customerInfo) {
+            diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
+            if (lastSent != null) {
+                log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER }
+            } else {
+                log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
             }
+            synchronized(this@CustomerInfoUpdateHandler) {
+                this.lastSentCustomerInfo = customerInfo
+            }
+            legacyListener?.let { dispatch { it.onReceived(customerInfo) } }
+            addedListeners.forEach { listener ->
+                dispatch { listener.onReceived(customerInfo) }
+            }
+        }
     }
 
-    private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
+    private fun afterSetLegacyListener(listener: UpdatedCustomerInfoListener?) {
         if (listener != null) {
             log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
             if (!appConfig.customEntitlementComputation) {
@@ -71,6 +102,11 @@ internal class CustomerInfoUpdateHandler constructor(
                 }
             }
         }
+    }
+
+    private fun sendToSingleListener(listener: UpdatedCustomerInfoListener, customerInfo: CustomerInfo) {
+        log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
+        dispatch { listener.onReceived(customerInfo) }
     }
 
     private fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {

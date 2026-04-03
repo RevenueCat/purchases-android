@@ -21,6 +21,7 @@ import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
@@ -63,6 +64,10 @@ internal interface PurchasesType {
 
     @Throws(PurchasesException::class)
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
+
+    fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener)
+
+    fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener)
 }
 
 @Suppress("TooManyFunctions")
@@ -130,5 +135,13 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @Throws(PurchasesException::class)
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         return purchases.awaitCreateSupportTicket(email, description)
+    }
+
+    override fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        purchases.addUpdatedCustomerInfoListener(listener)
+    }
+
+    override fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        purchases.removeUpdatedCustomerInfoListener(listener)
     }
 }
