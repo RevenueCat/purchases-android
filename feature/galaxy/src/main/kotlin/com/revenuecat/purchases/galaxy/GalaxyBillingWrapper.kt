@@ -23,11 +23,13 @@ import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.conversions.toStoreTransaction
 import com.revenuecat.purchases.galaxy.handler.AcknowledgePurchaseHandler
 import com.revenuecat.purchases.galaxy.handler.ChangeSubscriptionPlanHandler
+import com.revenuecat.purchases.galaxy.handler.ConsumePurchaseHandler
 import com.revenuecat.purchases.galaxy.handler.GetOwnedListHandler
 import com.revenuecat.purchases.galaxy.handler.ProductDataHandler
 import com.revenuecat.purchases.galaxy.handler.PurchaseHandler
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
 import com.revenuecat.purchases.galaxy.listener.ChangeSubscriptionPlanResponseListener
+import com.revenuecat.purchases.galaxy.listener.ConsumePurchaseResponseListener
 import com.revenuecat.purchases.galaxy.listener.GetOwnedListResponseListener
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
@@ -35,7 +37,6 @@ import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.SerialRequestExecutor
-import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
 import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
@@ -72,6 +73,10 @@ internal class GalaxyBillingWrapper(
         AcknowledgePurchaseHandler(
             iapHelper = iapHelper,
             context = context,
+        ),
+    private val consumePurchaseHandler: ConsumePurchaseResponseListener =
+        ConsumePurchaseHandler(
+            iapHelper = iapHelper,
         ),
     private val getOwnedListHandler: GetOwnedListResponseListener =
         GetOwnedListHandler(
@@ -182,33 +187,96 @@ internal class GalaxyBillingWrapper(
         }
     }
 
+    @Suppress("ReturnCount")
     override fun consumeAndSave(
         finishTransactions: Boolean,
         purchase: StoreTransaction,
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        if (!finishTransactions || purchase.type == ProductType.UNKNOWN) {
-            // Here, we hard-code isAutoRenewing to true because we only support subscriptions for now.
-            // We will need to update this when we add support for one time purchases.
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken, isAutoRenewing = true)
+        if (purchase.type == ProductType.UNKNOWN) {
+            log(LogIntent.GALAXY_WARNING) {
+                GalaxyStrings.WARNING_CANNOT_ACKNOWLEDGE_OR_CONSUME_UNKNOWN_PRODUCT_TYPE
+            }
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken, isAutoRenewing = purchase.isAutoRenewing)
+            return
+        }
+
+        if (!finishTransactions) {
+            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken, isAutoRenewing = purchase.isAutoRenewing)
             return
         }
 
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return
 
-        if (purchase.type == ProductType.SUBS) {
-            acknowledgePurchase(
-                storeTransaction = purchase,
-                // Here, we hard-code isAutoRenewing to true because we only support subscriptions for now.
-                // We will need to update this when we add support for one time purchases.
-                onAcknowledged = { token ->
-                    deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = true)
+        when (purchase.type) {
+            ProductType.SUBS -> {
+                acknowledgePurchase(
+                    storeTransaction = purchase,
+                    // Here, we hard-code isAutoRenewing to true because we only support subscriptions for now.
+                    // We will need to update this when we add support for one time purchases.
+                    onAcknowledged = { token ->
+                        deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = true)
+                    },
+                )
+            }
+            ProductType.INAPP -> {
+                if (shouldConsume) {
+                    consumePurchase(
+                        storeTransaction = purchase,
+                        onConsumed = { token ->
+                            deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = false)
+                        },
+                    )
+                } else {
+                    // acknowledge (non-consumable purchase)
+                    acknowledgePurchase(
+                        storeTransaction = purchase,
+                        onAcknowledged = { token ->
+                            deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = false)
+                        },
+                    )
+                }
+            }
+            ProductType.UNKNOWN -> {} // Shouldn't be run due to being caught above
+        }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    internal fun consumePurchase(
+        storeTransaction: StoreTransaction,
+        onConsumed: (purchaseToken: String) -> Unit,
+    ) {
+        serialRequestExecutor.executeSerially { finish ->
+            consumePurchaseHandler.consumePurchase(
+                transaction = storeTransaction,
+                onSuccess = { consumptionResult ->
+                    val resultStatus = GalaxyConsumeOrAcknowledgeStatusCode.fromCode(
+                        code = consumptionResult.statusCode,
+                    )
+
+                    if (resultStatus == null) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.CONSUME_REQUEST_RETURNED_UNKNOWN_STATUS_CODE
+                                .format(consumptionResult.statusCode)
+                        }
+                    } else if (resultStatus != GalaxyConsumeOrAcknowledgeStatusCode.SUCCESS) {
+                        log(LogIntent.GALAXY_ERROR) {
+                            GalaxyStrings.CONSUME_REQUEST_RETURNED_ERROR_STATUS_CODE
+                                .format(
+                                    consumptionResult.statusCode,
+                                    consumptionResult.statusString,
+                                )
+                        }
+                    } else {
+                        onConsumed(storeTransaction.purchaseToken)
+                    }
+
+                    finish()
                 },
+                onError = { _ -> finish() },
             )
-        } else {
-            log(LogIntent.GALAXY_WARNING) { GalaxyStrings.WARNING_CANNOT_CONSUME_NON_SUBS_PRODUCT_TYPES }
         }
     }
 
@@ -324,15 +392,6 @@ internal class GalaxyBillingWrapper(
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
             return
         }
-        if (galaxyPurchaseInfo.productType == ProductType.INAPP) {
-            val error = PurchasesError(
-                PurchasesErrorCode.UnsupportedError,
-                GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED,
-            )
-            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_OTPS_NOT_SUPPORTED }
-            purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-            return
-        }
 
         val productId = galaxyPurchaseInfo.productId
 
@@ -424,19 +483,19 @@ internal class GalaxyBillingWrapper(
         serialRequestExecutor.executeSerially { finish ->
             getOwnedListHandler.getOwnedList(
                 onSuccess = { ownedProducts ->
-                    val activeOwnedProducts = ownedProducts
-                        .filter {
-                            // TO DO: Find out what this returns for OTPs when we support OTPs
-                            try {
-                                it.subscriptionEndDate.parseDateFromGalaxyDateString() > dateProvider.now
-                            } catch (e: IllegalArgumentException) {
-                                val errorMessage = GalaxyStrings.ERROR_CANNOT_PARSE_SUBSCRIPTION_END_DATE
-                                    .format(e.message)
-                                log(LogIntent.GALAXY_ERROR) { errorMessage }
-                                false
-                            }
-                        }
-                    val storeTransactions = activeOwnedProducts
+
+                    // getOwnedList returns:
+                    // Items that were purchased with a single charge to the user's payment method. They are either
+                    // consumable or non-consumable:
+                    //    - Consumable items that have not yet been used and not yet reported as consumed
+                    //       -Non-consumable items
+                    //       -Subscriptions currently in a free trial or an active subscription period
+                    // Includes canceled subscriptions until their active subscription period has ended
+                    //    If the subscription price is changed, includes information such as new price, renewal date,
+                    //    and user consent
+                    //
+                    // Therefore, we don't need to check if the subscription is active here
+                    val storeTransactions = ownedProducts
                         .mapNotNull {
                             try {
                                 it.toStoreTransaction(purchaseState = PurchaseState.PURCHASED)
@@ -450,7 +509,7 @@ internal class GalaxyBillingWrapper(
                         storeTransaction.purchaseToken.sha1()
                     }
 
-                    if (activeOwnedProducts.isNotEmpty() && purchasesMap.isEmpty()) {
+                    if (ownedProducts.isNotEmpty() && purchasesMap.isEmpty()) {
                         val error = PurchasesError(
                             code = PurchasesErrorCode.InvalidReceiptError,
                             underlyingErrorMessage = "No valid transactions were parsed for the getOwnedList query.",

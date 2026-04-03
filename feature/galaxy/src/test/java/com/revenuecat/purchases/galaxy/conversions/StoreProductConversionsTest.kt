@@ -69,6 +69,28 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
+    fun `toStoreProduct creates expected INAPP shape for Samsung item products`() {
+        val productId = "inapp_product"
+
+        val storeProduct = createProductVo(
+            itemId = productId,
+            type = "item",
+        ).toStoreProduct()
+
+        assertThat(storeProduct.type).isEqualTo(ProductType.INAPP)
+        assertThat(storeProduct.period).isNull()
+        assertThat(storeProduct.subscriptionOptions).isNull()
+        assertThat(storeProduct.defaultOption).isNull()
+        assertThat(storeProduct.purchasingData).isEqualTo(
+            GalaxyPurchasingData.Product(
+                productId = productId,
+                productType = ProductType.INAPP,
+            ),
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
     fun `toStoreProduct creates subscriptionOptions and defaultOption for subscriptions with parsable period`() {
         val productId = "sub_product"
         val storeProduct = createProductVo(
