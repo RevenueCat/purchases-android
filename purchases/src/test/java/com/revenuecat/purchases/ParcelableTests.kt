@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
@@ -92,6 +93,13 @@ class ParcelableTests {
     fun `GoogleReplacementMode is Parcelable`() {
         GoogleReplacementMode.values().forEach { testParcelization(it, true) }
         val nullMode: GoogleReplacementMode? = null
+        testParcelization(nullMode, true)
+    }
+
+    @Test
+    fun `StoreReplacementMode is Parcelable`() {
+        StoreReplacementMode.values().forEach { testParcelization(it, true) }
+        val nullMode: StoreReplacementMode? = null
         testParcelization(nullMode, true)
     }
 

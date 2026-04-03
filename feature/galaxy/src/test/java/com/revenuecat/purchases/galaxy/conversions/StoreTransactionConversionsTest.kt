@@ -5,9 +5,9 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import io.mockk.every
 import io.mockk.mockk
@@ -82,7 +82,7 @@ class StoreTransactionConversionsTest {
             purchaseDate = purchaseDateString,
             type = "subscription",
         )
-        val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE
+        val replacementMode = StoreReplacementMode.WITH_TIME_PRORATION
 
         val storeTransaction = purchaseVo.toStoreTransaction(
             productId = "product",

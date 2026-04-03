@@ -85,7 +85,7 @@ public interface PurchaseLogic : PaywallPurchaseLogic {
  * ```kotlin
  * val params = PaywallPurchaseLogicParams.Builder(rcPackage)
  *     .oldProductId("com.example.old_product")
- *     .replacementMode(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+ *     .replacementMode(StoreReplacementMode.CHARGE_PRORATED_PRICE)
  *     .subscriptionOption(subscriptionOption)
  *     .build()
  * ```
@@ -112,7 +112,7 @@ public class PaywallPurchaseLogicParams internal constructor(
 
     /**
      * The replacement mode to use for this product change, as configured in the paywall.
-     * For Google Play, this will be a [com.revenuecat.purchases.models.GoogleReplacementMode].
+     * For Google Play, this will be a [com.revenuecat.purchases.models.StoreReplacementMode].
      * Null if this is a new purchase or the store does not support replacement modes.
      */
     public val replacementMode: ReplacementMode? get() = productChange?.replacementMode
@@ -137,7 +137,7 @@ public class PaywallPurchaseLogicParams internal constructor(
 
         /**
          * Sets the replacement mode for this product change.
-         * For Google Play, use [com.revenuecat.purchases.models.GoogleReplacementMode].
+         * Use [com.revenuecat.purchases.models.StoreReplacementMode].
          */
         public fun replacementMode(replacementMode: ReplacementMode?): Builder = apply {
             this.replacementMode = replacementMode
