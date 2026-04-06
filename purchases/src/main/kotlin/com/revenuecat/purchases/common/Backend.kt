@@ -22,6 +22,13 @@ import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
+import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
+import com.revenuecat.purchases.common.workflows.WorkflowDetailHttpProcessingResult
+import com.revenuecat.purchases.common.workflows.WorkflowDetailHttpProcessor
+import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
+import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
+import com.revenuecat.purchases.common.workflows.WorkflowsListResponse
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -96,6 +103,12 @@ internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit,
 
 internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
 
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias WorkflowsListCallback = Pair<(WorkflowsListResponse) -> Unit, (PurchasesError) -> Unit>
+
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias WorkflowDetailCallback = Pair<(WorkflowFetchResult) -> Unit, (PurchasesError) -> Unit>
+
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
@@ -115,7 +128,9 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
+    workflowCdnFetcher: WorkflowCdnFetcher = FileCachedWorkflowCdnFetcher(fileRepository = null),
 ) {
+    private val workflowDetailHttpProcessor = WorkflowDetailHttpProcessor(workflowCdnFetcher)
     companion object {
         private const val APP_USER_ID = "app_user_id"
         private const val FETCH_TOKEN = "fetch_token"
@@ -176,6 +191,14 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var workflowsListCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowsListCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var workflowDetailCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowDetailCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -966,6 +989,136 @@ internal class Backend(
         synchronized(this@Backend) {
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             virtualCurrenciesCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getWorkflows(
+        appUserID: String,
+        appInBackground: Boolean,
+        onSuccess: (WorkflowsListResponse) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetWorkflows(appUserID)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    workflowsListCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    workflowsListCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccessHandler(WorkflowJsonParser.parseWorkflowsListResponse(result.payload))
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            workflowsListCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getWorkflow(
+        appUserID: String,
+        workflowId: String,
+        appInBackground: Boolean,
+        onSuccess: (WorkflowFetchResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val call = object : Dispatcher.AsyncCall() {
+            private var workflowDetailProcessing: WorkflowDetailHttpProcessingResult? = null
+
+            override fun call(): HTTPResult {
+                val raw = httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+                val processed = workflowDetailHttpProcessor.process(raw)
+                workflowDetailProcessing = processed
+                return processed.httpResult
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    workflowDetailCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    workflowDetailCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val workflow = WorkflowJsonParser.parsePublishedWorkflow(result.payload)
+                            onSuccessHandler(
+                                WorkflowFetchResult(
+                                    workflow = workflow,
+                                    enrolledVariants = workflowDetailProcessing?.enrolledVariants,
+                                ),
+                            )
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            workflowDetailCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
                 cacheKey,
