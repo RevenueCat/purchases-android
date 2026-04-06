@@ -27,6 +27,21 @@ internal sealed class Endpoint(
             }
         }
     }
+
+    data class GetWorkflows(val userId: String) : Endpoint(
+        "/v1/subscribers/%s/workflows",
+        "get_workflows",
+    ) {
+        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+    }
+
+    data class GetWorkflow(val userId: String, val workflowId: String) : Endpoint(
+        "/v1/subscribers/%s/workflows/%s",
+        "get_workflow",
+    ) {
+        override fun getPath(useFallback: Boolean) =
+            pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
+    }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
@@ -102,6 +117,7 @@ internal sealed class Endpoint(
             LogIn,
             PostReceipt,
             is GetOfferings,
+            is GetWorkflows,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
@@ -115,6 +131,7 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            is GetWorkflow,
             ->
                 false
         }
@@ -130,6 +147,8 @@ internal sealed class Endpoint(
                 true
             is GetAmazonReceipt,
             is GetOfferings,
+            is GetWorkflows,
+            is GetWorkflow,
             is PostAttributes,
             PostDiagnostics,
             PostEvents,
