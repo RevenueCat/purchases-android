@@ -385,6 +385,11 @@ internal class StyleFactory(
         fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
             when (to) {
                 is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                is HeaderComponentStyle -> to.copy(
+                    stackComponentStyle = to.stackComponentStyle.copy(
+                        applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied,
+                    ),
+                )
                 else -> to
             }
 
@@ -415,6 +420,9 @@ internal class StyleFactory(
                     is StickyFooterComponentStyle -> copy(
                         stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
                     )
+                    is HeaderComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
+                    )
 
                     else -> this
                 } as T
@@ -440,6 +448,8 @@ internal class StyleFactory(
     )
 
     /**
+     * @param applyTopWindowInsets Whether to apply top window insets to the root of this tree (i.e. the
+     * passed-in [component]). Should be false when a header is rendered above this component.
      * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
      * passed-in [component]).
      * @param applyHorizontalWindowInsets Whether to apply horizontal window insets to the root of this tree (i.e. the
@@ -447,6 +457,7 @@ internal class StyleFactory(
      */
     fun create(
         component: PaywallComponent,
+        applyTopWindowInsets: Boolean = true,
         applyBottomWindowInsets: Boolean = false,
         applyHorizontalWindowInsets: Boolean = false,
     ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
@@ -458,7 +469,13 @@ internal class StyleFactory(
                             nonEmptyListOf(PaywallValidationError.RootComponentUnsupportedProperties(component)),
                         )
                 }
-                .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
+                .map { componentStyle ->
+                    if (applyTopWindowInsets) {
+                        applyTopWindowInsetsIfNotYetApplied(to = componentStyle)
+                    } else {
+                        componentStyle
+                    }
+                }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
                 .map { componentStyle ->
                     componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
