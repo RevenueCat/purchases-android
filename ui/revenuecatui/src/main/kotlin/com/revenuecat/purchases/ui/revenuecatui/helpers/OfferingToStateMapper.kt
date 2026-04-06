@@ -194,6 +194,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     return zipOrAccumulate(
         first = styleFactory.create(
             config.stack,
+            applyTopWindowInsets = config.header == null,
             applyBottomWindowInsets = config.stickyFooter == null,
             applyHorizontalWindowInsets = true,
         ),
