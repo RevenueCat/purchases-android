@@ -1,7 +1,8 @@
-@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.common.workflows
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.isSuccessful
 import com.revenuecat.purchases.common.networking.HTTPResult
 import org.json.JSONException
@@ -23,7 +24,9 @@ internal class WorkflowDetailHttpProcessor(
         }
         val root = JSONObject(result.payload)
         val enrolledVariants = root.optJSONObject("enrolled_variants")?.toEnrolledVariantsMap()
-        val action = WorkflowResponseAction.fromValue(root.getString("action"))
+        val rawAction = root.getString("action")
+        val action = WorkflowResponseAction.fromValue(rawAction)
+            ?: throw JSONException("Unknown workflow response action: $rawAction")
         val normalizedPayload = when (action) {
             WorkflowResponseAction.INLINE -> root.getJSONObject("data").toString()
             WorkflowResponseAction.USE_CDN -> workflowCdnFetcher.fetchCompiledWorkflowJson(root.getString("url"))

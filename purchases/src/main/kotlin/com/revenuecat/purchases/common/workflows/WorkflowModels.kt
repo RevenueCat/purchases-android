@@ -1,7 +1,8 @@
-@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.common.workflows
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -97,8 +98,7 @@ internal enum class WorkflowResponseAction(val value: String) {
     ;
 
     internal companion object {
-        fun fromValue(value: String): WorkflowResponseAction =
+        fun fromValue(value: String): WorkflowResponseAction? =
             values().firstOrNull { it.value == value }
-                ?: throw IllegalArgumentException("Unknown workflow response action: $value")
     }
 }
