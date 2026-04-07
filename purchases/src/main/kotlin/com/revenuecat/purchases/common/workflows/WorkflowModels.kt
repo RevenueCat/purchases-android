@@ -37,12 +37,20 @@ internal data class WorkflowTriggerAction(
 }
 
 @Serializable
+internal data class WorkflowTrigger(
+    val name: String,
+    val type: String,
+    @SerialName("action_id") val actionId: String,
+    @SerialName("component_id") val componentId: String,
+)
+
+@Serializable
 internal data class WorkflowStep(
     val id: String,
     val type: String,
     @SerialName("screen_id") val screenId: String? = null,
     @SerialName("param_values") val paramValues: Map<String, JsonElement> = emptyMap(),
-    val triggers: List<JsonElement> = emptyList(),
+    val triggers: List<WorkflowTrigger> = emptyList(),
     val outputs: Map<String, JsonElement> = emptyMap(),
     @SerialName("trigger_actions") val triggerActions: Map<String, WorkflowTriggerAction> = emptyMap(),
     val metadata: JsonElement? = null,
