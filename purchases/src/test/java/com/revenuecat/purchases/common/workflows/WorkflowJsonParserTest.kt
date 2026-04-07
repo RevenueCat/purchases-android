@@ -33,7 +33,7 @@ class WorkflowJsonParserTest {
     }
 
     @Test
-    fun `parsePublishedWorkflow maps steps and trigger_actions`() {
+    fun `parsePublishedWorkflow maps steps, triggers, and trigger_actions`() {
         val json = """
             {
               "id": "wf_test",
@@ -43,11 +43,23 @@ class WorkflowJsonParserTest {
                 "step_1": {
                   "id": "step_1",
                   "type": "screen",
-                  "param_values": {},
-                  "triggers": [],
+                  "screen_id": "pw458e23295b7841f8",
+                  "param_values": {
+                    "experiment_id": "expeae100d588",
+                    "experiment_variant": "b",
+                    "is_last_variant_step": true
+                  },
+                  "triggers": [
+                    {
+                      "name": "Button",
+                      "type": "on_press",
+                      "action_id": "btn_wagcLsIVjN",
+                      "component_id": "wagcLsIVjN"
+                    }
+                  ],
                   "outputs": {},
                   "trigger_actions": {
-                    "btn_1": { "type": "step", "value": "step_2" }
+                    "btn_wagcLsIVjN": { "type": "step", "step_id": "step_2" }
                   },
                   "metadata": null
                 }
@@ -67,7 +79,15 @@ class WorkflowJsonParserTest {
 
         assertThat(parsed.id).isEqualTo("wf_test")
         assertThat(parsed.initialStepId).isEqualTo("step_1")
-        assertThat(parsed.steps["step_1"]?.triggerActions?.get("btn_1")?.resolvedTargetStepId).isEqualTo("step_2")
         assertThat(parsed.contentMaxWidth).isEqualTo(100)
+
+        val step = parsed.steps["step_1"]!!
+        assertThat(step.screenId).isEqualTo("pw458e23295b7841f8")
+        assertThat(step.triggers).hasSize(1)
+        assertThat(step.triggers[0].name).isEqualTo("Button")
+        assertThat(step.triggers[0].type).isEqualTo("on_press")
+        assertThat(step.triggers[0].actionId).isEqualTo("btn_wagcLsIVjN")
+        assertThat(step.triggers[0].componentId).isEqualTo("wagcLsIVjN")
+        assertThat(step.triggerActions["btn_wagcLsIVjN"]?.resolvedTargetStepId).isEqualTo("step_2")
     }
 }
