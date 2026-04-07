@@ -783,6 +783,10 @@ internal class BillingWrapper(
                     debugLog { "Activity is destroyed, not showing Google Play in-app message." }
                     return@withConnectedClient
                 }
+                if (activity.window?.peekDecorView()?.windowToken == null) {
+                    debugLog { "Activity is not attached to a window, not showing Google Play in-app message." }
+                    return@withConnectedClient
+                }
                 showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
                     when (val responseCode = inAppMessageResult.responseCode) {
                         InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {

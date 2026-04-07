@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.revenuecat.purchases_sample.BuildConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -46,7 +47,7 @@ class DataStoreUtils(
             val storedStore = Store.fromName(preferences[storeKey])
             val fallbackStore = if (preferences[useAmazonKey] == true) Store.AMAZON else Store.GOOGLE
             SdkConfiguration(
-                apiKey = preferences[apiKeyKey] ?: "",
+                apiKey = preferences[apiKeyKey] ?: BuildConfig.REVENUECAT_API_KEY,
                 proxyUrl = preferences[proxyUrlKey],
                 store = storedStore ?: fallbackStore,
                 appUserId = preferences[appUserIdKey],
