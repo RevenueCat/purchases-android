@@ -20,6 +20,18 @@ public interface PaywallListener {
         resume()
     }
 
+    /**
+     * Called when restoring purchases is about to be initiated, before the restore flow starts.
+     * This allows the app to perform any necessary preparation (e.g., authentication) before proceeding.
+     *
+     * @param resume A callback that must be invoked to continue with the restore flow.
+     *               If not called, the restore flow will not proceed.
+     */
+    public fun onRestoreInitiated(resume: Resumable) {
+        // Default implementation immediately resumes
+        resume()
+    }
+
     public fun onPurchaseStarted(rcPackage: Package) {}
     public fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
     public fun onPurchaseError(error: PurchasesError) {}

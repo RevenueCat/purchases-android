@@ -1,5 +1,19 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.revenuecat.android.application)
+}
+
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
+}
+
+fun resolveProperty(name: String, default: String = ""): String {
+    return (project.findProperty(name) as? String)?.takeIf { it.isNotEmpty() }
+        ?: localProperties.getProperty(name, default)
 }
 
 fun obtainTestBuildType(): String {
@@ -13,6 +27,10 @@ fun obtainTestBuildType(): String {
 }
 
 android {
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "com.revenuecat.purchases.integrationtests"
         minSdk = 23
@@ -27,6 +45,12 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
+
+        buildConfigField(
+            "String",
+            "REVENUECAT_API_KEY",
+            "\"${resolveProperty("REVENUECAT_API_KEY")}\"",
+        )
     }
     signingConfigs {
         create("release") {
