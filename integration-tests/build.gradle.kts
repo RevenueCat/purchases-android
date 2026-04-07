@@ -33,7 +33,7 @@ android {
 
     defaultConfig {
         applicationId = "com.revenuecat.purchases.integrationtests"
-        minSdk = 21
+        minSdk = 23
         versionCode = 1
         versionName = "1.0"
 
