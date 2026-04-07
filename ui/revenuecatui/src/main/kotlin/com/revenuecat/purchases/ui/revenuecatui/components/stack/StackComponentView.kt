@@ -60,6 +60,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.LocalHeaderHeight
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
@@ -491,6 +492,8 @@ private fun MainStackComponent(
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
+        val headerHeight = LocalHeaderHeight.current
+
         // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
         // to draw "boxes" using whatever stack they please, for instance to create dividers.
         if (stackState.children.isEmpty()) {
@@ -521,6 +524,9 @@ private fun MainStackComponent(
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
                                 .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                }
+                                .conditional(stackState.applyHeaderPadding && !child.shouldIgnoreTopWindowInsets) {
+                                    padding(top = headerHeight)
                                 }
                                 .alpha(contentAlpha),
                         )
@@ -554,6 +560,13 @@ private fun MainStackComponent(
                                 ) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
+                                .conditional(
+                                    stackState.applyHeaderPadding &&
+                                        index == 0 &&
+                                        !child.shouldIgnoreTopWindowInsets,
+                                ) {
+                                    padding(top = headerHeight)
+                                }
                                 .alpha(contentAlpha),
                         )
                     }
@@ -580,6 +593,9 @@ private fun MainStackComponent(
                             modifier = Modifier
                                 .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
                                     windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                }
+                                .conditional(stackState.applyHeaderPadding && !child.shouldIgnoreTopWindowInsets) {
+                                    padding(top = headerHeight)
                                 }
                                 .alpha(contentAlpha),
                         )
