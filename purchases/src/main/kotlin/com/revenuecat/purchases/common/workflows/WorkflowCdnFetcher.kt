@@ -1,7 +1,8 @@
-@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.common.workflows
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.storage.FileRepository
 import kotlinx.coroutines.runBlocking
 import java.io.File

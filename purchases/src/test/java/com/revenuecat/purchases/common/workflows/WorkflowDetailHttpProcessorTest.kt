@@ -5,6 +5,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.json.JSONException
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -70,7 +71,8 @@ class WorkflowDetailHttpProcessorTest {
     fun `unknown action throws`() {
         val raw = httpResult(200, """{"action":"other"}""")
         assertThatThrownBy { processor.process(raw) }
-            .isInstanceOf(IllegalArgumentException::class.java)
+            .isInstanceOf(JSONException::class.java)
+            .hasMessageContaining("other")
     }
 
     @Test
