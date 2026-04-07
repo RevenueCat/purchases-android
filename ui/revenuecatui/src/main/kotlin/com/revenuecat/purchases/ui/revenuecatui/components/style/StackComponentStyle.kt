@@ -99,4 +99,11 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyHorizontalWindowInsets: Boolean = false,
+    /**
+     * Will cause this stack to apply padding equal to the header height to its children, except for children that
+     * have `ignoreTopWindowInsets` set to true (hero images/videos). This is set on the main stack when a header is
+     * present, so that non-hero content starts below the header while hero images extend behind it.
+     */
+    @get:JvmSynthetic
+    val applyHeaderPadding: Boolean = false,
 ) : ComponentStyle, PackageContext
