@@ -26,7 +26,6 @@ android {
 
     buildFeatures {
         buildConfig = true
-        aidl = true
     }
 
     // billingclient dimension is added for bc7/bc8 support
@@ -63,11 +62,6 @@ android {
             type = "boolean",
             name = "ENABLE_EXTRA_REQUEST_LOGGING",
             value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
-        )
-        buildConfigField(
-            type = "boolean",
-            name = "ENABLE_QUERY_PURCHASE_HISTORY_AIDL",
-            value = (localProperties["ENABLE_QUERY_PURCHASE_HISTORY_AIDL"] as? String ?: "true"),
         )
 
         buildConfigField(

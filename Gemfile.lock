@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/RevenueCat/fastlane-plugin-revenuecat_internal
-  revision: 6289be1dcdf7efc57682b284be9bdb1db3efbe69
+  revision: ceecf91456afaa3c761b1b3a02f72a3b4b2a58ca
   branch: main
   specs:
     fastlane-plugin-revenuecat_internal (0.1.0)
@@ -25,7 +25,7 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
-    addressable (2.8.8)
+    addressable (2.9.0)
       public_suffix (>= 2.0.2, < 8.0)
     artifactory (3.0.17)
     atomos (0.1.3)
@@ -266,7 +266,7 @@ GEM
     plist (3.7.2)
     process_executer (1.3.0)
     pstore (0.2.0)
-    public_suffix (7.0.2)
+    public_suffix (7.0.5)
     racc (1.8.1)
     rake (13.3.1)
     rchardet (1.9.0)
