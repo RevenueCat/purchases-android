@@ -25,8 +25,8 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -573,13 +573,13 @@ internal class MockViewModel(
         trackExitOfferParams.add(Pair(exitOfferType, exitOfferingIdentifier))
     }
 
-    var trackControlInteractionCallCount = 0
+    var trackComponentInteractionCallCount = 0
         private set
-    val trackControlInteractionParams = mutableListOf<PaywallControlInteractionData>()
+    val trackComponentInteractionParams = mutableListOf<PaywallComponentInteractionData>()
 
-    override fun trackControlInteraction(data: PaywallControlInteractionData) {
-        trackControlInteractionCallCount++
-        trackControlInteractionParams.add(data)
+    override fun trackComponentInteraction(data: PaywallComponentInteractionData) {
+        trackComponentInteractionCallCount++
+        trackComponentInteractionParams.add(data)
     }
 
     var refreshStateIfLocaleChangedCallCount = 0

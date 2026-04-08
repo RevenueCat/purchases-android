@@ -78,7 +78,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyControlInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallTierSelection
 import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
@@ -93,10 +93,10 @@ private object Template7UIConstants {
 }
 
 /**
- * `component_value` for Template 7 tier control interaction).
+ * `component_value` for Template 7 tier component interaction).
  */
 @JvmSynthetic
-internal fun tierSelectorControlInteractionValue(tier: TemplateConfiguration.TierInfo): String =
+internal fun tierSelectorComponentInteractionValue(tier: TemplateConfiguration.TierInfo): String =
     tier.name.takeUnless { it.isBlank() } ?: ""
 
 @Composable
@@ -124,10 +124,10 @@ internal fun Template7(
     val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
     val onTierSelected: (TemplateConfiguration.TierInfo) -> Unit = { tier ->
-        viewModel.trackControlInteraction(
+        viewModel.trackComponentInteraction(
             paywallTierSelection(
-                tierDisplayName = tierSelectorControlInteractionValue(tier),
-                componentName = PaywallLegacyControlInteraction.TIER_SELECTOR_NAME,
+                tierDisplayName = tierSelectorComponentInteractionValue(tier),
+                componentName = PaywallLegacyComponentInteraction.TIER_SELECTOR_NAME,
                 originPackage = selectedTier.defaultPackage.rcPackage,
                 destinationPackage = tier.defaultPackage.rcPackage,
             ),

@@ -18,6 +18,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.Date
@@ -60,17 +61,17 @@ public enum class PaywallEventType(public val value: String) {
     EXIT_OFFER("paywall_exit_offer"),
 
     /**
-     * User interacted with a paywall control (tabs, carousel, non-purchase button, etc.).
+     * User interacted with a paywall component (tabs, carousel, non-purchase button, etc.).
      */
-    CONTROL_INTERACTION("paywall_control_interaction"),
+    COMPONENT_INTERACTION("paywall_component_interaction"),
 }
 
 /**
- * Control categories for [PaywallEventType.CONTROL_INTERACTION]. Wire values match iOS `ControlType`.
+ * Component categories for [PaywallEventType.COMPONENT_INTERACTION]. Wire values match iOS `ControlType`.
  */
 @InternalRevenueCatAPI
 @Serializable
-public enum class PaywallControlType {
+public enum class PaywallComponentType {
     @SerialName("tab")
     TAB,
 
@@ -94,12 +95,12 @@ public enum class PaywallControlType {
 }
 
 /**
- * Payload for [PaywallEventType.CONTROL_INTERACTION].
+ * Payload for [PaywallEventType.COMPONENT_INTERACTION].
  */
 @InternalRevenueCatAPI
 @Serializable
-public data class PaywallControlInteractionData(
-    public val componentType: PaywallControlType,
+public data class PaywallComponentInteractionData(
+    public val componentType: PaywallComponentType,
     public val componentName: String? = null,
     public val componentValue: String,
     public val componentUrl: String? = null,
@@ -141,7 +142,8 @@ public data class PaywallEvent(
     public val creationData: CreationData,
     public val data: Data,
     public val type: PaywallEventType,
-    public val controlInteraction: PaywallControlInteractionData? = null,
+    @JsonNames("controlInteraction")
+    public val componentInteraction: PaywallComponentInteractionData? = null,
 ) : FeatureEvent {
 
     override val isPriorityEvent: Boolean get() = type == PaywallEventType.IMPRESSION
@@ -345,21 +347,21 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
 }
 
 @InternalRevenueCatAPI
-internal fun PaywallControlType.toWireString(): String = when (this) {
-    PaywallControlType.TAB -> "tab"
-    PaywallControlType.SWITCH -> "switch"
-    PaywallControlType.CAROUSEL -> "carousel"
-    PaywallControlType.BUTTON -> "button"
-    PaywallControlType.TEXT -> "text"
-    PaywallControlType.PACKAGE -> "package"
-    PaywallControlType.PACKAGE_SELECTION_SHEET -> "package_selection_sheet"
+internal fun PaywallComponentType.toWireString(): String = when (this) {
+    PaywallComponentType.TAB -> "tab"
+    PaywallComponentType.SWITCH -> "switch"
+    PaywallComponentType.CAROUSEL -> "carousel"
+    PaywallComponentType.BUTTON -> "button"
+    PaywallComponentType.TEXT -> "text"
+    PaywallComponentType.PACKAGE -> "package"
+    PaywallComponentType.PACKAGE_SELECTION_SHEET -> "package_selection_sheet"
 }
 
 /**
- * Flattened control-interaction values for [BackendEvent.Paywalls] (shared by stored-event paths).
+ * Flattened component-interaction values for [BackendEvent.Paywalls] (shared by stored-event paths).
  */
 @InternalRevenueCatAPI
-internal data class BackendPaywallControlFields(
+internal data class BackendPaywallComponentFields(
     val componentType: String? = null,
     val componentName: String? = null,
     val componentValue: String? = null,
@@ -382,9 +384,9 @@ internal data class BackendPaywallControlFields(
 )
 
 @InternalRevenueCatAPI
-internal fun PaywallControlInteractionData?.toBackendControlFields(): BackendPaywallControlFields {
-    val interaction = this ?: return BackendPaywallControlFields()
-    return BackendPaywallControlFields(
+internal fun PaywallComponentInteractionData?.toBackendComponentFields(): BackendPaywallComponentFields {
+    val interaction = this ?: return BackendPaywallComponentFields()
+    return BackendPaywallComponentFields(
         componentType = interaction.componentType.toWireString(),
         componentName = interaction.componentName,
         componentValue = interaction.componentValue,

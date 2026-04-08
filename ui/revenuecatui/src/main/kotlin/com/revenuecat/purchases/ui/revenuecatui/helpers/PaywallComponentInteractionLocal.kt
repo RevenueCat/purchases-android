@@ -3,24 +3,24 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 
 /**
- * Tracks paywall control interactions for analytics.
+ * Tracks paywall component interactions for analytics.
  */
-internal fun interface PaywallControlInteractionTracker {
-    fun track(data: PaywallControlInteractionData)
+internal fun interface PaywallComponentInteractionTracker {
+    fun track(data: PaywallComponentInteractionData)
 }
 
-internal val LocalPaywallControlInteractionTracker =
-    staticCompositionLocalOf<PaywallControlInteractionTracker> {
-        PaywallControlInteractionTracker { _ -> }
+internal val LocalPaywallComponentInteractionTracker =
+    staticCompositionLocalOf<PaywallComponentInteractionTracker> {
+        PaywallComponentInteractionTracker { _ -> }
     }
 
 /**
  * V1 template footer / tier control `component_name` constants.
  */
-internal object PaywallLegacyControlInteraction {
+internal object PaywallLegacyComponentInteraction {
     const val ALL_PLANS_BUTTON_NAME = "all_plans_button"
     const val RESTORE_BUTTON_NAME = "restore_button"
     const val TERMS_LINK_NAME = "terms_link"

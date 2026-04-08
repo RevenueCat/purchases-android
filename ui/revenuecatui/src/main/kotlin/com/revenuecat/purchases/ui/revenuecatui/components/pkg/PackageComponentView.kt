@@ -11,7 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageRowSelection
 
 @JvmSynthetic
@@ -22,7 +22,7 @@ internal fun PackageComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
+    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
@@ -34,7 +34,7 @@ internal fun PackageComponentView(
             clickable(
                 enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
             ) {
-                controlInteractionTracker.track(
+                componentInteractionTracker.track(
                     paywallPackageRowSelection(
                         componentName = style.componentName,
                         destination = style.rcPackage,

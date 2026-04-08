@@ -24,8 +24,8 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -48,7 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 
 @Composable
 internal fun TextComponentView(
@@ -90,13 +90,13 @@ internal fun TextComponentView(
 
     if (textState.visible) {
         val uriHandler = LocalUriHandler.current
-        val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
-        val trackingUriHandler = remember(uriHandler, controlInteractionTracker, style.componentName) {
+        val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
+        val trackingUriHandler = remember(uriHandler, componentInteractionTracker, style.componentName) {
             object : UriHandler {
                 override fun openUri(uri: String) {
-                    controlInteractionTracker.track(
-                        PaywallControlInteractionData(
-                            componentType = PaywallControlType.TEXT,
+                    componentInteractionTracker.track(
+                        PaywallComponentInteractionData(
+                            componentType = PaywallComponentType.TEXT,
                             componentName = style.componentName,
                             componentValue = "navigate_to_url",
                             componentUrl = uri,

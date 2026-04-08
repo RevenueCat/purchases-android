@@ -68,14 +68,14 @@ class PaywallEventsRequestSerializationTest {
     }
 
     @Test
-    fun `can encode paywall control interaction event with component fields`() {
+    fun `can encode paywall component interaction event with component fields`() {
         val controlRequest = EventsRequest(
             listOf(
                 BackendStoredEvent.Paywalls(
                     BackendEvent.Paywalls(
                         id = "cid",
                         version = 1,
-                        type = PaywallEventType.CONTROL_INTERACTION.value,
+                        type = PaywallEventType.COMPONENT_INTERACTION.value,
                         appUserID = "user",
                         sessionID = "sess",
                         offeringID = "off",
@@ -101,7 +101,7 @@ class PaywallEventsRequestSerializationTest {
                         "\"discriminator\":\"paywalls\"," +
                         "\"id\":\"cid\"," +
                         "\"version\":1," +
-                        "\"type\":\"paywall_control_interaction\"," +
+                        "\"type\":\"paywall_component_interaction\"," +
                         "\"app_user_id\":\"user\"," +
                         "\"session_id\":\"sess\"," +
                         "\"offering_id\":\"off\"," +
@@ -121,14 +121,14 @@ class PaywallEventsRequestSerializationTest {
     }
 
     @Test
-    fun `can encode paywall control interaction with package lifecycle fields`() {
+    fun `can encode paywall component interaction with package lifecycle fields`() {
         val controlRequest = EventsRequest(
             listOf(
                 BackendStoredEvent.Paywalls(
                     BackendEvent.Paywalls(
                         id = "cid",
                         version = 1,
-                        type = PaywallEventType.CONTROL_INTERACTION.value,
+                        type = PaywallEventType.COMPONENT_INTERACTION.value,
                         appUserID = "user",
                         sessionID = "sess",
                         offeringID = "off",
@@ -158,7 +158,7 @@ class PaywallEventsRequestSerializationTest {
                         "\"discriminator\":\"paywalls\"," +
                         "\"id\":\"cid\"," +
                         "\"version\":1," +
-                        "\"type\":\"paywall_control_interaction\"," +
+                        "\"type\":\"paywall_component_interaction\"," +
                         "\"app_user_id\":\"user\"," +
                         "\"session_id\":\"sess\"," +
                         "\"offering_id\":\"off\"," +

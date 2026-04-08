@@ -10,7 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-internal class TierSelectorControlInteractionValueTest {
+internal class TierSelectorComponentInteractionValueTest {
 
     private fun tier(name: String, id: String): TemplateConfiguration.TierInfo {
         val rcPackage = TestData.template2Offering.availablePackages.first { it.packageType == PackageType.MONTHLY }
@@ -25,16 +25,16 @@ internal class TierSelectorControlInteractionValueTest {
 
     @Test
     fun `uses non-blank name`() {
-        assertThat(tierSelectorControlInteractionValue(tier("Premium", "premium_id"))).isEqualTo("Premium")
+        assertThat(tierSelectorComponentInteractionValue(tier("Premium", "premium_id"))).isEqualTo("Premium")
     }
 
     @Test
     fun `blank name matches empty string fallback`() {
-        assertThat(tierSelectorControlInteractionValue(tier("", "tier_abc"))).isEmpty()
+        assertThat(tierSelectorComponentInteractionValue(tier("", "tier_abc"))).isEmpty()
     }
 
     @Test
     fun `whitespace-only name matches empty string fallback`() {
-        assertThat(tierSelectorControlInteractionValue(tier("   ", "id_only"))).isEmpty()
+        assertThat(tierSelectorComponentInteractionValue(tier("   ", "id_only"))).isEmpty()
     }
 }

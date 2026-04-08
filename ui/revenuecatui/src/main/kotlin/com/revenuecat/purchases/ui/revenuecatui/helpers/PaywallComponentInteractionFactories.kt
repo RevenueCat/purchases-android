@@ -4,15 +4,15 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 
 @InternalRevenueCatAPI
 internal fun paywallPackageSelectionSheetOpen(
     sheetComponentName: String?,
     rootSelectedPackage: Package?,
-): PaywallControlInteractionData = PaywallControlInteractionData(
-    componentType = PaywallControlType.PACKAGE_SELECTION_SHEET,
+): PaywallComponentInteractionData = PaywallComponentInteractionData(
+    componentType = PaywallComponentType.PACKAGE_SELECTION_SHEET,
     componentName = sheetComponentName,
     componentValue = "open",
     currentPackageIdentifier = rootSelectedPackage?.identifier,
@@ -24,8 +24,8 @@ internal fun paywallPackageSelectionSheetClose(
     sheetComponentName: String?,
     sheetSelectedPackage: Package?,
     resultingRootPackage: Package?,
-): PaywallControlInteractionData = PaywallControlInteractionData(
-    componentType = PaywallControlType.PACKAGE_SELECTION_SHEET,
+): PaywallComponentInteractionData = PaywallComponentInteractionData(
+    componentType = PaywallComponentType.PACKAGE_SELECTION_SHEET,
     componentName = sheetComponentName,
     componentValue = "close",
     currentPackageIdentifier = sheetSelectedPackage?.identifier,
@@ -40,8 +40,8 @@ internal fun paywallPackageRowSelection(
     destination: Package,
     origin: Package?,
     defaultPackage: Package?,
-): PaywallControlInteractionData = PaywallControlInteractionData(
-    componentType = PaywallControlType.PACKAGE,
+): PaywallComponentInteractionData = PaywallComponentInteractionData(
+    componentType = PaywallComponentType.PACKAGE,
     componentName = componentName,
     componentValue = destination.identifier,
     originPackageIdentifier = origin?.identifier,
@@ -58,8 +58,8 @@ internal fun paywallTierSelection(
     componentName: String? = null,
     originPackage: Package?,
     destinationPackage: Package?,
-): PaywallControlInteractionData = PaywallControlInteractionData(
-    componentType = PaywallControlType.TAB,
+): PaywallComponentInteractionData = PaywallComponentInteractionData(
+    componentType = PaywallComponentType.TAB,
     componentName = componentName,
     componentValue = tierDisplayName,
     originPackageIdentifier = originPackage?.identifier,

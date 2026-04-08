@@ -6,12 +6,12 @@ package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 
 @Composable
 internal fun TabControlButtonView(
@@ -19,7 +19,7 @@ internal fun TabControlButtonView(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
-    val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
+    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     StackComponentView(
         style = style.stack,
         state = state,
@@ -27,9 +27,9 @@ internal fun TabControlButtonView(
         clickHandler = { },
         modifier = modifier.clickable {
             val componentValue = style.tabButtonName ?: style.tabId
-            controlInteractionTracker.track(
-                PaywallControlInteractionData(
-                    componentType = PaywallControlType.TAB,
+            componentInteractionTracker.track(
+                PaywallComponentInteractionData(
+                    componentType = PaywallComponentType.TAB,
                     componentName = style.tabsComponentName,
                     componentValue = componentValue,
                 ),

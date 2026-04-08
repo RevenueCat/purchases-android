@@ -58,8 +58,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetClose
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetOpen
@@ -80,9 +80,9 @@ internal fun LoadedPaywallComponents(
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
-    val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
+    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
-        handleClick(action, state, clickHandler, controlInteractionTracker)
+        handleClick(action, state, clickHandler, componentInteractionTracker)
     }
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
@@ -117,7 +117,7 @@ private suspend fun handleClick(
     action: PaywallAction,
     state: PaywallState.Loaded.Components,
     externalClickHandler: suspend (PaywallAction.External) -> Unit,
-    controlInteractionTracker: PaywallControlInteractionTracker,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
     when (action) {
         is PaywallAction.External -> externalClickHandler(action)
@@ -125,7 +125,7 @@ private suspend fun handleClick(
             is PaywallAction.Internal.NavigateTo -> when (action.destination) {
                 is PaywallAction.Internal.NavigateTo.Destination.Sheet -> {
                     val sheet = action.destination.sheet
-                    controlInteractionTracker.track(
+                    componentInteractionTracker.track(
                         paywallPackageSelectionSheetOpen(
                             sheetComponentName = sheet.name,
                             rootSelectedPackage = state.selectedPackageInfo?.rcPackage,
@@ -134,9 +134,9 @@ private suspend fun handleClick(
                     state.sheet.show(
                         sheet,
                         state,
-                        controlInteractionTracker,
+                        componentInteractionTracker,
                     ) {
-                        handleClick(it, state, externalClickHandler, controlInteractionTracker)
+                        handleClick(it, state, externalClickHandler, componentInteractionTracker)
                     }
                 }
             }
@@ -150,7 +150,7 @@ private suspend fun handleClick(
 private fun SimpleSheetState.show(
     sheet: ButtonComponentStyle.Action.NavigateTo.Destination.Sheet,
     state: PaywallState.Loaded.Components,
-    controlInteractionTracker: PaywallControlInteractionTracker,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     onClick: suspend (PaywallAction) -> Unit,
 ) {
     show(
@@ -173,7 +173,7 @@ private fun SimpleSheetState.show(
         onDismiss = {
             val sheetSelected = state.selectedPackageInfo
             val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
-            controlInteractionTracker.track(
+            componentInteractionTracker.track(
                 paywallPackageSelectionSheetClose(
                     sheetComponentName = sheet.name,
                     sheetSelectedPackage = sheetSelected?.rcPackage,
@@ -207,7 +207,7 @@ private fun LoadedPaywallComponents_BottomSheet_NullSize_Preview() {
     state.sheet.show(
         sheet = previewBottomSheet(size = null),
         state = state,
-        controlInteractionTracker = PaywallControlInteractionTracker { _ -> },
+        componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
         onClick = { },
     )
 
@@ -227,7 +227,7 @@ private fun LoadedPaywallComponents_BottomSheet_FitSize_Preview() {
     state.sheet.show(
         sheet = previewBottomSheet(size = Size(width = Fit, height = Fit)),
         state = state,
-        controlInteractionTracker = PaywallControlInteractionTracker { _ -> },
+        componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
         onClick = { },
     )
 

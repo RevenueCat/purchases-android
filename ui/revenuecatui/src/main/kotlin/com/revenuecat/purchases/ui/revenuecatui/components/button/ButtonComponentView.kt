@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
@@ -54,7 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.rememberUpdated
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -93,7 +93,7 @@ internal fun ButtonComponentView(
         )
 
         val coroutineScope = rememberCoroutineScope()
-        val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
+        val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
         // Whether there's an action in progress anywhere on the paywall.
         val anyActionInProgress by state::actionInProgress
         // Whether this button's action is in progress.
@@ -140,11 +140,11 @@ internal fun ButtonComponentView(
             modifier = modifier.clickable(enabled = !anyActionInProgress) {
                 val paywallAction = buttonState.action
                 if (!style.action.isPurchaseRelated()) {
-                    val urlForEvent = paywallAction.navigateToUrlForControlInteraction()
-                    style.action.controlInteraction(urlForEvent)?.let { interaction ->
-                        controlInteractionTracker.track(
-                            PaywallControlInteractionData(
-                                componentType = PaywallControlType.BUTTON,
+                    val urlForEvent = paywallAction.navigateToUrlForComponentInteraction()
+                    style.action.componentInteraction(urlForEvent)?.let { interaction ->
+                        componentInteractionTracker.track(
+                            PaywallComponentInteractionData(
+                                componentType = PaywallComponentType.BUTTON,
                                 componentName = style.componentName,
                                 componentValue = interaction.value,
                                 componentUrl = interaction.url,
@@ -255,7 +255,7 @@ private val Color.brightness: Float
         green * COEFFICIENT_LUMINANCE_GREEN +
         blue * COEFFICIENT_LUMINANCE_BLUE
 
-private fun PaywallAction.navigateToUrlForControlInteraction(): String? =
+private fun PaywallAction.navigateToUrlForComponentInteraction(): String? =
     when (this) {
         is PaywallAction.External.NavigateTo -> when (val dest = destination) {
             is PaywallAction.External.NavigateTo.Destination.Url -> dest.url

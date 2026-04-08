@@ -34,8 +34,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
@@ -65,7 +65,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import java.util.concurrent.atomic.AtomicBoolean
@@ -117,19 +117,19 @@ internal fun CarouselComponentView(
         )
     }
 
-    val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
+    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     if (pageCount > 0) {
-        LaunchedEffect(pagerState, pageCount, style.componentName, controlInteractionTracker) {
+        LaunchedEffect(pagerState, pageCount, style.componentName, componentInteractionTracker) {
             var previousPage = pagerState.currentPage
             snapshotFlow { pagerState.currentPage }.collect { page ->
                 if (page != previousPage) {
                     if (skipProgrammaticPageTracking.getAndSet(false)) {
-                        // Auto-advance scroll; do not emit control interaction.
+                        // Auto-advance scroll; do not emit component interaction.
                     } else {
                         val logicalPage = page % pageCount
-                        controlInteractionTracker.track(
-                            PaywallControlInteractionData(
-                                componentType = PaywallControlType.CAROUSEL,
+                        componentInteractionTracker.track(
+                            PaywallComponentInteractionData(
+                                componentType = PaywallComponentType.CAROUSEL,
                                 componentName = style.componentName,
                                 componentValue = logicalPage.toString(),
                             ),

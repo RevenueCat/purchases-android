@@ -712,17 +712,17 @@ internal class StyleFactory(
             is ButtonComponent.Destination.PrivacyPolicy -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
-                controlInteractionValue = "navigate_to_privacy_policy",
+                componentInteractionValue = "navigate_to_privacy_policy",
             )
             is ButtonComponent.Destination.Terms -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
-                controlInteractionValue = "navigate_to_terms",
+                componentInteractionValue = "navigate_to_terms",
             )
             is ButtonComponent.Destination.Url -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
-                controlInteractionValue = "navigate_to_url",
+                componentInteractionValue = "navigate_to_url",
             )
             is ButtonComponent.Destination.Sheet ->
                 createStackComponentStyle(destination.stack)
@@ -745,13 +745,13 @@ internal class StyleFactory(
     private fun buttonComponentStyleUrlDestination(
         urlLid: LocalizationKey,
         method: ButtonComponent.UrlMethod,
-        controlInteractionValue: String,
+        componentInteractionValue: String,
     ) =
         localizations.stringForAllLocales(urlLid).map { urls ->
             ButtonComponentStyle.Action.NavigateTo.Destination.Url(
                 urls = urls,
                 method = method,
-                controlInteractionValue = controlInteractionValue,
+                componentInteractionValue = componentInteractionValue,
             )
         }.map { urlDestination ->
             when (urlDestination.method) {

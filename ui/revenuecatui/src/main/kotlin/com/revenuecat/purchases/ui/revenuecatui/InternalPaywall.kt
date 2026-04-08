@@ -28,7 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -45,10 +45,10 @@ import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallVie
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallControlInteractionTracker
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyControlInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
@@ -80,9 +80,9 @@ internal fun InternalPaywall(
 
     val state = viewModel.state.collectAsStateWithLifecycle().value
 
-    val controlInteractionTracker = remember(viewModel) {
-        PaywallControlInteractionTracker { data ->
-            viewModel.trackControlInteraction(data)
+    val componentInteractionTracker = remember(viewModel) {
+        PaywallComponentInteractionTracker { data ->
+            viewModel.trackComponentInteraction(data)
         }
     }
 
@@ -100,7 +100,7 @@ internal fun InternalPaywall(
         }
     }
 
-    CompositionLocalProvider(LocalPaywallControlInteractionTracker provides controlInteractionTracker) {
+    CompositionLocalProvider(LocalPaywallComponentInteractionTracker provides componentInteractionTracker) {
         PaywallTheme(fontProvider = options.fontProvider) {
             AnimatedVisibility(
                 visible = state is PaywallState.Loaded.Legacy,
@@ -190,10 +190,10 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
                     viewModel.purchaseSelectedPackage(activity)
                 },
                 onRestore = {
-                    viewModel.trackControlInteraction(
-                        componentType = PaywallControlType.BUTTON,
-                        componentName = PaywallLegacyControlInteraction.RESTORE_BUTTON_NAME,
-                        componentValue = PaywallLegacyControlInteraction.Value.RESTORE_PURCHASES,
+                    viewModel.trackComponentInteraction(
+                        componentType = PaywallComponentType.BUTTON,
+                        componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+                        componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
                     )
                     viewModel.restorePurchases()
                 },

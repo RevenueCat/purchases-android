@@ -15,8 +15,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -27,7 +27,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggl
 import com.revenuecat.purchases.ui.revenuecatui.composables.Switch
 import com.revenuecat.purchases.ui.revenuecatui.composables.SwitchDefaults
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallControlInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 
 @Composable
 internal fun TabControlToggleView(
@@ -36,15 +36,15 @@ internal fun TabControlToggleView(
     modifier: Modifier = Modifier,
 ) {
     val checked by remember { derivedStateOf { state.selectedTabIndex > 0 } }
-    val controlInteractionTracker = LocalPaywallControlInteractionTracker.current
+    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
 
     Switch(
         checked = checked,
         onCheckedChange = {
             state.update(selectedTabIndex = if (it) 1 else 0)
-            controlInteractionTracker.track(
-                PaywallControlInteractionData(
-                    componentType = PaywallControlType.SWITCH,
+            componentInteractionTracker.track(
+                PaywallComponentInteractionData(
+                    componentType = PaywallComponentType.SWITCH,
                     componentName = style.componentName,
                     componentValue = if (it) "on" else "off",
                 ),
