@@ -88,7 +88,7 @@ internal fun LoadedPaywallComponents(
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
     val density = LocalDensity.current
     var headerHeightPx by remember { mutableIntStateOf(0) }
-    val headerHeightDp = remember(headerHeightPx) { with(density) { headerHeightPx.toDp() } }
+    val headerHeightDp = remember(headerHeightPx, density) { with(density) { headerHeightPx.toDp() } }
 
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
