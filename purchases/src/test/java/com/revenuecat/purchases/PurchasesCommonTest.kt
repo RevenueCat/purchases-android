@@ -16,8 +16,6 @@ import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.models.GoogleReplacementMode
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -25,6 +23,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -812,7 +811,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productChangeParams = getPurchaseParams(
             storeProduct.first().subscriptionOptions!!.first(),
             oldPurchase.productIds.first(),
-            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+            storeReplacementMode = StoreReplacementMode.DEFERRED,
         )
         var callCount = 0
         purchases.purchaseWith(
@@ -882,7 +881,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productChangeParams = getPurchaseParams(
             storeProduct.first().subscriptionOptions!!.first(),
             oldProductIdWithBasePlan,
-            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+            storeReplacementMode = StoreReplacementMode.DEFERRED,
         )
         var callCount = 0
         purchases.purchaseWith(
@@ -902,7 +901,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
+    fun `upgrade defaults to replacement mode WITHOUT_PRORATION`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
         val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
@@ -931,7 +930,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION
+            StoreReplacementMode.WITHOUT_PRORATION
         )
         verify {
             mockBillingAbstract.makePurchaseAsync(
@@ -947,7 +946,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `upgrade uses galaxyReplacementMode when store is Galaxy`() {
+    fun `upgrade uses replacementMode when store is Galaxy`() {
         buildPurchases(anonymous = false, store = Store.GALAXY)
 
         val productId = "galaxy_gold"
@@ -966,13 +965,13 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
         }
 
-        val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE
+        val replacementMode = StoreReplacementMode.WITH_TIME_PRORATION
         val upgradePurchaseParams = PurchaseParams.Builder(
             mockActivity,
             storeProduct
         )
             .oldProductId(oldSubId)
-            .galaxyReplacementMode(replacementMode)
+            .replacementMode(replacementMode)
             .build()
 
         purchases.purchaseWith(
@@ -995,6 +994,73 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 any()
             )
         }
+    }
+
+    @Test
+    fun `when making a deferred product change on Galaxy, completion is called with the new transaction`() {
+        buildPurchases(anonymous = false, store = Store.GALAXY)
+
+        val newProductId = "newproduct"
+        val storeProduct = stubStoreProduct(newProductId)
+        val oldProductId = "oldProductId"
+        val oldPurchase = getMockedStoreTransaction(
+            productId = oldProductId,
+            purchaseToken = "old_purchase_token",
+            productType = ProductType.SUBS,
+        )
+        val newPurchase = getMockedStoreTransaction(
+            productId = newProductId,
+            purchaseToken = "new_purchase_token",
+            productType = ProductType.SUBS,
+        )
+
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserID = appUserId,
+                productType = ProductType.SUBS,
+                productId = oldProductId,
+                onCompletion = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
+        }
+
+        mockQueryingProductDetails(newProductId, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                newPurchase,
+                any(),
+                any(),
+                isRestore = false,
+                appUserId,
+                initiationSource,
+                sdkOriginated = true,
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(newPurchase, mockk(relaxed = true))
+        }
+
+        val productChangeParams = getPurchaseParams(
+            storeProduct,
+            oldProductId,
+            storeReplacementMode = StoreReplacementMode.DEFERRED,
+        )
+
+        var receivedPurchase: StoreTransaction? = null
+        purchases.purchaseWith(
+            productChangeParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { purchase, _ ->
+                receivedPurchase = purchase
+            },
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(newPurchase))
+
+        assertThat(receivedPurchase).isEqualTo(newPurchase)
     }
 
     @Test
@@ -1211,7 +1277,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.defaultOption!!.purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, StoreReplacementMode.WITHOUT_PRORATION),
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
@@ -1859,7 +1925,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, StoreReplacementMode.WITHOUT_PRORATION),
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
@@ -1918,7 +1984,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, StoreReplacementMode.WITHOUT_PRORATION),
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
@@ -2008,7 +2074,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION
+            StoreReplacementMode.WITHOUT_PRORATION
         )
 
         verify {
@@ -2072,7 +2138,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION
+            StoreReplacementMode.WITHOUT_PRORATION
         )
 
         verify {

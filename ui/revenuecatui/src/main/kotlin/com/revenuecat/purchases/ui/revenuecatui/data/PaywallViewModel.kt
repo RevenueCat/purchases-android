@@ -551,7 +551,7 @@ internal class PaywallViewModelImpl(
                         )
                         purchaseParamsBuilder
                             .oldProductId(productChangeInfo.oldProductId)
-                            .googleReplacementMode(productChangeInfo.replacementMode)
+                            .replacementMode(productChangeInfo.replacementMode)
                     }
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)

@@ -29,9 +29,9 @@ import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases_sample.R
@@ -51,7 +51,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private var activeSubscriptions: Set<String> = setOf()
 
     private lateinit var dataStoreUtils: DataStoreUtils
-    private var isPlayStore: Boolean = true
+    private var store: Store = Store.GOOGLE
     private var packageCardAdapter: PackageCardAdapter? = null
     private var isAddOnPurchaseUpgrade: Boolean = false
 
@@ -74,7 +74,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         lifecycleScope.launch {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
-                isPlayStore = sdkConfiguration.store == Store.GOOGLE
+                store = sdkConfiguration.store
             }.collect()
         }
 
@@ -141,7 +141,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             offering.availablePackages,
             activeSubscriptions,
             this,
-            isPlayStore,
+            store,
         )
         binding.offeringDetailsPackagesRecycler.adapter = packageCardAdapter
 
@@ -258,7 +258,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     purchaseParamsBuilder.oldProductId(it)
 
                     replacementMode?.let {
-                        purchaseParamsBuilder.googleReplacementMode(replacementMode)
+                        purchaseParamsBuilder.replacementMode(replacementMode)
                     }
 
                     val purchaseParams = purchaseParamsBuilder.build()
@@ -311,7 +311,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     purchaseParamsBuilder.oldProductId(it)
 
                     replacementMode?.let {
-                        purchaseParamsBuilder.googleReplacementMode(replacementMode)
+                        purchaseParamsBuilder.replacementMode(replacementMode)
                     }
 
                     if (isPersonalizedPrice) {
@@ -372,7 +372,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun promptForProductChangeInfo(callback: (String?, GoogleReplacementMode?) -> Unit) {
+    private fun promptForProductChangeInfo(callback: (String?, StoreReplacementMode?) -> Unit) {
         showOldSubIdPicker { subId ->
             subId?.let {
                 showReplacementModePicker { replacementMode, error ->
@@ -439,9 +439,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             .show()
     }
 
-    private fun showReplacementModePicker(callback: (GoogleReplacementMode?, Error?) -> Unit) {
-        val replacementModeOptions = GoogleReplacementMode.values()
-        var selectedReplacementMode: GoogleReplacementMode? = null
+    private fun showReplacementModePicker(callback: (StoreReplacementMode?, Error?) -> Unit) {
+        val replacementModeOptions = StoreReplacementMode.values()
+        var selectedReplacementMode: StoreReplacementMode? = null
 
         val replacementModeNames = replacementModeOptions.map { it.name }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())

@@ -27,10 +27,10 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
-import com.revenuecat.purchases.models.GalaxyReplacementMode;
 import com.revenuecat.purchases.models.GoogleReplacementMode;
 import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.StoreProduct;
+import com.revenuecat.purchases.models.StoreReplacementMode;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
 
@@ -109,15 +109,15 @@ final class PurchasesCommonAPI {
             }
         };
         String oldProductId = "old";
-        GoogleReplacementMode replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION;
-        GalaxyReplacementMode galaxyReplacementMode = GalaxyReplacementMode.INSTANT_PRORATED_CHARGE;
+        GoogleReplacementMode googleReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION;
+        StoreReplacementMode storeReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION;
         Boolean isPersonalizedPrice = true;
 
         PurchaseParams.Builder purchaseProductBuilder = new PurchaseParams.Builder(activity, storeProduct);
         purchaseProductBuilder
                 .oldProductId(oldProductId)
-                .googleReplacementMode(replacementMode)
-                .galaxyReplacementMode(galaxyReplacementMode)
+                .googleReplacementMode(googleReplacementMode)
+                .replacementMode(storeReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseProductParams = purchaseProductBuilder.build();
         purchases.purchase(purchaseProductParams, purchaseCallback);
@@ -125,8 +125,8 @@ final class PurchasesCommonAPI {
         PurchaseParams.Builder purchaseOptionBuilder = new PurchaseParams.Builder(activity, subscriptionOption);
         purchaseOptionBuilder
                 .oldProductId(oldProductId)
-                .googleReplacementMode(replacementMode)
-                .galaxyReplacementMode(galaxyReplacementMode)
+                .googleReplacementMode(googleReplacementMode)
+                .replacementMode(storeReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
@@ -134,8 +134,8 @@ final class PurchasesCommonAPI {
         PurchaseParams.Builder purchasePackageBuilder = new PurchaseParams.Builder(activity, packageToPurchase);
         purchasePackageBuilder
                 .oldProductId(oldProductId)
-                .googleReplacementMode(replacementMode)
-                .galaxyReplacementMode(galaxyReplacementMode)
+                .googleReplacementMode(googleReplacementMode)
+                .replacementMode(storeReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);
