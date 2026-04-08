@@ -92,6 +92,7 @@ internal sealed interface PaywallState {
             val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
+            val mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
              * for that.

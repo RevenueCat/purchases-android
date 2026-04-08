@@ -7,11 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -24,8 +23,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -74,8 +71,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
 import java.util.Date
 
-internal val LocalHeaderHeight = compositionLocalOf { 0.dp }
-
 @Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
@@ -93,45 +88,48 @@ internal fun LoadedPaywallComponents(
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
     val density = LocalDensity.current
     var headerHeightPx by remember { mutableIntStateOf(0) }
-    val headerHeightDp: Dp = remember(headerHeightPx) { with(density) { headerHeightPx.toDp() } }
+    val headerHeightDp = remember(headerHeightPx) { with(density) { headerHeightPx.toDp() } }
 
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
         modifier = modifier.background(background),
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
-            CompositionLocalProvider(LocalHeaderHeight provides headerHeightDp) {
-                Column {
-                    Box(modifier = Modifier.weight(1f), propagateMinConstraints = true) {
-                        ComponentView(
-                            style = style,
-                            state = state,
-                            onClick = onClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState()),
-                        )
-                        headerComponentStyle?.let {
-                            ComponentView(
-                                style = it,
-                                state = state,
-                                onClick = onClick,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .align(Alignment.TopCenter)
-                                    .onSizeChanged { headerHeightPx = it.height },
-                            )
-                        }
-                    }
-                    footerComponentStyle?.let {
+            Column {
+                Box(modifier = Modifier.weight(1f), propagateMinConstraints = true) {
+                    ComponentView(
+                        style = style,
+                        state = state,
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .conditional(
+                                headerComponentStyle != null && !state.mainStackHasHeroImage,
+                            ) {
+                                padding(top = headerHeightDp)
+                            },
+                    )
+                    headerComponentStyle?.let {
                         ComponentView(
                             style = it,
                             state = state,
                             onClick = onClick,
                             modifier = Modifier
-                                .fillMaxWidth(),
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .onSizeChanged { headerHeightPx = it.height },
                         )
                     }
+                }
+                footerComponentStyle?.let {
+                    ComponentView(
+                        style = it,
+                        state = state,
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxWidth(),
+                    )
                 }
             }
         }

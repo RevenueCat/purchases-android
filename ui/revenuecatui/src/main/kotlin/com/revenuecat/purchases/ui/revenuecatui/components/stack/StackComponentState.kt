@@ -129,9 +129,6 @@ internal class StackComponentState(
     val applyHorizontalWindowInsets = style.applyHorizontalWindowInsets
 
     @get:JvmSynthetic
-    val applyHeaderPadding = style.applyHeaderPadding
-
-    @get:JvmSynthetic
     val dimension by derivedStateOf { presentedPartial?.partial?.dimension ?: style.dimension }
 
     @get:JvmSynthetic
