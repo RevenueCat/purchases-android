@@ -96,13 +96,13 @@ internal fun LoadedPaywallComponents(
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
             Column {
-                Box(modifier = Modifier.weight(1f), propagateMinConstraints = true) {
+                Box(modifier = Modifier.weight(1f)) {
                     ComponentView(
                         style = style,
                         state = state,
                         onClick = onClick,
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                             .conditional(
                                 headerComponentStyle != null && !state.mainStackHasHeroImage,
