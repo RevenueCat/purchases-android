@@ -570,6 +570,9 @@ internal class StyleFactory(
                         // A statically hidden package must never drive the initial selection, even if
                         // isSelectedByDefault is true. Dynamic override visibility is reconciled at
                         // runtime via PackageComponentView reporting visibility to PaywallState.
+                        // Note: the paywall builder enforces that the default-selected package cannot
+                        // be statically hidden (visible: false), so this guard is a defensive
+                        // fallback rather than a normal code path.
                         isSelectedByDefault = component.isSelectedByDefault && component.visible != false,
                         resolvedOffer = resolvedOffer,
                     ),

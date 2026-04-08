@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PromoOfferConfig
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -258,9 +259,9 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
                         isSelectedByDefault = true,
                         stack = StackComponent(components = emptyList()),
                         overrides = listOf(
-                            com.revenuecat.purchases.paywalls.components.common.ComponentOverride(
+                            ComponentOverride(
                                 conditions = listOf(
-                                    com.revenuecat.purchases.paywalls.components.common.ComponentOverride.Condition.IntroOffer
+                                    ComponentOverride.Condition.IntroOffer
                                 ),
                                 properties = PartialPackageComponent(visible = false),
                             )
