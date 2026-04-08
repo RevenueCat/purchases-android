@@ -216,14 +216,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
         // definite solution for positioning the root component.
         val rootComponent = (backendRootComponent as? StackComponentStyle)
-            ?.let { style ->
-                val withSize = if (style.size.height == SizeConstraint.Fit) {
-                    style.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
-                } else {
-                    style
-                }
-                if (header != null) withSize.copy(applyHeaderPadding = true) else withSize
-            }
+            ?.takeIf { it.size.height == SizeConstraint.Fit }
+            ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
             ?: backendRootComponent
 
         PaywallValidationResult.Components(
@@ -241,6 +235,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex
                 ?: headerResult?.defaultTabIndex
                 ?: stickyFooterResult?.defaultTabIndex,
+            mainStackHasHeroImage = backendRootComponentResult.hasHeroImage,
         )
     }
 }
@@ -384,6 +379,7 @@ internal fun Offering.toComponentsPaywallState(
         customVariables = customVariables,
         defaultCustomVariables = defaultCustomVariables,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
+        mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,
     )
 }

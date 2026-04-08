@@ -254,6 +254,12 @@ internal class StyleFactory(
          */
         val ignoreTopWindowInsets by windowInsetsState::ignoreTopWindowInsets
 
+        /**
+         * Whether the tree contains a hero image (a full-width image/video as the first child of a ZLayer stack).
+         */
+        val hasHeroImage: Boolean
+            get() = windowInsetsState.topWindowInsetsApplied
+
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
             get() = packageInfo?.pkg
@@ -445,6 +451,7 @@ internal class StyleFactory(
         val componentStyle: ComponentStyle,
         val availablePackages: AvailablePackages,
         val defaultTabIndex: Int?,
+        val hasHeroImage: Boolean = false,
     )
 
     /**
@@ -485,6 +492,7 @@ internal class StyleFactory(
                         componentStyle = componentStyle,
                         availablePackages = packages,
                         defaultTabIndex = defaultTabIndex,
+                        hasHeroImage = hasHeroImage,
                     )
                 }
         }
