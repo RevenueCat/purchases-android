@@ -10,6 +10,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
@@ -28,6 +29,7 @@ interface PaywallScreenViewModel : PaywallListener {
     val state: StateFlow<PaywallScreenState>
 
     fun onDialogDismissed()
+    fun refreshOffering()
 }
 
 class PaywallScreenViewModelImpl(
@@ -100,11 +102,27 @@ class PaywallScreenViewModelImpl(
         }
     }
 
-    private fun updateOffering() {
+    override fun refreshOffering() {
+        val currentState = _state.value
+        val nextRefreshCount = if (currentState is PaywallScreenState.Loaded) {
+            currentState.refreshCount + 1
+        } else {
+            1
+        }
+        _state.update { PaywallScreenState.Loading }
+        updateOffering(nextRefreshCount)
+    }
+
+    private fun updateOffering(refreshCount: Int = 0) {
+        val forceRefresh = refreshCount > 0
         viewModelScope.launch {
             placementId?.let {
                 try {
-                    val offerings = Purchases.sharedInstance.awaitOfferings()
+                    val offerings = if (forceRefresh) {
+                        Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
+                    } else {
+                        Purchases.sharedInstance.awaitOfferings()
+                    }
                     val offeringToLoad = offerings.getCurrentOfferingForPlacement(it)
 
                     if (offeringToLoad == null) {
@@ -113,7 +131,11 @@ class PaywallScreenViewModelImpl(
                         }
                     } else {
                         _state.update {
-                            PaywallScreenState.Loaded(offeringToLoad, footerCondensed = footerCondensed ?: false)
+                            PaywallScreenState.Loaded(
+                                offeringToLoad,
+                                footerCondensed = footerCondensed ?: false,
+                                refreshCount = refreshCount,
+                            )
                         }
                     }
                 } catch (e: PurchasesException) {
@@ -121,7 +143,11 @@ class PaywallScreenViewModelImpl(
                 }
             } ?: run {
                 try {
-                    val offerings = Purchases.sharedInstance.awaitOfferings()
+                    val offerings = if (forceRefresh) {
+                        Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
+                    } else {
+                        Purchases.sharedInstance.awaitOfferings()
+                    }
                     val offeringToLoad = offeringId?.let {
                         offerings.all[it]
                     } ?: offerings.current
@@ -131,7 +157,11 @@ class PaywallScreenViewModelImpl(
                         }
                     } else {
                         _state.update {
-                            PaywallScreenState.Loaded(offeringToLoad, footerCondensed = footerCondensed ?: false)
+                            PaywallScreenState.Loaded(
+                                offeringToLoad,
+                                footerCondensed = footerCondensed ?: false,
+                                refreshCount = refreshCount,
+                            )
                         }
                     }
                 } catch (e: PurchasesException) {
