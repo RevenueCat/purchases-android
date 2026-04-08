@@ -110,9 +110,9 @@ internal fun LoadedPaywallComponents(
                                 padding(top = headerHeightDp)
                             },
                     )
-                    headerComponentStyle?.let {
+                    headerComponentStyle?.let { headerStyle ->
                         ComponentView(
-                            style = it,
+                            style = headerStyle,
                             state = state,
                             onClick = onClick,
                             modifier = Modifier
