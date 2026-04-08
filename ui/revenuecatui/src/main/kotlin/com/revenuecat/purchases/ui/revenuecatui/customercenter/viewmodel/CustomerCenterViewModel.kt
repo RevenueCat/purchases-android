@@ -48,6 +48,7 @@ import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
@@ -446,6 +447,8 @@ internal class CustomerCenterViewModelImpl(
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
                 startGoogleProductCancellation(context, purchaseInfo.product)
+            purchaseInfo?.store == Store.AMAZON && purchaseInfo.managementURL != null ->
+                startAmazonCancellation(context, purchaseInfo.managementURL)
             purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
             else -> Logger.e("No product or management URL available for cancel path")
         }
@@ -460,6 +463,22 @@ internal class CustomerCenterViewModelImpl(
         shouldRefreshOnResume = true
         notifyListenersForManageSubscription()
         showManageSubscriptions(context, googleProduct.productId)
+    }
+
+    private fun startAmazonCancellation(context: Context, managementURL: Uri) {
+        shouldRefreshOnResume = true
+        notifyListenersForManageSubscription()
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(CustomerCenterConstants.Management.AMAZON_MANAGEMENT_URL)),
+            )
+        } catch (_: ActivityNotFoundException) {
+            openURL(
+                context,
+                managementURL.toString(),
+                HelpPath.OpenMethod.EXTERNAL,
+            )
+        }
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {

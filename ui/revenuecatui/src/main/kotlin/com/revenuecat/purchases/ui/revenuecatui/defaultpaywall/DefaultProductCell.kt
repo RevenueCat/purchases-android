@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
+import com.revenuecat.purchases.ui.revenuecatui.icons.CheckCircle
 import com.revenuecat.purchases.ui.revenuecatui.icons.CircleOutlined
 
 @Suppress("LongParameterList")
@@ -65,7 +64,7 @@ internal fun DefaultProductCell(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(
-            imageVector = if (isSelected) Icons.Filled.CheckCircle else CircleOutlined,
+            imageVector = if (isSelected) CheckCircle else CircleOutlined,
             contentDescription = null,
             tint = contentColor.copy(alpha = if (isSelected) 1f else 0.5f),
         )
