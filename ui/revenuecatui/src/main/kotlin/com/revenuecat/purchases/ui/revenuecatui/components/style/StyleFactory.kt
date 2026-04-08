@@ -602,6 +602,7 @@ internal class StyleFactory(
                             stackComponentStyle = stack,
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
+                            componentName = component.name,
                             isSelectable = purchaseButtons == 0,
                             resolvedOffer = resolvedOffer,
                         )

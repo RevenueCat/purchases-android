@@ -83,12 +83,23 @@ internal interface PaywallViewModel {
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
     fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String)
+    fun trackControlInteraction(data: PaywallControlInteractionData)
+
     fun trackControlInteraction(
         componentType: PaywallControlType,
         componentName: String?,
         componentValue: String,
         componentUrl: String? = null,
-    )
+    ) {
+        trackControlInteraction(
+            PaywallControlInteractionData(
+                componentType = componentType,
+                componentName = componentName,
+                componentValue = componentValue,
+                componentUrl = componentUrl,
+            ),
+        )
+    }
     fun closePaywall(result: PaywallResult? = null)
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
@@ -336,12 +347,7 @@ internal class PaywallViewModelImpl(
         purchases.track(event)
     }
 
-    override fun trackControlInteraction(
-        componentType: PaywallControlType,
-        componentName: String?,
-        componentValue: String,
-        componentUrl: String?,
-    ) {
+    override fun trackControlInteraction(data: PaywallControlInteractionData) {
         val eventData = paywallPresentationData
         if (eventData == null) {
             Logger.e("Paywall event data is null, not tracking paywall control interaction")
@@ -351,12 +357,7 @@ internal class PaywallViewModelImpl(
             creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
             data = eventData,
             type = PaywallEventType.CONTROL_INTERACTION,
-            controlInteraction = PaywallControlInteractionData(
-                componentType = componentType,
-                componentName = componentName,
-                componentValue = componentValue,
-                componentUrl = componentUrl,
-            ),
+            controlInteraction = data,
         )
         purchases.track(event)
     }

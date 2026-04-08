@@ -81,8 +81,8 @@ internal fun InternalPaywall(
     val state = viewModel.state.collectAsStateWithLifecycle().value
 
     val controlInteractionTracker = remember(viewModel) {
-        PaywallControlInteractionTracker { type, name, value, url ->
-            viewModel.trackControlInteraction(type, name, value, url)
+        PaywallControlInteractionTracker { data ->
+            viewModel.trackControlInteraction(data)
         }
     }
 

@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -142,10 +143,12 @@ internal fun ButtonComponentView(
                     val urlForEvent = paywallAction.navigateToUrlForControlInteraction()
                     style.action.controlInteraction(urlForEvent)?.let { interaction ->
                         controlInteractionTracker.track(
-                            componentType = PaywallControlType.BUTTON,
-                            componentName = style.componentName,
-                            componentValue = interaction.value,
-                            componentUrl = interaction.url,
+                            PaywallControlInteractionData(
+                                componentType = PaywallControlType.BUTTON,
+                                componentName = style.componentName,
+                                componentValue = interaction.value,
+                                componentUrl = interaction.url,
+                            ),
                         )
                     }
                 }

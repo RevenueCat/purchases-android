@@ -85,6 +85,12 @@ public enum class PaywallControlType {
 
     @SerialName("text")
     TEXT,
+
+    @SerialName("package")
+    PACKAGE,
+
+    @SerialName("package_selection_sheet")
+    PACKAGE_SELECTION_SHEET,
 }
 
 /**
@@ -97,6 +103,21 @@ public data class PaywallControlInteractionData(
     public val componentName: String? = null,
     public val componentValue: String,
     public val componentUrl: String? = null,
+    public val originIndex: Int? = null,
+    public val destinationIndex: Int? = null,
+    public val originContextName: String? = null,
+    public val destinationContextName: String? = null,
+    public val defaultIndex: Int? = null,
+    public val originPackageIdentifier: String? = null,
+    public val destinationPackageIdentifier: String? = null,
+    public val defaultPackageIdentifier: String? = null,
+    public val originProductIdentifier: String? = null,
+    public val destinationProductIdentifier: String? = null,
+    public val defaultProductIdentifier: String? = null,
+    public val currentPackageIdentifier: String? = null,
+    public val resultingPackageIdentifier: String? = null,
+    public val currentProductIdentifier: String? = null,
+    public val resultingProductIdentifier: String? = null,
 )
 
 /**
@@ -330,4 +351,58 @@ internal fun PaywallControlType.toWireString(): String = when (this) {
     PaywallControlType.CAROUSEL -> "carousel"
     PaywallControlType.BUTTON -> "button"
     PaywallControlType.TEXT -> "text"
+    PaywallControlType.PACKAGE -> "package"
+    PaywallControlType.PACKAGE_SELECTION_SHEET -> "package_selection_sheet"
+}
+
+/**
+ * Flattened control-interaction values for [BackendEvent.Paywalls] (shared by stored-event paths).
+ */
+@InternalRevenueCatAPI
+internal data class BackendPaywallControlFields(
+    val componentType: String? = null,
+    val componentName: String? = null,
+    val componentValue: String? = null,
+    val componentUrl: String? = null,
+    val originIndex: Int? = null,
+    val destinationIndex: Int? = null,
+    val originContextName: String? = null,
+    val destinationContextName: String? = null,
+    val defaultIndex: Int? = null,
+    val originPackageIdentifier: String? = null,
+    val destinationPackageIdentifier: String? = null,
+    val defaultPackageIdentifier: String? = null,
+    val originProductIdentifier: String? = null,
+    val destinationProductIdentifier: String? = null,
+    val defaultProductIdentifier: String? = null,
+    val currentPackageIdentifier: String? = null,
+    val resultingPackageIdentifier: String? = null,
+    val currentProductIdentifier: String? = null,
+    val resultingProductIdentifier: String? = null,
+)
+
+@InternalRevenueCatAPI
+internal fun PaywallControlInteractionData?.toBackendControlFields(): BackendPaywallControlFields {
+    val interaction = this ?: return BackendPaywallControlFields()
+    return BackendPaywallControlFields(
+        componentType = interaction.componentType.toWireString(),
+        componentName = interaction.componentName,
+        componentValue = interaction.componentValue,
+        componentUrl = interaction.componentUrl,
+        originIndex = interaction.originIndex,
+        destinationIndex = interaction.destinationIndex,
+        originContextName = interaction.originContextName,
+        destinationContextName = interaction.destinationContextName,
+        defaultIndex = interaction.defaultIndex,
+        originPackageIdentifier = interaction.originPackageIdentifier,
+        destinationPackageIdentifier = interaction.destinationPackageIdentifier,
+        defaultPackageIdentifier = interaction.defaultPackageIdentifier,
+        originProductIdentifier = interaction.originProductIdentifier,
+        destinationProductIdentifier = interaction.destinationProductIdentifier,
+        defaultProductIdentifier = interaction.defaultProductIdentifier,
+        currentPackageIdentifier = interaction.currentPackageIdentifier,
+        resultingPackageIdentifier = interaction.resultingPackageIdentifier,
+        currentProductIdentifier = interaction.currentProductIdentifier,
+        resultingProductIdentifier = interaction.resultingProductIdentifier,
+    )
 }

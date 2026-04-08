@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
@@ -23,6 +24,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
@@ -93,10 +95,12 @@ internal fun TextComponentView(
             object : UriHandler {
                 override fun openUri(uri: String) {
                     controlInteractionTracker.track(
-                        componentType = PaywallControlType.TEXT,
-                        componentName = style.componentName,
-                        componentValue = "navigate_to_url",
-                        componentUrl = uri,
+                        PaywallControlInteractionData(
+                            componentType = PaywallControlType.TEXT,
+                            componentName = style.componentName,
+                            componentValue = "navigate_to_url",
+                            componentUrl = uri,
+                        ),
                     )
                     uriHandler.openUri(uri)
                 }

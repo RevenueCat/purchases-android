@@ -1,10 +1,12 @@
 @file:JvmSynthetic
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
@@ -26,10 +28,11 @@ internal fun TabControlButtonView(
         modifier = modifier.clickable {
             val componentValue = style.tabButtonName ?: style.tabId
             controlInteractionTracker.track(
-                componentType = PaywallControlType.TAB,
-                componentName = style.tabsComponentName,
-                componentValue = componentValue,
-                componentUrl = null,
+                PaywallControlInteractionData(
+                    componentType = PaywallControlType.TAB,
+                    componentName = style.tabsComponentName,
+                    componentValue = componentValue,
+                ),
             )
             state.update(selectedTabIndex = style.tabIndex)
         },

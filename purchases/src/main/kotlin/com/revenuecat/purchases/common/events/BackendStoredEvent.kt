@@ -7,7 +7,7 @@ import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEv
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
-import com.revenuecat.purchases.paywalls.events.toWireString
+import com.revenuecat.purchases.paywalls.events.toBackendControlFields
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
@@ -87,6 +87,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
         // WIP: We should implement support for these events in the backend.
         return null
     }
+    val backendControlFields = controlInteraction.toBackendControlFields()
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
             id = creationData.id.toString(),
@@ -107,10 +108,25 @@ internal fun PaywallEvent.toBackendStoredEvent(
             productID = data.productIdentifier,
             errorCode = data.errorCode,
             errorMessage = data.errorMessage,
-            componentType = controlInteraction?.componentType?.toWireString(),
-            componentName = controlInteraction?.componentName,
-            componentValue = controlInteraction?.componentValue,
-            componentUrl = controlInteraction?.componentUrl,
+            componentType = backendControlFields.componentType,
+            componentName = backendControlFields.componentName,
+            componentValue = backendControlFields.componentValue,
+            componentUrl = backendControlFields.componentUrl,
+            originIndex = backendControlFields.originIndex,
+            destinationIndex = backendControlFields.destinationIndex,
+            originContextName = backendControlFields.originContextName,
+            destinationContextName = backendControlFields.destinationContextName,
+            defaultIndex = backendControlFields.defaultIndex,
+            originPackageIdentifier = backendControlFields.originPackageIdentifier,
+            destinationPackageIdentifier = backendControlFields.destinationPackageIdentifier,
+            defaultPackageIdentifier = backendControlFields.defaultPackageIdentifier,
+            originProductIdentifier = backendControlFields.originProductIdentifier,
+            destinationProductIdentifier = backendControlFields.destinationProductIdentifier,
+            defaultProductIdentifier = backendControlFields.defaultProductIdentifier,
+            currentPackageIdentifier = backendControlFields.currentPackageIdentifier,
+            resultingPackageIdentifier = backendControlFields.resultingPackageIdentifier,
+            currentProductIdentifier = backendControlFields.currentProductIdentifier,
+            resultingProductIdentifier = backendControlFields.resultingProductIdentifier,
         ),
     )
 }

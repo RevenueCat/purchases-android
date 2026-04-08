@@ -119,6 +119,36 @@ internal sealed class BackendEvent : Event {
         val componentValue: String? = null,
         @SerialName("component_url")
         val componentUrl: String? = null,
+        @SerialName("origin_index")
+        val originIndex: Int? = null,
+        @SerialName("destination_index")
+        val destinationIndex: Int? = null,
+        @SerialName("origin_context_name")
+        val originContextName: String? = null,
+        @SerialName("destination_context_name")
+        val destinationContextName: String? = null,
+        @SerialName("default_index")
+        val defaultIndex: Int? = null,
+        @SerialName("origin_package_id")
+        val originPackageIdentifier: String? = null,
+        @SerialName("destination_package_id")
+        val destinationPackageIdentifier: String? = null,
+        @SerialName("default_package_id")
+        val defaultPackageIdentifier: String? = null,
+        @SerialName("origin_product_id")
+        val originProductIdentifier: String? = null,
+        @SerialName("destination_product_id")
+        val destinationProductIdentifier: String? = null,
+        @SerialName("default_product_id")
+        val defaultProductIdentifier: String? = null,
+        @SerialName("current_package_id")
+        val currentPackageIdentifier: String? = null,
+        @SerialName("resulting_package_id")
+        val resultingPackageIdentifier: String? = null,
+        @SerialName("current_product_id")
+        val currentProductIdentifier: String? = null,
+        @SerialName("resulting_product_id")
+        val resultingProductIdentifier: String? = null,
     ) : BackendEvent()
 
     /**

@@ -343,4 +343,76 @@ class PaywallEventSerializationTests {
         assertThat(backend.componentValue).isEqualTo("annual")
         assertThat(backend.componentUrl).isNull()
     }
+
+    @Test
+    fun `can encode and decode control interaction event with extended package fields`() {
+        val stored = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
+                    date = Date(1699270689111),
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                    paywallRevision = 2,
+                    sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
+                    displayMode = "fullscreen",
+                    localeIdentifier = "en_US",
+                    darkMode = false,
+                ),
+                type = PaywallEventType.CONTROL_INTERACTION,
+                controlInteraction = PaywallControlInteractionData(
+                    componentType = PaywallControlType.PACKAGE,
+                    componentName = "hero_pkg",
+                    componentValue = "monthly",
+                    originPackageIdentifier = "annual",
+                    destinationPackageIdentifier = "monthly",
+                    defaultPackageIdentifier = "annual",
+                    originProductIdentifier = "com.annual",
+                    destinationProductIdentifier = "com.monthly",
+                    defaultProductIdentifier = "com.annual",
+                ),
+            ),
+            userID = "testAppUserId",
+        )
+        val json = PaywallStoredEvent.json.encodeToString(stored)
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(json)
+        assertThat(decoded).isEqualTo(stored)
+    }
+
+    @Test
+    fun `toBackendStoredEvent maps extended control interaction fields`() {
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
+                date = Date(1699270689111),
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "pw",
+                presentedOfferingContext = PresentedOfferingContext("off"),
+                paywallRevision = 1,
+                sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
+                displayMode = "footer",
+                localeIdentifier = "en_US",
+                darkMode = true,
+            ),
+            type = PaywallEventType.CONTROL_INTERACTION,
+            controlInteraction = PaywallControlInteractionData(
+                componentType = PaywallControlType.PACKAGE_SELECTION_SHEET,
+                componentName = "pkg_sheet",
+                componentValue = "close",
+                currentPackageIdentifier = "monthly",
+                resultingPackageIdentifier = "annual",
+                currentProductIdentifier = "com.monthly",
+                resultingProductIdentifier = "com.annual",
+            ),
+        )
+        val backend = event.toBackendStoredEvent("uid")!!.event
+        assertThat(backend.componentType).isEqualTo("package_selection_sheet")
+        assertThat(backend.currentPackageIdentifier).isEqualTo("monthly")
+        assertThat(backend.resultingPackageIdentifier).isEqualTo("annual")
+        assertThat(backend.currentProductIdentifier).isEqualTo("com.monthly")
+        assertThat(backend.resultingProductIdentifier).isEqualTo("com.annual")
+    }
 }

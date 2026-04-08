@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.app.Activity
@@ -23,6 +25,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -572,18 +575,11 @@ internal class MockViewModel(
 
     var trackControlInteractionCallCount = 0
         private set
-    val trackControlInteractionParams = mutableListOf<MockTrackControlInteractionParams>()
+    val trackControlInteractionParams = mutableListOf<PaywallControlInteractionData>()
 
-    override fun trackControlInteraction(
-        componentType: PaywallControlType,
-        componentName: String?,
-        componentValue: String,
-        componentUrl: String?,
-    ) {
+    override fun trackControlInteraction(data: PaywallControlInteractionData) {
         trackControlInteractionCallCount++
-        trackControlInteractionParams.add(
-            MockTrackControlInteractionParams(componentType, componentName, componentValue, componentUrl),
-        )
+        trackControlInteractionParams.add(data)
     }
 
     var refreshStateIfLocaleChangedCallCount = 0
@@ -729,9 +725,3 @@ internal class MockViewModel(
     }
 }
 
-internal data class MockTrackControlInteractionParams(
-    val componentType: PaywallControlType,
-    val componentName: String?,
-    val componentValue: String,
-    val componentUrl: String?,
-)

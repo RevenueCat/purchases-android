@@ -3,23 +3,18 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import com.revenuecat.purchases.paywalls.events.PaywallControlType
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 
 /**
  * Tracks paywall control interactions for analytics.
  */
 internal fun interface PaywallControlInteractionTracker {
-    fun track(
-        componentType: PaywallControlType,
-        componentName: String?,
-        componentValue: String,
-        componentUrl: String?,
-    )
+    fun track(data: PaywallControlInteractionData)
 }
 
 internal val LocalPaywallControlInteractionTracker =
     staticCompositionLocalOf<PaywallControlInteractionTracker> {
-        PaywallControlInteractionTracker { _, _, _, _ -> }
+        PaywallControlInteractionTracker { _ -> }
     }
 
 /**

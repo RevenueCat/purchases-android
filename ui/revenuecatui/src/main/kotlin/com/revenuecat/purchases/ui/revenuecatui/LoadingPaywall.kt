@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
@@ -21,6 +23,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -190,12 +193,7 @@ private class LoadingViewModel(
 
     override fun trackPaywallImpressionIfNeeded() = Unit
     override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) = Unit
-    override fun trackControlInteraction(
-        componentType: PaywallControlType,
-        componentName: String?,
-        componentValue: String,
-        componentUrl: String?,
-    ) = Unit
+    override fun trackControlInteraction(data: PaywallControlInteractionData) = Unit
     override fun refreshStateIfLocaleChanged() = Unit
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDarkMode: Boolean) = Unit
 

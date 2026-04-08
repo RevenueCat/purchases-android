@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
@@ -14,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -41,10 +43,11 @@ internal fun TabControlToggleView(
         onCheckedChange = {
             state.update(selectedTabIndex = if (it) 1 else 0)
             controlInteractionTracker.track(
-                componentType = PaywallControlType.SWITCH,
-                componentName = style.componentName,
-                componentValue = if (it) "on" else "off",
-                componentUrl = null,
+                PaywallControlInteractionData(
+                    componentType = PaywallControlType.SWITCH,
+                    componentName = style.componentName,
+                    componentValue = if (it) "on" else "off",
+                ),
             )
         },
         modifier = modifier

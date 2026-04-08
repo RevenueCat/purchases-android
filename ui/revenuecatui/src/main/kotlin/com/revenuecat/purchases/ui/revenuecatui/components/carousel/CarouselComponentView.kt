@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.carousel
@@ -33,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.events.PaywallControlInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallControlType
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -126,10 +128,11 @@ internal fun CarouselComponentView(
                     } else {
                         val logicalPage = page % pageCount
                         controlInteractionTracker.track(
-                            componentType = PaywallControlType.CAROUSEL,
-                            componentName = style.componentName,
-                            componentValue = logicalPage.toString(),
-                            componentUrl = null,
+                            PaywallControlInteractionData(
+                                componentType = PaywallControlType.CAROUSEL,
+                                componentName = style.componentName,
+                                componentValue = logicalPage.toString(),
+                            ),
                         )
                     }
                     previousPage = page

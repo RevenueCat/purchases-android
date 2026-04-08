@@ -22,6 +22,7 @@ internal data class PaywallStoredEvent(
 
     @OptIn(InternalRevenueCatAPI::class)
     fun toBackendEvent(): BackendEvent.Paywalls {
+        val backendControlFields = event.controlInteraction.toBackendControlFields()
         return BackendEvent.Paywalls(
             id = event.creationData.id.toString(),
             version = BackendEvent.PAYWALL_EVENT_SCHEMA_VERSION,
@@ -41,10 +42,25 @@ internal data class PaywallStoredEvent(
             productID = event.data.productIdentifier,
             errorCode = event.data.errorCode,
             errorMessage = event.data.errorMessage,
-            componentType = event.controlInteraction?.componentType?.toWireString(),
-            componentName = event.controlInteraction?.componentName,
-            componentValue = event.controlInteraction?.componentValue,
-            componentUrl = event.controlInteraction?.componentUrl,
+            componentType = backendControlFields.componentType,
+            componentName = backendControlFields.componentName,
+            componentValue = backendControlFields.componentValue,
+            componentUrl = backendControlFields.componentUrl,
+            originIndex = backendControlFields.originIndex,
+            destinationIndex = backendControlFields.destinationIndex,
+            originContextName = backendControlFields.originContextName,
+            destinationContextName = backendControlFields.destinationContextName,
+            defaultIndex = backendControlFields.defaultIndex,
+            originPackageIdentifier = backendControlFields.originPackageIdentifier,
+            destinationPackageIdentifier = backendControlFields.destinationPackageIdentifier,
+            defaultPackageIdentifier = backendControlFields.defaultPackageIdentifier,
+            originProductIdentifier = backendControlFields.originProductIdentifier,
+            destinationProductIdentifier = backendControlFields.destinationProductIdentifier,
+            defaultProductIdentifier = backendControlFields.defaultProductIdentifier,
+            currentPackageIdentifier = backendControlFields.currentPackageIdentifier,
+            resultingPackageIdentifier = backendControlFields.resultingPackageIdentifier,
+            currentProductIdentifier = backendControlFields.currentProductIdentifier,
+            resultingProductIdentifier = backendControlFields.resultingProductIdentifier,
         )
     }
 
