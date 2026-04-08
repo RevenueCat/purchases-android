@@ -374,6 +374,15 @@ internal open class BasePurchasesTest {
             every {
                 updatedCustomerInfoListener
             } returns null
+            every {
+                addUpdatedCustomerInfoListener(any())
+            } just Runs
+            every {
+                removeUpdatedCustomerInfoListener(any())
+            } just Runs
+            every {
+                removeAllListeners()
+            } just Runs
         }
     }
 
