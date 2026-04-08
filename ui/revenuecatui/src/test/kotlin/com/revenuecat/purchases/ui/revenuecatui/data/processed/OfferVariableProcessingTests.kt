@@ -362,7 +362,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = optionWithNoDiscountPhases,
         )
 
-        // 1 month product at $10.00 -> $10.00/month
+        // 1 month product at $10.00 -> $10/month
         assertThat(result).isEqualTo("$10.00")
     }
 
@@ -426,7 +426,7 @@ class OfferVariableProcessingTests {
             subscriptionOption = optionWithWeeklyDiscount,
         )
 
-        // Falls back to product's price per month ($10.00/month for a monthly product)
+        // Falls back to product's price per month ($10/month for a monthly product)
         assertThat(result).isEqualTo("$10.00")
     }
 
