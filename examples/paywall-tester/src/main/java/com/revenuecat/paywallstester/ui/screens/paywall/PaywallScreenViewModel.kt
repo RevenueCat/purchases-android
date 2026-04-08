@@ -45,6 +45,8 @@ class PaywallScreenViewModelImpl(
     private val footerCondensed = savedStateHandle.get<Boolean?>(PaywallScreenViewModel.FOOTER_CONDENSED_KEY)
     private val placementId = savedStateHandle.get<String?>(PaywallScreenViewModel.PLACEMENT_ID_KEY)
 
+    private var refreshCounter = 0
+
     init {
         updateOffering()
     }
@@ -103,14 +105,9 @@ class PaywallScreenViewModelImpl(
     }
 
     override fun refreshOffering() {
-        val currentState = _state.value
-        val nextRefreshCount = if (currentState is PaywallScreenState.Loaded) {
-            currentState.refreshCount + 1
-        } else {
-            1
-        }
+        refreshCounter++
         _state.update { PaywallScreenState.Loading }
-        updateOffering(nextRefreshCount)
+        updateOffering(refreshCounter)
     }
 
     private fun updateOffering(refreshCount: Int = 0) {
