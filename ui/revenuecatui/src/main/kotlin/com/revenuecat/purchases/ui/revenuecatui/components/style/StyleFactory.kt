@@ -256,6 +256,7 @@ internal class StyleFactory(
 
         /**
          * Whether the tree contains a hero image (a full-width image/video as the first child of a ZLayer stack).
+         * Backed by [WindowInsetsState.topWindowInsetsApplied] — both are set during the same traversal step.
          */
         val hasHeroImage: Boolean
             get() = windowInsetsState.topWindowInsetsApplied
