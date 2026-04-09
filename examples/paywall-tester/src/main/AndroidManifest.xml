@@ -9,8 +9,7 @@
             android:roundIcon="@mipmap/icon_round"
             android:backupAgent="com.revenuecat.purchases.backup.RevenueCatBackupAgent"
             android:supportsRtl="true"
-            android:theme="@style/Theme.Purchasesandroid"
-            android:networkSecurityConfig="@xml/network_security_config">
+            android:theme="@style/Theme.Purchasesandroid">
         <activity
                 android:name=".PaywallFooterViewActivity"
                 android:exported="false" />
