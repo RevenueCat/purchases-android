@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -1166,5 +1167,67 @@ class StyleFactoryTests {
         assertThat(firstImage.ignoreTopWindowInsets).isFalse()
         val secondImage = style.children[1] as ImageComponentStyle
         assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `PackageComponentStyle visible defaults to true when component visible is null`() {
+        // Arrange
+        val packageComponent = PackageComponent(
+            packageId = "\$rc_annual",
+            isSelectedByDefault = false,
+            visible = null,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(packageComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val pkgStyle = (result as Result.Success).value.componentStyle as PackageComponentStyle
+        assertThat(pkgStyle.visible).isTrue()
+    }
+
+    @Test
+    fun `PackageComponentStyle visible is false when component visible is false`() {
+        // Arrange
+        val packageComponent = PackageComponent(
+            packageId = "\$rc_annual",
+            isSelectedByDefault = false,
+            visible = false,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(packageComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val pkgStyle = (result as Result.Success).value.componentStyle as PackageComponentStyle
+        assertThat(pkgStyle.visible).isFalse()
+    }
+
+    @Test
+    fun `PackageComponentStyle overrides are populated from component overrides`() {
+        // Arrange
+        val packageComponent = PackageComponent(
+            packageId = "\$rc_annual",
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialPackageComponent(visible = false),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(packageComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val pkgStyle = (result as Result.Success).value.componentStyle as PackageComponentStyle
+        assertThat(pkgStyle.overrides).hasSize(1)
     }
 }
