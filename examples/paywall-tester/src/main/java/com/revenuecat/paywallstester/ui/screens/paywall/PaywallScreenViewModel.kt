@@ -5,10 +5,10 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.models.StoreTransaction
@@ -126,7 +126,7 @@ class PaywallScreenViewModelImpl(
                         refreshCount = refreshCount,
                     )
                 }
-            } catch (e: PurchasesException) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 _state.update { PaywallScreenState.Error(e.toString()) }
             } finally {
                 _isRefreshing.value = false
@@ -134,7 +134,7 @@ class PaywallScreenViewModelImpl(
         }
     }
 
-    private suspend fun fetchOffering(forceRefresh: Boolean): com.revenuecat.purchases.Offering {
+    private suspend fun fetchOffering(forceRefresh: Boolean): Offering {
         val offerings = if (forceRefresh) {
             Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
         } else {
