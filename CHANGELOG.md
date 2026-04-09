@@ -1,3 +1,9 @@
+## 10.0.2
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* PW-1178 | Support package-level visibility via visible property and overrides (#3279) via Facundo Menzella (@facumenzella)
+
 ## 10.0.1
 ### 🔄 Other Changes
 * [EXTERNAL] Allow the use of Test Store in release builds using the uiPreview dangerous setting for the RC Mobile app (#3307) via @bcapps (#3308) via Antonio Pallares (@ajpallares)
