@@ -51,11 +51,11 @@ internal fun FontInfo.Name.toDownloadableFontInfo(): Result<DownloadableFontInfo
     } else {
         Result.Success(
             DownloadableFontInfo(
-                url = url,
-                expectedMd5 = hash,
-                family = family,
-                weight = weight,
-                style = style,
+                url = url!!,
+                expectedMd5 = hash!!,
+                family = family!!,
+                weight = weight!!,
+                style = style!!,
             ),
         )
     }
