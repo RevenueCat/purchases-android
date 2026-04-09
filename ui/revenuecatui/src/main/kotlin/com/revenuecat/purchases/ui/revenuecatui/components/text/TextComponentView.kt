@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
@@ -9,6 +10,7 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -18,8 +20,12 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.unit.sp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -42,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 
 @Composable
 internal fun TextComponentView(
@@ -82,21 +89,40 @@ internal fun TextComponentView(
     }
 
     if (textState.visible) {
-        Markdown(
-            text = text,
-            modifier = modifier
-                .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
-                .padding(textState.margin)
-                .applyIfNotNull(backgroundColorStyle) { background(it) }
-                .padding(textState.padding),
-            color = color,
-            fontSize = textState.fontSize.sp,
-            fontWeight = textState.fontWeight,
-            fontFamily = textState.fontFamily,
-            horizontalAlignment = textState.horizontalAlignment,
-            textAlign = textState.textAlign,
-            style = textStyle,
-        )
+        val uriHandler = LocalUriHandler.current
+        val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
+        val trackingUriHandler = remember(uriHandler, componentInteractionTracker, style.componentName) {
+            object : UriHandler {
+                override fun openUri(uri: String) {
+                    componentInteractionTracker.track(
+                        PaywallComponentInteractionData(
+                            componentType = PaywallComponentType.TEXT,
+                            componentName = style.componentName,
+                            componentValue = "navigate_to_url",
+                            componentUrl = uri,
+                        ),
+                    )
+                    uriHandler.openUri(uri)
+                }
+            }
+        }
+        CompositionLocalProvider(LocalUriHandler provides trackingUriHandler) {
+            Markdown(
+                text = text,
+                modifier = modifier
+                    .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
+                    .padding(textState.margin)
+                    .applyIfNotNull(backgroundColorStyle) { background(it) }
+                    .padding(textState.padding),
+                color = color,
+                fontSize = textState.fontSize.sp,
+                fontWeight = textState.fontWeight,
+                fontFamily = textState.fontFamily,
+                horizontalAlignment = textState.horizontalAlignment,
+                textAlign = textState.textAlign,
+                style = textStyle,
+            )
+        }
     }
 }
 

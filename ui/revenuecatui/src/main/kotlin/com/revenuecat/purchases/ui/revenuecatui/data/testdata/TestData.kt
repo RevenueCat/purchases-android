@@ -1,3 +1,5 @@
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.app.Activity
@@ -23,6 +25,8 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -569,6 +573,15 @@ internal class MockViewModel(
         trackExitOfferParams.add(Pair(exitOfferType, exitOfferingIdentifier))
     }
 
+    var trackComponentInteractionCallCount = 0
+        private set
+    val trackComponentInteractionParams = mutableListOf<PaywallComponentInteractionData>()
+
+    override fun trackComponentInteraction(data: PaywallComponentInteractionData) {
+        trackComponentInteractionCallCount++
+        trackComponentInteractionParams.add(data)
+    }
+
     var refreshStateIfLocaleChangedCallCount = 0
         private set
     override fun refreshStateIfLocaleChanged() {
@@ -711,3 +724,4 @@ internal class MockViewModel(
         private const val MILLIS_2025_01_25 = 1737763200000
     }
 }
+

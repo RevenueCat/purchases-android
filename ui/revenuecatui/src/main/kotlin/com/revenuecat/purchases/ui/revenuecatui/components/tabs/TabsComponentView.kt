@@ -130,6 +130,7 @@ private fun TabsComponentView_Preview() {
         children = listOf(
             TabControlButtonComponentStyle(
                 tabIndex = 0,
+                tabId = "t0",
                 stack = previewStackComponentStyle(
                     children = listOf(
                         previewTextComponentStyle(
@@ -144,6 +145,7 @@ private fun TabsComponentView_Preview() {
             ),
             TabControlButtonComponentStyle(
                 tabIndex = 1,
+                tabId = "t1",
                 stack = previewStackComponentStyle(
                     children = listOf(
                         previewTextComponentStyle(
@@ -158,6 +160,7 @@ private fun TabsComponentView_Preview() {
             ),
             TabControlButtonComponentStyle(
                 tabIndex = 2,
+                tabId = "t2",
                 stack = previewStackComponentStyle(
                     children = listOf(
                         previewTextComponentStyle(

@@ -187,6 +187,29 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
                     )
                 ),
             ),
+            arrayOf(
+                "optional name",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "name": "hero_package"
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        name = "hero_package",
+                    )
+                ),
+            ),
         )
     }
 

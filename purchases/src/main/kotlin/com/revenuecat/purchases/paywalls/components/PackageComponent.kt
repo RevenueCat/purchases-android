@@ -26,4 +26,7 @@ public class PackageComponent(
     @Serializable(with = ResilientPromoOfferConfigSerializer::class)
     @SerialName("play_store_offer")
     public val playStoreOffer: PromoOfferConfig? = null,
+    @get:JvmSynthetic
+    @SerialName("name")
+    public val name: String? = null,
 ) : PaywallComponent

@@ -19,6 +19,8 @@ internal data class ButtonComponentStyle(
     val action: Action,
     @get:JvmSynthetic
     val transition: PaywallTransition? = null,
+    @get:JvmSynthetic
+    val componentName: String? = null,
 ) : ComponentStyle {
 
     internal sealed interface Action {
@@ -57,6 +59,8 @@ internal data class ButtonComponentStyle(
                 data class Url(
                     @get:JvmSynthetic val urls: NonEmptyMap<LocaleId, String>,
                     @get:JvmSynthetic val method: ButtonComponent.UrlMethod,
+                    /** Wire `component_value` for paywall component interaction (terms vs privacy vs generic link). */
+                    @get:JvmSynthetic val componentInteractionValue: String = "navigate_to_url",
                 ) : Destination
 
                 @Immutable

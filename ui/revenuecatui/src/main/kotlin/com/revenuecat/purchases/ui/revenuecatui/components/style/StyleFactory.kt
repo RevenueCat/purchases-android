@@ -126,6 +126,10 @@ internal class StyleFactory(
          */
         var tabIndex: Int? = null,
         /**
+         * When building a [TabsComponent] subtree, holds that component's dashboard `name` for tab control analytics.
+         */
+        var enclosingTabsComponentName: String? = null,
+        /**
          * If this is non-null, it means the branch currently being built is inside a countdown component.
          */
         var countdownDate: Date? = null,
@@ -322,6 +326,19 @@ internal class StyleFactory(
             this.tabIndex = currentScope.tabIndex
 
             return result
+        }
+
+        fun <T> withTabsComponentName(
+            name: String?,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val previous = enclosingTabsComponentName
+            enclosingTabsComponentName = name
+            try {
+                return block()
+            } finally {
+                enclosingTabsComponentName = previous
+            }
         }
 
         /**
@@ -538,6 +555,7 @@ internal class StyleFactory(
                 stackComponentStyle = stack,
                 action = action,
                 transition = component.transition,
+                componentName = component.name,
             )
         }
     }
@@ -584,6 +602,7 @@ internal class StyleFactory(
                             stackComponentStyle = stack,
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
+                            componentName = component.name,
                             isSelectable = purchaseButtons == 0,
                             resolvedOffer = resolvedOffer,
                         )
@@ -600,6 +619,7 @@ internal class StyleFactory(
         ButtonComponentStyle(
             stackComponentStyle = stack,
             action = action,
+            componentName = null,
         )
     }
 
@@ -692,14 +712,17 @@ internal class StyleFactory(
             is ButtonComponent.Destination.PrivacyPolicy -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
+                componentInteractionValue = "navigate_to_privacy_policy",
             )
             is ButtonComponent.Destination.Terms -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
+                componentInteractionValue = "navigate_to_terms",
             )
             is ButtonComponent.Destination.Url -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
+                componentInteractionValue = "navigate_to_url",
             )
             is ButtonComponent.Destination.Sheet ->
                 createStackComponentStyle(destination.stack)
@@ -722,9 +745,14 @@ internal class StyleFactory(
     private fun buttonComponentStyleUrlDestination(
         urlLid: LocalizationKey,
         method: ButtonComponent.UrlMethod,
+        componentInteractionValue: String,
     ) =
         localizations.stringForAllLocales(urlLid).map { urls ->
-            ButtonComponentStyle.Action.NavigateTo.Destination.Url(urls, method)
+            ButtonComponentStyle.Action.NavigateTo.Destination.Url(
+                urls = urls,
+                method = method,
+                componentInteractionValue = componentInteractionValue,
+            )
         }.map { urlDestination ->
             when (urlDestination.method) {
                 ButtonComponent.UrlMethod.IN_APP_BROWSER,
@@ -846,6 +874,7 @@ internal class StyleFactory(
             countFrom = countFrom,
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
+            componentName = component.name,
         )
     }
 
@@ -1075,6 +1104,7 @@ internal class StyleFactory(
             tabIndex = tabControlIndex,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
+            componentName = component.name,
         )
     }
 
@@ -1085,7 +1115,15 @@ internal class StyleFactory(
             // Button control doesn't have a default tab.
             defaultTabIndex = 0
             createStackComponentStyle(component.stack)
-                .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
+                .map { stack ->
+                    TabControlButtonComponentStyle(
+                        tabIndex = component.tabIndex,
+                        tabId = component.tabId,
+                        stack = stack,
+                        tabsComponentName = enclosingTabsComponentName,
+                        tabButtonName = component.name,
+                    )
+                }
         }
 
     private fun StyleFactoryScope.createTabControlToggleComponentStyle(
@@ -1103,13 +1141,15 @@ internal class StyleFactory(
                 thumbColorOff = thumbColorOff,
                 trackColorOn = trackColorOn,
                 trackColorOff = trackColorOff,
+                componentName = component.name,
             )
         }
 
     private fun StyleFactoryScope.createTabsComponentStyle(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createTabsComponentStyleTabControl(component.control).flatMap { control ->
+        withTabsComponentName(component.name) {
+            createTabsComponentStyleTabControl(component.control).flatMap { control ->
             // Find the index of the defaultTabId.
             component.defaultTabId
                 ?.takeUnless { it.isBlank() }
@@ -1142,6 +1182,7 @@ internal class StyleFactory(
                     overrides = overrides,
                 )
             }
+        }
         }
 
     private fun StyleFactoryScope.createTabsComponentStyleTabControl(

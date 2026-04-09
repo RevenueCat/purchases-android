@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -276,5 +277,175 @@ class PaywallEventSerializationTests {
         assertThat(decodedEvent.event.data.errorCode).isEqualTo(123)
         assertThat(decodedEvent.event.data.errorMessage).isEqualTo("Purchase failed")
         assertThat(decodedEvent.event.type).isEqualTo(PaywallEventType.PURCHASE_ERROR)
+    }
+
+    @Test
+    fun `can encode and decode component interaction event`() {
+        val stored = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
+                    date = Date(1699270689111),
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                    paywallRevision = 2,
+                    sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
+                    displayMode = "fullscreen",
+                    localeIdentifier = "en_US",
+                    darkMode = false,
+                ),
+                type = PaywallEventType.COMPONENT_INTERACTION,
+                componentInteraction = PaywallComponentInteractionData(
+                    componentType = PaywallComponentType.BUTTON,
+                    componentName = "terms",
+                    componentValue = "navigate_to_terms",
+                    componentUrl = "https://example.com/terms",
+                ),
+            ),
+            userID = "testAppUserId",
+        )
+        val json = PaywallStoredEvent.json.encodeToString(stored)
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(json)
+        assertThat(decoded).isEqualTo(stored)
+        assertThat(decoded.event.componentInteraction?.componentType).isEqualTo(PaywallComponentType.BUTTON)
+        assertThat(decoded.event.componentInteraction?.componentUrl).isEqualTo("https://example.com/terms")
+    }
+
+    @Test
+    fun `decodes stored event json using legacy controlInteraction property name`() {
+        val stored = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
+                    date = Date(1699270689111),
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                    paywallRevision = 2,
+                    sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
+                    displayMode = "fullscreen",
+                    localeIdentifier = "en_US",
+                    darkMode = false,
+                ),
+                type = PaywallEventType.COMPONENT_INTERACTION,
+                componentInteraction = PaywallComponentInteractionData(
+                    componentType = PaywallComponentType.BUTTON,
+                    componentName = "terms",
+                    componentValue = "navigate_to_terms",
+                    componentUrl = "https://example.com/terms",
+                ),
+            ),
+            userID = "testAppUserId",
+        )
+        val json = PaywallStoredEvent.json.encodeToString(stored)
+        val legacyJson = json.replace("componentInteraction", "controlInteraction")
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(legacyJson)
+        assertThat(decoded).isEqualTo(stored)
+    }
+
+    @Test
+    fun `toBackendStoredEvent maps component interaction fields`() {
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
+                date = Date(1699270689111),
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "pw",
+                presentedOfferingContext = PresentedOfferingContext("off"),
+                paywallRevision = 1,
+                sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
+                displayMode = "footer",
+                localeIdentifier = "en_US",
+                darkMode = true,
+            ),
+            type = PaywallEventType.COMPONENT_INTERACTION,
+            componentInteraction = PaywallComponentInteractionData(
+                componentType = PaywallComponentType.TAB,
+                componentName = "tabs_main",
+                componentValue = "annual",
+            ),
+        )
+        val backend = event.toBackendStoredEvent("uid")!!.event
+        assertThat(backend.type).isEqualTo("paywall_component_interaction")
+        assertThat(backend.componentType).isEqualTo("tab")
+        assertThat(backend.componentName).isEqualTo("tabs_main")
+        assertThat(backend.componentValue).isEqualTo("annual")
+        assertThat(backend.componentUrl).isNull()
+    }
+
+    @Test
+    fun `can encode and decode component interaction event with extended package fields`() {
+        val stored = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
+                    date = Date(1699270689111),
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                    paywallRevision = 2,
+                    sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
+                    displayMode = "fullscreen",
+                    localeIdentifier = "en_US",
+                    darkMode = false,
+                ),
+                type = PaywallEventType.COMPONENT_INTERACTION,
+                componentInteraction = PaywallComponentInteractionData(
+                    componentType = PaywallComponentType.PACKAGE,
+                    componentName = "hero_pkg",
+                    componentValue = "monthly",
+                    originPackageIdentifier = "annual",
+                    destinationPackageIdentifier = "monthly",
+                    defaultPackageIdentifier = "annual",
+                    originProductIdentifier = "com.annual",
+                    destinationProductIdentifier = "com.monthly",
+                    defaultProductIdentifier = "com.annual",
+                ),
+            ),
+            userID = "testAppUserId",
+        )
+        val json = PaywallStoredEvent.json.encodeToString(stored)
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(json)
+        assertThat(decoded).isEqualTo(stored)
+    }
+
+    @Test
+    fun `toBackendStoredEvent maps extended component interaction fields`() {
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
+                date = Date(1699270689111),
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "pw",
+                presentedOfferingContext = PresentedOfferingContext("off"),
+                paywallRevision = 1,
+                sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
+                displayMode = "footer",
+                localeIdentifier = "en_US",
+                darkMode = true,
+            ),
+            type = PaywallEventType.COMPONENT_INTERACTION,
+            componentInteraction = PaywallComponentInteractionData(
+                componentType = PaywallComponentType.PACKAGE_SELECTION_SHEET,
+                componentName = "pkg_sheet",
+                componentValue = "close",
+                currentPackageIdentifier = "monthly",
+                resultingPackageIdentifier = "annual",
+                currentProductIdentifier = "com.monthly",
+                resultingProductIdentifier = "com.annual",
+            ),
+        )
+        val backend = event.toBackendStoredEvent("uid")!!.event
+        assertThat(backend.componentType).isEqualTo("package_selection_sheet")
+        assertThat(backend.currentPackageIdentifier).isEqualTo("monthly")
+        assertThat(backend.resultingPackageIdentifier).isEqualTo("annual")
+        assertThat(backend.currentProductIdentifier).isEqualTo("com.monthly")
+        assertThat(backend.resultingProductIdentifier).isEqualTo("com.annual")
     }
 }

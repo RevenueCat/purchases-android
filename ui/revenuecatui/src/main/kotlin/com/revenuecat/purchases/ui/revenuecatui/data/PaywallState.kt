@@ -330,6 +330,30 @@ internal sealed interface PaywallState {
                         ?: selectedPackageByTab[selectedTabIndex]
             }
 
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? =
+                packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
+                    ?: initialSelectedPackageOutsideTabs
+                    ?: selectedPackageByTab[selectedTabIndex]
+
+            fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
+                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss() ?: return null
+                val info = findPackageInfoByUniqueId(uid) ?: return null
+                return SelectedPackageInfo(
+                    rcPackage = info.pkg,
+                    resolvedOffer = info.resolvedOffer,
+                    uniqueId = uid,
+                    offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
+                )
+            }
+
+            /**
+             * Default package for the current tab / root context (aligned with [resetToDefaultPackage]).
+             */
+            fun defaultPackageForPackageRowAnalytics(): Package? {
+                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss() ?: return null
+                return findPackageInfoByUniqueId(uid)?.pkg
+            }
+
             private fun LocaleList.toLocaleId(): LocaleId {
                 val preferredOverride = purchases.preferredUILocaleOverride
                 val deviceLocales = map { it.toLocaleId() }.plus(locales.head)

@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.nullable
@@ -17,6 +18,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.Date
@@ -57,7 +59,67 @@ public enum class PaywallEventType(public val value: String) {
      * An exit offer will be shown to the user.
      */
     EXIT_OFFER("paywall_exit_offer"),
+
+    /**
+     * User interacted with a paywall component (tabs, carousel, non-purchase button, etc.).
+     */
+    COMPONENT_INTERACTION("paywall_component_interaction"),
 }
+
+/**
+ * Component categories for [PaywallEventType.COMPONENT_INTERACTION]. Wire values match iOS `ControlType`.
+ */
+@InternalRevenueCatAPI
+@Serializable
+public enum class PaywallComponentType {
+    @SerialName("tab")
+    TAB,
+
+    @SerialName("switch")
+    SWITCH,
+
+    @SerialName("carousel")
+    CAROUSEL,
+
+    @SerialName("button")
+    BUTTON,
+
+    @SerialName("text")
+    TEXT,
+
+    @SerialName("package")
+    PACKAGE,
+
+    @SerialName("package_selection_sheet")
+    PACKAGE_SELECTION_SHEET,
+}
+
+/**
+ * Payload for [PaywallEventType.COMPONENT_INTERACTION].
+ */
+@InternalRevenueCatAPI
+@Serializable
+public data class PaywallComponentInteractionData(
+    public val componentType: PaywallComponentType,
+    public val componentName: String? = null,
+    public val componentValue: String,
+    public val componentUrl: String? = null,
+    public val originIndex: Int? = null,
+    public val destinationIndex: Int? = null,
+    public val originContextName: String? = null,
+    public val destinationContextName: String? = null,
+    public val defaultIndex: Int? = null,
+    public val originPackageIdentifier: String? = null,
+    public val destinationPackageIdentifier: String? = null,
+    public val defaultPackageIdentifier: String? = null,
+    public val originProductIdentifier: String? = null,
+    public val destinationProductIdentifier: String? = null,
+    public val defaultProductIdentifier: String? = null,
+    public val currentPackageIdentifier: String? = null,
+    public val resultingPackageIdentifier: String? = null,
+    public val currentProductIdentifier: String? = null,
+    public val resultingProductIdentifier: String? = null,
+)
 
 /**
  * Types of exit offers. Meant for RevenueCatUI use.
@@ -80,6 +142,8 @@ public data class PaywallEvent(
     public val creationData: CreationData,
     public val data: Data,
     public val type: PaywallEventType,
+    @JsonNames("controlInteraction")
+    public val componentInteraction: PaywallComponentInteractionData? = null,
 ) : FeatureEvent {
 
     override val isPriorityEvent: Boolean get() = type == PaywallEventType.IMPRESSION
@@ -280,4 +344,67 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             errorMessage = errorMessage,
         )
     }
+}
+
+@InternalRevenueCatAPI
+internal fun PaywallComponentType.toWireString(): String = when (this) {
+    PaywallComponentType.TAB -> "tab"
+    PaywallComponentType.SWITCH -> "switch"
+    PaywallComponentType.CAROUSEL -> "carousel"
+    PaywallComponentType.BUTTON -> "button"
+    PaywallComponentType.TEXT -> "text"
+    PaywallComponentType.PACKAGE -> "package"
+    PaywallComponentType.PACKAGE_SELECTION_SHEET -> "package_selection_sheet"
+}
+
+/**
+ * Flattened component-interaction values for [BackendEvent.Paywalls] (shared by stored-event paths).
+ */
+@InternalRevenueCatAPI
+internal data class BackendPaywallComponentFields(
+    val componentType: String? = null,
+    val componentName: String? = null,
+    val componentValue: String? = null,
+    val componentUrl: String? = null,
+    val originIndex: Int? = null,
+    val destinationIndex: Int? = null,
+    val originContextName: String? = null,
+    val destinationContextName: String? = null,
+    val defaultIndex: Int? = null,
+    val originPackageIdentifier: String? = null,
+    val destinationPackageIdentifier: String? = null,
+    val defaultPackageIdentifier: String? = null,
+    val originProductIdentifier: String? = null,
+    val destinationProductIdentifier: String? = null,
+    val defaultProductIdentifier: String? = null,
+    val currentPackageIdentifier: String? = null,
+    val resultingPackageIdentifier: String? = null,
+    val currentProductIdentifier: String? = null,
+    val resultingProductIdentifier: String? = null,
+)
+
+@InternalRevenueCatAPI
+internal fun PaywallComponentInteractionData?.toBackendComponentFields(): BackendPaywallComponentFields {
+    val interaction = this ?: return BackendPaywallComponentFields()
+    return BackendPaywallComponentFields(
+        componentType = interaction.componentType.toWireString(),
+        componentName = interaction.componentName,
+        componentValue = interaction.componentValue,
+        componentUrl = interaction.componentUrl,
+        originIndex = interaction.originIndex,
+        destinationIndex = interaction.destinationIndex,
+        originContextName = interaction.originContextName,
+        destinationContextName = interaction.destinationContextName,
+        defaultIndex = interaction.defaultIndex,
+        originPackageIdentifier = interaction.originPackageIdentifier,
+        destinationPackageIdentifier = interaction.destinationPackageIdentifier,
+        defaultPackageIdentifier = interaction.defaultPackageIdentifier,
+        originProductIdentifier = interaction.originProductIdentifier,
+        destinationProductIdentifier = interaction.destinationProductIdentifier,
+        defaultProductIdentifier = interaction.defaultProductIdentifier,
+        currentPackageIdentifier = interaction.currentPackageIdentifier,
+        resultingPackageIdentifier = interaction.resultingPackageIdentifier,
+        currentProductIdentifier = interaction.currentProductIdentifier,
+        resultingProductIdentifier = interaction.resultingProductIdentifier,
+    )
 }

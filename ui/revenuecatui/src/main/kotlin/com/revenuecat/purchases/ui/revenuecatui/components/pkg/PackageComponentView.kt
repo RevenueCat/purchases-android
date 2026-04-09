@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
@@ -10,6 +11,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageRowSelection
 
 @JvmSynthetic
 @Composable
@@ -19,6 +22,7 @@ internal fun PackageComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
@@ -29,7 +33,17 @@ internal fun PackageComponentView(
         modifier = modifier.conditional(style.isSelectable) {
             clickable(
                 enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
-            ) { state.update(selectedPackageUniqueId = style.uniqueId) }
+            ) {
+                componentInteractionTracker.track(
+                    paywallPackageRowSelection(
+                        componentName = style.componentName,
+                        destination = style.rcPackage,
+                        origin = state.selectedPackageInfo?.rcPackage,
+                        defaultPackage = state.defaultPackageForPackageRowAnalytics(),
+                    ),
+                )
+                state.update(selectedPackageUniqueId = style.uniqueId)
+            }
         },
     )
 }
