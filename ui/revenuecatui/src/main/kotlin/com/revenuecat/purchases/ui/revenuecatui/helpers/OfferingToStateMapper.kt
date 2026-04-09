@@ -235,7 +235,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex
                 ?: headerResult?.defaultTabIndex
                 ?: stickyFooterResult?.defaultTabIndex,
-            mainStackHasHeroImage = backendRootComponentResult.hasHeroImage,
+            mainStackHasHeroImage = backendRootComponentResult.heroImageDetected,
         )
     }
 }
