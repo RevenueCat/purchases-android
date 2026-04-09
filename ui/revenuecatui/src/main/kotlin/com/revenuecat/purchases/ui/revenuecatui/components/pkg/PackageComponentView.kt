@@ -19,6 +19,10 @@ internal fun PackageComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val packageState = rememberUpdatedPackageComponentState(style = style, paywallState = state)
+
+    if (!packageState.visible) return
+
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
