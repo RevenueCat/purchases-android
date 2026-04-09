@@ -45,7 +45,7 @@ class PaidEventTrackingTest {
         setUpPaidEventTracking(
             setListener = { captured = it },
             adFormat = AdFormat.INTERSTITIAL,
-            placement = "home_interstitial",
+            placementProvider = { "home_interstitial" },
             adUnitId = "test-ad-unit",
             responseInfoProvider = { mockk(relaxed = true) },
             delegate = null,
@@ -174,7 +174,7 @@ class PaidEventTrackingTest {
         setUpPaidEventTracking(
             setListener = { captured = it },
             adFormat = AdFormat.REWARDED,
-            placement = "rewarded_placement",
+            placementProvider = { "rewarded_placement" },
             adUnitId = "rewarded-unit",
             responseInfoProvider = { responseInfo },
             delegate = null,
@@ -214,7 +214,7 @@ class PaidEventTrackingTest {
         setUpPaidEventTracking(
             setListener = { captured = it },
             adFormat = AdFormat.APP_OPEN,
-            placement = "app_open",
+            placementProvider = { "app_open" },
             adUnitId = "app-open-unit",
             responseInfoProvider = { mockk(relaxed = true) },
             delegate = delegate,
