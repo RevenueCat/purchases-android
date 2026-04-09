@@ -11,26 +11,27 @@ internal class IntermediateSignatureHelper(
     private val rootSignatureVerifier: SignatureVerifier,
 ) {
 
-    @Suppress("ReturnCount")
     fun createIntermediateKeyVerifierIfVerified(
         signature: Signature,
     ): Result<SignatureVerifier, PurchasesError> {
         val intermediateKeyMessageToVerify = signature.intermediateKeyExpiration + signature.intermediateKey
-        if (!rootSignatureVerifier.verify(signature.intermediateKeySignature, intermediateKeyMessageToVerify)) {
-            return Result.Error(
+        return if (!rootSignatureVerifier.verify(signature.intermediateKeySignature, intermediateKeyMessageToVerify)) {
+            Result.Error(
                 PurchasesError(PurchasesErrorCode.SignatureVerificationError, "Error verifying intermediate key."),
             )
+        } else {
+            val intermediateKeyExpirationDate = getIntermediateKeyExpirationDate(signature.intermediateKeyExpiration)
+            if (intermediateKeyExpirationDate.before(Date())) {
+                Result.Error(
+                    PurchasesError(
+                        PurchasesErrorCode.SignatureVerificationError,
+                        "Intermediate key expired at $intermediateKeyExpirationDate",
+                    ),
+                )
+            } else {
+                Result.Success(DefaultSignatureVerifier(signature.intermediateKey))
+            }
         }
-        val intermediateKeyExpirationDate = getIntermediateKeyExpirationDate(signature.intermediateKeyExpiration)
-        if (intermediateKeyExpirationDate.before(Date())) {
-            return Result.Error(
-                PurchasesError(
-                    PurchasesErrorCode.SignatureVerificationError,
-                    "Intermediate key expired at $intermediateKeyExpirationDate",
-                ),
-            )
-        }
-        return Result.Success(DefaultSignatureVerifier(signature.intermediateKey))
     }
 
     private fun getIntermediateKeyExpirationDate(intermediateKeyExpirationBytes: ByteArray): Date {

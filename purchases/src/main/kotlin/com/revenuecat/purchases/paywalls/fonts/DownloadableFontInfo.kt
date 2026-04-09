@@ -19,47 +19,44 @@ internal data class DownloadableFontInfo(
     val style: FontStyle,
 )
 
-@Suppress("ReturnCount")
 @JvmSynthetic
 @OptIn(InternalRevenueCatAPI::class)
 internal fun FontInfo.Name.toDownloadableFontInfo(): Result<DownloadableFontInfo, String> {
-    if (url.isNullOrBlank()) {
-        return Result.Error(
+    val error = when {
+        url.isNullOrBlank() -> {
             "Font URL is empty for $value. Cannot download font. " +
-                "Please try to re-upload your font in the RevenueCat dashboard.",
-        )
-    }
-    if (hash.isNullOrBlank()) {
-        return Result.Error(
+                "Please try to re-upload your font in the RevenueCat dashboard."
+        }
+        hash.isNullOrBlank() -> {
             "Font hash is empty for $value. Cannot validate downloaded font. " +
-                "Please try to re-upload your font in the RevenueCat dashboard.",
-        )
-    }
-    if (family.isNullOrBlank()) {
-        return Result.Error(
+                "Please try to re-upload your font in the RevenueCat dashboard."
+        }
+        family.isNullOrBlank() -> {
             "Font family is empty for $value. Cannot download font. " +
-                "Please try to re-upload your font in the RevenueCat dashboard.",
-        )
-    }
-    if (weight == null) {
-        return Result.Error(
+                "Please try to re-upload your font in the RevenueCat dashboard."
+        }
+        weight == null -> {
             "Font weight is null for $value. Cannot download font. " +
-                "Please try to re-upload your font in the RevenueCat dashboard.",
-        )
-    }
-    if (style == null) {
-        return Result.Error(
+                "Please try to re-upload your font in the RevenueCat dashboard."
+        }
+        style == null -> {
             "Font style is null for $value. Cannot download font. " +
-                "Please try to re-upload your font in the RevenueCat dashboard.",
+                "Please try to re-upload your font in the RevenueCat dashboard."
+        }
+        else -> null
+    }
+
+    return if (error != null) {
+        Result.Error(error)
+    } else {
+        Result.Success(
+            DownloadableFontInfo(
+                url = url,
+                expectedMd5 = hash,
+                family = family,
+                weight = weight,
+                style = style,
+            ),
         )
     }
-    return Result.Success(
-        DownloadableFontInfo(
-            url = url,
-            expectedMd5 = hash,
-            family = family,
-            weight = weight,
-            style = style,
-        ),
-    )
 }
