@@ -137,6 +137,36 @@ class PurchasesFactoryTest {
         assertThat(capturedIntent.getStringExtra("redactedApiKey")).isEqualTo("a_redacted_api_key")
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `configuring SDK with simulated store api key in release mode and uiPreviewMode does not show error activity`() {
+        // Arrange
+        purchasesFactory = PurchasesFactory(
+            isDebugBuild = { false },
+            apiKeyValidator = apiKeyValidatorMock,
+        )
+        val applicationContextMock = mockk<Application>()
+        every {
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+        } returns PackageManager.PERMISSION_GRANTED
+        every {
+            applicationMock.applicationContext
+        } returns applicationContextMock
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+
+        // Act
+        purchasesFactory.validateConfiguration(
+            createConfiguration(
+                dangerousSettings = DangerousSettings.forPreviewMode(),
+            ),
+        )
+
+        // Assert
+        verify(exactly = 0) { applicationMock.startActivity(any()) }
+    }
+
     // region shouldInitializeDiagnostics
 
     @Test
@@ -165,10 +195,14 @@ class PurchasesFactoryTest {
 
     // endregion
 
-    private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {
+    private fun createConfiguration(
+        testApiKey: String = "fakeApiKey",
+        dangerousSettings: DangerousSettings = DangerousSettings(),
+    ): PurchasesConfiguration {
         return PurchasesConfiguration.Builder(contextMock, testApiKey)
             .appUserID("appUserID")
             .store(Store.PLAY_STORE)
+            .dangerousSettings(dangerousSettings)
             .build()
     }
 }
