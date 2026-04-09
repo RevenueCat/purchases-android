@@ -126,7 +126,7 @@ class PaywallScreenViewModelImpl(
                         refreshCount = refreshCount,
                     )
                 }
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            } catch (e: PurchasesException) {
                 _state.update { PaywallScreenState.Error(e.toString()) }
             } finally {
                 _isRefreshing.value = false
@@ -140,12 +140,9 @@ class PaywallScreenViewModelImpl(
         } else {
             Purchases.sharedInstance.awaitOfferings()
         }
-        placementId?.let {
-            return offerings.getCurrentOfferingForPlacement(it)
-                ?: error("Could not find offering for placement $it")
-        }
-        return offeringId?.let { offerings.all[it] }
+        return placementId?.let { offerings.getCurrentOfferingForPlacement(it) }
+            ?: offeringId?.let { offerings.all[it] }
             ?: offerings.current
-            ?: error("Could not find offering or current offering")
+            ?: error("Could not find offering")
     }
 }

@@ -213,6 +213,7 @@ fun PaywallsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDismiss: () -> Unit) {
+    var isRefreshing by remember { mutableStateOf(false) }
     var refreshCount by remember { mutableIntStateOf(0) }
 
     Dialog(
@@ -221,7 +222,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
     ) {
         Scaffold(modifier = Modifier.fillMaxSize()) { scaffoldPadding ->
             PullToRefreshBox(
-                isRefreshing = false,
+                isRefreshing = isRefreshing,
                 onRefresh = {
                     refreshCount++
                 },
