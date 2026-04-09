@@ -39,5 +39,5 @@ public class PackageComponent(
 @Immutable
 public class PartialPackageComponent(
     @get:JvmSynthetic
-    public val visible: Boolean? = true,
+    public val visible: Boolean? = null,
 ) : PartialComponent
