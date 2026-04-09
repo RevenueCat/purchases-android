@@ -140,9 +140,12 @@ class PaywallScreenViewModelImpl(
         } else {
             Purchases.sharedInstance.awaitOfferings()
         }
-        return placementId?.let { offerings.getCurrentOfferingForPlacement(it) }
-            ?: offeringId?.let { offerings.all[it] }
+        placementId?.let {
+            return offerings.getCurrentOfferingForPlacement(it)
+                ?: error("Could not find offering for placement $it")
+        }
+        return offeringId?.let { offerings.all[it] }
             ?: offerings.current
-            ?: error("Could not find offering")
+            ?: error("Could not find offering or current offering")
     }
 }
