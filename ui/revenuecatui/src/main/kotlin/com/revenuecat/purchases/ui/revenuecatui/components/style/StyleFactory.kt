@@ -205,6 +205,7 @@ internal class StyleFactory(
                     is ImageComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderImage
+                            topWindowInsetsApplied = topWindowInsetsApplied || component.isHeaderImage
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -212,6 +213,7 @@ internal class StyleFactory(
                     is VideoComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderVideo
+                            topWindowInsetsApplied = topWindowInsetsApplied || component.isHeaderVideo
                         }
                         stillLookingForHeaderMedia = false
                     }
