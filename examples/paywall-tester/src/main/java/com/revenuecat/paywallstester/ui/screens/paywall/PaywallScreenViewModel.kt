@@ -27,6 +27,7 @@ interface PaywallScreenViewModel : PaywallListener {
         const val PLACEMENT_ID_KEY = "placement_id"
     }
     val state: StateFlow<PaywallScreenState>
+    val isRefreshing: StateFlow<Boolean>
 
     fun onDialogDismissed()
     fun refreshOffering()
@@ -40,6 +41,10 @@ class PaywallScreenViewModelImpl(
     override val state: StateFlow<PaywallScreenState>
         get() = _state.asStateFlow()
     private val _state: MutableStateFlow<PaywallScreenState> = MutableStateFlow(PaywallScreenState.Loading)
+
+    override val isRefreshing: StateFlow<Boolean>
+        get() = _isRefreshing.asStateFlow()
+    private val _isRefreshing = MutableStateFlow(false)
 
     private val offeringId = savedStateHandle.get<String?>(PaywallScreenViewModel.OFFERING_ID_KEY)
     private val footerCondensed = savedStateHandle.get<Boolean?>(PaywallScreenViewModel.FOOTER_CONDENSED_KEY)
@@ -106,65 +111,38 @@ class PaywallScreenViewModelImpl(
 
     override fun refreshOffering() {
         refreshCounter++
-        _state.update { PaywallScreenState.Loading }
+        _isRefreshing.value = true
         updateOffering(refreshCounter)
     }
 
     private fun updateOffering(refreshCount: Int = 0) {
-        val forceRefresh = refreshCount > 0
         viewModelScope.launch {
-            placementId?.let {
-                try {
-                    val offerings = if (forceRefresh) {
-                        Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
-                    } else {
-                        Purchases.sharedInstance.awaitOfferings()
-                    }
-                    val offeringToLoad = offerings.getCurrentOfferingForPlacement(it)
-
-                    if (offeringToLoad == null) {
-                        _state.update {
-                            PaywallScreenState.Error("Could not find offering for placement $it")
-                        }
-                    } else {
-                        _state.update {
-                            PaywallScreenState.Loaded(
-                                offeringToLoad,
-                                footerCondensed = footerCondensed ?: false,
-                                refreshCount = refreshCount,
-                            )
-                        }
-                    }
-                } catch (e: PurchasesException) {
-                    _state.update { PaywallScreenState.Error(e.toString()) }
+            try {
+                val offeringToLoad = fetchOffering(forceRefresh = refreshCount > 0)
+                _state.update {
+                    PaywallScreenState.Loaded(
+                        offeringToLoad,
+                        footerCondensed = footerCondensed ?: false,
+                        refreshCount = refreshCount,
+                    )
                 }
-            } ?: run {
-                try {
-                    val offerings = if (forceRefresh) {
-                        Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
-                    } else {
-                        Purchases.sharedInstance.awaitOfferings()
-                    }
-                    val offeringToLoad = offeringId?.let {
-                        offerings.all[it]
-                    } ?: offerings.current
-                    if (offeringToLoad == null) {
-                        _state.update {
-                            PaywallScreenState.Error("Could not find offering or current offering")
-                        }
-                    } else {
-                        _state.update {
-                            PaywallScreenState.Loaded(
-                                offeringToLoad,
-                                footerCondensed = footerCondensed ?: false,
-                                refreshCount = refreshCount,
-                            )
-                        }
-                    }
-                } catch (e: PurchasesException) {
-                    _state.update { PaywallScreenState.Error(e.toString()) }
-                }
+            } catch (e: PurchasesException) {
+                _state.update { PaywallScreenState.Error(e.toString()) }
+            } finally {
+                _isRefreshing.value = false
             }
         }
+    }
+
+    private suspend fun fetchOffering(forceRefresh: Boolean): com.revenuecat.purchases.Offering {
+        val offerings = if (forceRefresh) {
+            Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
+        } else {
+            Purchases.sharedInstance.awaitOfferings()
+        }
+        return placementId?.let { offerings.getCurrentOfferingForPlacement(it) }
+            ?: offeringId?.let { offerings.all[it] }
+            ?: offerings.current
+            ?: error("Could not find offering")
     }
 }
