@@ -4,8 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
@@ -22,21 +20,6 @@ internal fun PackageComponentView(
     modifier: Modifier = Modifier,
 ) {
     val packageState = rememberUpdatedPackageComponentState(style = style, paywallState = state)
-
-    // Notify PaywallState whenever this package's visibility changes so that purchase / pricing
-    // state never references a hidden package. These effects run before the early-return so they
-    // remain active even while invisible.
-    LaunchedEffect(packageState.visible) {
-        state.setPackageVisible(uniqueId = style.uniqueId, isVisible = packageState.visible)
-    }
-    DisposableEffect(style.uniqueId) {
-        onDispose {
-            // Clear rather than mark-false so that packages leaving one tab (and potentially
-            // re-entering in another) are treated as unknown rather than hidden, preventing
-            // reconcileSelectedIfHidden from evicting the selection prematurely.
-            state.clearPackageVisible(uniqueId = style.uniqueId)
-        }
-    }
 
     if (!packageState.visible) return
 
