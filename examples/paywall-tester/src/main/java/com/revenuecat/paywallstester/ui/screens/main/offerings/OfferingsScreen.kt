@@ -1,7 +1,9 @@
 package com.revenuecat.paywallstester.ui.screens.main.offerings
 
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -115,7 +117,7 @@ private fun LoadingOfferingsScreen(
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalFoundationApi::class)
 @Suppress("LongMethod", "LongParameterList", "ViewModelInjection")
 @Composable
 private fun OfferingsListScreen(
@@ -212,7 +214,10 @@ private fun OfferingsListScreen(
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .clickable { dropdownExpandedOffering = offering }
+                                .combinedClickable(
+                                    onClick = { tappedOnNavigateToOffering(offering) },
+                                    onLongClick = { dropdownExpandedOffering = offering },
+                                )
                                 .padding(16.dp),
                         ) {
                             Column {
