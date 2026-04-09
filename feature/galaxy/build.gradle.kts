@@ -39,4 +39,3 @@ dependencies {
     testImplementation(libs.kotlin.test)
     testImplementation("com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
 }
-

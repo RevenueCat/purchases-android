@@ -28,4 +28,3 @@ dependencies {
 
     implementation(libs.amazon.appstore.sdk)
 }
-
