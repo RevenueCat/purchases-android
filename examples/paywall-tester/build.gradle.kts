@@ -23,7 +23,7 @@ android {
     namespace = "com.revenuecat.paywallstester"
 
     defaultConfig {
-        applicationId = "com.revenuecat.paywall_tester"
+        applicationId = "com.revenuecat.purchases_sample"
         minSdk = 24
         versionCode = (project.properties["paywallTesterVersionCode"] as String).toInt()
         versionName = project.properties["paywallTesterVersionName"] as String
