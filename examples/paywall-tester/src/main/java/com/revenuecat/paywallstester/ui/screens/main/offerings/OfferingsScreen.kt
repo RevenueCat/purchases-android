@@ -7,16 +7,12 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Divider
 import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
@@ -26,7 +22,11 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -88,12 +88,16 @@ fun OfferingsScreen(
         is OfferingsState.Error -> ErrorOfferingsScreen(errorState = state, modifier)
         is OfferingsState.Loaded -> OfferingsListScreen(
             offeringsState = state,
-            tappedOnNavigateToOffering = tappedOnOffering,
+            tappedOnNavigateToOffering = { offering ->
+                viewModel.markOfferingAsRecent(offering.identifier)
+                tappedOnOffering(offering)
+            },
             tappedOnNavigateToOfferingFooter = tappedOnOfferingFooter,
             tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
             tappedOnNavigateToOfferingByPlacement = tappedOnOfferingByPlacement,
             tappedOnReloadOfferings = { viewModel.refreshOfferings() },
             onSearchQueryChange = { query -> viewModel.updateSearchQuery(query) },
+            onOfferingInteract = { viewModel.markOfferingAsRecent(it.identifier) },
             modifier,
         )
         OfferingsState.Loading -> LoadingOfferingsScreen(modifier)
@@ -127,7 +131,7 @@ private fun LoadingOfferingsScreen(
 }
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalFoundationApi::class)
-@Suppress("LongMethod", "LongParameterList", "ViewModelInjection")
+@Suppress("LongMethod", "LongParameterList", "ViewModelInjection", "CyclomaticComplexMethod")
 @Composable
 private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,
@@ -137,6 +141,7 @@ private fun OfferingsListScreen(
     tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
     tappedOnReloadOfferings: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
+    onOfferingInteract: (Offering) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val customVariablesViewModel: CustomVariablesViewModel = viewModel()
@@ -146,18 +151,33 @@ private fun OfferingsListScreen(
     val showDialog = remember { mutableStateOf(false) }
     var showCustomVariablesEditor by remember { mutableStateOf(false) }
 
-    // Filter offerings based on search query
-    val filteredOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
+    // Filter and group offerings by template
+    val groupedOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
         val query = offeringsState.searchQuery.lowercase().trim()
-        if (query.isEmpty()) {
-            offeringsState.offerings.all.values.toList()
+        val allOfferings = offeringsState.offerings.all.values
+        val filtered = if (query.isEmpty()) {
+            allOfferings.toList()
         } else {
-            offeringsState.offerings.all.values.filter { offering ->
+            allOfferings.filter { offering ->
                 offering.identifier.lowercase().contains(query) ||
                     offering.paywall?.templateName?.lowercase()?.contains(query) == true ||
                     offering.paywallComponents?.data?.templateName?.lowercase()?.contains(query) == true
             }
         }
+        filtered.groupBy { offering ->
+            offering.paywallComponents?.data?.templateName?.let { "V2 — $it" }
+                ?: offering.paywall?.templateName?.let { "Template $it" }
+                ?: "No paywall"
+        }.toSortedMap(
+            compareBy {
+                // Sort: templates first, then V2, then no paywall last
+                when {
+                    it.startsWith("Template") -> "0_$it"
+                    it.startsWith("V2") -> "1_$it"
+                    else -> "2_$it"
+                }
+            },
+        )
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -191,56 +211,63 @@ private fun OfferingsListScreen(
             }
 
             item {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { showDialog.value = true }
-                                .padding(16.dp),
-                        ) {
-                            Column {
-                                Text("Get offering by placement")
-                            }
-                        }
-                        Divider()
-                    }
-                }
+                ListItem(
+                    headlineContent = { Text("Get offering by placement") },
+                    modifier = Modifier.clickable { showDialog.value = true },
+                )
+                HorizontalDivider()
             }
-            items(filteredOfferings) { offering ->
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    if (offering == dropdownExpandedOffering) {
-                        DisplayOfferingMenu(
-                            offering = offering,
-                            tappedOnNavigateToOffering = tappedOnNavigateToOffering,
-                            tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
-                            tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
-                            tappedOnDisplayOfferingAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
-                            dismissed = { dropdownExpandedOffering = null },
-                        )
-                    }
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    onClick = { tappedOnNavigateToOffering(offering) },
-                                    onLongClick = { dropdownExpandedOffering = offering },
-                                )
-                                .padding(16.dp),
-                        ) {
-                            Column {
-                                Text(text = offering.identifier)
 
-                                offering.paywall?.also {
-                                    Text("Template ${it.templateName}")
-                                } ?: offering.paywallComponents?.also {
-                                    Text("Components ${it.data.templateName}")
-                                } ?: Text("No paywall")
-                            }
-                        }
-                        Divider()
-                    }
+            // Recents section
+            val recentOfferings = offeringsState.recentOfferingIds.mapNotNull { id ->
+                offeringsState.offerings.all[id]
+            }
+            if (recentOfferings.isNotEmpty() && offeringsState.searchQuery.isEmpty()) {
+                item {
+                    SectionHeader("Recents")
+                }
+                items(recentOfferings, key = { "recent_${it.identifier}" }) { offering ->
+                    OfferingRow(
+                        offering = offering,
+                        dropdownExpandedOffering = dropdownExpandedOffering,
+                        onTap = {
+                            tappedOnNavigateToOffering(offering)
+                        },
+                        onLongPress = { dropdownExpandedOffering = offering },
+                        onNavigate = tappedOnNavigateToOffering,
+                        onDisplayAsDialog = {
+                            onOfferingInteract(it)
+                            displayPaywallDialogOffering = it
+                        },
+                        onDisplayAsFooter = tappedOnNavigateToOfferingFooter,
+                        onDisplayAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
+                        onDismissMenu = { dropdownExpandedOffering = null },
+                    )
+                }
+                item { HorizontalDivider() }
+            }
+
+            groupedOfferings.forEach { (sectionTitle, offerings) ->
+                item(key = "header_$sectionTitle") {
+                    SectionHeader(sectionTitle)
+                }
+                items(offerings, key = { it.identifier }) { offering ->
+                    OfferingRow(
+                        offering = offering,
+                        dropdownExpandedOffering = dropdownExpandedOffering,
+                        onTap = {
+                            tappedOnNavigateToOffering(offering)
+                        },
+                        onLongPress = { dropdownExpandedOffering = offering },
+                        onNavigate = tappedOnNavigateToOffering,
+                        onDisplayAsDialog = {
+                            onOfferingInteract(it)
+                            displayPaywallDialogOffering = it
+                        },
+                        onDisplayAsFooter = tappedOnNavigateToOfferingFooter,
+                        onDisplayAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
+                        onDismissMenu = { dropdownExpandedOffering = null },
+                    )
                 }
             }
         }
@@ -427,6 +454,51 @@ private fun RefreshablePaywallDialog(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
+@Suppress("LongParameterList")
+@Composable
+private fun OfferingRow(
+    offering: Offering,
+    dropdownExpandedOffering: Offering?,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
+    onNavigate: (Offering) -> Unit,
+    onDisplayAsDialog: (Offering) -> Unit,
+    onDisplayAsFooter: (Offering) -> Unit,
+    onDisplayAsCondensedFooter: (Offering) -> Unit,
+    onDismissMenu: () -> Unit,
+) {
+    Box {
+        if (offering == dropdownExpandedOffering) {
+            DisplayOfferingMenu(
+                offering = offering,
+                tappedOnNavigateToOffering = onNavigate,
+                tappedOnDisplayOfferingAsDialog = onDisplayAsDialog,
+                tappedOnDisplayOfferingAsFooter = onDisplayAsFooter,
+                tappedOnDisplayOfferingAsCondensedFooter = onDisplayAsCondensedFooter,
+                dismissed = onDismissMenu,
+            )
+        }
+        ListItem(
+            headlineContent = { Text(text = offering.identifier) },
+            modifier = Modifier.combinedClickable(
+                onClick = onTap,
+                onLongClick = onLongPress,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
+    )
+}
+
 @Suppress("LongParameterList")
 @Composable
 private fun DisplayOfferingMenu(
@@ -500,6 +572,10 @@ fun OfferingsScreenPreview() {
             }
 
             override fun updateSearchQuery(query: String) {
+                // no-op
+            }
+
+            override fun markOfferingAsRecent(offeringId: String) {
                 // no-op
             }
         },
