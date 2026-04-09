@@ -567,10 +567,6 @@ internal class StyleFactory(
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
-                        // The paywall builder enforces that the default-selected package cannot be
-                        // statically hidden (visible: false), so we trust isSelectedByDefault as-is.
-                        // Dynamic override visibility is reconciled at runtime via PackageComponentView
-                        // reporting visibility to PaywallState.
                         isSelectedByDefault = component.isSelectedByDefault,
                         resolvedOffer = resolvedOffer,
                     ),
