@@ -126,7 +126,7 @@ class PaywallScreenViewModelImpl(
                         refreshCount = refreshCount,
                     )
                 }
-            } catch (e: PurchasesException) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 _state.update { PaywallScreenState.Error(e.toString()) }
             } finally {
                 _isRefreshing.value = false
