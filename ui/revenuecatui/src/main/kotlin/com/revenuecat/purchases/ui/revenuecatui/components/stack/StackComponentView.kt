@@ -559,30 +559,39 @@ private fun MainStackComponent(
                     }
                 }
 
-                is Dimension.ZLayer -> Box(
-                    modifier = modifier
-                        .size(
-                            size = stackState.size,
-                            horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                            verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                        )
-                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                is Dimension.ZLayer -> {
+                    val headerHeight = state.headerHeight
+                    Box(
+                        modifier = modifier
+                            .size(
+                                size = stackState.size,
+                                horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                                verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                            )
+                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                scrollable(state, orientation)
+                            }
+                            .then(rootModifier),
+                        contentAlignment = dimension.alignment.toAlignment(),
+                    ) {
+                        stackState.children.forEach { child ->
+                            val applyTopInsets =
+                                stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets
+                            ComponentView(
+                                style = child,
+                                state = state,
+                                onClick = clickHandler,
+                                modifier = Modifier
+                                    .conditional(applyTopInsets && headerHeight > 0.dp) {
+                                        // Header height already includes status bar padding.
+                                        padding(top = headerHeight)
+                                    }
+                                    .conditional(applyTopInsets && headerHeight == 0.dp) {
+                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                    }
+                                    .alpha(contentAlpha),
+                            )
                         }
-                        .then(rootModifier),
-                    contentAlignment = dimension.alignment.toAlignment(),
-                ) {
-                    stackState.children.forEach { child ->
-                        ComponentView(
-                            style = child,
-                            state = state,
-                            onClick = clickHandler,
-                            modifier = Modifier
-                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                }
-                                .alpha(contentAlpha),
-                        )
                     }
                 }
             }
