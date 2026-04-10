@@ -12,6 +12,8 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
@@ -89,8 +91,10 @@ internal sealed interface PaywallState {
         @Stable
         class Components(
             val stack: ComponentStyle,
+            val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
+            val mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
              * for that.
@@ -275,6 +279,14 @@ internal sealed interface PaywallState {
 
             val currentDate: Date
                 get() = dateProvider()
+
+            /**
+             * The measured height of the header overlay. Updated at composition time by
+             * [LoadedPaywallComponents] so that ZLayer hero stacks can push non-hero children
+             * below the header.
+             */
+            var headerHeight: Dp by mutableStateOf(0.dp)
+                internal set
 
             var actionInProgress by mutableStateOf(false)
                 private set

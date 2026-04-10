@@ -12,6 +12,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -832,6 +833,125 @@ class PaywallComponentDataValidationTests {
         assertTrue(heroParent.applyTopWindowInsets)
         val heroImage = heroParent.children[0] as ImageComponentStyle
         assertTrue(heroImage.ignoreTopWindowInsets)
+    }
+
+    @Test
+    fun `Should set mainStackHasHeroImage when header and hero image coexist`() {
+        // Arrange
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            StackComponent(
+                                dimension = Dimension.ZLayer(TwoDimensionalAlignment.TOP),
+                                components = listOf(
+                                    ImageComponent(
+                                        source = ThemeImageUrls(
+                                            light = ImageUrls(
+                                                original = URL("https://preview"),
+                                                webp = URL("https://preview"),
+                                                webpLowRes = URL("https://preview"),
+                                                width = 100u,
+                                                height = 100u,
+                                            ),
+                                        )
+                                    )
+                                )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    header = HeaderComponent(stack = StackComponent(components = emptyList())),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(LocalizationKey("key1") to LocalizationData.Text("value1")),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val result = validated as PaywallValidationResult.Components
+        assertTrue(result.mainStackHasHeroImage)
+        assertNotNull(result.header)
+        // Top window insets go to the hero image parent, not the root stack
+        val actualStack = result.stack as StackComponentStyle
+        val heroParent = actualStack.children[0] as StackComponentStyle
+        assertTrue(heroParent.applyTopWindowInsets)
+    }
+
+    @Test
+    fun `Should set mainStackHasHeroImage when header and direct hero image coexist`() {
+        // Arrange - image directly in the root Vertical stack, not wrapped in a ZLayer
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            ImageComponent(
+                                source = ThemeImageUrls(
+                                    light = ImageUrls(
+                                        original = URL("https://preview"),
+                                        webp = URL("https://preview"),
+                                        webpLowRes = URL("https://preview"),
+                                        width = 100u,
+                                        height = 100u,
+                                    ),
+                                )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    header = HeaderComponent(stack = StackComponent(components = emptyList())),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(LocalizationKey("key1") to LocalizationData.Text("value1")),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val result = validated as PaywallValidationResult.Components
+        assertTrue(result.mainStackHasHeroImage)
+        assertNotNull(result.header)
     }
 
     @Test

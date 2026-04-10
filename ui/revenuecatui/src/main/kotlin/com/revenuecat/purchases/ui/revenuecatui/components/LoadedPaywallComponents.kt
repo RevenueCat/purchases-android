@@ -3,16 +3,25 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -73,24 +82,49 @@ internal fun LoadedPaywallComponents(
     state.update(localeList = configuration.locales)
 
     val style = state.stack
+    val headerComponentStyle = state.header
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
+    val density = LocalDensity.current
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val headerHeightDp = remember(headerHeightPx, density) { with(density) { headerHeightPx.toDp() } }
+
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
         modifier = modifier.background(background),
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
             Column {
-                ComponentView(
-                    style = style,
-                    state = state,
-                    onClick = onClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .verticalScroll(rememberScrollState()),
-                )
+                Box(modifier = Modifier.weight(1f)) {
+                    if (headerComponentStyle != null && state.mainStackHasHeroImage) {
+                        state.headerHeight = headerHeightDp
+                    }
+                    ComponentView(
+                        style = style,
+                        state = state,
+                        onClick = onClick,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .conditional(
+                                headerComponentStyle != null && !state.mainStackHasHeroImage,
+                            ) {
+                                padding(top = headerHeightDp)
+                            },
+                    )
+                    headerComponentStyle?.let { headerStyle ->
+                        ComponentView(
+                            style = headerStyle,
+                            state = state,
+                            onClick = onClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .align(Alignment.TopCenter)
+                                .onSizeChanged { headerHeightPx = it.height },
+                        )
+                    }
+                }
                 footerComponentStyle?.let {
                     ComponentView(
                         style = it,
