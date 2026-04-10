@@ -55,13 +55,13 @@ internal class GetOwnedListHandler(
 
         if (!requestWasDispatched) {
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_OWNED_LIST_REQUEST }
+            clearInFlightRequest()
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
                     underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_OWNED_LIST_REQUEST,
                 ),
             )
-            clearInFlightRequest()
             return
         }
     }

@@ -81,13 +81,13 @@ internal class AcknowledgePurchaseHandler(
 
         if (!requestWasDispatched) {
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST }
+            clearInFlightRequest()
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
                     underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST,
                 ),
             )
-            clearInFlightRequest()
             return
         }
     }
