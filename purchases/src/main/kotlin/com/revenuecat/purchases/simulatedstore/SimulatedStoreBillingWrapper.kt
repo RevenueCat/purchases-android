@@ -192,8 +192,8 @@ internal class SimulatedStoreBillingWrapper(
             activity = activity,
             title = "Test Store Purchase",
             message = message,
-            positiveButtonText = "Test valid Purchase",
-            negativeButtonText = "Test failed Purchase",
+            positiveButtonText = "Test valid purchase",
+            negativeButtonText = "Test failed purchase",
             neutralButtonText = "Cancel",
             onPositiveButtonClicked = {
                 debugLog { "[Test store] Performing test purchase. This purchase won't appear in production." }
