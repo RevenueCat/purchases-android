@@ -120,6 +120,10 @@ internal object GalaxyStrings {
     const val CONSUME_REQUEST_RETURNED_ERROR_STATUS_CODE = "The consumption request returned " +
         "an error status code %s (%s)."
 
+    const val CONSUME_REQUEST_FAILED_DUE_TO_PRODUCT_ALREADY_CONSUMED = "Unable to consume the purchase because the" +
+        " purchase has already been consumed. This can occur if the RevenueCat backend has already consumed" +
+        " the purchase."
+
     // Get Owned Products
     const val ANOTHER_GET_OWNED_LIST_REQUEST_IN_FLIGHT = "Another get owned products request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."

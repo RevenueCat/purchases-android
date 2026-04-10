@@ -260,16 +260,20 @@ internal class GalaxyBillingWrapper(
                                 .format(consumptionResult.statusCode)
                         }
                     } else if (resultStatus != GalaxyConsumeOrAcknowledgeStatusCode.SUCCESS) {
-                        // This is a warning instead of an error because it's possible for the backend to consume
-                        // a purchase before we do. In that case, we get back the following error:
-                        // Error Code: 4
-                        // Error Message: This purchase has been consumed already.
-                        log(LogIntent.GALAXY_WARNING) {
-                            GalaxyStrings.CONSUME_REQUEST_RETURNED_ERROR_STATUS_CODE
-                                .format(
-                                    consumptionResult.statusCode,
-                                    consumptionResult.statusString,
-                                )
+                        if (resultStatus == GalaxyConsumeOrAcknowledgeStatusCode.ALREADY_CONSUMED_OR_ACKNOWLEDGED) {
+                            // This is a warning instead of an error because it's possible for the backend to consume
+                            // a purchase before we do.
+                            log(LogIntent.GALAXY_WARNING) {
+                                GalaxyStrings.CONSUME_REQUEST_FAILED_DUE_TO_PRODUCT_ALREADY_CONSUMED
+                            }
+                        } else {
+                            log(LogIntent.GALAXY_ERROR) {
+                                GalaxyStrings.CONSUME_REQUEST_RETURNED_ERROR_STATUS_CODE
+                                    .format(
+                                        consumptionResult.statusCode,
+                                        consumptionResult.statusString,
+                                    )
+                            }
                         }
                     } else {
                         onConsumed(storeTransaction.purchaseToken)
