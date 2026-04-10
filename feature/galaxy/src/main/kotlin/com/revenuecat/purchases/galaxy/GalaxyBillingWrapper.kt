@@ -266,6 +266,11 @@ internal class GalaxyBillingWrapper(
                             log(LogIntent.GALAXY_WARNING) {
                                 GalaxyStrings.CONSUME_REQUEST_FAILED_DUE_TO_PRODUCT_ALREADY_CONSUMED
                             }
+
+                            // We still want to call onConsumed here because if the backend has consumed this before
+                            // the SDK does, we still want to mark the purchase as consumed here in the SDK so we
+                            // don't try to consume it again in the future.
+                            onConsumed(storeTransaction.purchaseToken)
                         } else {
                             log(LogIntent.GALAXY_ERROR) {
                                 GalaxyStrings.CONSUME_REQUEST_RETURNED_ERROR_STATUS_CODE

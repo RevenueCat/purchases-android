@@ -19,7 +19,6 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.galaxy.constants.GalaxyConsumeOrAcknowledgeStatusCode
 import com.revenuecat.purchases.galaxy.conversions.toSamsungIAPOperationMode
 import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
@@ -1105,7 +1104,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave consumes inapp purchases when shouldConsume is true`() {
+    fun `consumeAndSave consumes OTPs when shouldConsume is true`() {
         val consumeTransactionSlot = slot<StoreTransaction>()
         val consumeCallbackSlot = slot<(ConsumeVo) -> Unit>()
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
@@ -1147,7 +1146,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave acknowledges inapp purchases when shouldConsume is false`() {
+    fun `consumeAndSave acknowledges OTPs when shouldConsume is false`() {
         val ackTransactionSlot = slot<StoreTransaction>()
         val ackCallbackSlot = slot<(AcknowledgeVo) -> Unit>()
         val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
@@ -1207,7 +1206,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave does not cache inapp purchases when consume result has unknown status code`() {
+    fun `consumeAndSave does not cache OTPs when consume result has unknown status code`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>(relaxed = true)
         val consumePurchaseHandler = mockk<ConsumePurchaseResponseListener>()
@@ -1247,7 +1246,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave does not cache inapp purchases when consume result has non success status code`() {
+    fun `consumeAndSave does not cache OTPs when consume result has non success status code`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>(relaxed = true)
         val consumePurchaseHandler = mockk<ConsumePurchaseResponseListener>()
@@ -1287,7 +1286,50 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave does not cache inapp purchases when consume handler returns error`() {
+    fun `consumeAndSave caches OTPs when consume result is already consumed or acknowledged`() {
+        val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>(relaxed = true)
+        val consumePurchaseHandler = mockk<ConsumePurchaseResponseListener>()
+        every { deviceCache.addSuccessfullyPostedToken("token-iap", isAutoRenewing = false) } returns Unit
+        every {
+            consumePurchaseHandler.consumePurchase(
+                any(),
+                any(),
+                any(),
+            )
+        } answers {
+            val onSuccess = it.invocation.args[1] as (ConsumeVo) -> Unit
+            onSuccess(
+                mockk {
+                    every {
+                        statusCode
+                    } returns GalaxyConsumeOrAcknowledgeStatusCode.ALREADY_CONSUMED_OR_ACKNOWLEDGED.code
+                    every { statusString } returns "Already consumed"
+                },
+            )
+        }
+        val wrapper = createWrapper(
+            acknowledgePurchaseHandler = acknowledgePurchaseHandler,
+            consumePurchaseHandler = consumePurchaseHandler,
+            getOwnedListHandler = getOwnedListHandler,
+        )
+
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = storeTransaction("token-iap", type = ProductType.INAPP),
+            shouldConsume = true,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+        )
+
+        verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
+        verify(exactly = 0) { getOwnedListHandler.getOwnedList(any(), any()) }
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-iap", isAutoRenewing = false) }
+        verify(exactly = 1) { consumePurchaseHandler.consumePurchase(any(), any(), any()) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `consumeAndSave does not cache OTPs when consume handler returns error`() {
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>(relaxed = true)
         val consumePurchaseHandler = mockk<ConsumePurchaseResponseListener>()
