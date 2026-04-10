@@ -126,21 +126,22 @@ internal fun ButtonComponentView(
                     // We're the button, so we're handling the click already.
                     clickHandler = { },
                     contentAlpha = animatedContentAlpha,
+                    interactionModifier = Modifier.clickable(enabled = !anyActionInProgress) {
+                        myActionInProgress = true
+                        state.update(actionInProgress = true)
+                        coroutineScope.launch {
+                            onClick(buttonState.action)
+                            myActionInProgress = false
+                            state.update(actionInProgress = false)
+                        }
+                    },
                 )
                 CircularProgressIndicator(
                     modifier = Modifier.alpha(animatedProgressAlpha),
                     color = progressColorFor(style.stackComponentStyle.background),
                 )
             },
-            modifier = modifier.clickable(enabled = !anyActionInProgress) {
-                myActionInProgress = true
-                state.update(actionInProgress = true)
-                coroutineScope.launch {
-                    onClick(buttonState.action)
-                    myActionInProgress = false
-                    state.update(actionInProgress = false)
-                }
-            },
+            modifier = modifier,
             measurePolicy = { measurables, constraints ->
                 val stack = measurables[0].measure(constraints)
                 // Ensure that the progress indicator is not bigger than the stack.
