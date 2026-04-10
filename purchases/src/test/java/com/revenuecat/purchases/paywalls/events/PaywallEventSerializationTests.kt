@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.events.BackendEvent
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -138,6 +139,49 @@ class PaywallEventSerializationTests {
     }
 
     @Test
+    fun `round trip serialization preserves placement and targeting in backend event`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(impressionEvent)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                placementIdentifier = "placementID",
+                targetingRevision = 5,
+                targetingRuleId = "ruleID",
+            )
+        )
+    }
+
+    @Test
+    fun `round trip serialization without placement produces null backend context`() {
+        val eventWithoutPlacement = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                    date = Date(1699270688884)
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                    paywallRevision = 5,
+                    sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                    displayMode = "footer",
+                    localeIdentifier = "es_ES",
+                    darkMode = true
+                ),
+                type = PaywallEventType.IMPRESSION,
+            ),
+            userID = "testAppUserId",
+        )
+        val eventString = PaywallStoredEvent.json.encodeToString(eventWithoutPlacement)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        assertThat(backendEvent.presentedOfferingContext).isNull()
+    }
+
+    @Test
     fun `can decode old cached event with offeringIdentifier string field`() {
         // Old format with "offeringIdentifier" as a string field instead of "presentedOfferingContext" object
         val oldFormatJson = """
@@ -238,6 +282,82 @@ class PaywallEventSerializationTests {
         // Verify it doesn't have offeringIdentifier as a direct field in data (old format)
         // by checking the structure has presentedOfferingContext before offeringIdentifier
         assertThat(eventString).contains("\"presentedOfferingContext\":{\"offeringIdentifier\":\"offeringID\"")
+    }
+
+    @Test
+    fun `round trip serialization with placement only preserves placement in backend event`() {
+        val eventWithPlacementOnly = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                    date = Date(1699270688884)
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext(
+                        offeringIdentifier = "offeringID",
+                        placementIdentifier = "placementID",
+                        targetingContext = null,
+                    ),
+                    paywallRevision = 5,
+                    sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                    displayMode = "footer",
+                    localeIdentifier = "es_ES",
+                    darkMode = true
+                ),
+                type = PaywallEventType.IMPRESSION,
+            ),
+            userID = "testAppUserId",
+        )
+        val eventString = PaywallStoredEvent.json.encodeToString(eventWithPlacementOnly)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                placementIdentifier = "placementID",
+            )
+        )
+    }
+
+    @Test
+    fun `round trip serialization with targeting only preserves targeting in backend event`() {
+        val eventWithTargetingOnly = PaywallStoredEvent(
+            event = PaywallEvent(
+                creationData = PaywallEvent.CreationData(
+                    id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                    date = Date(1699270688884)
+                ),
+                data = PaywallEvent.Data(
+                    paywallIdentifier = "paywallID",
+                    presentedOfferingContext = PresentedOfferingContext(
+                        offeringIdentifier = "offeringID",
+                        placementIdentifier = null,
+                        targetingContext = PresentedOfferingContext.TargetingContext(
+                            revision = 7,
+                            ruleId = "targetingRuleID",
+                        ),
+                    ),
+                    paywallRevision = 5,
+                    sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                    displayMode = "footer",
+                    localeIdentifier = "es_ES",
+                    darkMode = true
+                ),
+                type = PaywallEventType.IMPRESSION,
+            ),
+            userID = "testAppUserId",
+        )
+        val eventString = PaywallStoredEvent.json.encodeToString(eventWithTargetingOnly)
+        val decodedEvent = PaywallStoredEvent.fromString(eventString)
+        val backendEvent = decodedEvent.toBackendEvent()
+
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                targetingRevision = 7,
+                targetingRuleId = "targetingRuleID",
+            )
+        )
     }
 
     @Test

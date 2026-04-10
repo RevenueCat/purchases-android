@@ -9,10 +9,13 @@ import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.events.toBackendEvent
+import com.revenuecat.purchases.common.events.toBackendStoredEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
@@ -33,6 +36,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
+import java.util.Date
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -56,6 +61,30 @@ class BackendPaywallEventTest {
                 displayMode = "footer",
                 darkMode = true,
                 localeIdentifier = "en_US",
+            )
+        )
+    ).map { it.toBackendEvent() })
+
+    private val placementTargetingEventRequest = EventsRequest(listOf(
+        BackendStoredEvent.Paywalls(
+            BackendEvent.Paywalls(
+                id = "placement-id",
+                version = 1,
+                type = PaywallEventType.IMPRESSION.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallID = "paywallID",
+                paywallRevision = 5,
+                timestamp = 123456789,
+                displayMode = "full_screen",
+                darkMode = true,
+                localeIdentifier = "es_ES",
+                presentedOfferingContext = BackendEvent.PresentedOfferingContextData(
+                    placementIdentifier = "home_banner",
+                    targetingRevision = 3,
+                    targetingRuleId = "rule_abc123",
+                ),
             )
         )
     ).map { it.toBackendEvent() })
@@ -144,6 +173,44 @@ class BackendPaywallEventTest {
                         "\"display_mode\":\"footer\"," +
                         "\"dark_mode\":true," +
                         "\"locale\":\"en_US\"" +
+                    "}" +
+                "]" +
+            "}"
+        )
+    }
+
+    @Test
+    fun `postPaywallEvents posts events with placement and targeting correctly`() {
+        mockHttpResult()
+        backend.postEvents(
+            placementTargetingEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
+            onSuccessHandler = {},
+            onErrorHandler = { _, _ -> },
+        )
+        verifyCallWithBody(
+            "{" +
+                "\"events\":[" +
+                    "{" +
+                        "\"discriminator\":\"paywalls\"," +
+                        "\"id\":\"placement-id\"," +
+                        "\"version\":1," +
+                        "\"type\":\"paywall_impression\"," +
+                        "\"app_user_id\":\"appUserID\"," +
+                        "\"session_id\":\"sessionID\"," +
+                        "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
+                        "\"paywall_revision\":5," +
+                        "\"timestamp\":123456789," +
+                        "\"display_mode\":\"full_screen\"," +
+                        "\"dark_mode\":true," +
+                        "\"locale\":\"es_ES\"," +
+                        "\"presented_offering_context\":{" +
+                            "\"placement_identifier\":\"home_banner\"," +
+                            "\"targeting_revision\":3," +
+                            "\"targeting_rule_id\":\"rule_abc123\"" +
+                        "}" +
                     "}" +
                 "]" +
             "}"
@@ -339,6 +406,59 @@ class BackendPaywallEventTest {
                 requestHeaders = any(),
             )
         }
+    }
+
+    @Test
+    fun `toBackendStoredEvent preserves placement and targeting from PresentedOfferingContext`() {
+        val paywallEvent = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("298207f4-87af-4b57-a581-eb27bcc6e009"),
+                date = Date(1699270688884)
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywallID",
+                presentedOfferingContext = PresentedOfferingContext(
+                    offeringIdentifier = "offeringID",
+                    placementIdentifier = "home_banner",
+                    targetingContext = PresentedOfferingContext.TargetingContext(
+                        revision = 3,
+                        ruleId = "rule_abc123",
+                    ),
+                ),
+                paywallRevision = 5,
+                sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
+                displayMode = "footer",
+                localeIdentifier = "es_ES",
+                darkMode = true
+            ),
+            type = PaywallEventType.IMPRESSION,
+        )
+
+        val storedEvent = paywallEvent.toBackendStoredEvent("testAppUserId")
+        assertThat(storedEvent).isNotNull
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Paywalls::class.java)
+
+        val backendEvent = (storedEvent as BackendStoredEvent.Paywalls).event
+        assertThat(backendEvent.offeringID).isEqualTo("offeringID")
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                placementIdentifier = "home_banner",
+                targetingRevision = 3,
+                targetingRuleId = "rule_abc123",
+            )
+        )
+    }
+
+    @Test
+    fun `old stored BackendStoredEvent without presentedOfferingContext deserializes correctly`() {
+        val oldJson = """
+            {"discriminator":"paywalls","event":{"discriminator":"paywalls","id":"test-id","version":1,"type":"paywall_impression","app_user_id":"appUserID","session_id":"sessionID","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":123456789,"display_mode":"full_screen","dark_mode":true,"locale":"es_ES"}}
+        """.trimIndent()
+        val deserialized = JsonProvider.defaultJson.decodeFromString<BackendStoredEvent>(oldJson)
+        assertThat(deserialized).isInstanceOf(BackendStoredEvent.Paywalls::class.java)
+        val event = (deserialized as BackendStoredEvent.Paywalls).event
+        assertThat(event.presentedOfferingContext).isNull()
+        assertThat(event.offeringID).isEqualTo("offeringID")
     }
 
     private fun verifyCallWithBody(body: String) {
