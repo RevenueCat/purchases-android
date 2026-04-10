@@ -178,6 +178,14 @@ internal class StyleFactory(
             var topWindowInsetsApplied = false
 
             /**
+             * Whether the first visual component in the tree is a full-width image or video (a "hero image").
+             * This is tracked separately from [topWindowInsetsApplied] because a hero image can appear
+             * outside a ZLayer (e.g. directly in a Vertical stack), in which case it doesn't affect
+             * top window insets application but still needs to be detected for header padding logic.
+             */
+            var heroImageDetected = false
+
+            /**
              * We're only interested in the first non-container component. After that, we can stop looking.
              */
             private var stillLookingForHeaderMedia = true
@@ -192,8 +200,10 @@ internal class StyleFactory(
                     is StackComponent -> if (stillLookingForHeaderMedia) {
                         applyTopWindowInsets = when (component.dimension) {
                             is Dimension.ZLayer -> {
-                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderMedia == true
-                                topWindowInsetsApplied
+                                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
+                                topWindowInsetsApplied = hasHero
+                                heroImageDetected = hasHero
+                                hasHero
                             }
 
                             is Dimension.Horizontal,
@@ -205,7 +215,7 @@ internal class StyleFactory(
                     is ImageComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderImage
-                            topWindowInsetsApplied = topWindowInsetsApplied || component.isHeaderImage
+                            heroImageDetected = component.isHeaderImage
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -213,7 +223,7 @@ internal class StyleFactory(
                     is VideoComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderVideo
-                            topWindowInsetsApplied = topWindowInsetsApplied || component.isHeaderVideo
+                            heroImageDetected = component.isHeaderVideo
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -257,11 +267,10 @@ internal class StyleFactory(
         val ignoreTopWindowInsets by windowInsetsState::ignoreTopWindowInsets
 
         /**
-         * Whether the tree contains a hero image (a full-width image/video as the first child of a ZLayer stack).
-         * Backed by [WindowInsetsState.topWindowInsetsApplied] — both are set during the same traversal step.
+         * Whether the first visual component in the tree is a full-width hero image or video.
          */
         val heroImageDetected: Boolean
-            get() = windowInsetsState.topWindowInsetsApplied
+            get() = windowInsetsState.heroImageDetected
 
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
