@@ -11,7 +11,6 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
 import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import io.mockk.every
 import io.mockk.mockk
@@ -46,7 +45,7 @@ class BackendWorkflowsTest {
         dispatcher,
         mockClient,
         backendHelper,
-        workflowCdnFetcher = FileCachedWorkflowCdnFetcher(fileRepository = null),
+        workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
     )
     private val appUserId = "user_1"
 
