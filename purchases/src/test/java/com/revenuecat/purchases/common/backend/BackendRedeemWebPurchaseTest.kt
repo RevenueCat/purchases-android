@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
@@ -64,6 +65,7 @@ class BackendRedeemWebPurchaseTest {
             SyncDispatcher(),
             httpClient,
             backendHelper,
+            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
         )
 
         asyncBackend = Backend(
@@ -72,6 +74,7 @@ class BackendRedeemWebPurchaseTest {
             asyncDispatcher2,
             httpClient,
             asyncBackendHelper,
+            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
         )
     }
 

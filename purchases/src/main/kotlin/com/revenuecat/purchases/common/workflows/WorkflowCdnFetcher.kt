@@ -18,24 +18,18 @@ internal fun interface WorkflowCdnFetcher {
 }
 
 /**
- * Uses [FileRepository] for disk caching when non-null; otherwise reads the URL directly.
+ * Uses [FileRepository] for disk caching.
  */
 internal class FileCachedWorkflowCdnFetcher(
-    private val fileRepository: FileRepository?,
+    private val fileRepository: FileRepository,
 ) : WorkflowCdnFetcher {
 
     @Throws(IOException::class)
     override fun fetchCompiledWorkflowJson(cdnUrl: String): String {
         val url = URL(cdnUrl)
-        return if (fileRepository != null) {
-            runBlocking {
-                val uri = fileRepository.generateOrGetCachedFileURL(url)
-                File(uri).readText()
-            }
-        } else {
-            url.openConnection().getInputStream().use { stream ->
-                stream.readBytes().decodeToString()
-            }
+        return runBlocking {
+            val uri = fileRepository.generateOrGetCachedFileURL(url)
+            File(uri).readText()
         }
     }
 }

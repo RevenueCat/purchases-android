@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -131,7 +132,14 @@ internal abstract class BaseBackendIntegrationTest {
             requestResponseListener = goldenFileRecorder
         )
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
-        backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
+        backend = Backend(
+            appConfig,
+            dispatcher,
+            diagnosticsDispatcher,
+            httpClient,
+            backendHelper,
+            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
+        )
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {

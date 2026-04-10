@@ -47,6 +47,7 @@ import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getNullableString
 import com.revenuecat.purchases.utils.stubStoreProduct
+import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrency
@@ -123,7 +124,8 @@ class BackendTest {
         dispatcher,
         dispatcher,
         mockClient,
-        backendHelper
+        backendHelper,
+        workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
     )
     private val asyncDispatcher = spyk(
         Dispatcher(
@@ -150,7 +152,8 @@ class BackendTest {
             )
         ),
         mockClient,
-        asyncBackendHelper
+        asyncBackendHelper,
+        workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
     )
     private val appUserID = "jerry"
     private val storeProduct = stubStoreProduct("productID")

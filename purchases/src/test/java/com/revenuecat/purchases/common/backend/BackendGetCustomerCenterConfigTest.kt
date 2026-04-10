@@ -17,6 +17,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType
+import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import com.revenuecat.purchases.customercenter.RCColor
 import io.mockk.every
 import io.mockk.mockk
@@ -213,6 +214,7 @@ class BackendGetCustomerCenterConfigTest {
             SyncDispatcher(),
             httpClient,
             backendHelper,
+            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
         )
 
         asyncBackend = Backend(
@@ -221,6 +223,7 @@ class BackendGetCustomerCenterConfigTest {
             asyncDispatcher2,
             httpClient,
             asyncBackendHelper,
+            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
         )
     }
 

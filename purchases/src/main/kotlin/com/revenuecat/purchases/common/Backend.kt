@@ -128,7 +128,7 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
-    workflowCdnFetcher: WorkflowCdnFetcher = FileCachedWorkflowCdnFetcher(fileRepository = null),
+    workflowCdnFetcher: WorkflowCdnFetcher,
 ) {
     private val workflowDetailHttpProcessor = WorkflowDetailHttpProcessor(workflowCdnFetcher)
     companion object {
