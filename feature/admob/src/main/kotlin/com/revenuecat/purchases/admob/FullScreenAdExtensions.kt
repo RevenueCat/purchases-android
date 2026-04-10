@@ -86,3 +86,75 @@ public fun RewardedInterstitialAd.show(
     applyPlacementOverride(fullScreenContentCallback, placement)
     show(activity, onUserEarnedRewardListener)
 }
+
+// region Safe callback reassignment
+
+/**
+ * Safely sets your [FullScreenContentCallback] without removing RevenueCat's tracking wrapper.
+ *
+ * Use this instead of assigning [InterstitialAd.fullScreenContentCallback] directly when the ad
+ * was loaded via [AdTracker.loadAndTrackInterstitialAd]. If the ad was not loaded via
+ * `loadAndTrack`, this falls back to direct assignment.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public fun InterstitialAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
+    val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
+    if (wrapper != null) {
+        wrapper.delegate = callback
+    } else {
+        fullScreenContentCallback = callback
+    }
+}
+
+/**
+ * Safely sets your [FullScreenContentCallback] without removing RevenueCat's tracking wrapper.
+ *
+ * Use this instead of assigning [AppOpenAd.fullScreenContentCallback] directly when the ad
+ * was loaded via [AdTracker.loadAndTrackAppOpenAd]. If the ad was not loaded via
+ * `loadAndTrack`, this falls back to direct assignment.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public fun AppOpenAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
+    val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
+    if (wrapper != null) {
+        wrapper.delegate = callback
+    } else {
+        fullScreenContentCallback = callback
+    }
+}
+
+/**
+ * Safely sets your [FullScreenContentCallback] without removing RevenueCat's tracking wrapper.
+ *
+ * Use this instead of assigning [RewardedAd.fullScreenContentCallback] directly when the ad
+ * was loaded via [AdTracker.loadAndTrackRewardedAd]. If the ad was not loaded via
+ * `loadAndTrack`, this falls back to direct assignment.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public fun RewardedAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
+    val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
+    if (wrapper != null) {
+        wrapper.delegate = callback
+    } else {
+        fullScreenContentCallback = callback
+    }
+}
+
+/**
+ * Safely sets your [FullScreenContentCallback] without removing RevenueCat's tracking wrapper.
+ *
+ * Use this instead of assigning [RewardedInterstitialAd.fullScreenContentCallback] directly when
+ * the ad was loaded via [AdTracker.loadAndTrackRewardedInterstitialAd]. If the ad was not loaded
+ * via `loadAndTrack`, this falls back to direct assignment.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public fun RewardedInterstitialAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
+    val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
+    if (wrapper != null) {
+        wrapper.delegate = callback
+    } else {
+        fullScreenContentCallback = callback
+    }
+}
+
+// endregion
