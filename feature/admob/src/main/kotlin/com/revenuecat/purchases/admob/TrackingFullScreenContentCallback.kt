@@ -25,7 +25,7 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
  * on the ad object by the caller (see [setUpPaidEventTracking]).
  */
 internal class TrackingFullScreenContentCallback(
-    private val delegate: FullScreenContentCallback?,
+    internal var delegate: FullScreenContentCallback?,
     private val adFormat: AdFormat,
     internal var placement: String?,
     private val adUnitId: String,
