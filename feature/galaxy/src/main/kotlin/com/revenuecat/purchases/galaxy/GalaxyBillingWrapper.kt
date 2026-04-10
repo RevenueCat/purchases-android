@@ -214,8 +214,6 @@ internal class GalaxyBillingWrapper(
             ProductType.SUBS -> {
                 acknowledgePurchase(
                     storeTransaction = purchase,
-                    // Here, we hard-code isAutoRenewing to true because we only support subscriptions for now.
-                    // We will need to update this when we add support for one time purchases.
                     onAcknowledged = { token ->
                         deviceCache.addSuccessfullyPostedToken(token, isAutoRenewing = true)
                     },
