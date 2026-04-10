@@ -39,11 +39,13 @@ import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetc
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
+import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -196,6 +198,9 @@ internal class PurchasesFactory(
                 eventsDispatcher,
                 httpClient,
                 backendHelper,
+                workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
+                    fileRepository = DefaultFileRepository(contextForStorage),
+                ),
             )
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
