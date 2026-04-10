@@ -7,6 +7,7 @@ import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
@@ -282,6 +283,23 @@ internal class ContainsUnsupportedConditionTests {
                 components = listOf(
                     textComponent(overrides = listOf(unsupportedOverride)),
                 ),
+            ),
+        )
+        val stack = emptyStack(components = listOf(pkg))
+        assertTrue(stack.containsUnsupportedCondition())
+    }
+
+    @Test
+    fun `PackageComponent detects unsupported in its own overrides`() {
+        val pkg = PackageComponent(
+            packageId = "monthly",
+            isSelectedByDefault = true,
+            stack = emptyStack(),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Unsupported),
+                    properties = PartialPackageComponent(visible = false),
+                )
             ),
         )
         val stack = emptyStack(components = listOf(pkg))

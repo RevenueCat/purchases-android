@@ -459,7 +459,8 @@ internal class PurchasesFactory(
             val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
 
             if (!isDebugBuild() &&
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE &&
+                !dangerousSettings.uiPreviewMode
             ) {
                 val redactedApiKey = apiKeyValidator.redactApiKey(apiKey)
                 errorLog(
