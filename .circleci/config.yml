@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.17.0
+  revenuecat: revenuecat/sdks-common-config@dev:8dc0a6a1e3cff28bb5393175d0a1c4dad95e5ec5
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -979,6 +979,15 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
+      # DEBUG JOB
+      - revenuecat/await-maven-central-package:
+          name: debug-await-maven-central-package
+          coordinates: |
+            com.revenuecat.purchases:purchases:10.29.0
+            com.revenuecat.purchases:purchases-ui:10.29.0
+            com.revenuecat.purchases:purchases-store-amazon:10.29.0
+            com.revenuecat.purchases:purchases-store-galaxy:10.29.0
+            com.revenuecat.purchases:purchases-admob:10.29.0
       - prepare-tests
       - test:
           name: test_defaults_bc8_debug
@@ -1098,6 +1107,16 @@ workflows:
       - deploy:
           <<: *release-tags
           context: maven-central-publishing
+      - revenuecat/await-maven-central-package:
+          coordinates: |
+            com.revenuecat.purchases:purchases:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-ui:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-store-amazon:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-store-galaxy:<< pipeline.git.tag >>
+            com.revenuecat.purchases:purchases-admob:<< pipeline.git.tag >>
+          requires:
+            - deploy
+          <<: *release-tags
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:
@@ -1120,6 +1139,7 @@ workflows:
           repo_name: purchases-android
           use_merge_queue: true
           requires:
+            - revenuecat/await-maven-central-package
             - publish-purchase-tester-release
             - publish-paywall-tester-release
             - publish-rct-tester-release
