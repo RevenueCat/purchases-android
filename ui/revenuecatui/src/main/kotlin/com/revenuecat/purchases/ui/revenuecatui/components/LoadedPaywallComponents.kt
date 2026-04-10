@@ -97,6 +97,9 @@ internal fun LoadedPaywallComponents(
         WithOptionalBackgroundOverlay(state, background = background) {
             Column {
                 Box(modifier = Modifier.weight(1f)) {
+                    if (headerComponentStyle != null && state.mainStackHasHeroImage) {
+                        state.headerHeight = headerHeightDp
+                    }
                     ComponentView(
                         style = style,
                         state = state,
