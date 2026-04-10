@@ -91,6 +91,7 @@ internal class ChangeSubscriptionPlanHandler(
 
         if (!requestWasDispatched) {
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_CHANGE_SUBSCRIPTION_PLAN_REQUEST }
+            clearInFlightRequest()
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
@@ -98,7 +99,6 @@ internal class ChangeSubscriptionPlanHandler(
                         .GALAXY_STORE_FAILED_TO_ACCEPT_CHANGE_SUBSCRIPTION_PLAN_REQUEST,
                 ),
             )
-            clearInFlightRequest()
             return
         }
     }
