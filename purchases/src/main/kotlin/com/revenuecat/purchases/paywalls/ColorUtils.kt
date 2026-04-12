@@ -31,7 +31,10 @@ private const val ALPHA_MATCH_GROUP_INDEX = 4
 internal fun parseRGBAColor(stringRepresentation: String): Int =
     rgbaColorRegex.matchEntire(stringRepresentation)?.let { match ->
         val (r, g, b) = match.destructured
-        val a = match.groupValues.getOrNull(ALPHA_MATCH_GROUP_INDEX).takeUnless { it.isNullOrBlank() } ?: DEFAULT_ALPHA_HEX
+        val a = match.groupValues
+            .getOrNull(ALPHA_MATCH_GROUP_INDEX)
+            .takeUnless { it.isNullOrBlank() }
+            ?: DEFAULT_ALPHA_HEX
         colorInt(
             alpha = a.toInt(HEX_RADIX),
             red = r.toInt(HEX_RADIX),
