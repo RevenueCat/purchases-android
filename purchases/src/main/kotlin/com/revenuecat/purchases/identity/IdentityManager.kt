@@ -235,6 +235,7 @@ internal class IdentityManager(
         }
     }
 
+    @Suppress("UnusedPrivateMember", "FunctionOnlyReturningConstant")
     private fun shouldInvalidateETagCache(customerInfo: CustomerInfo?): Boolean {
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
