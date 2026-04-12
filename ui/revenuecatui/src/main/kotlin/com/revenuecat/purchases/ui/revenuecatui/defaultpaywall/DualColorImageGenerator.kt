@@ -11,6 +11,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.AppStyleExtractor
  * Utility for generating deterministic images used in previews and tests.
  */
 internal object DualColorImageGenerator {
+    private const val PURPLE_COLOR_HEX = 0xFF800080
+    private const val ORANGE_COLOR_HEX = 0xFFFFA500
 
     internal data class PreviewAppIcon(
         val bitmap: Bitmap,
@@ -24,9 +26,8 @@ internal object DualColorImageGenerator {
         create(color1 = Color.Blue, color2 = Color.Green) ?: error("Failed to generate blueGreen preview icon")
     }
 
-    @Suppress("MagicNumber")
     val purpleOrange: PreviewAppIcon by lazy {
-        create(color1 = Color(0xFF800080), color2 = Color(0xFFFFA500))
+        create(color1 = Color(PURPLE_COLOR_HEX), color2 = Color(ORANGE_COLOR_HEX))
             ?: error("Failed to generate purpleOrange preview icon")
     }
 

@@ -50,7 +50,6 @@ internal class OfflineEntitlementsManager(
         isServerError: Boolean,
     ) = isServerError && isOfflineEntitlementsEnabled()
 
-    @Suppress("FunctionOnlyReturningConstant")
     fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
         onSuccess: (CustomerInfo) -> Unit,
