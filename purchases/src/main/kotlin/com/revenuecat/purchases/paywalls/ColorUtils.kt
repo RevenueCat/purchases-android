@@ -10,6 +10,7 @@ private const val DEFAULT_ALPHA_HEX = "FF"
 private const val ALPHA_SHIFT_BITS = 24
 private const val RED_SHIFT_BITS = 16
 private const val GREEN_SHIFT_BITS = 8
+private const val ALPHA_MATCH_GROUP_INDEX = 4
 
 /**
  *
@@ -30,7 +31,7 @@ private const val GREEN_SHIFT_BITS = 8
 internal fun parseRGBAColor(stringRepresentation: String): Int =
     rgbaColorRegex.matchEntire(stringRepresentation)?.let { match ->
         val (r, g, b) = match.destructured
-        val a = match.groupValues.getOrNull(4).takeUnless { it.isNullOrBlank() } ?: DEFAULT_ALPHA_HEX
+        val a = match.groupValues.getOrNull(ALPHA_MATCH_GROUP_INDEX).takeUnless { it.isNullOrBlank() } ?: DEFAULT_ALPHA_HEX
         colorInt(
             alpha = a.toInt(HEX_RADIX),
             red = r.toInt(HEX_RADIX),
