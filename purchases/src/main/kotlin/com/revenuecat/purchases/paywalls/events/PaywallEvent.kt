@@ -63,11 +63,11 @@ public enum class PaywallEventType(public val value: String) {
     /**
      * User interacted with a paywall component (tabs, carousel, non-purchase button, etc.).
      */
-    COMPONENT_INTERACTION("paywall_component_interaction"),
+    COMPONENT_INTERACTION("paywall_component_interacted"),
 }
 
 /**
- * Component categories for [PaywallEventType.COMPONENT_INTERACTION]. Wire values match iOS `ControlType`.
+ * Component categories for [PaywallEventType.COMPONENT_INTERACTION].
  */
 @InternalRevenueCatAPI
 @Serializable

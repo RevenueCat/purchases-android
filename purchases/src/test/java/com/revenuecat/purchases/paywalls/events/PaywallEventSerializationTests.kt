@@ -370,7 +370,7 @@ class PaywallEventSerializationTests {
             ),
         )
         val backend = event.toBackendStoredEvent("uid")!!.event
-        assertThat(backend.type).isEqualTo("paywall_component_interaction")
+        assertThat(backend.type).isEqualTo("paywall_component_interacted")
         assertThat(backend.componentType).isEqualTo("tab")
         assertThat(backend.componentName).isEqualTo("tabs_main")
         assertThat(backend.componentValue).isEqualTo("annual")

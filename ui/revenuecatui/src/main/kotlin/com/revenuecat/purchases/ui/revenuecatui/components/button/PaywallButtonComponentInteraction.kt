@@ -41,7 +41,7 @@ private fun ButtonComponentStyle.Action.NavigateTo.Destination.componentInteract
     }
 
 /**
- * True for purchase / web checkout actions — these must not emit `paywall_component_interaction`
+ * True for purchase / web checkout actions — these must not emit `paywall_component_interacted`
  */
 internal fun ButtonComponentStyle.Action.isPurchaseRelated(): Boolean =
     when (this) {

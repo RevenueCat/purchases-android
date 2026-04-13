@@ -101,7 +101,7 @@ class PaywallEventsRequestSerializationTest {
                         "\"discriminator\":\"paywalls\"," +
                         "\"id\":\"cid\"," +
                         "\"version\":1," +
-                        "\"type\":\"paywall_component_interaction\"," +
+                        "\"type\":\"paywall_component_interacted\"," +
                         "\"app_user_id\":\"user\"," +
                         "\"session_id\":\"sess\"," +
                         "\"offering_id\":\"off\"," +
@@ -158,7 +158,7 @@ class PaywallEventsRequestSerializationTest {
                         "\"discriminator\":\"paywalls\"," +
                         "\"id\":\"cid\"," +
                         "\"version\":1," +
-                        "\"type\":\"paywall_component_interaction\"," +
+                        "\"type\":\"paywall_component_interacted\"," +
                         "\"app_user_id\":\"user\"," +
                         "\"session_id\":\"sess\"," +
                         "\"offering_id\":\"off\"," +
