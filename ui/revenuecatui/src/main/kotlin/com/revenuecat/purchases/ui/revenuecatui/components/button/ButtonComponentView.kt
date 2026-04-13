@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
@@ -56,6 +57,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.purchaseButtonInteractionComponentUrl
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -140,7 +143,23 @@ internal fun ButtonComponentView(
             },
             modifier = modifier.clickable(enabled = !anyActionInProgress) {
                 val paywallAction = buttonState.action
-                if (!style.action.isPurchaseRelated()) {
+                if (style.action.isPurchaseRelated()) {
+                    val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
+                    val componentUrl = purchaseButtonInteractionComponentUrl(
+                        paywallAction = paywallAction,
+                        currentPackage = currentPackage,
+                        state = state,
+                    )
+                    componentInteractionTracker.track(
+                        paywallPurchaseButtonAction(
+                            componentName = style.componentName,
+                            componentValue = style.action.description,
+                            componentUrl = componentUrl,
+                            currentPackageIdentifier = currentPackage?.identifier,
+                            currentProductIdentifier = currentPackage?.product?.id,
+                        ),
+                    )
+                } else {
                     val urlForEvent = paywallAction.navigateToUrlForComponentInteraction()
                     style.action.componentInteraction(urlForEvent)?.let { interaction ->
                         componentInteractionTracker.track(
@@ -264,6 +283,24 @@ private fun PaywallAction.navigateToUrlForComponentInteraction(): String? =
         }
         else -> null
     }
+
+/**
+ * Resolves the [Package] used for purchase / web-checkout analytics: explicit package on the button style when
+ * present, otherwise the paywall's currently selected package.
+ */
+private fun packageForPurchaseButtonInteraction(
+    action: ButtonComponentStyle.Action,
+    state: PaywallState.Loaded.Components,
+): Package? {
+    val actionPackage = when (action) {
+        is ButtonComponentStyle.Action.PurchasePackage -> action.rcPackage
+        is ButtonComponentStyle.Action.WebCheckout -> action.rcPackage
+        is ButtonComponentStyle.Action.CustomWebCheckout -> action.rcPackage
+        is ButtonComponentStyle.Action.WebProductSelection -> null
+        else -> null
+    }
+    return actionPackage ?: state.selectedPackageInfo?.rcPackage
+}
 
 @Preview
 @Composable

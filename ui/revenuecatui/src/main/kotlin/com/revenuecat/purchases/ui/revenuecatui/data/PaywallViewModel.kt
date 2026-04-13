@@ -50,19 +50,17 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
-import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import java.net.URI
-import java.net.URISyntaxException
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -267,36 +265,13 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("ReturnCount")
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
-        val customUrl = launchWebCheckout.customUrl
         val state = state.value as? PaywallState.Loaded.Components
         if (state == null) {
             Logger.e("Web checkout URL can only be constructed for loaded Components paywalls")
             return null
         }
-        val behavior = launchWebCheckout.packageParamBehavior
-        val (packageToUse, packageParam) = when (behavior) {
-            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append ->
-                (behavior.rcPackage ?: state.selectedPackageInfo?.rcPackage) to behavior.packageParam
-            is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend ->
-                null to null
-        }
-        if (customUrl != null) {
-            val uri = try {
-                URI(customUrl)
-            } catch (e: URISyntaxException) {
-                Logger.e("Invalid custom URI: $customUrl", e)
-                return null
-            }
-            val finalUri = if (packageParam != null && packageToUse != null) {
-                uri.appendQueryParameter(packageParam, packageToUse.identifier)
-            } else {
-                uri
-            }
-            return finalUri.toString()
-        }
-        return packageToUse?.webCheckoutURL?.toString() ?: state.offering.webCheckoutURL.toString()
+        return state.resolveWebCheckoutUrlForInteraction(launchWebCheckout)
     }
 
     override fun invalidateCustomerInfoCache() {

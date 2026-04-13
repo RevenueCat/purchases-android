@@ -639,7 +639,7 @@ internal class StyleFactory(
         ButtonComponentStyle(
             stackComponentStyle = stack,
             action = action,
-            componentName = null,
+            componentName = component.name,
         )
     }
 

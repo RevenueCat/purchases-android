@@ -92,6 +92,9 @@ public enum class PaywallComponentType {
 
     @SerialName("package_selection_sheet")
     PACKAGE_SELECTION_SHEET,
+
+    @SerialName("purchase_button")
+    PURCHASE_BUTTON,
 }
 
 /**
@@ -355,6 +358,7 @@ internal fun PaywallComponentType.toWireString(): String = when (this) {
     PaywallComponentType.TEXT -> "text"
     PaywallComponentType.PACKAGE -> "package"
     PaywallComponentType.PACKAGE_SELECTION_SHEET -> "package_selection_sheet"
+    PaywallComponentType.PURCHASE_BUTTON -> "purchase_button"
 }
 
 /**

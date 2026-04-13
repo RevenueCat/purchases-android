@@ -65,6 +65,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.CarouselPageChangeInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallCarouselPageChange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -139,12 +140,14 @@ internal fun CarouselComponentView(
                             style.pageContextNames.getOrNull(logical)?.takeUnless { it.isBlank() }
                         componentInteractionTracker.track(
                             paywallCarouselPageChange(
-                                componentName = style.componentName,
-                                destinationPageIndex = logicalDestination,
-                                originPageIndex = logicalOrigin,
-                                defaultPageIndex = style.initialPageIndex,
-                                originContextName = pageName(logicalOrigin),
-                                destinationContextName = pageName(logicalDestination),
+                                CarouselPageChangeInteraction(
+                                    componentName = style.componentName,
+                                    destinationPageIndex = logicalDestination,
+                                    originPageIndex = logicalOrigin,
+                                    defaultPageIndex = style.initialPageIndex,
+                                    originContextName = pageName(logicalOrigin),
+                                    destinationContextName = pageName(logicalDestination),
+                                ),
                             ),
                         )
                     }
