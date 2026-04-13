@@ -1061,7 +1061,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave does not acknowledge already acknowledged subscriptions`() {
+    fun `consumeAndSave caches already acknowledged subscriptions without re-acknowledging`() {
         val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
@@ -1098,7 +1098,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
-        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any(), isAutoRenewing = any()) }
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-sub", isAutoRenewing = true) }
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
     }
 
@@ -1201,6 +1201,52 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
         verify(exactly = 1) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
         assertThat(ackTransactionSlot.captured.purchaseToken).isEqualTo("token-iap")
+        verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-iap", isAutoRenewing = false) }
+    }
+
+    @OptIn(GalaxySerialOperation::class)
+    @Test
+    fun `consumeAndSave caches already acknowledged OTPs without re-acknowledging`() {
+        val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
+        val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
+        val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
+        val consumePurchaseHandler = mockk<ConsumePurchaseResponseListener>(relaxed = true)
+        every { deviceCache.addSuccessfullyPostedToken(any(), isAutoRenewing = any()) } returns Unit
+        every {
+            getOwnedListHandler.getOwnedList(
+                onSuccess = capture(ownedListSuccessSlot),
+                onError = any(),
+            )
+        } answers { }
+        val wrapper = createWrapper(
+            acknowledgePurchaseHandler = acknowledgePurchaseHandler,
+            consumePurchaseHandler = consumePurchaseHandler,
+            getOwnedListHandler = getOwnedListHandler,
+        )
+
+        val productId = "productId"
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = storeTransaction("token-iap", type = ProductType.INAPP, productId = productId),
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+        )
+
+        ownedListSuccessSlot.captured.invoke(
+            arrayListOf(
+                createOwnedProductVo(
+                    itemId = productId,
+                    purchaseId = "token-iap",
+                    type = "item",
+                    purchaseDate = "2024-02-02 00:00:00",
+                    acknowledgedStatus = HelperDefine.AcknowledgedStatus.ACKNOWLEDGED,
+                ),
+            ),
+        )
+
+        verify(exactly = 0) { consumePurchaseHandler.consumePurchase(any(), any(), any()) }
+        verify(exactly = 0) { acknowledgePurchaseHandler.acknowledgePurchase(any(), any(), any()) }
+        verify(exactly = 1) { getOwnedListHandler.getOwnedList(any(), any()) }
         verify(exactly = 1) { deviceCache.addSuccessfullyPostedToken("token-iap", isAutoRenewing = false) }
     }
 
