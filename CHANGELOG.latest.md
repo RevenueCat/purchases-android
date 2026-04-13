@@ -1,9 +1,10 @@
 ## RevenueCat SDK
-### ✨ New Features
-* [Galaxy]: Support OTP Purchases (#3267) via Will Taylor (@fire-at-will)
+### 🐞 Bugfixes
+* [Galaxy]: Cache already acknowledged purchase tokens (#3333) via Will Taylor (@fire-at-will)
 
 ### 🔄 Other Changes
-* Match iOS casing for Test Store purchase button labels (#3314) via Antonio Pallares (@ajpallares)
-* Update CODEOWNERS default owner to @RevenueCat/sdk (#3322) via Antonio Pallares (@ajpallares)
-* Add pull to refresh to Paywall in paywall tester (#3316) via Cesar de la Vega (@vegaro)
-* Refactor: Remove unnecessary lint suppressions (#3317) via cursor[bot] (@cursor[bot])
+* Refactor: Remove unnecessary lint suppressions (#3331) via cursor[bot] (@cursor[bot])
+* Refactor: Remove unnecessary lint suppressions (#3330) via cursor[bot] (@cursor[bot])
+* Refactor: Remove unnecessary lint suppressions (#3323) via cursor[bot] (@cursor[bot])
+* Bump fastlane-plugin-revenuecat_internal from `894bb1b` to `20911d1` (#3334) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `ceecf91` to `894bb1b` (#3326) via dependabot[bot] (@dependabot[bot])
