@@ -315,39 +315,6 @@ class PaywallEventSerializationTests {
     }
 
     @Test
-    fun `decodes stored event json using legacy controlInteraction property name`() {
-        val stored = PaywallStoredEvent(
-            event = PaywallEvent(
-                creationData = PaywallEvent.CreationData(
-                    id = UUID.fromString("598207f4-97af-4b57-a581-eb27bcc6e444"),
-                    date = Date(1699270689111),
-                ),
-                data = PaywallEvent.Data(
-                    paywallIdentifier = "paywallID",
-                    presentedOfferingContext = PresentedOfferingContext("offeringID"),
-                    paywallRevision = 2,
-                    sessionIdentifier = UUID.fromString("615107f4-98bf-4b68-a582-eb27bcb6e444"),
-                    displayMode = "fullscreen",
-                    localeIdentifier = "en_US",
-                    darkMode = false,
-                ),
-                type = PaywallEventType.COMPONENT_INTERACTION,
-                componentInteraction = PaywallComponentInteractionData(
-                    componentType = PaywallComponentType.BUTTON,
-                    componentName = "terms",
-                    componentValue = "navigate_to_terms",
-                    componentUrl = "https://example.com/terms",
-                ),
-            ),
-            userID = "testAppUserId",
-        )
-        val json = PaywallStoredEvent.json.encodeToString(stored)
-        val legacyJson = json.replace("componentInteraction", "controlInteraction")
-        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(legacyJson)
-        assertThat(decoded).isEqualTo(stored)
-    }
-
-    @Test
     fun `toBackendStoredEvent maps component interaction fields`() {
         val event = PaywallEvent(
             creationData = PaywallEvent.CreationData(

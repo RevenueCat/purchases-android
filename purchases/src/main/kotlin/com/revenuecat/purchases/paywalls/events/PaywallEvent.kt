@@ -18,7 +18,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonNames
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.util.Date
@@ -145,7 +144,6 @@ public data class PaywallEvent(
     public val creationData: CreationData,
     public val data: Data,
     public val type: PaywallEventType,
-    @JsonNames("controlInteraction")
     public val componentInteraction: PaywallComponentInteractionData? = null,
 ) : FeatureEvent {
 
