@@ -143,6 +143,8 @@ internal fun ButtonComponentView(
             },
             modifier = modifier.clickable(enabled = !anyActionInProgress) {
                 val paywallAction = buttonState.action
+                myActionInProgress = true
+                state.update(actionInProgress = true)
                 if (style.action.isPurchaseRelated()) {
                     val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                     val componentUrl = purchaseButtonInteractionComponentUrl(
@@ -172,8 +174,6 @@ internal fun ButtonComponentView(
                         )
                     }
                 }
-                myActionInProgress = true
-                state.update(actionInProgress = true)
                 coroutineScope.launch {
                     onClick(paywallAction)
                     myActionInProgress = false
