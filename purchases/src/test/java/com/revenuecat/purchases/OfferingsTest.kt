@@ -542,6 +542,53 @@ class OfferingsTest {
         assertThat(offerings.getCurrentOfferingForPlacement("does_not_exist_do_not_fall_back")).isNull()
     }
 
+    @Test
+    fun `createOfferings creates placement object with fallback but no offering_ids_by_placement`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+
+        // Simulates backend response when no specific placements are configured
+        // (e.g., "all placements" targeting rule or no targeting match)
+        val placementsJSON = JSONObject().apply {
+            put("fallback_offering_id", "offering_a")
+        }
+
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val offeringsJson = getOfferingsJSON(placements = placementsJSON)
+
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        assertThat(offerings).isNotNull
+
+        assertThat(offerings.placements).isNotNull
+        assertThat(offerings.placements!!.fallbackOfferingId).isEqualTo("offering_a")
+        assertThat(offerings.placements!!.offeringIdsByPlacement).isEmpty()
+
+        assertThat(offerings.getCurrentOfferingForPlacement("any_placement")).isNotNull
+        assertThat(offerings.getCurrentOfferingForPlacement("any_placement")!!.identifier).isEqualTo("offering_a")
+    }
+
+    @Test
+    fun `createOfferings creates placement object with null fallback and no offering_ids_by_placement`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+
+        val placementsJSON = JSONObject().apply {
+            put("fallback_offering_id", JSONObject.NULL)
+        }
+
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val offeringsJson = getOfferingsJSON(placements = placementsJSON)
+
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        assertThat(offerings).isNotNull
+
+        assertThat(offerings.placements).isNotNull
+        assertThat(offerings.placements!!.fallbackOfferingId).isNull()
+        assertThat(offerings.placements!!.offeringIdsByPlacement).isEmpty()
+
+        assertThat(offerings.getCurrentOfferingForPlacement("any_placement")).isNull()
+    }
+
     fun `createOfferings creates targeting object`() {
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
