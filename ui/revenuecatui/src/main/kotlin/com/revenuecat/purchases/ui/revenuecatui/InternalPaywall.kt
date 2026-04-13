@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
@@ -27,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
@@ -49,6 +52,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInt
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
@@ -187,6 +191,16 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
                 warning = state.validationWarning,
                 onSelectPackage = viewModel::selectPackage,
                 onPurchase = {
+                    val rcPackage = state.selectedPackage.value.rcPackage
+                    viewModel.trackComponentInteraction(
+                        paywallPurchaseButtonAction(
+                            componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
+                            componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
+                            componentUrl = null,
+                            currentPackageIdentifier = rcPackage.identifier,
+                            currentProductIdentifier = rcPackage.product.id,
+                        ),
+                    )
                     viewModel.purchaseSelectedPackage(activity)
                 },
                 onRestore = {

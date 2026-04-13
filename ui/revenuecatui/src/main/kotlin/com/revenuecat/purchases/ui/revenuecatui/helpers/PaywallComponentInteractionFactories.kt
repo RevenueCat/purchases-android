@@ -28,22 +28,44 @@ internal fun paywallTabControlButtonSelection(
 )
 
 @InternalRevenueCatAPI
-internal fun paywallCarouselPageChange(
+internal fun paywallPurchaseButtonAction(
     componentName: String?,
-    destinationPageIndex: Int,
-    originPageIndex: Int,
-    defaultPageIndex: Int,
-    originContextName: String?,
-    destinationContextName: String?,
+    componentValue: String,
+    componentUrl: String?,
+    currentPackageIdentifier: String?,
+    currentProductIdentifier: String?,
+): PaywallComponentInteractionData = PaywallComponentInteractionData(
+    componentType = PaywallComponentType.PURCHASE_BUTTON,
+    componentName = componentName,
+    componentValue = componentValue,
+    componentUrl = componentUrl,
+    currentPackageIdentifier = currentPackageIdentifier,
+    currentProductIdentifier = currentProductIdentifier,
+)
+
+@InternalRevenueCatAPI
+@Suppress("LongParameterList")
+internal data class CarouselPageChangeInteraction(
+    val componentName: String?,
+    val destinationPageIndex: Int,
+    val originPageIndex: Int,
+    val defaultPageIndex: Int,
+    val originContextName: String?,
+    val destinationContextName: String?,
+)
+
+@InternalRevenueCatAPI
+internal fun paywallCarouselPageChange(
+    interaction: CarouselPageChangeInteraction,
 ): PaywallComponentInteractionData = PaywallComponentInteractionData(
     componentType = PaywallComponentType.CAROUSEL,
-    componentName = componentName,
-    componentValue = destinationPageIndex.toString(),
-    originIndex = originPageIndex,
-    destinationIndex = destinationPageIndex,
-    originContextName = originContextName,
-    destinationContextName = destinationContextName,
-    defaultIndex = defaultPageIndex,
+    componentName = interaction.componentName,
+    componentValue = interaction.destinationPageIndex.toString(),
+    originIndex = interaction.originPageIndex,
+    destinationIndex = interaction.destinationPageIndex,
+    originContextName = interaction.originContextName,
+    destinationContextName = interaction.destinationContextName,
+    defaultIndex = interaction.defaultPageIndex,
 )
 
 @InternalRevenueCatAPI

@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
@@ -1302,6 +1303,37 @@ class PaywallViewModelTest {
                     assertThat(ci.componentName).isEqualTo("restore_button")
                     assertThat(ci.componentValue).isEqualTo("restore_purchases")
                     assertThat(ci.componentUrl).isNull()
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackComponentInteraction legacy purchase button matches purchase button spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val pkg = TestData.Packages.monthly
+        model.trackComponentInteraction(
+            paywallPurchaseButtonAction(
+                componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
+                componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
+                componentUrl = null,
+                currentPackageIdentifier = pkg.identifier,
+                currentProductIdentifier = pkg.product.id,
+            ),
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.COMPONENT_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.componentInteraction)
+                    assertThat(ci.componentType).isEqualTo(PaywallComponentType.PURCHASE_BUTTON)
+                    assertThat(ci.componentName).isEqualTo("purchase_button")
+                    assertThat(ci.componentValue).isEqualTo("in_app_checkout")
+                    assertThat(ci.componentUrl).isNull()
+                    assertThat(ci.currentPackageIdentifier).isEqualTo(pkg.identifier)
+                    assertThat(ci.currentProductIdentifier).isEqualTo(pkg.product.id)
                 },
             )
         }

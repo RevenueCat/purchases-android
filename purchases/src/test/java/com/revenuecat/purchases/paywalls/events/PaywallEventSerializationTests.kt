@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
@@ -369,7 +370,7 @@ class PaywallEventSerializationTests {
                 componentValue = "annual",
             ),
         )
-        val backend = event.toBackendStoredEvent("uid")!!.event
+        val backend = (event.toBackendStoredEvent("uid")!! as BackendStoredEvent.Paywalls).event
         assertThat(backend.type).isEqualTo("paywall_component_interacted")
         assertThat(backend.componentType).isEqualTo("tab")
         assertThat(backend.componentName).isEqualTo("tabs_main")
@@ -441,7 +442,7 @@ class PaywallEventSerializationTests {
                 resultingProductIdentifier = "com.annual",
             ),
         )
-        val backend = event.toBackendStoredEvent("uid")!!.event
+        val backend = (event.toBackendStoredEvent("uid")!! as BackendStoredEvent.Paywalls).event
         assertThat(backend.componentType).isEqualTo("package_selection_sheet")
         assertThat(backend.currentPackageIdentifier).isEqualTo("monthly")
         assertThat(backend.resultingPackageIdentifier).isEqualTo("annual")
