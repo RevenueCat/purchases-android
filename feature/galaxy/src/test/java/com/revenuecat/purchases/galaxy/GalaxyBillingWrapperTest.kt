@@ -1238,7 +1238,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
                     itemId = productId,
                     purchaseId = "token-iap",
                     type = "item",
-                    purchaseDate = "2024-02-02 00:00:00",
+                    purchaseDate = "2026-01-01 00:00:00",
                     acknowledgedStatus = HelperDefine.AcknowledgedStatus.ACKNOWLEDGED,
                 ),
             ),
