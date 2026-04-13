@@ -1206,7 +1206,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
 
     @OptIn(GalaxySerialOperation::class)
     @Test
-    fun `consumeAndSave caches already acknowledged OTPs without re-acknowledging`() {
+    fun `consumeAndSave caches already acknowledged non-consumable OTPs without re-acknowledging`() {
         val ownedListSuccessSlot = slot<(ArrayList<OwnedProductVo>) -> Unit>()
         val acknowledgePurchaseHandler = mockk<AcknowledgePurchaseResponseListener>(relaxed = true)
         val getOwnedListHandler = mockk<GetOwnedListResponseListener>()
