@@ -41,7 +41,11 @@ internal fun TabControlToggleView(
     Switch(
         checked = checked,
         onCheckedChange = {
-            state.update(selectedTabIndex = if (it) 1 else 0)
+            val newTabIndex = if (it) 1 else 0
+            if (newTabIndex == state.selectedTabIndex) {
+                return@Switch
+            }
+            state.update(selectedTabIndex = newTabIndex)
             componentInteractionTracker.track(
                 PaywallComponentInteractionData(
                     componentType = PaywallComponentType.SWITCH,

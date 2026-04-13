@@ -23,6 +23,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 internal data class CarouselComponentStyle(
     @get:JvmSynthetic
     val pages: List<StackComponentStyle>,
+    /**
+     * Optional display names for each carousel page stack (same order as [pages]), for analytics context fields.
+     */
+    @get:JvmSynthetic
+    val pageContextNames: List<String?>,
     @get:JvmSynthetic
     val initialPageIndex: Int,
     @get:JvmSynthetic

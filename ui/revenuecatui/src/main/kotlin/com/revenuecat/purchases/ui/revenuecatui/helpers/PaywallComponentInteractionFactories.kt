@@ -8,6 +8,45 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 
 @InternalRevenueCatAPI
+internal fun paywallTabControlButtonSelection(
+    tabsComponentName: String?,
+    destinationTabId: String,
+    originIndex: Int?,
+    destinationIndex: Int?,
+    originContextName: String?,
+    destinationContextName: String?,
+    defaultIndex: Int?,
+): PaywallComponentInteractionData = PaywallComponentInteractionData(
+    componentType = PaywallComponentType.TAB,
+    componentName = tabsComponentName,
+    componentValue = destinationTabId,
+    originIndex = originIndex,
+    destinationIndex = destinationIndex,
+    originContextName = originContextName,
+    destinationContextName = destinationContextName,
+    defaultIndex = defaultIndex,
+)
+
+@InternalRevenueCatAPI
+internal fun paywallCarouselPageChange(
+    componentName: String?,
+    destinationPageIndex: Int,
+    originPageIndex: Int,
+    defaultPageIndex: Int,
+    originContextName: String?,
+    destinationContextName: String?,
+): PaywallComponentInteractionData = PaywallComponentInteractionData(
+    componentType = PaywallComponentType.CAROUSEL,
+    componentName = componentName,
+    componentValue = destinationPageIndex.toString(),
+    originIndex = originPageIndex,
+    destinationIndex = destinationPageIndex,
+    originContextName = originContextName,
+    destinationContextName = destinationContextName,
+    defaultIndex = defaultPageIndex,
+)
+
+@InternalRevenueCatAPI
 internal fun paywallPackageSelectionSheetOpen(
     sheetComponentName: String?,
     rootSelectedPackage: Package?,

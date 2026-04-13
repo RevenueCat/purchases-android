@@ -239,6 +239,7 @@ private fun ColumnScope.Template7PortraitContent(
             viewModel = viewModel,
             packages = selectedTier.packages,
             colors = colorForTier,
+            selectedTier = selectedTier,
             packageSelectionVisible = packageSelectionVisible,
         )
 
@@ -333,6 +334,7 @@ private fun ColumnScope.Template7LandscapeContent(
                 viewModel = viewModel,
                 packages = selectedTier.packages,
                 colors = colorForTier,
+                selectedTier = selectedTier,
             )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
@@ -467,6 +469,7 @@ private fun AnimatedPackages(
     packageSelectionVisible: Boolean = true,
     packages: List<TemplateConfiguration.PackageInfo>,
     colors: TemplateConfiguration.Colors,
+    selectedTier: TemplateConfiguration.TierInfo,
 ) {
     val packagesContentAlignment = if (state.isInFullScreenMode) {
         Alignment.TopStart
@@ -499,7 +502,7 @@ private fun AnimatedPackages(
                 ),
             ) {
                 packages.forEach { packageInfo ->
-                    SelectPackageButton(state, packageInfo, viewModel, colors)
+                    SelectPackageButton(state, packageInfo, viewModel, colors, selectedTier)
                 }
             }
         }
@@ -513,6 +516,7 @@ private fun ColumnScope.SelectPackageButton(
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
     colors: TemplateConfiguration.Colors,
+    selectedTier: TemplateConfiguration.TierInfo,
 ) {
     val isSelected = packageInfo == state.selectedPackage.value
 
@@ -532,7 +536,14 @@ private fun ColumnScope.SelectPackageButton(
             .semantics {
                 selected = isSelected
             },
-        onClick = { viewModel.selectPackage(packageInfo) },
+        onClick = {
+            viewModel.trackTemplatePackageRowSelectionIfChanged(
+                state = state,
+                packageInfo = packageInfo,
+                defaultPackageInfo = selectedTier.defaultPackage,
+            )
+            viewModel.selectPackage(packageInfo)
+        },
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
         contentPadding = PaddingValues(

@@ -129,6 +129,9 @@ internal class StyleFactory(
          * When building a [TabsComponent] subtree, holds that component's dashboard `name` for tab control analytics.
          */
         var enclosingTabsComponentName: String? = null,
+        var enclosingTabsOrderedTabIds: List<String> = emptyList(),
+        var enclosingTabContextNamesById: Map<String, String> = emptyMap(),
+        var enclosingTabsDefaultTabIndexForInteraction: Int = 0,
         /**
          * If this is non-null, it means the branch currently being built is inside a countdown component.
          */
@@ -328,16 +331,33 @@ internal class StyleFactory(
             return result
         }
 
-        fun <T> withTabsComponentName(
-            name: String?,
+        fun <T> withTabsInteractionContext(
+            tabsComponentName: String?,
+            tabs: List<TabsComponent.Tab>,
+            defaultTabId: String?,
             block: StyleFactoryScope.() -> T,
         ): T {
-            val previous = enclosingTabsComponentName
-            enclosingTabsComponentName = name
+            val previousName = enclosingTabsComponentName
+            val previousIds = enclosingTabsOrderedTabIds
+            val previousContextNames = enclosingTabContextNamesById
+            val previousDefaultForInteraction = enclosingTabsDefaultTabIndexForInteraction
+            enclosingTabsComponentName = tabsComponentName
+            enclosingTabsOrderedTabIds = tabs.map { it.id }
+            enclosingTabContextNamesById = tabs.mapNotNull { tab ->
+                tab.name?.takeUnless { it.isBlank() }?.let { tab.id to it }
+            }.toMap()
+            enclosingTabsDefaultTabIndexForInteraction = defaultTabId
+                ?.takeUnless { it.isBlank() }
+                ?.let { id -> tabs.indexOfFirst { it.id == id } }
+                ?.takeUnless { it == -1 }
+                ?: 0
             try {
                 return block()
             } finally {
-                enclosingTabsComponentName = previous
+                enclosingTabsComponentName = previousName
+                enclosingTabsOrderedTabIds = previousIds
+                enclosingTabContextNamesById = previousContextNames
+                enclosingTabsDefaultTabIndexForInteraction = previousDefaultForInteraction
             }
         }
 
@@ -1082,8 +1102,10 @@ internal class StyleFactory(
         fifth = createBackgroundStyles(component.background, component.backgroundColor),
         sixth = component.pageControl?.toPageControlStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, background, pageControlStyles ->
+        val pageContextNames = component.pages.map { it.name }
         CarouselComponentStyle(
             pages = stackComponentStyles,
+            pageContextNames = pageContextNames,
             initialPageIndex = component.initialPageIndex ?: 0,
             pageAlignment = component.pageAlignment.toAlignment(),
             visible = component.visible ?: DEFAULT_VISIBILITY,
@@ -1122,6 +1144,9 @@ internal class StyleFactory(
                         stack = stack,
                         tabsComponentName = enclosingTabsComponentName,
                         tabButtonName = component.name,
+                        tabIdsOrdered = enclosingTabsOrderedTabIds,
+                        tabContextNamesById = enclosingTabContextNamesById,
+                        tabsDefaultTabIndex = enclosingTabsDefaultTabIndexForInteraction,
                     )
                 }
         }
@@ -1148,7 +1173,11 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createTabsComponentStyle(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
-        withTabsComponentName(component.name) {
+        withTabsInteractionContext(
+            tabsComponentName = component.name,
+            tabs = component.tabs,
+            defaultTabId = component.defaultTabId,
+        ) {
             createTabsComponentStyleTabControl(component.control).flatMap { control ->
             // Find the index of the defaultTabId.
             component.defaultTabId

@@ -315,7 +315,10 @@ private fun SelectPackageButton(
                         }
                     }
                     .fillMaxHeight(),
-                onClick = { viewModel.selectPackage(packageInfo) },
+                onClick = {
+                    viewModel.trackTemplatePackageRowSelectionIfChanged(state, packageInfo)
+                    viewModel.selectPackage(packageInfo)
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = colors.background),
                 shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
                 contentPadding = PaddingValues(

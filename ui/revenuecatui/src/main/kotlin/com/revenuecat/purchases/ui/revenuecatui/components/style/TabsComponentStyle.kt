@@ -27,6 +27,12 @@ internal data class TabControlButtonComponentStyle(
     val tabsComponentName: String? = null,
     @get:JvmSynthetic
     val tabButtonName: String? = null,
+    @get:JvmSynthetic
+    val tabIdsOrdered: List<String> = emptyList(),
+    @get:JvmSynthetic
+    val tabContextNamesById: Map<String, String> = emptyMap(),
+    @get:JvmSynthetic
+    val tabsDefaultTabIndex: Int = 0,
 ) : ComponentStyle {
     override val visible: Boolean = stack.visible
     override val size: Size = stack.size

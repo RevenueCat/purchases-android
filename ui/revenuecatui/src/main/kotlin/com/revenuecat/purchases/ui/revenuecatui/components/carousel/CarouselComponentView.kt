@@ -34,8 +34,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
-import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
@@ -66,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallCarouselPageChange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import java.util.concurrent.atomic.AtomicBoolean
@@ -119,19 +118,32 @@ internal fun CarouselComponentView(
 
     val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     if (pageCount > 0) {
-        LaunchedEffect(pagerState, pageCount, style.componentName, componentInteractionTracker) {
+        LaunchedEffect(
+            pagerState,
+            pageCount,
+            style.componentName,
+            style.pageContextNames,
+            style.initialPageIndex,
+            componentInteractionTracker,
+        ) {
             var previousPage = pagerState.currentPage
             snapshotFlow { pagerState.currentPage }.collect { page ->
                 if (page != previousPage) {
                     if (skipProgrammaticPageTracking.getAndSet(false)) {
                         // Auto-advance scroll; do not emit component interaction.
                     } else {
-                        val logicalPage = page % pageCount
+                        val logicalDestination = page % pageCount
+                        val logicalOrigin = previousPage % pageCount
+                        fun pageName(logical: Int): String? =
+                            style.pageContextNames.getOrNull(logical)?.takeUnless { it.isBlank() }
                         componentInteractionTracker.track(
-                            PaywallComponentInteractionData(
-                                componentType = PaywallComponentType.CAROUSEL,
+                            paywallCarouselPageChange(
                                 componentName = style.componentName,
-                                componentValue = logicalPage.toString(),
+                                destinationPageIndex = logicalDestination,
+                                originPageIndex = logicalOrigin,
+                                defaultPageIndex = style.initialPageIndex,
+                                originContextName = pageName(logicalOrigin),
+                                destinationContextName = pageName(logicalDestination),
                             ),
                         )
                     }
@@ -455,6 +467,7 @@ private fun previewCarouselComponentStyle(
 ): CarouselComponentStyle {
     return CarouselComponentStyle(
         pages = pages,
+        pageContextNames = List(pages.size) { null },
         initialPageIndex = initialPageIndex,
         pageAlignment = alignment,
         visible = visible,

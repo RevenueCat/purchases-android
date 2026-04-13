@@ -323,10 +323,13 @@ internal class PaywallViewModelImpl(
     }
 
     override fun trackPaywallImpressionIfNeeded() {
-        if (paywallPresentationData == null) {
-            paywallPresentationData = createEventData()
-            track(PaywallEventType.IMPRESSION)
+        if (paywallPresentationData != null) {
+            track(PaywallEventType.CLOSE)
+            paywallPresentationData = null
         }
+        val newData = createEventData() ?: return
+        paywallPresentationData = newData
+        track(PaywallEventType.IMPRESSION)
     }
 
     override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {

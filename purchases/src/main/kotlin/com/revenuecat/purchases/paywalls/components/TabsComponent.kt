@@ -109,6 +109,8 @@ public class TabsComponent(
         @get:JvmSynthetic
         public val id: String,
         @get:JvmSynthetic
+        public val name: String? = null,
+        @get:JvmSynthetic
         public val stack: StackComponent,
     )
 
