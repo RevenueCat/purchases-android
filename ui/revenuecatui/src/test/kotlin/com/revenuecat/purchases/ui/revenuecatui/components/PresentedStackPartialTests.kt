@@ -53,7 +53,7 @@ import org.junit.runners.Parameterized
 internal class PresentedStackPartialTests {
 
     @RunWith(Parameterized::class)
-    class CombinePresentedStackPartialTests(@Suppress("UNUSED_PARAMETER") name: String, private val args: Args) {
+    class CombinePresentedStackPartialTests(_: String, private val args: Args) {
 
         class Args(
             val base: PresentedStackPartial,

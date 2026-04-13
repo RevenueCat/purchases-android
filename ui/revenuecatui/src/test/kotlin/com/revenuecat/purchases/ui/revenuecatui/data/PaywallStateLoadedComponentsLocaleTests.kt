@@ -24,7 +24,7 @@ import java.util.Date
 
 @RunWith(Parameterized::class)
 internal class PaywallStateLoadedComponentsLocaleTests(
-    @Suppress("UNUSED_PARAMETER") name: String,
+    _: String,
     private val args: Args
 ) {
 

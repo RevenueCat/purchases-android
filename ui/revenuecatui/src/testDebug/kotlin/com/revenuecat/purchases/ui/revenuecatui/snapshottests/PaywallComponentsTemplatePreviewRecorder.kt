@@ -27,7 +27,7 @@ import org.junit.runners.Parameterized.Parameters
 @OptIn(ExperimentalCoroutinesApi::class, DelicateCoroutinesApi::class)
 @RunWith(Parameterized::class)
 class PaywallComponentsTemplatePreviewRecorder internal constructor(
-    @Suppress("UNUSED_PARAMETER") name: String,
+    _: String,
     private val paywall: PaywallResources,
 ) : BasePaparazziTest(
     testConfig = TestConfig(
