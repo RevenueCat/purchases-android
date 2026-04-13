@@ -1,7 +1,8 @@
-@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 
 /**

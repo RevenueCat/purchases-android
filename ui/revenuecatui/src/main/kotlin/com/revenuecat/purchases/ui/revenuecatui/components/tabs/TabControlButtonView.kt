@@ -1,9 +1,10 @@
 @file:JvmSynthetic
-@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
 import androidx.compose.foundation.clickable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
