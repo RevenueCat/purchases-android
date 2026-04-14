@@ -61,8 +61,7 @@ class BackendWorkflowsTest {
     fun `getWorkflows calls performRequest with GetWorkflows endpoint`() {
         val listJson = """
             {
-              "workflows": [],
-              $minimalUiConfigJson
+              "workflows": []
             }
         """.trimIndent()
         every {
