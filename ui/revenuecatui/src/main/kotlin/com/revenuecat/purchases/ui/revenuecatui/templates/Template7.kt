@@ -98,7 +98,7 @@ private object Template7UIConstants {
  */
 @JvmSynthetic
 internal fun tierSelectorComponentInteractionValue(tier: TemplateConfiguration.TierInfo): String =
-    tier.name.takeUnless { it.isBlank() } ?: ""
+    tier.name.takeUnless { it.isBlank() } ?: tier.id
 
 @Composable
 internal fun Template7(

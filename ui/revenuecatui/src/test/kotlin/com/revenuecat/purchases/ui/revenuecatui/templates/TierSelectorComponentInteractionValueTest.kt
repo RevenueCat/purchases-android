@@ -29,12 +29,12 @@ internal class TierSelectorComponentInteractionValueTest {
     }
 
     @Test
-    fun `blank name matches empty string fallback`() {
-        assertThat(tierSelectorComponentInteractionValue(tier("", "tier_abc"))).isEmpty()
+    fun `blank name falls back to tier id`() {
+        assertThat(tierSelectorComponentInteractionValue(tier("", "tier_abc"))).isEqualTo("tier_abc")
     }
 
     @Test
-    fun `whitespace-only name matches empty string fallback`() {
-        assertThat(tierSelectorComponentInteractionValue(tier("   ", "id_only"))).isEmpty()
+    fun `whitespace-only name falls back to tier id`() {
+        assertThat(tierSelectorComponentInteractionValue(tier("   ", "id_only"))).isEqualTo("id_only")
     }
 }
