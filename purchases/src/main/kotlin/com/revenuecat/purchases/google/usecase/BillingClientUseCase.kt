@@ -97,11 +97,11 @@ internal abstract class BillingClientUseCase<T>(
         } ?: log(LogIntent.GOOGLE_WARNING) { BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()) }
     }
 
-    @Suppress("ThrowingExceptionsWithoutMessageOrCause")
     private fun getStackTrace(): String {
         val stringWriter = StringWriter()
         val printWriter = PrintWriter(stringWriter)
-        Throwable().printStackTrace(printWriter)
+        val stackTraceCapture = Throwable("Capturing stack trace for disconnected BillingClient usage.")
+        stackTraceCapture.printStackTrace(printWriter)
         return stringWriter.toString()
     }
 

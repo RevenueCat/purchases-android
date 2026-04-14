@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.paywalls
 
-import android.annotation.SuppressLint
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
@@ -63,11 +62,6 @@ internal class OfferingFontPreDownloader(
         }
     }
 
-    /**
-     * Use sparingly. The underlying platform API is discouraged because
-     * > resource reflection makes it harder to perform build optimizations and compile-time verification of code.
-     */
-    @SuppressLint("DiscouragedApi")
     private fun Context.getResourceIdentifier(name: String, type: String): Int =
         resources.getIdentifier(name, type, packageName)
 

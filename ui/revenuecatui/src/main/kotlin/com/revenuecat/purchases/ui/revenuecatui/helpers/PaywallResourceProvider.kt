@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.AssetManager
 import android.content.res.Resources
@@ -53,11 +52,6 @@ internal class PaywallResourceProvider(
         return resources.configuration.locales.get(0)
     }
 
-    /**
-     * Use sparingly. The underlying platform API is discouraged because
-     * > resource reflection makes it harder to perform build optimizations and compile-time verification of code.
-     */
-    @SuppressLint("DiscouragedApi")
     override fun getResourceIdentifier(name: String, type: String): Int =
         resources.getIdentifier(name, type, packageName)
 

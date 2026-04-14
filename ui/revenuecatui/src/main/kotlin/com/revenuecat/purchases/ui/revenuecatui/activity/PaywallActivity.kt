@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -10,10 +9,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -97,7 +94,6 @@ internal class PaywallActivity : ComponentActivity() {
         }
     }
 
-    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -201,36 +197,30 @@ internal class PaywallActivity : ComponentActivity() {
 
         setContent {
             MaterialTheme {
-                // Scaffold padding is intentionally ignored because we zero out contentWindowInsets
-                // and let the Paywall composable handle its own insets to avoid double padding.
-                Scaffold(
-                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                ) { _ ->
-                    Box(
-                        Modifier.fillMaxSize(),
-                    ) {
-                        // Empty dismissRequest is overridden below by setDismissRequestWithExitOffering
-                        val paywallOptions = PaywallOptions.Builder(
-                            dismissRequest = {},
+                Box(
+                    Modifier.fillMaxSize(),
+                ) {
+                    // Empty dismissRequest is overridden below by setDismissRequestWithExitOffering
+                    val paywallOptions = PaywallOptions.Builder(
+                        dismissRequest = {},
+                    )
+                        .setOfferingSelection(offeringSelection)
+                        .setFontProvider(getFontProvider())
+                        .setShouldDisplayDismissButton(
+                            args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON,
                         )
-                            .setOfferingSelection(offeringSelection)
-                            .setFontProvider(getFontProvider())
-                            .setShouldDisplayDismissButton(
-                                args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON,
-                            )
-                            .setListener(compositeListener)
-                            .setPurchaseLogic(purchaseLogic)
-                            .setDismissRequestWithExitOffering(::onDismissRequest)
-                            .setCustomVariables(args?.customVariables ?: emptyMap())
-                            .build()
-                        val viewModel = getPaywallViewModel(paywallOptions)
+                        .setListener(compositeListener)
+                        .setPurchaseLogic(purchaseLogic)
+                        .setDismissRequestWithExitOffering(::onDismissRequest)
+                        .setCustomVariables(args?.customVariables ?: emptyMap())
+                        .build()
+                    val viewModel = getPaywallViewModel(paywallOptions)
 
-                        LaunchedEffect(Unit) {
-                            viewModel.preloadExitOffering()
-                        }
-
-                        Paywall(paywallOptions)
+                    LaunchedEffect(Unit) {
+                        viewModel.preloadExitOffering()
                     }
+
+                    Paywall(paywallOptions)
                 }
             }
         }
