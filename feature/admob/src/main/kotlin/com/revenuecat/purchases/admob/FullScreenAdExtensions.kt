@@ -9,6 +9,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import kotlin.jvm.JvmSynthetic
 
 /**
  * Shows the interstitial ad and overrides the placement used for RevenueCat analytics.
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun InterstitialAd.show(activity: Activity, placement: String?) {
     (fullScreenContentCallback as? TrackingFullScreenContentCallback)?.placement = placement
     show(activity)
@@ -29,6 +31,7 @@ public fun InterstitialAd.show(activity: Activity, placement: String?) {
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun AppOpenAd.show(activity: Activity, placement: String?) {
     (fullScreenContentCallback as? TrackingFullScreenContentCallback)?.placement = placement
     show(activity)
@@ -41,6 +44,7 @@ public fun AppOpenAd.show(activity: Activity, placement: String?) {
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
     placement: String?,
@@ -57,6 +61,7 @@ public fun RewardedAd.show(
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun RewardedInterstitialAd.show(
     activity: Activity,
     placement: String?,
