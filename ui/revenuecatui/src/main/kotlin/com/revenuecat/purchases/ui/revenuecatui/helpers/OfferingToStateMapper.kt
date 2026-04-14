@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
@@ -507,6 +508,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is TabControlButtonComponent -> stack.containsUnsupportedCondition()
     is TabControlToggleComponent -> false
     is TabControlComponent -> false
+    is FallbackHeaderComponent -> false
 }
 
 @JvmSynthetic

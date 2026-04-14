@@ -11,6 +11,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
@@ -530,6 +531,7 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
+            is FallbackHeaderComponent -> Result.Success(null)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
