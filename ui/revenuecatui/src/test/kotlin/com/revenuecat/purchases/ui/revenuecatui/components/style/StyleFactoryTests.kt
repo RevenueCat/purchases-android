@@ -8,6 +8,7 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
@@ -1166,5 +1167,28 @@ class StyleFactoryTests {
         assertThat(firstImage.ignoreTopWindowInsets).isFalse()
         val secondImage = style.children[1] as ImageComponentStyle
         assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should filter out FallbackHeaderComponent from stack children`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                FallbackHeaderComponent,
+                TextComponent(
+                    text = LOCALIZATION_KEY_TEXT_1,
+                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(1)
+        assertThat(style.children[0]).isInstanceOf(TextComponentStyle::class.java)
     }
 }

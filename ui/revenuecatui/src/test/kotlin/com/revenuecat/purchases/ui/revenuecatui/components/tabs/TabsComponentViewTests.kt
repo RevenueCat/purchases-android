@@ -22,6 +22,7 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -1289,6 +1290,7 @@ class TabsComponentViewTests {
                     current.fallback?.let { queue.add(it) }
                 }
 
+                is FallbackHeaderComponent,
                 is TabControlToggleComponent,
                 is TabControlComponent,
                 is TimelineComponent,
