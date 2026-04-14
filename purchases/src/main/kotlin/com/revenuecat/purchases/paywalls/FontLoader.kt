@@ -70,8 +70,10 @@ internal class FontLoader(
             }
             warnLog { "Cached font files missing for ${cachedFontFamily.family}, re-downloading" }
             synchronized(lock) {
-                cachedFontFamilyByFamilyName.remove(cachedFontFamily.family)
-                cachedFontFamilyByFontInfo.entries.removeAll { it.value == cachedFontFamily.family }
+                if (cachedFontFamilyByFamilyName[cachedFontFamily.family] === cachedFontFamily) {
+                    cachedFontFamilyByFamilyName.remove(cachedFontFamily.family)
+                    cachedFontFamilyByFontInfo.entries.removeAll { it.value == cachedFontFamily.family }
+                }
             }
         }
 
