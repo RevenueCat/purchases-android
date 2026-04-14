@@ -207,10 +207,6 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             .orSuccessfullyNull(),
         fourth = config.background.toBackgroundStyles(aliases = colorAliases),
     ) { backendRootComponentResult, headerResult, stickyFooterResult, background ->
-        val hasAnyPackages = backendRootComponentResult.availablePackages.hasAnyPackages ||
-            headerResult?.availablePackages?.hasAnyPackages ?: false ||
-            stickyFooterResult?.availablePackages?.hasAnyPackages ?: false
-
         val backendRootComponent = backendRootComponentResult.componentStyle
         val header = headerResult?.componentStyle
         val stickyFooter = stickyFooterResult?.componentStyle
