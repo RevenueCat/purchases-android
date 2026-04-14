@@ -117,9 +117,7 @@ class BackendWorkflowsTest {
                 }
               },
               "screens": {},
-              $minimalUiConfigJson,
-              "content_max_width": null,
-              "metadata": null
+              $minimalUiConfigJson
             }
         """.trimIndent()
         val envelope = """
@@ -174,9 +172,7 @@ class BackendWorkflowsTest {
                 }
               },
               "screens": {},
-              $minimalUiConfigJson,
-              "content_max_width": null,
-              "metadata": null
+              $minimalUiConfigJson
             }
         """.trimIndent()
         var fetchedUrl: String? = null
