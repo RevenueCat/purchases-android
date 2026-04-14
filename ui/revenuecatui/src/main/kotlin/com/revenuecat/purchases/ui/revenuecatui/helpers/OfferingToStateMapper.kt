@@ -200,7 +200,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             applyHorizontalWindowInsets = true,
         ),
         second = config.header
-            ?.let { styleFactory.create(it, applyHorizontalWindowInsets = true) }
+            ?.let { styleFactory.create(it, applyTopWindowInsets = false, applyHorizontalWindowInsets = true) }
             .orSuccessfullyNull(),
         third = config.stickyFooter
             ?.let { styleFactory.create(it, applyBottomWindowInsets = true, applyHorizontalWindowInsets = true) }

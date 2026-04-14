@@ -5,6 +5,7 @@ import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -115,7 +116,7 @@ internal class HeaderComponentTests(
         val actual = JsonTools.json.decodeFromString<HeaderComponent>(args.json)
 
         // Assert
-        assert(actual == args.expected)
+        assertThat(actual).isEqualTo(args.expected)
     }
 
     @Test
@@ -124,6 +125,6 @@ internal class HeaderComponentTests(
         val actual = JsonTools.json.decodeFromString<PaywallComponent>(args.json)
 
         // Assert
-        assert(actual == args.expected)
+        assertThat(actual).isEqualTo(args.expected)
     }
 }
