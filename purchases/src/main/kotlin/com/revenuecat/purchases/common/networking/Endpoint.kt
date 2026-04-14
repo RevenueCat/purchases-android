@@ -118,6 +118,7 @@ internal sealed class Endpoint(
             PostReceipt,
             is GetOfferings,
             is GetWorkflows,
+            is GetWorkflow,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
@@ -131,7 +132,6 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
-            is GetWorkflow,
             ->
                 false
         }
