@@ -1,12 +1,11 @@
 package com.revenuecat.purchases.galaxy.handler
 
-import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
-import com.revenuecat.purchases.galaxy.listener.AcknowledgePurchaseResponseListener
+import com.revenuecat.purchases.galaxy.listener.ConsumePurchaseResponseListener
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
@@ -14,52 +13,37 @@ import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.galaxy.utils.toPurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
-import com.samsung.android.sdk.iap.lib.vo.AcknowledgeVo
+import com.samsung.android.sdk.iap.lib.vo.ConsumeVo
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import java.util.ArrayList
 
-internal class AcknowledgePurchaseHandler(
+internal class ConsumePurchaseHandler(
     private val iapHelper: IAPHelperProvider,
-    private val context: Context,
-) : AcknowledgePurchaseResponseListener {
+) : ConsumePurchaseResponseListener {
 
     @get:Synchronized
     private var inFlightRequest: Request? = null
 
     private data class Request(
         val transaction: StoreTransaction,
-        val onSuccess: (AcknowledgeVo) -> Unit,
+        val onSuccess: (ConsumeVo) -> Unit,
         val onError: (PurchasesError) -> Unit,
     )
 
     @OptIn(InternalRevenueCatAPI::class)
-    @Suppress("ReturnCount")
     @GalaxySerialOperation
-    override fun acknowledgePurchase(
+    override fun consumePurchase(
         transaction: StoreTransaction,
-        onSuccess: (AcknowledgeVo) -> Unit,
+        onSuccess: (ConsumeVo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         if (inFlightRequest != null) {
-            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.ANOTHER_ACKNOWLEDGE_REQUEST_IN_FLIGHT }
+            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.ANOTHER_CONSUME_REQUEST_IN_FLIGHT }
             val error = PurchasesError(
                 code = PurchasesErrorCode.OperationAlreadyInProgressError,
-                underlyingErrorMessage = GalaxyStrings.ANOTHER_ACKNOWLEDGE_REQUEST_IN_FLIGHT,
+                underlyingErrorMessage = GalaxyStrings.ANOTHER_CONSUME_REQUEST_IN_FLIGHT,
             )
             onError(error)
-            return
-        }
-
-        if (!iapHelper.isAcknowledgeAvailable(context = context)) {
-            log(LogIntent.GALAXY_WARNING) {
-                GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE
-            }
-            onError(
-                PurchasesError(
-                    code = PurchasesErrorCode.UnsupportedError,
-                    underlyingErrorMessage = GalaxyStrings.WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE,
-                ),
-            )
             return
         }
 
@@ -70,62 +54,61 @@ internal class AcknowledgePurchaseHandler(
         )
 
         log(LogIntent.PURCHASE) {
-            PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(transaction.purchaseToken)
+            PurchaseStrings.CONSUMING_PURCHASE.format(transaction.purchaseToken)
         }
 
-        // Note: acknowledgePurchases() swallows all exceptions and returns failures to the listener
-        val requestWasDispatched = iapHelper.acknowledgePurchases(
+        // Note: consumePurchasedItems() swallows all exceptions and returns failures to the listener
+        val requestWasDispatched = iapHelper.consumePurchasedItems(
             purchaseIds = transaction.purchaseToken,
-            onAcknowledgePurchasesListener = this,
+            onConsumePurchasedItemsListener = this,
         )
 
         if (!requestWasDispatched) {
-            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST }
+            log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_CONSUME_REQUEST }
             clearInFlightRequest()
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
-                    underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST,
+                    underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_CONSUME_REQUEST,
                 ),
             )
             return
         }
     }
 
-    override fun onAcknowledgePurchases(
+    override fun onConsumePurchasedItems(
         error: ErrorVo,
-        acknowledgementResults: ArrayList<AcknowledgeVo?>,
+        consumptionResults: ArrayList<ConsumeVo?>,
     ) {
-        super.onAcknowledgePurchases(error, acknowledgementResults)
-
+        super.onConsumePurchasedItems(error, consumptionResults)
         if (error.isError()) {
-            handleUnsuccessfulAcknowledgeRequest(error = error)
+            handleUnsuccessfulConsumptionRequest(error = error)
         } else {
-            handleSuccessfulAcknowledgeRequest(acknowledgementResults = acknowledgementResults)
+            handleSuccessfulConsumptionRequest(consumptionResults = consumptionResults)
         }
     }
 
-    private fun handleSuccessfulAcknowledgeRequest(acknowledgementResults: ArrayList<AcknowledgeVo?>) {
-        val nonNullAcknowledgementResults = acknowledgementResults.mapNotNull { it }
-        if (nonNullAcknowledgementResults.isEmpty()) {
+    private fun handleSuccessfulConsumptionRequest(consumptionResults: ArrayList<ConsumeVo?>) {
+        val nonNullConsumptionResults = consumptionResults.mapNotNull { it }
+        if (nonNullConsumptionResults.isEmpty()) {
             log(LogIntent.GALAXY_ERROR) {
-                GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_SUCCESS_BUT_NO_ACKNOWLEDGEMENT_RESULTS
+                GalaxyStrings.CONSUME_REQUEST_RETURNED_SUCCESS_BUT_NO_CONSUMPTION_RESULTS
             }
             val purchasesError = PurchasesError(
                 PurchasesErrorCode.StoreProblemError,
-                GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_SUCCESS_BUT_NO_ACKNOWLEDGEMENT_RESULTS,
+                GalaxyStrings.CONSUME_REQUEST_RETURNED_SUCCESS_BUT_NO_CONSUMPTION_RESULTS,
             )
             val onError = inFlightRequest?.onError
             clearInFlightRequest()
             onError?.invoke(purchasesError)
             return
-        } else if (nonNullAcknowledgementResults.count() > 1) {
+        } else if (nonNullConsumptionResults.count() > 1) {
             log(LogIntent.GALAXY_ERROR) {
-                GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_MORE_THAN_ONE_RESULT
+                GalaxyStrings.CONSUME_REQUEST_RETURNED_MORE_THAN_ONE_RESULT
             }
             val purchasesError = PurchasesError(
                 PurchasesErrorCode.StoreProblemError,
-                GalaxyStrings.ACKNOWLEDGE_REQUEST_RETURNED_MORE_THAN_ONE_RESULT,
+                GalaxyStrings.CONSUME_REQUEST_RETURNED_MORE_THAN_ONE_RESULT,
             )
             val onError = inFlightRequest?.onError
             clearInFlightRequest()
@@ -135,13 +118,13 @@ internal class AcknowledgePurchaseHandler(
 
         val onSuccess = inFlightRequest?.onSuccess
         clearInFlightRequest()
-        onSuccess?.invoke(nonNullAcknowledgementResults[0])
+        onSuccess?.invoke(nonNullConsumptionResults[0])
     }
 
-    private fun handleUnsuccessfulAcknowledgeRequest(error: ErrorVo) {
+    private fun handleUnsuccessfulConsumptionRequest(error: ErrorVo) {
         val underlyingErrorMessage = error.errorString
         log(LogIntent.GALAXY_ERROR) {
-            GalaxyStrings.ACKNOWLEDGE_REQUEST_ERRORED.format(
+            GalaxyStrings.CONSUME_REQUEST_ERRORED.format(
                 inFlightRequest?.transaction?.purchaseToken ?: "[none]",
                 underlyingErrorMessage,
             )

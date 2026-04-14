@@ -69,13 +69,13 @@ internal class PromotionEligibilityHandler(
             log(LogIntent.GALAXY_ERROR) {
                 GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_PROMOTION_ELIGIBILITY_REQUEST
             }
+            clearInFlightRequest()
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
                     underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_PROMOTION_ELIGIBILITY_REQUEST,
                 ),
             )
-            clearInFlightRequest()
             return
         }
     }
