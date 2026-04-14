@@ -86,6 +86,7 @@ internal data class PublishedWorkflow(
     @SerialName("ui_config") val uiConfig: UiConfig,
     @Serializable(with = JsonObjectToMapSerializer::class)
     val metadata: Map<String, @Contextual Any> = emptyMap(),
+    val hash: String? = null,
 )
 
 internal data class WorkflowFetchResult(
@@ -93,13 +94,21 @@ internal data class WorkflowFetchResult(
     val enrolledVariants: Map<String, String>?,
 )
 
-internal enum class WorkflowResponseAction(val value: String) {
-    INLINE("inline"),
-    USE_CDN("use_cdn"),
-    ;
+@Serializable
+internal enum class WorkflowResponseAction {
+    @SerialName("inline")
+    INLINE,
 
-    internal companion object {
-        fun fromValue(value: String): WorkflowResponseAction? =
-            values().firstOrNull { it.value == value }
-    }
+    @SerialName("use_cdn")
+    USE_CDN,
 }
+
+@Serializable
+internal data class WorkflowDetailResponse(
+    val action: WorkflowResponseAction,
+    val data: PublishedWorkflow? = null,
+    val url: String? = null,
+    val hash: String? = null,
+    @SerialName("enrolled_variants")
+    val enrolledVariants: Map<String, String>? = null,
+)
