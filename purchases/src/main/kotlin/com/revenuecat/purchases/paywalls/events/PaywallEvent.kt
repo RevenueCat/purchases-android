@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -347,18 +348,6 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
     }
 }
 
-@InternalRevenueCatAPI
-internal fun PaywallComponentType.toWireString(): String = when (this) {
-    PaywallComponentType.TAB -> "tab"
-    PaywallComponentType.SWITCH -> "switch"
-    PaywallComponentType.CAROUSEL -> "carousel"
-    PaywallComponentType.BUTTON -> "button"
-    PaywallComponentType.TEXT -> "text"
-    PaywallComponentType.PACKAGE -> "package"
-    PaywallComponentType.PACKAGE_SELECTION_SHEET -> "package_selection_sheet"
-    PaywallComponentType.PURCHASE_BUTTON -> "purchase_button"
-}
-
 /**
  * Flattened component-interaction values for [BackendEvent.Paywalls] (shared by stored-event paths).
  */
@@ -385,11 +374,16 @@ internal data class BackendPaywallComponentFields(
     val resultingProductIdentifier: String? = null,
 )
 
+@OptIn(ExperimentalSerializationApi::class)
 @InternalRevenueCatAPI
 internal fun PaywallComponentInteractionData?.toBackendComponentFields(): BackendPaywallComponentFields {
     val interaction = this ?: return BackendPaywallComponentFields()
+    val componentType = PaywallComponentType
+        .serializer()
+        .descriptor
+        .getElementName(interaction.componentType.ordinal)
     return BackendPaywallComponentFields(
-        componentType = interaction.componentType.toWireString(),
+        componentType = componentType,
         componentName = interaction.componentName,
         componentValue = interaction.componentValue,
         componentUrl = interaction.componentUrl,
