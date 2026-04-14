@@ -19,7 +19,8 @@ internal class TestUrlConnection(
 }
 
 internal class TestUrlConnectionFactory(
-    private val mockedConnections: Map<String, TestUrlConnection>
+    private val mockedConnections: Map<String, TestUrlConnection> = emptyMap(),
+    private val connectionProvider: ((String) -> TestUrlConnection)? = null,
 ): UrlConnectionFactory {
     private val _createdConnections = mutableListOf<String>()
     val createdConnections: List<String>
@@ -27,7 +28,9 @@ internal class TestUrlConnectionFactory(
 
     override fun createConnection(url: String, requestMethod: String): UrlConnection {
         _createdConnections.add(url)
-        return mockedConnections[url] ?: throw IllegalArgumentException("No mocked connection for URL: $url")
+        return connectionProvider?.invoke(url)
+            ?: mockedConnections[url]
+            ?: throw IllegalArgumentException("No mocked connection for URL: $url")
     }
 
     fun clear() {
