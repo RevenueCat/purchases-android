@@ -715,10 +715,10 @@ private fun MainStackComponent(
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
-                {},
-                componentInteractionTracker,
+                clickHandler = {},
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
+                componentInteractionTracker = componentInteractionTracker,
             )
         }
     } else if (overlay != null) {
