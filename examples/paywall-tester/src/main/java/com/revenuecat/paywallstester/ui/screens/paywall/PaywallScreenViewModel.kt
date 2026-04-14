@@ -146,6 +146,6 @@ class PaywallScreenViewModelImpl(
         }
         return offeringId?.let { offerings.all[it] }
             ?: offerings.current
-            ?: error("Could not find offering or current offering")
+            ?: error("Could not find offering")
     }
 }
