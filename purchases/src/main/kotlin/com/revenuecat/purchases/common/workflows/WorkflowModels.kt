@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.utils.serializers.URLSerializer
+import com.revenuecat.purchases.utils.serializers.toStringAnyMap
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -83,8 +84,10 @@ internal data class PublishedWorkflow(
     val screens: Map<String, WorkflowScreen>,
     @SerialName("ui_config") val uiConfig: UiConfig,
     @SerialName("content_max_width") val contentMaxWidth: Int? = null,
-    val metadata: JsonObject? = null,
-)
+    @SerialName("metadata") private val metadataJson: JsonObject? = null,
+) {
+    val metadata: Map<String, Any>? get() = metadataJson?.toStringAnyMap()
+}
 
 internal data class WorkflowFetchResult(
     val workflow: PublishedWorkflow,
