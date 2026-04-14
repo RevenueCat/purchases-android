@@ -22,10 +22,7 @@ import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
-import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
-import com.revenuecat.purchases.common.workflows.WorkflowDetailHttpProcessingResult
-import com.revenuecat.purchases.common.workflows.WorkflowDetailHttpProcessor
-import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
+import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
 import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
 import com.revenuecat.purchases.common.workflows.WorkflowsListResponse
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -106,7 +103,7 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 internal typealias WorkflowsListCallback = Pair<(WorkflowsListResponse) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
-internal typealias WorkflowDetailCallback = Pair<(WorkflowFetchResult) -> Unit, (PurchasesError) -> Unit>
+internal typealias WorkflowDetailCallback = Pair<(WorkflowDetailResponse) -> Unit, (PurchasesError) -> Unit>
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -127,9 +124,7 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
-    workflowCdnFetcher: WorkflowCdnFetcher,
 ) {
-    private val workflowDetailHttpProcessor = WorkflowDetailHttpProcessor(workflowCdnFetcher)
     companion object {
         private const val APP_USER_ID = "app_user_id"
         private const val FETCH_TOKEN = "fetch_token"
@@ -1060,17 +1055,15 @@ internal class Backend(
         appUserID: String,
         workflowId: String,
         appInBackground: Boolean,
-        onSuccess: (WorkflowFetchResult) -> Unit,
+        onSuccess: (WorkflowDetailResponse) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
         val call = object : Dispatcher.AsyncCall() {
-            private var workflowDetailProcessing: WorkflowDetailHttpProcessingResult? = null
-
             override fun call(): HTTPResult {
-                val raw = httpClient.performRequest(
+                return httpClient.performRequest(
                     appConfig.baseURL,
                     endpoint,
                     body = null,
@@ -1078,9 +1071,6 @@ internal class Backend(
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = appConfig.fallbackBaseURLs,
                 )
-                val processed = workflowDetailHttpProcessor.process(raw)
-                workflowDetailProcessing = processed
-                return processed.httpResult
             }
 
             override fun onError(error: PurchasesError) {
@@ -1097,12 +1087,8 @@ internal class Backend(
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
-                            val workflow = WorkflowJsonParser.parsePublishedWorkflow(result.payload)
                             onSuccessHandler(
-                                WorkflowFetchResult(
-                                    workflow = workflow,
-                                    enrolledVariants = workflowDetailProcessing?.enrolledVariants,
-                                ),
+                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payload),
                             )
                         } catch (e: SerializationException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })

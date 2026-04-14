@@ -17,7 +17,6 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.JsonProvider
-import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.asMap
 import io.mockk.every
@@ -107,7 +106,6 @@ class BackendPaywallEventTest {
             SyncDispatcher(),
             httpClient,
             backendHelper,
-            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
         )
 
         asyncBackend = Backend(
@@ -116,7 +114,6 @@ class BackendPaywallEventTest {
             asyncDispatcher2,
             httpClient,
             asyncBackendHelper,
-            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
         )
     }
 
