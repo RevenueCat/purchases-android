@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
+import com.revenuecat.purchases.galaxy.conversions.createRevenueCatProductTypeFromSamsungIAPTypeString
 import com.revenuecat.purchases.galaxy.conversions.toStoreProduct
 import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PromotionEligibilityResponseListener
@@ -105,10 +106,22 @@ internal class ProductDataHandler(
             requestedProductIds = inFlightRequest?.productIds,
             products = nonNullProducts,
         )
+
+        val subscriptionProducts = nonNullProducts.filter {
+            it.type.createRevenueCatProductTypeFromSamsungIAPTypeString() == ProductType.SUBS
+        }
+        if (subscriptionProducts.isEmpty()) {
+            // If there are no subscriptions, don't request promotional eligibilities since only subscriptions
+            // are eligible for promotions.
+            val storeProducts = nonNullProducts.map { it.toStoreProduct() }
+            handleStoreProducts(storeProducts = storeProducts)
+            return
+        }
+
         // The serial execution of this call is an extension of the serial execution of the parent
         // get products request
         promotionEligibilityResponseListener.getPromotionEligibilities(
-            productIds = nonNullProducts.map { it.itemId },
+            productIds = subscriptionProducts.map { it.itemId },
             onSuccess = { promotionEligibilities ->
                 // Map of product IDs to a list of all PromotionEligibilityVos for that product
                 val promotionalEligibilityMap: Map<String, List<PromotionEligibilityVo>> =
