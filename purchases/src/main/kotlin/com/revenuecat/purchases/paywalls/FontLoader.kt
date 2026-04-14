@@ -57,11 +57,20 @@ internal class FontLoader(
             }
         }
 
+        val cachedFontFamily: DownloadedFontFamily?
         synchronized(lock) {
             val cachedFontFamilyName = cachedFontFamilyByFontInfo[fontInfoToDownload]
-            val cachedFontFamily = cachedFontFamilyByFamilyName[cachedFontFamilyName]
-            if (cachedFontFamily != null) {
+            cachedFontFamily = cachedFontFamilyByFamilyName[cachedFontFamilyName]
+        }
+
+        if (cachedFontFamily != null) {
+            if (cachedFontFamily.fonts.all { it.file.exists() }) {
                 return cachedFontFamily
+            }
+            debugLog { "Cached font files missing for ${cachedFontFamily.family}, re-downloading" }
+            synchronized(lock) {
+                cachedFontFamilyByFamilyName.remove(cachedFontFamily.family)
+                cachedFontFamilyByFontInfo.entries.removeAll { it.value == cachedFontFamily.family }
             }
         }
 
