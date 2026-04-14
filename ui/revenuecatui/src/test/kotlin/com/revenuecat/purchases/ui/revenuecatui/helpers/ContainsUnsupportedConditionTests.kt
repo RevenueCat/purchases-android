@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -352,6 +353,16 @@ internal class ContainsUnsupportedConditionTests {
         )
         val stack = emptyStack(components = listOf(header))
         assertTrue(stack.containsUnsupportedCondition())
+    }
+
+    // endregion
+
+    // region FallbackHeaderComponent
+
+    @Test
+    fun `FallbackHeaderComponent does not contain unsupported condition`() {
+        val stack = emptyStack(components = listOf(FallbackHeaderComponent))
+        assertFalse(stack.containsUnsupportedCondition())
     }
 
     // endregion

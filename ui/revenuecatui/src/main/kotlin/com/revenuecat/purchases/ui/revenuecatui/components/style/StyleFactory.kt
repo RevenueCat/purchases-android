@@ -228,6 +228,7 @@ internal class StyleFactory(
                         stillLookingForHeaderMedia = false
                     }
 
+                    is FallbackHeaderComponent -> { /* Skip: does not affect hero image detection. */ }
                     else -> stillLookingForHeaderMedia = false
                 }
             }
