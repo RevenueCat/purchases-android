@@ -24,7 +24,6 @@ internal data class WorkflowSummary(
 @Serializable
 internal data class WorkflowsListResponse(
     val workflows: List<WorkflowSummary> = emptyList(),
-    @SerialName("ui_config") val uiConfig: UiConfig,
 )
 
 @Serializable
