@@ -4,12 +4,12 @@ package com.revenuecat.purchases.admob
 
 import android.app.Activity
 import android.util.Log
+import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
-import com.google.android.gms.ads.FullScreenContentCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import kotlin.jvm.JvmSynthetic
 
@@ -22,7 +22,7 @@ private fun applyPlacementOverride(callback: FullScreenContentCallback?, placeme
     } else {
         Log.w(
             TAG,
-            "Placement override ignored: fullScreenContentCallback was manually reassigned"
+            "Placement override ignored: fullScreenContentCallback was manually reassigned",
         )
     }
 }
