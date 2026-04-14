@@ -13,7 +13,6 @@ internal data class ButtonComponentInteraction(
     val url: String? = null,
 )
 
-@Suppress("CyclomaticComplexMethod")
 internal fun ButtonComponentStyle.Action.componentInteraction(localeUrl: String?): ButtonComponentInteraction? =
     when (this) {
         is ButtonComponentStyle.Action.RestorePurchases ->
@@ -28,7 +27,6 @@ internal fun ButtonComponentStyle.Action.componentInteraction(localeUrl: String?
         -> null
     }
 
-@Suppress("CyclomaticComplexMethod")
 private fun ButtonComponentStyle.Action.NavigateTo.Destination.componentInteraction(
     localeUrl: String?,
 ): ButtonComponentInteraction =

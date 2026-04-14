@@ -69,7 +69,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.CarouselPageChangeIntera
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallCarouselPageChange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import java.util.concurrent.atomic.AtomicBoolean
 import androidx.compose.ui.unit.lerp as lerpUnit
 
 @Suppress("LongMethod")
@@ -106,7 +105,7 @@ internal fun CarouselComponentView(
         }
     }
 
-    val skipProgrammaticPageTracking = remember { AtomicBoolean(false) }
+    val skipProgrammaticPageTracking = remember { ProgrammaticPageTrackingFlag() }
 
     carouselState.autoAdvance?.let { autoAdvance ->
         EnableAutoAdvance(
@@ -131,7 +130,7 @@ internal fun CarouselComponentView(
             var previousPage = pagerState.currentPage
             snapshotFlow { pagerState.currentPage }.collect { page ->
                 if (page != previousPage) {
-                    if (skipProgrammaticPageTracking.getAndSet(false)) {
+                    if (skipProgrammaticPageTracking.consumeShouldSkipPageChange()) {
                         // Auto-advance scroll; do not emit component interaction.
                     } else {
                         val logicalDestination = page % pageCount
@@ -341,7 +340,7 @@ private fun EnableAutoAdvance(
     pagerState: PagerState,
     shouldLoop: Boolean,
     pageCount: Int,
-    skipProgrammaticPageTracking: AtomicBoolean,
+    skipProgrammaticPageTracking: ProgrammaticPageTrackingFlag,
 ) {
     LaunchedEffect(Unit) {
         while (true) {
@@ -352,7 +351,7 @@ private fun EnableAutoAdvance(
                 pageCount = pageCount,
                 currentPage = pagerState.currentPage,
             ) ?: continue
-            skipProgrammaticPageTracking.set(true)
+            skipProgrammaticPageTracking.markProgrammaticScrollStarted()
             try {
                 pagerState.animateScrollToPage(
                     page = nextPage,
@@ -361,10 +360,31 @@ private fun EnableAutoAdvance(
                     ),
                 )
             } catch (_: CancellationException) {
-                skipProgrammaticPageTracking.set(false)
+                skipProgrammaticPageTracking.clear()
                 // Do nothing, so we continue scrolling on the next loop
             }
         }
+    }
+}
+
+/**
+ * One-shot flag used to suppress tracking for the next programmatic carousel page change.
+ */
+private class ProgrammaticPageTrackingFlag {
+    private var shouldSkipNextPageChange = false
+
+    fun markProgrammaticScrollStarted() {
+        shouldSkipNextPageChange = true
+    }
+
+    fun consumeShouldSkipPageChange(): Boolean {
+        val shouldSkip = shouldSkipNextPageChange
+        shouldSkipNextPageChange = false
+        return shouldSkip
+    }
+
+    fun clear() {
+        shouldSkipNextPageChange = false
     }
 }
 
