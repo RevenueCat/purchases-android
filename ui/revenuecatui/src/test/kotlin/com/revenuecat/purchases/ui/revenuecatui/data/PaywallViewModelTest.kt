@@ -1448,6 +1448,31 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `trackPaywallImpression when presentation surface changes emits close then new impression`() {
+        val eventTypes = mutableListOf<PaywallEventType>()
+        every { purchases.track(any()) } answers {
+            eventTypes += (firstArg() as PaywallEvent).type
+        }
+
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+
+        // PaywallOptions.hashCode does not include paywall revision, so swapping paywall data alone may not
+        // rebuild state. Dark mode is part of the impression fingerprint and can change without a full reload.
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDark = true,
+        )
+        model.trackPaywallImpressionIfNeeded()
+
+        assertThat(eventTypes).containsExactly(
+            PaywallEventType.IMPRESSION,
+            PaywallEventType.CLOSE,
+            PaywallEventType.IMPRESSION,
+        )
+    }
+
+    @Test
     fun `trackPaywallImpression after close tracks again`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()

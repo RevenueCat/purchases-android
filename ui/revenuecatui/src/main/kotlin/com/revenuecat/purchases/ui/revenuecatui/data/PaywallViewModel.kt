@@ -161,6 +161,15 @@ internal class PaywallViewModelImpl(
 
     private var paywallPresentationData: PaywallEvent.Data? = null
 
+    private data class PaywallPresentationFingerprint(
+        val paywallIdentifier: String?,
+        val presentedOfferingContext: PresentedOfferingContext,
+        val paywallRevision: Int,
+        val displayMode: String,
+        val localeIdentifier: String,
+        val darkMode: Boolean,
+    )
+
     init {
         updateState()
         validateState()
@@ -298,11 +307,18 @@ internal class PaywallViewModelImpl(
         _actionError.value = null
     }
 
+    @Suppress("ReturnCount")
     override fun trackPaywallImpressionIfNeeded() {
-        if (paywallPresentationData != null) {
+        val targetFingerprint = computePresentationFingerprint() ?: return
+        val existing = paywallPresentationData
+
+        if (existing?.presentationFingerprint() == targetFingerprint) return
+
+        if (existing != null) {
             track(PaywallEventType.CLOSE)
             paywallPresentationData = null
         }
+
         val newData = createEventData() ?: return
         paywallPresentationData = newData
         track(PaywallEventType.IMPRESSION)
@@ -848,6 +864,67 @@ internal class PaywallViewModelImpl(
             darkMode = isDarkMode,
         )
     }
+
+    private fun computePresentationFingerprint(): PaywallPresentationFingerprint? =
+        when (val currentState = _state.value) {
+            is PaywallState.Loaded.Legacy -> currentState.presentationFingerprintLegacy(
+                mode = mode,
+                localeList = _lastLocaleList.value,
+                darkMode = isDarkMode,
+            )
+            is PaywallState.Loaded.Components -> currentState.presentationFingerprintComponents(
+                mode = mode,
+                darkMode = isDarkMode,
+            )
+            is PaywallState.Error,
+            is PaywallState.Loading,
+            -> null
+        }
+
+    private fun PaywallState.Loaded.Legacy.presentationFingerprintLegacy(
+        mode: PaywallMode,
+        localeList: LocaleListCompat,
+        darkMode: Boolean,
+    ): PaywallPresentationFingerprint? {
+        val revision = offering.paywall?.revision
+            ?: offering.paywallComponents?.data?.revision
+            ?: return null
+        val paywallId = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+        val locale = localeList.get(0) ?: Locale.getDefault()
+        return PaywallPresentationFingerprint(
+            paywallIdentifier = paywallId,
+            presentedOfferingContext = offering.presentedOfferingContext,
+            paywallRevision = revision,
+            displayMode = mode.name.lowercase(),
+            localeIdentifier = locale.toString(),
+            darkMode = darkMode,
+        )
+    }
+
+    private fun PaywallState.Loaded.Components.presentationFingerprintComponents(
+        mode: PaywallMode,
+        darkMode: Boolean,
+    ): PaywallPresentationFingerprint? {
+        val paywallData = offering.paywallComponents ?: return null
+        return PaywallPresentationFingerprint(
+            paywallIdentifier = paywallData.data.id,
+            presentedOfferingContext = offering.presentedOfferingContext,
+            paywallRevision = paywallData.data.revision,
+            displayMode = mode.name.lowercase(),
+            localeIdentifier = locale.toString(),
+            darkMode = darkMode,
+        )
+    }
+
+    private fun PaywallEvent.Data.presentationFingerprint(): PaywallPresentationFingerprint =
+        PaywallPresentationFingerprint(
+            paywallIdentifier = paywallIdentifier,
+            presentedOfferingContext = presentedOfferingContext,
+            paywallRevision = paywallRevision,
+            displayMode = displayMode,
+            localeIdentifier = localeIdentifier,
+            darkMode = darkMode,
+        )
 
     /**
      * Extracts default custom variable values from the offering's UiConfig.

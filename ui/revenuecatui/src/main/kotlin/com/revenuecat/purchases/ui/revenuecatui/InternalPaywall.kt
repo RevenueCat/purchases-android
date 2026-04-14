@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -110,7 +111,7 @@ internal fun InternalPaywall(
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
             if (state is PaywallState.Loaded.Legacy) {
-                LoadedPaywall(state = state, viewModel = viewModel)
+                LoadedPaywall(state = state, viewModel = viewModel, isDarkTheme = isDark)
             } else {
                 Logger.e(
                     "State is not loaded while transitioning animation. This may happen if state changes from " +
@@ -127,7 +128,19 @@ internal fun InternalPaywall(
         exit = fadeOut(animationSpec = defaultAnimation()),
     ) {
         if (state is PaywallState.Loaded.Components) {
-            viewModel.trackPaywallImpressionIfNeeded()
+            val paywallComponents = state.offering.paywallComponents
+            if (paywallComponents != null) {
+                LaunchedEffect(
+                    state.offering.identifier,
+                    paywallComponents.data.id,
+                    paywallComponents.data.revision,
+                    options.mode,
+                    state.locale.toString(),
+                    isDark,
+                ) {
+                    viewModel.trackPaywallImpressionIfNeeded()
+                }
+            }
             LoadedPaywallComponents(
                 state = state,
                 clickHandler = rememberPaywallActionHandler(viewModel),
@@ -172,8 +185,26 @@ internal fun InternalPaywall(
 
 @Suppress("LongMethod")
 @Composable
-private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
-    viewModel.trackPaywallImpressionIfNeeded()
+private fun LoadedPaywall(
+    state: PaywallState.Loaded.Legacy,
+    viewModel: PaywallViewModel,
+    isDarkTheme: Boolean,
+) {
+    val configuration = LocalConfiguration.current
+    val localeLanguageTags = configuration.locales.toLanguageTags()
+    val offering = state.offering
+    val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.data?.revision
+    val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+    LaunchedEffect(
+        offering.identifier,
+        paywallIdentifier,
+        paywallRevision,
+        state.templateConfiguration.mode,
+        localeLanguageTags,
+        isDarkTheme,
+    ) {
+        viewModel.trackPaywallImpressionIfNeeded()
+    }
     val context = LocalContext.current
     val activity = context.getActivity()
 
