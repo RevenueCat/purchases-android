@@ -52,6 +52,12 @@ This release updates to Billing Library 8.3.0 with min SDK supported of Android 
 * Bump fastlane-plugin-revenuecat_internal from `5d6e93f` to `6289be1` (#3299) via dependabot[bot] (@dependabot[bot])
 * Bump fastlane-plugin-revenuecat_internal from `f11fe40` to `5d6e93f` (#3294) via dependabot[bot] (@dependabot[bot])
 
+## 9.29.1
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* PW-1178 | Support package-level visibility via visible property and overrides (#3279) via Facundo Menzella (@facumenzella)
+
 ## 9.29.0
 ## RevenueCat SDK
 ### ✨ New Features
