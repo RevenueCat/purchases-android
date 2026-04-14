@@ -219,3 +219,4 @@ When creating a pull request, **always add one of these labels** to categorize t
 
 - **Never commit Claude-related files** — do not stage or commit `.claude/` directory, `settings.local.json`, or any AI tool configuration files
 - **Never commit API keys or secrets** — do not stage or commit API keys, tokens, credentials, or any sensitive data
+- **Avoid new CompositionLocals for non-UI dependencies** — for analytics, business logic, and event tracking dependencies, prefer explicit parameters/callback injection over implicit ambient state

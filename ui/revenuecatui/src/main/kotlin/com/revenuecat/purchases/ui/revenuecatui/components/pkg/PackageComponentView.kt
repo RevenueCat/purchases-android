@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageRowSelection
 
 @JvmSynthetic
@@ -22,8 +22,8 @@ internal fun PackageComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
@@ -31,6 +31,7 @@ internal fun PackageComponentView(
             // If this package is selectable, a click will select it. No need to pass the click to the clickHandler.
             if (!style.isSelectable) clickHandler(action)
         },
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier.conditional(style.isSelectable) {
             clickable(
                 enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,

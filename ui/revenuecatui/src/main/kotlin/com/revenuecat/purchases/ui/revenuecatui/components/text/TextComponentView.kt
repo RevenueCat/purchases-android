@@ -49,13 +49,14 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
 @Composable
 internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     // Get a TextComponentState that calculates the overridden properties we should use.
     val textState = rememberUpdatedTextComponentState(
@@ -91,7 +92,6 @@ internal fun TextComponentView(
 
     if (textState.visible) {
         val uriHandler = LocalUriHandler.current
-        val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
         val trackingUriHandler = remember(uriHandler, componentInteractionTracker, style.componentName) {
             object : UriHandler {
                 override fun openUri(uri: String) {

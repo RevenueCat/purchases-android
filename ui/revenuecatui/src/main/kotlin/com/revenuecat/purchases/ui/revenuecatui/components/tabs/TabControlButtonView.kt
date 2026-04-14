@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallTabControlButtonSelection
 
 @Composable
@@ -18,13 +18,14 @@ internal fun TabControlButtonView(
     style: TabControlButtonComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     StackComponentView(
         style = style.stack,
         state = state,
         // We act like a button, so we're handling the click already.
         clickHandler = { },
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier.clickable {
             val ordered = style.tabIdsOrdered
             val destinationIndex = style.tabIndex

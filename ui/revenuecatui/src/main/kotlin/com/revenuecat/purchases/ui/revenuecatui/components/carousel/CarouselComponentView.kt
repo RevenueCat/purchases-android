@@ -64,8 +64,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.CarouselPageChangeInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallCarouselPageChange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
@@ -79,6 +79,7 @@ internal fun CarouselComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val carouselState = rememberUpdatedCarouselComponentState(
         style = style,
@@ -117,7 +118,6 @@ internal fun CarouselComponentView(
         )
     }
 
-    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     if (pageCount > 0) {
         LaunchedEffect(
             pagerState,
@@ -194,6 +194,7 @@ internal fun CarouselComponentView(
                 style = carouselState.pages[page % pageCount],
                 state = state,
                 clickHandler = clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
             )
         }
 

@@ -1,8 +1,5 @@
-@file:OptIn(InternalRevenueCatAPI::class)
-
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
-import androidx.compose.runtime.staticCompositionLocalOf
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 
@@ -12,11 +9,6 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 internal fun interface PaywallComponentInteractionTracker {
     fun track(data: PaywallComponentInteractionData)
 }
-
-internal val LocalPaywallComponentInteractionTracker =
-    staticCompositionLocalOf<PaywallComponentInteractionTracker> {
-        PaywallComponentInteractionTracker { _ -> }
-    }
 
 /**
  * V1 template footer / tier control `component_name` constants.

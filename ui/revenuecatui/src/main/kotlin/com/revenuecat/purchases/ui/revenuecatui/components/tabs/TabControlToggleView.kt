@@ -28,16 +28,16 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggl
 import com.revenuecat.purchases.ui.revenuecatui.composables.Switch
 import com.revenuecat.purchases.ui.revenuecatui.composables.SwitchDefaults
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
 @Composable
 internal fun TabControlToggleView(
     style: TabControlToggleComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val checked by remember { derivedStateOf { state.selectedTabIndex > 0 } }
-    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
 
     Switch(
         checked = checked,

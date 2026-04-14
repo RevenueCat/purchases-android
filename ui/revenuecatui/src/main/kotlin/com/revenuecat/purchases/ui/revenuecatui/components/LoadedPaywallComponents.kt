@@ -59,7 +59,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetClose
@@ -74,6 +73,7 @@ internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
@@ -81,7 +81,6 @@ internal fun LoadedPaywallComponents(
     val style = state.stack
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
-    val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
     }
@@ -95,6 +94,7 @@ internal fun LoadedPaywallComponents(
                     style = style,
                     state = state,
                     onClick = onClick,
+                    componentInteractionTracker = componentInteractionTracker,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
@@ -105,6 +105,7 @@ internal fun LoadedPaywallComponents(
                         style = it,
                         state = state,
                         onClick = onClick,
+                        componentInteractionTracker = componentInteractionTracker,
                         modifier = Modifier
                             .fillMaxWidth(),
                     )
@@ -160,6 +161,7 @@ private fun SimpleSheetState.show(
             ComponentView(
                 style = sheet.stack,
                 state = state,
+                componentInteractionTracker = componentInteractionTracker,
                 onClick = { action ->
                     when (action) {
                         is PaywallAction.External.NavigateBack -> hide()

@@ -56,7 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.rememberUpdated
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.purchaseButtonInteractionComponentUrl
 import kotlinx.coroutines.launch
@@ -80,6 +80,7 @@ internal fun ButtonComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val stackState = rememberUpdatedStackComponentState(
         style = style.stackComponentStyle,
@@ -97,7 +98,6 @@ internal fun ButtonComponentView(
         )
 
         val coroutineScope = rememberCoroutineScope()
-        val componentInteractionTracker = LocalPaywallComponentInteractionTracker.current
         // Whether there's an action in progress anywhere on the paywall.
         val anyActionInProgress by state::actionInProgress
         // Whether this button's action is in progress.
@@ -134,6 +134,7 @@ internal fun ButtonComponentView(
                     state = state,
                     // We're the button, so we're handling the click already.
                     clickHandler = { },
+                    componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = animatedContentAlpha,
                 )
                 CircularProgressIndicator(
