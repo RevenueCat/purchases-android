@@ -1,9 +1,10 @@
-## RevenueCatUI SDK
+## RevenueCat SDK
 ### 🐞 Bugfixes
-* Fix: Crash on fallback paywall due to missing dependency  (#3283) via Jacob Rakidzich (@JZDesign)
-### Paywallv2
-#### 🐞 Bugfixes
-* PW-1152 Fix PaywallDialog dismissal after first toggle interaction (#3277) via Facundo Menzella (@facumenzella)
+* [Galaxy]: Cache already acknowledged purchase tokens (#3333) via Will Taylor (@fire-at-will)
 
 ### 🔄 Other Changes
-* feat: configure API keys and test variables via local.properties (#3271) via Toni Rico (@tonidero)
+* Refactor: Remove unnecessary lint suppressions (#3331) via cursor[bot] (@cursor[bot])
+* Refactor: Remove unnecessary lint suppressions (#3330) via cursor[bot] (@cursor[bot])
+* Refactor: Remove unnecessary lint suppressions (#3323) via cursor[bot] (@cursor[bot])
+* Bump fastlane-plugin-revenuecat_internal from `894bb1b` to `20911d1` (#3334) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `ceecf91` to `894bb1b` (#3326) via dependabot[bot] (@dependabot[bot])

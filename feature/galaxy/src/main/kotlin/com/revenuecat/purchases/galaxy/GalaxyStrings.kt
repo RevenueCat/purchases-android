@@ -29,8 +29,6 @@ internal object GalaxyStrings {
     // Purchasing
     const val ANOTHER_PURCHASE_REQUEST_IN_FLIGHT = "Another purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
-    const val GALAXY_OTPS_NOT_SUPPORTED = "Purchasing One-time purchases is not currently supported for the " +
-        "Galaxy Store."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST = "The Galaxy Store did not accept the IAP payment " +
         "request for processing. No transactions have occurred."
     const val PURCHASE_REQUEST_ERRORED = "An error occurred while purchasing product with ID %s with the " +
@@ -78,6 +76,8 @@ internal object GalaxyStrings {
 
     // Acknowledging Purchases
     const val WARNING_ACKNOWLEDGING_PURCHASES_UNAVAILABLE = "Acknowledging purchases is currently unavailable."
+    const val WARNING_CANNOT_ACKNOWLEDGE_OR_CONSUME_UNKNOWN_PRODUCT_TYPE = "Cannot acknowledge or consume a " +
+        "Galaxy Store purchase with unknown product type."
     const val ANOTHER_ACKNOWLEDGE_REQUEST_IN_FLIGHT = "Another acknowledge purchase request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST = "The Galaxy Store did not accept the acknowledge " +
@@ -97,6 +97,33 @@ internal object GalaxyStrings {
     const val NOT_ACKNOWLEDGING_TRANSACTION_BECAUSE_ALREADY_ACKNOWLEDGED = "Will not acknowledge transaction with " +
         "product ID %s because it has already been acknowledged."
 
+    // Consuming Purchases
+    const val ANOTHER_CONSUME_REQUEST_IN_FLIGHT = "Another consume purchase request with the Galaxy Store" +
+        " is already in progress. Please wait until that request completes and then try again."
+
+    const val GALAXY_STORE_FAILED_TO_ACCEPT_CONSUME_REQUEST = "The Galaxy Store did not accept the consume " +
+        "IAP request for processing."
+
+    const val CONSUME_REQUEST_ERRORED = "An error occurred while consuming product with token %s with the " +
+        "Galaxy Store. Error: %s"
+
+    const val CONSUME_REQUEST_RETURNED_SUCCESS_BUT_NO_CONSUMPTION_RESULTS = "The consumption request " +
+        "returned no error, but also returned no consumption results. This is likely an issue with the " +
+        "Galaxy Store."
+
+    const val CONSUME_REQUEST_RETURNED_MORE_THAN_ONE_RESULT = "The consumption request returned " +
+        "more than one consumption result. This is likely an issue with the Galaxy Store."
+
+    const val CONSUME_REQUEST_RETURNED_UNKNOWN_STATUS_CODE = "The consumption request returned an unknown " +
+        "status code %s."
+
+    const val CONSUME_REQUEST_RETURNED_ERROR_STATUS_CODE = "The consumption request returned " +
+        "an error status code %s (%s)."
+
+    const val CONSUME_REQUEST_FAILED_DUE_TO_PRODUCT_ALREADY_CONSUMED = "Unable to consume the purchase because the" +
+        " purchase has already been consumed. This can occur if the RevenueCat backend has already consumed" +
+        " the purchase."
+
     // Get Owned Products
     const val ANOTHER_GET_OWNED_LIST_REQUEST_IN_FLIGHT = "Another get owned products request with the Galaxy Store" +
         " is already in progress. Please wait until that request completes and then try again."
@@ -109,8 +136,6 @@ internal object GalaxyStrings {
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
         " with an error of IAP_ERROR_NONE."
-    const val WARNING_CANNOT_CONSUME_NON_SUBS_PRODUCT_TYPES = "Acknowledging/consuming non-subscription " +
-        "product types is currently unsupported."
 }
 
 internal fun HelperDefine.OperationMode.description(): String = when (this) {

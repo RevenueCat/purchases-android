@@ -472,6 +472,7 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_OFFER_PRICE ->
             resolveOfferPrice(
                 discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
+                locale = currencyLocale,
                 localizedVariableKeys = localizedVariableKeys,
             ) {
                 rcPackage?.let { pkg ->
@@ -549,6 +550,7 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_SECONDARY_OFFER_PRICE ->
             resolveOfferPrice(
                 discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
+                locale = currencyLocale,
                 localizedVariableKeys = localizedVariableKeys,
             ) {
                 rcPackage?.let { pkg ->

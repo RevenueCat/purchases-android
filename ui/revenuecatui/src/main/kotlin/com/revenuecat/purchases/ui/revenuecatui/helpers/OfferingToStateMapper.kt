@@ -463,7 +463,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
                 -> false
             }
         }
-    is PackageComponent -> stack.containsUnsupportedCondition()
+    is PackageComponent -> overrides.hasUnsupportedCondition() || stack.containsUnsupportedCondition()
     is PurchaseButtonComponent -> stack.containsUnsupportedCondition()
     is StickyFooterComponent -> stack.containsUnsupportedCondition()
     is CarouselComponent -> overrides.hasUnsupportedCondition() ||
