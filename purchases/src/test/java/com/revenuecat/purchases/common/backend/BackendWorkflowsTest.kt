@@ -11,7 +11,7 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
+import com.revenuecat.purchases.common.workflows.WorkflowResponseAction
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -45,7 +45,6 @@ class BackendWorkflowsTest {
         dispatcher,
         mockClient,
         backendHelper,
-        workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
     )
     private val appUserId = "user_1"
 
@@ -99,7 +98,7 @@ class BackendWorkflowsTest {
     }
 
     @Test
-    fun `getWorkflow inline unwraps data and returns WorkflowFetchResult`() {
+    fun `getWorkflow returns deserialized inline envelope`() {
         val workflowJson = """
             {
               "id": "wf_1",
@@ -142,10 +141,12 @@ class BackendWorkflowsTest {
             appUserID = appUserId,
             workflowId = "wf_1",
             appInBackground = false,
-            onSuccess = { result ->
-                assertThat(result.workflow.id).isEqualTo("wf_1")
-                assertThat(result.workflow.initialStepId).isEqualTo("step_1")
-                assertThat(result.enrolledVariants).isNull()
+            onSuccess = { response ->
+                assertThat(response.action).isEqualTo(WorkflowResponseAction.INLINE)
+                assertThat(response.data).isNotNull
+                assertThat(response.data!!.id).isEqualTo("wf_1")
+                assertThat(response.data!!.initialStepId).isEqualTo("step_1")
+                assertThat(response.enrolledVariants).isNull()
                 success = true
             },
             onError = { fail("unexpected error $it") },
@@ -154,41 +155,15 @@ class BackendWorkflowsTest {
     }
 
     @Test
-    fun `getWorkflow use_cdn uses injected WorkflowCdnFetcher`() {
-        val cdnWorkflowJson = """
+    fun `getWorkflow returns deserialized use_cdn envelope`() {
+        val envelope = """
             {
-              "id": "wf_cdn",
-              "display_name": "From CDN",
-              "initial_step_id": "step_1",
-              "steps": {
-                "step_1": {
-                  "id": "step_1",
-                  "type": "screen",
-                  "param_values": {},
-                  "triggers": [],
-                  "outputs": {},
-                  "trigger_actions": {},
-                  "metadata": null
-                }
-              },
-              "screens": {},
-              $minimalUiConfigJson
+              "action": "use_cdn",
+              "url": "https://cdn.example.com/wf.json",
+              "hash": "abc123",
+              "enrolled_variants": {"exp_1": "variant_a"}
             }
         """.trimIndent()
-        var fetchedUrl: String? = null
-        val testFetcher = WorkflowCdnFetcher { url ->
-            fetchedUrl = url
-            cdnWorkflowJson
-        }
-        val backendWithFetcher = Backend(
-            mockAppConfig,
-            dispatcher,
-            dispatcher,
-            mockClient,
-            backendHelper,
-            workflowCdnFetcher = testFetcher,
-        )
-        val envelope = """{"action":"use_cdn","url":"https://cdn.example.com/wf.json"}"""
         every {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
@@ -201,14 +176,16 @@ class BackendWorkflowsTest {
         } returns httpResult(RCHTTPStatusCodes.SUCCESS, envelope)
 
         var success = false
-        backendWithFetcher.getWorkflow(
+        backend.getWorkflow(
             appUserID = appUserId,
             workflowId = "wf_cdn",
             appInBackground = false,
-            onSuccess = { result ->
-                assertThat(fetchedUrl).isEqualTo("https://cdn.example.com/wf.json")
-                assertThat(result.workflow.id).isEqualTo("wf_cdn")
-                assertThat(result.workflow.displayName).isEqualTo("From CDN")
+            onSuccess = { response ->
+                assertThat(response.action).isEqualTo(WorkflowResponseAction.USE_CDN)
+                assertThat(response.url).isEqualTo("https://cdn.example.com/wf.json")
+                assertThat(response.hash).isEqualTo("abc123")
+                assertThat(response.enrolledVariants).isEqualTo(mapOf("exp_1" to "variant_a"))
+                assertThat(response.data).isNull()
                 success = true
             },
             onError = { fail("unexpected error $it") },

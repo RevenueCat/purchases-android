@@ -15,7 +15,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
-import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -138,7 +137,6 @@ internal abstract class BaseBackendIntegrationTest {
             diagnosticsDispatcher,
             httpClient,
             backendHelper,
-            workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
         )
     }
 

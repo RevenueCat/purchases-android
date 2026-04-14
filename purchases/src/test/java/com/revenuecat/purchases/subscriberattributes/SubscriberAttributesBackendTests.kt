@@ -19,7 +19,6 @@ import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
-import com.revenuecat.purchases.common.workflows.WorkflowCdnFetcher
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
@@ -63,7 +62,6 @@ class SubscriberAttributesPosterTests {
         dispatcher,
         mockClient,
         backendHelper,
-        workflowCdnFetcher = WorkflowCdnFetcher { error("CDN fetcher not expected") },
     )
     private var subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
 
