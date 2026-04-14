@@ -66,13 +66,13 @@ internal class PurchaseHandler(
 
         if (!requestWasDispatched) {
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_PAYMENT_REQUEST }
+            clearInFlightRequest()
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
                     underlyingErrorMessage = "The Galaxy Store failed to accept the purchase request.",
                 ),
             )
-            clearInFlightRequest()
             return
         }
     }

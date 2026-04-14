@@ -1,7 +1,9 @@
 package com.revenuecat.paywallstester.ui.screens.main.offerings
 
 import android.util.Log
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,16 +22,23 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,14 +61,17 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
-import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import com.revenuecat.purchases.Package as RCPackage
 
 @SuppressWarnings("LongParameterList")
@@ -106,16 +118,15 @@ private fun ErrorOfferingsScreen(
 private fun LoadingOfferingsScreen(
     modifier: Modifier = Modifier,
 ) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
     ) {
-        Text(text = "Loading...")
+        CircularProgressIndicator()
     }
 }
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalFoundationApi::class)
 @Suppress("LongMethod", "LongParameterList", "ViewModelInjection")
 @Composable
 private fun OfferingsListScreen(
@@ -212,7 +223,10 @@ private fun OfferingsListScreen(
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .clickable { dropdownExpandedOffering = offering }
+                                .combinedClickable(
+                                    onClick = { tappedOnNavigateToOffering(offering) },
+                                    onLongClick = { dropdownExpandedOffering = offering },
+                                )
                                 .padding(16.dp),
                         ) {
                             Column {
@@ -262,40 +276,9 @@ private fun OfferingsListScreen(
     }
 
     if (displayPaywallDialogOffering != null) {
-        PaywallDialog(
-            PaywallDialogOptions.Builder()
-                .setDismissRequest { displayPaywallDialogOffering = null }
-                .setOffering(displayPaywallDialogOffering)
-                .setCustomVariables(CustomVariablesHolder.customVariables)
-                .setListener(object : PaywallListener {
-                    override fun onPurchaseStarted(rcPackage: RCPackage) {
-                        Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")
-                    }
-
-                    override fun onPurchaseCompleted(
-                        customerInfo: CustomerInfo,
-                        storeTransaction: StoreTransaction,
-                    ) {
-                        Log.d("PaywallDialog", "onPurchaseCompleted: ${storeTransaction.productIds}")
-                    }
-
-                    override fun onPurchaseError(error: PurchasesError) {
-                        Log.e("PaywallDialog", "onPurchaseError: ${error.message}")
-                    }
-
-                    override fun onRestoreStarted() {
-                        Log.d("PaywallDialog", "onRestoreStarted")
-                    }
-
-                    override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-                        Log.d("PaywallDialog", "onRestoreCompleted: ${customerInfo.activeSubscriptions}")
-                    }
-
-                    override fun onRestoreError(error: PurchasesError) {
-                        Log.e("PaywallDialog", "onRestoreError: ${error.message}")
-                    }
-                })
-                .build(),
+        RefreshablePaywallDialog(
+            offering = displayPaywallDialogOffering!!,
+            onDismiss = { displayPaywallDialogOffering = null },
         )
     }
 
@@ -358,6 +341,86 @@ private fun PlacementDialog(
                     modifier = Modifier.align(Alignment.End),
                 ) {
                     Text("Submit")
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RefreshablePaywallDialog(
+    offering: Offering,
+    onDismiss: () -> Unit,
+) {
+    var currentOffering by remember { mutableStateOf(offering) }
+    var isRefreshing by remember { mutableStateOf(false) }
+    var refreshCount by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Scaffold(modifier = Modifier.fillMaxSize()) { scaffoldPadding ->
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    scope.launch {
+                        isRefreshing = true
+                        try {
+                            val offerings = Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
+                            offerings.all[currentOffering.identifier]?.let {
+                                currentOffering = it
+                            }
+                            refreshCount++
+                        } finally {
+                            isRefreshing = false
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(scaffoldPadding),
+            ) {
+                val customVariables = CustomVariablesHolder.customVariables +
+                    mapOf("refresh_token" to CustomVariableValue.String("$refreshCount"))
+                key(refreshCount) {
+                    Paywall(
+                        PaywallOptions.Builder(onDismiss)
+                            .setOffering(currentOffering)
+                            .setShouldDisplayDismissButton(true)
+                            .setCustomVariables(customVariables)
+                            .setListener(object : PaywallListener {
+                                override fun onPurchaseStarted(rcPackage: RCPackage) {
+                                    Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")
+                                }
+
+                                override fun onPurchaseCompleted(
+                                    customerInfo: CustomerInfo,
+                                    storeTransaction: StoreTransaction,
+                                ) {
+                                    Log.d("PaywallDialog", "onPurchaseCompleted: ${storeTransaction.productIds}")
+                                }
+
+                                override fun onPurchaseError(error: PurchasesError) {
+                                    Log.e("PaywallDialog", "onPurchaseError: ${error.message}")
+                                }
+
+                                override fun onRestoreStarted() {
+                                    Log.d("PaywallDialog", "onRestoreStarted")
+                                }
+
+                                override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                                    Log.d("PaywallDialog", "onRestoreCompleted: ${customerInfo.activeSubscriptions}")
+                                }
+
+                                override fun onRestoreError(error: PurchasesError) {
+                                    Log.e("PaywallDialog", "onRestoreError: ${error.message}")
+                                }
+                            })
+                            .build(),
+                    )
                 }
             }
         }

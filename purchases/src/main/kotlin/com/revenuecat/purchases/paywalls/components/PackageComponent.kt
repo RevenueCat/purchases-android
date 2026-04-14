@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.PromoOfferConfig
 import com.revenuecat.purchases.paywalls.components.common.ResilientPromoOfferConfigSerializer
 import dev.drewhamilton.poko.Poko
@@ -29,4 +30,17 @@ public class PackageComponent(
     @get:JvmSynthetic
     @SerialName("name")
     public val name: String? = null,
+    @get:JvmSynthetic
+    public val visible: Boolean? = null,
+    @get:JvmSynthetic
+    public val overrides: List<ComponentOverride<PartialPackageComponent>> = emptyList(),
 ) : PaywallComponent
+
+@InternalRevenueCatAPI
+@Poko
+@Serializable
+@Immutable
+public class PartialPackageComponent(
+    @get:JvmSynthetic
+    public val visible: Boolean? = null,
+) : PartialComponent

@@ -3,12 +3,17 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 
+@Suppress("LongParameterList")
 @Immutable
 internal data class PackageComponentStyle(
     @get:JvmSynthetic
-    val rcPackage: Package,
+    override val rcPackage: Package,
     @get:JvmSynthetic
     val isSelectedByDefault: Boolean,
     @get:JvmSynthetic
@@ -17,15 +22,23 @@ internal data class PackageComponentStyle(
     val stackComponentStyle: StackComponentStyle,
     @get:JvmSynthetic
     val isSelectable: Boolean,
+    @get:JvmSynthetic
+    override val resolvedOffer: ResolvedOffer? = null,
+    @get:JvmSynthetic
+    override val visible: Boolean,
+    @get:JvmSynthetic
+    val overrides: List<PresentedOverride<PresentedPackagePartial>>,
     /**
-     * The resolved Play Store offer for this package, if configured.
-     * Used for purchase flow and template variables.
+     * Pre-computed offer eligibility for this package, used for evaluating intro/promo offer conditions
+     * in package-level overrides.
      */
     @get:JvmSynthetic
-    val resolvedOffer: ResolvedOffer? = null,
-) : ComponentStyle {
-    override val visible: Boolean = stackComponentStyle.visible
+    override val offerEligibility: OfferEligibility? = null,
+) : ComponentStyle, PackageContext {
     override val size: Size = stackComponentStyle.size
+
+    @get:JvmSynthetic
+    override val tabIndex: Int? = null
 
     /**
      * Unique identifier for this package component, combining package ID and offer ID.

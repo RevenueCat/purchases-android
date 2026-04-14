@@ -24,6 +24,10 @@ internal fun PackageComponentView(
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
+    val packageState = rememberUpdatedPackageComponentState(style = style, paywallState = state)
+
+    if (!packageState.visible) return
+
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
