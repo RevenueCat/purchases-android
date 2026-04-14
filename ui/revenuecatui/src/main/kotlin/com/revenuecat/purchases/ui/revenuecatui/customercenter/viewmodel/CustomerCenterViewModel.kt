@@ -714,7 +714,7 @@ internal class CustomerCenterViewModelImpl(
                     val entitlement = customerInfo.entitlements.active.values
                         .firstOrNull { it.productIdentifier == transaction.productIdentifier }
                         ?: customerInfo.entitlements.all.values
-                        .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
                     createPurchaseInformation(
                         transaction,
@@ -735,7 +735,7 @@ internal class CustomerCenterViewModelImpl(
             val entitlement = customerInfo.entitlements.active.values
                 .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
                 ?: customerInfo.entitlements.all.values
-                .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+                    .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
 
             listOf(
                 createPurchaseInformation(
@@ -1001,6 +1001,7 @@ internal class CustomerCenterViewModelImpl(
         loadCustomerCenter(isRefresh = true)
     }
 
+    @Suppress("LongMethod")
     private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {
