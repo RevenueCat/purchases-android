@@ -8,7 +8,9 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -82,6 +84,8 @@ internal data class PublishedWorkflow(
     val steps: Map<String, WorkflowStep>,
     val screens: Map<String, WorkflowScreen>,
     @SerialName("ui_config") val uiConfig: UiConfig,
+    @Serializable(with = JsonObjectToMapSerializer::class)
+    val metadata: Map<String, @Contextual Any> = emptyMap(),
 )
 
 internal data class WorkflowFetchResult(
