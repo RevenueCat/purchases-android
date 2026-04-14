@@ -231,6 +231,34 @@ class PaidEventTrackingTest {
         assertEquals(adValue, delegate.lastAdValue)
     }
 
+    @Test
+    fun `setUpPaidEventTracking resolves placement lazily at event time`() {
+        var currentPlacement: String? = "load_time"
+        var captured: OnPaidEventListener? = null
+
+        setUpPaidEventTracking(
+            setListener = { captured = it },
+            adFormat = AdFormat.INTERSTITIAL,
+            placementProvider = { currentPlacement },
+            adUnitId = "test-unit",
+            responseInfoProvider = { mockk(relaxed = true) },
+            delegate = null,
+        )
+
+        currentPlacement = "show_time"
+
+        val adValue = mockk<AdValue>()
+        every { adValue.valueMicros } returns 1L
+        every { adValue.currencyCode } returns "USD"
+        every { adValue.precisionType } returns AdValue.PrecisionType.ESTIMATED
+
+        captured!!.onPaidEvent(adValue)
+
+        val slot = slot<AdRevenueData>()
+        verify { mockAdTracker.trackAdRevenue(capture(slot)) }
+        assertEquals("show_time", slot.captured.placement)
+    }
+
     private class RecordingPaidEventListener : OnPaidEventListener {
         var lastAdValue: AdValue? = null
 
