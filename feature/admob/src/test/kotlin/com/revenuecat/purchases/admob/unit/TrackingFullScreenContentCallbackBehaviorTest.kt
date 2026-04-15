@@ -5,8 +5,10 @@ package com.revenuecat.purchases.admob
 import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.ResponseInfo
+import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.setTrackingFullScreenContentCallback
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -218,6 +220,53 @@ class TrackingFullScreenContentCallbackBehaviorTest {
         verify(exactly = 0) { mockAdTracker.trackAdRevenue(any()) }
         verify(exactly = 0) { mockAdTracker.trackAdLoaded(any()) }
         verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any()) }
+    }
+
+    // endregion
+
+    // region setTrackingFullScreenContentCallback tests
+
+    @Test
+    fun `setTrackingFullScreenContentCallback updates wrapper delegate`() {
+        val wrapper = createDelegationSubject(delegate = null)
+        val mockAd = mockk<InterstitialAd>()
+        every { mockAd.fullScreenContentCallback } returns wrapper
+        every { mockAd.fullScreenContentCallback = any() } answers {}
+
+        val newCallback = RecordingFullScreenContentCallback()
+        mockAd.setTrackingFullScreenContentCallback(newCallback)
+
+        wrapper.onAdShowedFullScreenContent()
+
+        assertEquals(1, newCallback.onAdShowedCalls)
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any()) }
+    }
+
+    @Test
+    fun `setTrackingFullScreenContentCallback with null still tracks`() {
+        val wrapper = createDelegationSubject(delegate = RecordingFullScreenContentCallback())
+        val mockAd = mockk<InterstitialAd>()
+        every { mockAd.fullScreenContentCallback } returns wrapper
+        every { mockAd.fullScreenContentCallback = any() } answers {}
+
+        mockAd.setTrackingFullScreenContentCallback(null)
+
+        wrapper.onAdShowedFullScreenContent()
+
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any()) }
+    }
+
+    @Test
+    fun `setTrackingFullScreenContentCallback falls back to direct assignment without wrapper`() {
+        val mockAd = mockk<InterstitialAd>()
+        var assignedCallback: FullScreenContentCallback? = null
+        every { mockAd.fullScreenContentCallback } returns null
+        every { mockAd.fullScreenContentCallback = any() } answers { assignedCallback = firstArg() }
+
+        val newCallback = RecordingFullScreenContentCallback()
+        mockAd.setTrackingFullScreenContentCallback(newCallback)
+
+        assertEquals(newCallback, assignedCallback)
     }
 
     // endregion
