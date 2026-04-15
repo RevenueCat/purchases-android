@@ -10,6 +10,10 @@ package com.revenuecat.purchases.admob {
   }
 
   public final class FullScreenAdExtensionsKt {
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.appopen.AppOpenAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.interstitial.InterstitialAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.rewarded.RewardedAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.appopen.AppOpenAd, android.app.Activity activity, String? placement);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.interstitial.InterstitialAd, android.app.Activity activity, String? placement);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.rewarded.RewardedAd, android.app.Activity activity, String? placement, com.google.android.gms.ads.OnUserEarnedRewardListener onUserEarnedRewardListener);
