@@ -17,9 +17,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 internal class BlockstoreHelper
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -139,7 +139,7 @@ constructor(
         val retrieveRequest = RetrieveBytesRequest.Builder()
             .setRetrieveAll(true)
             .build()
-        return suspendCoroutine { cont ->
+        return suspendCancellableCoroutine { cont ->
             blockstoreClient.retrieveBytes(retrieveRequest)
                 .addOnSuccessListener { cont.resume(it.blockstoreDataMap) }
                 .addOnFailureListener { cont.resumeWithException(it) }
@@ -166,7 +166,7 @@ constructor(
             .setKey(BLOCKSTORE_USER_ID_KEY)
             .setShouldBackupToCloud(true)
             .build()
-        suspendCoroutine { cont ->
+        suspendCancellableCoroutine { cont ->
             blockstoreClient.storeBytes(storeRequest)
                 .addOnSuccessListener {
                     debugLog { "Block store: User ID: $userId stored in Block store." }

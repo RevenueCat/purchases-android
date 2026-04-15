@@ -62,7 +62,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.UUID
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @Suppress("TooManyFunctions")
 @Stable
@@ -473,7 +472,7 @@ internal class PaywallViewModelImpl(
     ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
-        val shouldResume = suspendCoroutine { continuation ->
+        val shouldResume = suspendCancellableCoroutine { continuation ->
             listener?.onPurchasePackageInitiated(packageToPurchase) { shouldResume ->
                 continuation.resume(shouldResume)
             } ?: continuation.resume(true)

@@ -14,6 +14,7 @@ import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
@@ -26,7 +27,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -253,7 +253,7 @@ abstract class BasePurchasesIntegrationTest {
     }
 
     protected suspend fun waitForProductEntitlementMappingToUpdate() {
-        suspendCoroutine { continuation ->
+        suspendCancellableCoroutine { continuation ->
             Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
                 .updateProductEntitlementMappingCacheIfStale {
                     if (it != null) {

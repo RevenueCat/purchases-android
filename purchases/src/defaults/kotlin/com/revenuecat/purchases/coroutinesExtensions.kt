@@ -5,10 +5,10 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Get latest available customer info.
@@ -25,7 +25,7 @@ import kotlin.coroutines.suspendCoroutine
 public suspend fun Purchases.awaitCustomerInfo(
     fetchPolicy: CacheFetchPolicy = CacheFetchPolicy.default(),
 ): CustomerInfo {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getCustomerInfoWith(
             fetchPolicy,
             onSuccess = continuation::resume,
@@ -47,7 +47,7 @@ public suspend fun Purchases.awaitCustomerInfo(
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
 public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         logInWith(
             appUserID,
             onSuccess = { customerInfo, created ->
@@ -70,7 +70,7 @@ public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
 public suspend fun Purchases.awaitLogOut(): CustomerInfo {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         logOutWith(
             onSuccess = { continuation.resume(it) },
             onError = { continuation.resumeWithException(PurchasesException(it)) },
@@ -91,7 +91,7 @@ public suspend fun Purchases.awaitLogOut(): CustomerInfo {
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         syncPurchasesWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
@@ -118,7 +118,7 @@ public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
@@ -147,7 +147,7 @@ public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offering
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String, String>): Offerings {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         setAppstackAttributionParams(
             data,
             syncAttributesAndOfferingsListener(
@@ -176,7 +176,7 @@ public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String,
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
@@ -195,7 +195,7 @@ public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
             override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
                 continuation.resume(customerCenterConfig)
@@ -221,7 +221,7 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getVirtualCurrenciesWith(
             onSuccess = { continuation.resume(it) },
             onError = { continuation.resumeWithException(PurchasesException(it)) },
@@ -242,7 +242,7 @@ public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitStorefrontLocale(): Locale {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getStorefrontLocaleWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
@@ -273,7 +273,7 @@ public data class CreateSupportTicketResult(
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         createSupportTicket(
             email = email,
             description = description,

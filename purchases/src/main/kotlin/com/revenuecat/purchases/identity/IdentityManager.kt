@@ -21,11 +21,11 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -89,7 +89,7 @@ internal class IdentityManager(
         oldAppUserID: String,
     ) {
         val newAppUserID = currentAppUserID
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             backend.aliasUsers(
                 oldAppUserID = oldAppUserID,
                 newAppUserID = newAppUserID,

@@ -23,7 +23,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Purchase manager for purchasesAreCompletedBy MY_APP using BillingClient directly.
@@ -198,7 +197,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
 
     private suspend fun ensureConnected(): Boolean {
         if (billingClient.isReady) return true
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             billingClient.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
                     continuation.resume(
