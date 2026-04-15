@@ -582,5 +582,3 @@ private fun previewBottomSheet(
         backgroundBlur = true,
         size = size,
     )
-
-private const val MILLIS_2025_01_25 = 1737763200000
