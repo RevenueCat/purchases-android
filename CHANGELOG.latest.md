@@ -1,7 +1,4 @@
-## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Fix paywall crash when cached font files are evicted (#3341) via Toni Rico (@tonidero)
-
-### 🔄 Other Changes
-* Cleaner Offerings list in Paywall tester (#3319) via Cesar de la Vega (@vegaro)
-* Add 9.29.1 hotfix release to changelog (#3340) via Cesar de la Vega (@vegaro)
+## RevenueCat SDK
+### ✨ New Features
+* feat(ads): add possibility to update fullscreen content callback (#3325) via Peter Porfy (@peterporfy)
+* feat(ads): placement override at show time (#3318) via Peter Porfy (@peterporfy)
