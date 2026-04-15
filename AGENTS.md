@@ -171,7 +171,7 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 
 ### Target Specifications
 - **Compile SDK**: 35
-- **Min SDK**: 21 (24 for UI modules)
+- **Min SDK**: 23 (24 for UI modules)
 - **Java**: 8+
 - **Kotlin**: 2.0.21 (language level 1.8)
 

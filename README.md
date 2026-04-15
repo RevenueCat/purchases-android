@@ -67,7 +67,7 @@ Or view / build our Android sample app:
 ## Requirements
 - Java 8+
 - Kotlin 1.8.0+
-- Minimum target: Android 5.0+ (API level 21+)
+- Minimum target: Android 6.0+ (API level 23+)
 
 ## SDK Reference
 Our full SDK reference [can be found here](https://sdk.revenuecat.com/android/index.html).

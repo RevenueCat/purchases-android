@@ -8,6 +8,7 @@ import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
 import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
+import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import io.mockk.every
 import io.mockk.mockk
@@ -189,6 +190,105 @@ class StoreTransactionConversionsTest {
         }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
+    @Test
+    fun `OwnedProductVo toStoreTransaction maps core OTP fields`() {
+        val itemId = "otp_product"
+        val purchaseId = "otp_purchase"
+        val ownedProductVo = createMockOwnedProductVo(
+            itemId = itemId,
+            purchaseId = purchaseId,
+            purchaseDate = purchaseDateString,
+            type = "item",
+        )
+
+        val storeTransaction = ownedProductVo.toStoreTransaction(
+            purchaseState = PurchaseState.PURCHASED,
+        )
+
+        assertThat(storeTransaction.orderId).isNull()
+        assertThat(storeTransaction.purchaseToken).isEqualTo(purchaseId)
+        assertThat(storeTransaction.productIds).containsExactly(itemId)
+        assertThat(storeTransaction.purchaseState).isEqualTo(PurchaseState.PURCHASED)
+        assertThat(storeTransaction.purchaseTime)
+            .isEqualTo(purchaseDateString.parseDateFromGalaxyDateString().time)
+        assertThat(storeTransaction.presentedOfferingContext).isNull()
+        assertThat(storeTransaction.purchaseType).isEqualTo(PurchaseType.GALAXY_PURCHASE)
+        assertThat(storeTransaction.storeUserID).isNull()
+        assertThat(storeTransaction.marketplace).isNull()
+        assertThat(storeTransaction.signature).isNull()
+        assertThat(storeTransaction.originalJson.getString("itemId")).isEqualTo(itemId)
+        assertThat(storeTransaction.subscriptionOptionId).isNull()
+        assertThat(storeTransaction.subscriptionOptionIdForProductIDs).isNull()
+        assertThat(storeTransaction.replacementMode).isNull()
+    }
+
+    @Test
+    fun `OwnedProductVo toStoreTransaction maps item type to INAPP and disables auto renewing`() {
+        val ownedProductVo = createMockOwnedProductVo(
+            itemId = "otp_product",
+            purchaseId = "otp_purchase",
+            purchaseDate = purchaseDateString,
+            type = "item",
+        )
+
+        val storeTransaction = ownedProductVo.toStoreTransaction(
+            purchaseState = PurchaseState.PURCHASED,
+        )
+
+        assertThat(storeTransaction.type).isEqualTo(ProductType.INAPP)
+        assertThat(storeTransaction.isAutoRenewing).isFalse
+    }
+
+    @Test
+    fun `OwnedProductVo toStoreTransaction maps subscription type and sets auto renewing`() {
+        val ownedProductVo = createMockOwnedProductVo(
+            itemId = "sub_product",
+            purchaseId = "sub_purchase",
+            purchaseDate = purchaseDateString,
+            type = "subscription",
+        )
+
+        val storeTransaction = ownedProductVo.toStoreTransaction(
+            purchaseState = PurchaseState.PURCHASED,
+        )
+
+        assertThat(storeTransaction.type).isEqualTo(ProductType.SUBS)
+        assertThat(storeTransaction.isAutoRenewing).isTrue
+    }
+
+    @Test
+    fun `OwnedProductVo toStoreTransaction maps unknown type to UNKNOWN product type`() {
+        val ownedProductVo = createMockOwnedProductVo(
+            itemId = "unknown_product",
+            purchaseId = "unknown_purchase",
+            purchaseDate = purchaseDateString,
+            type = "weird_type",
+        )
+
+        val storeTransaction = ownedProductVo.toStoreTransaction(
+            purchaseState = PurchaseState.PENDING,
+        )
+
+        assertThat(storeTransaction.type).isEqualTo(ProductType.UNKNOWN)
+        assertThat(storeTransaction.isAutoRenewing).isFalse
+    }
+
+    @Test
+    fun `OwnedProductVo toStoreTransaction throws IllegalArgumentException for invalid purchase date`() {
+        val ownedProductVo = createMockOwnedProductVo(
+            itemId = "otp_product",
+            purchaseId = "otp_purchase",
+            purchaseDate = "not-a-date",
+            type = "item",
+        )
+
+        assertThatThrownBy {
+            ownedProductVo.toStoreTransaction(
+                purchaseState = PurchaseState.PURCHASED,
+            )
+        }.isInstanceOf(IllegalArgumentException::class.java)
+    }
+
     private fun createMockPurchaseVo(
         orderId: String,
         purchaseId: String,
@@ -207,6 +307,26 @@ class StoreTransactionConversionsTest {
                 "mPurchaseDate": "$purchaseDate",
                 "mType": "$type",
                 "mItemId": "$itemId"
+            }
+        """.trimIndent()
+    }
+
+    private fun createMockOwnedProductVo(
+        itemId: String,
+        purchaseId: String,
+        purchaseDate: String,
+        type: String,
+    ): OwnedProductVo = mockk {
+        every { this@mockk.type } returns type
+        every { this@mockk.purchaseDate } returns purchaseDate
+        every { this@mockk.itemId } returns itemId
+        every { this@mockk.purchaseId } returns purchaseId
+        every { this@mockk.jsonString } returns """
+            {
+                "itemId": "$itemId",
+                "purchaseId": "$purchaseId",
+                "purchaseDate": "$purchaseDate",
+                "type": "$type"
             }
         """.trimIndent()
     }

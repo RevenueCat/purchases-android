@@ -73,7 +73,7 @@ internal class AcknowledgePurchaseHandler(
             PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(transaction.purchaseToken)
         }
 
-        // Note: acknowledgePurchases() swallows all exceptions
+        // Note: acknowledgePurchases() swallows all exceptions and returns failures to the listener
         val requestWasDispatched = iapHelper.acknowledgePurchases(
             purchaseIds = transaction.purchaseToken,
             onAcknowledgePurchasesListener = this,
@@ -81,13 +81,13 @@ internal class AcknowledgePurchaseHandler(
 
         if (!requestWasDispatched) {
             log(LogIntent.GALAXY_ERROR) { GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST }
+            clearInFlightRequest()
             onError(
                 PurchasesError(
                     code = PurchasesErrorCode.StoreProblemError,
                     underlyingErrorMessage = GalaxyStrings.GALAXY_STORE_FAILED_TO_ACCEPT_ACKNOWLEDGE_REQUEST,
                 ),
             )
-            clearInFlightRequest()
             return
         }
     }
