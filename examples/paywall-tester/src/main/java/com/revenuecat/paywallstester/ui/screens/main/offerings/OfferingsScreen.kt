@@ -7,16 +7,12 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.Divider
 import androidx.compose.material.FloatingActionButton
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Refresh
@@ -25,20 +21,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,17 +55,14 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
-import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
-import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 import com.revenuecat.purchases.Package as RCPackage
 
 @SuppressWarnings("LongParameterList")
@@ -88,12 +79,22 @@ fun OfferingsScreen(
         is OfferingsState.Error -> ErrorOfferingsScreen(errorState = state, modifier)
         is OfferingsState.Loaded -> OfferingsListScreen(
             offeringsState = state,
-            tappedOnNavigateToOffering = tappedOnOffering,
-            tappedOnNavigateToOfferingFooter = tappedOnOfferingFooter,
-            tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
+            tappedOnNavigateToOffering = { offering ->
+                viewModel.markOfferingAsRecent(offering.identifier)
+                tappedOnOffering(offering)
+            },
+            tappedOnNavigateToOfferingFooter = { offering ->
+                viewModel.markOfferingAsRecent(offering.identifier)
+                tappedOnOfferingFooter(offering)
+            },
+            tappedOnNavigateToOfferingCondensedFooter = { offering ->
+                viewModel.markOfferingAsRecent(offering.identifier)
+                tappedOnOfferingCondensedFooter(offering)
+            },
             tappedOnNavigateToOfferingByPlacement = tappedOnOfferingByPlacement,
             tappedOnReloadOfferings = { viewModel.refreshOfferings() },
             onSearchQueryChange = { query -> viewModel.updateSearchQuery(query) },
+            onOfferingInteract = { viewModel.markOfferingAsRecent(it.identifier) },
             modifier,
         )
         OfferingsState.Loading -> LoadingOfferingsScreen(modifier)
@@ -127,7 +128,7 @@ private fun LoadingOfferingsScreen(
 }
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalFoundationApi::class)
-@Suppress("LongMethod", "LongParameterList", "ViewModelInjection")
+@Suppress("LongMethod", "LongParameterList", "ViewModelInjection", "CyclomaticComplexMethod")
 @Composable
 private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,
@@ -137,27 +138,43 @@ private fun OfferingsListScreen(
     tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
     tappedOnReloadOfferings: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
+    onOfferingInteract: (Offering) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val customVariablesViewModel: CustomVariablesViewModel = viewModel()
-    var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
+    var dropdownExpandedKey by remember { mutableStateOf<String?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
     var showCustomVariablesEditor by remember { mutableStateOf(false) }
 
-    // Filter offerings based on search query
-    val filteredOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
+    // Filter and group offerings by template
+    val groupedOfferings = remember(offeringsState.offerings, offeringsState.searchQuery) {
         val query = offeringsState.searchQuery.lowercase().trim()
-        if (query.isEmpty()) {
-            offeringsState.offerings.all.values.toList()
+        val allOfferings = offeringsState.offerings.all.values
+        val filtered = if (query.isEmpty()) {
+            allOfferings.toList()
         } else {
-            offeringsState.offerings.all.values.filter { offering ->
+            allOfferings.filter { offering ->
                 offering.identifier.lowercase().contains(query) ||
                     offering.paywall?.templateName?.lowercase()?.contains(query) == true ||
                     offering.paywallComponents?.data?.templateName?.lowercase()?.contains(query) == true
             }
         }
+        filtered.groupBy { offering ->
+            offering.paywallComponents?.data?.templateName?.let { "V2 — $it" }
+                ?: offering.paywall?.templateName?.let { "Template $it" }
+                ?: "No paywall"
+        }.toSortedMap(
+            compareBy {
+                // Sort: templates first, then V2, then no paywall last
+                when {
+                    it.startsWith("Template") -> "0_$it"
+                    it.startsWith("V2") -> "1_$it"
+                    else -> "2_$it"
+                }
+            },
+        )
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -191,56 +208,66 @@ private fun OfferingsListScreen(
             }
 
             item {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { showDialog.value = true }
-                                .padding(16.dp),
-                        ) {
-                            Column {
-                                Text("Get offering by placement")
-                            }
-                        }
-                        Divider()
-                    }
-                }
+                ListItem(
+                    headlineContent = { Text("Get offering by placement") },
+                    modifier = Modifier.clickable { showDialog.value = true },
+                )
+                HorizontalDivider()
             }
-            items(filteredOfferings) { offering ->
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    if (offering == dropdownExpandedOffering) {
-                        DisplayOfferingMenu(
-                            offering = offering,
-                            tappedOnNavigateToOffering = tappedOnNavigateToOffering,
-                            tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
-                            tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
-                            tappedOnDisplayOfferingAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
-                            dismissed = { dropdownExpandedOffering = null },
-                        )
-                    }
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .combinedClickable(
-                                    onClick = { tappedOnNavigateToOffering(offering) },
-                                    onLongClick = { dropdownExpandedOffering = offering },
-                                )
-                                .padding(16.dp),
-                        ) {
-                            Column {
-                                Text(text = offering.identifier)
 
-                                offering.paywall?.also {
-                                    Text("Template ${it.templateName}")
-                                } ?: offering.paywallComponents?.also {
-                                    Text("Components ${it.data.templateName}")
-                                } ?: Text("No paywall")
-                            }
-                        }
-                        Divider()
-                    }
+            // Recents section
+            val recentOfferings = offeringsState.recentOfferingIds.mapNotNull { id ->
+                offeringsState.offerings.all[id]
+            }
+            if (recentOfferings.isNotEmpty() && offeringsState.searchQuery.isEmpty()) {
+                item {
+                    SectionHeader("Recents")
+                }
+                items(recentOfferings, key = { "recent_${it.identifier}" }) { offering ->
+                    val rowKey = "recent_${offering.identifier}"
+                    OfferingRow(
+                        offering = offering,
+                        isMenuExpanded = dropdownExpandedKey == rowKey,
+                        showSubtitle = true,
+                        onTap = {
+                            tappedOnNavigateToOffering(offering)
+                        },
+                        onLongPress = { dropdownExpandedKey = rowKey },
+                        onNavigate = tappedOnNavigateToOffering,
+                        onDisplayAsDialog = {
+                            onOfferingInteract(it)
+                            displayPaywallDialogOffering = it
+                        },
+                        onDisplayAsFooter = tappedOnNavigateToOfferingFooter,
+                        onDisplayAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
+                        onDismissMenu = { dropdownExpandedKey = null },
+                    )
+                }
+                item { HorizontalDivider() }
+            }
+
+            groupedOfferings.forEach { (sectionTitle, offerings) ->
+                item(key = "header_$sectionTitle") {
+                    SectionHeader(sectionTitle)
+                }
+                items(offerings, key = { it.identifier }) { offering ->
+                    val rowKey = offering.identifier
+                    OfferingRow(
+                        offering = offering,
+                        isMenuExpanded = dropdownExpandedKey == rowKey,
+                        onTap = {
+                            tappedOnNavigateToOffering(offering)
+                        },
+                        onLongPress = { dropdownExpandedKey = rowKey },
+                        onNavigate = tappedOnNavigateToOffering,
+                        onDisplayAsDialog = {
+                            onOfferingInteract(it)
+                            displayPaywallDialogOffering = it
+                        },
+                        onDisplayAsFooter = tappedOnNavigateToOfferingFooter,
+                        onDisplayAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
+                        onDismissMenu = { dropdownExpandedKey = null },
+                    )
                 }
             }
         }
@@ -276,9 +303,40 @@ private fun OfferingsListScreen(
     }
 
     if (displayPaywallDialogOffering != null) {
-        RefreshablePaywallDialog(
-            offering = displayPaywallDialogOffering!!,
-            onDismiss = { displayPaywallDialogOffering = null },
+        PaywallDialog(
+            PaywallDialogOptions.Builder()
+                .setDismissRequest { displayPaywallDialogOffering = null }
+                .setOffering(displayPaywallDialogOffering)
+                .setCustomVariables(CustomVariablesHolder.customVariables)
+                .setListener(object : PaywallListener {
+                    override fun onPurchaseStarted(rcPackage: RCPackage) {
+                        Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")
+                    }
+
+                    override fun onPurchaseCompleted(
+                        customerInfo: CustomerInfo,
+                        storeTransaction: StoreTransaction,
+                    ) {
+                        Log.d("PaywallDialog", "onPurchaseCompleted: ${storeTransaction.productIds}")
+                    }
+
+                    override fun onPurchaseError(error: PurchasesError) {
+                        Log.e("PaywallDialog", "onPurchaseError: ${error.message}")
+                    }
+
+                    override fun onRestoreStarted() {
+                        Log.d("PaywallDialog", "onRestoreStarted")
+                    }
+
+                    override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                        Log.d("PaywallDialog", "onRestoreCompleted: ${customerInfo.activeSubscriptions}")
+                    }
+
+                    override fun onRestoreError(error: PurchasesError) {
+                        Log.e("PaywallDialog", "onRestoreError: ${error.message}")
+                    }
+                })
+                .build(),
         )
     }
 
@@ -347,84 +405,59 @@ private fun PlacementDialog(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, InternalRevenueCatAPI::class)
+@Suppress("LongParameterList")
 @Composable
-private fun RefreshablePaywallDialog(
+private fun OfferingRow(
     offering: Offering,
-    onDismiss: () -> Unit,
+    isMenuExpanded: Boolean,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
+    onNavigate: (Offering) -> Unit,
+    onDisplayAsDialog: (Offering) -> Unit,
+    onDisplayAsFooter: (Offering) -> Unit,
+    onDisplayAsCondensedFooter: (Offering) -> Unit,
+    onDismissMenu: () -> Unit,
+    showSubtitle: Boolean = false,
 ) {
-    var currentOffering by remember { mutableStateOf(offering) }
-    var isRefreshing by remember { mutableStateOf(false) }
-    var refreshCount by remember { mutableIntStateOf(0) }
-    val scope = rememberCoroutineScope()
-
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { scaffoldPadding ->
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = {
-                    scope.launch {
-                        isRefreshing = true
-                        try {
-                            val offerings = Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
-                            offerings.all[currentOffering.identifier]?.let {
-                                currentOffering = it
-                            }
-                            refreshCount++
-                        } finally {
-                            isRefreshing = false
-                        }
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(scaffoldPadding),
-            ) {
-                val customVariables = CustomVariablesHolder.customVariables +
-                    mapOf("refresh_token" to CustomVariableValue.String("$refreshCount"))
-                key(refreshCount) {
-                    Paywall(
-                        PaywallOptions.Builder(onDismiss)
-                            .setOffering(currentOffering)
-                            .setShouldDisplayDismissButton(true)
-                            .setCustomVariables(customVariables)
-                            .setListener(object : PaywallListener {
-                                override fun onPurchaseStarted(rcPackage: RCPackage) {
-                                    Log.d("PaywallDialog", "onPurchaseStarted: ${rcPackage.identifier}")
-                                }
-
-                                override fun onPurchaseCompleted(
-                                    customerInfo: CustomerInfo,
-                                    storeTransaction: StoreTransaction,
-                                ) {
-                                    Log.d("PaywallDialog", "onPurchaseCompleted: ${storeTransaction.productIds}")
-                                }
-
-                                override fun onPurchaseError(error: PurchasesError) {
-                                    Log.e("PaywallDialog", "onPurchaseError: ${error.message}")
-                                }
-
-                                override fun onRestoreStarted() {
-                                    Log.d("PaywallDialog", "onRestoreStarted")
-                                }
-
-                                override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-                                    Log.d("PaywallDialog", "onRestoreCompleted: ${customerInfo.activeSubscriptions}")
-                                }
-
-                                override fun onRestoreError(error: PurchasesError) {
-                                    Log.e("PaywallDialog", "onRestoreError: ${error.message}")
-                                }
-                            })
-                            .build(),
-                    )
-                }
-            }
-        }
+    val subtitle = if (showSubtitle) {
+        offering.paywall?.let { "Template ${it.templateName}" }
+            ?: offering.paywallComponents?.let { "Components ${it.data.templateName}" }
+            ?: "No paywall"
+    } else {
+        null
     }
+
+    Box {
+        if (isMenuExpanded) {
+            DisplayOfferingMenu(
+                offering = offering,
+                tappedOnNavigateToOffering = onNavigate,
+                tappedOnDisplayOfferingAsDialog = onDisplayAsDialog,
+                tappedOnDisplayOfferingAsFooter = onDisplayAsFooter,
+                tappedOnDisplayOfferingAsCondensedFooter = onDisplayAsCondensedFooter,
+                dismissed = onDismissMenu,
+            )
+        }
+        ListItem(
+            headlineContent = { Text(text = offering.identifier) },
+            supportingContent = subtitle?.let { { Text(text = it) } },
+            modifier = Modifier.combinedClickable(
+                onClick = onTap,
+                onLongClick = onLongPress,
+            ),
+        )
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp),
+    )
 }
 
 @Suppress("LongParameterList")
@@ -500,6 +533,10 @@ fun OfferingsScreenPreview() {
             }
 
             override fun updateSearchQuery(query: String) {
+                // no-op
+            }
+
+            override fun markOfferingAsRecent(offeringId: String) {
                 // no-op
             }
         },
