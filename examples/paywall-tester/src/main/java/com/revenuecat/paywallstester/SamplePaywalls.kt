@@ -929,10 +929,16 @@ object SamplePaywalls {
                                                     ),
                                                 ),
                                                 padding = Padding(
-                                                    top = 8.0, bottom = 8.0, leading = 32.0, trailing = 32.0,
+                                                    top = 8.0,
+                                                    bottom = 8.0,
+                                                    leading = 32.0,
+                                                    trailing = 32.0,
                                                 ),
                                                 margin = Padding(
-                                                    top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0,
+                                                    top = 8.0,
+                                                    bottom = 8.0,
+                                                    leading = 0.0,
+                                                    trailing = 0.0,
                                                 ),
                                                 shape = Shape.Pill,
                                             ),

@@ -162,13 +162,22 @@ internal fun StackComponentView(
 
             Badge.Style.Nested ->
                 MainStackComponent(
-                    stackState, state, clickHandler, contentAlpha, modifier, badge,
+                    stackState,
+                    state,
+                    clickHandler,
+                    contentAlpha,
+                    modifier,
+                    badge,
                     interactionModifier = interactionModifier,
                 )
         }
     } else {
         MainStackComponent(
-            stackState, state, clickHandler, contentAlpha, modifier,
+            stackState,
+            state,
+            clickHandler,
+            contentAlpha,
+            modifier,
             interactionModifier = interactionModifier,
         )
     }
@@ -188,7 +197,10 @@ private fun StackWithOverlaidBadge(
 ) {
     Box(modifier = modifier) {
         MainStackComponent(
-            stackState, state, clickHandler, contentAlpha,
+            stackState,
+            state,
+            clickHandler,
+            contentAlpha,
             interactionModifier = interactionModifier,
         )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
@@ -455,7 +467,11 @@ private fun StackWithShortEdgeToEdgeBadge(
         }
     }
     MainStackComponent(
-        stackState, state, clickHandler, contentAlpha, modifier,
+        stackState,
+        state,
+        clickHandler,
+        contentAlpha,
+        modifier,
         interactionModifier = interactionModifier,
     ) {
         StackComponentView(
