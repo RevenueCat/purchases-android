@@ -408,6 +408,7 @@ internal class StyleFactory(
                 is HeaderComponentStyle -> to.copy(
                     stackComponentStyle = to.stackComponentStyle.copy(
                         applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied,
+                        ignoreHeaderHeight = true,
                     ),
                 )
                 else -> to

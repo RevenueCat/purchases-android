@@ -12,8 +12,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
@@ -281,12 +279,14 @@ internal sealed interface PaywallState {
                 get() = dateProvider()
 
             /**
-             * The measured height of the header overlay. Updated at composition time by
-             * [LoadedPaywallComponents] so that ZLayer hero stacks can push non-hero children
-             * below the header.
+             * The measured height of the header overlay in pixels. Set during the layout phase by
+             * the custom Layout in [LoadedPaywallComponents] so that ZLayer stacks can read it
+             * during their own layout phase (via [Modifier.layout]) to offset non-hero children
+             * below the header — all in a single pass, without recomposition.
              */
-            var headerHeight: Dp by mutableStateOf(0.dp)
-                internal set
+            @get:JvmSynthetic
+            var headerHeightPx: Int = 0
+                @JvmSynthetic internal set
 
             var actionInProgress by mutableStateOf(false)
                 private set

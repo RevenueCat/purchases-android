@@ -3,31 +3,20 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -91,9 +80,6 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
-    val density = LocalDensity.current
-    var headerHeightPx by remember { mutableIntStateOf(0) }
-    val headerHeightDp = remember(headerHeightPx, density) { with(density) { headerHeightPx.toDp() } }
 
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
@@ -101,10 +87,11 @@ internal fun LoadedPaywallComponents(
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
             Column {
-                Box(modifier = Modifier.weight(1f)) {
-                    if (headerComponentStyle != null && state.mainStackHasHeroImage) {
-                        state.headerHeight = headerHeightDp
-                    }
+                HeaderOverlayLayout(
+                    state = state,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    // Child 0: main scrollable content.
                     ComponentView(
                         style = style,
                         state = state,
@@ -115,21 +102,16 @@ internal fun LoadedPaywallComponents(
                             .conditional(
                                 headerComponentStyle != null && !state.mainStackHasHeroImage,
                             ) {
-                                padding(top = headerHeightDp)
+                                headerTopPadding(state)
                             },
                     )
+                    // Child 1 (optional): header overlay.
                     headerComponentStyle?.let { headerStyle ->
                         ComponentView(
                             style = headerStyle,
                             state = state,
                             onClick = onClick,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .align(Alignment.TopCenter)
-                                .onSizeChanged { headerHeightPx = it.height }
-                                .windowInsetsPadding(
-                                    WindowInsets.safeDrawing.only(WindowInsetsSides.Top),
-                                ),
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
@@ -146,6 +128,58 @@ internal fun LoadedPaywallComponents(
         }
     }
 }
+
+/**
+ * Custom Layout that measures the header overlay first, stores its pixel height in [state],
+ * then measures the main content. This ensures the header height is available during the main
+ * content's layout phase without requiring a second composition pass.
+ *
+ * Children: index 0 = main scrollable content, index 1 (optional) = header overlay.
+ */
+@Composable
+private fun HeaderOverlayLayout(
+    state: PaywallState.Loaded.Components,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Layout(
+        content = content,
+        modifier = modifier,
+    ) { measurables, constraints ->
+        // Measure header first (child 1) to get its height before the main content is measured.
+        val headerPlaceable = if (measurables.size > 1) {
+            measurables[1].measure(constraints.copy(minHeight = 0))
+        } else {
+            null
+        }
+
+        // Store header height so child Modifier.layout blocks can read it in this same pass.
+        // Both hero (ZLayer reads it) and non-hero (headerTopPadding reads it) cases need this.
+        state.headerHeightPx = headerPlaceable?.height ?: 0
+
+        // Measure main content. Its inner Modifier.layout blocks can now read state.headerHeightPx.
+        val mainPlaceable = measurables[0].measure(constraints)
+
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            mainPlaceable.place(0, 0)
+            headerPlaceable?.place(0, 0)
+        }
+    }
+}
+
+/**
+ * Adds top padding equal to the header's measured height in pixels. The value is read during the
+ * layout phase from [state.headerHeightPx][PaywallState.Loaded.Components.headerHeightPx], which
+ * is set by [HeaderOverlayLayout] earlier in the same layout pass.
+ */
+private fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
+    this.layout { measurable, constraints ->
+        val topPad = state.headerHeightPx
+        val placeable = measurable.measure(constraints.offset(vertical = -topPad))
+        layout(placeable.width, placeable.height + topPad) {
+            placeable.place(0, topPad)
+        }
+    }
 
 private suspend fun handleClick(
     action: PaywallAction,
