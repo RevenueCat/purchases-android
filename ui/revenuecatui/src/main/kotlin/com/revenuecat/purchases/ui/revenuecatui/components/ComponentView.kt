@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.header.HeaderComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.HeaderComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
@@ -68,6 +70,12 @@ internal fun ComponentView(
         )
     }
     is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
+    is HeaderComponentStyle -> HeaderComponentView(
+        style = style,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,
         state = state,

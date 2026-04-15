@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import dev.drewhamilton.poko.Poko
@@ -23,4 +24,6 @@ public class PaywallComponentsConfig(
     @get:JvmSynthetic
     @SerialName("sticky_footer")
     public val stickyFooter: StickyFooterComponent? = null,
+    @get:JvmSynthetic
+    public val header: HeaderComponent? = null,
 )

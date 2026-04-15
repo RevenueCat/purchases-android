@@ -9,6 +9,8 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -189,22 +191,24 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         stripRules = stripRules,
     )
 
-    // Combine the main stack with the stickyFooter and the background, or accumulate the encountered errors.
+    // Combine the main stack with the header, stickyFooter and the background, or accumulate the encountered errors.
     return zipOrAccumulate(
         first = styleFactory.create(
             config.stack,
+            applyTopWindowInsets = config.header == null,
             applyBottomWindowInsets = config.stickyFooter == null,
             applyHorizontalWindowInsets = true,
         ),
-        second = config.stickyFooter
+        second = config.header
+            ?.let { styleFactory.create(it, applyHorizontalWindowInsets = true) }
+            .orSuccessfullyNull(),
+        third = config.stickyFooter
             ?.let { styleFactory.create(it, applyBottomWindowInsets = true, applyHorizontalWindowInsets = true) }
             .orSuccessfullyNull(),
-        third = config.background.toBackgroundStyles(aliases = colorAliases),
-    ) { backendRootComponentResult, stickyFooterResult, background ->
-        val hasAnyPackages = backendRootComponentResult.availablePackages.hasAnyPackages ||
-            stickyFooterResult?.availablePackages?.hasAnyPackages ?: false
-
+        fourth = config.background.toBackgroundStyles(aliases = colorAliases),
+    ) { backendRootComponentResult, headerResult, stickyFooterResult, background ->
         val backendRootComponent = backendRootComponentResult.componentStyle
+        val header = headerResult?.componentStyle
         val stickyFooter = stickyFooterResult?.componentStyle
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
         // definite solution for positioning the root component.
@@ -215,14 +219,20 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
 
         PaywallValidationResult.Components(
             stack = rootComponent,
+            header = header,
             stickyFooter = stickyFooter,
             background = background,
             locales = localizations.keys,
             zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
             variableConfig = paywallComponents.uiConfig.variableConfig,
             variableDataProvider = VariableDataProvider(resourceProvider),
-            packages = backendRootComponentResult.availablePackages.merge(with = stickyFooterResult?.availablePackages),
-            initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex ?: stickyFooterResult?.defaultTabIndex,
+            packages = backendRootComponentResult.availablePackages
+                .merge(with = headerResult?.availablePackages)
+                .merge(with = stickyFooterResult?.availablePackages),
+            initialSelectedTabIndex = backendRootComponentResult.defaultTabIndex
+                ?: headerResult?.defaultTabIndex
+                ?: stickyFooterResult?.defaultTabIndex,
+            mainStackHasHeroImage = backendRootComponentResult.heroImageDetected,
         )
     }
 }
@@ -352,6 +362,7 @@ internal fun Offering.toComponentsPaywallState(
 
     return PaywallState.Loaded.Components(
         stack = validationResult.stack,
+        header = validationResult.header,
         stickyFooter = validationResult.stickyFooter,
         background = validationResult.background,
         showPricesWithDecimals = showPricesWithDecimals,
@@ -365,6 +376,7 @@ internal fun Offering.toComponentsPaywallState(
         customVariables = customVariables,
         defaultCustomVariables = defaultCustomVariables,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
+        mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,
     )
 }
@@ -436,7 +448,9 @@ private val Offering.PaywallComponents.defaultVariableLocalization: Map<Variable
  */
 @JvmSynthetic
 internal fun PaywallComponentsConfig.containsUnsupportedCondition(): Boolean =
-    stack.containsUnsupportedCondition() || stickyFooter?.stack?.containsUnsupportedCondition() == true
+    stack.containsUnsupportedCondition() ||
+        header?.stack?.containsUnsupportedCondition() == true ||
+        stickyFooter?.stack?.containsUnsupportedCondition() == true
 
 @JvmSynthetic
 internal fun StackComponent.containsUnsupportedCondition(): Boolean =
@@ -465,6 +479,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
         }
     is PackageComponent -> overrides.hasUnsupportedCondition() || stack.containsUnsupportedCondition()
     is PurchaseButtonComponent -> stack.containsUnsupportedCondition()
+    is HeaderComponent -> stack.containsUnsupportedCondition()
     is StickyFooterComponent -> stack.containsUnsupportedCondition()
     is CarouselComponent -> overrides.hasUnsupportedCondition() ||
         pages.any { it.containsUnsupportedCondition() }
@@ -489,6 +504,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is TabControlButtonComponent -> stack.containsUnsupportedCondition()
     is TabControlToggleComponent -> false
     is TabControlComponent -> false
+    is FallbackHeaderComponent -> false
 }
 
 @JvmSynthetic
