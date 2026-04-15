@@ -11,6 +11,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(InternalRevenueCatAPI::class)
 class WorkflowManagerTest {
@@ -121,6 +122,39 @@ class WorkflowManagerTest {
         )
         assertThat(error).isNotNull
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `getWorkflow calls onError when resolver throws IOException`() {
+        val response = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn.example.com/workflow.json",
+        )
+        every { mockResolver.resolve(response) } throws IOException("CDN fetch failed")
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers {
+            successSlot.captured(response)
+        }
+
+        var error: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("expected error") },
+            onError = { error = it },
+        )
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.toPurchasesError
+import java.io.IOException
 
 internal class WorkflowManager(
     private val backend: Backend,
@@ -41,6 +42,8 @@ internal class WorkflowManager(
                 try {
                     onSuccess(workflowDetailResolver.resolve(response))
                 } catch (e: IllegalStateException) {
+                    onError(e.toPurchasesError())
+                } catch (e: IOException) {
                     onError(e.toPurchasesError())
                 }
             },
