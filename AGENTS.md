@@ -113,6 +113,10 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 - **`@ExperimentalPreviewRevenueCatPurchasesAPI`** - Public APIs for developers that may change before being made stable
 - **`@ExperimentalPreviewRevenueCatUIPurchasesAPI`** - Same as above but for the `:ui:revenuecatui` module
 
+## Code Style
+
+- **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
+
 ## Testing Framework
 
 ### Technologies Used

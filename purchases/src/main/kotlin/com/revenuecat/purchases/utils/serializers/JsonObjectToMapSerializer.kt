@@ -6,6 +6,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -35,7 +36,7 @@ private fun JsonObject.toAnyMap(): Map<String, Any> =
         key to mapped
     }.toMap()
 
-private fun kotlinx.serialization.json.JsonElement.toAny(): Any? = when (this) {
+private fun JsonElement.toAny(): Any? = when (this) {
     is JsonNull -> null
     is JsonPrimitive -> when {
         isString -> content
