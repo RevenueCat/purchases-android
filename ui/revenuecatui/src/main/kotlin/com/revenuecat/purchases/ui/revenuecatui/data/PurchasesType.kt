@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
@@ -14,11 +15,15 @@ import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitGetVirtualCurrencies
+import com.revenuecat.purchases.awaitGetWorkflow
+import com.revenuecat.purchases.awaitGetWorkflows
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
+import com.revenuecat.purchases.common.workflows.WorkflowsListResponse
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -63,6 +68,14 @@ internal interface PurchasesType {
 
     @Throws(PurchasesException::class)
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
+
+    @InternalRevenueCatAPI
+    @Throws(PurchasesException::class)
+    suspend fun awaitGetWorkflows(): WorkflowsListResponse
+
+    @InternalRevenueCatAPI
+    @Throws(PurchasesException::class)
+    suspend fun awaitGetWorkflow(workflowId: String): WorkflowFetchResult
 }
 
 @Suppress("TooManyFunctions")
@@ -130,5 +143,17 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @Throws(PurchasesException::class)
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         return purchases.awaitCreateSupportTicket(email, description)
+    }
+
+    @InternalRevenueCatAPI
+    @Throws(PurchasesException::class)
+    override suspend fun awaitGetWorkflows(): WorkflowsListResponse {
+        return purchases.awaitGetWorkflows()
+    }
+
+    @InternalRevenueCatAPI
+    @Throws(PurchasesException::class)
+    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowFetchResult {
+        return purchases.awaitGetWorkflow(workflowId)
     }
 }
