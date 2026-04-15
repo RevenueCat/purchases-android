@@ -683,9 +683,10 @@ private fun MainStackComponent(
         } else {
             stack(
                 outerShapeModifier
+                    .conditional(interactionModifier !== Modifier) { clip(composeShape) }
+                    .then(interactionModifier)
                     .then(borderModifier)
                     .then(innerShapeModifier)
-                    .then(interactionModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
                     }
