@@ -61,7 +61,8 @@ internal class ComponentsConfigTests {
                         components = listOf(
                             TextComponent(
                                 text = LocalizationKey("7bkohQjzIE"),
-                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                name = "Text",
                             )
                         ),
                     ),
@@ -159,7 +160,8 @@ internal class ComponentsConfigTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             ),
@@ -173,7 +175,8 @@ internal class ComponentsConfigTests {
                                     components = listOf(
                                         TextComponent(
                                             text = LocalizationKey("7bkohQjzIE"),
-                                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                            name = "Text",
                                         )
                                     ),
                                 )
@@ -220,7 +223,8 @@ internal class ComponentsConfigTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             ),
@@ -272,7 +276,8 @@ internal class ComponentsConfigTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             ),
@@ -318,7 +323,8 @@ internal class ComponentsConfigTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             ),

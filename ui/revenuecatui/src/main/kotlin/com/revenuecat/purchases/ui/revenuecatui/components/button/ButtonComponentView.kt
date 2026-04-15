@@ -163,7 +163,7 @@ internal fun ButtonComponentView(
                         ),
                     )
                 } else {
-                    val urlForEvent = paywallAction.navigateToUrlForComponentInteraction()
+                    val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
                     style.action.componentInteraction(urlForEvent)?.let { interaction ->
                         componentInteractionTracker.track(
                             PaywallComponentInteractionData(
@@ -276,7 +276,7 @@ private val Color.brightness: Float
         green * COEFFICIENT_LUMINANCE_GREEN +
         blue * COEFFICIENT_LUMINANCE_BLUE
 
-private fun PaywallAction.navigateToUrlForComponentInteraction(): String? =
+private fun PaywallAction.navigationUrlForComponentInteraction(): String? =
     when (this) {
         is PaywallAction.External.NavigateTo -> when (val dest = destination) {
             is PaywallAction.External.NavigateTo.Destination.Url -> dest.url
