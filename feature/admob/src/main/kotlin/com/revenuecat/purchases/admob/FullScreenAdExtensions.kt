@@ -97,6 +97,7 @@ public fun RewardedInterstitialAd.show(
  * `loadAndTrack`, this falls back to direct assignment.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun InterstitialAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
     if (wrapper != null) {
@@ -114,6 +115,7 @@ public fun InterstitialAd.setTrackingFullScreenContentCallback(callback: FullScr
  * `loadAndTrack`, this falls back to direct assignment.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun AppOpenAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
     if (wrapper != null) {
@@ -131,6 +133,7 @@ public fun AppOpenAd.setTrackingFullScreenContentCallback(callback: FullScreenCo
  * `loadAndTrack`, this falls back to direct assignment.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun RewardedAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
     if (wrapper != null) {
@@ -148,6 +151,7 @@ public fun RewardedAd.setTrackingFullScreenContentCallback(callback: FullScreenC
  * via `loadAndTrack`, this falls back to direct assignment.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
 public fun RewardedInterstitialAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
     if (wrapper != null) {
