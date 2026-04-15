@@ -683,7 +683,6 @@ private fun MainStackComponent(
         } else {
             stack(
                 outerShapeModifier
-                    .clip(composeShape)
                     .then(interactionModifier)
                     .then(borderModifier)
                     .then(innerShapeModifier)
