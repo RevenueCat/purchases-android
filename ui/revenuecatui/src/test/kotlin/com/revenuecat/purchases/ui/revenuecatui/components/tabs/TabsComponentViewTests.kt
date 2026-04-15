@@ -420,7 +420,7 @@ class TabsComponentViewTests {
         )
         val rootStack = StackComponent(
             components = listOf(
-                TabsComponentWithToggleControl(
+                tabsComponentWithToggleControl(
                     // Tab 1 is selected by default
                     defaultToggleValue = true,
                     // On tab 0, index 1 is selected by default. On tab 1, index 0 is selected by default.
@@ -490,7 +490,7 @@ class TabsComponentViewTests {
             )
             val rootStack = StackComponent(
                 components = listOf(
-                    TabsComponentWithToggleControl(
+                    tabsComponentWithToggleControl(
                         // Tab 1 is selected by default
                         defaultToggleValue = true,
                         // On tab 0, index 1 is selected by default. On tab 1, index 0 is selected by default.
@@ -563,11 +563,11 @@ class TabsComponentViewTests {
             0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne),
         ) +
             // Adding an extra tab without any packages
-            Tab(id = "2", components = listOf())
+            tab(id = "2", components = listOf())
         val tabControlButtonKeys = List(tabs.size) { index ->
             LocalizationKey("tab_control_button_$index")
         }
-        val tabsComponent = TabsComponentWithButtonsControl(
+        val tabsComponent = tabsComponentWithButtonsControl(
             tabs,
             List(tabs.size) { index ->
                 TabControlButtonComponent(
@@ -649,11 +649,11 @@ class TabsComponentViewTests {
                 0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
             ) +
                 // Adding an extra tab without any packages
-                Tab(id = "2", components = listOf())
+                tab(id = "2", components = listOf())
             val tabControlButtonKeys = List(tabs.size) { index ->
                 LocalizationKey("tab_control_button_$index")
             }
-            val tabsComponent = TabsComponentWithButtonsControl(
+            val tabsComponent = tabsComponentWithButtonsControl(
                 tabs,
                 List(tabs.size) { index ->
                     TabControlButtonComponent(
@@ -775,11 +775,11 @@ class TabsComponentViewTests {
                 0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
             ) +
                 // Adding an extra tab without any packages
-                Tab(id = "2", components = listOf())
+                tab(id = "2", components = listOf())
             val tabControlButtonKeys = List(tabs.size) { index ->
                 LocalizationKey("tab_control_button_$index")
             }
-            val tabsComponent = TabsComponentWithButtonsControl(
+            val tabsComponent = tabsComponentWithButtonsControl(
                 tabs,
                 List(tabs.size) { index ->
                     TabControlButtonComponent(
@@ -891,7 +891,7 @@ class TabsComponentViewTests {
 
         val rootStack = StackComponent(
             components = listOf(
-                TabsComponentWithToggleControl(
+                tabsComponentWithToggleControl(
                     defaultToggleValue = true,
                     1 to listOf(otherPackageOnTabZero, defaultPackageOnTabZero),
                     0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne, defaultGlobalPackageAndOnTabOne),
@@ -1001,7 +1001,7 @@ class TabsComponentViewTests {
 
         val rootStack = StackComponent(
             components = listOf(
-                TabsComponentWithToggleControl(
+                tabsComponentWithToggleControl(
                     defaultToggleValue = true,
                     1 to listOf(otherPackageOnTabZero, defaultPackageOnTabZero),
                     0 to listOf(defaultPackageOnTabOne, otherPackageOnTabOne),
@@ -1102,8 +1102,7 @@ class TabsComponentViewTests {
             )
         }
 
-    @Suppress("TestFunctionName")
-    private fun Tab(id: String, components: List<PaywallComponent>): TabsComponent.Tab =
+    private fun tab(id: String, components: List<PaywallComponent>): TabsComponent.Tab =
         TabsComponent.Tab(
             id = id,
             stack = StackComponent(
@@ -1111,8 +1110,7 @@ class TabsComponentViewTests {
             )
         )
 
-    @Suppress("TestFunctionName")
-    private fun TabControlToggleComponent(defaultValue: Boolean): TabControlToggleComponent =
+    private fun tabControlToggleComponent(defaultValue: Boolean): TabControlToggleComponent =
         TabControlToggleComponent(
             defaultValue = defaultValue,
             thumbColorOn = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb())),
@@ -1121,8 +1119,7 @@ class TabsComponentViewTests {
             trackColorOff = ColorScheme(ColorInfo.Hex(Color.Yellow.toArgb())),
         )
 
-    @Suppress("TestFunctionName")
-    private fun TabsComponentWithButtonsControl(
+    private fun tabsComponentWithButtonsControl(
         tabs: List<TabsComponent.Tab>,
         tabControlButtons: List<TabControlButtonComponent>,
     ): TabsComponent =
@@ -1131,8 +1128,7 @@ class TabsComponentViewTests {
             control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = tabControlButtons))
         )
 
-    @Suppress("TestFunctionName")
-    private fun TabsComponentWithToggleControl(
+    private fun tabsComponentWithToggleControl(
         tabs: List<TabsComponent.Tab>,
         tabControl: TabControlToggleComponent
     ): TabsComponent =
@@ -1141,14 +1137,13 @@ class TabsComponentViewTests {
             control = TabsComponent.TabControl.Toggle(stack = StackComponent(components = listOf(tabControl)))
         )
 
-    @Suppress("TestFunctionName")
-    private fun TabsComponentWithToggleControl(
+    private fun tabsComponentWithToggleControl(
         defaultToggleValue: Boolean,
         vararg tabsBySelectedByDefaultIndex: Pair<Int?, List<Package>>
     ): TabsComponent {
         val tabs = tabs(*tabsBySelectedByDefaultIndex)
-        val tabControl = TabControlToggleComponent(defaultValue = defaultToggleValue)
-        return TabsComponentWithToggleControl(tabs, tabControl)
+        val tabControl = tabControlToggleComponent(defaultValue = defaultToggleValue)
+        return tabsComponentWithToggleControl(tabs, tabControl)
     }
 
     @Suppress("TestFunctionName")
