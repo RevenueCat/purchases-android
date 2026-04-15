@@ -102,8 +102,8 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    contentAlpha: Float = 1f,
     interactionModifier: Modifier = Modifier,
+    contentAlpha: Float = 1f,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -167,8 +167,8 @@ internal fun StackComponentView(
                     clickHandler,
                     contentAlpha,
                     modifier,
-                    badge,
                     interactionModifier = interactionModifier,
+                    nestedBadge = badge,
                 )
         }
     } else {
@@ -517,9 +517,9 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    interactionModifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
-    interactionModifier: Modifier = Modifier,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
     val safeDrawingInsets = WindowInsets.safeDrawing
@@ -683,9 +683,9 @@ private fun MainStackComponent(
         } else {
             stack(
                 outerShapeModifier
-                    .then(interactionModifier)
                     .then(borderModifier)
                     .then(innerShapeModifier)
+                    .then(interactionModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
                     }
