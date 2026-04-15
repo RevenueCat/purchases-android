@@ -51,7 +51,7 @@ class EndpointTest {
     @Test
     fun `GetWorkflows has correct path`() {
         val endpoint = Endpoint.GetWorkflows("test user-id")
-        val expectedPath = "/v1/subscribers/test%20user-id/workflows"
+        val expectedPath = "/v1/subscribers/test%20user-id/workflows?type=paywall"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
@@ -153,6 +153,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.GetWorkflows("test-user-id"),
+            Endpoint.GetWorkflow("test-user-id", "wf_1"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
@@ -172,7 +173,6 @@ class EndpointTest {
             Endpoint.PostDiagnostics,
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
-            Endpoint.GetWorkflow("test-user-id", "wf_1"),
             Endpoint.AliasUsers("test-user-id"),
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
