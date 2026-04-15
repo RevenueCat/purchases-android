@@ -7,6 +7,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import org.json.JSONArray
+import org.json.JSONObject
 import java.security.MessageDigest
 
 /**
@@ -65,7 +67,7 @@ internal class WorkflowDetailResolver(
          * `json.dumps(sort_keys=True, separators=(',', ':'))` on the payload without the hash key.
          */
         internal fun computeCanonicalHash(json: String): String {
-            val parsed = org.json.JSONObject(json)
+            val parsed = JSONObject(json)
             parsed.remove("hash")
             val canonical = toCanonicalJson(parsed)
             val digest = MessageDigest.getInstance("SHA-256").digest(canonical.toByteArray())
@@ -74,7 +76,7 @@ internal class WorkflowDetailResolver(
 
         private fun toCanonicalJson(obj: Any?): String = buildString {
             when (obj) {
-                is org.json.JSONObject -> {
+                is JSONObject -> {
                     append('{')
                     obj.keys().asSequence().sorted().forEachIndexed { index, key ->
                         if (index > 0) append(',')
@@ -86,7 +88,7 @@ internal class WorkflowDetailResolver(
                     }
                     append('}')
                 }
-                is org.json.JSONArray -> {
+                is JSONArray -> {
                     append('[')
                     for (i in 0 until obj.length()) {
                         if (i > 0) append(',')
@@ -100,7 +102,7 @@ internal class WorkflowDetailResolver(
                     append('"')
                 }
                 is Boolean, is Int, is Long, is Double, is Float -> append(obj)
-                org.json.JSONObject.NULL, null -> append("null")
+                JSONObject.NULL, null -> append("null")
                 else -> {
                     append('"')
                     append(escapeJsonString(obj.toString()))
