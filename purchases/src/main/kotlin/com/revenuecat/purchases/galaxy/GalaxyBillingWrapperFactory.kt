@@ -10,7 +10,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 internal object GalaxyBillingWrapperFactory {
 
     @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Suppress("ThrowsCount")
     fun createGalaxyBillingWrapper(
         stateProvider: PurchasesStateProvider,
         context: Context,
@@ -25,13 +24,13 @@ internal object GalaxyBillingWrapperFactory {
                 GalaxyBillingMode::class.java,
                 DeviceCache::class.java,
             )
-            @Suppress("UNCHECKED_CAST")
             return constructor.newInstance(
                 stateProvider,
                 context,
                 billingMode,
                 deviceCache,
-            ) as BillingAbstract
+            ) as? BillingAbstract
+                ?: throw IllegalStateException("GalaxyBillingWrapper does not implement BillingAbstract")
         } catch (e: ClassNotFoundException) {
             val error = NoClassDefFoundError(e.message)
             error.initCause(e)

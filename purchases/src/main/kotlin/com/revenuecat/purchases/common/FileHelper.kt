@@ -60,7 +60,7 @@ internal class FileHelper(
             errorLog(
                 e,
             ) { "FileHelper: file not found when trying to remove first lines from file: $filePath. Ignoring." }
-        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+        } catch (e: Exception) {
             onException?.invoke(e)
             errorLog(e) { "FileHelper: error removing first lines from file: $filePath. Ignoring." }
             throw e
