@@ -11,6 +11,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -184,6 +186,14 @@ internal class StyleFactory(
             var topWindowInsetsApplied = false
 
             /**
+             * Whether the first visual component in the tree is a full-width image or video (a "hero image").
+             * This is tracked separately from [topWindowInsetsApplied] because a hero image can appear
+             * outside a ZLayer (e.g. directly in a Vertical stack), in which case it doesn't affect
+             * top window insets application but still needs to be detected for header padding logic.
+             */
+            var heroImageDetected = false
+
+            /**
              * We're only interested in the first non-container component. After that, we can stop looking.
              */
             private var stillLookingForHeaderMedia = true
@@ -198,8 +208,10 @@ internal class StyleFactory(
                     is StackComponent -> if (stillLookingForHeaderMedia) {
                         applyTopWindowInsets = when (component.dimension) {
                             is Dimension.ZLayer -> {
-                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderMedia == true
-                                topWindowInsetsApplied
+                                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
+                                topWindowInsetsApplied = hasHero
+                                heroImageDetected = hasHero
+                                hasHero
                             }
 
                             is Dimension.Horizontal,
@@ -211,6 +223,7 @@ internal class StyleFactory(
                     is ImageComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderImage
+                            heroImageDetected = component.isHeaderImage
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -218,10 +231,12 @@ internal class StyleFactory(
                     is VideoComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderVideo
+                            heroImageDetected = component.isHeaderVideo
                         }
                         stillLookingForHeaderMedia = false
                     }
 
+                    is FallbackHeaderComponent -> { /* Skip: does not affect hero image detection. */ }
                     else -> stillLookingForHeaderMedia = false
                 }
             }
@@ -259,6 +274,12 @@ internal class StyleFactory(
          * Whether the current component should ignore the top window insets.
          */
         val ignoreTopWindowInsets by windowInsetsState::ignoreTopWindowInsets
+
+        /**
+         * Whether the first visual component in the tree is a full-width hero image or video.
+         */
+        val heroImageDetected: Boolean
+            get() = windowInsetsState.heroImageDetected
 
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
@@ -421,6 +442,12 @@ internal class StyleFactory(
         fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
             when (to) {
                 is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                is HeaderComponentStyle -> to.copy(
+                    stackComponentStyle = to.stackComponentStyle.copy(
+                        applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied,
+                        ignoreHeaderHeight = true,
+                    ),
+                )
                 else -> to
             }
 
@@ -451,6 +478,9 @@ internal class StyleFactory(
                     is StickyFooterComponentStyle -> copy(
                         stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
                     )
+                    is HeaderComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
+                    )
 
                     else -> this
                 } as T
@@ -473,9 +503,12 @@ internal class StyleFactory(
         val componentStyle: ComponentStyle,
         val availablePackages: AvailablePackages,
         val defaultTabIndex: Int?,
+        val heroImageDetected: Boolean = false,
     )
 
     /**
+     * @param applyTopWindowInsets Whether to apply top window insets to the root of this tree (i.e. the
+     * passed-in [component]). Should be false when a header is rendered above this component.
      * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
      * passed-in [component]).
      * @param applyHorizontalWindowInsets Whether to apply horizontal window insets to the root of this tree (i.e. the
@@ -483,6 +516,7 @@ internal class StyleFactory(
      */
     fun create(
         component: PaywallComponent,
+        applyTopWindowInsets: Boolean = true,
         applyBottomWindowInsets: Boolean = false,
         applyHorizontalWindowInsets: Boolean = false,
     ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
@@ -494,7 +528,13 @@ internal class StyleFactory(
                             nonEmptyListOf(PaywallValidationError.RootComponentUnsupportedProperties(component)),
                         )
                 }
-                .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
+                .map { componentStyle ->
+                    if (applyTopWindowInsets) {
+                        applyTopWindowInsetsIfNotYetApplied(to = componentStyle)
+                    } else {
+                        componentStyle
+                    }
+                }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
                 .map { componentStyle ->
                     componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
@@ -504,6 +544,7 @@ internal class StyleFactory(
                         componentStyle = componentStyle,
                         availablePackages = packages,
                         defaultTabIndex = defaultTabIndex,
+                        heroImageDetected = heroImageDetected,
                     )
                 }
         }
@@ -519,6 +560,7 @@ internal class StyleFactory(
             is PackageComponent -> createPackageComponentStyle(component)
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
             is StackComponent -> createStackComponentStyle(component)
+            is HeaderComponent -> createHeaderComponentStyle(component)
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component)
             is IconComponent -> createIconComponentStyle(component)
@@ -529,6 +571,7 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
+            is FallbackHeaderComponent -> Result.Success(null)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
@@ -551,6 +594,16 @@ internal class StyleFactory(
                     endStackComponentStyle = endStack,
                     fallbackStackComponentStyle = fallbackStack,
                 )
+            }
+        }
+
+    private fun StyleFactoryScope.createHeaderComponentStyle(
+        component: HeaderComponent,
+    ): Result<HeaderComponentStyle, NonEmptyList<PaywallValidationError>> =
+        // tabControlIndex is null because a header cannot be _inside_ a tab control.
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
+            createStackComponentStyle(component.stack).map {
+                HeaderComponentStyle(stackComponentStyle = it)
             }
         }
 

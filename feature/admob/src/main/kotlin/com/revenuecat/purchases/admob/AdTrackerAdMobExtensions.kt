@@ -74,17 +74,18 @@ public fun AdTracker.loadAndTrackInterstitialAd(
                         ),
                     )
                 }
-                ad.fullScreenContentCallback = TrackingFullScreenContentCallback(
+                val trackingCallback = TrackingFullScreenContentCallback(
                     delegate = fullScreenContentCallback,
                     adFormat = AdFormat.INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                 )
+                ad.fullScreenContentCallback = trackingCallback
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.INTERSTITIAL,
-                    placement = placement,
+                    placementProvider = { trackingCallback.placement },
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,
@@ -154,17 +155,18 @@ public fun AdTracker.loadAndTrackAppOpenAd(
                         ),
                     )
                 }
-                ad.fullScreenContentCallback = TrackingFullScreenContentCallback(
+                val trackingCallback = TrackingFullScreenContentCallback(
                     delegate = fullScreenContentCallback,
                     adFormat = AdFormat.APP_OPEN,
                     placement = placement,
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                 )
+                ad.fullScreenContentCallback = trackingCallback
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.APP_OPEN,
-                    placement = placement,
+                    placementProvider = { trackingCallback.placement },
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,
@@ -234,17 +236,18 @@ public fun AdTracker.loadAndTrackRewardedAd(
                         ),
                     )
                 }
-                ad.fullScreenContentCallback = TrackingFullScreenContentCallback(
+                val trackingCallback = TrackingFullScreenContentCallback(
                     delegate = fullScreenContentCallback,
                     adFormat = AdFormat.REWARDED,
                     placement = placement,
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                 )
+                ad.fullScreenContentCallback = trackingCallback
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.REWARDED,
-                    placement = placement,
+                    placementProvider = { trackingCallback.placement },
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,
@@ -314,17 +317,18 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
                         ),
                     )
                 }
-                ad.fullScreenContentCallback = TrackingFullScreenContentCallback(
+                val trackingCallback = TrackingFullScreenContentCallback(
                     delegate = fullScreenContentCallback,
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
                     placement = placement,
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                 )
+                ad.fullScreenContentCallback = trackingCallback
                 setUpPaidEventTracking(
                     setListener = { ad.onPaidEventListener = it },
                     adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                    placement = placement,
+                    placementProvider = { trackingCallback.placement },
                     adUnitId = adUnitId,
                     responseInfoProvider = { loadedResponseInfo },
                     delegate = onPaidEventListener,

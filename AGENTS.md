@@ -215,6 +215,11 @@ When creating a pull request, **always add one of these labels** to categorize t
 - `feat:Paywalls_V2` — Changes related to Paywalls V2 (requires `pr:RevenueCatUI` as well)
 - `feat:Customer Center` — Changes related to Customer Center (requires `pr:RevenueCatUI` as well)
 
+## Compose UI Guidelines
+
+- **Avoid `onSizeChanged`** — It introduces a mutable state that triggers recomposition after the first frame (first frame renders with size = 0). Prefer custom `Layout` or `SubcomposeLayout` composables to measure and position children in a single pass. Only fall back to `onSizeChanged` if a single-pass approach is too complex.
+- **Avoid `CompositionLocal`** — Do not introduce new `CompositionLocal` values. Pass dependencies explicitly through function parameters instead.
+
 ## Guardrails
 
 - **Never commit Claude-related files** — do not stage or commit `.claude/` directory, `settings.local.json`, or any AI tool configuration files

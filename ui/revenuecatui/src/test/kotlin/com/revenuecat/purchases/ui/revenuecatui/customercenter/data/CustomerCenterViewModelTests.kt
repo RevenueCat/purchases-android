@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
@@ -1378,6 +1379,90 @@ class CustomerCenterViewModelTests {
         model.state.first { it is CustomerCenterState.Success }
 
         coVerify(exactly = 1) { purchases.awaitGetProduct("product_identifier", "monthly") }
+    }
+
+    @Test
+    fun `loadCustomerCenter shows active subscription as not expired when multiple entitlements share same product identifier`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        // Two entitlements pointing to the same product — expired one inserted FIRST to make
+        // the bug deterministic (LinkedHashMap preserves insertion order, firstOrNull hits it first)
+        val expiredEntitlement = EntitlementInfo(
+            identifier = "entitlement_a",
+            isActive = false,
+            willRenew = false,
+            periodType = PeriodType.NORMAL,
+            latestPurchaseDate = Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000),
+            originalPurchaseDate = Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000),
+            expirationDate = Date(System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000),
+            store = Store.PLAY_STORE,
+            productIdentifier = "product_a",
+            productPlanIdentifier = "plan_a",
+            isSandbox = false,
+            unsubscribeDetectedAt = null,
+            billingIssueDetectedAt = null,
+            ownershipType = OwnershipType.PURCHASED,
+            jsonObject = mockk(relaxed = true),
+            verification = VerificationResult.NOT_REQUESTED,
+        )
+
+        val activeEntitlement = EntitlementInfo(
+            identifier = "entitlement_b",
+            isActive = true,
+            willRenew = true,
+            periodType = PeriodType.NORMAL,
+            latestPurchaseDate = Date(System.currentTimeMillis() - 60 * 1000),
+            originalPurchaseDate = Date(System.currentTimeMillis() - 60 * 1000),
+            expirationDate = Date(System.currentTimeMillis() + 24L * 60 * 60 * 1000),
+            store = Store.PLAY_STORE,
+            productIdentifier = "product_a",
+            productPlanIdentifier = "plan_b",
+            isSandbox = false,
+            unsubscribeDetectedAt = null,
+            billingIssueDetectedAt = null,
+            ownershipType = OwnershipType.PURCHASED,
+            jsonObject = mockk(relaxed = true),
+            verification = VerificationResult.NOT_REQUESTED,
+        )
+
+        every { customerInfo.entitlements } returns EntitlementInfos(
+            mapOf("entitlement_a" to expiredEntitlement, "entitlement_b" to activeEntitlement),
+            VerificationResult.NOT_REQUESTED,
+        )
+
+        val activeSubscription = SubscriptionInfo(
+            productIdentifier = "product_a",
+            purchaseDate = Date(System.currentTimeMillis() - 60 * 1000),
+            originalPurchaseDate = null,
+            expiresDate = Date(System.currentTimeMillis() + 24L * 60 * 60 * 1000),
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "plan_b",
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "product_a" to activeSubscription
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("product_a")
+
+        val model = setupViewModel()
+
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).hasSize(1)
+        assertThat(successState.purchases.first().isExpired).isFalse()
     }
 
     @Test
