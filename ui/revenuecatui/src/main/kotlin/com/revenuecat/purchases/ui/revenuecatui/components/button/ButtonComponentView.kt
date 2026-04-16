@@ -59,7 +59,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
-import com.revenuecat.purchases.ui.revenuecatui.helpers.purchaseButtonInteractionComponentUrl
+import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -149,9 +149,8 @@ internal fun ButtonComponentView(
                 state.update(actionInProgress = true)
                 if (style.action.isPurchaseRelated()) {
                     val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
-                    val componentUrl = purchaseButtonInteractionComponentUrl(
+                    val componentUrl = resolvedWebCheckoutInteractionUrl(
                         paywallAction = paywallAction,
-                        currentPackage = currentPackage,
                         state = state,
                     )
                     componentInteractionTracker.track(

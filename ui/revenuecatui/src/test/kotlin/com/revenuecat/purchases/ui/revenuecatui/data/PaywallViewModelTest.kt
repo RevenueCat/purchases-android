@@ -55,6 +55,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
@@ -2043,6 +2044,45 @@ class PaywallViewModelTest {
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
         ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    @Test
+    fun `purchaseButtonInteractionComponentUrl matches resolved launch url for in app browser`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+
+        val state = model.state.value as? PaywallState.Loaded.Components
+            ?: error("Expected to have loaded components state")
+        state.update(TestData.Packages.monthly.identifier)
+
+        val action = launchWebCheckoutWithCustomUrlNoPackage.copy(
+            openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
+        )
+
+        assertThat(
+            resolvedWebCheckoutInteractionUrl(
+                paywallAction = action,
+                state = state,
+            ),
+        ).isEqualTo(model.getWebCheckoutUrl(action))
+    }
+
+    @Test
+    fun `purchaseButtonInteractionComponentUrl matches resolved launch url for deep link`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+
+        val state = model.state.value as? PaywallState.Loaded.Components
+            ?: error("Expected to have loaded components state")
+
+        val action = launchWebCheckoutWithCustomUrlAndPackage.copy(
+            openMethod = ButtonComponent.UrlMethod.DEEP_LINK,
+        )
+
+        assertThat(
+            resolvedWebCheckoutInteractionUrl(
+                paywallAction = action,
+                state = state,
+            ),
+        ).isEqualTo(model.getWebCheckoutUrl(action))
     }
 
     // endregion getWebCheckoutUrl

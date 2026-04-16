@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -47,29 +46,21 @@ internal fun PaywallState.Loaded.Components.resolveWebCheckoutUrlForInteraction(
 /**
  * URL string for purchase-button component interaction events.
  *
- * For [ButtonComponent.UrlMethod.EXTERNAL_BROWSER], this matches the fully resolved URL that will be opened.
- * For in-app browser or deep link, analytics use the Web Purchase Link on the [currentPackage]
- * or [PaywallState.Loaded.Components.offering], falling back to the localized custom URL template
- * when there is no WPL on the package/offering.
+ * For web-checkout actions, this matches the exact resolved URL that will be opened.
  */
 @InternalRevenueCatAPI
-internal fun purchaseButtonInteractionComponentUrl(
+internal fun resolvedWebCheckoutInteractionUrl(
     paywallAction: PaywallAction,
-    currentPackage: Package?,
     state: PaywallState.Loaded.Components,
 ): String? {
     return when (paywallAction) {
         is PaywallAction.External.LaunchWebCheckout -> {
             when (paywallAction.openMethod) {
-                ButtonComponent.UrlMethod.EXTERNAL_BROWSER ->
-                    state.resolveWebCheckoutUrlForInteraction(paywallAction)
+                ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
                 ButtonComponent.UrlMethod.IN_APP_BROWSER,
                 ButtonComponent.UrlMethod.DEEP_LINK,
-                -> {
-                    currentPackage?.webCheckoutURL?.toString()
-                        ?: state.offering.webCheckoutURL?.toString()
-                        ?: paywallAction.customUrl
-                }
+                ->
+                    state.resolveWebCheckoutUrlForInteraction(paywallAction)
                 ButtonComponent.UrlMethod.UNKNOWN -> null
             }
         }
