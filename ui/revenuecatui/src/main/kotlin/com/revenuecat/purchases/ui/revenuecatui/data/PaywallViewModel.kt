@@ -474,8 +474,8 @@ internal class PaywallViewModelImpl(
 
         val shouldResume = suspendCancellableCoroutine { continuation ->
             listener?.onPurchasePackageInitiated(packageToPurchase) { shouldResume ->
-                continuation.resume(shouldResume)
-            } ?: continuation.resume(true)
+                if (continuation.isActive) continuation.resume(shouldResume)
+            } ?: run { if (continuation.isActive) continuation.resume(true) }
         }
 
         if (!shouldResume) {

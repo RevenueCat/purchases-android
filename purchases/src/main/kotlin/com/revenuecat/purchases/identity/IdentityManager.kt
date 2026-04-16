@@ -102,10 +102,10 @@ internal class IdentityManager(
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
-                    continuation.resume(Unit)
+                    if (continuation.isActive) continuation.resume(Unit)
                 },
                 onErrorHandler = { error ->
-                    continuation.resumeWithException(PurchasesException(error))
+                    if (continuation.isActive) continuation.resumeWithException(PurchasesException(error))
                 },
             )
         }

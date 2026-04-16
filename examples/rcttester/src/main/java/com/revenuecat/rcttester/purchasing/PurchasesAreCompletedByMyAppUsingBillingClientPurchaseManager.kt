@@ -200,9 +200,11 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
         return suspendCancellableCoroutine { continuation ->
             billingClient.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
-                    continuation.resume(
-                        billingResult.responseCode == BillingClient.BillingResponseCode.OK,
-                    )
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            billingResult.responseCode == BillingClient.BillingResponseCode.OK,
+                        )
+                    }
                 }
 
                 override fun onBillingServiceDisconnected() {

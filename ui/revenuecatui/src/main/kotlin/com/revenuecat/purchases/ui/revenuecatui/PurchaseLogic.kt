@@ -223,7 +223,7 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
     final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performPurchaseWithCompletion(activity, rcPackage) { result ->
-                continuation.resume(result)
+                if (continuation.isActive) continuation.resume(result)
             }
         }
 
@@ -234,7 +234,7 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
     final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
-                continuation.resume(result)
+                if (continuation.isActive) continuation.resume(result)
             }
         }
 }
@@ -293,7 +293,7 @@ public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
     ): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performPurchaseWithCompletion(activity, params) { result ->
-                continuation.resume(result)
+                if (continuation.isActive) continuation.resume(result)
             }
         }
 
@@ -304,7 +304,7 @@ public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
     final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
-                continuation.resume(result)
+                if (continuation.isActive) continuation.resume(result)
             }
         }
 }

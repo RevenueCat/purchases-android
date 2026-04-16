@@ -141,8 +141,8 @@ constructor(
             .build()
         return suspendCancellableCoroutine { cont ->
             blockstoreClient.retrieveBytes(retrieveRequest)
-                .addOnSuccessListener { cont.resume(it.blockstoreDataMap) }
-                .addOnFailureListener { cont.resumeWithException(it) }
+                .addOnSuccessListener { if (cont.isActive) cont.resume(it.blockstoreDataMap) }
+                .addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }
         }
     }
 
@@ -170,9 +170,9 @@ constructor(
             blockstoreClient.storeBytes(storeRequest)
                 .addOnSuccessListener {
                     debugLog { "Block store: User ID: $userId stored in Block store." }
-                    cont.resume(Unit)
+                    if (cont.isActive) cont.resume(Unit)
                 }
-                .addOnFailureListener { cont.resumeWithException(it) }
+                .addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }
         }
     }
 }

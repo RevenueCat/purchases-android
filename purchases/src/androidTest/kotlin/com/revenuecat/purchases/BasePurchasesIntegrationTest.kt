@@ -256,6 +256,7 @@ abstract class BasePurchasesIntegrationTest {
         suspendCancellableCoroutine { continuation ->
             Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
                 .updateProductEntitlementMappingCacheIfStale {
+                    if (!continuation.isActive) return@updateProductEntitlementMappingCacheIfStale
                     if (it != null) {
                         continuation.resumeWithException(
                             AssertionError("Expected to get product entitlement mapping but got error: $it"),

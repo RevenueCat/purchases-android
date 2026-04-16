@@ -26,8 +26,8 @@ import kotlin.coroutines.resumeWithException
 public suspend fun Purchases.awaitOfferings(): Offerings {
     return suspendCancellableCoroutine { continuation ->
         getOfferingsWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -49,8 +49,8 @@ public suspend fun Purchases.awaitOfferings(): Offerings {
 public suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
     suspendCancellableCoroutine { continuation ->
         getOfferingsWith(
-            onSuccess = { continuation.resume(Result.success(it)) },
-            onError = { continuation.resume(Result.failure(PurchasesException(it))) },
+            onSuccess = { if (continuation.isActive) continuation.resume(Result.success(it)) },
+            onError = { if (continuation.isActive) continuation.resume(Result.failure(PurchasesException(it))) },
         )
     }
 
@@ -78,10 +78,16 @@ public suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): Purc
             purchaseParams = purchaseParams,
             callback = purchaseCompletedCallback(
                 onSuccess = { storeTransaction, customerInfo ->
-                    continuation.resume(PurchaseResult(storeTransaction, customerInfo))
+                    if (continuation.isActive) {
+                        continuation.resume(PurchaseResult(storeTransaction, customerInfo))
+                    }
                 },
                 onError = { purchasesError, userCancelled ->
-                    continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
+                    if (continuation.isActive) {
+                        continuation.resumeWithException(
+                            PurchasesTransactionException(purchasesError, userCancelled),
+                        )
+                    }
                 },
             ),
         )
@@ -111,10 +117,16 @@ public suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams)
             purchaseParams = purchaseParams,
             callback = purchaseCompletedCallback(
                 onSuccess = { storeTransaction, customerInfo ->
-                    continuation.resume(Result.success(PurchaseResult(storeTransaction, customerInfo)))
+                    if (continuation.isActive) {
+                        continuation.resume(Result.success(PurchaseResult(storeTransaction, customerInfo)))
+                    }
                 },
                 onError = { purchasesError, userCancelled ->
-                    continuation.resume(Result.failure(PurchasesTransactionException(purchasesError, userCancelled)))
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            Result.failure(PurchasesTransactionException(purchasesError, userCancelled)),
+                        )
+                    }
                 },
             ),
         )
@@ -143,9 +155,9 @@ public suspend fun Purchases.awaitGetProducts(
         getProductsWith(
             productIds,
             type,
-            onGetStoreProducts = continuation::resume,
+            onGetStoreProducts = { if (continuation.isActive) continuation.resume(it) },
             onError = {
-                continuation.resumeWithException(PurchasesException(it))
+                if (continuation.isActive) continuation.resumeWithException(PurchasesException(it))
             },
         )
     }
@@ -173,10 +185,10 @@ public suspend fun Purchases.awaitGetProductsResult(
             productIds,
             type,
             onGetStoreProducts = { storeProducts ->
-                continuation.resume(Result.success(storeProducts))
+                if (continuation.isActive) continuation.resume(Result.success(storeProducts))
             },
             onError = {
-                continuation.resume(Result.failure(PurchasesException(it)))
+                if (continuation.isActive) continuation.resume(Result.failure(PurchasesException(it)))
             },
         )
     }
@@ -203,8 +215,8 @@ public suspend fun Purchases.awaitGetProductsResult(
 public suspend fun Purchases.awaitRestore(): CustomerInfo {
     return suspendCancellableCoroutine { continuation ->
         restorePurchasesWith(
-            onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -230,10 +242,10 @@ public suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
     return suspendCancellableCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { customerInfo ->
-                continuation.resume(Result.success(customerInfo))
+                if (continuation.isActive) continuation.resume(Result.success(customerInfo))
             },
             onError = {
-                continuation.resume(Result.failure(PurchasesException(it)))
+                if (continuation.isActive) continuation.resume(Result.failure(PurchasesException(it)))
             },
         )
     }
@@ -250,8 +262,8 @@ public suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
 public suspend fun Purchases.awaitStorefrontCountryCode(): String {
     return suspendCancellableCoroutine { continuation ->
         getStorefrontCountryCodeWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -277,7 +289,7 @@ public suspend fun Purchases.Companion.awaitCanMakePayments(
         canMakePayments(
             context = context,
             features = features,
-            callback = { continuation.resume(it) },
+            callback = { if (continuation.isActive) continuation.resume(it) },
         )
     }
 }

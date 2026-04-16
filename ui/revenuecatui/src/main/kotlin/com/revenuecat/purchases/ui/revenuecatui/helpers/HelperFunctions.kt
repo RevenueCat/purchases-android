@@ -36,10 +36,9 @@ internal fun windowAspectRatio(): Float {
  */
 internal suspend fun shouldDisplayPaywall(shouldDisplayBlock: (CustomerInfo) -> Boolean): Boolean {
     return suspendCancellableCoroutine { continuation ->
-        shouldDisplayPaywall(
-            shouldDisplayBlock,
-            continuation::resume,
-        )
+        shouldDisplayPaywall(shouldDisplayBlock) {
+            if (continuation.isActive) continuation.resume(it)
+        }
     }
 }
 

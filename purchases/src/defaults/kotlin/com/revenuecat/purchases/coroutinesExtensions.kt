@@ -28,8 +28,8 @@ public suspend fun Purchases.awaitCustomerInfo(
     return suspendCancellableCoroutine { continuation ->
         getCustomerInfoWith(
             fetchPolicy,
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -51,9 +51,9 @@ public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
         logInWith(
             appUserID,
             onSuccess = { customerInfo, created ->
-                continuation.resume(LogInResult(customerInfo, created))
+                if (continuation.isActive) continuation.resume(LogInResult(customerInfo, created))
             },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -72,8 +72,8 @@ public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
 public suspend fun Purchases.awaitLogOut(): CustomerInfo {
     return suspendCancellableCoroutine { continuation ->
         logOutWith(
-            onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -93,8 +93,8 @@ public suspend fun Purchases.awaitLogOut(): CustomerInfo {
 public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
     return suspendCancellableCoroutine { continuation ->
         syncPurchasesWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -120,8 +120,8 @@ public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
 public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
     return suspendCancellableCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -151,8 +151,8 @@ public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String,
         setAppstackAttributionParams(
             data,
             syncAttributesAndOfferingsListener(
-                onSuccess = continuation::resume,
-                onError = { continuation.resumeWithException(PurchasesException(it)) },
+                onSuccess = { if (continuation.isActive) continuation.resume(it) },
+                onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
             ),
         )
     }
@@ -178,8 +178,8 @@ public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String,
 public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
     return suspendCancellableCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -198,11 +198,11 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
     return suspendCancellableCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
             override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
-                continuation.resume(customerCenterConfig)
+                if (continuation.isActive) continuation.resume(customerCenterConfig)
             }
 
             override fun onError(error: PurchasesError) {
-                continuation.resumeWithException(PurchasesException(error))
+                if (continuation.isActive) continuation.resumeWithException(PurchasesException(error))
             }
         })
     }
@@ -223,8 +223,8 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
     return suspendCancellableCoroutine { continuation ->
         getVirtualCurrenciesWith(
-            onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -244,8 +244,8 @@ public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
 public suspend fun Purchases.awaitStorefrontLocale(): Locale {
     return suspendCancellableCoroutine { continuation ->
         getStorefrontLocaleWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { if (continuation.isActive) continuation.resume(it) },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -277,8 +277,10 @@ public suspend fun Purchases.awaitCreateSupportTicket(email: String, description
         createSupportTicket(
             email = email,
             description = description,
-            onSuccess = { wasSent -> continuation.resume(CreateSupportTicketResult(success = wasSent)) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { wasSent ->
+                if (continuation.isActive) continuation.resume(CreateSupportTicketResult(success = wasSent))
+            },
+            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
