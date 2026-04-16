@@ -57,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.purchaseButtonInteractionComponentUrl
 import kotlinx.coroutines.launch
@@ -159,7 +160,7 @@ internal fun ButtonComponentView(
                             componentValue = style.action.description,
                             componentUrl = componentUrl,
                             currentPackageIdentifier = currentPackage?.identifier,
-                            currentProductIdentifier = currentPackage?.product?.id,
+                            currentProductIdentifier = currentPackage?.product?.paywallProductIdentifier(),
                         ),
                     )
                 } else {

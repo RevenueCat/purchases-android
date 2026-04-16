@@ -77,7 +77,7 @@ internal fun paywallPackageSelectionSheetOpen(
     componentName = sheetComponentName,
     componentValue = "open",
     currentPackageIdentifier = rootSelectedPackage?.identifier,
-    currentProductIdentifier = rootSelectedPackage?.product?.id,
+    currentProductIdentifier = rootSelectedPackage?.product?.paywallProductIdentifier(),
 )
 
 @InternalRevenueCatAPI
@@ -91,8 +91,8 @@ internal fun paywallPackageSelectionSheetClose(
     componentValue = "close",
     currentPackageIdentifier = sheetSelectedPackage?.identifier,
     resultingPackageIdentifier = resultingRootPackage?.identifier,
-    currentProductIdentifier = sheetSelectedPackage?.product?.id,
-    resultingProductIdentifier = resultingRootPackage?.product?.id,
+    currentProductIdentifier = sheetSelectedPackage?.product?.paywallProductIdentifier(),
+    resultingProductIdentifier = resultingRootPackage?.product?.paywallProductIdentifier(),
 )
 
 @InternalRevenueCatAPI
@@ -108,9 +108,9 @@ internal fun paywallPackageRowSelection(
     originPackageIdentifier = origin?.identifier,
     destinationPackageIdentifier = destination.identifier,
     defaultPackageIdentifier = defaultPackage?.identifier,
-    originProductIdentifier = origin?.product?.id,
-    destinationProductIdentifier = destination.product.id,
-    defaultProductIdentifier = defaultPackage?.product?.id,
+    originProductIdentifier = origin?.product?.paywallProductIdentifier(),
+    destinationProductIdentifier = destination.product.paywallProductIdentifier(),
+    defaultProductIdentifier = defaultPackage?.product?.paywallProductIdentifier(),
 )
 
 @InternalRevenueCatAPI
@@ -125,6 +125,6 @@ internal fun paywallTierSelection(
     componentValue = tierDisplayName,
     originPackageIdentifier = originPackage?.identifier,
     destinationPackageIdentifier = destinationPackage?.identifier,
-    originProductIdentifier = originPackage?.product?.id,
-    destinationProductIdentifier = destinationPackage?.product?.id,
+    originProductIdentifier = originPackage?.product?.paywallProductIdentifier(),
+    destinationProductIdentifier = destinationPackage?.product?.paywallProductIdentifier(),
 )

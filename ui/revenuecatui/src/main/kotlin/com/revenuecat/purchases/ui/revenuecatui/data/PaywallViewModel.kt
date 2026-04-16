@@ -21,7 +21,6 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -50,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -751,12 +751,7 @@ internal class PaywallViewModelImpl(
             Logger.e("Paywall event data is null, not tracking purchase initiated event")
             return
         }
-        val product = rcPackage.product
-        val productId = if (product is GoogleStoreProduct) {
-            product.productId
-        } else {
-            product.id
-        }
+        val productId = rcPackage.product.paywallProductIdentifier()
         val purchaseInitiatedEventData = eventData.copy(
             packageIdentifier = rcPackage.identifier,
             productIdentifier = productId,
@@ -775,12 +770,7 @@ internal class PaywallViewModelImpl(
             Logger.e("Paywall event data is null, not tracking purchase error event")
             return
         }
-        val product = rcPackage.product
-        val productId = if (product is GoogleStoreProduct) {
-            product.productId
-        } else {
-            product.id
-        }
+        val productId = rcPackage.product.paywallProductIdentifier()
         val purchaseErrorEventData = eventData.copy(
             packageIdentifier = rcPackage.identifier,
             productIdentifier = productId,

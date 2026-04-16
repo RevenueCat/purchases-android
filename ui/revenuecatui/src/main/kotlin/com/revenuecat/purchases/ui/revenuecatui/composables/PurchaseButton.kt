@@ -48,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 
 @Composable
@@ -137,7 +138,7 @@ private fun PurchaseButton(
                         componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
                         componentUrl = null,
                         currentPackageIdentifier = rcPackage.identifier,
-                        currentProductIdentifier = rcPackage.product.id,
+                        currentProductIdentifier = rcPackage.product.paywallProductIdentifier(),
                     ),
                 )
                 viewModel.purchaseSelectedPackage(activity)
