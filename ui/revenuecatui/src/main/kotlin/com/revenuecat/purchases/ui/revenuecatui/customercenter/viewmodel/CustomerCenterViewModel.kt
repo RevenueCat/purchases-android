@@ -48,6 +48,7 @@ import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
@@ -446,6 +447,8 @@ internal class CustomerCenterViewModelImpl(
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
                 startGoogleProductCancellation(context, purchaseInfo.product)
+            purchaseInfo?.store == Store.AMAZON && purchaseInfo.managementURL != null ->
+                startAmazonCancellation(context, purchaseInfo.managementURL)
             purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
             else -> Logger.e("No product or management URL available for cancel path")
         }
@@ -460,6 +463,22 @@ internal class CustomerCenterViewModelImpl(
         shouldRefreshOnResume = true
         notifyListenersForManageSubscription()
         showManageSubscriptions(context, googleProduct.productId)
+    }
+
+    private fun startAmazonCancellation(context: Context, managementURL: Uri) {
+        shouldRefreshOnResume = true
+        notifyListenersForManageSubscription()
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(CustomerCenterConstants.Management.AMAZON_MANAGEMENT_URL)),
+            )
+        } catch (_: ActivityNotFoundException) {
+            openURL(
+                context,
+                managementURL.toString(),
+                HelpPath.OpenMethod.EXTERNAL,
+            )
+        }
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
@@ -692,8 +711,10 @@ internal class CustomerCenterViewModelImpl(
 
             if (activeTransactions.isNotEmpty()) {
                 return activeTransactions.map { transaction ->
-                    val entitlement = customerInfo.entitlements.all.values
+                    val entitlement = customerInfo.entitlements.active.values
                         .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+                        ?: customerInfo.entitlements.all.values
+                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
                     createPurchaseInformation(
                         transaction,
@@ -711,8 +732,10 @@ internal class CustomerCenterViewModelImpl(
         // If no active purchases found, try to find the latest expired subscription
         val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
         return if (latestExpiredTransaction != null) {
-            val entitlement = customerInfo.entitlements.all.values
+            val entitlement = customerInfo.entitlements.active.values
                 .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+                ?: customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
 
             listOf(
                 createPurchaseInformation(
@@ -978,6 +1001,7 @@ internal class CustomerCenterViewModelImpl(
         loadCustomerCenter(isRefresh = true)
     }
 
+    @Suppress("LongMethod")
     private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {

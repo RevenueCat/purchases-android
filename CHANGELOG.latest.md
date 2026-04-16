@@ -1,9 +1,11 @@
-## RevenueCatUI SDK
+## RevenueCat SDK
+### ✨ New Features
+* feat(ads): add possibility to update fullscreen content callback (#3325) via Peter Porfy (@peterporfy)
+* feat(ads): placement override at show time (#3318) via Peter Porfy (@peterporfy)
 ### 🐞 Bugfixes
-* Fix: Crash on fallback paywall due to missing dependency  (#3283) via Jacob Rakidzich (@JZDesign)
-### Paywallv2
-#### 🐞 Bugfixes
-* PW-1152 Fix PaywallDialog dismissal after first toggle interaction (#3277) via Facundo Menzella (@facumenzella)
+* fix(customer-center): prefer active entitlement when decorating subsc… (#3313) via Guilherme (@GuilhermeMota93)
 
-### 🔄 Other Changes
-* feat: configure API keys and test variables via local.properties (#3271) via Toni Rico (@tonidero)
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add new HeaderComponent (#3290) via Cesar de la Vega (@vegaro)

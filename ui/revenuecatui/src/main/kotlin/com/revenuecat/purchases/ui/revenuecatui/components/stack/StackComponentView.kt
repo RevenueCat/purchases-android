@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -559,30 +560,48 @@ private fun MainStackComponent(
                     }
                 }
 
-                is Dimension.ZLayer -> Box(
-                    modifier = modifier
-                        .size(
-                            size = stackState.size,
-                            horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                            verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                        )
-                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                is Dimension.ZLayer -> {
+                    // Pre-compute the top safe-drawing inset in px for use as a fallback
+                    // when no header height is available. Captured at composition time so
+                    // the Modifier.layout closure can branch at layout time.
+                    val topInsetPx = if (stackState.applyTopWindowInsets && !stackState.ignoreHeaderHeight) {
+                        safeDrawingInsets.getTop(LocalDensity.current)
+                    } else {
+                        0
+                    }
+                    Box(
+                        modifier = modifier
+                            .size(
+                                size = stackState.size,
+                                horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                                verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                            )
+                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                scrollable(state, orientation)
+                            }
+                            .then(rootModifier),
+                        contentAlignment = dimension.alignment.toAlignment(),
+                    ) {
+                        stackState.children.forEach { child ->
+                            val applyTopInsets =
+                                stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets
+                            ComponentView(
+                                style = child,
+                                state = state,
+                                onClick = clickHandler,
+                                modifier = Modifier
+                                    .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
+                                        // Read header height at layout time. If set (hero case),
+                                        // it already includes status bar padding. Otherwise fall
+                                        // back to the safe-drawing top inset.
+                                        headerOrInsetsTopPadding(state, topInsetPx)
+                                    }
+                                    .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
+                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                    }
+                                    .alpha(contentAlpha),
+                            )
                         }
-                        .then(rootModifier),
-                    contentAlignment = dimension.alignment.toAlignment(),
-                ) {
-                    stackState.children.forEach { child ->
-                        ComponentView(
-                            style = child,
-                            state = state,
-                            onClick = clickHandler,
-                            modifier = Modifier
-                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                }
-                                .alpha(contentAlpha),
-                        )
                     }
                 }
             }
@@ -1759,4 +1778,20 @@ private fun previewBadge(
         style = style,
         alignment = alignment,
     )
+}
+
+/**
+ * Adds top padding read at layout time: uses [state]'s header height in pixels if set (hero case
+ * where the header already accounts for the status bar), otherwise falls back to [fallbackInsetPx]
+ * (the safe-drawing top inset, pre-computed at composition time).
+ */
+private fun Modifier.headerOrInsetsTopPadding(
+    state: PaywallState.Loaded.Components,
+    fallbackInsetPx: Int,
+): Modifier = this.layout { measurable, constraints ->
+    val topPad = if (state.headerHeightPx > 0) state.headerHeightPx else fallbackInsetPx
+    val placeable = measurable.measure(constraints.offset(vertical = -topPad))
+    layout(placeable.width, placeable.height + topPad) {
+        placeable.place(0, topPad)
+    }
 }

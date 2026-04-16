@@ -432,7 +432,7 @@ platform :android do
       task: ':purchases:testDefaultsBc8DebugUnitTest',
       flags: '--tests "com.revenuecat.purchases.backend_integration_tests.*"',
       properties: {
-        "minSdkVersion" => 21,
+        "minSdkVersion" => 23,
         "BACKEND_INTEGRATION_API_KEY" => ENV['REVENUECAT_API_KEY'],
         "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY" => ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
       }
@@ -556,7 +556,7 @@ platform :android do
 
         gradle(
           task: ":purchases:connectedDefaultsBc8ReleaseAndroidTest",
-          properties: { "testBuildType" => "release", "minSdkVersion" => 21 }.merge(test_properties)
+          properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
         )
 
         success = true
@@ -598,7 +598,7 @@ platform :android do
 
     gradle(
       task: ":purchases:connectedCustomEntitlementComputationBc8ReleaseAndroidTest",
-      properties: { "testBuildType" => "release", "minSdkVersion" => 21 }.merge(test_properties)
+      properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
     )
   end
 
@@ -798,7 +798,7 @@ DESC
       version_name_new = "purchaseTesterVersionName=#{version_code}"
       sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{version_name_old}/#{version_name_new}/' {} \\;")
 
-      min_sdk_version_old = "purchaseTesterMinSdkVersion=21"
+      min_sdk_version_old = "purchaseTesterMinSdkVersion=23"
       min_sdk_version_new = "purchaseTesterMinSdkVersion=#{min_sdk_version}"
       sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{min_sdk_version_old}/#{min_sdk_version_new}/' {} \\;")
 

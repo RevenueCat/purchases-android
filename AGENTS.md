@@ -167,7 +167,7 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 
 ### Target Specifications
 - **Compile SDK**: 35
-- **Min SDK**: 21 (24 for UI modules)
+- **Min SDK**: 23 (24 for UI modules)
 - **Java**: 8+
 - **Kotlin**: 2.0.21 (language level 1.8)
 
@@ -214,6 +214,11 @@ When creating a pull request, **always add one of these labels** to categorize t
 - `pr:RevenueCatUI` — Changes specific to the RevenueCatUI module (paywalls, customer center)
 - `feat:Paywalls_V2` — Changes related to Paywalls V2 (requires `pr:RevenueCatUI` as well)
 - `feat:Customer Center` — Changes related to Customer Center (requires `pr:RevenueCatUI` as well)
+
+## Compose UI Guidelines
+
+- **Avoid `onSizeChanged`** — It introduces a mutable state that triggers recomposition after the first frame (first frame renders with size = 0). Prefer custom `Layout` or `SubcomposeLayout` composables to measure and position children in a single pass. Only fall back to `onSizeChanged` if a single-pass approach is too complex.
+- **Avoid `CompositionLocal`** — Do not introduce new `CompositionLocal` values. Pass dependencies explicitly through function parameters instead.
 
 ## Guardrails
 

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
@@ -263,6 +264,7 @@ class CreateSupportTicketViewTest {
         ).assertIsEnabled()
     }
 
+    @OptIn(ExperimentalTestApi::class)
     @Test
     fun `can retry submission after error`() {
         var submitCount = 0
@@ -294,6 +296,16 @@ class CreateSupportTicketViewTest {
                 CustomerCenterConfigData.Localization.CommonLocalizedString.SUBMIT_TICKET
             )
         ).performClick()
+
+        // Wait for error snackbar to appear and disappear so it doesn't overlay the button
+        composeTestRule.waitUntilDoesNotExist(
+            hasText(
+                mockLocalization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SUPPORT_TICKET_FAILED
+                )
+            ),
+            timeoutMillis = 5000,
+        )
 
         composeTestRule.onNodeWithText(
             mockLocalization.commonLocalizedString(

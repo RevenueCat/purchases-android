@@ -4,6 +4,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -43,6 +45,7 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
             is PurchaseButtonComponent -> queue.add(current.stack)
             is ButtonComponent -> queue.add(current.stack)
             is PackageComponent -> queue.add(current.stack)
+            is HeaderComponent -> queue.add(current.stack)
             is StickyFooterComponent -> queue.add(current.stack)
             is CarouselComponent -> queue.addAll(current.pages)
             is TabControlButtonComponent -> queue.add(current.stack)
@@ -64,6 +67,7 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
                 current.fallback?.let { queue.add(it) }
             }
 
+            is FallbackHeaderComponent,
             is VideoComponent,
             is TabControlToggleComponent,
             is TabControlComponent,

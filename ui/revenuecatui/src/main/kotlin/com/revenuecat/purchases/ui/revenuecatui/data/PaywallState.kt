@@ -89,8 +89,10 @@ internal sealed interface PaywallState {
         @Stable
         class Components(
             val stack: ComponentStyle,
+            val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
+            val mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
              * for that.
@@ -275,6 +277,16 @@ internal sealed interface PaywallState {
 
             val currentDate: Date
                 get() = dateProvider()
+
+            /**
+             * The measured height of the header overlay in pixels. Set during the layout phase by
+             * the custom Layout in [LoadedPaywallComponents] so that ZLayer stacks can read it
+             * during their own layout phase (via [Modifier.layout]) to offset non-hero children
+             * below the header — all in a single pass, without recomposition.
+             */
+            @get:JvmSynthetic
+            var headerHeightPx: Int = 0
+                @JvmSynthetic internal set
 
             var actionInProgress by mutableStateOf(false)
                 private set

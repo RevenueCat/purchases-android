@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PromoOfferConfig
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -184,6 +185,87 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
                         isSelectedByDefault = true,
                         stack = StackComponent(components = emptyList()),
                         playStoreOffer = null,
+                    )
+                ),
+            ),
+            arrayOf(
+                "visible = true",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "visible": true,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        visible = true,
+                    )
+                ),
+            ),
+            arrayOf(
+                "visible = false",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "visible": false,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        visible = false,
+                    )
+                ),
+            ),
+            arrayOf(
+                "overrides with visible = false",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "overrides": [
+                            {
+                              "conditions": [{"type": "intro_offer"}],
+                              "properties": {"visible": false}
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        overrides = listOf(
+                            ComponentOverride(
+                                conditions = listOf(
+                                    ComponentOverride.Condition.IntroOffer
+                                ),
+                                properties = PartialPackageComponent(visible = false),
+                            )
+                        ),
                     )
                 ),
             ),
