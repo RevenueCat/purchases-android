@@ -9,7 +9,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 @JvmSynthetic
 @Composable
@@ -30,10 +29,13 @@ internal fun PackageComponentView(
             // If this package is selectable, a click will select it. No need to pass the click to the clickHandler.
             if (!style.isSelectable) clickHandler(action)
         },
-        modifier = modifier.conditional(style.isSelectable) {
-            clickable(
+        modifier = modifier,
+        interactionModifier = if (style.isSelectable) {
+            Modifier.clickable(
                 enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
             ) { state.update(selectedPackageUniqueId = style.uniqueId) }
+        } else {
+            Modifier
         },
     )
 }

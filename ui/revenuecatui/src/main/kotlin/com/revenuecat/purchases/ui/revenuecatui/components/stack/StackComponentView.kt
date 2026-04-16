@@ -103,6 +103,7 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    interactionModifier: Modifier = Modifier,
     contentAlpha: Float = 1f,
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
@@ -127,6 +128,7 @@ internal fun StackComponentView(
                     clickHandler,
                     contentAlpha,
                     modifier,
+                    interactionModifier = interactionModifier,
                 )
             }
 
@@ -142,6 +144,7 @@ internal fun StackComponentView(
                         clickHandler,
                         contentAlpha,
                         modifier,
+                        interactionModifier = interactionModifier,
                     )
 
                     else
@@ -153,15 +156,31 @@ internal fun StackComponentView(
                         clickHandler,
                         contentAlpha,
                         modifier,
+                        interactionModifier = interactionModifier,
                     )
                 }
             }
 
             Badge.Style.Nested ->
-                MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier, badge)
+                MainStackComponent(
+                    stackState,
+                    state,
+                    clickHandler,
+                    contentAlpha,
+                    modifier,
+                    interactionModifier = interactionModifier,
+                    nestedBadge = badge,
+                )
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier)
+        MainStackComponent(
+            stackState,
+            state,
+            clickHandler,
+            contentAlpha,
+            modifier,
+            interactionModifier = interactionModifier,
+        )
     }
 }
 
@@ -175,9 +194,16 @@ private fun StackWithOverlaidBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    interactionModifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler, contentAlpha)
+        MainStackComponent(
+            stackState,
+            state,
+            clickHandler,
+            contentAlpha,
+            interactionModifier = interactionModifier,
+        )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
         }
@@ -204,6 +230,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    interactionModifier: Modifier = Modifier,
 ) {
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
@@ -220,6 +247,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 clickHandler,
                 contentAlpha,
                 shouldApplyShadow = false,
+                interactionModifier = interactionModifier,
             )
         }.first()
         val stackPlaceable = stackMeasurable.measure(constraints)
@@ -368,6 +396,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     clickHandler: suspend (PaywallAction) -> Unit,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    interactionModifier: Modifier = Modifier,
 ) {
     val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
         is CornerRadiuses.Percentage -> {
@@ -438,7 +467,14 @@ private fun StackWithShortEdgeToEdgeBadge(
             }
         }
     }
-    MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier) {
+    MainStackComponent(
+        stackState,
+        state,
+        clickHandler,
+        contentAlpha,
+        modifier,
+        interactionModifier = interactionModifier,
+    ) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
@@ -482,6 +518,7 @@ private fun MainStackComponent(
     clickHandler: suspend (PaywallAction) -> Unit,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    interactionModifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
@@ -648,6 +685,7 @@ private fun MainStackComponent(
                     .size(stackState.size)
                     .then(outerShapeModifier)
                     .clip(composeShape)
+                    .then(interactionModifier)
                     .then(borderModifier),
             ) {
                 stack(
@@ -664,6 +702,8 @@ private fun MainStackComponent(
         } else {
             stack(
                 outerShapeModifier
+                    .conditional(interactionModifier !== Modifier) { clip(composeShape) }
+                    .then(interactionModifier)
                     .then(borderModifier)
                     .then(innerShapeModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
@@ -679,6 +719,7 @@ private fun MainStackComponent(
             modifier = modifier
                 .then(outerShapeModifier)
                 .clip(composeShape)
+                .then(interactionModifier)
                 .then(borderModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
@@ -697,7 +738,8 @@ private fun MainStackComponent(
         Box(
             modifier = modifier
                 .then(outerShapeModifier)
-                .clip(composeShape),
+                .clip(composeShape)
+                .then(interactionModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
                 stack(borderModifier.then(innerShapeModifier))
