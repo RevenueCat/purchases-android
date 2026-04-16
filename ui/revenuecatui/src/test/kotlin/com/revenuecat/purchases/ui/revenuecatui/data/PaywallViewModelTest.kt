@@ -2,10 +2,13 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -958,6 +961,31 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `purchase dismiss waits for posted purchase completion work`() {
+        val order = mutableListOf<String>()
+        listener = object : PaywallListener {
+            override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
+                resume(true)
+            }
+
+            override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
+                Handler(Looper.getMainLooper()).post {
+                    order.add("callback")
+                }
+            }
+        }
+
+        val model = create(dismissRequest = { order.add("dismiss") })
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(transaction, customerInfo)
+
+        model.purchaseSelectedPackage(activity)
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        assertThat(order).containsExactly("callback", "dismiss")
+    }
+
+    @Test
     fun `purchasePackage fails`() {
         val model = create()
 
@@ -1109,6 +1137,7 @@ class PaywallViewModelTest {
         } returns customerInfo
 
         model.restorePurchases()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         assertThat(dismissInvoked).isTrue()
     }
@@ -1139,6 +1168,33 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `restore dismiss waits for posted restore completion work`() {
+        val order = mutableListOf<String>()
+        listener = object : PaywallListener {
+            override fun onRestoreInitiated(resume: Resumable) {
+                resume(true)
+            }
+
+            override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                Handler(Looper.getMainLooper()).post {
+                    order.add("callback")
+                }
+            }
+        }
+
+        val model = create(
+            shouldDisplayBlock = { false },
+            dismissRequest = { order.add("dismiss") },
+        )
+        coEvery { purchases.awaitRestore() } returns customerInfo
+
+        model.restorePurchases()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        assertThat(order).containsExactly("callback", "dismiss")
+    }
+
+    @Test
     fun `restorePurchases does not call onDismiss if shouldDisplayBlock condition true`() {
         val model = create {
             true
@@ -1149,6 +1205,7 @@ class PaywallViewModelTest {
         } returns customerInfo
 
         model.restorePurchases()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         assertThat(dismissInvoked).isFalse()
     }
@@ -2567,9 +2624,10 @@ class PaywallViewModelTest {
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequest: () -> Unit = { dismissInvoked = true },
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
-        val builder = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+        val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
             .setListener(listener)
             .setOffering(offering)
             .setPurchaseLogic(customPurchaseLogic)
