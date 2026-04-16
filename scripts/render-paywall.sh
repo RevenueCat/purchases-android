@@ -5,24 +5,27 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 usage() {
-    echo "Usage: $0 --input <offerings.json> --output <screenshot.png>"
+    echo "Usage: $0 --input <offerings.json> --output <screenshot.png> [--offering-id <id>]"
     echo ""
     echo "Renders an Android paywall screenshot from an SDK-shaped offerings.json."
     echo ""
     echo "Arguments:"
-    echo "  --input   Path to an SDK-shaped offerings.json file"
-    echo "  --output  Path where the output PNG will be written"
+    echo "  --input        Path to an SDK-shaped offerings.json file"
+    echo "  --output       Path where the output PNG will be written"
+    echo "  --offering-id  Optional offering identifier to render; defaults to offerings.current"
     exit 1
 }
 
 INPUT_FILE=""
 OUTPUT_FILE=""
+OFFERING_ID=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --input)  INPUT_FILE="$2"; shift 2 ;;
-        --output) OUTPUT_FILE="$2"; shift 2 ;;
-        *)        echo "Unknown argument: $1"; usage ;;
+        --input)        INPUT_FILE="$2"; shift 2 ;;
+        --output)       OUTPUT_FILE="$2"; shift 2 ;;
+        --offering-id)  OFFERING_ID="$2"; shift 2 ;;
+        *)              echo "Unknown argument: $1"; usage ;;
     esac
 done
 
@@ -125,7 +128,8 @@ echo "==> Running Paparazzi screenshot test..."
 cd "$REPO_ROOT"
 ./gradlew :ui:revenuecatui:recordPaparazziBc8Debug \
     --tests="*PaywallJsonScreenshotter" \
-    -Ppaywall.input.dir="$WORK_DIR"
+    -Ppaywall.input.dir="$WORK_DIR" \
+    -Ppaywall.offering.id="$OFFERING_ID"
 
 PNG_FILE=$(find "$PAPARAZZI_OUTPUT_DIR" -name '*PaywallJsonScreenshotter*' -name '*.png' | head -1)
 if [[ -z "$PNG_FILE" ]]; then

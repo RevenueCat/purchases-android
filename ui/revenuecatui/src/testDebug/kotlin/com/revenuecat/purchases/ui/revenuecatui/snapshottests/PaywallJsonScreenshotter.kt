@@ -110,10 +110,19 @@ class PaywallJsonScreenshotter internal constructor(
                 emptyMap<String, List<StoreProduct>>(),
             ) as Offerings
 
-            val offering = offerings.current
-                ?: error("No current offering found in offerings.json")
+            val requestedOfferingId = System.getProperty("paywall.offering.id")?.takeIf { it.isNotBlank() }
+            val offering = if (requestedOfferingId != null) {
+                offerings.all[requestedOfferingId]
+                    ?: error("Offering '$requestedOfferingId' not found in offerings.json")
+            } else {
+                offerings.current
+                    ?: error(
+                        "No current offering found in offerings.json and no offering id was provided. " +
+                            "Pass -Ppaywall.offering.id=<id> to Gradle.",
+                    )
+            }
             require(offering.paywallComponents != null) {
-                "Current offering '${offering.identifier}' has no paywall_components"
+                "Offering '${offering.identifier}' has no paywall_components"
             }
 
             return listOf(arrayOf(offering.identifier, offering))
