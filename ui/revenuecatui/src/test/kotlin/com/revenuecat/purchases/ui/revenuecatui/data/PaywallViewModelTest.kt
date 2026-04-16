@@ -1137,6 +1137,7 @@ class PaywallViewModelTest {
         } returns customerInfo
 
         model.restorePurchases()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         assertThat(dismissInvoked).isTrue()
     }
@@ -1167,6 +1168,33 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `restore dismiss waits for posted restore completion work`() {
+        val order = mutableListOf<String>()
+        listener = object : PaywallListener {
+            override fun onRestoreInitiated(resume: Resumable) {
+                resume(true)
+            }
+
+            override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+                Handler(Looper.getMainLooper()).post {
+                    order.add("callback")
+                }
+            }
+        }
+
+        val model = create(
+            shouldDisplayBlock = { false },
+            dismissRequest = { order.add("dismiss") },
+        )
+        coEvery { purchases.awaitRestore() } returns customerInfo
+
+        model.restorePurchases()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        assertThat(order).containsExactly("callback", "dismiss")
+    }
+
+    @Test
     fun `restorePurchases does not call onDismiss if shouldDisplayBlock condition true`() {
         val model = create {
             true
@@ -1177,6 +1205,7 @@ class PaywallViewModelTest {
         } returns customerInfo
 
         model.restorePurchases()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         assertThat(dismissInvoked).isFalse()
     }
@@ -2595,8 +2624,8 @@ class PaywallViewModelTest {
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
-        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
             .setListener(listener)

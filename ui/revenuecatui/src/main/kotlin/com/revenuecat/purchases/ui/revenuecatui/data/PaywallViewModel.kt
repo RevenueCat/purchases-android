@@ -397,6 +397,11 @@ internal class PaywallViewModelImpl(
                     shouldDisplayBlock?.let {
                         if (!it(customerInfo)) {
                             _purchaseCompleted.value = true
+                            if (listener != null) {
+                                // Give listener implementations a chance to flush any posted main-thread work
+                                // before the paywall dismisses itself.
+                                yield()
+                            }
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             options.dismissRequest()
                         }
