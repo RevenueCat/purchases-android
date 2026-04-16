@@ -395,33 +395,6 @@ public class Purchases internal constructor(
     }
 
     /**
-     * Fetches a published workflow by identifier.
-     *
-     * @param [workflowId] The identifier of the workflow to fetch.
-     * @param [onError] Called when the fetch fails.
-     * @param [onSuccess] Called with the fetched [WorkflowFetchResult] on success.
-     */
-    @OptIn(InternalRevenueCatAPI::class)
-    @InternalRevenueCatAPI
-    @JvmSynthetic
-    public fun getWorkflowsWith(
-        onError: (PurchasesError) -> Unit,
-        onSuccess: (com.revenuecat.purchases.common.workflows.WorkflowsListResponse) -> Unit,
-    ) {
-        purchasesOrchestrator.getWorkflows(onSuccess, onError)
-    }
-
-    @InternalRevenueCatAPI
-    @JvmSynthetic
-    public fun getWorkflowWith(
-        workflowId: String,
-        onError: (PurchasesError) -> Unit,
-        onSuccess: (com.revenuecat.purchases.common.workflows.WorkflowFetchResult) -> Unit,
-    ) {
-        purchasesOrchestrator.getWorkflow(workflowId, onSuccess, onError)
-    }
-
-    /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds
      * @param [callback] Response callback
