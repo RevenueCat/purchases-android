@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui
 
-import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
@@ -21,7 +20,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -35,7 +33,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.rememberComponentsActionHandler
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -63,8 +61,6 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
-import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
-import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
 @Suppress("LongMethod", "ViewModelForwarding")
 @Composable
@@ -144,7 +140,10 @@ internal fun InternalPaywall(
             }
             LoadedPaywallComponents(
                 state = state,
-                clickHandler = rememberPaywallActionHandler(viewModel),
+                clickHandler = rememberComponentsActionHandler(
+                    viewModel = viewModel,
+                    onDismiss = viewModel::closePaywall,
+                ),
                 componentInteractionTracker = componentInteractionTracker,
             )
         } else {
@@ -324,70 +323,6 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
     configuration.setLocale(templateConfiguration.locale)
 
     return configuration
-}
-
-@Composable
-private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (PaywallAction.External) -> Unit {
-    val context: Context = LocalContext.current
-    val activity: Activity? = context.getActivity()
-    return remember(viewModel) {
-        {
-                action ->
-            when (action) {
-                is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
-                is PaywallAction.External.PurchasePackage ->
-                    if (activity == null) {
-                        Logger.e("Activity is null, not initiating package purchase")
-                    } else {
-                        viewModel.handlePackagePurchase(
-                            activity,
-                            pkg = action.rcPackage,
-                            resolvedOffer = action.resolvedOffer,
-                        )
-                    }
-
-                is PaywallAction.External.LaunchWebCheckout -> {
-                    val url = viewModel.getWebCheckoutUrl(action)
-                    if (url == null) {
-                        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
-                    } else {
-                        viewModel.invalidateCustomerInfoCache()
-                        context.handleUrlDestination(url, action.openMethod)
-                        if (action.autoDismiss) {
-                            Logger.d("Auto-dismissing paywall after launching web checkout.")
-                            viewModel.closePaywall()
-                        }
-                    }
-                }
-
-                is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
-                is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
-                    is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
-                        Logger.w("Customer Center is not yet implemented on Android.")
-
-                    is PaywallAction.External.NavigateTo.Destination.Url -> context.handleUrlDestination(
-                        url = destination.url,
-                        method = destination.method,
-                    )
-                }
-            }
-        }
-    }
-}
-
-private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
-    val openingMethod = when (method) {
-        ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
-        ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
-        ButtonComponent.UrlMethod.DEEP_LINK -> URLOpeningMethod.DEEP_LINK
-        ButtonComponent.UrlMethod.UNKNOWN -> {
-            // Buttons like this should be hidden, so this log should never be shown.
-            Logger.e("Ignoring button click with unknown open method for URL: '$url'. This is a bug in the SDK.")
-            return
-        }
-    }
-
-    URLOpener.openURL(this, url, openingMethod)
 }
 
 private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this
