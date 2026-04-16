@@ -129,7 +129,7 @@ internal fun Template7(
             paywallTierSelection(
                 tierDisplayName = tierSelectorComponentInteractionValue(tier),
                 componentName = PaywallLegacyComponentInteraction.TIER_SELECTOR_NAME,
-                originPackage = selectedTier.defaultPackage.rcPackage,
+                originPackage = state.selectedPackage.value.rcPackage,
                 destinationPackage = tier.defaultPackage.rcPackage,
             ),
         )
