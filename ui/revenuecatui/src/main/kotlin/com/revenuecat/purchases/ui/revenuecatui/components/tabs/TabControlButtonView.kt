@@ -29,11 +29,15 @@ internal fun TabControlButtonView(
         modifier = modifier.clickable {
             val ordered = style.tabIdsOrdered
             val destinationIndex = style.tabIndex
+            val resolvedTabIndex = if (ordered.isNotEmpty()) {
+                destinationIndex.coerceIn(0, ordered.lastIndex)
+            } else {
+                destinationIndex
+            }
             if (ordered.isNotEmpty()) {
                 val originIndex = state.selectedTabIndex.coerceIn(0, ordered.lastIndex)
-                val coercedDestination = destinationIndex.coerceIn(0, ordered.lastIndex)
-                if (originIndex == coercedDestination) {
-                    state.update(selectedTabIndex = destinationIndex)
+                if (originIndex == resolvedTabIndex) {
+                    state.update(selectedTabIndex = resolvedTabIndex)
                     return@clickable
                 }
                 val originTabId = ordered[originIndex]
@@ -43,7 +47,7 @@ internal fun TabControlButtonView(
                         tabsComponentName = style.tabsComponentName,
                         destinationTabId = destinationTabId,
                         originIndex = originIndex,
-                        destinationIndex = coercedDestination,
+                        destinationIndex = resolvedTabIndex,
                         originContextName = style.tabContextNamesById[originTabId],
                         destinationContextName = style.tabContextNamesById[destinationTabId],
                         defaultIndex = style.tabsDefaultTabIndex,
@@ -62,7 +66,7 @@ internal fun TabControlButtonView(
                     ),
                 )
             }
-            state.update(selectedTabIndex = destinationIndex)
+            state.update(selectedTabIndex = resolvedTabIndex)
         },
     )
 }
