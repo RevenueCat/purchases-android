@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.paywallstester.ui.screens.paywall
 
 import androidx.compose.foundation.layout.Box
@@ -15,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesHolder
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -65,6 +68,17 @@ fun PaywallScreen(
                             .build(),
                     )
                 }
+                state.dialogText?.let {
+                    PurchaseAlertDialog(viewModel, it)
+                }
+            }
+            is PaywallScreenState.WorkflowLoaded -> {
+                Paywall(
+                    PaywallOptions.Builder(dismissRequest)
+                        .setWorkflowIdentifier(state.workflowId)
+                        .setListener(viewModel)
+                        .build(),
+                )
                 state.dialogText?.let {
                     PurchaseAlertDialog(viewModel, it)
                 }

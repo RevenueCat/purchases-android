@@ -6,4 +6,5 @@ sealed class AppScreen(val route: String) {
     object PaywallFooter : AppScreen("paywall_footer")
     object PaywallByPlacement : AppScreen("paywall_by_placement")
     object CustomerCenter : AppScreen("customer_center")
+    object Workflow : AppScreen("workflow")
 }

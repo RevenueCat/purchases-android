@@ -11,4 +11,8 @@ sealed class PaywallScreenState {
         val footerCondensed: Boolean = false,
         val refreshCount: Int = 0,
     ) : PaywallScreenState()
+    data class WorkflowLoaded(
+        val workflowId: String,
+        val dialogText: String? = null,
+    ) : PaywallScreenState()
 }
