@@ -21,7 +21,6 @@ import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreen
 import com.revenuecat.paywallstester.ui.screens.main.locale.LocaleScreen
 import com.revenuecat.paywallstester.ui.screens.main.offerings.OfferingsScreen
 import com.revenuecat.paywallstester.ui.screens.main.paywalls.PaywallsScreen
-import com.revenuecat.paywallstester.ui.screens.main.workflows.WorkflowsScreen
 import com.revenuecat.purchases.Offering
 
 @SuppressWarnings("LongParameterList")
@@ -67,7 +66,6 @@ private val bottomNavigationItems = listOf(
     Tab.Paywalls,
     Tab.Offerings,
     Tab.Locale,
-    Tab.Workflows,
 )
 
 @Suppress("LongParameterList")
@@ -104,9 +102,6 @@ private fun MainNavHost(
         }
         composable(Tab.Locale.route) {
             LocaleScreen()
-        }
-        composable(Tab.Workflows.route) {
-            WorkflowsScreen()
         }
     }
 }
