@@ -1070,6 +1070,15 @@ workflows:
           matrix:
             parameters:
               backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+      # TEMP: test notify_slack fix - revert after verifying
+      - run-purchases-integration-tests:
+          name: run-purchases-integration-tests-notify-slack-test
+          backend_environment: "load_shedder_us_east_1"
+          notify_slack: true
+          requires:
+            - prepare-tests
+          context:
+            - slack-secrets
       - hold:
           type: approval
           requires:
