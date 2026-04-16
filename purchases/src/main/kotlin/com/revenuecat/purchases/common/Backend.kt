@@ -100,7 +100,7 @@ internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit,
 internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
-internal typealias WorkflowsListCallback = Pair<(WorkflowsListResponse) -> Unit, (PurchasesError) -> Unit>
+internal typealias WorkflowListCallback = Pair<(WorkflowsListResponse) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias WorkflowDetailCallback = Pair<(WorkflowDetailResponse) -> Unit, (PurchasesError) -> Unit>
@@ -187,8 +187,8 @@ internal class Backend(
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var workflowsListCallbacks =
-        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowsListCallback>>()
+    @Volatile var workflowListCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowListCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var workflowDetailCallbacks =
@@ -1015,7 +1015,7 @@ internal class Backend(
 
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
-                    workflowsListCallbacks.remove(cacheKey)
+                    workflowListCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
                     onErrorHandler(error)
                 }
@@ -1023,11 +1023,13 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
-                    workflowsListCallbacks.remove(cacheKey)
+                    workflowListCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccessHandler(WorkflowJsonParser.parseWorkflowsListResponse(result.payload))
+                            onSuccessHandler(
+                                WorkflowJsonParser.parseWorkflowsListResponse(result.payload),
+                            )
                         } catch (e: SerializationException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         } catch (e: IllegalArgumentException) {
@@ -1041,7 +1043,7 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
-            workflowsListCallbacks.addBackgroundAwareCallback(
+            workflowListCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
                 cacheKey,
