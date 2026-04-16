@@ -1,4 +1,4 @@
-@file:Suppress("TooManyFunctions")
+@file:Suppress("TooManyFunctions", "ViewModelForwarding")
 @file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.templates
@@ -79,11 +79,11 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
-import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallTierSelection
 import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallTierSelection
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template7UIConstants {
@@ -463,6 +463,7 @@ private fun Feature(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun AnimatedPackages(
     state: PaywallState.Loaded.Legacy,

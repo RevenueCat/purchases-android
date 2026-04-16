@@ -26,21 +26,25 @@ internal fun PaywallState.Loaded.Components.resolveWebCheckoutUrlForInteraction(
         is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend ->
             null to null
     }
-    if (customUrl != null) {
+    val fromCustomUrl: String? = if (customUrl != null) {
         val uri = try {
             URI(customUrl)
         } catch (e: URISyntaxException) {
             Logger.e("Invalid custom URI: $customUrl", e)
-            return null
+            null
         }
-        val finalUri = if (packageParam != null && packageToUse != null) {
-            uri.appendQueryParameter(packageParam, packageToUse.identifier)
-        } else {
-            uri
+        uri?.let { parsed ->
+            val finalUri = if (packageParam != null && packageToUse != null) {
+                parsed.appendQueryParameter(packageParam, packageToUse.identifier)
+            } else {
+                parsed
+            }
+            finalUri.toString()
         }
-        return finalUri.toString()
+    } else {
+        null
     }
-    return packageToUse?.webCheckoutURL?.toString() ?: offering.webCheckoutURL?.toString()
+    return fromCustomUrl ?: packageToUse?.webCheckoutURL?.toString() ?: offering.webCheckoutURL?.toString()
 }
 
 /**

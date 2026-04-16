@@ -4,9 +4,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
 import androidx.compose.foundation.clickable
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle

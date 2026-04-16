@@ -1247,39 +1247,39 @@ internal class StyleFactory(
             defaultTabId = component.defaultTabId,
         ) {
             createTabsComponentStyleTabControl(component.control).flatMap { control ->
-            // Find the index of the defaultTabId.
-            component.defaultTabId
-                ?.takeUnless { it.isBlank() }
-                ?.let { defaultTabId -> component.tabs.indexOfFirst { it.id == defaultTabId } }
-                ?.takeUnless { it == -1 }
-                ?.also { defaultTabIndex = it }
+                // Find the index of the defaultTabId.
+                component.defaultTabId
+                    ?.takeUnless { it.isBlank() }
+                    ?.let { defaultTabId -> component.tabs.indexOfFirst { it.id == defaultTabId } }
+                    ?.takeUnless { it == -1 }
+                    ?.also { defaultTabIndex = it }
 
-            zipOrAccumulate(
-                first = component.overrides
-                    .toPresentedOverrides(
-                        stripRules,
-                    ) { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
-                    .mapError { nonEmptyListOf(it) },
-                second = createTabsComponentStyleTabs(component.tabs, control),
-                third = createBackgroundStyles(component.background, component.backgroundColor),
-                fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
-                fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-            ) { overrides, tabs, backgroundColor, border, shadow ->
-                TabsComponentStyle(
-                    visible = component.visible ?: DEFAULT_VISIBILITY,
-                    size = component.size,
-                    padding = component.padding.toPaddingValues(),
-                    margin = component.margin.toPaddingValues(),
-                    background = backgroundColor,
-                    shape = component.shape ?: DEFAULT_SHAPE,
-                    border = border,
-                    shadow = shadow,
-                    control = control,
-                    tabs = tabs,
-                    overrides = overrides,
-                )
+                zipOrAccumulate(
+                    first = component.overrides
+                        .toPresentedOverrides(
+                            stripRules,
+                        ) { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                        .mapError { nonEmptyListOf(it) },
+                    second = createTabsComponentStyleTabs(component.tabs, control),
+                    third = createBackgroundStyles(component.background, component.backgroundColor),
+                    fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+                    fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+                ) { overrides, tabs, backgroundColor, border, shadow ->
+                    TabsComponentStyle(
+                        visible = component.visible ?: DEFAULT_VISIBILITY,
+                        size = component.size,
+                        padding = component.padding.toPaddingValues(),
+                        margin = component.margin.toPaddingValues(),
+                        background = backgroundColor,
+                        shape = component.shape ?: DEFAULT_SHAPE,
+                        border = border,
+                        shadow = shadow,
+                        control = control,
+                        tabs = tabs,
+                        overrides = overrides,
+                    )
+                }
             }
-        }
         }
 
     private fun StyleFactoryScope.createTabsComponentStyleTabControl(

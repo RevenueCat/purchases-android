@@ -488,6 +488,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun BoxScope.OverlaidBadge(
     badgeStack: StackComponentStyle,

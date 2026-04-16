@@ -52,10 +52,10 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
-import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
-import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
@@ -66,7 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ViewModelForwarding")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,

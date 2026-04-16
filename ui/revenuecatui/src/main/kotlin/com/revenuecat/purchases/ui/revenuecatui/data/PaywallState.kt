@@ -348,14 +348,18 @@ internal sealed interface PaywallState {
                     ?: selectedPackageByTab[selectedTabIndex]
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
-                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss() ?: return null
-                val info = findPackageInfoByUniqueId(uid) ?: return null
-                return SelectedPackageInfo(
-                    rcPackage = info.pkg,
-                    resolvedOffer = info.resolvedOffer,
-                    uniqueId = uid,
-                    offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
-                )
+                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
+                val info = uid?.let { findPackageInfoByUniqueId(it) }
+                return if (uid != null && info != null) {
+                    SelectedPackageInfo(
+                        rcPackage = info.pkg,
+                        resolvedOffer = info.resolvedOffer,
+                        uniqueId = uid,
+                        offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
+                    )
+                } else {
+                    null
+                }
             }
 
             /**

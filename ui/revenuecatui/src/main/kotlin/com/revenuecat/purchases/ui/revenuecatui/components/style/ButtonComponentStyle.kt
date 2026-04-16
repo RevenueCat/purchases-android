@@ -26,6 +26,7 @@ internal data class ButtonComponentStyle(
     internal sealed interface Action {
         object RestorePurchases : Action
         object NavigateBack : Action
+
         @get:JvmSynthetic
         val description: String
             get() = "unknown"

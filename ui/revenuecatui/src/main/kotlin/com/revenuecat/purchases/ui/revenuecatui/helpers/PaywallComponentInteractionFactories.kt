@@ -8,6 +8,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 
 @InternalRevenueCatAPI
+@Suppress("LongParameterList")
 internal fun paywallTabControlButtonSelection(
     tabsComponentName: String?,
     destinationTabId: String,

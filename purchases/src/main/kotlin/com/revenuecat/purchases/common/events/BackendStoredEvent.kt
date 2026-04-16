@@ -7,8 +7,8 @@ import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEv
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
-import com.revenuecat.purchases.paywalls.events.toBackendComponentFields
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.paywalls.events.toBackendComponentFields
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

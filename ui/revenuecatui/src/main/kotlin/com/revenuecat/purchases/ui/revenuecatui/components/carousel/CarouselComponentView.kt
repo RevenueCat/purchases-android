@@ -346,23 +346,26 @@ private fun EnableAutoAdvance(
     LaunchedEffect(Unit) {
         while (true) {
             delay(autoAdvance.msTimePerPage.toLong())
-            if (pagerState.isScrollInProgress) continue
-            val nextPage = nextAutoAdvanceTargetPage(
-                shouldLoop = shouldLoop,
-                pageCount = pageCount,
-                currentPage = pagerState.currentPage,
-            ) ?: continue
-            skipProgrammaticPageTracking.markProgrammaticScrollStarted()
-            try {
-                pagerState.animateScrollToPage(
-                    page = nextPage,
-                    animationSpec = tween(
-                        autoAdvance.msTransitionTime,
-                    ),
+            if (!pagerState.isScrollInProgress) {
+                val nextPage = nextAutoAdvanceTargetPage(
+                    shouldLoop = shouldLoop,
+                    pageCount = pageCount,
+                    currentPage = pagerState.currentPage,
                 )
-            } catch (_: CancellationException) {
-                skipProgrammaticPageTracking.clear()
-                // Do nothing, so we continue scrolling on the next loop
+                if (nextPage != null) {
+                    skipProgrammaticPageTracking.markProgrammaticScrollStarted()
+                    try {
+                        pagerState.animateScrollToPage(
+                            page = nextPage,
+                            animationSpec = tween(
+                                autoAdvance.msTransitionTime,
+                            ),
+                        )
+                    } catch (_: CancellationException) {
+                        skipProgrammaticPageTracking.clear()
+                        // Do nothing, so we continue scrolling on the next loop
+                    }
+                }
             }
         }
     }

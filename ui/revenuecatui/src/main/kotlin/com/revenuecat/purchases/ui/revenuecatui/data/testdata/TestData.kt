@@ -27,7 +27,6 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -725,4 +724,3 @@ internal class MockViewModel(
         private const val MILLIS_2025_01_25 = 1737763200000
     }
 }
-

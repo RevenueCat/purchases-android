@@ -30,8 +30,6 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
-import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
-import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
@@ -40,6 +38,8 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.TransitionView
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
