@@ -590,9 +590,7 @@ jobs:
       - run:
           name: Build and run purchases integration tests
           command: |
-            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
-          environment:
-            NOTIFY_SLACK: "<< parameters.notify_slack >>"
+            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>' notify_slack:'<< parameters.notify_slack >>'
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
