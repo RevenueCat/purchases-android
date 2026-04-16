@@ -7,7 +7,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
-import java.io.IOException
 import java.io.InputStreamReader
 
 internal class FileHelper(
@@ -61,11 +60,7 @@ internal class FileHelper(
             errorLog(
                 e,
             ) { "FileHelper: file not found when trying to remove first lines from file: $filePath. Ignoring." }
-        } catch (e: IOException) {
-            onException?.invoke(e)
-            errorLog(e) { "FileHelper: error removing first lines from file: $filePath. Ignoring." }
-            throw e
-        } catch (e: SecurityException) {
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             onException?.invoke(e)
             errorLog(e) { "FileHelper: error removing first lines from file: $filePath. Ignoring." }
             throw e
