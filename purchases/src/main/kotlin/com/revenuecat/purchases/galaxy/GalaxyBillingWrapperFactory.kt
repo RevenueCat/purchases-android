@@ -24,25 +24,40 @@ internal object GalaxyBillingWrapperFactory {
                 GalaxyBillingMode::class.java,
                 DeviceCache::class.java,
             )
-            return constructor.newInstance(
+            val wrapperInstance = constructor.newInstance(
                 stateProvider,
                 context,
                 billingMode,
                 deviceCache,
-            ) as? BillingAbstract
-                ?: throw IllegalStateException("GalaxyBillingWrapper does not implement BillingAbstract")
-        } catch (e: ClassNotFoundException) {
-            val error = NoClassDefFoundError(e.message)
-            error.initCause(e)
-            throw error
-        } catch (e: NoSuchMethodException) {
-            throw IllegalStateException(
-                "Failed to find GalaxyBillingWrapper constructor. " +
-                    "Please ensure that you've declared a dependency on the purchases-galaxy module.",
-                e,
             )
+            check(wrapperInstance is BillingAbstract) {
+                "GalaxyBillingWrapper does not implement BillingAbstract"
+            }
+            return wrapperInstance
+        } catch (e: ClassNotFoundException) {
+            handleMissingGalaxyModule(e)
+        } catch (e: NoSuchMethodException) {
+            handleMissingConstructor(e)
         } catch (e: ReflectiveOperationException) {
-            throw IllegalStateException("Failed to create GalaxyBillingWrapper", e)
+            handleWrapperCreationFailure(e)
         }
+    }
+
+    private fun handleMissingGalaxyModule(e: ClassNotFoundException): Nothing {
+        val error = NoClassDefFoundError(e.message)
+        error.initCause(e)
+        throw error
+    }
+
+    private fun handleMissingConstructor(e: NoSuchMethodException): Nothing {
+        throw IllegalStateException(
+            "Failed to find GalaxyBillingWrapper constructor. " +
+                "Please ensure that you've declared a dependency on the purchases-galaxy module.",
+            e,
+        )
+    }
+
+    private fun handleWrapperCreationFailure(e: ReflectiveOperationException): Nothing {
+        throw IllegalStateException("Failed to create GalaxyBillingWrapper", e)
     }
 }
