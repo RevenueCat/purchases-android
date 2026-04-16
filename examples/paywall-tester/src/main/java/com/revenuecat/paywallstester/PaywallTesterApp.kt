@@ -58,6 +58,11 @@ private fun AppNavHost(
                 navigateToCustomerCenterScreen = {
                     navController.navigate(AppScreen.CustomerCenter.route)
                 },
+                navigateToWorkflowScreen = { workflowId ->
+                    navController.navigate(
+                        AppScreen.Workflow.route.plus("/$workflowId"),
+                    )
+                },
             )
         }
         composable(
@@ -92,6 +97,14 @@ private fun AppNavHost(
         }
         composable(route = AppScreen.CustomerCenter.route) {
             CustomerCenterScreen(dismissRequest = navController::popBackStack)
+        }
+        composable(
+            route = AppScreen.Workflow.route.plus("/{${PaywallScreenViewModel.WORKFLOW_ID_KEY}}"),
+            arguments = listOf(
+                navArgument(PaywallScreenViewModel.WORKFLOW_ID_KEY) { type = NavType.StringType },
+            ),
+        ) {
+            PaywallScreen(dismissRequest = navController::popBackStack)
         }
     }
 }

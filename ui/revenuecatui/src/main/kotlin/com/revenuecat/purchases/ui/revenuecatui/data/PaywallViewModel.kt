@@ -51,6 +51,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
+import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,11 +67,11 @@ import kotlin.coroutines.suspendCoroutine
 
 @Suppress("TooManyFunctions")
 @Stable
-internal interface PaywallViewModel {
+internal interface PaywallViewModel : ComponentsViewModel {
     val state: StateFlow<PaywallState>
     val resourceProvider: ResourceProvider
-    val actionInProgress: State<Boolean>
-    val actionError: State<PurchasesError?>
+    override val actionInProgress: State<Boolean>
+    override val actionError: State<PurchasesError?>
     val purchaseCompleted: State<Boolean>
     val preloadedExitOffering: State<Offering?>
 
@@ -81,20 +82,20 @@ internal interface PaywallViewModel {
     fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String)
     fun closePaywall(result: PaywallResult? = null)
 
-    fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
-    fun invalidateCustomerInfoCache()
+    override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
+    override fun invalidateCustomerInfoCache()
 
     /**
      * Purchase the selected package
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
-    suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer? = null)
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?)
 
     fun restorePurchases()
-    suspend fun handleRestorePurchases()
+    override suspend fun handleRestorePurchases()
 
-    fun clearActionError()
+    override fun clearActionError()
     fun preloadExitOffering()
 }
 
@@ -589,33 +590,9 @@ internal class PaywallViewModelImpl(
     private fun updateState() {
         viewModelScope.launch {
             try {
-                val currentOffering: Offering? = when (val offeringSelection = options.offeringSelection) {
-                    is OfferingSelection.OfferingType -> offeringSelection.offeringType
-                    is OfferingSelection.IdAndPresentedOfferingContext -> {
-                        val offerings = purchases.awaitOfferings()
-                        val presentedOfferingContext = offeringSelection.presentedOfferingContext
-                        val offering = offerings[offeringSelection.offeringId] ?: offerings.current
-                        presentedOfferingContext?.let {
-                            offering?.copy(presentedOfferingContext)
-                        } ?: offering
-                    }
-                    is OfferingSelection.None -> {
-                        val offerings = purchases.awaitOfferings()
-                        offerings.current
-                    }
-                }
-
-                if (currentOffering == null) {
-                    _state.value = PaywallState.Error(
-                        "The RevenueCat dashboard does not have a current offering configured.",
-                    )
-                } else {
-                    _state.value = calculateState(
-                        currentOffering,
-                        _colorScheme.value,
-                        purchases.storefrontCountryCode,
-                        options.mode,
-                    )
+                when (val offeringSelection = options.offeringSelection) {
+                    is OfferingSelection.WorkflowId -> updateStateFromWorkflow(offeringSelection.id)
+                    else -> updateStateFromOffering(offeringSelection)
                 }
             } catch (e: PurchasesException) {
                 _state.value = PaywallState.Error(
@@ -623,6 +600,103 @@ internal class PaywallViewModelImpl(
                 )
             }
         }
+    }
+
+    private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
+        val currentOffering: Offering? = when (offeringSelection) {
+            is OfferingSelection.OfferingType -> offeringSelection.offeringType
+            is OfferingSelection.IdAndPresentedOfferingContext -> {
+                val offerings = purchases.awaitOfferings()
+                val presentedOfferingContext = offeringSelection.presentedOfferingContext
+                val offering = offerings[offeringSelection.offeringId] ?: offerings.current
+                presentedOfferingContext?.let {
+                    offering?.copy(presentedOfferingContext)
+                } ?: offering
+            }
+            is OfferingSelection.None -> {
+                val offerings = purchases.awaitOfferings()
+                offerings.current
+            }
+            is OfferingSelection.WorkflowId -> error("Unexpected WorkflowId in updateStateFromOffering")
+        }
+
+        if (currentOffering == null) {
+            _state.value = PaywallState.Error(
+                "The RevenueCat dashboard does not have a current offering configured.",
+            )
+        } else {
+            _state.value = calculateState(
+                currentOffering,
+                _colorScheme.value,
+                purchases.storefrontCountryCode,
+                options.mode,
+            )
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private suspend fun updateStateFromWorkflow(workflowId: String) {
+        val fetchResult = purchases.awaitGetWorkflow(workflowId)
+        val workflow = fetchResult.workflow
+
+        val step = workflow.steps[workflow.initialStepId]
+        if (step == null) {
+            _state.value = PaywallState.Error(
+                "Initial step '${workflow.initialStepId}' not found in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val screenId = step.screenId
+        if (screenId == null) {
+            _state.value = PaywallState.Error(
+                "Initial step '${step.id}' has no screen_id in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val screen = workflow.screens[screenId]
+        if (screen == null) {
+            _state.value = PaywallState.Error(
+                "Screen '$screenId' not found in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, workflow.uiConfig)
+
+        val offeringId = screen.offeringId
+        if (offeringId == null) {
+            _state.value = PaywallState.Error(
+                "Screen '$screenId' has no offering_id in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val offerings = purchases.awaitOfferings()
+        val baseOffering = offerings[offeringId]
+        if (baseOffering == null) {
+            _state.value = PaywallState.Error(
+                "Offering '$offeringId' not found for screen '$screenId'",
+            )
+            return
+        }
+
+        val offering = Offering(
+            identifier = baseOffering.identifier,
+            serverDescription = baseOffering.serverDescription,
+            metadata = baseOffering.metadata,
+            availablePackages = baseOffering.availablePackages,
+            paywallComponents = paywallComponents,
+            webCheckoutURL = baseOffering.webCheckoutURL,
+        )
+
+        _state.value = calculateState(
+            offering,
+            _colorScheme.value,
+            purchases.storefrontCountryCode,
+            options.mode,
+        )
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {

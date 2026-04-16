@@ -25,6 +25,7 @@ interface PaywallScreenViewModel : PaywallListener {
         const val OFFERING_ID_KEY = "offering_id"
         const val FOOTER_CONDENSED_KEY = "footer_condensed"
         const val PLACEMENT_ID_KEY = "placement_id"
+        const val WORKFLOW_ID_KEY = "workflow_id"
     }
     val state: StateFlow<PaywallScreenState>
     val isRefreshing: StateFlow<Boolean>
@@ -49,11 +50,16 @@ class PaywallScreenViewModelImpl(
     private val offeringId = savedStateHandle.get<String?>(PaywallScreenViewModel.OFFERING_ID_KEY)
     private val footerCondensed = savedStateHandle.get<Boolean?>(PaywallScreenViewModel.FOOTER_CONDENSED_KEY)
     private val placementId = savedStateHandle.get<String?>(PaywallScreenViewModel.PLACEMENT_ID_KEY)
+    private val workflowId = savedStateHandle.get<String?>(PaywallScreenViewModel.WORKFLOW_ID_KEY)
 
     private var refreshCounter = 0
 
     init {
-        updateOffering()
+        if (workflowId != null) {
+            _state.value = PaywallScreenState.WorkflowLoaded(workflowId)
+        } else {
+            updateOffering()
+        }
     }
 
     @Suppress("MagicNumber")

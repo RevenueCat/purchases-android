@@ -53,6 +53,9 @@ fun PaywallFooterScreen(
                     PurchaseAlertDialog(viewModel, it)
                 }
             }
+            is PaywallScreenState.WorkflowLoaded -> {
+                // Workflows are not supported in footer mode
+            }
         }
     }
 }

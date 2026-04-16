@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
@@ -26,11 +27,15 @@ internal sealed class OfferingSelection {
     @Immutable
     object None : OfferingSelection()
 
+    @Immutable
+    data class WorkflowId(val id: String) : OfferingSelection()
+
     val offering: Offering?
         get() = when (this) {
             is OfferingType -> offeringType
             is IdAndPresentedOfferingContext -> null
             None -> null
+            is WorkflowId -> null
         }
 
     val offeringIdentifier: String?
@@ -38,6 +43,7 @@ internal sealed class OfferingSelection {
             is OfferingType -> offeringType.identifier
             is IdAndPresentedOfferingContext -> offeringId
             None -> null
+            is WorkflowId -> null
         }
 }
 
@@ -78,7 +84,7 @@ public class PaywallOptions internal constructor(
     // Fields like fontProvider, listener, purchaseLogic, and dismissRequest are excluded because
     // they don't influence visual/structural uniqueness and may not be reliably hashable.
     override fun hashCode(): Int {
-        var result = offeringSelection.offeringIdentifier.hashCode()
+        var result = offeringSelection.hashCode()
         result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
         result = hashMultiplier * result + mode.hashCode()
         result = hashMultiplier * result + customVariables.hashCode()
@@ -149,6 +155,11 @@ public class PaywallOptions internal constructor(
 
         internal fun setOfferingSelection(offeringSelection: OfferingSelection?) = apply {
             this.offeringSelection = offeringSelection ?: OfferingSelection.None
+        }
+
+        @InternalRevenueCatAPI
+        public fun setWorkflowIdentifier(workflowId: String): Builder = apply {
+            this.offeringSelection = OfferingSelection.WorkflowId(workflowId)
         }
 
         /**

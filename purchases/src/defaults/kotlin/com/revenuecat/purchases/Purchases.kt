@@ -394,14 +394,6 @@ public class Purchases internal constructor(
         purchasesOrchestrator.getOfferings(listener)
     }
 
-    /**
-     * Fetches a published workflow by identifier.
-     *
-     * @param [workflowId] The identifier of the workflow to fetch.
-     * @param [onError] Called when the fetch fails.
-     * @param [onSuccess] Called with the fetched [WorkflowFetchResult] on success.
-     */
-    @OptIn(InternalRevenueCatAPI::class)
     @InternalRevenueCatAPI
     @JvmSynthetic
     public fun getWorkflowsWith(

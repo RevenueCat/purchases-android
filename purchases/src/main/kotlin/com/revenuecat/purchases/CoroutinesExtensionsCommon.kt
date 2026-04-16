@@ -285,13 +285,12 @@ public suspend fun Purchases.Companion.awaitCanMakePayments(
 }
 
 /**
- * Fetches a published workflow by identifier.
+ * Fetches the list of published workflows.
  *
- * Coroutine friendly version of [Purchases.getWorkflowWith].
+ * Coroutine friendly version of [Purchases.getWorkflowsWith].
  *
- * @param workflowId The identifier of the workflow to fetch.
- * @throws [PurchasesException] with a [PurchasesError] if there's an error fetching the workflow.
- * @return The [com.revenuecat.purchases.common.workflows.WorkflowFetchResult] for the given identifier.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error fetching the workflows.
+ * @return The [com.revenuecat.purchases.common.workflows.WorkflowsListResponse].
  */
 @OptIn(InternalRevenueCatAPI::class)
 @InternalRevenueCatAPI
@@ -306,6 +305,15 @@ public suspend fun Purchases.awaitGetWorkflows(): com.revenuecat.purchases.commo
     }
 }
 
+/**
+ * Fetches a published workflow by identifier.
+ *
+ * Coroutine friendly version of [Purchases.getWorkflowWith].
+ *
+ * @param workflowId The identifier of the workflow to fetch.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error fetching the workflow.
+ * @return The [com.revenuecat.purchases.common.workflows.WorkflowFetchResult] for the given identifier.
+ */
 @OptIn(InternalRevenueCatAPI::class)
 @InternalRevenueCatAPI
 @JvmSynthetic
