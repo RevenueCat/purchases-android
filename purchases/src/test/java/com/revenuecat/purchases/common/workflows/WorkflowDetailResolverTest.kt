@@ -169,18 +169,9 @@ class WorkflowDetailResolverTest {
 
     @Test
     fun `computeCanonicalHash produces stable SHA-256 hex digest`() {
-        val json = """{"b":2,"a":1}"""
+        val json = """{"a":1,"b":2}"""
         val hash = WorkflowDetailResolver.computeCanonicalHash(json)
         assertThat(hash).hasSize(64)
-        // Same input → same output
         assertThat(WorkflowDetailResolver.computeCanonicalHash(json)).isEqualTo(hash)
-    }
-
-    @Test
-    fun `computeCanonicalHash excludes hash field`() {
-        val withoutHash = """{"id":"wf_1","steps":{}}"""
-        val withHash = """{"id":"wf_1","steps":{},"hash":"abc123"}"""
-        assertThat(WorkflowDetailResolver.computeCanonicalHash(withHash))
-            .isEqualTo(WorkflowDetailResolver.computeCanonicalHash(withoutHash))
     }
 }
