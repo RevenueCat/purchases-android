@@ -3,16 +3,16 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.JsonProvider
+import com.revenuecat.purchases.JsonTools
 
 internal object WorkflowJsonParser {
 
     fun parseWorkflowsListResponse(payload: String): WorkflowsListResponse =
-        JsonProvider.defaultJson.decodeFromString<WorkflowsListResponse>(payload)
+        JsonTools.json.decodeFromString<WorkflowsListResponse>(payload)
 
     fun parsePublishedWorkflow(payload: String): PublishedWorkflow =
-        JsonProvider.defaultJson.decodeFromString<PublishedWorkflow>(payload)
+        JsonTools.json.decodeFromString<PublishedWorkflow>(payload)
 
     fun parseWorkflowDetailResponse(payload: String): WorkflowDetailResponse =
-        JsonProvider.defaultJson.decodeFromString<WorkflowDetailResponse>(payload)
+        JsonTools.json.decodeFromString<WorkflowDetailResponse>(payload)
 }

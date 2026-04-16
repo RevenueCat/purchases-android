@@ -60,6 +60,7 @@ internal class WorkflowDetailResolver(
 
     companion object {
         private const val CONTROL_CHAR_UPPER_BOUND = 0x20
+        private const val NON_ASCII_LOWER_BOUND = 0x80
 
         /**
          * Computes SHA-256 hex digest of the canonical JSON, excluding the "hash" field.
@@ -121,7 +122,7 @@ internal class WorkflowDetailResolver(
                     '\t' -> append("\\t")
                     '\b' -> append("\\b")
                     '\u000C' -> append("\\f")
-                    else -> if (c.code < CONTROL_CHAR_UPPER_BOUND) {
+                    else -> if (c.code < CONTROL_CHAR_UPPER_BOUND || c.code >= NON_ASCII_LOWER_BOUND) {
                         append("\\u%04x".format(c.code))
                     } else {
                         append(c)

@@ -17,19 +17,22 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import java.net.URL
 
+@InternalRevenueCatAPI
 @Serializable
-internal data class WorkflowSummary(
+public data class WorkflowSummary(
     val id: String,
     @SerialName("display_name") val displayName: String,
 )
 
+@InternalRevenueCatAPI
 @Serializable
-internal data class WorkflowsListResponse(
+public data class WorkflowsListResponse(
     val workflows: List<WorkflowSummary> = emptyList(),
 )
 
+@InternalRevenueCatAPI
 @Serializable
-internal data class WorkflowTriggerAction(
+public data class WorkflowTriggerAction(
     val type: String,
     val value: String? = null,
     @SerialName("step_id") val stepId: String? = null,
@@ -38,16 +41,18 @@ internal data class WorkflowTriggerAction(
         get() = value ?: stepId
 }
 
+@InternalRevenueCatAPI
 @Serializable
-internal data class WorkflowTrigger(
+public data class WorkflowTrigger(
     val name: String,
     val type: String,
     @SerialName("action_id") val actionId: String,
     @SerialName("component_id") val componentId: String,
 )
 
+@InternalRevenueCatAPI
 @Serializable
-internal data class WorkflowStep(
+public data class WorkflowStep(
     val id: String,
     val type: String,
     @SerialName("screen_id") val screenId: String? = null,
@@ -58,8 +63,9 @@ internal data class WorkflowStep(
     val metadata: JsonElement? = null,
 )
 
+@InternalRevenueCatAPI
 @Serializable
-internal data class WorkflowScreen(
+public data class WorkflowScreen(
     val name: String? = null,
     @SerialName("template_name") val templateName: String,
     val revision: Int = 0,
@@ -76,8 +82,9 @@ internal data class WorkflowScreen(
 /**
  * Published workflow document returned inline or via CDN (same JSON shape).
  */
+@InternalRevenueCatAPI
 @Serializable
-internal data class PublishedWorkflow(
+public data class PublishedWorkflow(
     val id: String,
     @SerialName("display_name") val displayName: String,
     @SerialName("initial_step_id") val initialStepId: String,
@@ -89,7 +96,8 @@ internal data class PublishedWorkflow(
     val hash: String? = null,
 )
 
-internal data class WorkflowFetchResult(
+@InternalRevenueCatAPI
+public data class WorkflowFetchResult(
     val workflow: PublishedWorkflow,
     val enrolledVariants: Map<String, String>?,
 )
