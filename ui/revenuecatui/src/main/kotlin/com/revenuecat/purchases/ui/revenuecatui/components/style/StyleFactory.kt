@@ -130,6 +130,7 @@ internal class StyleFactory(
         var tabIndex: Int? = null,
         /**
          * When building a [TabsComponent] subtree, holds that component's dashboard `name` for tab control analytics.
+         * Blank strings are treated as absent (same as [withTabsInteractionContext] input normalization).
          */
         var enclosingTabsComponentName: String? = null,
         var enclosingTabsOrderedTabIds: List<String> = emptyList(),
@@ -363,7 +364,7 @@ internal class StyleFactory(
             val previousIds = enclosingTabsOrderedTabIds
             val previousContextNames = enclosingTabContextNamesById
             val previousDefaultForInteraction = enclosingTabsDefaultTabIndexForInteraction
-            enclosingTabsComponentName = tabsComponentName
+            enclosingTabsComponentName = tabsComponentName?.takeUnless { it.isBlank() }
             enclosingTabsOrderedTabIds = tabs.map { it.id }
             enclosingTabContextNamesById = tabs.mapNotNull { tab ->
                 tab.name?.takeUnless { it.isBlank() }?.let { tab.id to it }
