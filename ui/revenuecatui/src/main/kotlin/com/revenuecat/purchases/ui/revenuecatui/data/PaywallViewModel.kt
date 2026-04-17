@@ -71,11 +71,11 @@ import kotlin.coroutines.suspendCoroutine
 
 @Suppress("TooManyFunctions")
 @Stable
-internal interface PaywallViewModel : ComponentsViewModel {
+internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
     val resourceProvider: ResourceProvider
-    override val actionInProgress: State<Boolean>
-    override val actionError: State<PurchasesError?>
+    val actionInProgress: State<Boolean>
+    val actionError: State<PurchasesError?>
     val purchaseCompleted: State<Boolean>
     val preloadedExitOffering: State<Offering?>
 
@@ -103,20 +103,20 @@ internal interface PaywallViewModel : ComponentsViewModel {
     }
     fun closePaywall(result: PaywallResult? = null)
 
-    override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
-    override fun invalidateCustomerInfoCache()
+    fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
+    fun invalidateCustomerInfoCache()
 
     /**
      * Purchase the selected package
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(activity: Activity?)
-    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?)
+    suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer? = null)
 
     fun restorePurchases()
-    override suspend fun handleRestorePurchases()
+    suspend fun handleRestorePurchases()
 
-    override fun clearActionError()
+    fun clearActionError()
     fun preloadExitOffering()
 }
 

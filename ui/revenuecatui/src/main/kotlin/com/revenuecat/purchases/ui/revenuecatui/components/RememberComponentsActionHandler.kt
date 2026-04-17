@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
-import com.revenuecat.purchases.ui.revenuecatui.data.ComponentsViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
@@ -14,14 +14,14 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
 /**
  * Creates a remembered action handler that dispatches [PaywallAction.External] events
- * to the given [viewModel]. Used by both Paywall and Workflow composables.
+ * to the given [viewModel].
  *
  * @param viewModel the ViewModel that handles purchases, restores, and web checkout.
  * @param onDismiss called when the UI should be dismissed (NavigateBack, auto-dismiss after web checkout).
  */
 @Composable
 internal fun rememberComponentsActionHandler(
-    viewModel: ComponentsViewModel,
+    viewModel: PaywallViewModel,
     onDismiss: () -> Unit,
 ): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
