@@ -1234,7 +1234,7 @@ internal class StyleFactory(
                 thumbColorOff = thumbColorOff,
                 trackColorOn = trackColorOn,
                 trackColorOff = trackColorOff,
-                componentName = component.name,
+                componentName = enclosingTabsComponentName ?: component.name,
             )
         }
 
