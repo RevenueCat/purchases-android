@@ -1,5 +1,3 @@
-@file:Suppress("TooManyFunctions")
-
 package com.revenuecat.purchases
 
 import android.content.Context
