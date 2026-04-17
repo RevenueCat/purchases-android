@@ -716,7 +716,7 @@ class PaywallViewModelTest {
         }
 
         assertThat(state.errorMessage)
-            .isNotEqualTo("The RevenueCat dashboard does not have a current offering configured.")
+            .isEqualTo("The RevenueCat dashboard does not have a current offering configured.")
     }
 
     @Test
