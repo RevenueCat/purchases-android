@@ -284,14 +284,8 @@ jobs:
                 command: ./gradlew purchases:koverXmlReportDefaultsBc8Release
             - codecov/upload:
                 file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
-      - run:
-          name: Collect JUnit XMLs
-          when: always
-          command: |
-            mkdir -p build/test-results-collected
-            find . -path "*/build/test-results/*/TEST-*.xml" -exec cp --parents {} build/test-results-collected/ \;
       - store_test_results:
-          path: build/test-results-collected
+          path: "**/build/test-results"
       - store_artifacts:
           path: build/reports
 
@@ -335,14 +329,8 @@ jobs:
           name: Run Galaxy Unit Tests
           command: |
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          when: always
-          command: |
-            mkdir -p build/test-results-collected
-            find . -path "*/build/test-results/*/TEST-*.xml" -exec cp --parents {} build/test-results-collected/ \;
       - store_test_results:
-          path: build/test-results-collected
+          path: "**/build/test-results"
       - store_artifacts:
           path: build/reports
 
