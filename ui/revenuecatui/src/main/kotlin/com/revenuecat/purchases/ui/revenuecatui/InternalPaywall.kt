@@ -144,10 +144,7 @@ internal fun InternalPaywall(
             }
             LoadedPaywallComponents(
                 state = state,
-                clickHandler = rememberPaywallActionHandler(
-                    viewModel = viewModel,
-                    onDismiss = viewModel::closePaywall,
-                ),
+                clickHandler = rememberPaywallActionHandler(viewModel),
                 componentInteractionTracker = componentInteractionTracker,
             )
         } else {
@@ -334,20 +331,18 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
  * to the given [viewModel].
  *
  * @param viewModel the ViewModel that handles purchases, restores, and web checkout.
- * @param onDismiss called when the UI should be dismissed (NavigateBack, auto-dismiss after web checkout).
  */
 @Composable
 private fun rememberPaywallActionHandler(
     viewModel: PaywallViewModel,
-    onDismiss: () -> Unit,
 ): suspend (PaywallAction.External) -> Unit {
     val context: Context = LocalContext.current
     val activity: Activity? = context.getActivity()
-    return remember(viewModel, onDismiss) {
+    return remember(viewModel) {
         {
                 action ->
             when (action) {
-                is PaywallAction.External.NavigateBack -> onDismiss()
+                is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
 
                 is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
 
@@ -372,7 +367,7 @@ private fun rememberPaywallActionHandler(
                         context.handleUrlDestination(url, action.openMethod)
                         if (action.autoDismiss) {
                             Logger.d("Auto-dismissing after launching web checkout.")
-                            onDismiss()
+                            viewModel.closePaywall()
                         }
                     }
                 }
@@ -388,7 +383,7 @@ private fun rememberPaywallActionHandler(
     }
 }
 
-internal fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
+private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
     val openingMethod = when (method) {
         ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
         ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
@@ -398,6 +393,7 @@ internal fun Context.handleUrlDestination(url: String, method: ButtonComponent.U
             return
         }
     }
+
     URLOpener.openURL(this, url, openingMethod)
 }
 
