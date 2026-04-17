@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -148,6 +149,50 @@ class WorkflowDetailResolverTest {
             hash = expectedHash,
         )
         // Should not throw — hash matches
+        val result = resolver.resolve(response)
+        assertThat(result.workflow.id).isEqualTo("wf_1")
+    }
+
+    @Test
+    fun `use_cdn throws SignatureVerificationException when hash mismatches in Enforced mode`() {
+        val resolver = createResolver(
+            signatureVerificationMode = SignatureVerificationMode.Enforced(),
+        ) { minimalWorkflowJson }
+        val response = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn.example.com/wf.json",
+            hash = "wrong_hash",
+        )
+        assertThatThrownBy { resolver.resolve(response) }
+            .isInstanceOf(SignatureVerificationException::class.java)
+    }
+
+    @Test
+    fun `use_cdn does not throw when hash matches in Enforced mode`() {
+        val json = minimalWorkflowJson
+        val expectedHash = WorkflowDetailResolver.computeCanonicalHash(json)
+        val resolver = createResolver(
+            signatureVerificationMode = SignatureVerificationMode.Enforced(),
+        ) { json }
+        val response = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn.example.com/wf.json",
+            hash = expectedHash,
+        )
+        val result = resolver.resolve(response)
+        assertThat(result.workflow.id).isEqualTo("wf_1")
+    }
+
+    @Test
+    fun `use_cdn does not throw when hash mismatches in Informational mode`() {
+        val resolver = createResolver(
+            signatureVerificationMode = SignatureVerificationMode.Informational(),
+        ) { minimalWorkflowJson }
+        val response = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn.example.com/wf.json",
+            hash = "wrong_hash",
+        )
         val result = resolver.resolve(response)
         assertThat(result.workflow.id).isEqualTo("wf_1")
     }

@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import java.security.MessageDigest
 
@@ -18,7 +19,7 @@ internal class WorkflowDetailResolver(
     private val signatureVerificationMode: SignatureVerificationMode,
 ) {
 
-    @Throws(IllegalStateException::class)
+    @Throws(IllegalStateException::class, SignatureVerificationException::class)
     fun resolve(response: WorkflowDetailResponse): WorkflowFetchResult {
         val workflow = when (response.action) {
             WorkflowResponseAction.INLINE -> {
@@ -33,7 +34,7 @@ internal class WorkflowDetailResolver(
                 if (signatureVerificationMode.shouldVerify) {
                     val expectedHash = response.hash
                     if (expectedHash != null) {
-                        verifyContentHash(json, expectedHash)
+                        verifyContentHash(json, url, expectedHash)
                     }
                 }
                 workflow
@@ -45,15 +46,19 @@ internal class WorkflowDetailResolver(
         )
     }
 
-    private fun verifyContentHash(json: String, expectedHash: String) {
+    @Throws(SignatureVerificationException::class)
+    private fun verifyContentHash(json: String, url: String, expectedHash: String) {
         val actualHash = computeCanonicalHash(json)
-        if (actualHash != expectedHash) {
-            val error = PurchasesError(
-                PurchasesErrorCode.SignatureVerificationError,
-                "CDN workflow content hash mismatch. Expected: $expectedHash, got: $actualHash",
-            )
-            errorLog(error)
+        if (actualHash == expectedHash) return
+
+        if (signatureVerificationMode is SignatureVerificationMode.Enforced) {
+            throw SignatureVerificationException(url)
         }
+        val error = PurchasesError(
+            PurchasesErrorCode.SignatureVerificationError,
+            "CDN workflow content hash mismatch. Expected: $expectedHash, got: $actualHash",
+        )
+        errorLog(error)
     }
 
     companion object {
