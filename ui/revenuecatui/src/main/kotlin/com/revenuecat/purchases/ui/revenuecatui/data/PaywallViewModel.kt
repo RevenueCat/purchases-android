@@ -649,7 +649,7 @@ internal class PaywallViewModelImpl(
 
         if (currentOffering == null) {
             _state.value = PaywallState.Error(
-                "The RevenueCat dashboard does not have a current offering configured.",
+                "You do not have a current offering configured in the RevenueCat dashboard.",
             )
         } else {
             _state.value = calculateState(
