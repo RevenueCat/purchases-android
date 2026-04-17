@@ -157,28 +157,4 @@ class WorkflowManagerTest {
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
 
-    @Test
-    fun `getWorkflows delegates to backend`() {
-        val expectedResponse = WorkflowsListResponse(workflows = emptyList())
-        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
-        every {
-            mockBackend.getWorkflows(
-                appUserID = "user_1",
-                appInBackground = false,
-                onSuccess = capture(successSlot),
-                onError = any(),
-            )
-        } answers {
-            successSlot.captured(expectedResponse)
-        }
-
-        var result: WorkflowsListResponse? = null
-        workflowManager.getWorkflows(
-            appUserID = "user_1",
-            appInBackground = false,
-            onSuccess = { result = it },
-            onError = { fail("unexpected error $it") },
-        )
-        assertThat(result).isEqualTo(expectedResponse)
-    }
 }

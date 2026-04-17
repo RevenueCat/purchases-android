@@ -57,47 +57,6 @@ class BackendWorkflowsTest {
     """.trimIndent()
 
     @Test
-    fun `getWorkflows calls performRequest with GetWorkflows endpoint`() {
-        val listJson = """
-            {
-              "workflows": []
-            }
-        """.trimIndent()
-        every {
-            mockClient.performRequest(
-                baseURL = mockBaseURL,
-                endpoint = Endpoint.GetWorkflows(appUserId),
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders,
-                fallbackBaseURLs = emptyList(),
-            )
-        } returns httpResult(RCHTTPStatusCodes.SUCCESS, listJson)
-
-        var success = false
-        backend.getWorkflows(
-            appUserID = appUserId,
-            appInBackground = false,
-            onSuccess = {
-                assertThat(it.workflows).isEmpty()
-                success = true
-            },
-            onError = { fail("unexpected error $it") },
-        )
-        assertThat(success).isTrue()
-        verify(exactly = 1) {
-            mockClient.performRequest(
-                baseURL = mockBaseURL,
-                endpoint = Endpoint.GetWorkflows(appUserId),
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders,
-                fallbackBaseURLs = emptyList(),
-            )
-        }
-    }
-
-    @Test
     fun `getWorkflow returns deserialized inline envelope`() {
         val workflowJson = """
             {

@@ -19,19 +19,6 @@ import java.net.URL
 
 @InternalRevenueCatAPI
 @Serializable
-public data class WorkflowSummary(
-    val id: String,
-    @SerialName("display_name") val displayName: String,
-)
-
-@InternalRevenueCatAPI
-@Serializable
-public data class WorkflowsListResponse(
-    val workflows: List<WorkflowSummary> = emptyList(),
-)
-
-@InternalRevenueCatAPI
-@Serializable
 public data class WorkflowTriggerAction(
     val type: String,
     val value: String? = null,

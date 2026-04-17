@@ -13,20 +13,6 @@ internal class WorkflowManager(
     private val workflowDetailResolver: WorkflowDetailResolver,
 ) {
 
-    fun getWorkflows(
-        appUserID: String,
-        appInBackground: Boolean,
-        onSuccess: (WorkflowsListResponse) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        backend.getWorkflows(
-            appUserID = appUserID,
-            appInBackground = appInBackground,
-            onSuccess = onSuccess,
-            onError = onError,
-        )
-    }
-
     fun getWorkflow(
         appUserID: String,
         workflowId: String,

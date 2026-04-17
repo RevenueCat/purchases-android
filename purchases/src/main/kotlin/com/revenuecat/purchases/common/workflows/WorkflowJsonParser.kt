@@ -7,9 +7,6 @@ import com.revenuecat.purchases.JsonTools
 
 internal object WorkflowJsonParser {
 
-    fun parseWorkflowsListResponse(payload: String): WorkflowsListResponse =
-        JsonTools.json.decodeFromString<WorkflowsListResponse>(payload)
-
     fun parsePublishedWorkflow(payload: String): PublishedWorkflow =
         JsonTools.json.decodeFromString<PublishedWorkflow>(payload)
 
