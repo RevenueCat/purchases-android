@@ -78,7 +78,7 @@ public class PaywallOptions internal constructor(
     // Fields like fontProvider, listener, purchaseLogic, and dismissRequest are excluded because
     // they don't influence visual/structural uniqueness and may not be reliably hashable.
     override fun hashCode(): Int {
-        var result = offeringSelection.hashCode()
+        var result = offeringSelection.offeringIdentifier.hashCode()
         result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
         result = hashMultiplier * result + mode.hashCode()
         result = hashMultiplier * result + customVariables.hashCode()
