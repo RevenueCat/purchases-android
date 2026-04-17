@@ -397,6 +397,18 @@ public class Purchases internal constructor(
 
     @InternalRevenueCatAPI
     @JvmSynthetic
+<<<<<<< HEAD
+=======
+    public fun getWorkflowsWith(
+        onError: (PurchasesError) -> Unit,
+        onSuccess: (WorkflowsListResponse) -> Unit,
+    ) {
+        purchasesOrchestrator.getWorkflows(onSuccess, onError)
+    }
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+>>>>>>> 51b449c73 (imports)
     public fun getWorkflowWith(
         workflowId: String,
         onError: (PurchasesError) -> Unit,
