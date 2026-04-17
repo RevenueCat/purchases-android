@@ -75,7 +75,7 @@ fun PaywallScreen(
             is PaywallScreenState.WorkflowLoaded -> {
                 Paywall(
                     PaywallOptions.Builder(dismissRequest)
-                        .setWorkflowIdentifier(state.workflowId)
+                        .setOfferingIdentifier(state.workflowId)
                         .setListener(viewModel)
                         .build(),
                 )

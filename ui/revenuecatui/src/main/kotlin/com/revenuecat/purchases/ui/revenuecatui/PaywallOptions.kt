@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
@@ -149,6 +150,17 @@ public class PaywallOptions internal constructor(
 
         internal fun setOfferingSelection(offeringSelection: OfferingSelection?) = apply {
             this.offeringSelection = offeringSelection ?: OfferingSelection.None
+        }
+
+        @InternalRevenueCatAPI
+        public fun setOfferingIdentifier(
+            offeringIdentifier: String,
+            presentedOfferingContext: PresentedOfferingContext? = null,
+        ): Builder = apply {
+            this.offeringSelection = OfferingSelection.IdAndPresentedOfferingContext(
+                offeringId = offeringIdentifier,
+                presentedOfferingContext = presentedOfferingContext,
+            )
         }
 
         /**
