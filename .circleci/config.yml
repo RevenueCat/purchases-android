@@ -289,7 +289,7 @@ jobs:
           when: always
           command: |
             mkdir -p build/test-results-collected
-            find . -path "*/build/test-results/*/TEST-*.xml" -exec cp --parents {} build/test-results-collected/ \;
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
           path: build/test-results-collected
       - store_artifacts:
@@ -340,7 +340,7 @@ jobs:
           when: always
           command: |
             mkdir -p build/test-results-collected
-            find . -path "*/build/test-results/*/TEST-*.xml" -exec cp --parents {} build/test-results-collected/ \;
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
           path: build/test-results-collected
       - store_artifacts:
