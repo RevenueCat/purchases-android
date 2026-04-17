@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -392,6 +393,16 @@ public class Purchases internal constructor(
         listener: ReceiveOfferingsCallback,
     ) {
         purchasesOrchestrator.getOfferings(listener)
+    }
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public fun getWorkflowWith(
+        workflowId: String,
+        onError: (PurchasesError) -> Unit,
+        onSuccess: (WorkflowFetchResult) -> Unit,
+    ) {
+        purchasesOrchestrator.getWorkflow(workflowId, onSuccess, onError)
     }
 
     /**

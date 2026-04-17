@@ -51,6 +51,8 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
@@ -152,6 +154,8 @@ internal class PurchasesOrchestrator(
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
+
+    private val workflowManager: WorkflowManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
@@ -556,6 +560,21 @@ internal class PurchasesOrchestrator(
             { listener.onError(it) },
             { listener.onReceived(it) },
             fetchCurrent,
+        )
+    }
+
+    @InternalRevenueCatAPI
+    fun getWorkflow(
+        workflowId: String,
+        onSuccess: (WorkflowFetchResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        workflowManager.getWorkflow(
+            appUserID = identityManager.currentAppUserID,
+            workflowId = workflowId,
+            appInBackground = state.appInBackground,
+            onSuccess = onSuccess,
+            onError = onError,
         )
     }
 
