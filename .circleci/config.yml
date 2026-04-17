@@ -286,14 +286,17 @@ jobs:
                 file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
             RESULTS_DIR="build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>"
             mkdir -p $RESULTS_DIR
             find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
       - store_test_results:
           path: build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>
+          when: always
       - store_artifacts:
           path: build/reports
+          when: always
 
   test_dokka_hide_internal:
     <<: *android-executor
@@ -307,8 +310,10 @@ jobs:
           command: ./gradlew :dokka-hide-internal:test --parallel --no-daemon
       - store_test_results:
           path: dokka-hide-internal/build/test-results/test
+          when: always
       - store_artifacts:
           path: build/reports
+          when: always
 
   test-galaxy:
     <<: *android-executor
@@ -337,14 +342,17 @@ jobs:
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
             RESULTS_DIR="build/test-results-galaxy"
             mkdir -p $RESULTS_DIR
             find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
       - store_test_results:
           path: build/test-results-galaxy
+          when: always
       - store_artifacts:
           path: build/reports
+          when: always
 
   detekt:
     <<: *android-executor
@@ -594,6 +602,7 @@ jobs:
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
+          when: always
 
   run-purchases-cec-integration-tests:
     description: "Run purchases module custom entitlement computation integration tests on CircleCI emulator."
@@ -620,6 +629,7 @@ jobs:
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
+          when: always
 
   emerge_purchases_ui_snapshot_tests:
     description: "Emerge purchases ui snapshot tests"
@@ -700,6 +710,7 @@ jobs:
       - android/save_build_cache
       - store_test_results:
           path: integration-tests/build/outputs/androidTest-results
+          when: always
 
   run-backend-integration-tests:
     description: "Run backend integration tests. All variants"
@@ -732,6 +743,7 @@ jobs:
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/test-results
+          when: always
 
   update-golden-requests-backend-integration-tests:
     description: "Run backend integration tests and create PR if golden files change"
@@ -751,6 +763,7 @@ jobs:
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/test-results
+          when: always
 
   record-and-upload-paparazzi-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots with Paparazzi and upload them to Emerge"
@@ -889,8 +902,10 @@ jobs:
             maestro test --format junit --output maestro/report.xml maestro/
       - store_artifacts:
           path: ~/.maestro/tests/
+          when: always
       - store_test_results:
           path: maestro/report.xml
+          when: always
 
   update-paywall-preview-resources-submodule:
     docker:
