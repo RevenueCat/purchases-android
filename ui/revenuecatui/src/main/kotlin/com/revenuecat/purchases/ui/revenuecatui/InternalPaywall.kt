@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
@@ -30,10 +31,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
-import com.revenuecat.purchases.ui.revenuecatui.components.rememberComponentsActionHandler
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -61,6 +63,8 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
+import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
 @Suppress("LongMethod", "ViewModelForwarding")
 @Composable
@@ -140,7 +144,7 @@ internal fun InternalPaywall(
             }
             LoadedPaywallComponents(
                 state = state,
-                clickHandler = rememberComponentsActionHandler(
+                clickHandler = rememberPaywallActionHandler(
                     viewModel = viewModel,
                     onDismiss = viewModel::closePaywall,
                 ),
@@ -323,6 +327,78 @@ private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Conf
     configuration.setLocale(templateConfiguration.locale)
 
     return configuration
+}
+
+/**
+ * Creates a remembered action handler that dispatches [PaywallAction.External] events
+ * to the given [viewModel].
+ *
+ * @param viewModel the ViewModel that handles purchases, restores, and web checkout.
+ * @param onDismiss called when the UI should be dismissed (NavigateBack, auto-dismiss after web checkout).
+ */
+@Composable
+private fun rememberPaywallActionHandler(
+    viewModel: PaywallViewModel,
+    onDismiss: () -> Unit,
+): suspend (PaywallAction.External) -> Unit {
+    val context: Context = LocalContext.current
+    val activity: Activity? = context.getActivity()
+    return remember(viewModel, onDismiss) {
+        {
+                action ->
+            when (action) {
+                is PaywallAction.External.NavigateBack -> onDismiss()
+
+                is PaywallAction.External.RestorePurchases -> viewModel.handleRestorePurchases()
+
+                is PaywallAction.External.PurchasePackage -> {
+                    if (activity == null) {
+                        Logger.e("Activity is null, not initiating package purchase")
+                    } else {
+                        viewModel.handlePackagePurchase(
+                            activity = activity,
+                            pkg = action.rcPackage,
+                            resolvedOffer = action.resolvedOffer,
+                        )
+                    }
+                }
+
+                is PaywallAction.External.LaunchWebCheckout -> {
+                    val url = viewModel.getWebCheckoutUrl(action)
+                    if (url == null) {
+                        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
+                    } else {
+                        viewModel.invalidateCustomerInfoCache()
+                        context.handleUrlDestination(url, action.openMethod)
+                        if (action.autoDismiss) {
+                            Logger.d("Auto-dismissing after launching web checkout.")
+                            onDismiss()
+                        }
+                    }
+                }
+
+                is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
+                    is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
+                        Logger.w("Customer Center is not yet implemented on Android.")
+                    is PaywallAction.External.NavigateTo.Destination.Url ->
+                        context.handleUrlDestination(destination.url, destination.method)
+                }
+            }
+        }
+    }
+}
+
+internal fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
+    val openingMethod = when (method) {
+        ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
+        ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
+        ButtonComponent.UrlMethod.DEEP_LINK -> URLOpeningMethod.DEEP_LINK
+        ButtonComponent.UrlMethod.UNKNOWN -> {
+            Logger.e("Ignoring button click with unknown open method for URL: '$url'.")
+            return
+        }
+    }
+    URLOpener.openURL(this, url, openingMethod)
 }
 
 private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this
