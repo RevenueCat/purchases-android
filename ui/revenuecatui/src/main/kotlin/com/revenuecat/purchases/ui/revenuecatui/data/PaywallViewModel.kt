@@ -29,6 +29,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -632,20 +633,27 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        // All paywalls are delivered through the workflows endpoint. The backend converts
-        // single-page paywalls on the fly, so GET /workflows/{identifier} always returns a workflow.
-        if (offeringSelection is OfferingSelection.IdAndPresentedOfferingContext) {
+        if (BuildConfig.USE_WORKFLOWS_ENDPOINT &&
+            offeringSelection is OfferingSelection.IdAndPresentedOfferingContext
+        ) {
             updateStateFromWorkflow(purchases.awaitGetWorkflow(offeringSelection.offeringId))
             return
         }
 
         val currentOffering: Offering? = when (offeringSelection) {
             is OfferingSelection.OfferingType -> offeringSelection.offeringType
+            is OfferingSelection.IdAndPresentedOfferingContext -> {
+                val offerings = purchases.awaitOfferings()
+                val presentedOfferingContext = offeringSelection.presentedOfferingContext
+                val offering = offerings[offeringSelection.offeringId] ?: offerings.current
+                presentedOfferingContext?.let {
+                    offering?.copy(presentedOfferingContext)
+                } ?: offering
+            }
             is OfferingSelection.None -> {
                 val offerings = purchases.awaitOfferings()
                 offerings.current
             }
-            is OfferingSelection.IdAndPresentedOfferingContext -> error("Already handled above")
         }
 
         if (currentOffering == null) {
