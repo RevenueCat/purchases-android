@@ -620,39 +620,44 @@ internal class PaywallViewModelImpl(
     private fun updateState() {
         viewModelScope.launch {
             try {
-                val currentOffering: Offering? = when (val offeringSelection = options.offeringSelection) {
-                    is OfferingSelection.OfferingType -> offeringSelection.offeringType
-                    is OfferingSelection.IdAndPresentedOfferingContext -> {
-                        val offerings = purchases.awaitOfferings()
-                        val presentedOfferingContext = offeringSelection.presentedOfferingContext
-                        val offering = offerings[offeringSelection.offeringId] ?: offerings.current
-                        presentedOfferingContext?.let {
-                            offering?.copy(presentedOfferingContext)
-                        } ?: offering
-                    }
-                    is OfferingSelection.None -> {
-                        val offerings = purchases.awaitOfferings()
-                        offerings.current
-                    }
-                }
-
-                if (currentOffering == null) {
-                    _state.value = PaywallState.Error(
-                        "The RevenueCat dashboard does not have a current offering configured.",
-                    )
-                } else {
-                    _state.value = calculateState(
-                        currentOffering,
-                        _colorScheme.value,
-                        purchases.storefrontCountryCode,
-                        options.mode,
-                    )
-                }
+                updateStateFromOffering(options.offeringSelection)
             } catch (e: PurchasesException) {
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
                 )
             }
+        }
+    }
+
+    private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
+        val currentOffering: Offering? = when (val offeringSelection = offeringSelection) {
+            is OfferingSelection.OfferingType -> offeringSelection.offeringType
+            is OfferingSelection.IdAndPresentedOfferingContext -> {
+                val offerings = purchases.awaitOfferings()
+                val presentedOfferingContext = offeringSelection.presentedOfferingContext
+                val offering = offerings[offeringSelection.offeringId] ?: offerings.current
+                presentedOfferingContext?.let {
+                    offering?.copy(presentedOfferingContext)
+                } ?: offering
+            }
+
+            is OfferingSelection.None -> {
+                val offerings = purchases.awaitOfferings()
+                offerings.current
+            }
+        }
+
+        if (currentOffering == null) {
+            _state.value = PaywallState.Error(
+                "You do not have a current offering configured in the RevenueCat dashboard.",
+            )
+        } else {
+            _state.value = calculateState(
+                currentOffering,
+                _colorScheme.value,
+                purchases.storefrontCountryCode,
+                options.mode,
+            )
         }
     }
 
