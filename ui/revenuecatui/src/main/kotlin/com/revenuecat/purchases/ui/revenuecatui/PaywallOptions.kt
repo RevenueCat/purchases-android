@@ -26,15 +26,11 @@ internal sealed class OfferingSelection {
     @Immutable
     object None : OfferingSelection()
 
-    @Immutable
-    data class WorkflowId(val id: String) : OfferingSelection()
-
     val offering: Offering?
         get() = when (this) {
             is OfferingType -> offeringType
             is IdAndPresentedOfferingContext -> null
             None -> null
-            is WorkflowId -> null
         }
 
     val offeringIdentifier: String?
@@ -42,7 +38,6 @@ internal sealed class OfferingSelection {
             is OfferingType -> offeringType.identifier
             is IdAndPresentedOfferingContext -> offeringId
             None -> null
-            is WorkflowId -> null
         }
 }
 

@@ -58,9 +58,6 @@ internal class MockPurchasesType(
         // No-op for mock - return success to simulate success
         return CreateSupportTicketResult(success = true)
     }
-    override suspend fun awaitGetWorkflows(): WorkflowsListResponse {
-        throw NotImplementedError("Mock implementation")
-    }
     override suspend fun awaitGetWorkflow(workflowId: String): WorkflowFetchResult {
         throw NotImplementedError("Mock implementation")
     }

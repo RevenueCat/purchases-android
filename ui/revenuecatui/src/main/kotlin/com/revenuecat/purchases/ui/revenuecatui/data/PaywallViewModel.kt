@@ -21,6 +21,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -56,7 +57,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
-import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -622,10 +622,7 @@ internal class PaywallViewModelImpl(
     private fun updateState() {
         viewModelScope.launch {
             try {
-                when (val offeringSelection = options.offeringSelection) {
-                    is OfferingSelection.WorkflowId -> updateStateFromWorkflow(offeringSelection.id)
-                    else -> updateStateFromOffering(offeringSelection)
-                }
+                updateStateFromOffering(options.offeringSelection)
             } catch (e: PurchasesException) {
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
@@ -635,6 +632,16 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
+        // For ID-based selection, transparently resolve to a workflow if the backend returns one.
+        // GET /workflows/{identifier} accepts both workflow IDs and offering IDs.
+        if (offeringSelection is OfferingSelection.IdAndPresentedOfferingContext) {
+            val fetchResult = runCatching { purchases.awaitGetWorkflow(offeringSelection.offeringId) }.getOrNull()
+            if (fetchResult != null) {
+                updateStateFromWorkflow(fetchResult)
+                return
+            }
+        }
+
         val currentOffering: Offering? = when (offeringSelection) {
             is OfferingSelection.OfferingType -> offeringSelection.offeringType
             is OfferingSelection.IdAndPresentedOfferingContext -> {
@@ -650,7 +657,6 @@ internal class PaywallViewModelImpl(
                 val offerings = purchases.awaitOfferings()
                 offerings.current
             }
-            is OfferingSelection.WorkflowId -> error("Unexpected WorkflowId in updateStateFromOffering")
         }
 
         if (currentOffering == null) {
@@ -668,8 +674,7 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private suspend fun updateStateFromWorkflow(workflowId: String) {
-        val fetchResult = purchases.awaitGetWorkflow(workflowId)
+    private suspend fun updateStateFromWorkflow(fetchResult: WorkflowFetchResult) {
         val workflow = fetchResult.workflow
 
         val step = workflow.steps[workflow.initialStepId]
