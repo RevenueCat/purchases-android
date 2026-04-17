@@ -632,31 +632,20 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        // For ID-based selection, transparently resolve to a workflow if the backend returns one.
-        // GET /workflows/{identifier} accepts both workflow IDs and offering IDs.
+        // All paywalls are delivered through the workflows endpoint. The backend converts
+        // single-page paywalls on the fly, so GET /workflows/{identifier} always returns a workflow.
         if (offeringSelection is OfferingSelection.IdAndPresentedOfferingContext) {
-            val fetchResult = runCatching { purchases.awaitGetWorkflow(offeringSelection.offeringId) }.getOrNull()
-            if (fetchResult != null) {
-                updateStateFromWorkflow(fetchResult)
-                return
-            }
+            updateStateFromWorkflow(purchases.awaitGetWorkflow(offeringSelection.offeringId))
+            return
         }
 
         val currentOffering: Offering? = when (offeringSelection) {
             is OfferingSelection.OfferingType -> offeringSelection.offeringType
-            is OfferingSelection.IdAndPresentedOfferingContext -> {
-                val offerings = purchases.awaitOfferings()
-                val presentedOfferingContext = offeringSelection.presentedOfferingContext
-                val offering = offerings[offeringSelection.offeringId] ?: offerings.current
-                presentedOfferingContext?.let {
-                    offering?.copy(presentedOfferingContext)
-                } ?: offering
-            }
-
             is OfferingSelection.None -> {
                 val offerings = purchases.awaitOfferings()
                 offerings.current
             }
+            is OfferingSelection.IdAndPresentedOfferingContext -> error("Already handled above")
         }
 
         if (currentOffering == null) {
