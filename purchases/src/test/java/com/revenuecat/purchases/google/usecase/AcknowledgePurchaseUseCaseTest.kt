@@ -55,7 +55,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         ) { }
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
-        assertThat(capturedAcknowledgePurchaseParams.captured.purchaseToken).isEqualTo("wrong_token")
+        assertThat(capturedAcknowledgePurchaseParams.captured.purchaseToken).isEqualTo(token)
     }
 
     @Test
