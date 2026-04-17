@@ -14,11 +14,13 @@ import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitGetVirtualCurrencies
+import com.revenuecat.purchases.awaitGetWorkflow
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -63,6 +65,9 @@ internal interface PurchasesType {
 
     @Throws(PurchasesException::class)
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
+
+    @Throws(PurchasesException::class)
+    suspend fun awaitGetWorkflow(workflowId: String): WorkflowFetchResult
 }
 
 @Suppress("TooManyFunctions")
@@ -130,5 +135,10 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @Throws(PurchasesException::class)
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         return purchases.awaitCreateSupportTicket(email, description)
+    }
+
+    @Throws(PurchasesException::class)
+    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowFetchResult {
+        return purchases.awaitGetWorkflow(workflowId)
     }
 }

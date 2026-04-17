@@ -42,6 +42,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Tester-only toggle: when true, ID-based paywall selections resolve via
+        // GET /workflows/{id} instead of the offerings cache. Enable with
+        // `-Prevenuecat.useWorkflowsEndpoint=true` when building the SDK locally.
+        buildConfigField(
+            "boolean",
+            "USE_WORKFLOWS_ENDPOINT",
+            (project.findProperty("revenuecat.useWorkflowsEndpoint") == "true").toString(),
+        )
     }
 
     buildFeatures {
