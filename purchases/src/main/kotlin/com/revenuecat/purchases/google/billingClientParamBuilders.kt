@@ -44,7 +44,7 @@ internal fun @receiver:BillingClient.ProductType String.buildQueryProductDetails
         errorLog(e) { "$errorMessage: ${e.message}. Caused by: ${e.cause?.message}" }
         throw QueryProductDetailsParamsBuilderException(
             errorMessage,
-            e.cause,
+            e,
         )
     }
 }
