@@ -37,7 +37,7 @@ internal fun @receiver:BillingClient.ProductType String.buildQueryProductDetails
     return try {
         QueryProductDetailsParams.newBuilder()
             .setProductList(productList).build()
-    } catch (@Suppress("SwallowedException") e: ExceptionInInitializerError) {
+    } catch (e: ExceptionInInitializerError) {
         // We've received reports that setProductList may throw an exception in some Chromebook devices
         // This is a workaround to avoid the crash and return a proper error to the developer.
         val errorMessage = "Error while building QueryProductDetailsParams in Billing client"

@@ -9,17 +9,13 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
+import androidx.core.os.ConfigurationCompat
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import java.security.MessageDigest
 import java.util.Locale
 
 internal fun Context.getLocale(): Locale? =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-        resources.configuration.locales.get(0)
-    } else {
-        @Suppress("DEPRECATION")
-        resources.configuration.locale
-    }
+    ConfigurationCompat.getLocales(resources.configuration).get(0)
 
 @InternalRevenueCatAPI
 public fun String.sha1(): String =
