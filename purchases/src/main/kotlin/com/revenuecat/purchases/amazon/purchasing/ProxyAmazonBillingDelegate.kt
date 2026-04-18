@@ -1,13 +1,11 @@
 package com.revenuecat.purchases.amazon.purchasing
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.ContextCompat
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -22,14 +20,9 @@ internal class ProxyAmazonBillingDelegate {
     internal var broadcastReceiver: ProxyAmazonBillingActivityBroadcastReceiver? = null
     private val filter = ProxyAmazonBillingActivityBroadcastReceiver.newPurchaseFinishedIntentFilter()
 
-    @SuppressLint("WrongConstant")
     fun onCreate(activity: Activity, savedInstanceState: Bundle?) {
         broadcastReceiver = ProxyAmazonBillingActivityBroadcastReceiver(activity)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            activity.registerReceiver(broadcastReceiver, filter, Context.RECEIVER_EXPORTED)
-        } else {
-            activity.registerReceiver(broadcastReceiver, filter)
-        }
+        ContextCompat.registerReceiver(activity, broadcastReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
         if (savedInstanceState == null) {
             val requestId = startAmazonPurchase(activity.intent)
             if (requestId == null) {
