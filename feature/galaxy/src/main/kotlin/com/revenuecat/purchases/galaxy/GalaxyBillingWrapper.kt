@@ -343,6 +343,11 @@ internal class GalaxyBillingWrapper(
                             GalaxyStrings.NOT_ACKNOWLEDGING_TRANSACTION_BECAUSE_ALREADY_ACKNOWLEDGED
                                 .format(storeTransaction.productIds.firstOrNull() ?: "none")
                         }
+
+                        // We still want to call onAcknowledged here because if the store/backend flow has already
+                        // resulted in an acknowledged purchase, we still want to mark it as acknowledged locally
+                        // in the SDK so we don't try to acknowledge it again in the future.
+                        onAcknowledged(storeTransaction.purchaseToken)
                         finish()
                     }
                 },

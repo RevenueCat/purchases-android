@@ -11,6 +11,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -127,6 +129,14 @@ internal class StyleFactory(
          */
         var tabIndex: Int? = null,
         /**
+         * When building a [TabsComponent] subtree, holds that component's dashboard `name` for tab control analytics.
+         * Blank strings are treated as absent (same as [withTabsInteractionContext] input normalization).
+         */
+        var enclosingTabsComponentName: String? = null,
+        var enclosingTabsOrderedTabIds: List<String> = emptyList(),
+        var enclosingTabContextNamesById: Map<String, String> = emptyMap(),
+        var enclosingTabsDefaultTabIndexForInteraction: Int = 0,
+        /**
          * If this is non-null, it means the branch currently being built is inside a countdown component.
          */
         var countdownDate: Date? = null,
@@ -177,6 +187,14 @@ internal class StyleFactory(
             var topWindowInsetsApplied = false
 
             /**
+             * Whether the first visual component in the tree is a full-width image or video (a "hero image").
+             * This is tracked separately from [topWindowInsetsApplied] because a hero image can appear
+             * outside a ZLayer (e.g. directly in a Vertical stack), in which case it doesn't affect
+             * top window insets application but still needs to be detected for header padding logic.
+             */
+            var heroImageDetected = false
+
+            /**
              * We're only interested in the first non-container component. After that, we can stop looking.
              */
             private var stillLookingForHeaderMedia = true
@@ -191,8 +209,10 @@ internal class StyleFactory(
                     is StackComponent -> if (stillLookingForHeaderMedia) {
                         applyTopWindowInsets = when (component.dimension) {
                             is Dimension.ZLayer -> {
-                                topWindowInsetsApplied = component.components.firstOrNull()?.isHeaderMedia == true
-                                topWindowInsetsApplied
+                                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
+                                topWindowInsetsApplied = hasHero
+                                heroImageDetected = hasHero
+                                hasHero
                             }
 
                             is Dimension.Horizontal,
@@ -204,6 +224,7 @@ internal class StyleFactory(
                     is ImageComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderImage
+                            heroImageDetected = component.isHeaderImage
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -211,10 +232,12 @@ internal class StyleFactory(
                     is VideoComponent -> {
                         if (stillLookingForHeaderMedia) {
                             ignoreTopWindowInsets = component.isHeaderVideo
+                            heroImageDetected = component.isHeaderVideo
                         }
                         stillLookingForHeaderMedia = false
                     }
 
+                    is FallbackHeaderComponent -> { /* Skip: does not affect hero image detection. */ }
                     else -> stillLookingForHeaderMedia = false
                 }
             }
@@ -252,6 +275,12 @@ internal class StyleFactory(
          * Whether the current component should ignore the top window insets.
          */
         val ignoreTopWindowInsets by windowInsetsState::ignoreTopWindowInsets
+
+        /**
+         * Whether the first visual component in the tree is a full-width hero image or video.
+         */
+        val heroImageDetected: Boolean
+            get() = windowInsetsState.heroImageDetected
 
         var defaultTabIndex: Int? = null
         val rcPackage: Package?
@@ -325,6 +354,36 @@ internal class StyleFactory(
             return result
         }
 
+        fun <T> withTabsInteractionContext(
+            tabsComponentName: String?,
+            tabs: List<TabsComponent.Tab>,
+            defaultTabId: String?,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val previousName = enclosingTabsComponentName
+            val previousIds = enclosingTabsOrderedTabIds
+            val previousContextNames = enclosingTabContextNamesById
+            val previousDefaultForInteraction = enclosingTabsDefaultTabIndexForInteraction
+            enclosingTabsComponentName = tabsComponentName?.takeUnless { it.isBlank() }
+            enclosingTabsOrderedTabIds = tabs.map { it.id }
+            enclosingTabContextNamesById = tabs.mapNotNull { tab ->
+                tab.name?.takeUnless { it.isBlank() }?.let { tab.id to it }
+            }.toMap()
+            enclosingTabsDefaultTabIndexForInteraction = defaultTabId
+                ?.takeUnless { it.isBlank() }
+                ?.let { id -> tabs.indexOfFirst { it.id == id } }
+                ?.takeUnless { it == -1 }
+                ?: 0
+            try {
+                return block()
+            } finally {
+                enclosingTabsComponentName = previousName
+                enclosingTabsOrderedTabIds = previousIds
+                enclosingTabContextNamesById = previousContextNames
+                enclosingTabsDefaultTabIndexForInteraction = previousDefaultForInteraction
+            }
+        }
+
         /**
          * Records that this branch of the tree is in a countdown with the provided [countdownDate] and [countFrom].
          */
@@ -384,6 +443,12 @@ internal class StyleFactory(
         fun applyTopWindowInsetsIfNotYetApplied(to: ComponentStyle): ComponentStyle =
             when (to) {
                 is StackComponentStyle -> to.copy(applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied)
+                is HeaderComponentStyle -> to.copy(
+                    stackComponentStyle = to.stackComponentStyle.copy(
+                        applyTopWindowInsets = !windowInsetsState.topWindowInsetsApplied,
+                        ignoreHeaderHeight = true,
+                    ),
+                )
                 else -> to
             }
 
@@ -414,6 +479,9 @@ internal class StyleFactory(
                     is StickyFooterComponentStyle -> copy(
                         stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
                     )
+                    is HeaderComponentStyle -> copy(
+                        stackComponentStyle = stackComponentStyle.copy(applyHorizontalWindowInsets = true),
+                    )
 
                     else -> this
                 } as T
@@ -436,9 +504,12 @@ internal class StyleFactory(
         val componentStyle: ComponentStyle,
         val availablePackages: AvailablePackages,
         val defaultTabIndex: Int?,
+        val heroImageDetected: Boolean = false,
     )
 
     /**
+     * @param applyTopWindowInsets Whether to apply top window insets to the root of this tree (i.e. the
+     * passed-in [component]). Should be false when a header is rendered above this component.
      * @param applyBottomWindowInsets Whether to apply bottom window insets to the root of this tree (i.e. the
      * passed-in [component]).
      * @param applyHorizontalWindowInsets Whether to apply horizontal window insets to the root of this tree (i.e. the
@@ -446,6 +517,7 @@ internal class StyleFactory(
      */
     fun create(
         component: PaywallComponent,
+        applyTopWindowInsets: Boolean = true,
         applyBottomWindowInsets: Boolean = false,
         applyHorizontalWindowInsets: Boolean = false,
     ): Result<StyleResult, NonEmptyList<PaywallValidationError>> =
@@ -457,7 +529,13 @@ internal class StyleFactory(
                             nonEmptyListOf(PaywallValidationError.RootComponentUnsupportedProperties(component)),
                         )
                 }
-                .map { componentStyle -> applyTopWindowInsetsIfNotYetApplied(to = componentStyle) }
+                .map { componentStyle ->
+                    if (applyTopWindowInsets) {
+                        applyTopWindowInsetsIfNotYetApplied(to = componentStyle)
+                    } else {
+                        componentStyle
+                    }
+                }
                 .map { componentStyle -> componentStyle.applyBottomWindowInsetsIfNecessary(applyBottomWindowInsets) }
                 .map { componentStyle ->
                     componentStyle.applyHorizontalWindowInsetsIfNecessary(applyHorizontalWindowInsets)
@@ -467,6 +545,7 @@ internal class StyleFactory(
                         componentStyle = componentStyle,
                         availablePackages = packages,
                         defaultTabIndex = defaultTabIndex,
+                        heroImageDetected = heroImageDetected,
                     )
                 }
         }
@@ -482,6 +561,7 @@ internal class StyleFactory(
             is PackageComponent -> createPackageComponentStyle(component)
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
             is StackComponent -> createStackComponentStyle(component)
+            is HeaderComponent -> createHeaderComponentStyle(component)
             is StickyFooterComponent -> createStickyFooterComponentStyle(component)
             is TextComponent -> createTextComponentStyle(component)
             is IconComponent -> createIconComponentStyle(component)
@@ -492,6 +572,7 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
+            is FallbackHeaderComponent -> Result.Success(null)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
@@ -517,6 +598,16 @@ internal class StyleFactory(
             }
         }
 
+    private fun StyleFactoryScope.createHeaderComponentStyle(
+        component: HeaderComponent,
+    ): Result<HeaderComponentStyle, NonEmptyList<PaywallValidationError>> =
+        // tabControlIndex is null because a header cannot be _inside_ a tab control.
+        withSelectedScope(packageInfo = null, tabControlIndex = null) {
+            createStackComponentStyle(component.stack).map {
+                HeaderComponentStyle(stackComponentStyle = it)
+            }
+        }
+
     private fun StyleFactoryScope.createStickyFooterComponentStyle(
         component: StickyFooterComponent,
     ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
@@ -539,6 +630,7 @@ internal class StyleFactory(
                 stackComponentStyle = stack,
                 action = action,
                 transition = component.transition,
+                componentName = component.name,
             )
         }
     }
@@ -596,6 +688,7 @@ internal class StyleFactory(
                             stackComponentStyle = stack,
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
+                            componentName = component.name,
                             isSelectable = purchaseButtons == 0,
                             resolvedOffer = resolvedOffer,
                             visible = component.visible ?: DEFAULT_VISIBILITY,
@@ -615,6 +708,7 @@ internal class StyleFactory(
         ButtonComponentStyle(
             stackComponentStyle = stack,
             action = action,
+            componentName = component.name,
         )
     }
 
@@ -707,14 +801,17 @@ internal class StyleFactory(
             is ButtonComponent.Destination.PrivacyPolicy -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
+                componentInteractionValue = "navigate_to_privacy_policy",
             )
             is ButtonComponent.Destination.Terms -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
+                componentInteractionValue = "navigate_to_terms",
             )
             is ButtonComponent.Destination.Url -> buttonComponentStyleUrlDestination(
                 destination.urlLid,
                 destination.method,
+                componentInteractionValue = "navigate_to_url",
             )
             is ButtonComponent.Destination.Sheet ->
                 createStackComponentStyle(destination.stack)
@@ -737,9 +834,14 @@ internal class StyleFactory(
     private fun buttonComponentStyleUrlDestination(
         urlLid: LocalizationKey,
         method: ButtonComponent.UrlMethod,
+        componentInteractionValue: String,
     ) =
         localizations.stringForAllLocales(urlLid).map { urls ->
-            ButtonComponentStyle.Action.NavigateTo.Destination.Url(urls, method)
+            ButtonComponentStyle.Action.NavigateTo.Destination.Url(
+                urls = urls,
+                method = method,
+                componentInteractionValue = componentInteractionValue,
+            )
         }.map { urlDestination ->
             when (urlDestination.method) {
                 ButtonComponent.UrlMethod.IN_APP_BROWSER,
@@ -861,6 +963,7 @@ internal class StyleFactory(
             countFrom = countFrom,
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
+            componentName = component.name,
         )
     }
 
@@ -1068,8 +1171,10 @@ internal class StyleFactory(
         fifth = createBackgroundStyles(component.background, component.backgroundColor),
         sixth = component.pageControl?.toPageControlStyles(colorAliases).orSuccessfullyNull(),
     ) { presentedOverrides, stackComponentStyles, borderStyles, shadowStyles, background, pageControlStyles ->
+        val pageContextNames = component.pages.map { it.name }
         CarouselComponentStyle(
             pages = stackComponentStyles,
+            pageContextNames = pageContextNames,
             initialPageIndex = component.initialPageIndex ?: 0,
             pageAlignment = component.pageAlignment.toAlignment(),
             visible = component.visible ?: DEFAULT_VISIBILITY,
@@ -1090,6 +1195,7 @@ internal class StyleFactory(
             tabIndex = tabControlIndex,
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
+            componentName = component.name,
         )
     }
 
@@ -1100,7 +1206,18 @@ internal class StyleFactory(
             // Button control doesn't have a default tab.
             defaultTabIndex = 0
             createStackComponentStyle(component.stack)
-                .map { stack -> TabControlButtonComponentStyle(tabIndex = component.tabIndex, stack = stack) }
+                .map { stack ->
+                    TabControlButtonComponentStyle(
+                        tabIndex = component.tabIndex,
+                        tabId = component.tabId,
+                        stack = stack,
+                        tabsComponentName = enclosingTabsComponentName,
+                        tabButtonName = component.name,
+                        tabIdsOrdered = enclosingTabsOrderedTabIds,
+                        tabContextNamesById = enclosingTabContextNamesById,
+                        tabsDefaultTabIndex = enclosingTabsDefaultTabIndexForInteraction,
+                    )
+                }
         }
 
     private fun StyleFactoryScope.createTabControlToggleComponentStyle(
@@ -1118,44 +1235,51 @@ internal class StyleFactory(
                 thumbColorOff = thumbColorOff,
                 trackColorOn = trackColorOn,
                 trackColorOff = trackColorOff,
+                componentName = enclosingTabsComponentName ?: component.name,
             )
         }
 
     private fun StyleFactoryScope.createTabsComponentStyle(
         component: TabsComponent,
     ): Result<TabsComponentStyle, NonEmptyList<PaywallValidationError>> =
-        createTabsComponentStyleTabControl(component.control).flatMap { control ->
-            // Find the index of the defaultTabId.
-            component.defaultTabId
-                ?.takeUnless { it.isBlank() }
-                ?.let { defaultTabId -> component.tabs.indexOfFirst { it.id == defaultTabId } }
-                ?.takeUnless { it == -1 }
-                ?.also { defaultTabIndex = it }
+        withTabsInteractionContext(
+            tabsComponentName = component.name,
+            tabs = component.tabs,
+            defaultTabId = component.defaultTabId,
+        ) {
+            createTabsComponentStyleTabControl(component.control).flatMap { control ->
+                // Find the index of the defaultTabId.
+                component.defaultTabId
+                    ?.takeUnless { it.isBlank() }
+                    ?.let { defaultTabId -> component.tabs.indexOfFirst { it.id == defaultTabId } }
+                    ?.takeUnless { it == -1 }
+                    ?.also { defaultTabIndex = it }
 
-            zipOrAccumulate(
-                first = component.overrides
-                    .toPresentedOverrides(
-                        stripRules,
-                    ) { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
-                    .mapError { nonEmptyListOf(it) },
-                second = createTabsComponentStyleTabs(component.tabs, control),
-                third = createBackgroundStyles(component.background, component.backgroundColor),
-                fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
-                fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
-            ) { overrides, tabs, backgroundColor, border, shadow ->
-                TabsComponentStyle(
-                    visible = component.visible ?: DEFAULT_VISIBILITY,
-                    size = component.size,
-                    padding = component.padding.toPaddingValues(),
-                    margin = component.margin.toPaddingValues(),
-                    background = backgroundColor,
-                    shape = component.shape ?: DEFAULT_SHAPE,
-                    border = border,
-                    shadow = shadow,
-                    control = control,
-                    tabs = tabs,
-                    overrides = overrides,
-                )
+                zipOrAccumulate(
+                    first = component.overrides
+                        .toPresentedOverrides(
+                            stripRules,
+                        ) { partial -> PresentedTabsPartial(from = partial, aliases = colorAliases) }
+                        .mapError { nonEmptyListOf(it) },
+                    second = createTabsComponentStyleTabs(component.tabs, control),
+                    third = createBackgroundStyles(component.background, component.backgroundColor),
+                    fourth = component.border?.toBorderStyles(colorAliases).orSuccessfullyNull(),
+                    fifth = component.shadow?.toShadowStyles(colorAliases).orSuccessfullyNull(),
+                ) { overrides, tabs, backgroundColor, border, shadow ->
+                    TabsComponentStyle(
+                        visible = component.visible ?: DEFAULT_VISIBILITY,
+                        size = component.size,
+                        padding = component.padding.toPaddingValues(),
+                        margin = component.margin.toPaddingValues(),
+                        background = backgroundColor,
+                        shape = component.shape ?: DEFAULT_SHAPE,
+                        border = border,
+                        shadow = shadow,
+                        control = control,
+                        tabs = tabs,
+                        overrides = overrides,
+                    )
+                }
             }
         }
 

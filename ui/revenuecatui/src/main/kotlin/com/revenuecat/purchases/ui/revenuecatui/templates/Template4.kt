@@ -303,7 +303,7 @@ private fun SelectPackageButton(
                 ),
         ) {
             Button(
-                modifier = modifier
+                modifier = Modifier
                     .alpha(buttonAlpha)
                     // Trick to prevent white line around the button border
                     .padding(with(LocalDensity.current) { 1.toDp() })
@@ -315,7 +315,10 @@ private fun SelectPackageButton(
                         }
                     }
                     .fillMaxHeight(),
-                onClick = { viewModel.selectPackage(packageInfo) },
+                onClick = {
+                    viewModel.trackTemplatePackageRowSelectionIfChanged(state, packageInfo)
+                    viewModel.selectPackage(packageInfo)
+                },
                 colors = ButtonDefaults.buttonColors(containerColor = colors.background),
                 shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
                 contentPadding = PaddingValues(

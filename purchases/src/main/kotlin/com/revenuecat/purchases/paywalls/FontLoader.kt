@@ -6,6 +6,7 @@ import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.paywalls.fonts.DownloadableFontInfo
 import com.revenuecat.purchases.paywalls.fonts.toDownloadableFontInfo
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
@@ -57,11 +58,22 @@ internal class FontLoader(
             }
         }
 
+        val cachedFontFamily: DownloadedFontFamily?
         synchronized(lock) {
             val cachedFontFamilyName = cachedFontFamilyByFontInfo[fontInfoToDownload]
-            val cachedFontFamily = cachedFontFamilyByFamilyName[cachedFontFamilyName]
-            if (cachedFontFamily != null) {
+            cachedFontFamily = cachedFontFamilyByFamilyName[cachedFontFamilyName]
+        }
+
+        if (cachedFontFamily != null) {
+            if (cachedFontFamily.fonts.all { it.file.exists() }) {
                 return cachedFontFamily
+            }
+            warnLog { "Cached font files missing for ${cachedFontFamily.family}, re-downloading" }
+            synchronized(lock) {
+                if (cachedFontFamilyByFamilyName[cachedFontFamily.family] === cachedFontFamily) {
+                    cachedFontFamilyByFamilyName.remove(cachedFontFamily.family)
+                    cachedFontFamilyByFontInfo.entries.removeAll { it.value == cachedFontFamily.family }
+                }
             }
         }
 
