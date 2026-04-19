@@ -86,7 +86,6 @@ internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
     private val deviceCache: DeviceCache,
-    @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),

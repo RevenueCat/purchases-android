@@ -118,8 +118,10 @@ internal class SharedPreferencesManager(
                     true
                 }
                 is Set<*> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    editor.putStringSet(key, value as? Set<String> ?: emptySet())
+                    editor.putStringSet(
+                        key,
+                        value.filterIsInstance<String>().toSet(),
+                    )
                     true
                 }
                 else -> {
