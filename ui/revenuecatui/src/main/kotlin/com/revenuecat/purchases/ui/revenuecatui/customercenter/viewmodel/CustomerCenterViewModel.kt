@@ -711,8 +711,10 @@ internal class CustomerCenterViewModelImpl(
 
             if (activeTransactions.isNotEmpty()) {
                 return activeTransactions.map { transaction ->
-                    val entitlement = customerInfo.entitlements.all.values
+                    val entitlement = customerInfo.entitlements.active.values
                         .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+                        ?: customerInfo.entitlements.all.values
+                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
                     createPurchaseInformation(
                         transaction,
@@ -730,8 +732,10 @@ internal class CustomerCenterViewModelImpl(
         // If no active purchases found, try to find the latest expired subscription
         val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
         return if (latestExpiredTransaction != null) {
-            val entitlement = customerInfo.entitlements.all.values
+            val entitlement = customerInfo.entitlements.active.values
                 .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+                ?: customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
 
             listOf(
                 createPurchaseInformation(
@@ -997,6 +1001,7 @@ internal class CustomerCenterViewModelImpl(
         loadCustomerCenter(isRefresh = true)
     }
 
+    @Suppress("LongMethod")
     private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {

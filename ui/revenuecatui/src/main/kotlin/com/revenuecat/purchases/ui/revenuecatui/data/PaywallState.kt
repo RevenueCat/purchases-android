@@ -89,8 +89,10 @@ internal sealed interface PaywallState {
         @Stable
         class Components(
             val stack: ComponentStyle,
+            val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
+            val mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
              * for that.
@@ -276,6 +278,16 @@ internal sealed interface PaywallState {
             val currentDate: Date
                 get() = dateProvider()
 
+            /**
+             * The measured height of the header overlay in pixels. Set during the layout phase by
+             * the custom Layout in [LoadedPaywallComponents] so that ZLayer stacks can read it
+             * during their own layout phase (via [Modifier.layout]) to offset non-hero children
+             * below the header — all in a single pass, without recomposition.
+             */
+            @get:JvmSynthetic
+            var headerHeightPx: Int = 0
+                @JvmSynthetic internal set
+
             var actionInProgress by mutableStateOf(false)
                 private set
 
@@ -328,6 +340,34 @@ internal sealed interface PaywallState {
                     packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
                         ?: initialSelectedPackageOutsideTabs
                         ?: selectedPackageByTab[selectedTabIndex]
+            }
+
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? =
+                packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
+                    ?: initialSelectedPackageOutsideTabs
+                    ?: selectedPackageByTab[selectedTabIndex]
+
+            fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
+                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
+                val info = uid?.let { findPackageInfoByUniqueId(it) }
+                return if (uid != null && info != null) {
+                    SelectedPackageInfo(
+                        rcPackage = info.pkg,
+                        resolvedOffer = info.resolvedOffer,
+                        uniqueId = uid,
+                        offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
+                    )
+                } else {
+                    null
+                }
+            }
+
+            /**
+             * Default package for the current tab / root context (aligned with [resetToDefaultPackage]).
+             */
+            fun defaultPackageForPackageRowAnalytics(): Package? {
+                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss() ?: return null
+                return findPackageInfoByUniqueId(uid)?.pkg
             }
 
             private fun LocaleList.toLocaleId(): LocaleId {

@@ -163,6 +163,7 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         initialSelectedTabIndex: Int?,
     ) = PaywallState.Loaded.Components(
         stack = previewStackComponentStyle(children = emptyList()),
+        header = null,
         stickyFooter = null,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White))),
         showPricesWithDecimals = true,

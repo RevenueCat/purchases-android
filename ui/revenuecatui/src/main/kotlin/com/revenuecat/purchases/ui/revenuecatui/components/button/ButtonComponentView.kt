@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
@@ -26,6 +27,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -35,6 +38,8 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.TransitionView
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -51,6 +56,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.rememberUpdated
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import kotlinx.coroutines.launch
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -72,6 +81,7 @@ internal fun ButtonComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val stackState = rememberUpdatedStackComponentState(
         style = style.stackComponentStyle,
@@ -125,6 +135,7 @@ internal fun ButtonComponentView(
                     state = state,
                     // We're the button, so we're handling the click already.
                     clickHandler = { },
+                    componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = animatedContentAlpha,
                 )
                 CircularProgressIndicator(
@@ -133,10 +144,39 @@ internal fun ButtonComponentView(
                 )
             },
             modifier = modifier.clickable(enabled = !anyActionInProgress) {
+                val paywallAction = buttonState.action
                 myActionInProgress = true
                 state.update(actionInProgress = true)
+                if (style.action.isPurchaseRelated()) {
+                    val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
+                    val componentUrl = resolvedWebCheckoutInteractionUrl(
+                        paywallAction = paywallAction,
+                        state = state,
+                    )
+                    componentInteractionTracker.track(
+                        paywallPurchaseButtonAction(
+                            componentName = style.componentName,
+                            componentValue = style.action.description,
+                            componentUrl = componentUrl,
+                            currentPackageIdentifier = currentPackage?.identifier,
+                            currentProductIdentifier = currentPackage?.product?.paywallProductIdentifier(),
+                        ),
+                    )
+                } else {
+                    val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
+                    style.action.componentInteraction(urlForEvent)?.let { interaction ->
+                        componentInteractionTracker.track(
+                            PaywallComponentInteractionData(
+                                componentType = PaywallComponentType.BUTTON,
+                                componentName = style.componentName,
+                                componentValue = interaction.value,
+                                componentUrl = interaction.url,
+                            ),
+                        )
+                    }
+                }
                 coroutineScope.launch {
-                    onClick(buttonState.action)
+                    onClick(paywallAction)
                     myActionInProgress = false
                     state.update(actionInProgress = false)
                 }
@@ -235,6 +275,33 @@ private val Color.brightness: Float
     get() = red * COEFFICIENT_LUMINANCE_RED +
         green * COEFFICIENT_LUMINANCE_GREEN +
         blue * COEFFICIENT_LUMINANCE_BLUE
+
+private fun PaywallAction.navigationUrlForComponentInteraction(): String? =
+    when (this) {
+        is PaywallAction.External.NavigateTo -> when (val dest = destination) {
+            is PaywallAction.External.NavigateTo.Destination.Url -> dest.url
+            else -> null
+        }
+        else -> null
+    }
+
+/**
+ * Resolves the [Package] used for purchase / web-checkout analytics: explicit package on the button style when
+ * present, otherwise the paywall's currently selected package.
+ */
+private fun packageForPurchaseButtonInteraction(
+    action: ButtonComponentStyle.Action,
+    state: PaywallState.Loaded.Components,
+): Package? {
+    val actionPackage = when (action) {
+        is ButtonComponentStyle.Action.PurchasePackage -> action.rcPackage
+        is ButtonComponentStyle.Action.WebCheckout -> action.rcPackage
+        is ButtonComponentStyle.Action.CustomWebCheckout -> action.rcPackage
+        is ButtonComponentStyle.Action.WebProductSelection -> null
+        else -> null
+    }
+    return actionPackage ?: state.selectedPackageInfo?.rcPackage
+}
 
 @Preview
 @Composable

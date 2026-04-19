@@ -1,3 +1,48 @@
+## 10.2.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(ads): add possibility to update fullscreen content callback (#3325) via Peter Porfy (@peterporfy)
+* feat(ads): placement override at show time (#3318) via Peter Porfy (@peterporfy)
+### 🐞 Bugfixes
+* fix(customer-center): prefer active entitlement when decorating subsc… (#3313) via Guilherme (@GuilhermeMota93)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Add new HeaderComponent (#3290) via Cesar de la Vega (@vegaro)
+
+## 10.1.2
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix paywall crash when cached font files are evicted (#3341) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Cleaner Offerings list in Paywall tester (#3319) via Cesar de la Vega (@vegaro)
+* Add 9.29.1 hotfix release to changelog (#3340) via Cesar de la Vega (@vegaro)
+
+## 10.1.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* [Galaxy]: Cache already acknowledged purchase tokens (#3333) via Will Taylor (@fire-at-will)
+
+### 🔄 Other Changes
+* Refactor: Remove unnecessary lint suppressions (#3331) via cursor[bot] (@cursor[bot])
+* Refactor: Remove unnecessary lint suppressions (#3330) via cursor[bot] (@cursor[bot])
+* Refactor: Remove unnecessary lint suppressions (#3323) via cursor[bot] (@cursor[bot])
+* Bump fastlane-plugin-revenuecat_internal from `894bb1b` to `20911d1` (#3334) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `ceecf91` to `894bb1b` (#3326) via dependabot[bot] (@dependabot[bot])
+
+## 10.1.0
+## RevenueCat SDK
+### ✨ New Features
+* [Galaxy]: Support OTP Purchases (#3267) via Will Taylor (@fire-at-will)
+
+### 🔄 Other Changes
+* Match iOS casing for Test Store purchase button labels (#3314) via Antonio Pallares (@ajpallares)
+* Update CODEOWNERS default owner to @RevenueCat/sdk (#3322) via Antonio Pallares (@ajpallares)
+* Add pull to refresh to Paywall in paywall tester (#3316) via Cesar de la Vega (@vegaro)
+* Refactor: Remove unnecessary lint suppressions (#3317) via cursor[bot] (@cursor[bot])
+
 ## 10.0.2
 ## RevenueCatUI SDK
 ### Paywallv2
@@ -28,6 +73,12 @@ This release updates to Billing Library 8.3.0 with min SDK supported of Android 
 * [AUTOMATIC] Update golden test files for backend integration tests (#3302) via RevenueCat Git Bot (@RCGitBot)
 * Bump fastlane-plugin-revenuecat_internal from `5d6e93f` to `6289be1` (#3299) via dependabot[bot] (@dependabot[bot])
 * Bump fastlane-plugin-revenuecat_internal from `f11fe40` to `5d6e93f` (#3294) via dependabot[bot] (@dependabot[bot])
+
+## 9.29.1
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* PW-1178 | Support package-level visibility via visible property and overrides (#3279) via Facundo Menzella (@facumenzella)
 
 ## 9.29.0
 ## RevenueCat SDK

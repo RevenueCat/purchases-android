@@ -79,7 +79,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywallComponent
 import java.net.URL
 import java.util.Date
 
-private const val MILLIS_2025_01_25 = 1737763200000
+internal const val MILLIS_2025_01_25 = 1737763200000
 
 @Composable
 @JvmSynthetic
