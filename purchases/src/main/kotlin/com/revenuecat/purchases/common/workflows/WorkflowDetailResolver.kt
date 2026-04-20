@@ -4,11 +4,11 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
-import java.security.MessageDigest
+import com.revenuecat.purchases.models.Checksum
 
 /**
  * Resolves a [WorkflowDetailResponse] envelope into a [WorkflowFetchResult]
- * by handling inline data or CDN fetching + hash verification.
+ * by handling inline data or CDN fetching + checksum validation.
  */
 internal class WorkflowDetailResolver(
     private val workflowCdnFetcher: WorkflowCdnFetcher,
@@ -24,11 +24,8 @@ internal class WorkflowDetailResolver(
             WorkflowResponseAction.USE_CDN -> {
                 val url = response.url
                     ?: error("CDN workflow response missing url")
-                val json = workflowCdnFetcher.fetchCompiledWorkflowJson(url)
-                val expectedHash = response.hash
-                if (expectedHash != null) {
-                    verifyContentHash(json, url, expectedHash)
-                }
+                val checksum = response.hash?.let { Checksum(Checksum.Algorithm.SHA256, it) }
+                val json = workflowCdnFetcher.fetchCompiledWorkflowJson(url, checksum)
                 WorkflowJsonParser.parsePublishedWorkflow(json)
             }
         }
@@ -36,26 +33,5 @@ internal class WorkflowDetailResolver(
             workflow = workflow,
             enrolledVariants = response.enrolledVariants,
         )
-    }
-
-    @Throws(SignatureVerificationException::class)
-    private fun verifyContentHash(json: String, url: String, expectedHash: String) {
-        val actualHash = computeCanonicalHash(json)
-        if (actualHash != expectedHash) {
-            throw SignatureVerificationException(url)
-        }
-    }
-
-    companion object {
-        /**
-         * Computes SHA-256 hex digest of the CDN workflow JSON.
-         * The backend uploads canonical JSON (sorted keys, compact separators)
-         * and computes the hash from those same bytes, so we just hash the
-         * raw CDN content directly.
-         */
-        internal fun computeCanonicalHash(json: String): String {
-            val digest = MessageDigest.getInstance("SHA-256").digest(json.toByteArray(Charsets.UTF_8))
-            return digest.joinToString("") { "%02x".format(it) }
-        }
     }
 }
