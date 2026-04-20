@@ -126,10 +126,16 @@ public class Purchases internal constructor(
      * The listener is responsible for handling changes to customer information.
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
+    @Deprecated("Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead")
     public var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
-        @Synchronized get() = purchasesOrchestrator.updatedCustomerInfoListener
+        @Suppress("DEPRECATION")
+        @Synchronized
+        get() =
+            purchasesOrchestrator.updatedCustomerInfoListener
 
-        @Synchronized set(value) {
+        @Suppress("DEPRECATION")
+        @Synchronized
+        set(value) {
             purchasesOrchestrator.updatedCustomerInfoListener = value
         }
 
@@ -605,9 +611,30 @@ public class Purchases internal constructor(
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
      * to avoid memory leaks.
      */
+    @Deprecated("Use removeUpdatedCustomerInfoListener(listener) instead")
     @Suppress("MemberVisibilityCanBePrivate")
     public fun removeUpdatedCustomerInfoListener() {
-        purchasesOrchestrator.removeUpdatedCustomerInfoListener()
+        purchasesOrchestrator.removeLegacyUpdatedCustomerInfoListener()
+    }
+
+    /**
+     * Add a listener that will be called whenever customer info changes.
+     * Multiple listeners can be registered. The listener will immediately receive the latest
+     * cached customer info if available.
+     *
+     * Make sure to call [removeUpdatedCustomerInfoListener] when the listener is no longer needed
+     * to avoid memory leaks.
+     */
+    public fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        purchasesOrchestrator.addUpdatedCustomerInfoListener(listener)
+    }
+
+    /**
+     * Remove a previously added [UpdatedCustomerInfoListener]. Call this when you are finished
+     * using the listener to avoid memory leaks.
+     */
+    public fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        purchasesOrchestrator.removeUpdatedCustomerInfoListener(listener)
     }
 
     /**

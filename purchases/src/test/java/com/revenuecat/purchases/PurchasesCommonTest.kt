@@ -119,13 +119,14 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verifyClose()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `when setting listener for anonymous user, we set customer info helper listener`() {
         anonymousSetup(true)
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = null
+            mockCustomerInfoUpdateHandler.removeAllListeners()
         }
         verify(exactly = 1) {
             mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = updatedCustomerInfoListener
