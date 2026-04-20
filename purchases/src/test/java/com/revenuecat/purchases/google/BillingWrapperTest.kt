@@ -1525,6 +1525,21 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `showing inapp messages does not crash when billing client throws runtime exception`() {
+        val activity = mockAttachedActivity()
+        val exception = NullPointerException("Attempt to invoke virtual method on a null object reference")
+        every { mockClient.showInAppMessages(activity, any(), any()) } throws exception
+
+        assertErrorLog(BillingStrings.BILLING_INAPP_MESSAGE_SHOW_EXCEPTION.format(exception), exception) {
+            wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+                error("Unexpected subscription status change")
+            }
+        }
+
+        verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
     fun `showing inapp messages handles inapp messages listener response correctly when no messages`() {
         val activity = mockAttachedActivity()
         val listenerSlot = slot<InAppMessageResponseListener>()
