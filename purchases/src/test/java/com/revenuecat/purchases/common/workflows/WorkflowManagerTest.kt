@@ -4,9 +4,12 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
@@ -25,6 +28,7 @@ class WorkflowManagerTest {
         workflowManager = WorkflowManager(
             backend = mockBackend,
             workflowDetailResolver = mockResolver,
+            scope = CoroutineScope(UnconfinedTestDispatcher()),
         )
     }
 
@@ -38,7 +42,7 @@ class WorkflowManagerTest {
             workflow = response.data!!,
             enrolledVariants = null,
         )
-        every { mockResolver.resolve(response) } returns expectedResult
+        coEvery { mockResolver.resolve(response) } returns expectedResult
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -97,7 +101,7 @@ class WorkflowManagerTest {
             action = WorkflowResponseAction.INLINE,
             data = null,
         )
-        every { mockResolver.resolve(response) } throws IllegalStateException("missing data")
+        coEvery { mockResolver.resolve(response) } throws IllegalStateException("missing data")
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -130,7 +134,7 @@ class WorkflowManagerTest {
             action = WorkflowResponseAction.USE_CDN,
             url = "https://cdn.example.com/workflow.json",
         )
-        every { mockResolver.resolve(response) } throws IOException("CDN fetch failed")
+        coEvery { mockResolver.resolve(response) } throws IOException("CDN fetch failed")
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -156,5 +160,4 @@ class WorkflowManagerTest {
         assertThat(error).isNotNull
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
-
 }

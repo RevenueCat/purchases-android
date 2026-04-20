@@ -4,7 +4,6 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.storage.FileRepository
-import kotlinx.coroutines.runBlocking
 import java.io.File
 import java.io.IOException
 import java.net.URL
@@ -14,7 +13,7 @@ import java.net.URL
  */
 internal fun interface WorkflowCdnFetcher {
     @Throws(IOException::class)
-    fun fetchCompiledWorkflowJson(cdnUrl: String): String
+    suspend fun fetchCompiledWorkflowJson(cdnUrl: String): String
 }
 
 /**
@@ -25,11 +24,9 @@ internal class FileCachedWorkflowCdnFetcher(
 ) : WorkflowCdnFetcher {
 
     @Throws(IOException::class)
-    override fun fetchCompiledWorkflowJson(cdnUrl: String): String {
+    override suspend fun fetchCompiledWorkflowJson(cdnUrl: String): String {
         val url = URL(cdnUrl)
-        return runBlocking {
-            val uri = fileRepository.generateOrGetCachedFileURL(url)
-            File(uri).readText()
-        }
+        val uri = fileRepository.generateOrGetCachedFileURL(url)
+        return File(uri).readText()
     }
 }

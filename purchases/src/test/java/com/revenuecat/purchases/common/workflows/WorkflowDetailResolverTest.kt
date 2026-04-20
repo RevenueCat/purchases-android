@@ -3,13 +3,14 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.IOException
+import kotlin.test.assertFailsWith
 
 @OptIn(InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
@@ -42,7 +43,7 @@ class WorkflowDetailResolverTest {
 
     private fun createResolver(
         signatureVerificationMode: SignatureVerificationMode = SignatureVerificationMode.Disabled,
-        fetchResult: (String) -> String = { error("unexpected CDN fetch") },
+        fetchResult: suspend (String) -> String = { error("unexpected CDN fetch") },
     ) = WorkflowDetailResolver(
         WorkflowCdnFetcher { url -> fetchResult(url) },
         signatureVerificationMode,
@@ -52,7 +53,7 @@ class WorkflowDetailResolverTest {
         WorkflowJsonParser.parsePublishedWorkflow(minimalWorkflowJson)
 
     @Test
-    fun `inline extracts workflow from data`() {
+    fun `inline extracts workflow from data`() = runTest {
         val resolver = createResolver()
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.INLINE,
@@ -64,7 +65,7 @@ class WorkflowDetailResolverTest {
     }
 
     @Test
-    fun `inline with enrolled_variants passes them through`() {
+    fun `inline with enrolled_variants passes them through`() = runTest {
         val resolver = createResolver()
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.INLINE,
@@ -76,19 +77,18 @@ class WorkflowDetailResolverTest {
     }
 
     @Test
-    fun `inline throws when data is missing`() {
+    fun `inline throws when data is missing`() = runTest {
         val resolver = createResolver()
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.INLINE,
             data = null,
         )
-        assertThatThrownBy { resolver.resolve(response) }
-            .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("missing data")
+        val ex = assertFailsWith<IllegalStateException> { resolver.resolve(response) }
+        assertThat(ex.message).contains("missing data")
     }
 
     @Test
-    fun `use_cdn fetches and parses workflow`() {
+    fun `use_cdn fetches and parses workflow`() = runTest {
         val resolver = createResolver { url ->
             assertThat(url).isEqualTo("https://cdn.example.com/wf.json")
             minimalWorkflowJson
@@ -102,7 +102,7 @@ class WorkflowDetailResolverTest {
     }
 
     @Test
-    fun `use_cdn with enrolled_variants passes them through`() {
+    fun `use_cdn with enrolled_variants passes them through`() = runTest {
         val resolver = createResolver { minimalWorkflowJson }
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.USE_CDN,
@@ -114,30 +114,28 @@ class WorkflowDetailResolverTest {
     }
 
     @Test
-    fun `use_cdn throws when url is missing`() {
+    fun `use_cdn throws when url is missing`() = runTest {
         val resolver = createResolver()
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.USE_CDN,
             url = null,
         )
-        assertThatThrownBy { resolver.resolve(response) }
-            .isInstanceOf(IllegalStateException::class.java)
-            .hasMessageContaining("missing url")
+        val ex = assertFailsWith<IllegalStateException> { resolver.resolve(response) }
+        assertThat(ex.message).contains("missing url")
     }
 
     @Test
-    fun `use_cdn propagates IOException from fetcher`() {
+    fun `use_cdn propagates IOException from fetcher`() = runTest {
         val resolver = createResolver { throw IOException("network error") }
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.USE_CDN,
             url = "https://cdn.example.com/wf.json",
         )
-        assertThatThrownBy { resolver.resolve(response) }
-            .isInstanceOf(IOException::class.java)
+        assertFailsWith<IOException> { resolver.resolve(response) }
     }
 
     @Test
-    fun `use_cdn verifies hash when verification enabled`() {
+    fun `use_cdn verifies hash when verification enabled`() = runTest {
         val json = minimalWorkflowJson
         val expectedHash = WorkflowDetailResolver.computeCanonicalHash(json)
         val resolver = createResolver(
@@ -148,13 +146,12 @@ class WorkflowDetailResolverTest {
             url = "https://cdn.example.com/wf.json",
             hash = expectedHash,
         )
-        // Should not throw — hash matches
         val result = resolver.resolve(response)
         assertThat(result.workflow.id).isEqualTo("wf_1")
     }
 
     @Test
-    fun `use_cdn throws SignatureVerificationException when hash mismatches in Enforced mode`() {
+    fun `use_cdn throws SignatureVerificationException when hash mismatches in Enforced mode`() = runTest {
         val resolver = createResolver(
             signatureVerificationMode = SignatureVerificationMode.Enforced(),
         ) { minimalWorkflowJson }
@@ -163,12 +160,11 @@ class WorkflowDetailResolverTest {
             url = "https://cdn.example.com/wf.json",
             hash = "wrong_hash",
         )
-        assertThatThrownBy { resolver.resolve(response) }
-            .isInstanceOf(SignatureVerificationException::class.java)
+        assertFailsWith<SignatureVerificationException> { resolver.resolve(response) }
     }
 
     @Test
-    fun `use_cdn does not throw when hash matches in Enforced mode`() {
+    fun `use_cdn does not throw when hash matches in Enforced mode`() = runTest {
         val json = minimalWorkflowJson
         val expectedHash = WorkflowDetailResolver.computeCanonicalHash(json)
         val resolver = createResolver(
@@ -184,7 +180,7 @@ class WorkflowDetailResolverTest {
     }
 
     @Test
-    fun `use_cdn does not throw when hash mismatches in Informational mode`() {
+    fun `use_cdn does not throw when hash mismatches in Informational mode`() = runTest {
         val resolver = createResolver(
             signatureVerificationMode = SignatureVerificationMode.Informational(),
         ) { minimalWorkflowJson }
@@ -198,7 +194,7 @@ class WorkflowDetailResolverTest {
     }
 
     @Test
-    fun `use_cdn skips hash verification when disabled`() {
+    fun `use_cdn skips hash verification when disabled`() = runTest {
         val resolver = createResolver(
             signatureVerificationMode = SignatureVerificationMode.Disabled,
         ) { minimalWorkflowJson }
@@ -207,7 +203,6 @@ class WorkflowDetailResolverTest {
             url = "https://cdn.example.com/wf.json",
             hash = "wrong_hash",
         )
-        // Should not log error — verification is disabled
         val result = resolver.resolve(response)
         assertThat(result.workflow.id).isEqualTo("wf_1")
     }

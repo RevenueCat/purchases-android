@@ -20,7 +20,7 @@ internal class WorkflowDetailResolver(
 ) {
 
     @Throws(IllegalStateException::class, SignatureVerificationException::class)
-    fun resolve(response: WorkflowDetailResponse): WorkflowFetchResult {
+    suspend fun resolve(response: WorkflowDetailResponse): WorkflowFetchResult {
         val workflow = when (response.action) {
             WorkflowResponseAction.INLINE -> {
                 response.data
