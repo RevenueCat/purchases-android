@@ -413,6 +413,33 @@ class CustomerInfoUpdateHandlerTest {
         verify(exactly = 1) { listener.onReceived(newInfo) }
     }
 
+    @Test
+    fun `new listener does not receive stale cached info if notify happens during registration before initial dispatch queues`() {
+        val queuedHandler = QueuedHandler()
+        customerInfoUpdateHandler = CustomerInfoUpdateHandler(
+            deviceCache,
+            identityManager,
+            offlineEntitlementsManager,
+            appConfig = appConfig,
+            diagnosticsTracker = diagnosticsTracker,
+            handler = queuedHandler.handler,
+        )
+
+        val newInfo = mockk<CustomerInfo>()
+        every { deviceCache.getCachedCustomerInfo(appUserId) } answers {
+            customerInfoUpdateHandler.notifyListeners(newInfo)
+            mockInfo
+        }
+
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(listener)
+
+        queuedHandler.runPostedActions()
+
+        verify(exactly = 0) { listener.onReceived(mockInfo) }
+        verify(exactly = 1) { listener.onReceived(newInfo) }
+    }
+
     // endregion
 
     private class QueuedHandler {
