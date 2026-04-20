@@ -1,10 +1,20 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.androidx.navigation.safeargs)
 }
 
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
+}
+
 android {
     buildFeatures {
+        buildConfig = true
         viewBinding = true
     }
 
@@ -35,6 +45,12 @@ android {
             "String",
             "SUPPORTED_STORES",
             "\"${project.properties["purchaseTesterSupportedStores"]}\"",
+        )
+
+        buildConfigField(
+            "String",
+            "REVENUECAT_API_KEY",
+            "\"${localProperties.getProperty("PURCHASE_TESTER_API_KEY", "")}\"",
         )
     }
 

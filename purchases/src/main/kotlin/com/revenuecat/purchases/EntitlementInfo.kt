@@ -263,6 +263,7 @@ public enum class Store {
         get() = when (this) {
             PLAY_STORE -> Constants.GOOGLE_PLAY_MANAGEMENT_URL
             GALAXY -> Constants.GALAXY_STORE_MANAGEMENT_URL
+            AMAZON -> Constants.AMAZON_STORE_MANAGEMENT_URL
             else -> null
         }
 

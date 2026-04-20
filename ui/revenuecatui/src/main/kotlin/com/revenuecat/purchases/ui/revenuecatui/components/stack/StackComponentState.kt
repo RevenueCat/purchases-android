@@ -123,6 +123,9 @@ internal class StackComponentState(
     val applyTopWindowInsets = style.applyTopWindowInsets
 
     @get:JvmSynthetic
+    val ignoreHeaderHeight = style.ignoreHeaderHeight
+
+    @get:JvmSynthetic
     val applyBottomWindowInsets = style.applyBottomWindowInsets
 
     @get:JvmSynthetic

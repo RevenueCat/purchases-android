@@ -47,9 +47,11 @@ internal class FallbackComponentTests {
             components = listOf(
                 TextComponent(
                     text = LocalizationKey("7bkohQjzIE"),
-                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                    name = "Text",
                 )
-            )
+            ),
+            name = "Stack",
         )
 
         // Act
@@ -57,6 +59,31 @@ internal class FallbackComponentTests {
 
         // Assert
         assertThat(actual).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Should deserialize fallback_header as FallbackHeaderComponent and not its fallback`() {
+        // Arrange
+        // language=json
+        val serialized = """
+        {
+          "type": "fallback_header",
+          "id": "abc123",
+          "name": "Fallback Header",
+          "fallback": {
+            "components": [],
+            "id": "inner",
+            "name": "Stack",
+            "type": "stack"
+          }
+        }
+        """.trimIndent()
+
+        // Act
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(serialized)
+
+        // Assert
+        assertThat(actual).isInstanceOf(FallbackHeaderComponent::class.java)
     }
 
     @Test

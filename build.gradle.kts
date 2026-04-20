@@ -1,10 +1,5 @@
 import org.gradle.api.GradleException
 
-buildscript {
-    extra["compileVersion"] = 35
-    extra["minVersion"] = 21
-}
-
 plugins {
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.android.application) apply false

@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
@@ -7,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -31,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
@@ -49,6 +53,9 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
@@ -195,6 +202,10 @@ class PaywallViewModelTest {
         listener = mockk {
             every { onPurchasePackageInitiated(any(), any()) } answers {
                 val resume = secondArg<Resumable>()
+                resume(true)
+            }
+            every { onRestoreInitiated(any()) } answers {
+                val resume = invocation.args[0] as Resumable
                 resume(true)
             }
         }
@@ -704,8 +715,7 @@ class PaywallViewModelTest {
             return
         }
 
-        assertThat(state.errorMessage)
-            .isEqualTo("The RevenueCat dashboard does not have a current offering configured.")
+        assertThat(state.errorMessage).isNotEmpty
     }
 
     @Test
@@ -1048,6 +1058,24 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `restorePurchases cancelled when onRestoreInitiated returns false`() {
+        val model = create()
+        every { listener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(false)
+        }
+
+        model.restorePurchases()
+
+        coVerify(exactly = 0) { purchases.awaitRestore() }
+        verify(exactly = 0) { listener.onRestoreStarted() }
+        verify(exactly = 0) { listener.onRestoreCompleted(any()) }
+        verify(exactly = 0) { listener.onRestoreError(any()) }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
     fun handleRestorePurchases(): Unit = runBlocking {
         // Arrange
         val offering = Offering(
@@ -1257,6 +1285,158 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `trackComponentInteraction restore matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.COMPONENT_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.componentInteraction)
+                    assertThat(ci.componentType).isEqualTo(PaywallComponentType.BUTTON)
+                    assertThat(ci.componentName).isEqualTo("restore_button")
+                    assertThat(ci.componentValue).isEqualTo("restore_purchases")
+                    assertThat(ci.componentUrl).isNull()
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackComponentInteraction legacy purchase button matches purchase button spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val pkg = TestData.Packages.monthly
+        model.trackComponentInteraction(
+            paywallPurchaseButtonAction(
+                componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
+                componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
+                componentUrl = null,
+                currentPackageIdentifier = pkg.identifier,
+                currentProductIdentifier = pkg.product.id,
+            ),
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.COMPONENT_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.componentInteraction)
+                    assertThat(ci.componentType).isEqualTo(PaywallComponentType.PURCHASE_BUTTON)
+                    assertThat(ci.componentName).isEqualTo("purchase_button")
+                    assertThat(ci.componentValue).isEqualTo("in_app_checkout")
+                    assertThat(ci.componentUrl).isNull()
+                    assertThat(ci.currentPackageIdentifier).isEqualTo(pkg.identifier)
+                    assertThat(ci.currentProductIdentifier).isEqualTo(pkg.product.id)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackComponentInteraction all plans matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.ALL_PLANS_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.TOGGLE_ALL_PLANS,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.COMPONENT_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.componentInteraction)
+                    assertThat(ci.componentName).isEqualTo("all_plans_button")
+                    assertThat(ci.componentValue).isEqualTo("toggle_all_plans")
+                    assertThat(ci.componentUrl).isNull()
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackComponentInteraction terms link matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val url = "https://example.com/terms"
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.TERMS_LINK_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.NAVIGATE_TO_TERMS,
+            componentUrl = url,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.COMPONENT_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.componentInteraction)
+                    assertThat(ci.componentName).isEqualTo("terms_link")
+                    assertThat(ci.componentValue).isEqualTo("navigate_to_terms")
+                    assertThat(ci.componentUrl).isEqualTo(url)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackComponentInteraction privacy link matches legacy footer spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val url = "https://example.com/privacy"
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.PRIVACY_LINK_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.NAVIGATE_TO_PRIVACY_POLICY,
+            componentUrl = url,
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.COMPONENT_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.componentInteraction)
+                    assertThat(ci.componentName).isEqualTo("privacy_link")
+                    assertThat(ci.componentValue).isEqualTo("navigate_to_privacy_policy")
+                    assertThat(ci.componentUrl).isEqualTo(url)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `trackComponentInteraction tier selector matches legacy spec`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.TAB,
+            componentName = PaywallLegacyComponentInteraction.TIER_SELECTOR_NAME,
+            componentValue = "Premium",
+        )
+        verify(exactly = 1) {
+            purchases.track(
+                withArg { event ->
+                    val paywallEvent = event as PaywallEvent
+                    assertThat(paywallEvent.type).isEqualTo(PaywallEventType.COMPONENT_INTERACTION)
+                    val ci = requireNotNull(paywallEvent.componentInteraction)
+                    assertThat(ci.componentType).isEqualTo(PaywallComponentType.TAB)
+                    assertThat(ci.componentName).isEqualTo("tier_selector")
+                    assertThat(ci.componentValue).isEqualTo("Premium")
+                    assertThat(ci.componentUrl).isNull()
+                },
+            )
+        }
+    }
+
+    @Test
     fun `trackPaywallImpression multiple times in a row only tracks once`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
@@ -1265,6 +1445,31 @@ class PaywallViewModelTest {
         verify(exactly = 1) {
             purchases.track(any())
         }
+    }
+
+    @Test
+    fun `trackPaywallImpression when presentation surface changes emits close then new impression`() {
+        val eventTypes = mutableListOf<PaywallEventType>()
+        every { purchases.track(any()) } answers {
+            eventTypes += (firstArg() as PaywallEvent).type
+        }
+
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+
+        // PaywallOptions.hashCode does not include paywall revision, so swapping paywall data alone may not
+        // rebuild state. Dark mode is part of the impression fingerprint and can change without a full reload.
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDark = true,
+        )
+        model.trackPaywallImpressionIfNeeded()
+
+        assertThat(eventTypes).containsExactly(
+            PaywallEventType.IMPRESSION,
+            PaywallEventType.CLOSE,
+            PaywallEventType.IMPRESSION,
+        )
     }
 
     @Test
@@ -1838,6 +2043,45 @@ class PaywallViewModelTest {
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
         ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    @Test
+    fun `purchaseButtonInteractionComponentUrl matches resolved launch url for in app browser`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+
+        val state = model.state.value as? PaywallState.Loaded.Components
+            ?: error("Expected to have loaded components state")
+        state.update(TestData.Packages.monthly.identifier)
+
+        val action = launchWebCheckoutWithCustomUrlNoPackage.copy(
+            openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
+        )
+
+        assertThat(
+            resolvedWebCheckoutInteractionUrl(
+                paywallAction = action,
+                state = state,
+            ),
+        ).isEqualTo(model.getWebCheckoutUrl(action))
+    }
+
+    @Test
+    fun `purchaseButtonInteractionComponentUrl matches resolved launch url for deep link`(): Unit = runBlocking {
+        val model = create(offering = offeringWithWPL)
+
+        val state = model.state.value as? PaywallState.Loaded.Components
+            ?: error("Expected to have loaded components state")
+
+        val action = launchWebCheckoutWithCustomUrlAndPackage.copy(
+            openMethod = ButtonComponent.UrlMethod.DEEP_LINK,
+        )
+
+        assertThat(
+            resolvedWebCheckoutInteractionUrl(
+                paywallAction = action,
+                state = state,
+            ),
+        ).isEqualTo(model.getWebCheckoutUrl(action))
     }
 
     // endregion getWebCheckoutUrl

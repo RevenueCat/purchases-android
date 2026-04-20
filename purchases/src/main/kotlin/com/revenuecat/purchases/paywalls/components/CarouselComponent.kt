@@ -68,6 +68,8 @@ public class CarouselComponent(
     public val autoAdvance: AutoAdvancePages? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
+    @get:JvmSynthetic
+    public val name: String? = null,
 ) : PaywallComponent {
 
     @Poko
@@ -81,7 +83,7 @@ public class CarouselComponent(
         public val msTransitionTime: Int,
         @get:JvmSynthetic
         @SerialName("transition_type")
-        public val transitionType: TransitionType?,
+        public val transitionType: TransitionType? = null,
     ) {
         @Serializable(with = CarouselTransitionTypeDeserializer::class)
         public enum class TransitionType {

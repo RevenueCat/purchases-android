@@ -27,6 +27,7 @@ import com.revenuecat.purchases_sample.BuildConfig
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentConfigureBinding
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.net.MalformedURLException
@@ -190,7 +191,16 @@ class ConfigureFragment : Fragment() {
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
 
-        dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, selectedStore))
+        // Preserve the separately-entered app user ID because this screen only edits SDK configuration fields.
+        val existingConfiguration = dataStoreUtils.getSdkConfig().first()
+        dataStoreUtils.saveSdkConfig(
+            SdkConfiguration(
+                apiKey = apiKey,
+                proxyUrl = proxyUrl,
+                store = selectedStore,
+                appUserId = existingConfiguration.appUserId,
+            ),
+        )
         return true
     }
 

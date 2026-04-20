@@ -41,12 +41,14 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityArgs
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CreateSupportTicketData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
@@ -71,8 +73,10 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import java.util.Locale
+import kotlin.coroutines.resume
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @Suppress("TooManyFunctions")
@@ -443,6 +447,8 @@ internal class CustomerCenterViewModelImpl(
         when {
             purchaseInfo?.store == Store.PLAY_STORE && purchaseInfo.product != null ->
                 startGoogleProductCancellation(context, purchaseInfo.product)
+            purchaseInfo?.store == Store.AMAZON && purchaseInfo.managementURL != null ->
+                startAmazonCancellation(context, purchaseInfo.managementURL)
             purchaseInfo?.managementURL != null -> startManagementUrlCancellation(context, purchaseInfo.managementURL)
             else -> Logger.e("No product or management URL available for cancel path")
         }
@@ -457,6 +463,22 @@ internal class CustomerCenterViewModelImpl(
         shouldRefreshOnResume = true
         notifyListenersForManageSubscription()
         showManageSubscriptions(context, googleProduct.productId)
+    }
+
+    private fun startAmazonCancellation(context: Context, managementURL: Uri) {
+        shouldRefreshOnResume = true
+        notifyListenersForManageSubscription()
+        try {
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(CustomerCenterConstants.Management.AMAZON_MANAGEMENT_URL)),
+            )
+        } catch (_: ActivityNotFoundException) {
+            openURL(
+                context,
+                managementURL.toString(),
+                HelpPath.OpenMethod.EXTERNAL,
+            )
+        }
     }
 
     private fun startManagementUrlCancellation(context: Context, managementURL: Uri) {
@@ -519,6 +541,11 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override suspend fun restorePurchases() {
+        if (!shouldResumeRestorePurchases(listener, "listener") ||
+            !shouldResumeRestorePurchases(purchases.customerCenterListener, "purchases.customerCenterListener")
+        ) {
+            return
+        }
         notifyListenersForRestoreStarted()
 
         _state.update { currentState ->
@@ -566,6 +593,21 @@ internal class CustomerCenterViewModelImpl(
                 }
             }
         }
+    }
+
+    private suspend fun shouldResumeRestorePurchases(
+        listener: CustomerCenterListener?,
+        listenerName: String,
+    ): Boolean {
+        val shouldResume = suspendCancellableCoroutine { continuation ->
+            Logger.d("Restore Purchases Initiated… waiting for $listenerName to proceed.")
+            listener?.onRestoreInitiated { shouldResume ->
+                continuation.resume(shouldResume)
+            } ?: continuation.resume(true)
+        }
+        val detail = if (shouldResume) "will" else "will not"
+        Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
+        return shouldResume
     }
 
     private fun supportedPaths(
@@ -669,8 +711,10 @@ internal class CustomerCenterViewModelImpl(
 
             if (activeTransactions.isNotEmpty()) {
                 return activeTransactions.map { transaction ->
-                    val entitlement = customerInfo.entitlements.all.values
+                    val entitlement = customerInfo.entitlements.active.values
                         .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+                        ?: customerInfo.entitlements.all.values
+                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
                     createPurchaseInformation(
                         transaction,
@@ -688,8 +732,10 @@ internal class CustomerCenterViewModelImpl(
         // If no active purchases found, try to find the latest expired subscription
         val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
         return if (latestExpiredTransaction != null) {
-            val entitlement = customerInfo.entitlements.all.values
+            val entitlement = customerInfo.entitlements.active.values
                 .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+                ?: customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
 
             listOf(
                 createPurchaseInformation(
@@ -857,7 +903,11 @@ internal class CustomerCenterViewModelImpl(
         }
         val purchaseParams = PurchaseParams.Builder(activity, subscriptionOption)
         try {
-            purchases.awaitPurchase(purchaseParams)
+            val result = purchases.awaitPurchase(purchaseParams)
+            notifyListenersForPromotionalOfferSucceeded(
+                result.customerInfo,
+                result.storeTransaction,
+            )
 
             // Reload customer center data to refresh the UI with the latest subscription information
             // It will also go back to main screen
@@ -951,6 +1001,7 @@ internal class CustomerCenterViewModelImpl(
         loadCustomerCenter(isRefresh = true)
     }
 
+    @Suppress("LongMethod")
     private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {
@@ -1329,6 +1380,14 @@ internal class CustomerCenterViewModelImpl(
             customActionData.actionIdentifier,
             customActionData.purchaseIdentifier,
         )
+    }
+
+    private fun notifyListenersForPromotionalOfferSucceeded(
+        customerInfo: CustomerInfo,
+        transaction: StoreTransaction,
+    ) {
+        listener?.onPromotionalOfferSucceeded(customerInfo, transaction)
+        purchases.customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
     }
 
     override fun showPaywall(context: Context) {

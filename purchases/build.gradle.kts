@@ -13,12 +13,19 @@ val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
+// Resolves a property: Gradle -P flags (CI) take priority, then local.properties.
+// Empty string from -P flags is treated as a valid value (e.g. empty ACTIVE_ENTITLEMENT_IDS_TO_VERIFY).
+fun resolveProperty(name: String, default: String = ""): String {
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+    return localProperties.getProperty(name) ?: default
+}
+
 android {
     namespace = "com.revenuecat.purchases.api"
 
     buildFeatures {
         buildConfig = true
-        aidl = true
     }
 
     // billingclient dimension is added for bc7/bc8 support
@@ -56,11 +63,6 @@ android {
             name = "ENABLE_EXTRA_REQUEST_LOGGING",
             value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
         )
-        buildConfigField(
-            type = "boolean",
-            name = "ENABLE_QUERY_PURCHASE_HISTORY_AIDL",
-            value = (localProperties["ENABLE_QUERY_PURCHASE_HISTORY_AIDL"] as? String ?: "true"),
-        )
 
         buildConfigField(
             type = "String",
@@ -71,15 +73,65 @@ android {
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )
+
+        // Instrumentation test configuration — all environments passed so tests can run against any/all backends.
+        // Each test class selects its environment via BasePurchasesIntegrationTest.environmentConfig.
+
+        // Production environment
+        testInstrumentationRunnerArguments["PRODUCTION_REVENUECAT_API_KEY"] =
+            resolveProperty("REVENUECAT_API_KEY")
+        testInstrumentationRunnerArguments["PRODUCTION_GOOGLE_PURCHASE_TOKEN"] =
+            resolveProperty("GOOGLE_PURCHASE_TOKEN")
+        testInstrumentationRunnerArguments["PRODUCTION_PRODUCT_ID_TO_PURCHASE"] =
+            resolveProperty("PRODUCT_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["PRODUCTION_BASE_PLAN_ID_TO_PURCHASE"] =
+            resolveProperty("BASE_PLAN_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["PRODUCTION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
+            resolveProperty("ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
+
+        // Load Shedder environment (shared keys for US-East-1 and US-East-2)
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_REVENUECAT_API_KEY"] =
+            resolveProperty("LOAD_SHEDDER_REVENUECAT_API_KEY")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN"] =
+            resolveProperty("LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE"] =
+            resolveProperty("LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE"] =
+            resolveProperty("LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["LOAD_SHEDDER_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
+            resolveProperty("LOAD_SHEDDER_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
+
+        // Custom Entitlement Computation environment
+        testInstrumentationRunnerArguments["CEC_REVENUECAT_API_KEY"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_REVENUECAT_API_KEY")
+        testInstrumentationRunnerArguments["CEC_GOOGLE_PURCHASE_TOKEN"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_GOOGLE_PURCHASE_TOKEN")
+        testInstrumentationRunnerArguments["CEC_PRODUCT_ID_TO_PURCHASE"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_PRODUCT_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["CEC_BASE_PLAN_ID_TO_PURCHASE"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_BASE_PLAN_ID_TO_PURCHASE")
+        testInstrumentationRunnerArguments["CEC_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY"] =
+            resolveProperty("CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY")
+
+        // Shared
+        testInstrumentationRunnerArguments["TEST_PROXY_URL"] = resolveProperty("TEST_PROXY_URL")
+
+        // Optional package filter for running a subset of tests (used by CI).
+        // e.g. -PTEST_PACKAGE_FILTER=com.revenuecat.purchases.integration.production
+        val testPackageFilter = resolveProperty("TEST_PACKAGE_FILTER")
+        if (testPackageFilter.isNotEmpty()) {
+            testInstrumentationRunnerArguments["package"] = testPackageFilter
+        }
     }
 
     testOptions {
         unitTests.all {
-            if (project.hasProperty("RUN_INTEGRATION_TESTS")) {
-                it.include("com/revenuecat/purchases/backend_integration_tests/**")
-            } else {
-                it.exclude("com/revenuecat/purchases/backend_integration_tests/**")
-            }
+            // Pass test keys as JVM system properties for backend integration tests
+            it.systemProperty("BACKEND_INTEGRATION_API_KEY", resolveProperty("BACKEND_INTEGRATION_API_KEY"))
+            it.systemProperty(
+                "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY",
+                resolveProperty("BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY"),
+            )
         }
     }
 }

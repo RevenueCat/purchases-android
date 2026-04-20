@@ -20,6 +20,8 @@ import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
+import com.revenuecat.purchases.customercenter.Resumable;
+import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
@@ -238,6 +240,10 @@ final class PurchasesAPI {
     static void checkCustomerCenter() {
         CustomerCenterListener customerInfoListener = new CustomerCenterListener() {
             @Override
+            public void onRestoreInitiated(@NonNull Resumable resume) {
+            }
+
+            @Override
             public void onRestoreStarted() {
             }
         };
@@ -259,6 +265,10 @@ final class PurchasesAPI {
             }
 
             @Override
+            public void onRestoreInitiated(@NonNull Resumable resume) {
+            }
+
+            @Override
             public void onRestoreStarted() {
             }
             @Override
@@ -271,6 +281,13 @@ final class PurchasesAPI {
                     CustomerCenterManagementOption.CustomUrl customUrl = (CustomerCenterManagementOption.CustomUrl) action;
                     Uri uri = customUrl.getUri();
                 }
+            }
+
+            @Override
+            public void onPromotionalOfferSucceeded(
+                    @NonNull CustomerInfo customerInfo,
+                    @NonNull StoreTransaction transaction
+            ) {
             }
         };
         Purchases.getSharedInstance().setCustomerCenterListener(new CustomerCenterListener() {});

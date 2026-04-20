@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
@@ -15,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
@@ -27,7 +30,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -45,8 +50,12 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
@@ -57,7 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ViewModelForwarding")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
@@ -75,6 +84,12 @@ internal fun InternalPaywall(
     }
 
     val state = viewModel.state.collectAsStateWithLifecycle().value
+
+    val componentInteractionTracker = remember(viewModel) {
+        PaywallComponentInteractionTracker { data ->
+            viewModel.trackComponentInteraction(data)
+        }
+    }
 
     PaywallTheme(fontProvider = options.fontProvider) {
         AnimatedVisibility(
@@ -97,7 +112,7 @@ internal fun InternalPaywall(
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
             if (state is PaywallState.Loaded.Legacy) {
-                LoadedPaywall(state = state, viewModel = viewModel)
+                LoadedPaywall(state = state, viewModel = viewModel, isDarkTheme = isDark)
             } else {
                 Logger.e(
                     "State is not loaded while transitioning animation. This may happen if state changes from " +
@@ -114,14 +129,27 @@ internal fun InternalPaywall(
         exit = fadeOut(animationSpec = defaultAnimation()),
     ) {
         if (state is PaywallState.Loaded.Components) {
-            viewModel.trackPaywallImpressionIfNeeded()
+            val paywallComponents = state.offering.paywallComponents
+            if (paywallComponents != null) {
+                LaunchedEffect(
+                    state.offering.identifier,
+                    paywallComponents.data.id,
+                    paywallComponents.data.revision,
+                    options.mode,
+                    state.locale.toString(),
+                    isDark,
+                ) {
+                    viewModel.trackPaywallImpressionIfNeeded()
+                }
+            }
             LoadedPaywallComponents(
                 state = state,
                 clickHandler = rememberPaywallActionHandler(viewModel),
+                componentInteractionTracker = componentInteractionTracker,
             )
         } else {
             Logger.e(
-                "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
+                "State is not loaded while transitioning animation. This may happen if state changes " +
                     "from being loaded to a different state. This should not happen.",
             )
         }
@@ -158,8 +186,26 @@ internal fun InternalPaywall(
 
 @Suppress("LongMethod")
 @Composable
-private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
-    viewModel.trackPaywallImpressionIfNeeded()
+private fun LoadedPaywall(
+    state: PaywallState.Loaded.Legacy,
+    viewModel: PaywallViewModel,
+    isDarkTheme: Boolean,
+) {
+    val configuration = LocalConfiguration.current
+    val localeLanguageTags = configuration.locales.toLanguageTags()
+    val offering = state.offering
+    val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.data?.revision
+    val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+    LaunchedEffect(
+        offering.identifier,
+        paywallIdentifier,
+        paywallRevision,
+        state.templateConfiguration.mode,
+        localeLanguageTags,
+        isDarkTheme,
+    ) {
+        viewModel.trackPaywallImpressionIfNeeded()
+    }
     val context = LocalContext.current
     val activity = context.getActivity()
 
@@ -175,9 +221,24 @@ private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallV
                 warning = state.validationWarning,
                 onSelectPackage = viewModel::selectPackage,
                 onPurchase = {
+                    val rcPackage = state.selectedPackage.value.rcPackage
+                    viewModel.trackComponentInteraction(
+                        paywallPurchaseButtonAction(
+                            componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
+                            componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
+                            componentUrl = null,
+                            currentPackageIdentifier = rcPackage.identifier,
+                            currentProductIdentifier = rcPackage.product.paywallProductIdentifier(),
+                        ),
+                    )
                     viewModel.purchaseSelectedPackage(activity)
                 },
                 onRestore = {
+                    viewModel.trackComponentInteraction(
+                        componentType = PaywallComponentType.BUTTON,
+                        componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+                        componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+                    )
                     viewModel.restorePurchases()
                 },
             )

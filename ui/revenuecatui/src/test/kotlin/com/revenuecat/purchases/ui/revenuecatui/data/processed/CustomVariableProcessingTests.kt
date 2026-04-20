@@ -269,7 +269,7 @@ class CustomVariableProcessingTests {
 
         val result = processTemplate(template, customVariables = customVariables)
 
-        assertThat(result).isEqualTo("$ 2.00")
+        assertThat(result).isEqualTo("$2.00")
     }
 
     // endregion
