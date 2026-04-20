@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
@@ -278,6 +279,31 @@ public suspend fun Purchases.awaitCreateSupportTicket(email: String, description
             email = email,
             description = description,
             onSuccess = { wasSent -> continuation.resume(CreateSupportTicketResult(success = wasSent)) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Fetches a published workflow by identifier.
+ *
+ * Coroutine friendly version of [Purchases.getWorkflowWith].
+ *
+ * @param workflowId The identifier of the workflow to fetch.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error fetching the workflow.
+ * @return The [WorkflowFetchResult] for the given identifier.
+ */
+@OptIn(InternalRevenueCatAPI::class)
+@InternalRevenueCatAPI
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitGetWorkflow(
+    workflowId: String,
+): WorkflowFetchResult {
+    return suspendCoroutine { continuation ->
+        getWorkflowWith(
+            workflowId = workflowId,
+            onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }

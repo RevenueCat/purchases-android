@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.content.Context
-import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -279,31 +278,6 @@ public suspend fun Purchases.Companion.awaitCanMakePayments(
             context = context,
             features = features,
             callback = { continuation.resume(it) },
-        )
-    }
-}
-
-/**
- * Fetches a published workflow by identifier.
- *
- * Coroutine friendly version of [Purchases.getWorkflowWith].
- *
- * @param workflowId The identifier of the workflow to fetch.
- * @throws [PurchasesException] with a [PurchasesError] if there's an error fetching the workflow.
- * @return The [WorkflowFetchResult] for the given identifier.
- */
-@OptIn(InternalRevenueCatAPI::class)
-@InternalRevenueCatAPI
-@JvmSynthetic
-@Throws(PurchasesException::class)
-public suspend fun Purchases.awaitGetWorkflow(
-    workflowId: String,
-): WorkflowFetchResult {
-    return suspendCoroutine { continuation ->
-        getWorkflowWith(
-            workflowId = workflowId,
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }
