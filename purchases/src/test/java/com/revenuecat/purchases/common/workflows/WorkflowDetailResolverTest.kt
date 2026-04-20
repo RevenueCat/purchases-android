@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.models.Checksum
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -41,9 +41,9 @@ class WorkflowDetailResolverTest {
     """.trimIndent()
 
     private fun createResolver(
-        fetchResult: suspend (String) -> String = { error("unexpected CDN fetch") },
+        fetchResult: suspend (String, Checksum?) -> String = { _, _ -> error("unexpected CDN fetch") },
     ) = WorkflowDetailResolver(
-        WorkflowCdnFetcher { url -> fetchResult(url) },
+        WorkflowCdnFetcher { url, checksum -> fetchResult(url, checksum) },
     )
 
     private fun inlineWorkflow(): PublishedWorkflow =
@@ -86,7 +86,7 @@ class WorkflowDetailResolverTest {
 
     @Test
     fun `use_cdn fetches and parses workflow`() = runTest {
-        val resolver = createResolver { url ->
+        val resolver = createResolver { url, _ ->
             assertThat(url).isEqualTo("https://cdn.example.com/wf.json")
             minimalWorkflowJson
         }
@@ -100,7 +100,7 @@ class WorkflowDetailResolverTest {
 
     @Test
     fun `use_cdn with enrolled_variants passes them through`() = runTest {
-        val resolver = createResolver { minimalWorkflowJson }
+        val resolver = createResolver { _, _ -> minimalWorkflowJson }
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.USE_CDN,
             url = "https://cdn.example.com/wf.json",
@@ -123,7 +123,7 @@ class WorkflowDetailResolverTest {
 
     @Test
     fun `use_cdn propagates IOException from fetcher`() = runTest {
-        val resolver = createResolver { throw IOException("network error") }
+        val resolver = createResolver { _, _ -> throw IOException("network error") }
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.USE_CDN,
             url = "https://cdn.example.com/wf.json",
@@ -132,47 +132,34 @@ class WorkflowDetailResolverTest {
     }
 
     @Test
-    fun `use_cdn verifies hash and succeeds when hash matches`() = runTest {
-        val json = minimalWorkflowJson
-        val expectedHash = WorkflowDetailResolver.computeCanonicalHash(json)
-        val resolver = createResolver { json }
+    fun `use_cdn passes sha256 checksum to fetcher when hash is present`() = runTest {
+        var capturedChecksum: Checksum? = null
+        val resolver = createResolver { _, checksum ->
+            capturedChecksum = checksum
+            minimalWorkflowJson
+        }
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.USE_CDN,
             url = "https://cdn.example.com/wf.json",
-            hash = expectedHash,
+            hash = "abc123",
         )
-        val result = resolver.resolve(response)
-        assertThat(result.workflow.id).isEqualTo("wf_1")
+        resolver.resolve(response)
+        assertThat(capturedChecksum).isEqualTo(Checksum(Checksum.Algorithm.SHA256, "abc123"))
     }
 
     @Test
-    fun `use_cdn throws SignatureVerificationException when hash mismatches`() = runTest {
-        val resolver = createResolver { minimalWorkflowJson }
-        val response = WorkflowDetailResponse(
-            action = WorkflowResponseAction.USE_CDN,
-            url = "https://cdn.example.com/wf.json",
-            hash = "wrong_hash",
-        )
-        assertFailsWith<SignatureVerificationException> { resolver.resolve(response) }
-    }
-
-    @Test
-    fun `use_cdn skips hash verification when hash is absent`() = runTest {
-        val resolver = createResolver { minimalWorkflowJson }
+    fun `use_cdn passes null checksum to fetcher when hash is absent`() = runTest {
+        var capturedChecksum: Checksum? = Checksum(Checksum.Algorithm.SHA256, "sentinel")
+        val resolver = createResolver { _, checksum ->
+            capturedChecksum = checksum
+            minimalWorkflowJson
+        }
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.USE_CDN,
             url = "https://cdn.example.com/wf.json",
             hash = null,
         )
-        val result = resolver.resolve(response)
-        assertThat(result.workflow.id).isEqualTo("wf_1")
-    }
-
-    @Test
-    fun `computeCanonicalHash produces stable SHA-256 hex digest`() {
-        val json = """{"a":1,"b":2}"""
-        val hash = WorkflowDetailResolver.computeCanonicalHash(json)
-        assertThat(hash).hasSize(64)
-        assertThat(WorkflowDetailResolver.computeCanonicalHash(json)).isEqualTo(hash)
+        resolver.resolve(response)
+        assertThat(capturedChecksum).isNull()
     }
 }
