@@ -8,6 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
+import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
@@ -212,6 +213,7 @@ private fun LoadedPaywallComponents_Header_ZLayer_Preview() {
 }
 
 @Suppress("LongMethod", "MagicNumber")
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview(showSystemUi = true)
 @Composable
 private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
