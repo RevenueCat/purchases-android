@@ -35,50 +35,71 @@ internal class GoogleDeviceIdentifiersFetcher(
         })
     }
 
-    private fun getAdvertisingID(applicationContext: Application): String? {
-        var advertisingID: String? = null
-        try {
-            val adInfo = AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
-            if (!adInfo.isLimitAdTrackingEnabled) {
-                if (adInfo.id == noPermissionAdvertisingIdValue) {
-                    log(LogIntent.WARNING) {
-                        AttributionStrings.GOOGLE_PLAY_ADVERTISING_ID_NOT_AVAILABLE
+    private fun getAdvertisingID(applicationContext: Application): String? =
+        runCatching {
+            AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
+        }
+            .onFailure(::logAdvertisingIdError)
+            .getOrNull()
+            ?.takeUnless { adInfo ->
+                when {
+                    adInfo.isLimitAdTrackingEnabled -> true
+                    adInfo.id == noPermissionAdvertisingIdValue -> {
+                        log(LogIntent.WARNING) {
+                            AttributionStrings.GOOGLE_PLAY_ADVERTISING_ID_NOT_AVAILABLE
+                        }
+                        true
                     }
-                } else {
-                    advertisingID = adInfo.id
+                    else -> false
                 }
             }
-        } catch (e: GooglePlayServicesNotAvailableException) {
-            log(LogIntent.GOOGLE_ERROR) {
-                AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+            ?.id
+
+    private fun logAdvertisingIdError(throwable: Throwable) {
+        when (throwable) {
+            is GooglePlayServicesNotAvailableException -> {
+                log(LogIntent.GOOGLE_ERROR) {
+                    AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
+                        .format(throwable.localizedMessage)
+                }
             }
-        } catch (e: GooglePlayServicesRepairableException) {
-            log(LogIntent.GOOGLE_ERROR) {
-                AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+
+            is GooglePlayServicesRepairableException -> {
+                log(LogIntent.GOOGLE_ERROR) {
+                    AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                        .format(throwable.localizedMessage)
+                }
             }
-        } catch (e: TimeoutException) {
-            log(LogIntent.GOOGLE_ERROR) {
-                AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+
+            is TimeoutException -> {
+                log(LogIntent.GOOGLE_ERROR) {
+                    AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                        .format(throwable.localizedMessage)
+                }
             }
-        } catch (e: IOException) {
-            log(LogIntent.GOOGLE_ERROR) {
-                AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+
+            is IOException -> {
+                log(LogIntent.GOOGLE_ERROR) {
+                    AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                        .format(throwable.localizedMessage)
+                }
             }
-        } catch (e: NullPointerException) {
-            log(LogIntent.GOOGLE_ERROR) {
-                AttributionStrings.NULL_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+
+            is NullPointerException -> {
+                log(LogIntent.GOOGLE_ERROR) {
+                    AttributionStrings.NULL_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                        .format(throwable.localizedMessage)
+                }
             }
-        } catch (e: NoSuchMethodError) {
-            log(LogIntent.GOOGLE_ERROR) {
-                "${AttributionStrings.NO_SUCH_METHOD_WHEN_FETCHING_ADVERTISING_IDENTIFIER} " +
-                    "Message: ${e.localizedMessage}"
+
+            is NoSuchMethodError -> {
+                log(LogIntent.GOOGLE_ERROR) {
+                    "${AttributionStrings.NO_SUCH_METHOD_WHEN_FETCHING_ADVERTISING_IDENTIFIER} " +
+                        "Message: ${throwable.localizedMessage}"
+                }
             }
+
+            else -> throw throwable
         }
-        return advertisingID
     }
 }
