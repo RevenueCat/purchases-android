@@ -208,7 +208,6 @@ internal class PurchasesFactory(
                     workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
                         fileRepository = DefaultFileRepository(contextForStorage),
                     ),
-                    signatureVerificationMode = signatureVerificationMode,
                 ),
             )
 
