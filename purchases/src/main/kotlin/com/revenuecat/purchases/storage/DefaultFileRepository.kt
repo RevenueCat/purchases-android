@@ -198,7 +198,8 @@ internal class DefaultFileCache(
 ) : LocalFileCache {
 
     companion object {
-        const val DEFAULT_SUBDIR = "rc_files"
+        internal const val DEFAULT_SUBDIR = "rc_files"
+        private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 
     private val md: MessageDigest by lazy {
@@ -307,9 +308,5 @@ internal class DefaultFileCache(
         )
 
         return checksum == computedChecksum
-    }
-
-    companion object {
-        private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 }
