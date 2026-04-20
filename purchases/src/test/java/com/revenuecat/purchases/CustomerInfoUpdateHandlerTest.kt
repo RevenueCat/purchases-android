@@ -1,5 +1,7 @@
 package com.revenuecat.purchases
 
+import android.os.Handler
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -104,6 +106,17 @@ class CustomerInfoUpdateHandlerTest {
         customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(mockInfo) }
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `setting listener after prior broadcast still receives cached customer info`() {
+        customerInfoUpdateHandler.notifyListeners(mockInfo)
+
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        verify(exactly = 1) { listenerMock.onReceived(mockInfo) }
     }
 
     // endregion
@@ -241,6 +254,20 @@ class CustomerInfoUpdateHandlerTest {
     }
 
     @Test
+    fun `adding the same listener twice does not duplicate callbacks`() {
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(listener)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(listener)
+
+        val newCustomerInfo = mockk<CustomerInfo>()
+        every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
+
+        verify(exactly = 1) { listener.onReceived(mockInfo) }
+        verify(exactly = 1) { listener.onReceived(newCustomerInfo) }
+    }
+
+    @Test
     fun `removing a specific listener stops its notifications`() {
         val listener1 = mockk<UpdatedCustomerInfoListener>(relaxed = true)
         val listener2 = mockk<UpdatedCustomerInfoListener>(relaxed = true)
@@ -287,6 +314,19 @@ class CustomerInfoUpdateHandlerTest {
         customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
 
         verify(exactly = 1) { addedListener.onReceived(newCustomerInfo) }
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `setting legacy listener does not redeliver cached info to added listeners`() {
+        val addedListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(addedListener)
+
+        val legacyListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = legacyListener
+
+        verify(exactly = 1) { addedListener.onReceived(mockInfo) }
+        verify(exactly = 1) { legacyListener.onReceived(mockInfo) }
     }
 
     @Test
@@ -348,5 +388,52 @@ class CustomerInfoUpdateHandlerTest {
         verify(exactly = 1) { existingListener.onReceived(newInfo) } // exactly once, not twice
     }
 
+    @Test
+    fun `new listener does not receive stale cached info after newer notification wins the race`() {
+        val queuedHandler = QueuedHandler()
+        customerInfoUpdateHandler = CustomerInfoUpdateHandler(
+            deviceCache,
+            identityManager,
+            offlineEntitlementsManager,
+            appConfig = appConfig,
+            diagnosticsTracker = diagnosticsTracker,
+            handler = queuedHandler.handler,
+        )
+
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(listener)
+
+        val newInfo = mockk<CustomerInfo>()
+        every { deviceCache.cacheCustomerInfo(appUserId, newInfo) } just Runs
+        customerInfoUpdateHandler.notifyListeners(newInfo)
+
+        queuedHandler.runPostedActions()
+
+        verify(exactly = 0) { listener.onReceived(mockInfo) }
+        verify(exactly = 1) { listener.onReceived(newInfo) }
+    }
+
     // endregion
+
+    private class QueuedHandler {
+        private val looper = mockk<Looper>()
+        private val postedActions = mutableListOf<Runnable>()
+
+        val handler = mockk<Handler>()
+
+        init {
+            every { looper.thread } returns Thread()
+            every { handler.looper } returns looper
+            every { handler.post(any()) } answers {
+                postedActions.add(firstArg())
+                true
+            }
+        }
+
+        fun runPostedActions() {
+            val actions = postedActions.toList()
+            postedActions.clear()
+            actions.forEach(Runnable::run)
+        }
+    }
 }

@@ -17,6 +17,7 @@ import com.revenuecat.purchases.strings.CustomerInfoStrings
  * This class is responsible for updating the customer info cache and notifying the listeners.
  */
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("TooManyFunctions")
 internal class CustomerInfoUpdateHandler constructor(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,
@@ -26,35 +27,50 @@ internal class CustomerInfoUpdateHandler constructor(
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
+    private class ListenerState(
+        val listener: UpdatedCustomerInfoListener,
+    ) {
+        var lastDeliveredCustomerInfo: CustomerInfo? = null
+        var pendingInitialCustomerInfo: CustomerInfo? = null
+    }
+
+    private var legacyUpdatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
+
     @Deprecated("Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead")
-    var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
-        @Synchronized get
+    var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
+        @Synchronized get() = legacyUpdatedCustomerInfoListener
         set(value) {
             synchronized(this@CustomerInfoUpdateHandler) {
-                field = value
+                legacyUpdatedCustomerInfoListener = value
             }
             afterSetLegacyListener(value)
         }
 
-    private val listeners = mutableListOf<UpdatedCustomerInfoListener>()
+    private val listeners = mutableListOf<ListenerState>()
+    private var legacyListenerState: ListenerState? = null
 
     private var lastSentCustomerInfo: CustomerInfo? = null
 
     fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
         log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
-        if (!appConfig.customEntitlementComputation) {
-            getCachedCustomerInfo(identityManager.currentAppUserID)?.let { cachedInfo ->
-                sendToSingleListener(listener, cachedInfo)
-            }
+        val listenerState = synchronized(this@CustomerInfoUpdateHandler) {
+            listeners.firstOrNull { it.listener === listener }
+                ?: ListenerState(listener).also { listeners.add(it) }
         }
-        synchronized(this@CustomerInfoUpdateHandler) {
-            listeners.add(listener)
+        if (!appConfig.customEntitlementComputation) {
+            if (synchronized(this@CustomerInfoUpdateHandler) { listenerState.lastDeliveredCustomerInfo == null }) {
+                getCachedCustomerInfo(identityManager.currentAppUserID)?.let { cachedInfo ->
+                    sendToSingleListener(listenerState, cachedInfo)
+                }
+            }
         }
     }
 
     fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
         synchronized(this@CustomerInfoUpdateHandler) {
-            listeners.remove(listener)
+            listeners.indexOfFirst { it.listener === listener }
+                .takeIf { it >= 0 }
+                ?.let { listeners.removeAt(it) }
         }
     }
 
@@ -62,7 +78,8 @@ internal class CustomerInfoUpdateHandler constructor(
     fun removeAllListeners() {
         synchronized(this@CustomerInfoUpdateHandler) {
             listeners.clear()
-            updatedCustomerInfoListener = null
+            legacyListenerState = null
+            legacyUpdatedCustomerInfoListener = null
         }
     }
 
@@ -73,8 +90,33 @@ internal class CustomerInfoUpdateHandler constructor(
 
     @Suppress("DEPRECATION")
     fun notifyListeners(customerInfo: CustomerInfo) {
-        val (legacyListener, addedListeners, lastSent) = synchronized(this@CustomerInfoUpdateHandler) {
-            Triple(updatedCustomerInfoListener, listeners.toList(), lastSentCustomerInfo)
+        val (listenerStatesToNotify, lastSent) = synchronized(this@CustomerInfoUpdateHandler) {
+            val currentLastSent = lastSentCustomerInfo
+            if (currentLastSent == customerInfo) {
+                emptyList<ListenerState>() to currentLastSent
+            } else {
+                val listenerStates = buildList {
+                    legacyListenerState?.let { listenerState ->
+                        if (listenerState.lastDeliveredCustomerInfo != customerInfo) {
+                            listenerState.lastDeliveredCustomerInfo = customerInfo
+                            listenerState.pendingInitialCustomerInfo = null
+                            add(listenerState)
+                        } else {
+                            listenerState.pendingInitialCustomerInfo = null
+                        }
+                    }
+                    listeners.forEach { listenerState ->
+                        if (listenerState.lastDeliveredCustomerInfo != customerInfo) {
+                            listenerState.lastDeliveredCustomerInfo = customerInfo
+                            listenerState.pendingInitialCustomerInfo = null
+                            add(listenerState)
+                        } else {
+                            listenerState.pendingInitialCustomerInfo = null
+                        }
+                    }
+                }
+                listenerStates to currentLastSent
+            }
         }
         if (lastSent != customerInfo) {
             diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
@@ -86,32 +128,67 @@ internal class CustomerInfoUpdateHandler constructor(
             synchronized(this@CustomerInfoUpdateHandler) {
                 this.lastSentCustomerInfo = customerInfo
             }
-            legacyListener?.let { dispatch { it.onReceived(customerInfo) } }
-            addedListeners.forEach { listener ->
-                dispatch { listener.onReceived(customerInfo) }
+            listenerStatesToNotify.forEach { listenerState ->
+                dispatch { listenerState.listener.onReceived(customerInfo) }
             }
         }
     }
 
     private fun afterSetLegacyListener(listener: UpdatedCustomerInfoListener?) {
+        val listenerState = synchronized(this@CustomerInfoUpdateHandler) {
+            if (listener == null) {
+                legacyListenerState = null
+                null
+            } else {
+                ListenerState(listener).also { legacyListenerState = it }
+            }
+        }
         if (listener != null) {
             log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
-            if (!appConfig.customEntitlementComputation) {
-                getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
-                    notifyListeners(it)
-                }
-            }
+            sendCachedCustomerInfoToLegacyListener(listenerState)
         }
     }
 
-    private fun sendToSingleListener(listener: UpdatedCustomerInfoListener, customerInfo: CustomerInfo) {
+    private fun sendCachedCustomerInfoToLegacyListener(listenerState: ListenerState?) {
+        if (appConfig.customEntitlementComputation || listenerState == null) return
+        val cachedInfo = getCachedCustomerInfo(identityManager.currentAppUserID) ?: return
+        if (synchronized(this@CustomerInfoUpdateHandler) { lastSentCustomerInfo } != cachedInfo) {
+            diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(cachedInfo)
+        }
+        sendToSingleListener(listenerState, cachedInfo)
+    }
+
+    private fun sendToSingleListener(listenerState: ListenerState, customerInfo: CustomerInfo) {
+        synchronized(this@CustomerInfoUpdateHandler) {
+            if (!contains(listenerState)) return
+            listenerState.pendingInitialCustomerInfo = customerInfo
+        }
         log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
-        dispatch { listener.onReceived(customerInfo) }
+        dispatch {
+            val listener = synchronized(this@CustomerInfoUpdateHandler) {
+                if (!contains(listenerState) || listenerState.pendingInitialCustomerInfo != customerInfo) {
+                    null
+                } else {
+                    listenerState.pendingInitialCustomerInfo = null
+                    if (listenerState.lastDeliveredCustomerInfo == customerInfo) {
+                        null
+                    } else {
+                        listenerState.lastDeliveredCustomerInfo = customerInfo
+                        listenerState.listener
+                    }
+                }
+            }
+            listener?.onReceived(customerInfo)
+        }
     }
 
     private fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
         return offlineEntitlementsManager.offlineCustomerInfo
             ?: deviceCache.getCachedCustomerInfo(appUserID)
+    }
+
+    private fun contains(listenerState: ListenerState): Boolean {
+        return legacyListenerState === listenerState || listeners.contains(listenerState)
     }
 
     private fun dispatch(action: () -> Unit) {

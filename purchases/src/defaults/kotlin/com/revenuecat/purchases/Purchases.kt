@@ -126,10 +126,7 @@ public class Purchases internal constructor(
      * The listener is responsible for handling changes to customer information.
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
-    @Deprecated(
-        "Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead",
-        ReplaceWith("addUpdatedCustomerInfoListener(value!!)"),
-    )
+    @Deprecated("Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead")
     public var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Suppress("DEPRECATION")
         @Synchronized
@@ -614,10 +611,7 @@ public class Purchases internal constructor(
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
      * to avoid memory leaks.
      */
-    @Deprecated(
-        "Use removeUpdatedCustomerInfoListener(listener) instead",
-        ReplaceWith("removeUpdatedCustomerInfoListener(listener)"),
-    )
+    @Deprecated("Use removeUpdatedCustomerInfoListener(listener) instead")
     @Suppress("MemberVisibilityCanBePrivate")
     public fun removeUpdatedCustomerInfoListener() {
         purchasesOrchestrator.removeLegacyUpdatedCustomerInfoListener()
