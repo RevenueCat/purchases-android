@@ -788,7 +788,10 @@ internal class BillingWrapper(
                     return@withConnectedClient
                 }
                 try {
-                    showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
+                    showInAppMessages(
+                        activity,
+                        inAppMessageParams,
+                    ) { inAppMessageResult ->
                         when (val responseCode = inAppMessageResult.responseCode) {
                             InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
                                 verboseLog { BillingStrings.BILLING_INAPP_MESSAGE_NONE }
@@ -799,10 +802,14 @@ internal class BillingWrapper(
                                 subscriptionStatusChange()
                             }
 
-                            else -> errorLog { BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode) }
+                            else -> errorLog {
+                                BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(
+                                    responseCode,
+                                )
+                            }
                         }
                     }
-                } catch (e: RuntimeException) {
+                } catch (@SuppressWarnings("TooGenericExceptionCaught") e: RuntimeException) {
                     errorLog(e) { BillingStrings.BILLING_INAPP_MESSAGE_SHOW_EXCEPTION.format(e) }
                 }
             }
