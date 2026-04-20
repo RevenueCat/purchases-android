@@ -36,9 +36,14 @@ public abstract class BillingAbstract(
         public fun onConnected()
     }
 
-    public abstract fun startConnectionOnMainThread(delayMilliseconds: Long = 0)
-
-    public abstract fun startConnection()
+    /**
+     * Schedules a connection to the underlying billing service. Implementations decide which
+     * thread the actual connection work runs on. Google's implementation runs the work on a
+     * dedicated background thread to avoid ANRs during `bindService`. Amazon still requires the
+     * caller to be on the main thread so it can detect the foreground activity during
+     * `Activity.onCreate`.
+     */
+    public abstract fun startConnection(delayMilliseconds: Long = 0)
 
     protected abstract fun endConnection()
 

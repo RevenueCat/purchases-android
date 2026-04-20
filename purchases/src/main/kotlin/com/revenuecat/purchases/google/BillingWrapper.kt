@@ -85,6 +85,7 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
+    private val backgroundHandler: Handler,
     private val deviceCache: DeviceCache,
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
@@ -124,7 +125,6 @@ internal class BillingWrapper(
         private val context: Context,
         private val pendingTransactionsForPrepaidPlansEnabled: Boolean,
     ) {
-        @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
             val pendingPurchaseParams = PendingPurchasesParams.newBuilder()
                 .enableOneTimeProducts()
@@ -152,14 +152,14 @@ internal class BillingWrapper(
         }
     }
 
-    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        mainHandler.postDelayed(
-            { startConnection() },
+    override fun startConnection(delayMilliseconds: Long) {
+        backgroundHandler.postDelayed(
+            { performStartConnection() },
             delayMilliseconds,
         )
     }
 
-    override fun startConnection() {
+    private fun performStartConnection() {
         synchronized(this@BillingWrapper) {
             if (billingClient == null) {
                 billingClient = clientFactory.buildClient(this)
@@ -190,7 +190,7 @@ internal class BillingWrapper(
     }
 
     override fun endConnection() {
-        mainHandler.post {
+        backgroundHandler.post {
             synchronized(this@BillingWrapper) {
                 billingClient?.let {
                     log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_ENDING.format(it) }
@@ -206,7 +206,7 @@ internal class BillingWrapper(
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request to delayMilliseconds)
             if (billingClient?.isReady == false) {
-                startConnectionOnMainThread()
+                startConnection()
             } else {
                 executePendingRequests()
             }
@@ -738,7 +738,7 @@ internal class BillingWrapper(
         } else {
             log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds) }
             reconnectionAlreadyScheduled = true
-            startConnectionOnMainThread(reconnectMilliseconds)
+            startConnection(reconnectMilliseconds)
             reconnectMilliseconds = min(
                 reconnectMilliseconds * 2,
                 RECONNECT_TIMER_MAX_TIME_MILLISECONDS,

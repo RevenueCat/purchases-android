@@ -163,13 +163,14 @@ class BillingWrapperTest {
         wrapper = BillingWrapper(
             mockClientFactory,
             handler,
+            handler,
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
             mockDateProvider
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
-        wrapper.startConnectionOnMainThread()
+        wrapper.startConnection()
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
@@ -1374,9 +1375,9 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `startConnectionOnMainThread tracks diagnostics call with correct parameters`() {
+    fun `startConnection tracks diagnostics call with correct parameters`() {
         // Arrange, Act, Assert
-        // Our test setup() method calls startConnectionOnMainThread().
+        // Our test setup() method calls startConnection().
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
     }
 

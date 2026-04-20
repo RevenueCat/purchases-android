@@ -2,6 +2,7 @@ package com.revenuecat.purchases.simulatedstore
 
 import android.app.Activity
 import android.os.Handler
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
@@ -43,13 +44,14 @@ internal class SimulatedStoreBillingWrapper(
     @Volatile
     private var connected = false
 
-    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
+    override fun startConnection(delayMilliseconds: Long) {
         mainHandler.postDelayed({
-            startConnection()
+            performStartConnection()
         }, delayMilliseconds)
     }
 
-    override fun startConnection() {
+    @VisibleForTesting
+    internal fun performStartConnection() {
         debugLog { "SimulatedStoreBillingAbstract: Starting connection" }
         connected = true
         stateListener?.onConnected()
