@@ -787,19 +787,30 @@ internal class BillingWrapper(
                     debugLog { "Activity is not attached to a window, not showing Google Play in-app message." }
                     return@withConnectedClient
                 }
-                showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
-                    when (val responseCode = inAppMessageResult.responseCode) {
-                        InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
-                            verboseLog { BillingStrings.BILLING_INAPP_MESSAGE_NONE }
-                        }
+                try {
+                    showInAppMessages(
+                        activity,
+                        inAppMessageParams,
+                    ) { inAppMessageResult ->
+                        when (val responseCode = inAppMessageResult.responseCode) {
+                            InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
+                                verboseLog { BillingStrings.BILLING_INAPP_MESSAGE_NONE }
+                            }
 
-                        InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
-                            debugLog { BillingStrings.BILLING_INAPP_MESSAGE_UPDATE }
-                            subscriptionStatusChange()
-                        }
+                            InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
+                                debugLog { BillingStrings.BILLING_INAPP_MESSAGE_UPDATE }
+                                subscriptionStatusChange()
+                            }
 
-                        else -> errorLog { BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode) }
+                            else -> errorLog {
+                                BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(
+                                    responseCode,
+                                )
+                            }
+                        }
                     }
+                } catch (@SuppressWarnings("TooGenericExceptionCaught") e: RuntimeException) {
+                    errorLog(e) { BillingStrings.BILLING_INAPP_MESSAGE_SHOW_EXCEPTION.format(e) }
                 }
             }
         }
