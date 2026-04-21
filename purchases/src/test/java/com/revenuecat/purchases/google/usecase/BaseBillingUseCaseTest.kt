@@ -23,6 +23,7 @@ import io.mockk.slot
 import org.junit.After
 import org.junit.Before
 import java.util.Date
+import kotlin.time.Duration
 
 internal open class BaseBillingUseCaseTest {
 
@@ -108,13 +109,13 @@ internal open class BaseBillingUseCaseTest {
 
     private fun mockDiagnosticsTracker() {
         every {
-            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(any(), any(), any(), any(), any<Duration>())
         } just Runs
         every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(any(), any(), any(), any<Duration>(), any())
         } just Runs
         every {
-            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
+            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any<Duration>())
         } just Runs
         every {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())

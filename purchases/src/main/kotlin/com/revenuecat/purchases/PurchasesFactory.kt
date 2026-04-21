@@ -206,9 +206,8 @@ internal class PurchasesFactory(
                 backend = backend,
                 workflowDetailResolver = WorkflowDetailResolver(
                     workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                        fileRepository = DefaultFileRepository(contextForStorage),
+                        fileRepository = DefaultFileRepository(contextForStorage, "rc_compiled_workflows"),
                     ),
-                    signatureVerificationMode = signatureVerificationMode,
                 ),
             )
 

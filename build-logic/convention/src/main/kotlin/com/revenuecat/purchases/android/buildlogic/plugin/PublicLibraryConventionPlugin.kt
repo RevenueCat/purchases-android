@@ -28,5 +28,19 @@ class PublicLibraryConventionPlugin : Plugin<Project> {
         configureApisFlavors()
         configureConditionalPublishing()
         configureMetalava()
+
+        // Workaround for https://issuetracker.google.com/issues/328687152:
+        // Modules without a baselineProfile(...) dependency do not get the task wiring between
+        // copyBaselineProfileIntoSrc and prepareXxxArtProfile, causing an implicit dependency
+        // error in Gradle 8+. mustRunAfter enforces ordering without adding a dependency edge
+        // (which would create a circular dependency in modules that DO have explicit wiring).
+        afterEvaluate {
+            val hasBaselineProfileDeps = configurations.findByName("baselineProfile")
+                ?.dependencies?.isNotEmpty() == true
+            if (!hasBaselineProfileDeps) {
+                tasks.matching { it.name.startsWith("prepare") && it.name.endsWith("ArtProfile") }
+                    .configureEach { mustRunAfter("copyBaselineProfileIntoSrc") }
+            }
+        }
     }
 }
