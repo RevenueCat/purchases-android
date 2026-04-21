@@ -162,13 +162,13 @@ class BillingWrapperTest {
         mockDetailsList = listOf(mockProductDetails())
 
         wrapper = BillingWrapper(
-            mockClientFactory,
-            handler,
-            handler,
-            mockDeviceCache,
-            mockDiagnosticsTracker,
-            purchasesStateProvider,
-            mockDateProvider
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            backgroundHandler = handler,
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnection()
