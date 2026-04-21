@@ -47,7 +47,7 @@ public abstract class BillingAbstract(
 
     protected abstract fun endConnection()
 
-    public fun close() {
+    public open fun close() {
         purchasesUpdatedListener = null
         endConnection()
     }

@@ -8,6 +8,7 @@ package com.revenuecat.purchases.google
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import android.os.HandlerThread
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
@@ -85,13 +86,23 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
-    private val backgroundHandler: Handler,
+    backgroundHandler: Handler? = null,
     private val deviceCache: DeviceCache,
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
+
+    // Only non-null when BillingWrapper created the thread itself — used to quit on close.
+    private val ownedBackgroundThread: HandlerThread? = if (backgroundHandler == null) {
+        HandlerThread("revenuecat-billing").apply { start() }
+    } else {
+        null
+    }
+
+    private val backgroundHandler: Handler =
+        backgroundHandler ?: Handler(ownedBackgroundThread!!.looper)
 
     private companion object {
         /**
@@ -199,6 +210,13 @@ internal class BillingWrapper(
                 billingClient = null
             }
         }
+    }
+
+    override fun close() {
+        super.close()
+        // quitSafely lets the cleanup runnable enqueued by endConnection() drain before the
+        // looper exits, so the HandlerThread is released without dropping pending work.
+        ownedBackgroundThread?.quitSafely()
     }
 
     @Synchronized

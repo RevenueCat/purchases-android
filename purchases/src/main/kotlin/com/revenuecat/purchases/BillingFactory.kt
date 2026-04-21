@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import android.app.Application
 import android.os.Handler
-import android.os.HandlerThread
 import com.revenuecat.purchases.amazon.AmazonBilling
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -39,17 +38,13 @@ internal object BillingFactory {
                 purchasesStateProvider = stateProvider,
                 backend = backend,
             )
-            Store.PLAY_STORE -> {
-                val backgroundThread = HandlerThread("revenuecat-billing").apply { start() }
-                BillingWrapper(
-                    BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
-                    Handler(application.mainLooper),
-                    Handler(backgroundThread.looper),
-                    cache,
-                    diagnosticsTrackerIfEnabled,
-                    stateProvider,
-                )
-            }
+            Store.PLAY_STORE -> BillingWrapper(
+                clientFactory = BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
+                mainHandler = Handler(application.mainLooper),
+                deviceCache = cache,
+                diagnosticsTrackerIfEnabled = diagnosticsTrackerIfEnabled,
+                purchasesStateProvider = stateProvider,
+            )
             Store.AMAZON -> {
                 try {
                     AmazonBilling(
