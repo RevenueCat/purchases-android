@@ -5,8 +5,8 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Purchases
-import org.json.JSONObject
 import org.json.JSONException
+import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -58,7 +58,11 @@ class ProxySettingsBottomSheetViewModel(
                 val inputStream = httpURLConnection.inputStream
                 val responseCode = httpURLConnection.responseCode
                 if (responseCode != OK_CODE) {
-                    updateState(ProxySettingsState.Error("Invalid response code while executing request to $url: $responseCode"))
+                    updateState(
+                        ProxySettingsState.Error(
+                            "Invalid response code while executing request to $url: $responseCode",
+                        ),
+                    )
                     return@execute
                 }
                 val responseBody = BufferedReader(InputStreamReader(inputStream)).readText()
