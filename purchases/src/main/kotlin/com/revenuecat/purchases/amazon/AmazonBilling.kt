@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
-import androidx.annotation.VisibleForTesting
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.LWAConsentStatus
 import com.amazon.device.iap.model.ProductDataResponse
@@ -116,8 +115,7 @@ internal class AmazonBilling(
         }
     }
 
-    @VisibleForTesting
-    internal fun performStartConnection() {
+    private fun performStartConnection() {
         if (!shouldFinishTransactions()) return
 
         purchasingServiceProvider.registerListener(applicationContext, this)
