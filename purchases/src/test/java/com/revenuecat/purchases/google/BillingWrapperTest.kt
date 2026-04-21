@@ -90,6 +90,7 @@ class BillingWrapperTest {
     internal companion object {
         const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
         const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
+        private const val THREAD_JOIN_TIMEOUT_MS = 5_000L
     }
 
     private var onConnectedCalled: Boolean = false
@@ -217,6 +218,83 @@ class BillingWrapperTest {
         verify {
             mockClient.startConnection(billingClientStateListener!!)
         }
+    }
+
+    @Test
+    fun `startConnection schedules the connection on the background handler, not the main handler`() {
+        val mockMainHandler = mockk<Handler>()
+        val mockBackgroundHandler = mockk<Handler>()
+        every { mockMainHandler.postDelayed(any(), any()) } returns true
+        every { mockMainHandler.post(any()) } returns true
+        every { mockBackgroundHandler.postDelayed(any(), any()) } returns true
+        every { mockBackgroundHandler.post(any()) } returns true
+
+        val routedWrapper = BillingWrapper(
+            mockClientFactory,
+            mockMainHandler,
+            mockBackgroundHandler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        routedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        routedWrapper.startConnection()
+
+        verify(exactly = 1) { mockBackgroundHandler.postDelayed(any(), 0L) }
+        verify(exactly = 0) { mockMainHandler.postDelayed(any(), any<Long>()) }
+        verify(exactly = 0) { mockMainHandler.post(any()) }
+    }
+
+    @Test
+    fun `endConnection posts cleanup on the background handler, not the main handler`() {
+        val mockMainHandler = mockk<Handler>()
+        val mockBackgroundHandler = mockk<Handler>()
+        every { mockMainHandler.postDelayed(any(), any()) } returns true
+        every { mockMainHandler.post(any()) } returns true
+        every { mockBackgroundHandler.postDelayed(any(), any()) } returns true
+        every { mockBackgroundHandler.post(any()) } returns true
+
+        val routedWrapper = BillingWrapper(
+            mockClientFactory,
+            mockMainHandler,
+            mockBackgroundHandler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        routedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        routedWrapper.close()
+
+        verify(exactly = 1) { mockBackgroundHandler.post(any()) }
+        verify(exactly = 0) { mockMainHandler.post(any()) }
+    }
+
+    @Test
+    fun `close quits the background HandlerThread owned by BillingWrapper`() {
+        val selfOwnedWrapper = BillingWrapper(
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            // backgroundHandler omitted -> BillingWrapper creates and owns a HandlerThread
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider
+        )
+        selfOwnedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        val ownedThread = selfOwnedWrapper.ownedBackgroundThread
+        assertThat(ownedThread).`as`("BillingWrapper should own a HandlerThread when none is injected").isNotNull
+        assertThat(ownedThread!!.name).isEqualTo("revenuecat-billing")
+        assertThat(ownedThread.isAlive).isTrue
+
+        selfOwnedWrapper.close()
+        ownedThread.join(THREAD_JOIN_TIMEOUT_MS)
+
+        assertThat(ownedThread.isAlive).isFalse
     }
 
     @Test

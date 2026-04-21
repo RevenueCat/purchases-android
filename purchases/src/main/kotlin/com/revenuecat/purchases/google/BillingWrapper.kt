@@ -95,7 +95,8 @@ internal class BillingWrapper(
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
     // Only non-null when BillingWrapper created the thread itself — used to quit on close.
-    private val ownedBackgroundThread: HandlerThread? = if (backgroundHandler == null) {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val ownedBackgroundThread: HandlerThread? = if (backgroundHandler == null) {
         HandlerThread("revenuecat-billing").apply { start() }
     } else {
         null
