@@ -59,7 +59,8 @@ public data class WorkflowScreen(
     val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId,
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
-    @SerialName("offering_id") val offeringId: String? = null,
+    @SerialName("offering_id") val offeringInternalId: String? = null,
+    @SerialName("offering_identifier") val offeringIdentifier: String? = null,
 )
 
 /**

@@ -724,7 +724,7 @@ internal class PaywallViewModelImpl(
 
         val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, workflow.uiConfig)
 
-        val offeringId = screen.offeringId
+        val offeringId = screen.offeringIdentifier
         if (offeringId == null) {
             _state.value = PaywallState.Error(
                 "Screen '$screenId' has no offering_id in workflow '${workflow.id}'",
