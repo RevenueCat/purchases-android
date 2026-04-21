@@ -9,7 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
-import com.revenuecat.purchases.common.ReceiptInfo
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -17,13 +17,21 @@ import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleReplacementMode
-import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.GalaxyReplacementMode
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
+import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubOTPOffering
@@ -40,7 +48,6 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.not
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
@@ -48,10 +55,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Collections.emptyList
 import java.util.Date
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -209,6 +213,555 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(receivedProducts?.size).isEqualTo(inappStoreProducts.size)
     }
 
+    @Test
+    fun `getProducts normalizes product IDs with base plan`() {
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val normalizedProductId = "connect"
+        val productIds = listOf(productIdWithBasePlan)
+
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct))
+        }
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(emptyList())
+        }
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts).isEqualTo(listOf(monthlyProduct))
+        assertThat(receivedProducts?.size).isEqualTo(1)
+        assertThat(receivedProducts?.first()?.id).isEqualTo("connect:connect-monthly")
+    }
+
+    @Test
+    fun `getProducts normalizes product IDs with base plan for specific product type`() {
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val normalizedProductId = "connect"
+        val productIds = listOf(productIdWithBasePlan)
+
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct))
+        }
+
+        purchases.getProducts(
+            productIds,
+            ProductType.SUBS,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts).isEqualTo(listOf(monthlyProduct))
+        assertThat(receivedProducts?.size).isEqualTo(1)
+        assertThat(receivedProducts?.first()?.id).isEqualTo("connect:connect-monthly")
+    }
+
+    @Test
+    fun `getProducts handles mixed product IDs with and without base plans`() {
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val productIdWithoutBasePlan = "normal_purchase"
+        val productIds = listOf(productIdWithBasePlan, productIdWithoutBasePlan)
+        val normalizedProductId = "connect"
+
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        val inappProduct = createMockOneTimeProductDetails(productIdWithoutBasePlan).toInAppStoreProduct()!!
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId, productIdWithoutBasePlan),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct))
+        }
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(normalizedProductId, productIdWithoutBasePlan),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(inappProduct))
+        }
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts).isEqualTo(listOf(monthlyProduct, inappProduct))
+        assertThat(receivedProducts?.size).isEqualTo(2)
+    }
+
+    @Test
+    fun `getProducts returns multiple base plans when requested`() {
+        val productIdWithBasePlan1 = "connect:connect-monthly"
+        val productIdWithBasePlan2 = "connect:connect-annual"
+        val productIds = listOf(productIdWithBasePlan1, productIdWithBasePlan2)
+        val normalizedProductId = "connect"
+
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val annualBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-annual",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.YEAR, "P1Y"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "annual-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        val annualProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-annual",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Annual",
+            title = "Connect Annual",
+            description = "Annual subscription",
+            period = Period(1, Period.Unit.YEAR, "P1Y"),
+            subscriptionOptions = SubscriptionOptions(listOf(annualBasePlan)),
+            defaultOption = annualBasePlan,
+            productDetails = productDetails
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct, annualProduct))
+        }
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(emptyList())
+        }
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts?.size).isEqualTo(2)
+        val basePlanIds = receivedProducts?.map { (it as? GoogleStoreProduct)?.basePlanId }?.toSet()
+        assertThat(basePlanIds).containsExactlyInAnyOrder("connect-monthly", "connect-annual")
+    }
+
+    @Test
+    fun `getProducts returns all base plans when product ID queried both with and without base plan`() {
+        val productIdWithoutBasePlan = "connect"
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val productIds = listOf(productIdWithoutBasePlan, productIdWithBasePlan)
+        val normalizedProductId = "connect"
+
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val annualBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-annual",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.YEAR, "P1Y"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "annual-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        val annualProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-annual",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Annual",
+            title = "Connect Annual",
+            description = "Annual subscription",
+            period = Period(1, Period.Unit.YEAR, "P1Y"),
+            subscriptionOptions = SubscriptionOptions(listOf(annualBasePlan)),
+            defaultOption = annualBasePlan,
+            productDetails = productDetails
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct, annualProduct))
+        }
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(emptyList())
+        }
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts?.size).isEqualTo(2)
+        val basePlanIds = receivedProducts?.map { (it as? GoogleStoreProduct)?.basePlanId }?.toSet()
+        assertThat(basePlanIds).containsExactlyInAnyOrder("connect-monthly", "connect-annual")
+    }
+
+    @Test
+    fun `getProducts filters to only return requested base plan`() {
+        val productIdWithBasePlan = "connect:connect-monthly"
+        val normalizedProductId = "connect"
+        val productIds = listOf(productIdWithBasePlan)
+
+        val productDetails = mockProductDetails()
+        val price = Price("$1.00", 1_000_000L, "USD")
+
+        val monthlyBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.MONTH, "P1M"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "monthly-token"
+        )
+
+        val annualBasePlan = GoogleSubscriptionOption(
+            productId = normalizedProductId,
+            basePlanId = "connect-annual",
+            offerId = null,
+            pricingPhases = listOf(PricingPhase(
+                billingPeriod = Period(1, Period.Unit.YEAR, "P1Y"),
+                recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                billingCycleCount = 0,
+                price = price
+            )),
+            tags = emptyList(),
+            productDetails,
+            "annual-token"
+        )
+
+        val monthlyProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-monthly",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Monthly",
+            title = "Connect Monthly",
+            description = "Monthly subscription",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(monthlyBasePlan)),
+            defaultOption = monthlyBasePlan,
+            productDetails = productDetails
+        )
+
+        val annualProduct = GoogleStoreProduct(
+            productId = normalizedProductId,
+            basePlanId = "connect-annual",
+            type = ProductType.SUBS,
+            price = price,
+            name = "Connect Annual",
+            title = "Connect Annual",
+            description = "Annual subscription",
+            period = Period(1, Period.Unit.YEAR, "P1Y"),
+            subscriptionOptions = SubscriptionOptions(listOf(annualBasePlan)),
+            defaultOption = annualBasePlan,
+            productDetails = productDetails
+        )
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(monthlyProduct, annualProduct))
+        }
+
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(normalizedProductId),
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(emptyList())
+        }
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            }
+        )
+
+        assertThat(receivedProducts?.size).isEqualTo(1)
+        assertThat((receivedProducts?.first() as? GoogleStoreProduct)?.basePlanId).isEqualTo("connect-monthly")
+        assertThat(receivedProducts?.first()?.id).isEqualTo("connect:connect-monthly")
+    }
+
     // endregion
 
     // region purchasing
@@ -218,14 +771,14 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val oldPurchase = mockPurchaseFound()
 
         var callCount = 0
 
         val productChangeParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            storeProduct.subscriptionOptions!!.first(),
             oldPurchase.productIds.first()
         )
         purchases.purchaseWith(
@@ -248,10 +801,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val newProductId = listOf("newproduct")
         val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
         val oldPurchase = mockPurchaseFound()
-        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
+        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                oldPurchase, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, sdkOriginated = true, captureLambda(), any(),
             )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
@@ -278,9 +831,11 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = oldPurchase,
                 storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = true,
                 onSuccess = any(),
                 onError = any()
             )
@@ -288,10 +843,69 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `when making a deferred product change with basePlanId in oldProductId, completion is still called`() {
+        val newProductId = listOf("newproduct")
+        val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
+
+        // The transaction has just the productId, without basePlanId
+        val oldProductId = "oldProductId"
+        val oldPurchase = getMockedStoreTransaction(
+            productId = oldProductId,
+            purchaseToken = "another_purchase_token",
+            productType = ProductType.SUBS
+        )
+
+        // User passes oldProductId with basePlanId suffix
+        val oldProductIdWithBasePlan = "$oldProductId:basePlan"
+
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserID = appUserId,
+                productType = ProductType.SUBS,
+                // The SDK should strip the basePlanId when looking up the purchase
+                productId = oldProductId,
+                onCompletion = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
+        }
+
+        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                oldPurchase, any(), any(), isRestore = false, appUserId, initiationSource, sdkOriginated = true, captureLambda(), any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk(relaxed = true))
+        }
+        val productChangeParams = getPurchaseParams(
+            storeProduct.first().subscriptionOptions!!.first(),
+            oldProductIdWithBasePlan,
+            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+        )
+        var callCount = 0
+        purchases.purchaseWith(
+            productChangeParams,
+            onError = { _, _ ->
+                fail("should be successful")
+            },
+            onSuccess = { purchase, _ ->
+                callCount++
+                assertThat(purchase).isEqualTo(oldPurchase)
+            }
+        )
+        // The transaction returned by Google has just the productId without basePlanId
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
+        // The callback should still be called because we strip the basePlanId when storing the callback
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
     fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
@@ -307,7 +921,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
 
         val upgradePurchaseParams =
-            getPurchaseParams(receiptInfo.storeProduct!!.defaultOption!!, oldSubId)
+            getPurchaseParams(storeProduct.defaultOption!!, oldSubId)
         purchases.purchaseWith(
             upgradePurchaseParams,
             onError = { _, _ ->
@@ -323,7 +937,59 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 any(),
-                receiptInfo.storeProduct.defaultOption!!.purchasingData,
+                storeProduct.defaultOption!!.purchasingData,
+                expectedReplaceProductInfo,
+                any(),
+                any()
+            )
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `upgrade uses galaxyReplacementMode when store is Galaxy`() {
+        buildPurchases(anonymous = false, store = Store.GALAXY)
+
+        val productId = "galaxy_gold"
+        val oldSubId = "oldGalaxySubId"
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                onCompletion = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        val replacementMode = GalaxyReplacementMode.INSTANT_PRORATED_DATE
+        val upgradePurchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            storeProduct
+        )
+            .oldProductId(oldSubId)
+            .galaxyReplacementMode(replacementMode)
+            .build()
+
+        purchases.purchaseWith(
+            upgradePurchaseParams,
+            onError = { _, _ ->
+            },
+        ) { _, _ -> }
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            replacementMode,
+        )
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                storeProduct.purchasingData,
                 expectedReplaceProductInfo,
                 any(),
                 any()
@@ -480,7 +1146,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
 
-        val packageToPurchase = stubOTPOffering[expectedOfferingIdentifier]!!.availablePackages.get(0)
+        val packageToPurchase = stubOTPOffering[expectedOfferingIdentifier]!!.availablePackages[0]
         val purchaseParams = PurchaseParams.Builder(
             mockActivity,
             packageToPurchase
@@ -507,7 +1173,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             PresentedOfferingContext(expectedOfferingIdentifier),
         )
 
-        val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
+        stubOTPOffering(stubOtpProduct)
 
         val purchaseParams = PurchaseParams.Builder(
             mockActivity,
@@ -554,8 +1220,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `receiving new transactions in listener, posts them to the backend`() {
-        mockQueryingProductDetails(inAppProductId, ProductType.INAPP, null, null)
-        mockQueryingProductDetails(subProductId, ProductType.SUBS, null, subscriptionOptionId)
+        mockQueryingProductDetails(inAppProductId, ProductType.INAPP)
+        mockQueryingProductDetails(subProductId, ProductType.SUBS)
 
         val mockedInApps = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
         val mockedSubs = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS, PresentedOfferingContext("offering_a"))
@@ -566,9 +1232,11 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                     purchase = transaction,
                     storeProduct = any(),
+                    subscriptionOptionForProductIDs = null,
                     isRestore = false,
                     appUserID = appUserId,
                     initiationSource = initiationSource,
+                    sdkOriginated = false,
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -583,22 +1251,177 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockedInApps[0],
                 storeProduct = match { it.purchasingData.productId == inAppProductId },
+                subscriptionOptionForProductIDs = null,
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockedSubs[0],
                 storeProduct = match { it.purchasingData.productId == subProductId },
+                subscriptionOptionForProductIDs = any(),
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
-            mockEventsManager.flushEvents()
+            mockEventsManager.flushEvents(Delay.NONE)
+        }
+    }
+
+    @Test
+    fun `SDK-originated purchase has sdkOriginated set to true`() {
+        val productId = "test_product"
+        val storeProduct = mockStoreProduct(listOf(productId), listOf(productId), ProductType.SUBS)
+        val purchase = getMockedStoreTransaction(
+            productId = productId,
+            purchaseToken = "token",
+            productType = ProductType.SUBS
+        )
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockInfo)
+        }
+
+        val purchaseParams = getPurchaseParams(storeProduct.first().subscriptionOptions!!.first())
+        purchases.purchaseWith(
+            purchaseParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `SDK-originated multi-line purchase with different order of product Ids in resulting StoreTransaction has sdkOriginated set to true`() {
+        val productId = "test_product"
+        val productId2 = "another_product"
+        val storeProduct = mockStoreProduct(listOf(productId2, productId), listOf(productId2, productId), ProductType.SUBS)
+        val purchase = getMockedStoreTransaction(
+            productIds = listOf(productId2, productId),
+            purchaseToken = "token",
+            productType = ProductType.SUBS
+        )
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+        mockQueryingProductDetails(productId2, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockInfo)
+        }
+
+        // Purchasing second product (index 1), so the callbacks are keyed by that product ID.
+        val purchaseParams = getPurchaseParams(storeProduct[1].subscriptionOptions!!.first())
+        purchases.purchaseWith(
+            purchaseParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { _, _ -> }
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = true,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `non-SDK-originated purchase has sdkOriginated set to false`() {
+        val productId = "test_product"
+        mockQueryingProductDetails(productId, ProductType.INAPP)
+
+        val purchase = getMockedStoreTransaction(
+            productId = productId,
+            purchaseToken = "token",
+            productType = ProductType.INAPP
+        )
+
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(purchase, mockk())
+        }
+
+        // Trigger purchase updated without calling purchaseWith first,
+        // simulating a purchase that came from outside the SDK
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(purchase))
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = purchase,
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
+                isRestore = false,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                sdkOriginated = false,
+                onSuccess = any(),
+                onError = any()
+            )
         }
     }
 
@@ -610,9 +1433,11 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = any(),
                 storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
+                sdkOriginated = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -665,7 +1490,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
-        mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val storeProduct = stubStoreProduct(productId)
         val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
@@ -692,7 +1517,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId1 = "onemonth_freetrial_1"
         val purchaseToken1 = "crazy_purchase_token_1"
         var callCount = 0
-        mockQueryingProductDetails(productId1, ProductType.SUBS, null)
+        mockQueryingProductDetails(productId1, ProductType.SUBS)
         val storeProduct = stubStoreProduct(productId)
         val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         purchases.purchaseWith(
@@ -723,7 +1548,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         try {
             val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
             capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
-        } catch (e: ConcurrentModificationException) {
+        } catch (_: ConcurrentModificationException) {
             fail("Test throws ConcurrentModificationException")
         }
     }
@@ -732,7 +1557,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     fun `when making product change purchase, error is forwarded`() {
         val productId = "onemonth_freetrial"
 
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val stubBillingResult = mockk<BillingResult>()
         every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
@@ -747,7 +1572,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         var receivedUserCancelled: Boolean? = null
 
         val purchaseUpgradeParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            storeProduct.subscriptionOptions!!.first(),
             oldPurchase.productIds[0]
         )
 
@@ -768,7 +1593,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `no OperationAlreadyInProgress error if first purchase already returned error`() {
         val productId = "onemonth_freetrial"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NO_EXISTING_PURCHASE)
 
@@ -777,7 +1602,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         var receivedError: PurchasesError? = null
         val purchaseParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(), oldPurchase.productIds[0]
+            storeProduct.subscriptionOptions!!.first(), oldPurchase.productIds[0]
         )
         purchases.purchaseWith(
             purchaseParams,
@@ -800,7 +1625,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     fun `when making product change purchase, failures purchasing are forwarded`() {
         val productId = "onemonth_freetrial"
 
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val oldPurchase = mockPurchaseFound()
 
@@ -808,7 +1633,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         var receivedUserCancelled: Boolean? = null
 
         val purchaseParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(), oldPurchase.productIds[0]
+            storeProduct.subscriptionOptions!!.first(), oldPurchase.productIds[0]
         )
         purchases.purchaseWith(
             purchaseParams,
@@ -844,7 +1669,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             subscriptionOptions = listOf(expectedDefaultSubscriptionOption, basePlanSubscriptionOption)
         )
 
-        mockQueryingProductDetails(storeProduct, null)
+        mockQueryingProductDetails(storeProduct)
         val purchaseProductParams = getPurchaseParams(storeProduct)
 
         purchases.purchaseWith(
@@ -881,7 +1706,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         )
         val (_, offerings) = stubOfferings(storeProduct)
 
-        mockQueryingProductDetails(storeProduct, null)
+        mockQueryingProductDetails(storeProduct)
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         val purchasePackageParams = getPurchaseParams(packageToPurchase)
         purchases.purchaseWith(
@@ -906,7 +1731,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId = "onemonth_freetrial"
 
         val (_, offerings) = stubOfferings(productId)
-        mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val purchaseToken = "crazy_purchase_token"
 
@@ -943,7 +1768,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId = "onemonth_freetrial"
         val (_, offerings) = stubOfferings(productId)
 
-        mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        mockQueryingProductDetails(productId, ProductType.SUBS)
 
         val stubBillingResult = mockk<BillingResult>()
         every { stubBillingResult.responseCode } returns BillingClient.BillingResponseCode.ERROR
@@ -1122,9 +1947,11 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = null,
+                subscriptionOptionForProductIDs = null,
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1260,6 +2087,32 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `when making a purchase, backup manager is notified of data change`() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+
+        val storeProduct = stubStoreProduct(productId)
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        var callCount = 0
+        purchases.purchaseWith(
+            purchaseParams,
+            onSuccess = { _, _ ->
+                callCount++
+            }, onError = { _, _ -> fail("should be successful") })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
+        }
+        assertThat(callCount).isEqualTo(1)
+    }
+
     // endregion
 
     // region customer info
@@ -1282,7 +2135,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                any()
+                any(),
+                callback = any(),
             )
         }
     }
@@ -1576,7 +2430,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `purchase tracks purchaseResult diagnostics event on success`() {
-        mockQueryingProductDetails(inAppProductId, ProductType.INAPP, null)
+        mockQueryingProductDetails(inAppProductId, ProductType.INAPP)
 
         val stubOtpProduct = stubINAPPStoreProduct(inAppProductId)
         val purchaseParams = PurchaseParams.Builder(
@@ -1633,10 +2487,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `purchase product change tracks purchaseStart diagnostics event`() {
         val productId = "onemonth_freetrial"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
         val oldPurchase = mockPurchaseFound()
         val productChangeParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            storeProduct.subscriptionOptions!!.first(),
             oldPurchase.productIds.first()
         )
 
@@ -1656,10 +2510,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
         val oldPurchase = mockPurchaseFound()
         val productChangeParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            storeProduct.subscriptionOptions!!.first(),
             oldPurchase.productIds.first()
         )
         purchases.purchaseWith(
@@ -1686,10 +2540,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `purchase product change tracks purchaseResult diagnostics event on error`() {
         val productId = "onemonth_freetrial"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
         val oldPurchase = mockPurchaseFound()
         val productChangeParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            storeProduct.subscriptionOptions!!.first(),
             oldPurchase.productIds.first()
         )
         purchases.purchaseWith(
@@ -1719,14 +2573,14 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verify(exactly = 0) { mockEventsManager.flushEvents() }
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        verify(exactly = 1) { mockEventsManager.flushEvents() }
+        verify(exactly = 1) { mockEventsManager.flushEvents(Delay.DEFAULT) }
     }
 
     @Test
     fun `paywall events synced on app backgrounded`() {
         verify(exactly = 0) { mockEventsManager.flushEvents() }
         Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
-        verify(exactly = 1) { mockEventsManager.flushEvents() }
+        verify(exactly = 1) { mockEventsManager.flushEvents(Delay.NONE) }
     }
 
     // endregion
@@ -1766,6 +2620,61 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     // endregion
 
+    // region overridePreferredUILocale
+
+    @Test
+    fun `overridePreferredUILocale clears cache before fetching`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+
+        assertThat(result).isTrue
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache()
+            mockOfferingsManager.getOfferings(appUserId, any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns false if locale unchanged`() {
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(null)
+
+        assertThat(result).isFalse
+        verify(exactly = 0) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 0) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale skips cache clear and fetch when rate limited`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result1 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+        val result2 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("es_ES")
+        val result3 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("de_DE")
+
+        assertThat(result1).isTrue
+        assertThat(result2).isTrue
+        assertThat(result3).isFalse
+        verify(exactly = 2) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 2) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns true even when fetch fails`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "test error")
+        mockOfferingsManagerGetOfferings(error)
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("ja_JP")
+
+        assertThat(result).isTrue
+        verify(exactly = 1) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+    }
+
+    // endregion
+
     // region restoring
 
     @Test
@@ -1775,16 +2684,18 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
-        mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        mockQueryingProductDetails(productId, ProductType.SUBS)
         val transactions = getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(transactions)
         verify {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = true,
                 appUserID = randomAppUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1796,7 +2707,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productId = "onemonth_freetrial"
         val purchaseToken = "crazy_purchase_token"
 
-        mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        mockQueryingProductDetails(productId, ProductType.SUBS)
         val transactions = getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(transactions)
@@ -1805,9 +2716,11 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1908,16 +2821,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
-    private fun Int.buildResult(): BillingResult {
-        return BillingResult.newBuilder().setResponseCode(this).build()
-    }
-
     private fun mockQueryingProductDetails(
         productId: String,
         type: ProductType,
-        presentedOfferingContext: PresentedOfferingContext?,
-        subscriptionOptionId: String? = this.subscriptionOptionId
-    ): ReceiptInfo {
+    ): StoreProduct {
         return if (type == ProductType.SUBS) {
             val productDetails = createMockProductDetailsFreeTrial(productId, 2.00)
 
@@ -1925,28 +2832,17 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 productDetails.subscriptionOfferDetails!!
             )!!
 
-            mockQueryingProductDetails(storeProduct, presentedOfferingContext, subscriptionOptionId)
+            mockQueryingProductDetails(storeProduct)
         } else {
             val productDetails = createMockOneTimeProductDetails(productId, 2.00)
             val storeProduct = productDetails.toInAppStoreProduct()!!
 
-            mockQueryingProductDetails(storeProduct, presentedOfferingContext, null)
+            mockQueryingProductDetails(storeProduct)
         }
     }
 
-    private fun mockQueryingProductDetails(
-        storeProduct: StoreProduct,
-        presentedOfferingContext: PresentedOfferingContext?,
-        subscriptionOptionId: String? = this.subscriptionOptionId
-    ): ReceiptInfo {
+    private fun mockQueryingProductDetails(storeProduct: StoreProduct): StoreProduct {
         val productId = storeProduct.purchasingData.productId
-
-        val receiptInfo = ReceiptInfo(
-            productIDs = listOf(productId),
-            presentedOfferingContext = presentedOfferingContext,
-            storeProduct = storeProduct,
-            subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null
-        )
 
         every {
             mockBillingAbstract.queryProductDetailsAsync(
@@ -1959,7 +2855,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(storeProduct))
         }
 
-        return receiptInfo
+        return storeProduct
     }
 
     private fun mockPurchaseFound(error: PurchasesError? = null): StoreTransaction {

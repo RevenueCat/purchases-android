@@ -64,7 +64,8 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                any()
+                any(),
+                callback = any(),
             )
         }
         verify(exactly = 0) {
@@ -108,12 +109,46 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
-                any()
+                any(),
+                callback = any(),
             )
         }
         verify(exactly = 1) {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
+    }
+
+    @Test
+    fun `onAppForegrounded is no-op in preview mode`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+        every { mockIdentityManager.currentAppUserID } returns appUserId
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(
+            appInBackground = true,
+            firstTimeInForeground = true,
+        )
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), callback = any())
+        }
+        verify(exactly = 0) { mockOfferingsManager.onAppForeground(any()) }
+        verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any()) }
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale() }
+        verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
+        verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
+    }
+
+    @Test
+    fun `onAppBackgrounded skips attribution sync and event flushing in preview mode`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+        every { mockIdentityManager.currentAppUserID } returns appUserId
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
+        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue
+        assertThat(appConfig.isAppBackgrounded).isTrue
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
+        verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
     }
 
     // endregion
@@ -161,6 +196,14 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         verify(exactly = 1) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
     }
 
+    @Test
+    fun `onActivityPaused skips event flushing in preview mode`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+        purchases.purchasesOrchestrator.onActivityPaused(mockk())
+        verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
+        verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
+    }
+
     // endregion activity lifecycle
 
     // region Private
@@ -174,6 +217,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
             proxyURL = null,
             Store.AMAZON,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
     }
 

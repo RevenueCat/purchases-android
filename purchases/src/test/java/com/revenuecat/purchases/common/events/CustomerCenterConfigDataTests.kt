@@ -46,7 +46,10 @@ class CustomerCenterConfigDataTest {
                     )
                 )
             ),
-            support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
+            support = CustomerCenterConfigData.Support(
+                email = "test@revenuecat.com",
+                supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+            ),
             localization = CustomerCenterConfigData.Localization(
                 locale = "en",
                 localizedStrings = mapOf(
@@ -144,7 +147,10 @@ class CustomerCenterConfigDataTest {
 
     @Test
     fun `Support email is correctly set`() {
-        val support = CustomerCenterConfigData.Support(email = "support@example.com")
+        val support = CustomerCenterConfigData.Support(
+            email = "support@example.com",
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
         assertThat(support.email).isEqualTo("support@example.com")
     }
 
@@ -185,6 +191,33 @@ class CustomerCenterConfigDataTest {
 
         val configData = createSampleConfigData(json.toString())
         assertThat(configData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!.paths).hasSize(5)
+    }
+
+    @Test
+    fun `can parse json without display_virtual_currencies`() {
+        val json = JSONObject(loadTestJSON())
+        val support = json.getJSONObject("customer_center").getJSONObject("support")
+        support.remove("display_virtual_currencies")
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.support.displayVirtualCurrencies).isNull()
+    }
+
+    @Test
+    fun `can parse json with display_virtual_currencies true`() {
+        val json = JSONObject(loadTestJSON())
+        val support = json.getJSONObject("customer_center").getJSONObject("support")
+        support.put("display_virtual_currencies", true)
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.support.displayVirtualCurrencies).isTrue()
+    }
+
+    @Test
+    fun `can parse json with display_virtual_currencies false`() {
+        val json = JSONObject(loadTestJSON())
+        val support = json.getJSONObject("customer_center").getJSONObject("support")
+        support.put("display_virtual_currencies", false)
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.support.displayVirtualCurrencies).isFalse()
     }
 
     private fun createSampleConfigData(json: String = loadTestJSON()): CustomerCenterConfigData {

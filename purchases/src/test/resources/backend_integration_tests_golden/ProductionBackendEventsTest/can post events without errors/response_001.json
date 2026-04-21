@@ -1,0 +1,12 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "3",
+    "Content-Type": "application\/json",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "X-Request-Id",
+    "server": "envoy"
+  },
+  "body": {}
+}

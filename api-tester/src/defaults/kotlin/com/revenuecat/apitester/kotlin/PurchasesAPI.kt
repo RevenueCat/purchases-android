@@ -20,23 +20,28 @@ import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitRestoreResult
-import com.revenuecat.purchases.awaitStorefrontCountryCode
+import com.revenuecat.purchases.awaitSetAppstackAttributionParams
+import com.revenuecat.purchases.awaitStorefrontLocale
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.purchases.getStorefrontCountryCodeWith
+import com.revenuecat.purchases.getStorefrontLocaleWith
+import com.revenuecat.purchases.getVirtualCurrenciesWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
-import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -45,12 +50,17 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 import java.util.concurrent.ExecutorService
 
-@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
+@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION", "TooManyFunctions")
 private class PurchasesAPI {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
@@ -78,8 +88,14 @@ private class PurchasesAPI {
             override fun onSuccess(status: AmazonLWAConsentStatus) {}
             override fun onError(error: PurchasesError) {}
         }
-        val getStorefrontCallback = object : GetStorefrontCallback {
-            override fun onReceived(storefrontCountryCode: String) {}
+
+        val getVirtualCurrenciesCallback = object : GetVirtualCurrenciesCallback {
+            override fun onReceived(virtualCurrencies: VirtualCurrencies) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
+        val getStorefrontLocaleCallback = object : GetStorefrontLocaleCallback {
+            override fun onReceived(storefrontLocale: Locale) {}
             override fun onError(error: PurchasesError) {}
         }
 
@@ -108,24 +124,48 @@ private class PurchasesAPI {
 
         val store: Store = purchases.store
 
-        val countryCode = purchases.storefrontCountryCode
-        purchases.getStorefrontCountryCode(getStorefrontCallback)
-
         val configuration: PurchasesConfiguration = purchases.currentConfiguration
 
         purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
         val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
         val parsedWebPurchaseRedemption2: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption("")
+
+        purchases.getVirtualCurrencies(callback = getVirtualCurrenciesCallback)
+        purchases.invalidateVirtualCurrenciesCache()
+        val cachedVirtualCurrencies: VirtualCurrencies? = purchases.cachedVirtualCurrencies
+
+        val locale: Locale? = purchases.storefrontLocale
+        purchases.getStorefrontLocale(getStorefrontLocaleCallback)
+
+        // trackCustomPaywallImpression API
+        val defaultParams = CustomPaywallImpressionParams()
+        val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
+        val paramsWithOffering = CustomPaywallImpressionParams(paywallId = "my-paywall", offeringId = "my-offering")
+        purchases.trackCustomPaywallImpression()
+        purchases.trackCustomPaywallImpression(defaultParams)
+        purchases.trackCustomPaywallImpression(paramsWithId)
+        purchases.trackCustomPaywallImpression(paramsWithOffering)
     }
 
+    @Suppress("LongParameterList")
+    fun checkSyncAmazonPurchase(
+        purchases: Purchases,
+        productId: String,
+        receiptId: String,
+        amazonUserId: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+        purchaseTime: Long,
+    ) {
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price, purchaseTime)
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
     ) {
-        purchases.getStorefrontCountryCodeWith(
-            onError = { _: PurchasesError -> },
-            onSuccess = { _: String -> },
-        )
         purchases.logInWith(
             "",
             onError = { _: PurchasesError -> },
@@ -162,18 +202,24 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: AmazonLWAConsentStatus -> },
         )
+        purchases.getVirtualCurrenciesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: VirtualCurrencies -> },
+        )
+        purchases.getStorefrontLocaleWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: Locale -> },
+        )
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     suspend fun checkCoroutines(
         purchases: Purchases,
     ) {
-        val storefrontCountryCode: String = purchases.awaitStorefrontCountryCode()
         val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
         val logInResult: LogInResult = purchases.awaitLogIn("appUserID")
-        val (customerInfo2: CustomerInfo, created: Boolean) = purchases.awaitLogIn("appUserID")
         val customerInfo3: CustomerInfo = purchases.awaitLogOut()
         val customerInfo4: CustomerInfo = purchases.awaitRestore()
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
@@ -181,6 +227,10 @@ private class PurchasesAPI {
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
         var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
         var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+        val getVirtualCurrenciesResult: VirtualCurrencies = purchases.awaitGetVirtualCurrencies()
+        val storefrontLocale: Locale = purchases.awaitStorefrontLocale()
+        var offeringsWithAppstackTargeting: Offerings =
+            purchases.awaitSetAppstackAttributionParams(mapOf("key" to "value"))
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
@@ -201,15 +251,67 @@ private class PurchasesAPI {
             setMixpanelDistinctID("")
             setFirebaseAppInstanceID("")
             setTenjinAnalyticsInstallationID("")
+            setPostHogUserId("")
             setMediaSource("")
             setCampaign("")
             setCleverTapID("")
             setKochavaDeviceID("")
+            setAirbridgeDeviceID("")
+            setSolarEngineDistinctId("")
+            setSolarEngineAccountId("")
+            setSolarEngineVisitorId("")
             setAdGroup("")
             setAd("")
             setKeyword("")
             setCreative("")
         }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun checkSetAppsFlyerConversionData(purchases: Purchases) {
+        val mapStringAny: Map<String, Any> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringAny)
+
+        val mapNullableKeyAny: Map<String?, Any> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyAny)
+
+        val mapNullableKeyNullableValue: Map<String?, Any?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableValue)
+
+        val nullableMapNullableKeyNullableValue: Map<String?, Any?>? = null
+        purchases.setAppsFlyerConversionData(nullableMapNullableKeyNullableValue)
+
+        val nullableMapStringAny: Map<String, Any>? = emptyMap()
+        purchases.setAppsFlyerConversionData(nullableMapStringAny)
+
+        val mapStringString: Map<String, String> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringString)
+
+        val mapStringNullableString: Map<String, String?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringNullableString)
+
+        val mapNullableKeyNullableString: Map<String?, String?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableString)
+
+        val mapStringInt: Map<String, Int> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringInt)
+
+        val mapStringNullableInt: Map<String, Int?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapStringNullableInt)
+
+        val mapNullableKeyNullableInt: Map<String?, Int?> = emptyMap()
+        purchases.setAppsFlyerConversionData(mapNullableKeyNullableInt)
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun checkSetAppstackAttributionParams(purchases: Purchases) {
+        val callback = object : SyncAttributesAndOfferingsCallback {
+            override fun onSuccess(offerings: Offerings) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
+        val mapStringString: Map<String, String> = emptyMap()
+        purchases.setAppstackAttributionParams(mapStringString, callback)
     }
 
     @Suppress("ForbiddenComment")
@@ -257,6 +359,9 @@ private class PurchasesAPI {
 
     fun checkCustomerCenter() {
         val customerInfoListener: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onRestoreInitiated(resume: Resumable) {
+            }
+
             override fun onRestoreStarted() {
             }
         }
@@ -273,6 +378,9 @@ private class PurchasesAPI {
             override fun onRestoreFailed(error: PurchasesError) {
             }
 
+            override fun onRestoreInitiated(resume: Resumable) {
+            }
+
             override fun onRestoreStarted() {
             }
 
@@ -286,6 +394,12 @@ private class PurchasesAPI {
                         val uri: Uri = action.uri
                     }
                 }
+            }
+
+            override fun onPromotionalOfferSucceeded(
+                customerInfo: CustomerInfo,
+                transaction: StoreTransaction,
+            ) {
             }
         }
         sharedInstance.customerCenterListener = object : CustomerCenterListener {}

@@ -1,9 +1,13 @@
 package com.revenuecat.apitester.java;
 
+import androidx.annotation.Nullable;
+
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PackageType;
 import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.models.StoreProduct;
+
+import java.net.URL;
 
 @SuppressWarnings({"unused"})
 final class PackageAPI {
@@ -13,6 +17,7 @@ final class PackageAPI {
         final StoreProduct product = p.getProduct();
         final String offering = p.getOffering();
         final PresentedOfferingContext offeringContext = p.getPresentedOfferingContext();
+        final @Nullable URL webCheckoutURL = p.getWebCheckoutURL();
     }
 
     static void check(final PackageType type) {

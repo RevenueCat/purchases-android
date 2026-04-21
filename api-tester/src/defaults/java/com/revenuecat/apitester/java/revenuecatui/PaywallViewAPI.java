@@ -4,9 +4,15 @@ import android.content.Context;
 import android.util.AttributeSet;
 
 import com.revenuecat.purchases.Offering;
+import com.revenuecat.purchases.PresentedOfferingContext;
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener;
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider;
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @SuppressWarnings({"unused"})
 final class PaywallViewAPI {
@@ -17,7 +23,8 @@ final class PaywallViewAPI {
                                   Offering offering,
                                   PaywallListener listener,
                                   FontProvider fontProvider,
-                                  boolean shouldDisplayDismissButton) {
+                                  boolean shouldDisplayDismissButton,
+                                  PurchaseLogic purchaseLogic) {
         PaywallView paywallView = new PaywallView(context);
         PaywallView paywallView2 = new PaywallView(context, attrs);
         PaywallView paywallView3 = new PaywallView(context, attrs, defStyleAttr);
@@ -26,14 +33,24 @@ final class PaywallViewAPI {
         PaywallView paywallView6 = new PaywallView(context, offering, listener, fontProvider);
         PaywallView paywallView7 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton);
         PaywallView paywallView8 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, () -> null);
+        PaywallView paywallView9 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, purchaseLogic);
+        PaywallView paywallView10 = new PaywallView(context, offering, listener, fontProvider, shouldDisplayDismissButton, purchaseLogic, () -> null);
     }
 
-    static void checkMethods(PaywallView paywallView, PaywallListener listener) {
+    static void checkMethods(PaywallView paywallView, PaywallListener listener, PresentedOfferingContext context,
+                             PurchaseLogic purchaseLogic) {
         paywallView.setPaywallListener(null);
         paywallView.setPaywallListener(listener);
         paywallView.setDismissHandler(null);
         paywallView.setDismissHandler(() -> null);
         paywallView.setOfferingId(null);
         paywallView.setOfferingId("offeringId");
+        paywallView.setOfferingId(null, null);
+        paywallView.setOfferingId("offeringId", context);
+        paywallView.setPurchaseLogic(null);
+        paywallView.setPurchaseLogic(purchaseLogic);
+        Map<String, CustomVariableValue> customVariables = new HashMap<>();
+        customVariables.put("key", new CustomVariableValue.String("value"));
+        paywallView.setCustomVariables(customVariables);
     }
 }

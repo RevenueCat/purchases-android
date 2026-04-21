@@ -8,4 +8,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  * **RevenueCatUI** features should define their events here.
  */
 @InternalRevenueCatAPI
-interface FeatureEvent
+public interface FeatureEvent {
+    public val isPriorityEvent: Boolean get() = false
+}

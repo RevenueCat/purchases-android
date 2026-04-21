@@ -1,24 +1,37 @@
 package com.revenuecat.purchases.customercenter
 
 import android.net.Uri
+import dev.drewhamilton.poko.Poko
 
 /**
  * Interface representing different customer center management options.
  */
-interface CustomerCenterManagementOption {
+public interface CustomerCenterManagementOption {
     /**
      * Action to cancel the current operation
      */
-    object Cancel : CustomerCenterManagementOption
+    public object Cancel : CustomerCenterManagementOption
 
     /**
      * Action to open a custom URL
      * @property uri The URI to open
      */
-    data class CustomUrl(val uri: Uri) : CustomerCenterManagementOption
+    @Poko
+    public class CustomUrl(public val uri: Uri) : CustomerCenterManagementOption
 
     /**
      * Action to handle a missing purchase
      */
-    object MissingPurchase : CustomerCenterManagementOption
+    public object MissingPurchase : CustomerCenterManagementOption
+
+    /**
+     * Action representing a custom action configured in the Customer Center dashboard.
+     * @property actionIdentifier The unique identifier for the custom action
+     * @property purchaseIdentifier The optional product identifier of the active purchase
+     */
+    @Poko
+    public class CustomAction(
+        public val actionIdentifier: String,
+        public val purchaseIdentifier: String?,
+    ) : CustomerCenterManagementOption
 }

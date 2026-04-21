@@ -16,7 +16,7 @@ import kotlinx.serialization.json.jsonPrimitive
 
 @InternalRevenueCatAPI
 @Serializable(with = PaywallComponentSerializer::class)
-sealed interface PaywallComponent
+public sealed interface PaywallComponent
 
 @InternalRevenueCatAPI
 internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
@@ -42,6 +42,7 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "package" -> jsonDecoder.json.decodeFromString<PackageComponent>(json.toString())
             "purchase_button" -> jsonDecoder.json.decodeFromString<PurchaseButtonComponent>(json.toString())
             "stack" -> jsonDecoder.json.decodeFromString<StackComponent>(json.toString())
+            "header" -> jsonDecoder.json.decodeFromString<HeaderComponent>(json.toString())
             "sticky_footer" -> jsonDecoder.json.decodeFromString<StickyFooterComponent>(json.toString())
             "text" -> jsonDecoder.json.decodeFromString<TextComponent>(json.toString())
             "icon" -> jsonDecoder.json.decodeFromString<IconComponent>(json.toString())
@@ -51,6 +52,9 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "tab_control_toggle" -> jsonDecoder.json.decodeFromString<TabControlToggleComponent>(json.toString())
             "tab_control" -> jsonDecoder.json.decodeFromString<TabControlComponent>(json.toString())
             "tabs" -> jsonDecoder.json.decodeFromString<TabsComponent>(json.toString())
+            "video" -> jsonDecoder.json.decodeFromString<VideoComponent>(json.toString())
+            "countdown" -> jsonDecoder.json.decodeFromString<CountdownComponent>(json.toString())
+            "fallback_header" -> FallbackHeaderComponent
             else -> json["fallback"]
                 ?.let { it as? JsonObject }
                 ?.toString()

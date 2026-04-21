@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
@@ -14,10 +16,12 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.fromNow
+import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
+import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.add
-import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
+import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
 import com.revenuecat.purchases.utils.subtract
 import io.mockk.Runs
 import io.mockk.every
@@ -172,7 +176,7 @@ class OfflineCustomerInfoCalculatorTest {
         val p1mProduct = PurchasedProduct(
             productIdentifier,
             basePlan,
-            stubStoreTransactionFromPurchaseHistoryRecord(
+            stubStoreTransactionFromGooglePurchase(
                 productIds = listOf(productIdentifier),
                 purchaseTime = twoHoursAgo.time,
             ),
@@ -184,7 +188,7 @@ class OfflineCustomerInfoCalculatorTest {
         val notBwProduct = PurchasedProduct(
             productIdentifier,
             nonBackwardsCompatibleBasePlan,
-            stubStoreTransactionFromPurchaseHistoryRecord(
+            stubStoreTransactionFromGooglePurchase(
                 productIds = listOf(productIdentifier),
                 purchaseTime = notBwProductPurchaseDate.time,
             ),
@@ -231,6 +235,142 @@ class OfflineCustomerInfoCalculatorTest {
             expirationDate = oneDayFromNow,
             purchaseDate = notBwProductPurchaseDate
         )
+    }
+
+    @Test
+    fun `add-on subscription with entitlement for base purchase and no add-on entitlement only unlocks base entitlement`() {
+        val baseProductIdentifier = "base_product"
+        val baseEntitlement = "base_entitlement"
+        val purchasedProducts = createAddOnPurchasedProducts(
+            baseEntitlements = listOf(baseEntitlement),
+            addOnEntitlements = emptyList(),
+            baseExpiration = oneDayFromNow,
+            addOnExpiration = oneDayFromNow,
+        )
+        mockPurchasedProducts(purchasedProducts)
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") },
+        )
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo!!.entitlements.all.keys).containsExactly(baseEntitlement)
+
+        val baseProduct = purchasedProducts.first { it.productIdentifier == baseProductIdentifier }
+        verifyEntitlement(receivedCustomerInfo, baseEntitlement, baseProduct)
+    }
+
+    @Test
+    fun `add-on subscription with no entitlement for base purchase and entitlement for add-on only unlocks add-on entitlement`() {
+        val addOnProductIdentifier = "addon_product"
+        val addOnEntitlement = "addon_entitlement"
+        val purchasedProducts = createAddOnPurchasedProducts(
+            baseEntitlements = emptyList(),
+            addOnEntitlements = listOf(addOnEntitlement),
+            baseExpiration = oneDayFromNow,
+            addOnExpiration = oneDayFromNow,
+        )
+        mockPurchasedProducts(purchasedProducts)
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") },
+        )
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo!!.entitlements.all.keys).containsExactly(addOnEntitlement)
+
+        val addOnProduct = purchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
+        verifyEntitlement(receivedCustomerInfo, addOnEntitlement, addOnProduct)
+    }
+
+    @Test
+    fun `add-on subscription with different entitlements for base purchase and add-on purchase unlocks both entitlements`() {
+        val baseProductIdentifier = "base_product"
+        val addOnProductIdentifier = "addon_product"
+        val baseEntitlement = "base_entitlement"
+        val addOnEntitlement = "addon_entitlement"
+        val purchasedProducts = createAddOnPurchasedProducts(
+            baseEntitlements = listOf(baseEntitlement),
+            addOnEntitlements = listOf(addOnEntitlement),
+            baseExpiration = oneDayFromNow,
+            addOnExpiration = oneDayFromNow,
+        )
+        mockPurchasedProducts(purchasedProducts)
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") },
+        )
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo!!.entitlements.all.keys)
+            .containsExactlyInAnyOrder(baseEntitlement, addOnEntitlement)
+
+        val baseProduct = purchasedProducts.first { it.productIdentifier == baseProductIdentifier }
+        val addOnProduct = purchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
+        verifyEntitlement(receivedCustomerInfo, baseEntitlement, baseProduct)
+        verifyEntitlement(receivedCustomerInfo, addOnEntitlement, addOnProduct)
+    }
+
+    @Test
+    fun `add-on subscription with same entitlements prioritizes product with longest expiration`() {
+        val addOnProductIdentifier = "addon_product"
+        val entitlement = "shared_entitlement"
+        val longerExpiration = 2.days.fromNow()
+        val purchasedProducts = createAddOnPurchasedProducts(
+            baseEntitlements = listOf(entitlement),
+            addOnEntitlements = listOf(entitlement),
+            baseExpiration = oneDayFromNow,
+            addOnExpiration = longerExpiration,
+        )
+        mockPurchasedProducts(purchasedProducts)
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") },
+        )
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo!!.entitlements.all.keys).containsExactly(entitlement)
+
+        val addOnProduct = purchasedProducts.first { it.productIdentifier == addOnProductIdentifier }
+        verifyEntitlement(receivedCustomerInfo, entitlement, addOnProduct, expirationDate = longerExpiration)
+    }
+
+    @Test
+    fun `add-on subscription with same entitlements prioritizes product with no expiration`() {
+        val baseProductIdentifier = "base_product"
+        val entitlement = "shared_entitlement"
+        val purchasedProducts = createAddOnPurchasedProducts(
+            baseEntitlements = listOf(entitlement),
+            addOnEntitlements = listOf(entitlement),
+            baseExpiration = null,
+            addOnExpiration = oneDayFromNow,
+        )
+        mockPurchasedProducts(purchasedProducts)
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") },
+        )
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo!!.entitlements.all.keys).containsExactly(entitlement)
+
+        val baseProduct = purchasedProducts.first { it.productIdentifier == baseProductIdentifier }
+        verifyEntitlement(receivedCustomerInfo, entitlement, baseProduct, expirationDate = null)
     }
 
     @Test
@@ -523,6 +663,54 @@ class OfflineCustomerInfoCalculatorTest {
         }
     }
 
+    @Test
+    fun `management_url depends on store`() {
+        val purchasedProduct = mockActiveProducts().first()
+        val testCases = Store.values()
+            .associateWith { it.managementUrl ?: JSONObject.NULL }
+
+        testCases.forEach { (storeType, expectedManagementUrl) ->
+            val appConfigForStore = mockk<AppConfig>().apply {
+                every { store } returns storeType
+            }
+            val calculator = OfflineCustomerInfoCalculator(
+                purchasedProductsFetcher,
+                appConfigForStore,
+                diagnosticsTracker,
+                testDateProvider
+            )
+
+            var receivedCustomerInfo: CustomerInfo? = null
+            calculator.computeOfflineCustomerInfo(
+                appUserID = appUserID,
+                onSuccess = { receivedCustomerInfo = it },
+                onError = { fail("Should've succeeded") }
+            )
+
+            val expectedCustomerInfoManagementUrl = when (expectedManagementUrl) {
+                is String -> Uri.parse(expectedManagementUrl)
+                else -> null
+            }
+            assertThat(receivedCustomerInfo?.managementURL)
+                .isEqualTo(expectedCustomerInfoManagementUrl)
+
+            val subscriberRawData = receivedCustomerInfo?.rawData
+                ?.get(CustomerInfoResponseJsonKeys.SUBSCRIBER) as? JSONObject
+            assertThat(subscriberRawData).isNotNull
+            assertThat(subscriberRawData!!.get(CustomerInfoResponseJsonKeys.MANAGEMENT_URL))
+                .isEqualTo(expectedManagementUrl)
+
+            val subscriptionsRawData = subscriberRawData
+                .get(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS) as? JSONObject
+            assertThat(subscriptionsRawData).isNotNull
+            val subscriptionRawData =
+                subscriptionsRawData!!.get(purchasedProduct.productIdentifier) as? JSONObject
+            assertThat(subscriptionRawData).isNotNull
+            assertThat(subscriptionRawData!!.get(ProductResponseJsonKeys.MANAGEMENT_URL))
+                .isEqualTo(expectedManagementUrl)
+        }
+    }
+
     // region helpers
     private fun verifyEntitlement(
         receivedCustomerInfo: CustomerInfo?,
@@ -550,6 +738,37 @@ class OfflineCustomerInfoCalculatorTest {
         assertThat(receivedEntitlement?.unsubscribeDetectedAt).isNull()
     }
 
+    private fun createAddOnPurchasedProducts(
+        baseEntitlements: List<String>,
+        addOnEntitlements: List<String>,
+        baseExpiration: Date?,
+        addOnExpiration: Date?,
+        purchaseToken: String = "token",
+    ): List<PurchasedProduct> {
+        val storeTransaction = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf("base_product", "addon_product"),
+            purchaseTime = oneHourAgo.time,
+            purchaseToken = purchaseToken,
+        )
+
+        return listOf(
+            PurchasedProduct(
+                "base_product",
+                "base_plan",
+                storeTransaction,
+                baseEntitlements,
+                baseExpiration,
+            ),
+            PurchasedProduct(
+                "addon_product",
+                "addon_plan",
+                storeTransaction,
+                addOnEntitlements,
+                addOnExpiration,
+            ),
+        )
+    }
+
     private fun mockActiveProducts(
         entitlementMap: ProductEntitlementMapping = ProductEntitlementMapping(
             mapOf(
@@ -564,7 +783,7 @@ class OfflineCustomerInfoCalculatorTest {
     ): List<PurchasedProduct> {
         val products = entitlementMap.mappings.map { (productIdentifier, mapping) ->
             val expiresDate = expirationDates[productIdentifier]
-            val storeTransaction = stubStoreTransactionFromPurchaseHistoryRecord(
+            val storeTransaction = stubStoreTransactionFromGooglePurchase(
                 productIds = listOf(productIdentifier),
                 purchaseTime = oneHourAgo.time
             )
@@ -577,16 +796,35 @@ class OfflineCustomerInfoCalculatorTest {
             )
         }
 
+        mockPurchasedProducts(products)
+        return products
+    }
+
+    private fun mockPurchasedProducts(purchasedProducts: List<PurchasedProduct>) {
         every {
             purchasedProductsFetcher.queryActiveProducts(
                 appUserID = appUserID,
                 onSuccess = captureLambda(),
-                onError = any()
+                onError = any(),
             )
         } answers {
-            lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(products)
+            lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(purchasedProducts)
         }
-        return products
+    }
+
+    @Test
+    fun `computes customer info with OFFLINE_ENTITLEMENTS source`() {
+        val purchasedProduct = mockActiveProducts().first()
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
+        )
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo?.originalSource).isEqualTo(CustomerInfoOriginalSource.OFFLINE_ENTITLEMENTS)
+        assertThat(receivedCustomerInfo?.loadedFromCache).isFalse
     }
     // endregion
 }

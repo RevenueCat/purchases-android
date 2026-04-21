@@ -6,7 +6,10 @@
 package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.CustomerInfoOriginalSource
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
@@ -23,6 +26,15 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
+import com.revenuecat.purchases.strings.VirtualCurrencyStrings
+import com.revenuecat.purchases.utils.optNullableString
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -30,26 +42,76 @@ import kotlin.time.Duration.Companion.hours
 
 private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 25.hours
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
+private val tokenMapSerializer = MapSerializer(String.serializer(), TokenCacheEntry.serializer())
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
+/**
+ * Per-token metadata stored in the unified token cache.
+ * Using a data class allows adding more fields in the future without a cache migration.
+ */
+@Serializable
+internal data class TokenCacheEntry(
+    val isAutoRenewing: Boolean? = null,
+)
+
 @Suppress("TooManyFunctions")
-internal open class DeviceCache(
+@InternalRevenueCatAPI
+public open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : StorefrontProvider {
-    companion object {
+    private companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
         private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
+        private const val CUSTOMER_INFO_ORIGINAL_SOURCE_KEY = "customer_info_original_source"
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
-    val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
-    val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
+
+    @VisibleForTesting
+    internal val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
+
+    @VisibleForTesting
+    internal val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
-    val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
-    val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
+
+    /**
+     * Legacy key that stored sent token hashes as a `Set<String>` via `putStringSet`.
+     * Replaced by [tokensCacheKey] which stores a JSON map of `{ hashedToken: isAutoRenewing }`.
+     * Kept for migration: on first read, entries are migrated to the new key with `null`
+     * auto-renewing values, then this key is deleted.
+     */
+    internal val legacyTokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+
+    /**
+     * Unified token cache storing both "which tokens have been posted" (the key set) and
+     * per-token metadata (the values) as a JSON object.
+     *
+     * Format: `{ "hashedToken1": { "isAutoRenewing": true }, "hashedToken2": { "isAutoRenewing": null } }`
+     * - Keys = hashed tokens that have been successfully posted (replaces the old StringSet)
+     * - Values = JSON objects with cached metadata. Currently stores `isAutoRenewing` status
+     *   (`null` = unknown, e.g. migrated from legacy cache or posted via a path without the
+     *   StoreTransaction). The map format allows adding more fields in the future without
+     *   another migration.
+     *
+     * The `isAutoRenewing` values are used to detect subscription changes made outside the app
+     * (e.g., cancellations in Play Store management). When `queryPurchases` returns a different
+     * `isAutoRenewing` value than what's cached, the token is reposted so the backend can
+     * re-check the subscription status with Google — avoiding a full `syncPurchases` which
+     * reposts everything with `RESTORE` initiation source.
+     */
+    internal val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokensV2" }
+
+    /**
+     * In-memory cache for the token map to avoid repeated JSON deserialization.
+     * Populated on first read, invalidated on writes via [saveTokenMap].
+     */
+    private var tokenMapCache: Map<String, TokenCacheEntry>? = null
+
+    @VisibleForTesting
+    internal val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
         "$apiKeyPrefix.productEntitlementMapping"
@@ -62,27 +124,35 @@ internal open class DeviceCache(
         "$apiKeyPrefix.purchaserInfoLastUpdated"
     }
 
+    private val virtualCurrenciesCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrencies"
+    }
+
+    private val virtualCurrenciesLastUpdatedCacheBaseKey: String by lazy {
+        "$apiKeyPrefix.virtualCurrenciesLastUpdated"
+    }
+
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
-    fun startEditing(): SharedPreferences.Editor {
+    internal fun startEditing(): SharedPreferences.Editor {
         return preferences.edit()
     }
 
     // region app user id
 
     @Synchronized
-    fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
+    internal fun getLegacyCachedAppUserID(): String? = preferences.getString(legacyAppUserIDCacheKey, null)
 
     @Synchronized
-    fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
+    internal fun getCachedAppUserID(): String? = preferences.getString(appUserIDCacheKey, null)
 
     @Synchronized
-    fun cacheAppUserID(appUserID: String) {
+    internal fun cacheAppUserID(appUserID: String) {
         cacheAppUserID(appUserID, preferences.edit()).apply()
     }
 
     @Synchronized
-    fun cacheAppUserID(
+    internal fun cacheAppUserID(
         appUserID: String,
         cacheEditor: SharedPreferences.Editor,
     ): SharedPreferences.Editor {
@@ -90,11 +160,13 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun clearCachesForAppUserID(appUserID: String) {
+    internal fun clearCachesForAppUserID(appUserID: String) {
         preferences.edit()
             .clearCustomerInfo()
             .clearAppUserID()
             .clearCustomerInfoCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCacheTimestamp(appUserID)
+            .clearVirtualCurrenciesCache(appUserID)
             .apply()
     }
 
@@ -122,11 +194,15 @@ internal open class DeviceCache(
     // endregion
 
     // region purchaser info
-    fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
+    @VisibleForTesting
+    internal fun customerInfoCacheKey(appUserID: String) = "$legacyAppUserIDCacheKey.$appUserID"
 
-    fun customerInfoLastUpdatedCacheKey(appUserID: String) = "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
+    @VisibleForTesting
+    internal fun customerInfoLastUpdatedCacheKey(appUserID: String) =
+        "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
-    fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
+    @Suppress
+    internal fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
         return preferences.getString(customerInfoCacheKey(appUserID), null)
             ?.let { json ->
                 try {
@@ -140,11 +216,20 @@ internal open class DeviceCache(
                     val requestDate = cachedJSONObject.optLong(CUSTOMER_INFO_REQUEST_DATE_KEY).takeIf { it > 0 }?.let {
                         Date(it)
                     }
+                    val originalSourceString = cachedJSONObject.optNullableString(CUSTOMER_INFO_ORIGINAL_SOURCE_KEY)
+                    val originalSource = CustomerInfoOriginalSource.fromString(originalSourceString)
                     cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     cachedJSONObject.remove(CUSTOMER_INFO_REQUEST_DATE_KEY)
+                    cachedJSONObject.remove(CUSTOMER_INFO_ORIGINAL_SOURCE_KEY)
                     val verificationResult = VerificationResult.valueOf(verificationResultString)
                     return if (schemaVersion == CUSTOMER_INFO_SCHEMA_VERSION) {
-                        CustomerInfoFactory.buildCustomerInfo(cachedJSONObject, requestDate, verificationResult)
+                        CustomerInfoFactory.buildCustomerInfo(
+                            cachedJSONObject,
+                            requestDate,
+                            verificationResult,
+                            originalSource,
+                            loadedFromCache = true,
+                        )
                     } else {
                         null
                     }
@@ -155,11 +240,12 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
+    internal fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.rawData.also {
             it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)
             it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
             it.put(CUSTOMER_INFO_REQUEST_DATE_KEY, info.requestDate.time)
+            it.put(CUSTOMER_INFO_ORIGINAL_SOURCE_KEY, info.originalSource.name)
         }
         preferences.edit()
             .putString(
@@ -171,23 +257,23 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun isCustomerInfoCacheStale(appUserID: String, appInBackground: Boolean) =
+    internal fun isCustomerInfoCacheStale(appUserID: String, appInBackground: Boolean) =
         getCustomerInfoCachesLastUpdated(appUserID).isCacheStale(appInBackground, dateProvider)
 
     @Synchronized
-    fun clearCustomerInfoCacheTimestamp(appUserID: String) {
+    internal fun clearCustomerInfoCacheTimestamp(appUserID: String) {
         preferences.edit().clearCustomerInfoCacheTimestamp(appUserID).apply()
     }
 
     @Synchronized
-    fun clearCustomerInfoCache(appUserID: String) {
+    internal fun clearCustomerInfoCache(appUserID: String) {
         val editor = preferences.edit()
         clearCustomerInfoCache(appUserID, editor)
         editor.apply()
     }
 
     @Synchronized
-    fun clearCustomerInfoCache(
+    internal fun clearCustomerInfoCache(
         appUserID: String,
         editor: SharedPreferences.Editor,
     ) {
@@ -196,17 +282,18 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun setCustomerInfoCacheTimestampToNow(appUserID: String) {
+    internal fun setCustomerInfoCacheTimestampToNow(appUserID: String) {
         setCustomerInfoCacheTimestamp(appUserID, dateProvider.now)
     }
 
     @Synchronized
-    fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
+    @VisibleForTesting
+    internal fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
         preferences.edit().putLong(customerInfoLastUpdatedCacheKey(appUserID), date.time).apply()
     }
 
     @Synchronized
-    fun setStorefront(countryCode: String) {
+    internal fun setStorefront(countryCode: String) {
         verboseLog { BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode) }
         preferences.edit().putString(storefrontCacheKey, countryCode).apply()
     }
@@ -227,10 +314,120 @@ internal open class DeviceCache(
 
     // endregion
 
+    // region virtual currencies
+    @VisibleForTesting
+    internal fun virtualCurrenciesCacheKey(appUserID: String) = "$virtualCurrenciesCacheBaseKey.$appUserID"
+
+    @VisibleForTesting
+    internal fun virtualCurrenciesLastUpdatedCacheKey(appUserID: String) =
+        "$virtualCurrenciesLastUpdatedCacheBaseKey.$appUserID"
+
+    @Suppress("SwallowedException", "ForbiddenComment")
+    @Synchronized
+    internal fun getCachedVirtualCurrencies(appUserID: String): VirtualCurrencies? {
+        return preferences.getString(virtualCurrenciesCacheKey(appUserID), null)
+            ?.let { json ->
+                try {
+                    return VirtualCurrenciesFactory.buildVirtualCurrencies(jsonString = json)
+                } catch (error: JSONException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                } catch (error: SerializationException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                } catch (error: IllegalArgumentException) {
+                    log(LogIntent.WARNING) {
+                        VirtualCurrencyStrings.ERROR_DECODING_CACHED_VIRTUAL_CURRENCIES.format(error)
+                    }
+                    null
+                }
+            }
+    }
+
+    @Synchronized
+    internal fun cacheVirtualCurrencies(appUserID: String, virtualCurrencies: VirtualCurrencies) {
+        val virtualCurrenciesJSONString = Json.Default.encodeToString(VirtualCurrencies.serializer(), virtualCurrencies)
+
+        preferences.edit()
+            .putString(
+                virtualCurrenciesCacheKey(appUserID),
+                virtualCurrenciesJSONString,
+            ).apply()
+
+        setVirtualCurrenciesCacheTimestampToNow(appUserID)
+    }
+
+    @Synchronized
+    internal fun isVirtualCurrenciesCacheStale(appUserID: String, appInBackground: Boolean) =
+        getVirtualCurrenciesCacheLastUpdated(appUserID)
+            .isCacheStale(appInBackground, dateProvider)
+
+    @Synchronized
+    internal fun clearVirtualCurrenciesCache(appUserID: String) {
+        val editor = preferences.edit()
+        clearVirtualCurrenciesCache(appUserID, editor)
+        editor.apply()
+    }
+
+    @Synchronized
+    internal fun clearVirtualCurrenciesCache(
+        appUserID: String,
+        editor: SharedPreferences.Editor,
+    ) {
+        editor.clearVirtualCurrenciesCacheTimestamp(appUserID = appUserID)
+        editor.clearVirtualCurrenciesCache(appUserID = appUserID)
+    }
+
+    @Synchronized
+    private fun setVirtualCurrenciesCacheTimestampToNow(appUserID: String) {
+        setVirtualCurrenciesCacheTimestamp(appUserID, dateProvider.now)
+    }
+
+    @Synchronized
+    private fun setVirtualCurrenciesCacheTimestamp(appUserID: String, date: Date) {
+        preferences.edit().putLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    private fun getVirtualCurrenciesCacheLastUpdated(appUserID: String): Date {
+        return Date(preferences.getLong(virtualCurrenciesLastUpdatedCacheKey(appUserID), 0))
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCacheTimestamp(
+        appUserID: String,
+    ): SharedPreferences.Editor {
+        remove(virtualCurrenciesLastUpdatedCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesLastUpdatedCacheKey(it))
+        }
+        return this
+    }
+
+    private fun SharedPreferences.Editor.clearVirtualCurrenciesCache(appUserID: String): SharedPreferences.Editor {
+        remove(virtualCurrenciesCacheKey(appUserID))
+
+        getCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
+        getLegacyCachedAppUserID()?.let {
+            remove(virtualCurrenciesCacheKey(it))
+        }
+        return this
+    }
+    // endregion
+
     // region attribution data
 
     @Synchronized
-    fun cleanupOldAttributionData() {
+    internal fun cleanupOldAttributionData() {
         val editor = preferences.edit()
         for (key in preferences.all.keys) {
             if (key != null && key.startsWith(attributionCacheKey)) {
@@ -244,30 +441,77 @@ internal open class DeviceCache(
 
     // region purchase tokens
 
+    /**
+     * Returns the unified token map (hashedToken → metadata), migrating from legacy
+     * StringSet format if needed. The key set represents all previously sent tokens; the values
+     * contain per-token metadata (currently just isAutoRenewing, null = unknown).
+     */
     @Synchronized
-    fun getPreviouslySentHashedTokens(): Set<String> {
-        return try {
-            (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-                log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(it) }
+    private fun getTokenMap(): Map<String, TokenCacheEntry> {
+        tokenMapCache?.let { return it }
+
+        val result = loadTokenMapFromPreferences()
+        tokenMapCache = result
+        return result
+    }
+
+    private fun loadTokenMapFromPreferences(): Map<String, TokenCacheEntry> {
+        val json = preferences.getString(tokensCacheKey, null)
+        if (json != null) {
+            return try {
+                Json.decodeFromString(tokenMapSerializer, json)
+            } catch (@Suppress("SwallowedException") e: SerializationException) {
+                emptyMap()
+            } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
+                emptyMap()
             }
-        } catch (e: ClassCastException) {
-            emptySet()
+        }
+        // Migrate from legacy StringSet if it exists
+        return try {
+            val legacyTokens = preferences.getStringSet(legacyTokensCacheKey, null)?.toSet()
+            if (legacyTokens != null) {
+                val migrated = legacyTokens.associateWith { TokenCacheEntry() }
+                saveTokenMap(migrated)
+                preferences.edit().remove(legacyTokensCacheKey).apply()
+                log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(migrated.keys) }
+                migrated
+            } else {
+                emptyMap()
+            }
+        } catch (@Suppress("SwallowedException") e: ClassCastException) {
+            emptyMap()
         }
     }
 
     @Synchronized
-    fun addSuccessfullyPostedToken(token: String) {
-        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()) }
-        getPreviouslySentHashedTokens().let {
-            log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(it) }
-            setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
-        }
+    private fun saveTokenMap(tokenMap: Map<String, TokenCacheEntry>) {
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(tokenMap.keys) }
+        putString(tokensCacheKey, Json.encodeToString(tokenMapSerializer, tokenMap))
+        tokenMapCache = tokenMap
     }
 
     @Synchronized
-    private fun setSavedTokenHashes(newSet: Set<String>) {
-        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS.format(newSet) }
-        preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
+    internal fun getPreviouslySentHashedTokens(): Set<String> {
+        return getTokenMap().keys.also {
+            log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_ALREADY_POSTED.format(it) }
+        }
+    }
+
+    @InternalRevenueCatAPI
+    @Synchronized
+    public fun addSuccessfullyPostedToken(token: String, isAutoRenewing: Boolean? = null) {
+        val hashedToken = token.sha1()
+        log(LogIntent.DEBUG) { ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, hashedToken) }
+        val current = getTokenMap().toMutableMap()
+        log(LogIntent.DEBUG) { ReceiptStrings.TOKENS_IN_CACHE.format(current.keys) }
+        val existing = current[hashedToken]
+        if (existing == null) {
+            current[hashedToken] = TokenCacheEntry(isAutoRenewing = isAutoRenewing)
+            saveTokenMap(current)
+        } else if (isAutoRenewing != null && existing.isAutoRenewing != isAutoRenewing) {
+            current[hashedToken] = existing.copy(isAutoRenewing = isAutoRenewing)
+            saveTokenMap(current)
+        }
     }
 
     /**
@@ -275,13 +519,13 @@ internal open class DeviceCache(
      * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
      */
     @Synchronized
-    fun cleanPreviouslySentTokens(
+    internal fun cleanPreviouslySentTokens(
         hashedTokens: Set<String>,
     ) {
         log(LogIntent.DEBUG) { ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN }
-        setSavedTokenHashes(
-            hashedTokens.intersect(getPreviouslySentHashedTokens()),
-        )
+        val current = getTokenMap()
+        val cleaned = current.filterKeys { it in hashedTokens }
+        saveTokenMap(cleaned)
     }
 
     /**
@@ -291,7 +535,7 @@ internal open class DeviceCache(
      * been posted to our backend yet.
      */
     @Synchronized
-    fun getActivePurchasesNotInCache(
+    internal fun getActivePurchasesNotInCache(
         hashedTokens: Map<String, StoreTransaction>,
     ): List<StoreTransaction> {
         return hashedTokens
@@ -299,17 +543,58 @@ internal open class DeviceCache(
             .values.toList()
     }
 
+    /**
+     * Returns purchases whose [StoreTransaction.isAutoRenewing] status has changed compared to
+     * the cached value. This detects subscription changes made outside the app (e.g., cancellations
+     * in Play Store subscription management) without requiring a full syncPurchases.
+     */
+    @Synchronized
+    internal fun getPurchasesWithAutoRenewingChange(
+        hashedTokens: Map<String, StoreTransaction>,
+    ): List<StoreTransaction> {
+        val tokenMap = getTokenMap()
+        return hashedTokens.filter { (hash, transaction) ->
+            val cachedEntry = tokenMap[hash]
+            cachedEntry != null &&
+                cachedEntry.isAutoRenewing != null &&
+                transaction.isAutoRenewing != null &&
+                transaction.isAutoRenewing != cachedEntry.isAutoRenewing
+        }.values.toList()
+    }
+
+    /**
+     * Saves the auto-renewing status for all given hashed tokens. Tokens already in the cache
+     * get their status updated; tokens not in the cache are ignored (they haven't been posted yet).
+     */
+    @Synchronized
+    internal fun saveAutoRenewingStatus(hashedTokens: Map<String, StoreTransaction>) {
+        val current = getTokenMap().toMutableMap()
+        var changed = false
+        for ((hash, transaction) in hashedTokens) {
+            val existing = current[hash]
+            if (existing != null && transaction.isAutoRenewing != null &&
+                existing.isAutoRenewing != transaction.isAutoRenewing
+            ) {
+                current[hash] = existing.copy(isAutoRenewing = transaction.isAutoRenewing)
+                changed = true
+            }
+        }
+        if (changed) {
+            saveTokenMap(current)
+        }
+    }
+
     // endregion
 
     // region offerings response
 
     @Synchronized
-    fun getOfferingsResponseCache(): JSONObject? {
+    internal fun getOfferingsResponseCache(): JSONObject? {
         return getJSONObjectOrNull(offeringsResponseCacheKey)
     }
 
     @Synchronized
-    fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
+    internal fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
         preferences.edit()
             .putString(
                 offeringsResponseCacheKey,
@@ -318,7 +603,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun clearOfferingsResponseCache() {
+    internal fun clearOfferingsResponseCache() {
         preferences.edit().remove(offeringsResponseCacheKey).apply()
     }
 
@@ -327,18 +612,21 @@ internal open class DeviceCache(
     // region ProductEntitlementMapping
 
     @Synchronized
-    fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
+    internal fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
+        val json = productEntitlementMapping.toJson()
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                productEntitlementMapping.toJson().toString(),
-            ).apply()
+                json.toString(),
+            )
+            .apply()
 
         setProductEntitlementMappingCacheTimestampToNow()
     }
 
     @Synchronized
-    fun setProductEntitlementMappingCacheTimestampToNow() {
+    @VisibleForTesting
+    internal fun setProductEntitlementMappingCacheTimestampToNow() {
         setProductEntitlementMappingCacheTimestamp(dateProvider.now)
     }
 
@@ -347,21 +635,25 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun isProductEntitlementMappingCacheStale(): Boolean {
+    internal fun isProductEntitlementMappingCacheStale(): Boolean {
         return getProductEntitlementMappingLastUpdated().isCacheStale(
             PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD,
             dateProvider,
         )
     }
 
+    @Suppress("NestedBlockDepth")
     @Synchronized
-    fun getProductEntitlementMapping(): ProductEntitlementMapping? {
+    internal fun getProductEntitlementMapping(): ProductEntitlementMapping? {
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
             return try {
-                ProductEntitlementMapping.fromJson(JSONObject(jsonString))
+                val jsonObject = JSONObject(jsonString)
+                ProductEntitlementMapping.fromJson(jsonObject, loadedFromCache = true)
             } catch (e: JSONException) {
                 errorLog(e) { OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString) }
-                preferences.edit().remove(productEntitlementMappingCacheKey).apply()
+                preferences.edit()
+                    .remove(productEntitlementMappingCacheKey)
+                    .apply()
                 null
             }
         }
@@ -379,7 +671,7 @@ internal open class DeviceCache(
 
     // region utils
 
-    open fun getJSONObjectOrNull(key: String): JSONObject? {
+    internal open fun getJSONObjectOrNull(key: String): JSONObject? {
         return preferences.getString(key, null)?.let { json ->
             try {
                 JSONObject(json)
@@ -389,7 +681,7 @@ internal open class DeviceCache(
         }
     }
 
-    open fun putString(
+    internal open fun putString(
         cacheKey: String,
         value: String,
     ) {
@@ -399,13 +691,13 @@ internal open class DeviceCache(
         ).apply()
     }
 
-    fun remove(
+    internal fun remove(
         cacheKey: String,
     ) {
         preferences.edit().remove(cacheKey).apply()
     }
 
-    fun findKeysThatStartWith(
+    internal fun findKeysThatStartWith(
         cacheKey: String,
     ): Set<String> {
         return try {
@@ -417,7 +709,7 @@ internal open class DeviceCache(
         }
     }
 
-    fun newKey(
+    internal fun newKey(
         key: String,
     ) = "$apiKeyPrefix.$key"
 

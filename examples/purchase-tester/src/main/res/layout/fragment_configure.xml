@@ -1,13 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
-
-    <data>
-
-    </data>
-
-    <androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:tools="http://schemas.android.com/tools"
             android:id="@+id/login_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -131,6 +126,12 @@
                     android:checked="false"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
+            <RadioButton
+                    android:id="@+id/galaxy_store_radio_id"
+                    android:text="@string/galaxy"
+                    android:checked="false"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
         </RadioGroup>
 
         <androidx.appcompat.widget.AppCompatTextView
@@ -199,6 +200,20 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
 
+        <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/galaxy_warning_text_view"
+                android:text="@string/galaxy_store_warning"
+                android:textColor="@android:color/holo_red_dark"
+                android:textAlignment="textStart"
+                app:layout_constraintTop_toBottomOf="@id/continue_button"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:layout_marginTop="12dp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"/>
+
         <com.google.android.material.button.MaterialButton
                 android:id="@+id/logs_button"
                 android:text="@string/logs"
@@ -216,7 +231,4 @@
                 android:layout_marginEnd="10dp"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"/>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-</layout>
+</androidx.constraintlayout.widget.ConstraintLayout>

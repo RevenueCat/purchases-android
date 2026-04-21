@@ -40,7 +40,9 @@ class AmazonOfferingsTest {
     private val storeProductMonthly = stubStoreProductForAmazon(monthlyTermSku, period = monthlyPeriod)
     private  val storeProductAnnual = stubStoreProductForAmazon(annualTermSku, period = annualPeriod)
 
-    private val offeringsParser = OfferingParserFactory.createOfferingParser(Store.AMAZON)
+    private val offeringsParser = OfferingParserFactory.createOfferingParser(
+        Store.AMAZON,
+    )
 
     @Test
     fun `createPackage returns null if packageJson productIdentifier doesnt match any sub StoreProduct id`() {

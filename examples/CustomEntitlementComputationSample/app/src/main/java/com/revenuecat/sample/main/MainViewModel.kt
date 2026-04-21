@@ -71,10 +71,9 @@ class MainViewModel : ViewModel() {
         viewModelScope.launch {
             val purchaseParams = PurchaseParams.Builder(activity, aPackage).build()
             try {
-                val (transaction, customerInfo) =
-                    Purchases.sharedInstance.awaitPurchase(purchaseParams)
-                val logMessage = "Purchase finished:\nTransaction: $transaction\n" +
-                    "CustomerInfo: $customerInfo"
+                val result = Purchases.sharedInstance.awaitPurchase(purchaseParams)
+                val logMessage = "Purchase finished:\nTransaction: ${result.storeTransaction}\n" +
+                    "CustomerInfo: ${result.customerInfo}"
                 Log.d("Purchase", logMessage)
             } catch (error: PurchasesTransactionException) {
                 if (error.userCancelled) {

@@ -1,6 +1,8 @@
 package com.revenuecat.paywallstester.ui.screens.main.appinfo
 
+import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,63 +23,76 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.Constants
+import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
-import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.customercenter.CustomerCenterListener
-import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListener
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
-import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
+import com.revenuecat.purchases.ui.revenuecatui.views.CustomerCenterView
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-
-private const val TAG = "CustomerCenterTest"
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
+    modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
     ),
+    tappedOnCustomerCenter: () -> Unit,
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
-    var isCustomerCenterVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
-
-    // Use remember to cache the listener across recompositions
-    val customerCenterListener = remember { createCustomerCenterListener() }
-
-    if (isCustomerCenterVisible) {
-        CustomerCenter(
-            modifier = Modifier.fillMaxSize(),
-            options = CustomerCenterOptions.Builder()
-                .setListener(customerCenterListener)
-                .build(),
-        ) {
-            isCustomerCenterVisible = false
-        }
-        return
+    var showCustomerCenterView by remember { mutableStateOf(false) }
+    var isClearingFileCache by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val perViewListener = remember(context) {
+        createCustomerCenterListener(
+            tag = "CustomerCenterView",
+            onCustomAction = { actionIdentifier, purchaseIdentifier ->
+                val message = buildString {
+                    append("Custom action from view: ")
+                    append(actionIdentifier)
+                    purchaseIdentifier?.let {
+                        append(" (product: $it)")
+                    }
+                }
+                Log.d("CustomerCenterView", "Per-view listener received custom action: $message")
+                Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            },
+        )
     }
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         val state by viewModel.state.collectAsState()
+        val activity = LocalContext.current as MainActivity
         val currentUserID by remember { derivedStateOf { state.appUserID } }
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
+        val currentActiveEntitlements by remember { derivedStateOf { state.activeEntitlements } }
+        Spacer(modifier = Modifier.weight(1f))
         Text(text = "Current user ID: $currentUserID")
+        Text(text = "Current active entitlements: $currentActiveEntitlements")
         Text(text = "Current API key: $currentApiKeyDescription")
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
@@ -88,13 +103,50 @@ fun AppInfoScreen(
         Button(onClick = { showApiKeyDialog = true }) {
             Text(text = "Switch API key")
         }
+        Button(
+            enabled = !isClearingFileCache,
+            onClick = {
+                isClearingFileCache = true
+                coroutineScope.launch {
+                    val message = try {
+                        val clearResult = withContext(Dispatchers.IO) {
+                            clearPaywallFileCache(context)
+                        }
+                        clearResult.message
+                    } catch (@Suppress("TooGenericExceptionCaught") throwable: Throwable) {
+                        Log.e("PaywallTester", "Failed to clear paywall file cache", throwable)
+                        "Failed to clear paywall file cache. Check logs."
+                    } finally {
+                        isClearingFileCache = false
+                    }
+
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                }
+            },
+        ) {
+            Text(text = if (isClearingFileCache) "Clearing file cache..." else "Clear file cache")
+        }
         Button(onClick = { isDebugBottomSheetVisible = true }) {
             Text(text = "Show debug view")
         }
         Button(onClick = {
-            isCustomerCenterVisible = true
+            tappedOnCustomerCenter()
         }) {
             Text(text = "Show customer center")
+        }
+        Button(onClick = {
+            showCustomerCenterView = true
+        }) {
+            Text(text = "Customer Center (per-view Listener)")
+        }
+        Button(onClick = {
+            activity.launchCustomerCenter()
+        }) {
+            Text(text = "Customer Center (Activity)")
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Button(onClick = { viewModel.refresh() }) {
+            Text(text = "Refresh")
         }
     }
 
@@ -108,6 +160,24 @@ fun AppInfoScreen(
                 showApiKeyDialog = false
             },
         ) { showApiKeyDialog = false }
+    }
+
+    if (showCustomerCenterView) {
+        Dialog(
+            onDismissRequest = { showCustomerCenterView = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { viewContext ->
+                    CustomerCenterView(
+                        context = viewContext,
+                        dismissHandler = { showCustomerCenterView = false },
+                        customerCenterListener = perViewListener,
+                    )
+                },
+            )
+        }
     }
 
     DebugRevenueCatBottomSheet(
@@ -205,6 +275,42 @@ private fun ApiKeyButton(label: String, apiKey: String, onClick: (String) -> Uni
     }
 }
 
+private data class FileCacheClearResult(
+    val deletedEntries: Int,
+    val failedEntries: Int,
+) {
+    val message: String
+        get() = when {
+            failedEntries > 0 -> "Cleared paywall file cache with $failedEntries deletion error(s)."
+            deletedEntries == 0 -> "Paywall file cache was already empty."
+            else -> "Cleared paywall file cache."
+        }
+}
+
+private fun clearPaywallFileCache(context: Context): FileCacheClearResult {
+    val paywallCacheDirectories = listOf(
+        File(context.cacheDir, "rc_files"),
+        File(context.cacheDir, "rc_paywall_fonts"),
+    )
+
+    var deletedEntries = 0
+    var failedEntries = 0
+
+    paywallCacheDirectories.forEach { directory ->
+        if (directory.deleteRecursively()) {
+            deletedEntries += 1
+        } else {
+            failedEntries += 1
+            Log.w("PaywallTester", "Failed to delete cache entry: ${directory.absolutePath}")
+        }
+    }
+
+    return FileCacheClearResult(
+        deletedEntries = deletedEntries,
+        failedEntries = failedEntries,
+    )
+}
+
 @Suppress("EmptyFunctionBlock")
 @Preview(showBackground = true)
 @Composable
@@ -212,12 +318,20 @@ fun AppInfoScreenPreview() {
     AppInfoScreen(
         viewModel = object : AppInfoScreenViewModel {
             override val state: StateFlow<UiState>
-                get() = MutableStateFlow(UiState(appUserID = "test-user-id", apiKeyDescription = "test-api-key"))
+                get() = MutableStateFlow(
+                    UiState(
+                        appUserID = "test-user-id",
+                        apiKeyDescription = "test-api-key",
+                        activeEntitlements = listOf("pro", "premium"),
+                    ),
+                )
 
-            override fun logIn(newAppUserId: String) { }
-            override fun logOut() { }
-            override fun switchApiKey(newApiKey: String) { }
+            override fun logIn(newAppUserId: String) {}
+            override fun logOut() {}
+            override fun switchApiKey(newApiKey: String) {}
+            override fun refresh() {}
         },
+        tappedOnCustomerCenter = {},
     )
 }
 
@@ -228,36 +342,4 @@ private fun ApiKeyDialog_Preview() {
         onApiKeyClick = {},
         onDismissed = {},
     )
-}
-
-private fun createCustomerCenterListener(): CustomerCenterListener {
-    return object : CustomerCenterListener {
-        override fun onManagementOptionSelected(action: CustomerCenterManagementOption) {
-            Log.d(TAG, "Local listener: onManagementOptionSelected called with action: $action")
-        }
-
-        override fun onRestoreStarted() {
-            Log.d(TAG, "Local listener: onRestoreStarted called")
-        }
-
-        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            Log.d(
-                TAG,
-                "Local listener: onRestoreCompleted called with customer info: " +
-                    customerInfo.originalAppUserId,
-            )
-        }
-
-        override fun onRestoreFailed(error: PurchasesError) {
-            Log.d(TAG, "Local listener: onRestoreFailed called with error: ${error.message}")
-        }
-
-        override fun onShowingManageSubscriptions() {
-            Log.d(TAG, "Local listener: onShowingManageSubscriptions called")
-        }
-
-        override fun onFeedbackSurveyCompleted(feedbackSurveyOptionId: String) {
-            Log.d(TAG, "Local listener: onFeedbackSurveyCompleted called with option ID: $feedbackSurveyOptionId")
-        }
-    }
 }

@@ -46,6 +46,7 @@ internal class TabsComponentTests {
                         {
                           "type": "tab_control_button",
                           "tab_index": 0,
+                          "tab_id": "zero",
                           "stack": {
                             "type": "stack",
                             "components": [
@@ -68,11 +69,13 @@ internal class TabsComponentTests {
                         """.trimIndent(),
                         expected = TabControlButtonComponent(
                             tabIndex = 0,
+                            tabId = "zero",
                             stack = StackComponent(
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -166,6 +169,7 @@ internal class TabsComponentTests {
                                 {
                                   "type": "tab_control_button",
                                   "tab_index": 0,
+                                  "tab_id": "zero",
                                   "stack": {
                                     "components": []
                                   }
@@ -173,6 +177,7 @@ internal class TabsComponentTests {
                                 {
                                   "type": "tab_control_button",
                                   "tab_index": 1,
+                                  "tab_id": "one",
                                   "stack": {
                                     "components": []
                                   }
@@ -182,6 +187,7 @@ internal class TabsComponentTests {
                           },
                           "tabs": [
                             {
+                              "id": "zero",
                               "stack": {
                                 "components": [
                                   {
@@ -191,6 +197,7 @@ internal class TabsComponentTests {
                               }
                             },
                             {
+                              "id": "one",
                               "stack": {
                                 "components": [
                                   {
@@ -200,6 +207,7 @@ internal class TabsComponentTests {
                               }
                             }
                           ],
+                          "default_tab_id": "one",
                           "background_color": {
                             "light": {
                               "type": "alias",
@@ -272,19 +280,28 @@ internal class TabsComponentTests {
                                     components = listOf(
                                         TabControlButtonComponent(
                                             tabIndex = 0,
+                                            tabId = "zero",
                                             stack = StackComponent(components = emptyList())
                                         ),
                                         TabControlButtonComponent(
                                             tabIndex = 1,
+                                            tabId = "one",
                                             stack = StackComponent(components = emptyList())
                                         ),
                                     )
                                 )
                             ),
                             tabs = listOf(
-                                TabsComponent.Tab(stack = StackComponent(components = listOf(TabControlComponent))),
-                                TabsComponent.Tab(stack = StackComponent(components = listOf(TabControlComponent))),
+                                TabsComponent.Tab(
+                                    id = "zero",
+                                    stack = StackComponent(components = listOf(TabControlComponent))
+                                ),
+                                TabsComponent.Tab(
+                                    id = "one",
+                                    stack = StackComponent(components = listOf(TabControlComponent))
+                                ),
                             ),
+                            defaultTabId = "one",
                             size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
                             background = Background.Color(
@@ -303,6 +320,7 @@ internal class TabsComponentTests {
                                 x = 23.6,
                                 y = 45.2
                             ),
+                            name = "Tabs",
                         )
                     ),
                 ),
@@ -350,6 +368,7 @@ internal class TabsComponentTests {
                           },
                           "tabs": [
                             {
+                              "id": "zero",
                               "stack": {
                                 "components": [
                                   {
@@ -359,6 +378,7 @@ internal class TabsComponentTests {
                               }
                             },
                             {
+                              "id": "one",
                               "stack": {
                                 "components": [
                                   {
@@ -385,8 +405,14 @@ internal class TabsComponentTests {
                                 )
                             ),
                             tabs = listOf(
-                                TabsComponent.Tab(stack = StackComponent(components = listOf(TabControlComponent))),
-                                TabsComponent.Tab(stack = StackComponent(components = listOf(TabControlComponent))),
+                                TabsComponent.Tab(
+                                    id = "zero",
+                                    stack = StackComponent(components = listOf(TabControlComponent))
+                                ),
+                                TabsComponent.Tab(
+                                    id = "one",
+                                    stack = StackComponent(components = listOf(TabControlComponent))
+                                ),
                             ),
                         )
                     ),

@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2.Variable
+import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
@@ -155,6 +157,19 @@ internal class TextComponentViewVariablesTests(
             period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
         )
+        private val productYearlySekOneOffer = TestStoreProduct(
+            id = "com.revenuecat.annual_product",
+            name = "Annual",
+            title = "Annual (App name)",
+            price = Price(
+                amountMicros = 20000_000_000,
+                currencyCode = "SEK",
+                formatted = "20.000,00 kr",
+            ),
+            description = "Annual",
+            period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+            freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+        )
         private val productLifetimeUsd = TestStoreProduct(
             id = "com.revenuecat.lifetime_product",
             name = "Lifetime",
@@ -182,44 +197,47 @@ internal class TextComponentViewVariablesTests(
         private val productWithUpperCaseName = productYearlyUsdTwoOffers.copy(name = "ANNUAL")
         private val productWithLowerCaseName = productYearlyUsdTwoOffers.copy(name = "annual")
 
-        @Suppress("DEPRECATION")
         private val packageYearlyUsdTwoOffers = Package(
-            packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
-            offering = OFFERING_ID,
+            packageType = PackageType.ANNUAL,
             product = productYearlyUsdTwoOffers,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageMonthlyUsdOneOffer = Package(
-            packageType = PackageType.ANNUAL,
             identifier = "package_monthly",
-            offering = OFFERING_ID,
+            packageType = PackageType.ANNUAL,
             product = productMonthlyUsdOneOffer,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageQuarterlyUsdNoOffers = Package(
-            packageType = PackageType.THREE_MONTH,
             identifier = PackageType.THREE_MONTH.identifier!!,
-            offering = OFFERING_ID,
+            packageType = PackageType.THREE_MONTH,
             product = productQuarterlyUsdNoOffers,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageYearlyMxnOneOffer = Package(
-            packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
-            offering = OFFERING_ID,
+            packageType = PackageType.ANNUAL,
             product = productYearlyMxnOneOffer,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageYearlyJpyOneOffer = Package(
+            identifier = "package_yearly",
+            packageType = PackageType.ANNUAL,
+            product = productYearlyJpyOneOffer,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
+        )
+
+        @Suppress("DEPRECIATION")
+        private val packageYearlySekOneOffer = Package(
             packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
             offering = OFFERING_ID,
-            product = productYearlyJpyOneOffer,
+            product = productYearlySekOneOffer,
         )
 
         @Suppress("DEPRECATION")
@@ -297,7 +315,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$ 2.00/year"
+                    "\$2.00/year"
                 )
 
                 Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED -> arrayOf(
@@ -308,7 +326,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$ 2.00/yr"
+                    "\$2.00/yr"
                 )
 
                 Variable.PRODUCT_PRICE_PER_DAY -> arrayOf(
@@ -319,7 +337,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$0.01"
+                    "\$0.00"
                 )
 
                 Variable.PRODUCT_PRICE_PER_WEEK -> arrayOf(
@@ -330,7 +348,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$0.04"
+                    "\$0.03"
                 )
 
                 Variable.PRODUCT_PRICE_PER_MONTH -> arrayOf(
@@ -341,7 +359,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$0.17"
+                    "\$0.16"
                 )
 
                 Variable.PRODUCT_PRICE_PER_YEAR -> arrayOf(
@@ -473,7 +491,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product price per month when offer period can't display in months
+                    "\$0.16"
                 )
 
                 Variable.PRODUCT_OFFER_PRICE_PER_YEAR -> arrayOf(
@@ -484,7 +503,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product price per year when offer period can't display in years
+                    "\$2.00"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD -> arrayOf(
@@ -539,7 +559,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product period in months when offer period can't display in months
+                    "12"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_IN_YEARS -> arrayOf(
@@ -550,7 +571,8 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    ""
+                    // Falls back to product period in years when offer period can't display in years
+                    "1"
                 )
 
                 Variable.PRODUCT_OFFER_PERIOD_WITH_UNIT -> arrayOf(
@@ -584,7 +606,7 @@ internal class TextComponentViewVariablesTests(
                         storefrontCountryCode = "US",
                         variableLocalizations = variableLocalizationKeysForEnUs(),
                     ),
-                    "\$ 1.00"
+                    "\$1.00"
                 )
 
                 Variable.PRODUCT_SECONDARY_OFFER_PERIOD -> arrayOf(
@@ -630,6 +652,25 @@ internal class TextComponentViewVariablesTests(
                     ),
                     "Annual"
                 )
+
+                Variable.COUNT_DAYS_WITH_ZERO,
+                Variable.COUNT_DAYS_WITHOUT_ZERO,
+                Variable.COUNT_HOURS_WITH_ZERO,
+                Variable.COUNT_HOURS_WITHOUT_ZERO,
+                Variable.COUNT_MINUTES_WITH_ZERO,
+                Variable.COUNT_MINUTES_WITHOUT_ZERO,
+                Variable.COUNT_SECONDS_WITH_ZERO,
+                Variable.COUNT_SECONDS_WITHOUT_ZERO,
+                -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    ""
+                )
             }
         } + listOf(
             // Lifetime:
@@ -668,7 +709,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00",
+                "\$200.00",
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
                 Args(
@@ -677,7 +718,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -686,7 +727,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
                 Args(
@@ -695,7 +736,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
                 Args(
@@ -704,7 +745,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
                 Args(
@@ -713,7 +754,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
                 Args(
@@ -722,7 +763,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
                 Args(
@@ -842,7 +883,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "\$ 200.00"
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
                 Args(
@@ -1003,7 +1044,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥55"
+                "￥54"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
@@ -1013,7 +1054,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥384"
+                "￥383"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
@@ -1023,7 +1064,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥1,667"
+                "￥1,666"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
@@ -1033,7 +1074,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥20,000"
+                "￥20,000"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD.identifier} }}",
@@ -1043,7 +1084,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥20,000/year"
+                "￥20,000/year"
             ),
             arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
@@ -1053,7 +1094,49 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "JP",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                "¥20,000/yr"
+                "￥20,000/yr"
+            ),
+            // storefrontCountryCode different from device locale. We should always prefer the storefront country when
+            // formatting calculated prices, to avoid discrepancies with prices coming from the store directly.
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "54,79 kr"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "383,56 kr"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "1 666,66 kr"
+            ),
+            arrayOf(
+                "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
+                Args(
+                    packages = listOf(packageYearlySekOneOffer),
+                    locale = "en_US",
+                    storefrontCountryCode = "SE",
+                    variableLocalizations = variableLocalizationKeysForEnUs(),
+                ),
+                "20 000,00 kr"
             ),
             // Functions:
             arrayOf(
@@ -1367,6 +1450,7 @@ internal class TextComponentViewVariablesTests(
             )
         }
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -1413,7 +1497,7 @@ internal class TextComponentViewVariablesTests(
 
         // Assert
         // Select the first package to make sure the variables reflect its values.
-        state.update(selectedPackage = packages.first())
+        state.update(packages.first().identifier)
 
         onNodeWithTag("text")
             .onChild()

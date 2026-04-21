@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.Purchases.Companion.configure
+import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -19,6 +22,8 @@ import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -31,10 +36,15 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
+import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
+import java.util.Locale
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -44,13 +54,13 @@ import java.net.URL
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
-class Purchases internal constructor(
+public class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
     /**
      * The current configuration parameters of the Purchases SDK.
      */
-    val currentConfiguration: PurchasesConfiguration
+    public val currentConfiguration: PurchasesConfiguration
         get() = purchasesOrchestrator.currentConfiguration
 
     /**
@@ -61,7 +71,7 @@ class Purchases internal constructor(
         "\"Finishing transactions\" is not a platform-agnostic term.",
         ReplaceWith("purchasesAreCompletedBy"),
     )
-    var finishTransactions: Boolean
+    public var finishTransactions: Boolean
         @Synchronized get() = purchasesOrchestrator.finishTransactions
 
         @Synchronized set(value) {
@@ -72,7 +82,7 @@ class Purchases internal constructor(
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
      * outside of the Purchases SDK.
      */
-    var purchasesAreCompletedBy: PurchasesAreCompletedBy
+    public var purchasesAreCompletedBy: PurchasesAreCompletedBy
         @Synchronized get() =
             if (purchasesOrchestrator.finishTransactions) {
                 PurchasesAreCompletedBy.REVENUECAT
@@ -90,22 +100,33 @@ class Purchases internal constructor(
     /**
      * The passed in or generated app user ID
      */
-    val appUserID: String
+    public val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
 
     /**
      * The storefront country code in ISO-3166-1 alpha2.
      * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
      * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     *
+     * Not supported for the Galaxy Store.
      */
-    val storefrontCountryCode: String?
+    public val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
+
+    /**
+     * The storefront locale. **Note:** this locale only has a region set.
+     * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
+     * To get the country code asynchronously use [getStorefrontLocale] or [awaitStorefrontLocale].
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public val storefrontLocale: Locale?
+        get() = purchasesOrchestrator.storefrontLocale
 
     /**
      * The listener is responsible for handling changes to customer information.
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
-    var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
+    public var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Synchronized get() = purchasesOrchestrator.updatedCustomerInfoListener
 
         @Synchronized set(value) {
@@ -128,19 +149,54 @@ class Purchases internal constructor(
      * @note To use the Customer Center functionality, you need to include the RevenueCat UI SDK
      * by adding the 'purchases-ui' dependency to your app's build.gradle file.
      */
-    var customerCenterListener: CustomerCenterListener? by purchasesOrchestrator::customerCenterListener
+    public var customerCenterListener: CustomerCenterListener? by purchasesOrchestrator::customerCenterListener
+
+    /**
+     * Listener for receiving tracked feature events.
+     * This is an internal debug API for monitoring events tracked by RevenueCatUI.
+     */
+    @get:JvmSynthetic
+    @set:JvmSynthetic
+    @InternalRevenueCatAPI
+    public var trackedEventListener: TrackedEventListener? by purchasesOrchestrator::trackedEventListener
+
+    /**
+     * Listener for receiving debug events from the SDK's internal event storage and flushing pipeline.
+     * This is an internal debug API for monitoring low-level SDK operations and will likely be removed in future
+     * versions without warning.
+     */
+    @get:JvmSynthetic
+    @set:JvmSynthetic
+    @InternalRevenueCatAPI
+    public var debugEventListener: DebugEventListener? by purchasesOrchestrator::debugEventListener
 
     /**
      * If the `appUserID` has been generated by RevenueCat
      */
-    val isAnonymous: Boolean
+    public val isAnonymous: Boolean
         get() = purchasesOrchestrator.isAnonymous
 
     /**
      * The currently configured store
      */
-    val store: Store
+    public val store: Store
         get() = purchasesOrchestrator.store
+
+    /**
+     * The currently configured FileRepository
+     */
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
+    public val fileRepository: FileRepository
+        get() = purchasesOrchestrator.fileRepository
+
+    /**
+     * The AdTracker used to track ad attribution data.
+     */
+    @get:JvmSynthetic
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public val adTracker: AdTracker
+        get() = purchasesOrchestrator.adTracker
 
     @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
     @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
@@ -159,17 +215,33 @@ class Purchases internal constructor(
     /**
      * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
      * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
      */
-    fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
+    public fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         purchasesOrchestrator.getStorefrontCountryCode(callback)
     }
 
     /**
-     * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
-     * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
-     * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
+     * This method will try to obtain the Store (Google/Amazon) locale.
+     * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
+        purchasesOrchestrator.getStorefrontLocale(callback)
+    }
+
+    /**
+     * This method will send active subscriptions and unconsumed one time purchases to the RevenueCat backend.
+     * Call this when using your own implementation for subscriptions anytime a sync is needed, such as when migrating
+     * existing users to RevenueCat. The [SyncPurchasesCallback.onSuccess] callback will be called if all purchases
+     * have been synced successfully or there are no purchases.
+     * Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
      * [PurchasesError] indicating the first error found.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
      * an error. If no purchases are present, the success function will be called.
@@ -179,7 +251,7 @@ class Purchases internal constructor(
      * the user has. Consider that when waiting for this operation to complete.
      */
     @JvmOverloads
-    fun syncPurchases(
+    public fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
         purchasesOrchestrator.syncPurchases(listener)
@@ -202,7 +274,7 @@ class Purchases internal constructor(
         "syncObserverModeAmazonPurchase is being deprecated in favor of syncAmazonPurchase.",
         ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price)"),
     )
-    fun syncObserverModeAmazonPurchase(
+    public fun syncObserverModeAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
@@ -231,7 +303,12 @@ class Purchases internal constructor(
      * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
      * @param [price] Product's price.
      */
-    fun syncAmazonPurchase(
+    @Suppress("LongParameterList")
+    @Deprecated(
+        "Use syncAmazonPurchase with purchaseTime parameter instead.",
+        ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price, purchaseTime)"),
+    )
+    public fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
@@ -244,6 +321,41 @@ class Purchases internal constructor(
             amazonUserID,
             isoCurrencyCode,
             price,
+            null,
+        )
+    }
+
+    /**
+     * This method will send an Amazon purchase to the RevenueCat backend. This function should only be called if you
+     * have set [purchasesAreCompletedBy] to [MY_APP][PurchasesAreCompletedBy.MY_APP] or when performing a client side
+     * migration of your current users to RevenueCat.
+     *
+     * The receipt IDs are cached if successfully posted so they are not posted more than once.
+     *
+     * @param [productID] Product ID associated to the purchase.
+     * @param [receiptID] ReceiptId that represents the Amazon purchase.
+     * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
+     * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
+     * @param [price] Product's price.
+     * @param [purchaseTime] Time the product was purchased, in milliseconds since the epoch.
+     * Can be obtained from the PurchaseResponse > Receipt > purchaseTime.
+     */
+    @Suppress("LongParameterList")
+    public fun syncAmazonPurchase(
+        productID: String,
+        receiptID: String,
+        amazonUserID: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+        purchaseTime: Long,
+    ) {
+        purchasesOrchestrator.syncAmazonPurchase(
+            productID,
+            receiptID,
+            amazonUserID,
+            isoCurrencyCode,
+            price,
+            purchaseTime,
         )
     }
 
@@ -260,7 +372,7 @@ class Purchases internal constructor(
      * @param [listener] Called when subscriber attribute syncing is finished and offerings are available. Called
      * immediately if rate limit is reached.
      */
-    fun syncAttributesAndOfferingsIfNeeded(
+    public fun syncAttributesAndOfferingsIfNeeded(
         callback: SyncAttributesAndOfferingsCallback,
     ) {
         purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(callback)
@@ -276,7 +388,7 @@ class Purchases internal constructor(
      *
      * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
      */
-    fun getOfferings(
+    public fun getOfferings(
         listener: ReceiveOfferingsCallback,
     ) {
         purchasesOrchestrator.getOfferings(listener)
@@ -287,7 +399,7 @@ class Purchases internal constructor(
      * @param [productIds] List of productIds
      * @param [callback] Response callback
      */
-    fun getProducts(
+    public fun getProducts(
         productIds: List<String>,
         callback: GetStoreProductsCallback,
     ) {
@@ -300,7 +412,7 @@ class Purchases internal constructor(
      * @param [type] A product type to filter (no filtering applied if null)
      * @param [callback] Response callback
      */
-    fun getProducts(
+    public fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
         callback: GetStoreProductsCallback,
@@ -322,7 +434,7 @@ class Purchases internal constructor(
      *   @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
      *   @params [callback] The PurchaseCallback that will be called when purchase completes.
      */
-    fun purchase(
+    public fun purchase(
         purchaseParams: PurchaseParams,
         callback: PurchaseCallback,
     ) {
@@ -345,18 +457,12 @@ class Purchases internal constructor(
         "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()"),
     )
-    fun purchaseProduct(
+    public fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         callback: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            storeProduct.purchasingData,
-            null,
-            null,
-            callback,
-        )
+        purchase(PurchaseParams.Builder(activity, storeProduct).build(), callback)
     }
 
     /**
@@ -375,33 +481,29 @@ class Purchases internal constructor(
         "Use purchase() and PurchaseParams.Builder instead",
         ReplaceWith("purchase()"),
     )
-    fun purchasePackage(
+    public fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         listener: PurchaseCallback,
     ) {
-        purchasesOrchestrator.startPurchase(
-            activity,
-            packageToPurchase.product.purchasingData,
-            packageToPurchase.presentedOfferingContext,
-            null,
-            listener,
-        )
+        purchase(PurchaseParams.Builder(activity, packageToPurchase).build(), listener)
     }
 
     /**
      * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all purchases associated with the current Play Store account to
-     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
-     * used by an existing user, the current `appUserID` will be aliased together with the
+     * This method will post all active subscriptions and non consumed one time purchases associated with the current
+     * Play Store account to RevenueCat and become associated with the current `appUserID`. If the receipt token is
+     * being used by an existing user, the current `appUserID` will be aliased together with the
      * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
      * the same user.
+     *
+     * Note: For Amazon, this method will also send expired subscriptions and consumed one time purchases to RevenueCat.
      *
      * You shouldn't use this method if you have your own account system. In that case
      * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
      * @param [callback] The listener that will be called when purchase restore completes.
      */
-    fun restorePurchases(
+    public fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
     ) {
         purchasesOrchestrator.restorePurchases(callback)
@@ -414,7 +516,7 @@ class Purchases internal constructor(
      * @param [callback] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    fun logIn(
+    public fun logIn(
         newAppUserID: String,
         callback: LogInCallback? = null,
     ) {
@@ -427,15 +529,17 @@ class Purchases internal constructor(
      * @param [callback] An optional listener to listen for successes or errors.
      */
     @JvmOverloads
-    fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
+    public fun logOut(callback: ReceiveCustomerInfoCallback? = null) {
         purchasesOrchestrator.logOut(callback)
     }
 
     /**
-     * Call close when you are done with this instance of Purchases
+     * Call close when you are done with this instance of Purchases.
+     * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
-    fun close() {
+    public fun close() {
         purchasesOrchestrator.close()
+        backingFieldSharedInstance = null
     }
 
     /**
@@ -443,7 +547,7 @@ class Purchases internal constructor(
      * @param callback A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
-    fun getCustomerInfo(
+    public fun getCustomerInfo(
         callback: ReceiveCustomerInfoCallback,
     ) {
         purchasesOrchestrator.getCustomerInfo(CacheFetchPolicy.default(), true, callback)
@@ -455,7 +559,7 @@ class Purchases internal constructor(
      * @param callback A listener called when purchaser info is available and not stale.
      * Purchaser info can be null if an error occurred.
      */
-    fun getCustomerInfo(
+    public fun getCustomerInfo(
         fetchPolicy: CacheFetchPolicy,
         callback: ReceiveCustomerInfoCallback,
     ) {
@@ -463,11 +567,46 @@ class Purchases internal constructor(
     }
 
     /**
+     * Fetches the virtual currencies for the current subscriber.
+     *
+     * @param callback A listener called when the virtual currencies are available.
+     */
+    public fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        purchasesOrchestrator.getVirtualCurrencies(callback = callback)
+    }
+
+    /**
+     * Invalidates the cache for virtual currencies.
+     *
+     * This is useful for cases where a virtual currency's balance might have been updated
+     * outside of the app, like if you decreased a user's balance from the user spending a virtual currency,
+     * or if you increased the balance from your backend using the server APIs.
+     *
+     * For more info, see our [virtual currency docs](https://www.revenuecat.com/docs/offerings/virtual-currency)
+     */
+    public fun invalidateVirtualCurrenciesCache() {
+        purchasesOrchestrator.invalidateVirtualCurrenciesCache()
+    }
+
+    /**
+     * The currently cached [VirtualCurrencies] if one is available.
+     * This is synchronous, and therefore useful for contexts where an app needs a [VirtualCurrencies]
+     * right away without waiting for a callback. This value will remain null until virtual currencies
+     * have been fetched at least once with [Purchases.getVirtualCurrencies] or an equivalent function.
+     *
+     * This allows initializing state to ensure that UI can be loaded from the very first frame.
+     */
+    public val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = purchasesOrchestrator.cachedVirtualCurrencies
+
+    /**
      * Call this when you are finished using the [UpdatedCustomerInfoListener]. You should call this
      * to avoid memory leaks.
      */
     @Suppress("MemberVisibilityCanBePrivate")
-    fun removeUpdatedCustomerInfoListener() {
+    public fun removeUpdatedCustomerInfoListener() {
         purchasesOrchestrator.removeUpdatedCustomerInfoListener()
     }
 
@@ -480,7 +619,7 @@ class Purchases internal constructor(
      * For more info: https://rev.cat/googleplayinappmessaging
      */
     @JvmOverloads
-    fun showInAppMessagesIfNeeded(
+    public fun showInAppMessagesIfNeeded(
         activity: Activity,
         inAppMessageTypes: List<InAppMessageType> = listOf(InAppMessageType.BILLING_ISSUES),
     ) {
@@ -497,7 +636,7 @@ class Purchases internal constructor(
      * This is useful for cases where purchaser information might have been updated outside of the
      * app, like if a promotional subscription is granted through the RevenueCat dashboard.
      */
-    fun invalidateCustomerInfoCache() {
+    public fun invalidateCustomerInfoCache() {
         purchasesOrchestrator.invalidateCustomerInfoCache()
     }
 
@@ -506,8 +645,29 @@ class Purchases internal constructor(
      */
     @InternalRevenueCatAPI
     @JvmSynthetic
-    fun track(event: FeatureEvent) {
+    public fun track(event: FeatureEvent) {
         purchasesOrchestrator.track(event)
+    }
+
+    /**
+     * Tracks an impression for a custom paywall.
+     *
+     * Call this method when your custom (non-RevenueCat) paywall is displayed to a user.
+     * This enables RevenueCat to track paywall impressions for analytics.
+     *
+     * @param params Parameters for the custom paywall impression event.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    @JvmOverloads
+    public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
+        purchasesOrchestrator.track(
+            CustomPaywallEvent.Impression(
+                data = CustomPaywallEvent.Impression.Data(
+                    paywallId = params.paywallId,
+                    offeringId = params.offeringId ?: purchasesOrchestrator.cachedCurrentOfferingIdentifier,
+                ),
+            ),
+        )
     }
 
     // Kept internal since it's not meant for public usage.
@@ -515,6 +675,23 @@ class Purchases internal constructor(
         callback: GetCustomerCenterConfigCallback,
     ) {
         purchasesOrchestrator.getCustomerCenterConfig(callback)
+    }
+
+    /**
+     * Creates a support ticket for the current user.
+     * @param email The user's email address for the support ticket.
+     * @param description The description of the support request.
+     * @param onSuccess Called when the support ticket is created successfully with a Boolean indicating if it was sent.
+     * @param onError Called when there's an error creating the support ticket.
+     */
+    @InternalRevenueCatAPI
+    public fun createSupportTicket(
+        email: String,
+        description: String,
+        onSuccess: (Boolean) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
     }
 
     // region Subscriber Attributes
@@ -530,7 +707,7 @@ class Purchases internal constructor(
      *
      * @param attributes Map of attributes by key. Set the value as null to delete an attribute.
      */
-    fun setAttributes(attributes: Map<String, String?>) {
+    public fun setAttributes(attributes: Map<String, String?>) {
         purchasesOrchestrator.setAttributes(attributes)
     }
 
@@ -539,7 +716,7 @@ class Purchases internal constructor(
      *
      * @param email Null or empty will delete the subscriber attribute.
      */
-    fun setEmail(email: String?) {
+    public fun setEmail(email: String?) {
         purchasesOrchestrator.setEmail(email)
     }
 
@@ -548,7 +725,7 @@ class Purchases internal constructor(
      *
      * @param phoneNumber Null or empty will delete the subscriber attribute.
      */
-    fun setPhoneNumber(phoneNumber: String?) {
+    public fun setPhoneNumber(phoneNumber: String?) {
         purchasesOrchestrator.setPhoneNumber(phoneNumber)
     }
 
@@ -557,7 +734,7 @@ class Purchases internal constructor(
      *
      * @param displayName Null or empty will delete the subscriber attribute.
      */
-    fun setDisplayName(displayName: String?) {
+    public fun setDisplayName(displayName: String?) {
         purchasesOrchestrator.setDisplayName(displayName)
     }
 
@@ -566,7 +743,7 @@ class Purchases internal constructor(
      *
      * @param fcmToken Null or empty will delete the subscriber attribute.
      */
-    fun setPushToken(fcmToken: String?) {
+    public fun setPushToken(fcmToken: String?) {
         purchasesOrchestrator.setPushToken(fcmToken)
     }
 
@@ -578,7 +755,7 @@ class Purchases internal constructor(
      *
      * @param mixpanelDistinctID null or an empty string will delete the subscriber attribute.
      */
-    fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
+    public fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
         purchasesOrchestrator.setMixpanelDistinctID(mixpanelDistinctID)
     }
 
@@ -588,7 +765,7 @@ class Purchases internal constructor(
      *
      * @param onesignalID null or an empty string will delete the subscriber attribute
      */
-    fun setOnesignalID(onesignalID: String?) {
+    public fun setOnesignalID(onesignalID: String?) {
         purchasesOrchestrator.setOnesignalID(onesignalID)
     }
 
@@ -598,7 +775,7 @@ class Purchases internal constructor(
      *
      * @param onesignalUserID null or an empty string will delete the subscriber attribute
      */
-    fun setOnesignalUserID(onesignalUserID: String?) {
+    public fun setOnesignalUserID(onesignalUserID: String?) {
         purchasesOrchestrator.setOnesignalUserID(onesignalUserID)
     }
 
@@ -608,7 +785,7 @@ class Purchases internal constructor(
      *
      * @param airshipChannelID null or an empty string will delete the subscriber attribute
      */
-    fun setAirshipChannelID(airshipChannelID: String?) {
+    public fun setAirshipChannelID(airshipChannelID: String?) {
         purchasesOrchestrator.setAirshipChannelID(airshipChannelID)
     }
 
@@ -618,7 +795,7 @@ class Purchases internal constructor(
      *
      * @param firebaseAppInstanceID null or an empty string will delete the subscriber attribute.
      */
-    fun setFirebaseAppInstanceID(firebaseAppInstanceID: String?) {
+    public fun setFirebaseAppInstanceID(firebaseAppInstanceID: String?) {
         purchasesOrchestrator.setFirebaseAppInstanceID(firebaseAppInstanceID)
     }
 
@@ -628,8 +805,18 @@ class Purchases internal constructor(
      *
      * @param tenjinAnalyticsInstallationID null or an empty string will delete the subscriber attribute.
      */
-    fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
+    public fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
         purchasesOrchestrator.setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID)
+    }
+
+    /**
+     * Subscriber attribute associated with the PostHog User ID for the user
+     * Required for the RevenueCat PostHog integration
+     *
+     * @param postHogUserId null or an empty string will delete the subscriber attribute
+     */
+    public fun setPostHogUserId(postHogUserId: String?) {
+        purchasesOrchestrator.setPostHogUserId(postHogUserId)
     }
 
     // endregion
@@ -645,7 +832,7 @@ class Purchases internal constructor(
      * @warning You must declare the [AD_ID Permission](https://rev.cat/google-advertising-id) when your app targets
      * Android 13 or above. Apps that don't declare the permission will get a string of zeros.
      */
-    fun collectDeviceIdentifiers() {
+    public fun collectDeviceIdentifiers() {
         purchasesOrchestrator.collectDeviceIdentifiers()
     }
 
@@ -655,7 +842,7 @@ class Purchases internal constructor(
      *
      * @param adjustID null or an empty string will delete the subscriber attribute
      */
-    fun setAdjustID(adjustID: String?) {
+    public fun setAdjustID(adjustID: String?) {
         purchasesOrchestrator.setAdjustID(adjustID)
     }
 
@@ -665,7 +852,7 @@ class Purchases internal constructor(
      *
      * @param appsflyerID null or an empty string will delete the subscriber attribute
      */
-    fun setAppsflyerID(appsflyerID: String?) {
+    public fun setAppsflyerID(appsflyerID: String?) {
         purchasesOrchestrator.setAppsflyerID(appsflyerID)
     }
 
@@ -675,7 +862,7 @@ class Purchases internal constructor(
      *
      * @param fbAnonymousID null or an empty string will delete the subscriber attribute
      */
-    fun setFBAnonymousID(fbAnonymousID: String?) {
+    public fun setFBAnonymousID(fbAnonymousID: String?) {
         purchasesOrchestrator.setFBAnonymousID(fbAnonymousID)
     }
 
@@ -685,7 +872,7 @@ class Purchases internal constructor(
      *
      * @param mparticleID null or an empty string will delete the subscriber attribute
      */
-    fun setMparticleID(mparticleID: String?) {
+    public fun setMparticleID(mparticleID: String?) {
         purchasesOrchestrator.setMparticleID(mparticleID)
     }
 
@@ -695,7 +882,7 @@ class Purchases internal constructor(
      *
      * @param cleverTapID null or an empty string will delete the subscriber attribute.
      */
-    fun setCleverTapID(cleverTapID: String?) {
+    public fun setCleverTapID(cleverTapID: String?) {
         purchasesOrchestrator.setCleverTapID(cleverTapID)
     }
 
@@ -705,8 +892,92 @@ class Purchases internal constructor(
      *
      * @param kochavaDeviceID null or an empty string will delete the subscriber attribute.
      */
-    fun setKochavaDeviceID(kochavaDeviceID: String?) {
+    public fun setKochavaDeviceID(kochavaDeviceID: String?) {
         purchasesOrchestrator.setKochavaDeviceID(kochavaDeviceID)
+    }
+
+    /**
+     * Subscriber attribute associated with the Airbridge Device ID for the user
+     * Recommended for the RevenueCat Airbridge integration
+     *
+     * @param airbridgeDeviceID null or an empty string will delete the subscriber attribute.
+     */
+    public fun setAirbridgeDeviceID(airbridgeDeviceID: String?) {
+        purchasesOrchestrator.setAirbridgeDeviceID(airbridgeDeviceID)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Distinct ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineDistinctId null or an empty string will delete the subscriber attribute.
+     */
+    public fun setSolarEngineDistinctId(solarEngineDistinctId: String?) {
+        purchasesOrchestrator.setSolarEngineDistinctId(solarEngineDistinctId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Account ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineAccountId null or an empty string will delete the subscriber attribute.
+     */
+    public fun setSolarEngineAccountId(solarEngineAccountId: String?) {
+        purchasesOrchestrator.setSolarEngineAccountId(solarEngineAccountId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Solar Engine Visitor ID for the user
+     * Recommended for the RevenueCat Solar Engine integration
+     *
+     * @param solarEngineVisitorId null or an empty string will delete the subscriber attribute.
+     */
+    public fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
+        purchasesOrchestrator.setSolarEngineVisitorId(solarEngineVisitorId)
+    }
+
+    /**
+     * Sets attribution data from AppsFlyer's conversion data.
+     *
+     * Pass the map received from AppsFlyer's `onConversionDataSuccess` callback directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate subscriber attributes. Note that
+     * this method will never unset any attributes, even if passed `null`. To unset attributes, call the setter method
+     * for the individual attribute that should be unset with a `null` value.
+     *
+     * The following RevenueCat attributes will be set based on the AppsFlyer data:
+     * - `$mediaSource`: From `media_source`, or "Organic" if `af_status` is "Organic"
+     * - `$campaign`: From `campaign`
+     * - `$adGroup`: From `adgroup`, with fallback to `adset`
+     * - `$ad`: From `af_ad`, with fallback to `ad_id`
+     * - `$keyword`: From `af_keywords`, with fallback to `keyword`
+     * - `$creative`: From `creative`, with fallback to `af_creative`
+     *
+     * @param data The conversion data map from AppsFlyer's `onConversionDataSuccess` callback.
+     */
+    public fun setAppsFlyerConversionData(data: Map<*, *>?) {
+        purchasesOrchestrator.setAppsFlyerConversionData(data)
+    }
+
+    /**
+     * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
+     * fresh offerings so that Appstack-based targeting is applied before the callback returns.
+     *
+     * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+     * cached offerings will be returned instead.
+     *
+     * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
+     * The SDK will extract relevant attribution information and set the appropriate attributes.
+     * Note that this method will never unset any attributes. To unset an attribute, call the individual
+     * setter with a `null` value.
+     *
+     * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+     * @param callback Called with fresh [Offerings] (targeted with Appstack data) or a [PurchasesError].
+     */
+    public fun setAppstackAttributionParams(
+        data: Map<String, String>,
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        purchasesOrchestrator.setAppstackAttributionParams(data, callback)
     }
 
     // endregion
@@ -717,7 +988,7 @@ class Purchases internal constructor(
      *
      * @param mediaSource null or an empty string will delete the subscriber attribute.
      */
-    fun setMediaSource(mediaSource: String?) {
+    public fun setMediaSource(mediaSource: String?) {
         purchasesOrchestrator.setMediaSource(mediaSource)
     }
 
@@ -726,7 +997,7 @@ class Purchases internal constructor(
      *
      * @param campaign null or an empty string will delete the subscriber attribute.
      */
-    fun setCampaign(campaign: String?) {
+    public fun setCampaign(campaign: String?) {
         purchasesOrchestrator.setCampaign(campaign)
     }
 
@@ -735,7 +1006,7 @@ class Purchases internal constructor(
      *
      * @param adGroup null or an empty string will delete the subscriber attribute.
      */
-    fun setAdGroup(adGroup: String?) {
+    public fun setAdGroup(adGroup: String?) {
         purchasesOrchestrator.setAdGroup(adGroup)
     }
 
@@ -744,7 +1015,7 @@ class Purchases internal constructor(
      *
      * @param ad null or an empty string will delete the subscriber attribute.
      */
-    fun setAd(ad: String?) {
+    public fun setAd(ad: String?) {
         purchasesOrchestrator.setAd(ad)
     }
 
@@ -753,7 +1024,7 @@ class Purchases internal constructor(
      *
      * @param keyword null or an empty string will delete the subscriber attribute.
      */
-    fun setKeyword(keyword: String?) {
+    public fun setKeyword(keyword: String?) {
         purchasesOrchestrator.setKeyword(keyword)
     }
 
@@ -762,7 +1033,7 @@ class Purchases internal constructor(
      *
      * @param creative null or an empty string will delete the subscriber attribute.
      */
-    fun setCreative(creative: String?) {
+    public fun setCreative(creative: String?) {
         purchasesOrchestrator.setCreative(creative)
     }
 
@@ -773,7 +1044,7 @@ class Purchases internal constructor(
     // region Paywall fonts
 
     @InternalRevenueCatAPI
-    fun getCachedFontFamilyOrStartDownload(
+    public fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
     ): DownloadedFontFamily? {
         return purchasesOrchestrator.getCachedFontFamilyOrStartDownload(fontInfo)
@@ -792,12 +1063,34 @@ class Purchases internal constructor(
         "Replaced with configuration in the RevenueCat dashboard",
         ReplaceWith("configure through the RevenueCat dashboard"),
     )
-    var allowSharingPlayStoreAccount: Boolean
+    public var allowSharingPlayStoreAccount: Boolean
         @Synchronized get() = purchasesOrchestrator.allowSharingPlayStoreAccount
 
         @Synchronized set(value) {
             purchasesOrchestrator.allowSharingPlayStoreAccount = value
         }
+
+    /**
+     * The preferred UI locale override for RevenueCat UI components.
+     * This affects both API requests and UI rendering.
+     *
+     * @return The preferred UI locale override, or null if using system default
+     */
+    public val preferredUILocaleOverride: String?
+        @Synchronized get() = purchasesOrchestrator.preferredUILocaleOverride
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components at runtime.
+     * This affects both API requests and UI rendering.
+     *
+     * If the locale changes, this will automatically clear the offerings cache and trigger
+     * a background refetch to get paywall templates with the correct localizations.
+     *
+     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     */
+    public fun overridePreferredUILocale(localeString: String?): Boolean {
+        return purchasesOrchestrator.overridePreferredUILocale(localeString)
+    }
 
     /**
      * Gets the StoreProduct for the given list of subscription products.
@@ -808,7 +1101,7 @@ class Purchases internal constructor(
         "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
         ReplaceWith("getProducts()"),
     )
-    fun getSubscriptionSkus(
+    public fun getSubscriptionSkus(
         productIds: List<String>,
         callback: GetStoreProductsCallback,
     ) {
@@ -824,7 +1117,7 @@ class Purchases internal constructor(
         "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
         ReplaceWith("getProducts()"),
     )
-    fun getNonSubscriptionSkus(
+    public fun getNonSubscriptionSkus(
         productIds: List<String>,
         callback: GetStoreProductsCallback,
     ) {
@@ -843,7 +1136,7 @@ class Purchases internal constructor(
      *
      * @param [callback] Response callback
      */
-    fun getAmazonLWAConsentStatus(callback: GetAmazonLWAConsentStatusCallback) {
+    public fun getAmazonLWAConsentStatus(callback: GetAmazonLWAConsentStatusCallback) {
         purchasesOrchestrator.getAmazonLWAConsentStatus(callback)
     }
     // endregion
@@ -852,15 +1145,15 @@ class Purchases internal constructor(
      * Redeem a web purchase using a [WebPurchaseRedemption] object obtained
      * through [Intent.asWebPurchaseRedemption] or [Purchases.parseAsWebPurchaseRedemption].
      */
-    fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
+    public fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
         purchasesOrchestrator.redeemWebPurchase(webPurchaseRedemption, listener)
     }
 
     // region Static
-    companion object {
+    public companion object {
 
         @InternalRevenueCatAPI
-        fun getImageLoader(context: Context): Any {
+        public fun getImageLoader(context: Context): Any {
             return PurchasesOrchestrator.getImageLoader(context)
         }
 
@@ -870,7 +1163,7 @@ class Purchases internal constructor(
          * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
          */
         @JvmStatic
-        fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
+        public fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
             val intentData = intent.data ?: return null
             return DeepLinkParser.parseWebPurchaseRedemption(intentData)
         }
@@ -881,7 +1174,7 @@ class Purchases internal constructor(
          * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
          */
         @JvmStatic
-        fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
+        public fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
             try {
                 val uri = Uri.parse(string)
                 return DeepLinkParser.parseWebPurchaseRedemption(uri)
@@ -896,7 +1189,7 @@ class Purchases internal constructor(
          * being used
          */
         @JvmStatic
-        var platformInfo: PlatformInfo
+        public var platformInfo: PlatformInfo
             get() = PurchasesOrchestrator.platformInfo
             set(value) { PurchasesOrchestrator.platformInfo = value }
 
@@ -905,7 +1198,7 @@ class Purchases internal constructor(
          */
         @JvmStatic
         @Deprecated(message = "Use logLevel instead")
-        var debugLogsEnabled
+        public var debugLogsEnabled: Boolean
             get() = PurchasesOrchestrator.debugLogsEnabled
             set(value) {
                 PurchasesOrchestrator.debugLogsEnabled = value
@@ -916,7 +1209,7 @@ class Purchases internal constructor(
          * By default, LogLevel.DEBUG in debug builds, and LogLevel.INFO in release builds.
          */
         @JvmStatic
-        var logLevel: LogLevel
+        public var logLevel: LogLevel
             get() = PurchasesOrchestrator.logLevel
             set(value) {
                 PurchasesOrchestrator.logLevel = value
@@ -930,7 +1223,7 @@ class Purchases internal constructor(
          * If you wish to receive Debug level messages, see [debugLogsEnabled].
          */
         @JvmStatic
-        var logHandler: LogHandler
+        public var logHandler: LogHandler
             @Synchronized get() = PurchasesOrchestrator.logHandler
 
             @Synchronized set(value) {
@@ -946,7 +1239,7 @@ class Purchases internal constructor(
          * @throws UninitializedPropertyAccessException if the shared instance has not been configured.
          */
         @JvmStatic
-        var sharedInstance: Purchases
+        public var sharedInstance: Purchases
             get() =
                 backingFieldSharedInstance
                     ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
@@ -961,14 +1254,14 @@ class Purchases internal constructor(
          * Current version of the Purchases SDK
          */
         @JvmStatic
-        val frameworkVersion = PurchasesOrchestrator.frameworkVersion
+        public val frameworkVersion: String = PurchasesOrchestrator.frameworkVersion
 
         /**
          * Set this property to your proxy URL before configuring Purchases *only*
          * if you've received a proxy key value from your RevenueCat contact.
          */
         @JvmStatic
-        var proxyURL: URL?
+        public var proxyURL: URL?
             get() = PurchasesOrchestrator.proxyURL
             set(value) { PurchasesOrchestrator.proxyURL = value }
 
@@ -976,7 +1269,7 @@ class Purchases internal constructor(
          * True if [configure] has been called and [Purchases.sharedInstance] is set
          */
         @JvmStatic
-        val isConfigured: Boolean
+        public val isConfigured: Boolean
             get() = this.backingFieldSharedInstance != null
 
         /**
@@ -985,8 +1278,9 @@ class Purchases internal constructor(
          * @param configuration: the [PurchasesConfiguration] object you wish to use to configure [Purchases].
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
-        fun configure(
+        public fun configure(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
@@ -1023,7 +1317,7 @@ class Purchases internal constructor(
          */
         @JvmStatic
         @JvmOverloads
-        fun canMakePayments(
+        public fun canMakePayments(
             context: Context,
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>,

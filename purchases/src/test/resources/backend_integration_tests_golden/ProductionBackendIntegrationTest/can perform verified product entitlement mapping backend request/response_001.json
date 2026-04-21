@@ -1,0 +1,29 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "253",
+    "Content-Type": "application\/json",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "X-Request-Id",
+    "server": "envoy"
+  },
+  "body": {
+    "product_entitlement_mapping": {
+      "cheapest_subs": {
+        "base_plan_id": "annual",
+        "entitlements": [
+          "pro_cat"
+        ],
+        "product_identifier": "cheapest_subs"
+      },
+      "cheapest_subs:annual": {
+        "base_plan_id": "annual",
+        "entitlements": [
+          "pro_cat"
+        ],
+        "product_identifier": "cheapest_subs"
+      }
+    }
+  }
+}

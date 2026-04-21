@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
@@ -19,71 +21,81 @@ import kotlinx.serialization.encoding.Encoder
 @Poko
 @Serializable
 @SerialName("button")
-class ButtonComponent(
-    @get:JvmSynthetic val action: Action,
-    @get:JvmSynthetic val stack: StackComponent,
+@Immutable
+public class ButtonComponent(
+    @get:JvmSynthetic public val action: Action,
+    @get:JvmSynthetic public val stack: StackComponent,
+    @get:JvmSynthetic public val transition: PaywallTransition? = null,
+    @get:JvmSynthetic public val name: String? = null,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
     @Serializable(with = ActionSerializer::class)
-    sealed interface Action {
+    @Stable
+    public sealed interface Action {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
-        object Unknown : Action
+        public object Unknown : Action
 
         @Serializable
-        object RestorePurchases : Action
+        public object RestorePurchases : Action
 
         @Serializable
-        object NavigateBack : Action
+        public object NavigateBack : Action
 
         @Serializable
-        data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
+        @Immutable
+        public data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
     }
 
     @InternalRevenueCatAPI
     @Serializable
-    sealed interface Destination {
+    @Stable
+    public sealed interface Destination {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
-        object Unknown : Destination
+        public object Unknown : Destination
 
         @Serializable
-        object CustomerCenter : Destination
+        public object CustomerCenter : Destination
 
         @Serializable
-        data class PrivacyPolicy(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        @Immutable
+        public data class PrivacyPolicy(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
-        data class Terms(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        @Immutable
+        public data class Terms(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
-        data class Url(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        @Immutable
+        public data class Url(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
-        data class Sheet(
-            @get:JvmSynthetic val id: String,
-            @get:JvmSynthetic val name: String?,
-            @get:JvmSynthetic val stack: StackComponent,
-            @get:JvmSynthetic @SerialName("background_blur") val backgroundBlur: Boolean,
-            @get:JvmSynthetic val size: Size?,
+        @Immutable
+        public data class Sheet(
+            @get:JvmSynthetic public val id: String,
+            @get:JvmSynthetic public val name: String?,
+            @get:JvmSynthetic public val stack: StackComponent,
+            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean,
+            @get:JvmSynthetic public val size: Size?,
         ) : Destination
     }
 
     @InternalRevenueCatAPI
     @Serializable(with = UrlMethodDeserializer::class)
-    enum class UrlMethod {
+    public enum class UrlMethod {
         // SerialNames are handled by the UrlMethodDeserializer.
 
         IN_APP_BROWSER,
@@ -121,10 +133,10 @@ private object ActionSerializer : KSerializer<Action> {
 @OptIn(InternalRevenueCatAPI::class)
 @Serializable
 private class ActionSurrogate(
-    val type: ActionTypeSurrogate,
-    val destination: DestinationSurrogate? = null,
-    val url: UrlSurrogate? = null,
-    val sheet: Destination.Sheet? = null,
+    public val type: ActionTypeSurrogate,
+    public val destination: DestinationSurrogate? = null,
+    public val url: UrlSurrogate? = null,
+    public val sheet: Destination.Sheet? = null,
 ) {
     constructor(action: Action) : this(
         type = when (action) {
@@ -193,7 +205,7 @@ private class ActionSurrogate(
         },
     )
 
-    fun toAction(): Action =
+    public fun toAction(): Action =
         when (type) {
             ActionTypeSurrogate.unknown -> Action.Unknown
             ActionTypeSurrogate.restore_purchases -> Action.RestorePurchases

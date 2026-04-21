@@ -11,6 +11,8 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.SharedConstants
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -21,17 +23,25 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
+import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.stubOfferings
+import com.revenuecat.purchases.utils.stubPricingPhase
+import com.revenuecat.purchases.utils.stubStoreProduct
+import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -45,8 +55,8 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.io.File
 import java.net.URL
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -101,9 +111,11 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -172,6 +184,58 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `storefront locale is correctly constructed from storefront country`() {
+        // Arrange
+        val regionCode = "NL"
+        val expectedIso3Country = "NLD"
+        val expectedLocale = Locale.Builder().setRegion(regionCode).build()
+        every { mockBillingAbstract.getStorefront(onSuccess = captureLambda(), onError = any()) }.answers {
+            lambda<(String) -> Unit>().captured.invoke(regionCode)
+        }
+
+        // Act
+        var actualLocaleFromCallback: Locale? = null
+        purchases.getStorefrontLocaleWith { actualLocaleFromCallback = it }
+        val actualLocaleFromProperty = purchases.storefrontLocale
+
+        // Assert
+        assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
+        assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
+        // The below assertion is added so we're notified if our assumptions are no longer true. If it starts failing,
+        // we should look into providing another way of getting the 3-letter storefront country code.
+        assertThat(actualLocaleFromProperty?.isO3Country).isEqualTo(expectedIso3Country)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `storefront locale is null when the billing library returns an error`() {
+        // Arrange
+        val expectedLocale: Locale? = null
+        val expectedError = PurchasesError(
+            code = PurchasesErrorCode.StoreProblemError,
+            underlyingErrorMessage = "Error getting storefront"
+        )
+        every { mockBillingAbstract.getStorefront(onSuccess = any(), onError = captureLambda()) }.answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(expectedError)
+        }
+
+        // Act
+        var actualLocaleFromCallback: Locale? = null
+        var actualErrorFromCallback: PurchasesError? = null
+        purchases.getStorefrontLocaleWith(
+            onSuccess = { actualLocaleFromCallback = it },
+            onError = { actualErrorFromCallback = it }
+        )
+        val actualLocaleFromProperty = purchases.storefrontLocale
+
+        // Assert
+        assertThat(actualLocaleFromCallback).isEqualTo(expectedLocale)
+        assertThat(actualLocaleFromProperty).isEqualTo(expectedLocale)
+        assertThat(actualErrorFromCallback).isEqualTo(expectedError)
+    }
+
     // endregion storefrontCountryCode
 
     // region purchasing
@@ -180,7 +244,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `upgrade defaults ReplacementMode to WITHOUT_PRORATION if not passed`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = stubStoreProduct(productId)
+        mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
@@ -198,7 +263,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchaseWith(
             PurchaseParams.Builder(
                 mockActivity,
-                receiptInfo.storeProduct!!,
+                storeProduct,
             ).oldProductId(oldSubId)
                 .build(),
             onError = { _, _ ->
@@ -215,7 +280,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 any(),
-                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
+                storeProduct.defaultOption!!.purchasingData,
                 expectedReplaceProductInfo,
                 any(),
             )
@@ -226,7 +291,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `purchase does not set isPersonalizedPrice`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = stubStoreProduct(productId)
+        mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
@@ -244,7 +310,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchaseWith(
             PurchaseParams.Builder(
                 mockActivity,
-                receiptInfo.storeProduct!!,
+                storeProduct,
             ).oldProductId(oldSubId)
                 .build(),
             onError = { _, _ ->
@@ -257,7 +323,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 any(),
-                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
+                storeProduct.defaultOption!!.purchasingData,
                 any(),
                 null,
             )
@@ -525,6 +591,28 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `login called with different appUserID notifies backup manager`() {
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
+        }
+    }
+
+    @Test
     fun `login successful with new appUserID calls customer info updater to update delegate if changed`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
@@ -593,6 +681,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         verify(exactly = 1) {
             mockOfferingsManager.fetchAndCacheOfferings(appUserID, false, any(), any())
+        }
+        verify(exactly = 1) {
+            mockBackupManager.dataChanged()
         }
     }
 
@@ -832,16 +923,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             price = price,
-            currency = currencyCode
+            currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -889,16 +980,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             price = price,
-            currency = currencyCode
+            currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -920,11 +1011,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -967,15 +1056,17 @@ internal class PurchasesTest : BasePurchasesTest() {
             isoCurrencyCode = null
         )
 
-        val productInfo = ReceiptInfo(productIDs = listOf(skuTerm))
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            storeUserID = amazonUserID,
+            marketplace = null,
+        )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1021,16 +1112,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             currency = null,
-            price = null
+            price = null,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1103,15 +1194,15 @@ internal class PurchasesTest : BasePurchasesTest() {
             productIDs = listOf(skuTerm),
             price = price,
             currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = true,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
@@ -1162,15 +1253,15 @@ internal class PurchasesTest : BasePurchasesTest() {
             productIDs = listOf(skuTerm),
             price = price,
             currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = true,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
@@ -1214,8 +1305,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun historicalPurchasesPassedToBackend() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
-        val inAppTransactions = getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
-        val subTransactions = getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
+        val inAppTransactions = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
+        val subTransactions = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS)
 
         every {
             mockBillingAbstract.queryAllPurchases(
@@ -1241,15 +1332,17 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = inAppTransactions[0],
                 storeProduct = null,
+                subscriptionOptionForProductIDs = null,
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
-                onError = any()
+                onError = any(),
             )
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = subTransactions[0],
                 storeProduct = null,
+                subscriptionOptionForProductIDs = null,
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
@@ -1300,8 +1393,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         } answers {
             capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
                 it.invoke(
-                    getMockedPurchaseHistoryList(productId, purchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(productIdSub, purchaseTokenSub, ProductType.SUBS)
+                    getMockedPurchaseList(productId, purchaseToken, ProductType.INAPP) +
+                        getMockedPurchaseList(productIdSub, purchaseTokenSub, ProductType.SUBS)
                 )
             }
         }
@@ -1315,6 +1408,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = any(),
                 storeProduct = any(),
+                subscriptionOptionForProductIDs = null,
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
@@ -1370,29 +1464,46 @@ internal class PurchasesTest : BasePurchasesTest() {
     // region track events
 
     @Test
-    fun `track impression event caches it`() {
+    fun `track purchase initiated event caches it`() {
         val event = mockk<PaywallEvent>().apply {
-            every { type } returns PaywallEventType.IMPRESSION
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
         }
         every { mockEventsManager.track(event) } just Runs
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
         purchases.track(event)
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
     }
 
     @Test
-    fun `track close event clears cache`() {
-        every { mockEventsManager.track(any()) } just Runs
-        val impressionEvent = mockk<PaywallEvent>().apply {
-            every { type } returns PaywallEventType.IMPRESSION
+    fun `track purchase error event clears cache`() {
+        every { mockEventsManager.track(any<FeatureEvent>()) } just Runs
+        val purchaseInitiatedEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
         }
-        val closeEvent = mockk<PaywallEvent>().apply {
-            every { type } returns PaywallEventType.CLOSE
+        val purchaseErrorEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_ERROR
         }
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
-        purchases.track(impressionEvent)
-        purchases.track(closeEvent)
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
+        purchases.track(purchaseInitiatedEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
+        purchases.track(purchaseErrorEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
+    }
+
+    @Test
+    fun `track cancel event clears cache`() {
+        every { mockEventsManager.track(any<FeatureEvent>()) } just Runs
+        val purchaseInitiatedEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
+        }
+        val cancelEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.CANCEL
+        }
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
+        purchases.track(purchaseInitiatedEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
+        purchases.track(cancelEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
     }
 
     @Test
@@ -1404,6 +1515,30 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         purchases.track(event)
         verify(exactly = 1) { mockEventsManager.track(event) }
+    }
+
+    @Test
+    fun `track notifies listener if set`() {
+        val trackedEvents = mutableListOf<FeatureEvent>()
+        purchases.trackedEventListener = TrackedEventListener {
+            trackedEvents.add(it)
+        }
+        val event = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
+        }
+        every { mockEventsManager.track(event) } just Runs
+        purchases.track(event)
+
+        assertThat(trackedEvents).containsExactly(event)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `setting debugEventListener on Purchases propagates to EventManager`() {
+        purchases.debugEventListener = DebugEventListener { }
+        verify(exactly = 1) {
+            mockEventsManager.debugEventListener = any()
+        }
     }
 
     // endregion track events
@@ -1514,6 +1649,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             ),
             support = CustomerCenterConfigData.Support(
                 email = "",
+                supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
             ),
         )
 
@@ -1644,16 +1780,560 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // endregion Paywall fonts
 
+    // region Simulated store
+
+    @Test
+    fun `syncing transactions on simulated store does not sync purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.syncPurchases(object: SyncPurchasesCallback {
+            override fun onSuccess(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    @Test
+    fun `restore transactions on simulated store does not restore purchases`() {
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.restorePurchases(object: ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) {
+                receivedCustomerInfo = customerInfo
+            }
+
+            override fun onError(error: PurchasesError) {
+                fail("Expected succeess. Got $error")
+            }
+        })
+
+        verify(exactly = 0) { mockBillingAbstract.queryAllPurchases(any(), any(), any()) }
+        assertThat(receivedCustomerInfo).isNotNull
+    }
+
+    // endregion Simulated store
+
+    // region Add-On Purchases
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchase with empty add-ons list starts purchase with expected parameters`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .addOnStoreProducts(addOnStoreProducts = emptyList())
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                null,
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        assertThat(subscription.addOnProducts).isEmpty()
+        assertThat(capturedError).isNull()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `product change with empty add-ons list starts purchase with expected parameters`() {
+        val oldProductId = "oldProductId"
+        mockPurchaseFound()
+        val expectedOldPurchase = getMockedStoreTransaction(
+            productId = oldProductId,
+            purchaseToken = "another_purchase_token",
+            productType = ProductType.SUBS,
+        )
+
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .addOnStoreProducts(addOnStoreProducts = emptyList())
+            .oldProductId(oldProductId)
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        val replaceProductInfoSlot = slot<ReplaceProductInfo>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                capture(replaceProductInfoSlot),
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        assertThat(subscription.addOnProducts).isEmpty()
+        assertThat(capturedError).isNull()
+
+        val capturedReplaceProductInfo = replaceProductInfoSlot.captured
+        assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
+        assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `product change with add-ons starts purchase with expected parameters`() {
+        val oldProductId = "oldProductId"
+        mockPurchaseFound()
+        val expectedOldPurchase = getMockedStoreTransaction(
+            productId = oldProductId,
+            purchaseToken = "another_purchase_token",
+            productType = ProductType.SUBS,
+        )
+        val addOnStoreProducts = listOf(
+            stubStoreProductWithGoogleSubscriptionPurchaseData(
+                productId = "abc123",
+                optionId = "option1",
+                token = "abc"
+            )
+        )
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .addOnStoreProducts(addOnStoreProducts = addOnStoreProducts)
+            .oldProductId(oldProductId)
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        val replaceProductInfoSlot = slot<ReplaceProductInfo>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                capture(replaceProductInfoSlot),
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        assertThat(subscription.addOnProducts?.size).isEqualTo(1)
+        assertThat(subscription.addOnProducts?.first()?.productId).isEqualTo("abc123")
+        assertThat(capturedError).isNull()
+
+        val capturedReplaceProductInfo = replaceProductInfoSlot.captured
+        assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
+        assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchase with add-ons starts purchase with expected parameters`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+
+        val addOns = listOf(
+            stubStoreProductWithGoogleSubscriptionPurchaseData(
+                productId = "abc123",
+                optionId = "option1",
+                token = "abc"
+            ),
+            stubStoreProductWithGoogleSubscriptionPurchaseData(
+                productId = "xyz789",
+                optionId = "option2",
+                token = "xyz"
+            ),
+        )
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .addOnStoreProducts(addOnStoreProducts = addOns)
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                null,
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        val capturedAddOns = subscription.addOnProducts
+        assertThat(capturedAddOns?.size).isEqualTo(2)
+        assertThat(capturedAddOns?.first()?.productId).isEqualTo("abc123")
+        assertThat(capturedAddOns?.first()?.productType).isEqualTo(ProductType.SUBS)
+        assertThat(capturedAddOns?.last()?.productId).isEqualTo("xyz789")
+        assertThat(capturedAddOns?.last()?.productType).isEqualTo(ProductType.SUBS)
+        assertThat(capturedError).isNull()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `purchase with add-on SubscriptionOption starts purchase with expected parameters`() {
+        val baseProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        val subOption1 = GoogleSubscriptionOption(
+            productId = "productID1",
+            basePlanId = "basePlan1",
+            offerId = null,
+            pricingPhases = listOf(stubPricingPhase()),
+            tags = emptyList(),
+            productDetails = mockk(),
+            offerToken = "token"
+        )
+
+        val subOption2 = GoogleSubscriptionOption(
+            productId = "productID2",
+            basePlanId = "basePlan2",
+            offerId = null,
+            pricingPhases = listOf(stubPricingPhase()),
+            tags = emptyList(),
+            productDetails = mockk(),
+            offerToken = "token"
+        )
+
+        val purchaseParams = PurchaseParams.Builder(mockActivity, baseProduct)
+            .addOnSubscriptionOptions(addOnSubscriptionOptions = listOf(subOption1, subOption2))
+            .build()
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+            store = Store.PLAY_STORE
+        )
+
+        var capturedError: PurchasesError? = null
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) { }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) { capturedError = error }
+            },
+        )
+
+        val purchasingDataSlot = slot<PurchasingData>()
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                capture(purchasingDataSlot),
+                null,
+                null,
+                null,
+            )
+        }
+
+        val capturedPurchasingData = purchasingDataSlot.captured
+        assertThat(capturedPurchasingData).isInstanceOf(GooglePurchasingData.Subscription::class.java)
+        val subscription = capturedPurchasingData as GooglePurchasingData.Subscription
+        assertThat(subscription.productId).isEqualTo(baseProduct.purchasingData.productId)
+        assertThat(subscription.productType).isEqualTo(baseProduct.purchasingData.productType)
+        val capturedAddOns = subscription.addOnProducts
+        assertThat(capturedAddOns?.size).isEqualTo(2)
+
+        fun validateAddOnMatchesSubscriptionOption(
+            addOn: GooglePurchasingData,
+            expectedSubscriptionOption: GoogleSubscriptionOption
+        ) {
+            assertThat(addOn.productId).isEqualTo(expectedSubscriptionOption.productId)
+            assertThat((addOn as? GooglePurchasingData.Subscription)!!.optionId).isEqualTo(expectedSubscriptionOption.basePlanId)
+            assertThat(addOn.productType).isEqualTo(ProductType.SUBS)
+        }
+        validateAddOnMatchesSubscriptionOption(addOn = capturedAddOns!!.first(), expectedSubscriptionOption = subOption1)
+        validateAddOnMatchesSubscriptionOption(addOn = capturedAddOns.last(), expectedSubscriptionOption = subOption2)
+
+        assertThat(capturedError).isNull()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `initial purchase with add-ons that fails purchaseParams validation throws an error`() {
+
+        val errorCode = PurchasesErrorCode.PurchaseInvalidError
+        val underlyingErrorMessage = "This is an error."
+        every { mockPurchaseParamsValidator.validate(any()) } returns Result.Error(
+            PurchasesError(code = errorCode, underlyingErrorMessage = underlyingErrorMessage)
+        )
+        val purchaseParams = PurchaseParams.Builder(
+            activity = mockActivity,
+            storeProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        )
+            .addOnStoreProducts(
+                addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "abc"))
+            )
+            .build()
+
+        buildPurchases(
+            anonymous = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+            enableSimulatedStore = true,
+        )
+
+        val latch = CountDownLatch(1)
+        var capturedError: PurchasesError? = null
+        var capturedUserCancelled: Boolean? = null
+
+        purchases.purchase(
+            purchaseParams = purchaseParams,
+            callback = object: PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    fail("purchase() should fail due to a purchaseParams validation error")
+                    latch.countDown()
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    capturedError = error
+                    capturedUserCancelled = userCancelled
+                    latch.countDown()
+                }
+            },
+        )
+
+        assertThat(latch.await(3, TimeUnit.SECONDS)).withFailMessage(
+            "Callback was not called within timeout"
+        ).isTrue()
+
+        assertThat(capturedError).withFailMessage(
+            "Expected error to be captured"
+        ).isNotNull()
+
+        assertThat(capturedError?.code).isEqualTo(errorCode)
+        assertThat(capturedError?.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
+        assertThat(capturedError?.underlyingErrorMessage).isEqualTo(underlyingErrorMessage)
+
+        assertThat(capturedUserCancelled).withFailMessage(
+            "Expected userCancelled to be false"
+        ).isNotNull().isFalse()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `initial purchase with add-ons throws when Store is not PLAY_STORE`() {
+        val purchaseParams = PurchaseParams.Builder(
+            activity = mockActivity,
+            storeProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        )
+            .addOnStoreProducts(
+                addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "abc"))
+            )
+            .build()
+
+        for (store in Store.values()) {
+            if (store == Store.PLAY_STORE) { continue }
+            buildPurchases(
+                anonymous = false,
+                apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+                enableSimulatedStore = true,
+                store = store
+            )
+
+            val latch = CountDownLatch(1)
+            var capturedError: PurchasesError? = null
+            var capturedUserCancelled: Boolean? = null
+
+            purchases.purchase(
+                purchaseParams = purchaseParams,
+                callback = object: PurchaseCallback {
+                    override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                        fail("purchase() should fail with a purchase with add-ons when the store is not the Play Store")
+                        latch.countDown()
+                    }
+
+                    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                        capturedError = error
+                        capturedUserCancelled = userCancelled
+                        latch.countDown()
+                    }
+                },
+            )
+
+            assertThat(latch.await(3, TimeUnit.SECONDS)).withFailMessage(
+                "Callback was not called within timeout for store: $store"
+            ).isTrue()
+
+            assertThat(capturedError).withFailMessage(
+                "Expected error to be captured for store: $store"
+            ).isNotNull()
+
+            assertThat(capturedError?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+            assertThat(capturedError?.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
+            assertThat(capturedError?.underlyingErrorMessage).isEqualTo("Making a purchase with add-ons is only supported on" +
+                " the Play Store.")
+
+            assertThat(capturedUserCancelled).withFailMessage(
+                "Expected userCancelled to be false for store: $store"
+            ).isNotNull().isFalse()
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `product change with add-ons throws when Store is not PLAY_STORE`() {
+        val purchaseParams = PurchaseParams.Builder(
+            activity = mockActivity,
+            storeProduct = stubStoreProductWithGoogleSubscriptionPurchaseData()
+        )
+            .addOnStoreProducts(
+                addOnStoreProducts = listOf(stubStoreProductWithGoogleSubscriptionPurchaseData(productId = "abc"))
+            )
+            .oldProductId("123")
+            .build()
+
+        for (store in Store.values()) {
+            if (store == Store.PLAY_STORE) { continue }
+            buildPurchases(
+                anonymous = false,
+                apiKeyValidationResult = APIKeyValidator.ValidationResult.SIMULATED_STORE,
+                enableSimulatedStore = true,
+                store = store
+            )
+
+            val latch = CountDownLatch(1)
+            var capturedError: PurchasesError? = null
+            var capturedUserCancelled: Boolean? = null
+
+            purchases.purchase(
+                purchaseParams = purchaseParams,
+                callback = object: PurchaseCallback {
+                    override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                        fail("purchase() should fail with a purchase with add-ons when the store is not the Play Store")
+                        latch.countDown()
+                    }
+
+                    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                        capturedError = error
+                        capturedUserCancelled = userCancelled
+                        latch.countDown()
+                    }
+                },
+            )
+
+            assertThat(latch.await(3, TimeUnit.SECONDS)).withFailMessage(
+                "Callback was not called within timeout for store: $store"
+            ).isTrue()
+
+            assertThat(capturedError).withFailMessage(
+                "Expected error to be captured for store: $store"
+            ).isNotNull()
+
+            assertThat(capturedError?.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+            assertThat(capturedError?.message).isEqualTo(PurchasesErrorCode.PurchaseInvalidError.description)
+            assertThat(capturedError?.underlyingErrorMessage).isEqualTo("Making a purchase with add-ons is only supported on" +
+                " the Play Store.")
+
+            assertThat(capturedUserCancelled).withFailMessage(
+                "Expected userCancelled to be false for store: $store"
+            ).isNotNull().isFalse()
+        }
+    }
+    // endregion Add-On Purchases
+
     // region Private Methods
 
-    private fun getMockedPurchaseHistoryList(
+    private fun getMockedPurchaseList(
         productId: String,
         purchaseToken: String,
         productType: ProductType
     ): List<StoreTransaction> {
-        val purchaseHistoryRecordWrapper =
+        val purchaseRecordWrapper =
             getMockedStoreTransaction(productId, purchaseToken, productType)
-        return listOf(purchaseHistoryRecordWrapper)
+        return listOf(purchaseRecordWrapper)
     }
 
     private fun mockQueryingProductDetails(
@@ -1685,11 +2365,22 @@ internal class PurchasesTest : BasePurchasesTest() {
     ): ReceiptInfo {
         val productId = storeProduct.purchasingData.productId
 
+        val platformProductIds = listOf(mutableMapOf(
+            "product_id" to productId,
+        ))
+        if (storeProduct.type == ProductType.SUBS && subscriptionOptionId != null) {
+            platformProductIds[0]["base_plan_id"] = subscriptionOptionId
+        }
+
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),
             presentedOfferingContext = presentedOfferingContext,
-            storeProduct = storeProduct,
-            subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null,
+            price = storeProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
+            formattedPrice = storeProduct.price.formatted,
+            currency = storeProduct.price.currencyCode,
+            period = storeProduct.period,
+            pricingPhases = storeProduct.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }?.pricingPhases,
+            platformProductIds = platformProductIds,
         )
 
         every {

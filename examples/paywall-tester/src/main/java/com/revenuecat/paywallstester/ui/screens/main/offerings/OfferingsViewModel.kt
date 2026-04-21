@@ -17,6 +17,10 @@ abstract class OfferingsViewModel : ViewModel() {
     abstract val offeringsState: StateFlow<OfferingsState>
 
     abstract fun refreshOfferings()
+
+    abstract fun updateSearchQuery(query: String)
+
+    abstract fun markOfferingAsRecent(offeringId: String)
 }
 
 class OfferingsViewModelImpl : OfferingsViewModel() {
@@ -30,11 +34,37 @@ class OfferingsViewModelImpl : OfferingsViewModel() {
     }
 
     override fun refreshOfferings() {
+        val previousState = _offeringsState.value as? OfferingsState.Loaded
         _offeringsState.update { OfferingsState.Loading }
         viewModelScope.launch {
             val offerings = Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
-            _offeringsState.update { OfferingsState.Loaded(offerings) }
+            _offeringsState.update {
+                OfferingsState.Loaded(
+                    offerings,
+                    searchQuery = previousState?.searchQuery ?: "",
+                    recentOfferingIds = previousState?.recentOfferingIds ?: emptyList(),
+                )
+            }
         }
+    }
+
+    override fun updateSearchQuery(query: String) {
+        val currentState = _offeringsState.value
+        if (currentState is OfferingsState.Loaded) {
+            _offeringsState.update { currentState.copy(searchQuery = query) }
+        }
+    }
+
+    override fun markOfferingAsRecent(offeringId: String) {
+        val currentState = _offeringsState.value
+        if (currentState is OfferingsState.Loaded) {
+            val updated = listOf(offeringId) + currentState.recentOfferingIds.filter { it != offeringId }
+            _offeringsState.update { currentState.copy(recentOfferingIds = updated.take(MAX_RECENTS)) }
+        }
+    }
+
+    companion object {
+        private const val MAX_RECENTS = 5
     }
 
     private fun updateOfferings() {

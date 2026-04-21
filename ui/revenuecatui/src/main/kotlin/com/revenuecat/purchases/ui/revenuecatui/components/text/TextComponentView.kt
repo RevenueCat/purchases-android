@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
@@ -9,16 +10,20 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
@@ -26,6 +31,8 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -37,19 +44,19 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.forCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessorV2
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
 @Composable
 internal fun TextComponentView(
     style: TextComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     // Get a TextComponentState that calculates the overridden properties we should use.
     val textState = rememberUpdatedTextComponentState(
@@ -84,21 +91,39 @@ internal fun TextComponentView(
     }
 
     if (textState.visible) {
-        Markdown(
-            text = text,
-            modifier = modifier
-                .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
-                .padding(textState.margin)
-                .applyIfNotNull(backgroundColorStyle) { background(it) }
-                .padding(textState.padding),
-            color = color,
-            fontSize = textState.fontSize.sp,
-            fontWeight = textState.fontWeight,
-            fontFamily = textState.fontFamily,
-            horizontalAlignment = textState.horizontalAlignment,
-            textAlign = textState.textAlign,
-            style = textStyle,
-        )
+        val uriHandler = LocalUriHandler.current
+        val trackingUriHandler = remember(uriHandler, componentInteractionTracker, style.componentName) {
+            object : UriHandler {
+                override fun openUri(uri: String) {
+                    componentInteractionTracker.track(
+                        PaywallComponentInteractionData(
+                            componentType = PaywallComponentType.TEXT,
+                            componentName = style.componentName,
+                            componentValue = "navigate_to_url",
+                            componentUrl = uri,
+                        ),
+                    )
+                    uriHandler.openUri(uri)
+                }
+            }
+        }
+        CompositionLocalProvider(LocalUriHandler provides trackingUriHandler) {
+            Markdown(
+                text = text,
+                modifier = modifier
+                    .size(textState.size, horizontalAlignment = textState.horizontalAlignment)
+                    .padding(textState.margin)
+                    .applyIfNotNull(backgroundColorStyle) { background(it) }
+                    .padding(textState.padding),
+                color = color,
+                fontSize = textState.fontSize.sp,
+                fontWeight = textState.fontWeight,
+                fontFamily = textState.fontFamily,
+                horizontalAlignment = textState.horizontalAlignment,
+                textAlign = textState.textAlign,
+                style = textStyle,
+            )
+        }
     }
 }
 
@@ -112,37 +137,37 @@ private fun rememberProcessedText(
 ): String {
     val processedText by remember(state, textState) {
         derivedStateOf {
-            textState.applicablePackage?.let { packageToUse ->
-                val locale = state.locale.toJavaLocale()
+            val dateLocale = state.locale.toJavaLocale()
+            val currencyLocale = state.currencyLocale.toJavaLocale()
+            val packageToUse = textState.applicablePackage
 
-                val introEligibility = packageToUse.introEligibility
-
-                when (introEligibility) {
-                    IntroOfferEligibility.INELIGIBLE -> textState.text
-                    IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textState.text
-                    IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textState.text
-                }
-
+            val variableContext = packageToUse?.let { pkg ->
                 val discount = discountPercentage(
-                    pricePerMonthMicros = packageToUse.product.pricePerMonth()?.amountMicros,
+                    pricePerMonthMicros = pkg.product.pricePerMonth()?.amountMicros,
                     mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
                 )
-                val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
+                VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
                     showZeroDecimalPlacePrices = !state.showPricesWithDecimals,
                 )
+            }
 
-                VariableProcessorV2.processVariables(
-                    template = textState.text,
-                    localizedVariableKeys = textState.localizedVariableKeys,
-                    variableConfig = state.variableConfig,
-                    variableDataProvider = state.variableDataProvider,
-                    packageContext = variableContext,
-                    rcPackage = packageToUse,
-                    locale = locale,
-                    date = state.currentDate,
-                )
-            } ?: textState.text
+            VariableProcessorV2.processVariables(
+                template = textState.text,
+                localizedVariableKeys = textState.localizedVariableKeys,
+                variableConfig = state.variableConfig,
+                variableDataProvider = state.variableDataProvider,
+                packageContext = variableContext,
+                rcPackage = packageToUse,
+                subscriptionOption = textState.subscriptionOption,
+                currencyLocale = currencyLocale,
+                dateLocale = dateLocale,
+                date = state.currentDate,
+                countdownTime = textState.countdownTime,
+                countFrom = textState.countFrom,
+                customVariables = state.customVariables,
+                defaultCustomVariables = state.defaultCustomVariables,
+            )
         }
     }
 

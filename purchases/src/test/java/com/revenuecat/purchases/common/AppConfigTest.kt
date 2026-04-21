@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
@@ -15,7 +16,6 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
-import java.util.concurrent.atomic.AtomicBoolean
 
 @RunWith(AndroidJUnit4::class)
 class AppConfigTest {
@@ -40,6 +40,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -59,6 +60,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -81,6 +83,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -102,6 +105,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -124,6 +128,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.packageName).isEqualTo(expected)
     }
@@ -138,6 +143,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.showInAppMessagesAutomatically).isFalse
         val appConfig2 = AppConfig(
@@ -148,6 +154,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig2.showInAppMessagesAutomatically).isTrue
     }
@@ -162,6 +169,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.finishTransactions).isTrue()
     }
@@ -176,6 +184,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.finishTransactions).isFalse()
     }
@@ -191,6 +200,7 @@ class AppConfigTest {
             proxyURL = expected,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -206,22 +216,9 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
-    }
-
-    @Test
-    fun `default forceServerErrors is correct`() {
-        val appConfig = AppConfig(
-            context = mockk(relaxed = true),
-            purchasesAreCompletedBy = REVENUECAT,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE,
-            isDebugBuild = false,
-        )
-        assertThat(appConfig.forceServerErrors).isFalse
     }
 
     @Test
@@ -234,6 +231,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.forceSigningErrors).isFalse
     }
@@ -248,6 +246,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.isAppBackgrounded).isTrue
     }
@@ -262,6 +261,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.isAppBackgrounded).isTrue
         appConfig.isAppBackgrounded = false
@@ -278,6 +278,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(customEntitlementComputation = true)
         )
         assertThat(appConfig.customEntitlementComputation).isTrue
@@ -289,9 +290,41 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(customEntitlementComputation = false)
         )
         assertThat(appConfig2.customEntitlementComputation).isFalse
+    }
+
+    @Test
+    fun `uiPreviewMode matches value from dangerous settings`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            dangerousSettings = DangerousSettings(
+                autoSyncPurchases = true,
+                customEntitlementComputation = false,
+                uiPreviewMode = true,
+            ),
+        )
+        assertThat(appConfig.uiPreviewMode).isTrue
+        val appConfig2 = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+        )
+        assertThat(appConfig2.uiPreviewMode).isFalse
     }
 
     @Test
@@ -304,6 +337,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -313,6 +347,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isEqualTo(y)
@@ -328,6 +363,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         var y = AppConfig(
             context = mockk(relaxed = true),
@@ -337,6 +373,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -349,6 +386,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -361,6 +399,7 @@ class AppConfigTest {
             proxyURL = URL("https://a.com"),
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -373,6 +412,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
             dangerousSettings = DangerousSettings(autoSyncPurchases = false)
         )
 
@@ -386,6 +426,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = true,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -401,6 +442,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -410,6 +452,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
@@ -424,18 +467,20 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(x.toString()).isEqualTo(
             "AppConfig(" +
                 "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
                 "store=PLAY_STORE, " +
                 "isDebugBuild=false, " +
-                "dangerousSettings=DangerousSettings(autoSyncPurchases=true, customEntitlementComputation=false), " +
+                "dangerousSettings=DangerousSettings(autoSyncPurchases=true, customEntitlementComputation=false, uiPreviewMode=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +
                 "finishTransactions=true, " +
                 "showInAppMessagesAutomatically=false, " +
+                "apiKeyValidationResult=VALID, " +
                 "baseURL=https://api.revenuecat.com/)")
     }
 
@@ -451,6 +496,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.fallbackBaseURLs).isEqualTo(listOf(URL("https://api-production.8-lives-cat.io/")))
     }
@@ -465,6 +511,7 @@ class AppConfigTest {
             proxyURL = URL("https://proxy.com"),
             store = Store.PLAY_STORE,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         assertThat(appConfig.fallbackBaseURLs).isEmpty()
     }

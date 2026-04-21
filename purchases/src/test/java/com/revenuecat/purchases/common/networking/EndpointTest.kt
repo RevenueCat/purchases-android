@@ -19,78 +19,122 @@ class EndpointTest {
         Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
         Endpoint.PostAttributes("test-user-id"),
         Endpoint.PostDiagnostics,
-        Endpoint.PostPaywallEvents,
+        Endpoint.PostEvents,
         Endpoint.PostRedeemWebPurchase,
+        Endpoint.GetVirtualCurrencies("test-user-id"),
+        Endpoint.GetWorkflow("test-user-id", "wf_test"),
+        Endpoint.AliasUsers("test-user-id")
     )
 
     @Test
     fun `GetCustomerInfo has correct path`() {
         val endpoint = Endpoint.GetCustomerInfo("test user-id")
-        val expectedPath = "/subscribers/test%20user-id"
+        val expectedPath = "/v1/subscribers/test%20user-id"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `PostReceipt has correct path`() {
         val endpoint = Endpoint.PostReceipt
-        val expectedPath = "/receipts"
+        val expectedPath = "/v1/receipts"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `GetOfferings has correct path`() {
         val endpoint = Endpoint.GetOfferings("test user-id")
-        val expectedPath = "/subscribers/test%20user-id/offerings"
+        val expectedPath = "/v1/subscribers/test%20user-id/offerings"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetWorkflow has correct path`() {
+        val endpoint = Endpoint.GetWorkflow("test user-id", "wf abc")
+        val expectedPath = "/v1/subscribers/test%20user-id/workflows/wf%20abc"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `LogIn has correct path`() {
         val endpoint = Endpoint.LogIn
-        val expectedPath = "/subscribers/identify"
+        val expectedPath = "/v1/subscribers/identify"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `Diagnostics has correct path`() {
         val endpoint = Endpoint.PostDiagnostics
-        val expectedPath = "/diagnostics"
+        val expectedPath = "/v1/diagnostics"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `Paywall events has correct path`() {
-        val endpoint = Endpoint.PostPaywallEvents
-        val expectedPath = "/events"
+        val endpoint = Endpoint.PostEvents
+        val expectedPath = "/v1/events"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `PostAttributes has correct path`() {
         val endpoint = Endpoint.PostAttributes("test user-id")
-        val expectedPath = "/subscribers/test%20user-id/attributes"
+        val expectedPath = "/v1/subscribers/test%20user-id/attributes"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `GetAmazonReceipt has correct path`() {
         val endpoint = Endpoint.GetAmazonReceipt("test user-id", "test-receipt-id")
-        val expectedPath = "/receipts/amazon/test%20user-id/test-receipt-id"
+        val expectedPath = "/v1/receipts/amazon/test%20user-id/test-receipt-id"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `GetProductEntitlementMapping has correct path`() {
         val endpoint = Endpoint.GetProductEntitlementMapping
-        val expectedPath = "/product_entitlement_mapping"
+        val expectedPath = "/v1/product_entitlement_mapping"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
     @Test
     fun `PostRedeemWebPurchase has correct path`() {
         val endpoint = Endpoint.PostRedeemWebPurchase
-        val expectedPath = "/subscribers/redeem_purchase"
+        val expectedPath = "/v1/subscribers/redeem_purchase"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetVirtualCurrencies has correct path`() {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = "test user-id")
+        val expectedPath = "/v1/subscribers/test%20user-id/virtual_currencies"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetVirtualCurrencies has correct name`() {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = "test user-id")
+        val expectedName = "get_virtual_currencies"
+        assertThat(endpoint.name).isEqualTo(expectedName)
+    }
+
+    @Test
+    fun `WebBillingGetProducts has correct path`() {
+        val endpoint = Endpoint.WebBillingGetProducts(userId = "test user-id", linkedSetOf("product1", "product2"))
+        val expectedPath = "/rcbilling/v1/subscribers/test%20user-id/products?id=product1&id=product2"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `AliasUsers has correct path`() {
+        val endpoint = Endpoint.AliasUsers(userId = "test user-id")
+        val expectedPath = "/v1/subscribers/test%20user-id/alias"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `AliasUsers has correct name`() {
+        val endpoint = Endpoint.AliasUsers(userId = "test user-id")
+        assertThat(endpoint.name).isEqualTo("alias_users")
     }
 
     @Test
@@ -100,8 +144,10 @@ class EndpointTest {
             Endpoint.LogIn,
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
+            Endpoint.GetWorkflow("test-user-id", "wf_1"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
+            Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -116,7 +162,9 @@ class EndpointTest {
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
-            Endpoint.PostPaywallEvents,
+            Endpoint.PostEvents,
+            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
+            Endpoint.AliasUsers("test-user-id"),
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -143,6 +191,7 @@ class EndpointTest {
             Endpoint.LogIn,
             Endpoint.PostReceipt,
             Endpoint.PostRedeemWebPurchase,
+            Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
@@ -155,11 +204,14 @@ class EndpointTest {
     fun `needsNonceToPerformSigning is false for expected values`() {
         val expectedEndpoints = listOf(
             Endpoint.GetOfferings("test-user-id"),
+            Endpoint.GetWorkflow("test-user-id", "wf_1"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
-            Endpoint.PostPaywallEvents,
+            Endpoint.PostEvents,
+            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
+            Endpoint.AliasUsers("test-user-id"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)

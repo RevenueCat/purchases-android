@@ -1,21 +1,26 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter.views
 
+import android.content.res.Configuration
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
@@ -23,13 +28,19 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.icons.KeyboardArrowRight
 
+@SuppressWarnings("LongParameterList", "LongMethod")
 @Composable
 internal fun PurchaseInformationCardView(
     purchaseInformation: PurchaseInformation,
     localization: CustomerCenterConfigData.Localization,
     modifier: Modifier = Modifier,
     position: ButtonPosition = ButtonPosition.SINGLE,
+    isDetailedView: Boolean = false,
+    onCardClick: (() -> Unit)?,
 ) {
     val shape = when (position) {
         ButtonPosition.SINGLE -> RoundedCornerShape(CustomerCenterConstants.Card.ROUNDED_CORNER_SIZE)
@@ -51,10 +62,13 @@ internal fun PurchaseInformationCardView(
     Surface(
         modifier = modifier,
         shape = shape,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceColorAtElevation(2.dp),
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
-            modifier = Modifier.padding(CustomerCenterConstants.Card.CARD_PADDING),
+            modifier = Modifier
+                .applyIfNotNull(onCardClick) { clickable { onCardClick?.invoke() } }
+                .padding(CustomerCenterConstants.Card.CARD_PADDING),
         ) {
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -66,9 +80,29 @@ internal fun PurchaseInformationCardView(
                 Text(
                     text = purchaseInformation.title ?: purchaseInformation.product?.title ?: "",
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
-                PurchaseStatusBadge(purchaseInformation, localization)
+                when {
+                    !purchaseInformation.isSubscription && !isDetailedView -> {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(
+                                CustomerCenterConstants.Card.BADGE_HORIZONTAL_PADDING,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (purchaseInformation.isLifetime) {
+                                PurchaseStatusBadge(purchaseInformation, localization)
+                            }
+                            Icon(
+                                imageVector = KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                    else -> PurchaseStatusBadge(purchaseInformation, localization)
+                }
             }
 
             getSubtitle(
@@ -104,19 +138,23 @@ private fun getSubtitle(
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun getStoreText(store: Store, localization: CustomerCenterConfigData.Localization): String {
     val key = when (store) {
         Store.APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.APP_STORE
         Store.MAC_APP_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.MAC_APP_STORE
         Store.PLAY_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.GOOGLE_PLAY_STORE
         Store.AMAZON -> CustomerCenterConfigData.Localization.CommonLocalizedString.AMAZON_STORE
+        Store.GALAXY -> CustomerCenterConfigData.Localization.CommonLocalizedString.GALAXY_STORE
         Store.PROMOTIONAL -> CustomerCenterConfigData.Localization.CommonLocalizedString.CARD_STORE_PROMOTIONAL
         Store.STRIPE,
         Store.EXTERNAL,
         Store.PADDLE,
         Store.RC_BILLING,
         -> CustomerCenterConfigData.Localization.CommonLocalizedString.WEB_STORE
-        Store.UNKNOWN_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.UNKNOWN_STORE
+        Store.UNKNOWN_STORE,
+        -> CustomerCenterConfigData.Localization.CommonLocalizedString.UNKNOWN_STORE
+        Store.TEST_STORE -> CustomerCenterConfigData.Localization.CommonLocalizedString.TEST_STORE
     }
     return localization.commonLocalizedString(key)
 }
@@ -133,6 +171,7 @@ private fun getPrice(
         PriceDetails.Unknown -> null
     }
 }
+
 internal enum class ButtonPosition {
     SINGLE,
     FIRST,
@@ -146,6 +185,7 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
         CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
         CustomerCenterConfigTestData.purchaseInformationYearlyExpired,
+        CustomerCenterConfigTestData.purchaseInformationFreeTrial,
         CustomerCenterConfigTestData.purchaseInformationPromotional,
         CustomerCenterConfigTestData.purchaseInformationLifetime,
         CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
@@ -155,35 +195,35 @@ private class PurchaseInformationProvider : PreviewParameterProvider<PurchaseInf
 }
 
 @Preview(group = "scale = 1", fontScale = 1F)
+@Preview(group = "scale = 1", fontScale = 1F, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PurchaseInformationCardView_Preview(
     @PreviewParameter(PurchaseInformationProvider::class) details: PurchaseInformation,
 ) {
-    Surface(
-        color = Color.White,
-    ) {
+    CustomerCenterPreviewTheme {
         PurchaseInformationCardView(
             purchaseInformation = details,
             localization = CustomerCenterConfigTestData.customerCenterData(
                 shouldWarnCustomerToUpdate = false,
             ).localization,
+            onCardClick = { },
         )
     }
 }
 
 @Preview(group = "scale = 2", fontScale = 2F)
+@Preview(group = "scale = 2", fontScale = 2F, uiMode = Configuration.UI_MODE_NIGHT_YES)
 @Composable
 private fun PurchaseInformationCardView_Preview_Scale2(
     @PreviewParameter(PurchaseInformationProvider::class) details: PurchaseInformation,
 ) {
-    Surface(
-        color = Color.White,
-    ) {
+    CustomerCenterPreviewTheme {
         PurchaseInformationCardView(
             purchaseInformation = details,
             localization = CustomerCenterConfigTestData.customerCenterData(
                 shouldWarnCustomerToUpdate = false,
             ).localization,
+            onCardClick = { },
         )
     }
 }

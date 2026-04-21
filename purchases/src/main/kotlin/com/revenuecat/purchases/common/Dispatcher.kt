@@ -7,8 +7,10 @@ package com.revenuecat.purchases.common
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import org.json.JSONException
 import java.io.IOException
@@ -33,6 +35,7 @@ internal open class Dispatcher(
         const val INTEGRATION_TEST_DELAY_PERCENTAGE: Double = .01
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     abstract class AsyncCall : Runnable {
         @Throws(JSONException::class, IOException::class)
         abstract fun call(): HTTPResult
@@ -51,6 +54,8 @@ internal open class Dispatcher(
                 // This can happen if a user disables the INTERNET permission.
                 onError(e.toPurchasesError().also { errorLog(it) })
             } catch (e: SignatureVerificationException) {
+                onError(e.toPurchasesError().also { errorLog(it) })
+            } catch (e: NullPointerReadingErrorStreamException) {
                 onError(e.toPurchasesError().also { errorLog(it) })
             }
         }

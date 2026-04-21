@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -95,7 +96,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
                 "device locale only matches language, not region, es-AR -> es-ES",
                 Args(
                     paywallLocales = nonEmptyListOf("en_US", "es_ES"),
-                    deviceLocales = nonEmptyListOf("es-AR",),
+                    deviceLocales = nonEmptyListOf("es-AR"),
                     expected = "es-ES",
                 ),
             ),
@@ -351,6 +352,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         deviceLocales: NonEmptyList<String>,
     ) = PaywallState.Loaded.Components(
         stack = previewStackComponentStyle(children = emptyList()),
+        header = null,
         stickyFooter = null,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White))),
         showPricesWithDecimals = true,
@@ -365,8 +367,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
             paywallComponents = null,
         ),
         locales = paywallLocales.map { LocaleId(it) }.toNonEmptySetOrNull()!!,
-        activelySubscribedProductIds = emptySet(),
-        purchasedNonSubscriptionProductIds = emptySet(),
+        storefrontCountryCode = "US",
         dateProvider = { Date() },
         packages = PaywallState.Loaded.Components.AvailablePackages(
             packagesOutsideTabs = emptyList(),
@@ -374,6 +375,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         ),
         initialLocaleList = LocaleList(deviceLocales.map { Locale(it) }),
         initialSelectedTabIndex = 0,
+        purchases = MockPurchasesType(),
     )
 
 }

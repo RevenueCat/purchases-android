@@ -6,8 +6,10 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingImageLocalization
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingVideoLocalization
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -75,6 +77,34 @@ internal fun LocalizationDictionary.image(key: LocalizationKey): Result<ThemeIma
         ?.let { Result.Success(it) }
         ?: Result.Error(MissingImageLocalization(key))
 
+/**
+ * Retrieves a Video for all locales in this map, associated with the provided [key].
+ *
+ * @return A successful result containing the video keyed by the locale if it was found for all locales, or an error
+ * result containing a [MissingVideoLocalization] error for each locale the [key] wasn't found for.
+ */
+@JvmSynthetic
+internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.videoForAllLocales(
+    key: LocalizationKey,
+): Result<NonEmptyMap<LocaleId, ThemeVideoUrls>, NonEmptyList<MissingVideoLocalization>> =
+    mapValues { (locale, localizationDictionary) ->
+        localizationDictionary
+            .video(key)
+            .mapError { nonEmptyListOf(MissingVideoLocalization(key, locale)) }
+    }.mapValuesOrAccumulate { it }
+
+/**
+ * Retrieves a video from this [LocalizationDictionary] associated with the provided [key].
+ *
+ * @return A successful result containing the video if it was found, or an error result containing a
+ * [MissingStringLocalization] error if there was no image value associated with the provided [key].
+ */
+@JvmSynthetic
+internal fun LocalizationDictionary.video(key: LocalizationKey): Result<ThemeVideoUrls, MissingVideoLocalization> =
+    (get(key) as? LocalizationData.Video)?.value
+        ?.let { Result.Success(it) }
+        ?: Result.Error(MissingVideoLocalization(key))
+
 @JvmSynthetic
 internal fun LocaleId.toComposeLocale(): ComposeLocale =
     ComposeLocale(value.replace('_', '-'))
@@ -94,6 +124,10 @@ internal fun ComposeLocale.toLocaleId(): LocaleId =
 @JvmSynthetic
 internal fun ComposeLocale.toJavaLocale(): JavaLocale =
     JavaLocale.forLanguageTag(toLanguageTag())
+
+@JvmSynthetic
+internal fun JavaLocale.toComposeLocale(): ComposeLocale =
+    ComposeLocale(toLanguageTag())
 
 @JvmSynthetic
 internal fun <V> Map<LocaleId, V>.getBestMatch(localeId: LocaleId): V? =

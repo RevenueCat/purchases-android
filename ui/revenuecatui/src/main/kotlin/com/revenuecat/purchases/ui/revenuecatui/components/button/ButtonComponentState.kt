@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberButtonComponentState(
@@ -25,6 +26,7 @@ internal fun rememberButtonComponentState(
         localeProvider = { paywallState.locale },
     )
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberButtonComponentState(
@@ -71,8 +73,41 @@ internal class ButtonComponentState(
             }
 
             is ButtonComponentStyle.Action.PurchasePackage ->
-                PaywallAction.External.PurchasePackage(rcPackage = rcPackage)
+                PaywallAction.External.PurchasePackage(
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                )
 
             is ButtonComponentStyle.Action.RestorePurchases -> PaywallAction.External.RestorePurchases
+
+            is ButtonComponentStyle.Action.WebCheckout -> PaywallAction.External.LaunchWebCheckout(
+                customUrl = null,
+                openMethod = openMethod,
+                autoDismiss = autoDismiss,
+                packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                    rcPackage = rcPackage,
+                    packageParam = null,
+                ),
+            )
+
+            is ButtonComponentStyle.Action.WebProductSelection -> PaywallAction.External.LaunchWebCheckout(
+                customUrl = null,
+                openMethod = openMethod,
+                autoDismiss = autoDismiss,
+                packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
+            )
+
+            is ButtonComponentStyle.Action.CustomWebCheckout -> {
+                val urlString = urls.run { getOrDefault(localeId, entry.value) }
+                PaywallAction.External.LaunchWebCheckout(
+                    customUrl = urlString,
+                    openMethod = openMethod,
+                    autoDismiss = autoDismiss,
+                    packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                        rcPackage = rcPackage,
+                        packageParam = packageParam,
+                    ),
+                )
+            }
         }
 }

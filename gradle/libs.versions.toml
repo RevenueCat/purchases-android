@@ -1,19 +1,28 @@
 [versions]
-agp = "8.8.0"
+# Android SDK versions
+android-compileSdk = "36"
+android-minSdk = "23"
+android-targetSdk = "36"
+
+agp = "8.13.2"
 activityCompose = "1.9.3"
 # Note that version 18.0.1 adds the AD_ID permission to the SDK.
 # We should not add that permission ourselves, so keeping it at 17.0.1 for now.
 adsIdentifier = "17.0.1"
 amazon = "3.0.5"
+androidxCardView = "1.0.0"
 androidxConstraintLayout = "2.1.3"
 androidxCore = "1.8.0"
 androidxNavigation = "2.5.3"
 annotation = "1.3.0"
+annotationExperimental = "1.5.1"
 appcompat = "1.4.1"
 assertJ = "3.22.0"
 browser = "1.8.0"
-billing = "7.1.1"
+bc8 = "8.3.0"
+bc7 = "7.1.1"
 composeBom = "2024.09.00"
+composeAnnotation = "1.9.0"
 coil = "2.4.0"
 coreTesting = "2.0.0"
 commonmark = "0.21.0"
@@ -21,47 +30,59 @@ constraintlayout = "1.1.0"
 coroutines = "1.6.4"
 datastorePreference = "1.0.0"
 dependencyGraph = "0.9"
-detekt = "1.23.6"
+detekt = "1.23.8"
 detektRulesCompose = "0.4.10"
 dokka = "1.8.10"
-emergeGradlePlugin = "4.3.1"
-emergeSnapshots = "1.4.1"
-espresso = "3.4.0"
+emergeGradlePlugin = "4.4.0"
+emergeSnapshots = "1.5.0"
+espresso = "3.6.1"
+googleMobileAds = "23.6.0"
 fragment = "1.6.1"
+googleBlockstore = "16.4.0"
 hamcrest = "1.3"
 recyclerview = "1.2.1"
-roboelectric = "4.11.1"
-kotlin = "1.8.22"
+roboelectric = "4.16"
+kotlin = "2.0.21"
+kotlinLanguage = "1.8"
 # Can't update until we use more recent kotlin. 1.6.0 uses Kotlin 1.9.0
 kotlinxSerializationJSON = "1.5.1"
+samsungIap = "6.5.0"
 kover = "0.7.0"
 legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
 material = "1.6.0"
-mavenPublish = "0.27.0"
+mavenPublish = "0.33.0"
 metalava = "0.4.0-alpha03"
 mockk = "1.13.11"
 mockwebserver = "4.2.0"
 multidex = "2.0.1"
-paparrazzi = "1.3.1"
-poko = "0.13.1"
-testJUnit = "1.1.3"
+# Can't use alpha04 because it requires higher Kotlin version than we're using
+paparrazzi = "2.0.0-alpha02"
+poko = "0.17.2"
+testJUnit = "1.2.1"
 testJUnitParams = "1.1.1"
-testLibraries = "1.4.0"
+testLibraries = "1.6.1"
 tink = "1.8.0"
 viewmodelCompose = "2.4.0"
 window = "1.1.0"
 junit = "1.2.1"
 uiautomator = "2.3.0"
 benchmarkMacroJunit4 = "1.3.4"
-baselineprofile = "1.4.0-beta02"
+baselineprofile = "1.4.1"
 profileinstaller = "1.4.1"
+leakcanary = "2.14"
+kotlinpoet = "1.18.1"
+json = "20240303"
 
 [libraries]
+android-gradlePlugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+androidx-annotation-experimental = { module = "androidx.annotation:annotation-experimental", version.ref = "annotationExperimental" }
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
 androidx-browser = { module = "androidx.browser:browser", version.ref = "browser" }
+androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "androidxCardView" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintLayout" }
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreference" }
@@ -90,7 +111,8 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLib
 
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 amazon-appstore-sdk = { module = "com.amazon.device:amazon-appstore-sdk", version.ref = "amazon" }
-billing = { module = "com.android.billingclient:billing", version.ref = "billing" }
+billing-bc8 = { module = "com.android.billingclient:billing", version.ref = "bc8" }
+billing-bc7 = { module = "com.android.billingclient:billing", version.ref = "bc7" }
 
 coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
@@ -112,12 +134,14 @@ compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-ui-util = { module = "androidx.compose.ui:ui-util" }
 compose-window-size = { module = "androidx.compose.material3:material3-window-size-class" }
+compose-annotations = { module = "androidx.compose.runtime:runtime-annotation", version.ref = "composeAnnotation" }
 
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 detekt-compose = { module = "io.nlopez.compose.rules:detekt", version.ref = "detektRulesCompose" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+detekt-libraries = { module = "io.gitlab.arturbosch.detekt:detekt-rules-libraries", version.ref = "detekt"}
 
 dokka-base = { module = "org.jetbrains.dokka:dokka-base", version.ref = "dokka" }
 dokka-baseTestUtils = { module = "org.jetbrains.dokka:dokka-base-test-utils", version.ref = "dokka" }
@@ -125,7 +149,10 @@ dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" 
 dokka-testApi = { module = "org.jetbrains.dokka:dokka-test-api", version.ref = "dokka" }
 
 emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref = "emergeSnapshots" }
-emerge-snapshots-annotations = { module = "com.emergetools.snapshots:snapshots-annotations", version.ref = "emergeSnapshots" }
+emerge-snapshots-runtime = { module = "com.emergetools.snapshots:snapshots-runtime", version.ref = "emergeSnapshots" }
+
+google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
+google-mobile-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "googleMobileAds" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -147,11 +174,17 @@ androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "j
 androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 androidx-benchmark-macro-junit4 = { group = "androidx.benchmark", name = "benchmark-macro-junit4", version.ref = "benchmarkMacroJunit4" }
 androidx-profileinstaller = { group = "androidx.profileinstaller", name = "profileinstaller", version.ref = "profileinstaller" }
+leakcanary-android = { module = "com.squareup.leakcanary:leakcanary-android", version.ref = "leakcanary" }
+leakcanary-android-instrumentation = { module = "com.squareup.leakcanary:leakcanary-android-instrumentation", version.ref = "leakcanary" }
+kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
+json = { module = "org.json:json", version.ref = "json" }
+androidx-material3-adaptive-navigation-suite = { group = "androidx.compose.material3", name = "material3-adaptive-navigation-suite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 androidx-navigation-safeargs = { id = "androidx.navigation.safeargs.kotlin", version.ref = "androidxNavigation" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 dependencyGraph = { id = "com.savvasdalkitsis.module-dependency-graph", version.ref = "dependencyGraph" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 dokka = { id ="org.jetbrains.dokka", version.ref = "dokka"}
@@ -167,6 +200,9 @@ paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
 poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
 android-test = { id = "com.android.test", version.ref = "agp" }
 baselineprofile = { id = "androidx.baselineprofile", version.ref = "baselineprofile" }
+revenuecat-android-application = { id = "revenuecat-android-application" }
+revenuecat-api-tester-application = { id = "revenuecat-api-tester-application" }
+revenuecat-public-library = { id = "revenuecat-public-library" }
 
 [bundles]
 test = ["androidx-test-core", "androidx-core-testing", "androidx-test-runner", "androidx-test-rules", "androidx-test-junit", "robolectric", "mockk", "assertJ"]

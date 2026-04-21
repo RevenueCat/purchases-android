@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -13,6 +14,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
+import java.util.Date
 
 @Suppress("LongParameterList")
 @Immutable
@@ -48,13 +53,33 @@ internal data class StackComponentStyle(
      * available.
      */
     @get:JvmSynthetic
-    val rcPackage: Package?,
+    override val rcPackage: Package?,
+    /**
+     * The resolved offer for this package, containing the subscription option and promo offer status.
+     * Used to determine offer eligibility and pricing phase information.
+     */
+    @get:JvmSynthetic
+    override val resolvedOffer: ResolvedOffer? = null,
     /**
      * If this is non-null and equal to the currently selected tab index, the `selected` [overrides] will be used if
      * available. This should only be set for stacks inside tab control elements. Not for all stacks within a tab.
      */
     @get:JvmSynthetic
-    val tabIndex: Int?,
+    override val tabIndex: Int?,
+    /**
+     * The pre-computed offer eligibility for this component's package context.
+     * Used for applying conditional overrides based on intro/promo offer status.
+     * Null if this component is not in a package scope.
+     */
+    @get:JvmSynthetic
+    override val offerEligibility: OfferEligibility? = null,
+    /**
+     * If this is non-null, it means this stack is inside a countdown component.
+     */
+    @get:JvmSynthetic
+    val countdownDate: Date?,
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedStackPartial>>,
     /**
@@ -64,8 +89,21 @@ internal data class StackComponentStyle(
     @get:JvmSynthetic
     val applyTopWindowInsets: Boolean = false,
     /**
+     * When true, this ZLayer stack will always use window insets for top padding instead of
+     * [PaywallState.Loaded.Components.headerHeightPx]. Set on the header's inner stack to prevent it from
+     * padding its own children by its total measured height.
+     */
+    @get:JvmSynthetic
+    val ignoreHeaderHeight: Boolean = false,
+    /**
      * Will cause this stack to apply the bottom window insets to its content.
      */
     @get:JvmSynthetic
     val applyBottomWindowInsets: Boolean = false,
-) : ComponentStyle
+    /**
+     * Will cause this stack to apply the horizontal window insets (start/end) to its content.
+     * This is needed in landscape mode to avoid rendering behind camera cutouts or display notches.
+     */
+    @get:JvmSynthetic
+    val applyHorizontalWindowInsets: Boolean = false,
+) : ComponentStyle, PackageContext

@@ -15,6 +15,16 @@ For _fastlane_ installation instructions, see [Installing _fastlane_](https://do
 
 ## Android
 
+### android setup_local_properties
+
+```sh
+[bundle exec] fastlane android setup_local_properties
+```
+
+Fetch integration test secrets from 1Password and write them to local.properties
+
+Requires the 1Password CLI (op) to be installed and signed in
+
 ### android test
 
 ```sh
@@ -38,6 +48,14 @@ Setup development environment
 ```
 
 Emerge snapshot tests
+
+### android emerge_sdk_size_tests
+
+```sh
+[bundle exec] fastlane android emerge_sdk_size_tests
+```
+
+Emerge size tests
 
 ### android bump
 
@@ -119,13 +137,21 @@ Build purchase tester app bundle
 
 Build paywall tester app bundle
 
-### android build_default_purchases_integration_tests
+### android build_rct_tester_bundle
 
 ```sh
-[bundle exec] fastlane android build_default_purchases_integration_tests
+[bundle exec] fastlane android build_rct_tester_bundle
 ```
 
-Build purchases module integration tests pointing to production
+Build RCT tester app bundle
+
+### android publish_rct_tester
+
+```sh
+[bundle exec] fastlane android publish_rct_tester
+```
+
+Publish RCT tester to the specified track on Google Play
 
 ### android run_backend_integration_tests
 
@@ -133,17 +159,25 @@ Build purchases module integration tests pointing to production
 [bundle exec] fastlane android run_backend_integration_tests
 ```
 
-Build purchases module integration tests pointing to production
+Run backend integration tests
 
-### android run_load_shedder_purchases_integration_tests
+### android update_golden_requests_backend_integration_tests
 
 ```sh
-[bundle exec] fastlane android run_load_shedder_purchases_integration_tests
+[bundle exec] fastlane android update_golden_requests_backend_integration_tests
 ```
 
-Build and run purchases module load shedder integration tests
+Run backend integration tests and create PR if golden files change
 
-This requires the google cloud cli to be installed and initialized.
+### android run_purchases_integration_tests
+
+```sh
+[bundle exec] fastlane android run_purchases_integration_tests
+```
+
+Build and run purchases module integration tests on emulator
+
+Accepts a backend_environment parameter: 'production', 'load_shedder_us_east_1', 'load_shedder_us_east_2'
 
 ### android run_custom_entitlement_computation_integration_tests
 
@@ -151,9 +185,7 @@ This requires the google cloud cli to be installed and initialized.
 [bundle exec] fastlane android run_custom_entitlement_computation_integration_tests
 ```
 
-Build and run purchases module custom entitlement computation integration tests
-
-This requires the google cloud cli to be installed and initialized.
+Build and run purchases module custom entitlement computation integration tests on emulator
 
 ### android publish_to_track
 
@@ -195,6 +227,14 @@ Builds a Magic Weather Compose APK
 
 Builds a Magic Weather Compose APK
 
+### android build_admob_integration_sample
+
+```sh
+[bundle exec] fastlane android build_admob_integration_sample
+```
+
+Builds an AdMob Integration Sample APK
+
 ### android build_magic_weather
 
 ```sh
@@ -221,14 +261,6 @@ Builds a Purchase Tester APK and prompts for:
 * Version name
 * Min SDK Version
 * Amazon pem path (optional)
-
-
-### android send_slack_load_shedder_integration_test
-
-```sh
-[bundle exec] fastlane android send_slack_load_shedder_integration_test
-```
-
 
 
 ### android update_paywall_preview_resources_submodule

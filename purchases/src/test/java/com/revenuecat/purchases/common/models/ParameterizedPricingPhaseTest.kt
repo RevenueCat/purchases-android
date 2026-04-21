@@ -107,7 +107,7 @@ class ParameterizedPricingPhaseTest(
                         currencyCode = "USD"
                     ),
                     weekly = Price(
-                        formatted = "$1.92",
+                        formatted = "$1.91",
                         amountMicros = 1917616,
                         currencyCode = "USD",
                     ),

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -11,6 +12,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.events.EventsManager
+import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
@@ -28,6 +30,8 @@ internal fun interface DiagnosticsEventTrackerListener {
  * This class is the entry point for all diagnostics tracking. It contains all information for all events
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
+
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
@@ -66,6 +70,7 @@ internal class DiagnosticsTracker(
         const val HAD_UNSYNCED_PURCHASES_BEFORE_KEY = "had_unsynced_purchases_before"
         const val IS_RETRY = "is_retry"
         const val REQUEST_STATUS_KEY = "request_status"
+        const val CONNECTION_ERROR_REASON_KEY = "connection_error_reason"
     }
 
     private val commonProperties = if (appConfig.store == Store.PLAY_STORE) {
@@ -90,6 +95,7 @@ internal class DiagnosticsTracker(
         resultOrigin: HTTPResult.Origin?,
         verificationResult: VerificationResult,
         isRetry: Boolean,
+        connectionErrorReason: ConnectionErrorReason?,
     ) {
         val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
@@ -104,6 +110,7 @@ internal class DiagnosticsTracker(
                 ETAG_HIT_KEY to eTagHit,
                 VERIFICATION_RESULT_KEY to verificationResult.name,
                 IS_RETRY to isRetry,
+                CONNECTION_ERROR_REASON_KEY to connectionErrorReason?.name,
             ).filterNotNullValues(),
         )
     }

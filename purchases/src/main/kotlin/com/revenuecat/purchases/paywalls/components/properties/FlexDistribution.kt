@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable(with = FlexDistributionDeserializer::class)
-enum class FlexDistribution {
+public enum class FlexDistribution {
     // SerialNames are handled by the FlexDistributionDeserializer.
 
     START,

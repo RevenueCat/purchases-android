@@ -5,9 +5,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseResult
@@ -24,8 +25,11 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
@@ -33,12 +37,13 @@ import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateLoadedComponentsLocaleTests.Args
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createGoogleStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubGoogleSubscriptionOption
 import com.revenuecat.purchases.ui.revenuecatui.helpers.stubPricingPhase
+import com.revenuecat.purchases.ui.revenuecatui.helpers.subtract
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.clearMocks
@@ -47,22 +52,23 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import org.robolectric.shadows.ShadowLooper
 import java.util.Date
 import java.util.Locale
+import kotlin.time.Duration
 
 @RunWith(AndroidJUnit4::class)
 class CustomerCenterViewModelTests {
@@ -80,6 +86,10 @@ class CustomerCenterViewModelTests {
         customerInfo = mockk()
         configData = mockk()
         customerCenterListener = mockk(relaxed = true)
+        every { customerCenterListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         screens = mapOf(
             Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
@@ -114,17 +124,38 @@ class CustomerCenterViewModelTests {
                         type = HelpPath.PathType.REFUND_REQUEST
                     )
                 )
+            ),
+            Screen.ScreenType.NO_ACTIVE to CustomerCenterConfigData.Screen(
+                type = CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE,
+                title = "No Active Subscription",
+                subtitle = "You don't have an active subscription.",
+                paths = listOf(
+                    HelpPath(
+                        id = "restore_id",
+                        title = "Restore Purchases",
+                        type = HelpPath.PathType.MISSING_PURCHASE
+                    ),
+                    HelpPath(
+                        id = "support_id",
+                        title = "Contact Support",
+                        type = HelpPath.PathType.CUSTOM_URL,
+                        url = "https://support.example.com"
+                    )
+                )
             )
         )
     }
 
     @After
     internal fun tearDown() {
+        // Drain all pending delayed tasks on the main looper (e.g. stateIn's WhileSubscribed timeout)
+        // to prevent leaked viewModelScope coroutines from affecting subsequent test classes.
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
         clearAllMocks()
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer returns false when offer is not eligible`() = runTest {
+    fun `loadAndDisplayPromotionalOffer returns false when offer is not eligible`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -162,7 +193,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer works if legacy product mapping`() = runTest {
+    fun `loadAndDisplayPromotionalOffer works if legacy product mapping`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -208,7 +239,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer works if legacy product mapping trial`() = runTest {
+    fun `loadAndDisplayPromotionalOffer works if legacy product mapping trial`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -253,7 +284,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer returns false when no matching offer found in legacy product mapping`() = runTest {
+    fun `loadAndDisplayPromotionalOffer returns false when no matching offer found in legacy product mapping`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -295,7 +326,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer returns true for cross-product promotion`() = runTest {
+    fun `loadAndDisplayPromotionalOffer returns true for cross-product promotion`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -358,7 +389,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer returns false when target product not found in cross-product promotion`() = runTest {
+    fun `loadAndDisplayPromotionalOffer returns false when target product not found in cross-product promotion`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -406,7 +437,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer returns false when no matching cross-product promotion found`() = runTest {
+    fun `loadAndDisplayPromotionalOffer returns false when no matching cross-product promotion found`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
@@ -465,44 +496,50 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadAndDisplayPromotionalOffer handles target product without base plan`() = runTest {
+    fun `loadAndDisplayPromotionalOffer loads target product with same base plan if not specified`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = setupViewModel()
-
-        val monthlySubscriptionOption = createSubscriptionOption(
+        val regularPricingPhase = stubPricingPhase(
+            billingCycleCount = 0,
+            billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+            price = 9.99,
+            recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+        )
+        val subscriptionOption = createSubscriptionOption(
             productId = "paywall_tester.subs",
             basePlanId = "monthly",
-            offerId = "rc-cancel-offer"
+            offerId = "promotional-offer-id",
+            pricingPhases = listOf(
+                stubPricingPhase(
+                    billingCycleCount = 1,
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                    price = 0.0,
+                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+                ),
+                regularPricingPhase
+            )
         )
-
-        val annualSubscriptionOption = createSubscriptionOption(
-            productId = "old_product",
-            basePlanId = "p1m",
-            offerId = "rc-cancel-offer",
-            secondPhasePeriod = Period(value = 1, unit = Period.Unit.YEAR, "P1Y")
-        )
-
-        val crossProductPromotion = HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
-            storeOfferIdentifier = "rc-cancel-offer",
-            targetProductId = "old_product"
-        )
-
-        val productMonthly = createGoogleStoreProduct(
+        val subscriptionOptionBase = createSubscriptionOption(
             productId = "paywall_tester.subs",
             basePlanId = "monthly",
-            subscriptionOptions = listOf(monthlySubscriptionOption)
+            offerId = null,
+            pricingPhases = listOf(regularPricingPhase)
         )
-        val productAnnual = createGoogleStoreProduct(
-            productId = "old_product",
-            basePlanId = "p1m",
-            subscriptionOptions = listOf(annualSubscriptionOption)
+        val monthlyProduct = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption, subscriptionOptionBase)
         )
-        coEvery { purchases.awaitGetProduct("old_product", null) } returns productAnnual
+
+        coEvery { purchases.awaitGetProduct("paywall_tester.subs", "monthly") } returns monthlyProduct
 
         val promotionalOffer = createPromotionalOffer(
-            productMapping = emptyMap(),
-            crossProductPromotions = mapOf("paywall_tester.subs:monthly" to crossProductPromotion)
+            crossProductPromotions = mapOf("paywall_tester.subs" to
+                HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                    storeOfferIdentifier = "promotional-offer-id",
+                    targetProductId = "paywall_tester.subs"
+                ))
         )
 
         val originalPath = createOriginalPath()
@@ -511,7 +548,7 @@ class CustomerCenterViewModelTests {
 
         val result = model.loadAndDisplayPromotionalOffer(
             context = mockk(relaxed = true),
-            product = productMonthly,
+            product = monthlyProduct,
             promotionalOffer = promotionalOffer,
             originalPath = originalPath
         )
@@ -521,14 +558,84 @@ class CustomerCenterViewModelTests {
             model = model,
             expectedResult = true,
             expectedPromotionalOffer = promotionalOffer,
-            expectedSubscriptionOption = annualSubscriptionOption,
+            expectedSubscriptionOption = subscriptionOption,
             expectedOriginalPath = originalPath,
-            expectedPricingDescription = "First 1 month free, then $9.99/yr"
+            expectedPricingDescription = "First 1 month free, then $9.99/mth"
         )
     }
 
     @Test
-    fun `onNavigationButtonPressed handles CLOSE and BACK buttons correctly`() = runTest {
+    fun `loadAndDisplayPromotionalOffer handles source product without base plan`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        val regularPricingPhase = stubPricingPhase(
+            billingCycleCount = 0,
+            billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+            price = 9.99,
+            recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+        )
+
+        val subscriptionOption = createSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            offerId = "promotional-offer-id",
+            pricingPhases = listOf(
+                stubPricingPhase(
+                    billingCycleCount = 1,
+                    billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
+                    price = 0.0,
+                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+                ),
+                regularPricingPhase
+            )
+        )
+        val subscriptionOptionBase = createSubscriptionOption(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            offerId = null,
+            pricingPhases = listOf(regularPricingPhase)
+        )
+
+        val product = createGoogleStoreProduct(
+            productId = "paywall_tester.subs",
+            basePlanId = "monthly",
+            subscriptionOptions = listOf(subscriptionOption, subscriptionOptionBase)
+        )
+
+        val promotionalOffer = createPromotionalOffer(
+            crossProductPromotions = mapOf("paywall_tester.subs" to
+                HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion(
+                    storeOfferIdentifier = "promotional-offer-id",
+                    targetProductId = "paywall_tester.subs"
+                ))
+        )
+
+        val originalPath = createOriginalPath()
+        setupSuccessLoadScreen(originalPath, model)
+
+        coEvery { purchases.awaitGetProduct("paywall_tester.subs", "monthly") } returns product
+
+        val result = model.loadAndDisplayPromotionalOffer(
+            context = mockk(relaxed = true),
+            product = product,
+            promotionalOffer = promotionalOffer,
+            originalPath = originalPath
+        )
+
+        verifyPromotionalOfferResult(
+            result = result,
+            model = model,
+            expectedResult = true,
+            expectedPromotionalOffer = promotionalOffer,
+            expectedSubscriptionOption = subscriptionOption,
+            expectedOriginalPath = originalPath,
+            expectedPricingDescription = "First 1 month free, then $9.99/mth"
+        )
+    }
+
+    @Test
+    fun `onNavigationButtonPressed handles CLOSE and BACK buttons correctly`(): Unit = runBlocking {
         setupPurchasesMock()
 
         every { customerInfo.activeSubscriptions } returns setOf("product-id")
@@ -639,7 +746,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `dismissRestoreDialog reloads customer center`() = runTest {
+    fun `dismissRestoreDialog reloads customer center`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf("product-id")
 
@@ -736,12 +843,20 @@ class CustomerCenterViewModelTests {
 
 
     @Test
-    fun `notifyListenersForRestoreStarted calls both listeners`() = runTest {
+    fun `notifyListenersForRestoreStarted calls both listeners`(): Unit = runBlocking {
         setupPurchasesMock()
 
         // Create two separate listeners to verify they're both called
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -762,11 +877,19 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `notifyListenersForRestoreCompleted calls both listeners with correct customer info`() = runTest {
+    fun `notifyListenersForRestoreCompleted calls both listeners with correct customer info`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -787,11 +910,19 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `notifyListenersForRestoreFailed calls both listeners with correct error`() = runTest {
+    fun `notifyListenersForRestoreFailed calls both listeners with correct error`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
         val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
 
         every { purchases.customerCenterListener } returns purchasesListener
 
@@ -815,7 +946,40 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `notifyListenersForManageSubscription calls both listeners`() = runTest {
+    fun `restorePurchases does not continue when onRestoreInitiated returns false`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { directListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(false)
+        }
+        every { purchasesListener.onRestoreInitiated(any()) } answers {
+            val resume = invocation.args[0] as Resumable
+            resume(true)
+        }
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.restorePurchases()
+
+        verify(exactly = 1) { directListener.onRestoreInitiated(any()) }
+        verify(exactly = 0) { purchasesListener.onRestoreInitiated(any()) }
+        coVerify(exactly = 0) { purchases.awaitRestore() }
+        verify(exactly = 0) { directListener.onRestoreStarted() }
+        verify(exactly = 0) { purchasesListener.onRestoreStarted() }
+    }
+
+    @Test
+    fun `notifyListenersForManageSubscription calls both listeners`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
@@ -850,7 +1014,8 @@ class CustomerCenterViewModelTests {
         every { customerInfo.activeSubscriptions } returns setOf("test_product_id")
 
         // Create a mock product that will be returned from awaitGetProduct
-        val mockProduct = mockk<StoreProduct>(relaxed = true)
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "test_product_id"
         every { mockProduct.id } returns "test_product_id"
         coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
 
@@ -870,6 +1035,21 @@ class CustomerCenterViewModelTests {
         // Load the customer center to get things initialized
         model.loadCustomerCenter()
 
+        // Wait for the initial state to be loaded
+        val initialState = model.state.first { it is CustomerCenterState.Success } as CustomerCenterState.Success
+
+        // First, select a purchase to navigate to the detail view
+        val purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(
+            product = mockProduct,
+        )
+        model.selectPurchase(purchaseInformation)
+
+        // Wait for the navigation to complete
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
         // When Cancel path is triggered
         model.pathButtonPressed(
             context,
@@ -878,7 +1058,7 @@ class CustomerCenterViewModelTests {
                 title = "Cancel",
                 type = HelpPath.PathType.CANCEL
             ),
-            CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+            purchaseInformation
         )
 
         // Then both listeners should be notified
@@ -887,7 +1067,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `feedback survey completion notifies listeners with correct ID`() = runTest {
+    fun `feedback survey completion notifies listeners with correct ID`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val directListener = mockk<CustomerCenterListener>(relaxed = true)
@@ -986,7 +1166,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `notifyListenersForManagementOptionSelected converts paths to actions and notifies listeners`() = runTest {
+    fun `notifyListenersForManagementOptionSelected converts paths to actions and notifies listeners`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val context = mockk<Context>(relaxed = true)
@@ -1065,7 +1245,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadCustomerCenter is called after successful promotional offer purchase`() = runTest {
+    fun `loadCustomerCenter is called after successful promotional offer purchase`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val model = CustomerCenterViewModelImpl(
@@ -1091,7 +1271,69 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `loadCustomerCenter uses base plan from active subscription when entitlements are empty`() = runTest {
+    fun `notifyListenersForPromotionalOfferSucceeded calls both listeners`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val storeTransaction = mockk<com.revenuecat.purchases.models.StoreTransaction>(relaxed = true)
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(storeTransaction, customerInfo)
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        model.state.first { it is CustomerCenterState.Success }
+
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        verify(exactly = 1) { directListener.onPromotionalOfferSucceeded(customerInfo, storeTransaction) }
+        verify(exactly = 1) { purchasesListener.onPromotionalOfferSucceeded(customerInfo, storeTransaction) }
+    }
+
+    @Test
+    fun `notifyListenersForPromotionalOfferSucceeded not called on purchase failure`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(error)
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        val subscriptionOption = mockk<SubscriptionOption>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+
+        model.state.first { it is CustomerCenterState.Success }
+
+        model.onAcceptedPromotionalOffer(subscriptionOption, activity)
+
+        verify(exactly = 0) { directListener.onPromotionalOfferSucceeded(any(), any()) }
+        verify(exactly = 0) { purchasesListener.onPromotionalOfferSucceeded(any(), any()) }
+    }
+
+    @Test
+    fun `loadCustomerCenter uses base plan from active subscription when entitlements are empty`(): Unit = runBlocking {
         setupPurchasesMock()
 
         val subscription = SubscriptionInfo(
@@ -1140,7 +1382,91 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `isSupportedPaths allows CANCEL when purchase is not lifetime`() = runTest {
+    fun `loadCustomerCenter shows active subscription as not expired when multiple entitlements share same product identifier`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        // Two entitlements pointing to the same product — expired one inserted FIRST to make
+        // the bug deterministic (LinkedHashMap preserves insertion order, firstOrNull hits it first)
+        val expiredEntitlement = EntitlementInfo(
+            identifier = "entitlement_a",
+            isActive = false,
+            willRenew = false,
+            periodType = PeriodType.NORMAL,
+            latestPurchaseDate = Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000),
+            originalPurchaseDate = Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000),
+            expirationDate = Date(System.currentTimeMillis() - 10L * 24 * 60 * 60 * 1000),
+            store = Store.PLAY_STORE,
+            productIdentifier = "product_a",
+            productPlanIdentifier = "plan_a",
+            isSandbox = false,
+            unsubscribeDetectedAt = null,
+            billingIssueDetectedAt = null,
+            ownershipType = OwnershipType.PURCHASED,
+            jsonObject = mockk(relaxed = true),
+            verification = VerificationResult.NOT_REQUESTED,
+        )
+
+        val activeEntitlement = EntitlementInfo(
+            identifier = "entitlement_b",
+            isActive = true,
+            willRenew = true,
+            periodType = PeriodType.NORMAL,
+            latestPurchaseDate = Date(System.currentTimeMillis() - 60 * 1000),
+            originalPurchaseDate = Date(System.currentTimeMillis() - 60 * 1000),
+            expirationDate = Date(System.currentTimeMillis() + 24L * 60 * 60 * 1000),
+            store = Store.PLAY_STORE,
+            productIdentifier = "product_a",
+            productPlanIdentifier = "plan_b",
+            isSandbox = false,
+            unsubscribeDetectedAt = null,
+            billingIssueDetectedAt = null,
+            ownershipType = OwnershipType.PURCHASED,
+            jsonObject = mockk(relaxed = true),
+            verification = VerificationResult.NOT_REQUESTED,
+        )
+
+        every { customerInfo.entitlements } returns EntitlementInfos(
+            mapOf("entitlement_a" to expiredEntitlement, "entitlement_b" to activeEntitlement),
+            VerificationResult.NOT_REQUESTED,
+        )
+
+        val activeSubscription = SubscriptionInfo(
+            productIdentifier = "product_a",
+            purchaseDate = Date(System.currentTimeMillis() - 60 * 1000),
+            originalPurchaseDate = null,
+            expiresDate = Date(System.currentTimeMillis() + 24L * 60 * 60 * 1000),
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = null,
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = "plan_b",
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "product_a" to activeSubscription
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("product_a")
+
+        val model = setupViewModel()
+
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).hasSize(1)
+        assertThat(successState.purchases.first().isExpired).isFalse()
+    }
+
+    @Test
+    fun `isSupportedPaths allows CANCEL when purchase is not lifetime`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
@@ -1176,10 +1502,18 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
+        // Wait for the initial load to complete
+        val initialState = model.state.first { it is CustomerCenterState.Success } as CustomerCenterState.Success
+
+        // Select a purchase (the first one from the loaded purchases)
+        val purchaseInformation = initialState.purchases.first()
+        model.selectPurchase(purchaseInformation)
+
         val job = launch {
             model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                if (state is CustomerCenterState.Success &&
+                    state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail) {
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Expected CANCEL path to be present for non-lifetime purchases. Paths: $paths")
                         .anyMatch { it.type == HelpPath.PathType.CANCEL }
@@ -1192,7 +1526,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `isSupportedPaths filters CANCEL when management URL is not present and not Google Play Store`() = runTest {
+    fun `isSupportedPaths filters CANCEL when management URL is not present`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
@@ -1215,10 +1549,9 @@ class CustomerCenterViewModelTests {
                 displayName = null,
                 price = null,
                 productPlanIdentifier = "monthly",
-                managementURL = Uri.parse("https://example.com/manage"),
+                managementURL = null,
             )
         )
-
         every { customerInfo.nonSubscriptionTransactions } returns listOf()
 
         val model = CustomerCenterViewModelImpl(
@@ -1228,24 +1561,15 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage(
-                            "Expected CANCEL path to not be present when there are no management URL. Paths: $paths")
-                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected CANCEL path to not be present when there are no management URL. Paths: $paths")
+            .noneMatch { it.type == HelpPath.PathType.CANCEL }
     }
 
     @Test
-    fun `isSupportedPaths filters CANCEL when purchase is lifetime`() = runTest {
+    fun `isSupportedPaths filters CANCEL when purchase is lifetime`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.nonSubscriptionTransactions } returns listOf(
@@ -1267,23 +1591,15 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
-                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
+            .noneMatch { it.type == HelpPath.PathType.CANCEL }
     }
 
     @Test
-    fun `isSupportedPaths filters CANCEL when purchase is non Play Store lifetime and management URL`() = runTest {
+    fun `isSupportedPaths filters CANCEL when purchase is non Play Store lifetime and management URL`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.managementURL } returns Uri.parse("https://apple.com/")
@@ -1306,74 +1622,15 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
-                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected CANCEL path to not be present for lifetime purchases. Paths: $paths")
+            .noneMatch { it.type == HelpPath.PathType.CANCEL }
     }
 
     @Test
-    fun `isSupportedPaths filters CANCEL for non-Play Store without management URL`() = runTest {
-        setupPurchasesMock()
-        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
-        every { customerInfo.managementURL } returns null
-        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
-            "productIdentifier" to SubscriptionInfo(
-                productIdentifier = "productIdentifier",
-                purchaseDate = Date(),
-                originalPurchaseDate = null,
-                expiresDate = null,
-                store = Store.APP_STORE,
-                unsubscribeDetectedAt = null,
-                isSandbox = false,
-                billingIssuesDetectedAt = null,
-                gracePeriodExpiresDate = null,
-                ownershipType = OwnershipType.PURCHASED,
-                periodType = PeriodType.NORMAL,
-                refundedAt = null,
-                storeTransactionId = null,
-                requestDate = Date(),
-                autoResumeDate = null,
-                displayName = null,
-                price = null,
-                productPlanIdentifier = "monthly",
-                managementURL = Uri.parse("https://example.com/manage"),
-            )
-        )
-
-        val model = CustomerCenterViewModelImpl(
-            purchases = purchases,
-            locale = Locale.US,
-            colorScheme = TestData.Constants.currentColorScheme,
-            isDarkMode = false
-        )
-
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Expected CANCEL path to not be present for non-PLAY_STORE without management URL. Paths: $paths")
-                        .noneMatch { it.type == HelpPath.PathType.CANCEL }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
-    }
-
-    @Test
-    fun `isSupportedPaths allows CUSTOM_URL for Play store`() = runTest {
+    fun `isSupportedPaths allows CUSTOM_URL for Play store`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
@@ -1407,23 +1664,15 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
-                        .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
+            .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
     }
 
     @Test
-    fun `isSupportedPaths allows CUSTOM_URL for App store`() = runTest {
+    fun `isSupportedPaths allows CUSTOM_URL for App store`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
@@ -1457,23 +1706,15 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
-                        .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected CUSTOM_URL path to be present. Paths: $paths")
+            .anyMatch { it.type == HelpPath.PathType.CUSTOM_URL }
     }
 
     @Test
-    fun `isSupportedPaths allows MISSING_PURCHASE for App store`() = runTest {
+    fun `isSupportedPaths allows MISSING_PURCHASE for App store`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
@@ -1507,23 +1748,15 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Expected MISSING_PURCHASE path for APP_STORE. Paths: $paths")
-                        .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected MISSING_PURCHASE path for APP_STORE. Paths: $paths")
+            .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
     }
 
     @Test
-    fun `isSupportedPaths allows MISSING_PURCHASE for Play store`() = runTest {
+    fun `isSupportedPaths allows MISSING_PURCHASE for Play store`(): Unit = runBlocking {
         setupPurchasesMock()
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
@@ -1557,24 +1790,17 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Expected MISSING_PURCHASE path for PLAY_STORE. Paths: $paths")
-                        .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
-                    cancel()
-                }
-            }
-        }
-
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected MISSING_PURCHASE path for PLAY_STORE. Paths: $paths")
+            .anyMatch { it.type == HelpPath.PathType.MISSING_PURCHASE }
     }
 
     @Test
-    fun `isSupportedPaths filters non compatible paths for App store`() = runTest {
+    fun `isSupportedPaths filters non compatible paths for App store`(): Unit = runBlocking {
         setupPurchasesMock()
+
         every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
             "productIdentifier" to SubscriptionInfo(
@@ -1607,10 +1833,290 @@ class CustomerCenterViewModelTests {
             isDarkMode = false
         )
 
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val paths = state.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Not expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
+            .noneMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
+        assertThat(paths)
+            .withFailMessage("Not expected CHANGE_PLANS path for APP_STORE. Paths: $paths")
+            .noneMatch { it.type == HelpPath.PathType.CHANGE_PLANS }
+    }
+
+    @Test
+    fun `transformPathsOnSubscriptionState converts CANCEL to RESUBSCRIBE for cancelled subs`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val cancelPath = HelpPath(
+            id = "cancel_id",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+            feedbackSurvey = HelpPath.PathDetail.FeedbackSurvey(
+                title = "Why are you cancelling?",
+                options = listOf(
+                    HelpPath.PathDetail.FeedbackSurvey.Option(
+                        id = "1",
+                        title = "Too expensive",
+                        promotionalOffer = null
+                    )
+                )
+            ),
+            promotionalOffer = examplePromotionalOffer()
+        )
+
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(cancelPath)
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+        every { configData.localization } returns CustomerCenterConfigData.Localization(
+            locale = "en_US",
+            localizedStrings = mapOf(
+                "cancel" to "Cancel",
+                "resubscribe" to "Resubscribe"
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Wait for the initial load to complete
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        // Select the cancelled purchase
+        val cancelledPurchase = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring
+        model.selectPurchase(cancelledPurchase)
+
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>()
+            .first { it.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail }
+        val paths = state.detailScreenPaths
+
+        val transformedPath = paths.find { it.id == "cancel_id" }
+        assertThat(transformedPath).isNotNull
+        assertThat(transformedPath?.title).isEqualTo("Resubscribe")
+        assertThat(transformedPath?.type).isEqualTo(HelpPath.PathType.CANCEL)
+        assertThat(transformedPath?.feedbackSurvey).isNull() // Should be removed
+        assertThat(transformedPath?.promotionalOffer).isNull() // Should be removed
+    }
+
+    @Test
+    fun `transformPathsOnSubscriptionState keeps CANCEL unchanged for active subscriptions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val originalFeedbackSurvey = HelpPath.PathDetail.FeedbackSurvey(
+            title = "Why are you cancelling?",
+            options = listOf(
+                HelpPath.PathDetail.FeedbackSurvey.Option(
+                    id = "1",
+                    title = "Too expensive",
+                    promotionalOffer = null
+                )
+            )
+        )
+
+        val originalPromotionalOffer = examplePromotionalOffer()
+
+        val cancelPath = HelpPath(
+            id = "cancel_id",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+            feedbackSurvey = originalFeedbackSurvey,
+            promotionalOffer = originalPromotionalOffer
+        )
+
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(cancelPath)
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+        every { configData.localization } returns CustomerCenterConfigData.Localization(
+            locale = "en_US",
+            localizedStrings = mapOf(
+                "cancel" to "Cancel",
+                "resubscribe" to "Resubscribe"
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Wait for the initial load to complete
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val activePurchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+        model.selectPurchase(activePurchase)
+
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>()
+            .first { it.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail }
+        val paths = state.detailScreenPaths
+
+        // Find the path that should remain unchanged
+        val unchangedPath = paths.find { it.id == "cancel_id" }
+        assertThat(unchangedPath).isNotNull
+        assertThat(unchangedPath?.title).isEqualTo("Cancel") // Title should remain Cancel
+        assertThat(unchangedPath?.type).isEqualTo(HelpPath.PathType.CANCEL)
+        assertThat(unchangedPath?.feedbackSurvey).isEqualTo(originalFeedbackSurvey) // Should be preserved
+        assertThat(unchangedPath?.promotionalOffer).isEqualTo(originalPromotionalOffer) // Should be preserved
+    }
+
+    @Test
+    fun `transformPathsOnSubscriptionState uses localized RESUBSCRIBE string`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf("product_id")
+
+        val cancelPath = HelpPath(
+            id = "cancel_id",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL
+        )
+
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(cancelPath)
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+        every { configData.localization } returns CustomerCenterConfigData.Localization(
+            locale = "es_ES",
+            localizedStrings = mapOf(
+                "cancel" to "Cancelar",
+                "resubscribe" to "Resuscribirse"
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Wait for the initial load to complete
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        // Select the cancelled purchase
+        val cancelledPurchase = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring
+        model.selectPurchase(cancelledPurchase)
+
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>()
+            .first { it.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail }
+        val paths = state.detailScreenPaths
+
+        // Find the transformed path
+        val transformedPath = paths.find { it.id == "cancel_id" }
+        assertThat(transformedPath).isNotNull
+        assertThat(transformedPath?.title).isEqualTo("Resuscribirse") // Should use localized string
+    }
+
+    @Test
+    fun `transformPathsOnSubscriptionState falls back to default when localization missing`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf("product_id")
+
+        val cancelPath = HelpPath(
+            id = "cancel_id",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL
+        )
+
+        val managementScreen = Screen(
+            type = Screen.ScreenType.MANAGEMENT,
+            title = "Management",
+            subtitle = null,
+            paths = listOf(cancelPath)
+        )
+
+        every { configData.getManagementScreen() } returns managementScreen
+        every { configData.localization } returns CustomerCenterConfigData.Localization(
+            locale = "en_US",
+            localizedStrings = mapOf(
+                "cancel" to "Cancel"
+                // No "resubscribe" string provided
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Wait for the initial load to complete
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        // Select the cancelled purchase
+        val cancelledPurchase = CustomerCenterConfigTestData.purchaseInformationYearlyExpiring
+        model.selectPurchase(cancelledPurchase)
+
+
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>()
+            .first { it.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail }
+        val paths = state.detailScreenPaths
+
+        val transformedPath = paths.find { it.id == "cancel_id" }
+        assertThat(transformedPath).isNotNull
+        assertThat(transformedPath?.title).isEqualTo("Resubscribe")
+    }
+
+    @Test
+    fun `isSupportedPaths filters non compatible paths for Play store`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "productIdentifier" to SubscriptionInfo(
+                productIdentifier = "productIdentifier",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = null,
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = Uri.parse("https://example.com/manage"),
+            )
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false
+        )
+
+        // Wait for the initial state to load
+        model.state.first { it is CustomerCenterState.Success }
+
         val job = launch {
             model.state.collect { state ->
                 if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
+                    val paths = state.mainScreenPaths
                     assertThat(paths)
                         .withFailMessage("Not expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
                         .noneMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
@@ -1626,59 +2132,161 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `isSupportedPaths filters non compatible paths for Play store`() = runTest {
+    fun `loadCustomerCenter shows latest expired subscription when no active purchases`(): Unit = runBlocking {
         setupPurchasesMock()
-        every { customerInfo.activeSubscriptions } returns setOf(TestData.Packages.monthly.product.id)
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+
+        val expiredDate1 = Date(System.currentTimeMillis() - 7 * 24 * 60 * 60 * 1000) // 7 days ago
+        val purchaseDate1 = expiredDate1.subtract(Duration.parse("7d"))
+
+        val expiredDate2 = Date(System.currentTimeMillis() - 3 * 24 * 60 * 60 * 1000) // 3 days ago (latest)
+        val purchaseDate2 = expiredDate2.subtract(Duration.parse("7d"))
+
+        val olderExpiredSubscription = SubscriptionInfo(
+            productIdentifier = "old_product",
+            purchaseDate = purchaseDate1,
+            originalPurchaseDate = purchaseDate1,
+            expiresDate = expiredDate1,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = Date(),
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = null,
+            managementURL = null,
+        )
+
+        val latestExpiredSubscription = SubscriptionInfo(
+            productIdentifier = "latest_product",
+            purchaseDate = purchaseDate2,
+            originalPurchaseDate = purchaseDate2,
+            expiresDate = expiredDate2,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = Date(),
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = null,
+            managementURL = null,
+        )
+
         every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
-            "productIdentifier" to SubscriptionInfo(
-                productIdentifier = "productIdentifier",
-                purchaseDate = Date(),
-                originalPurchaseDate = null,
-                expiresDate = null,
-                store = Store.PLAY_STORE,
-                unsubscribeDetectedAt = null,
-                isSandbox = false,
-                billingIssuesDetectedAt = null,
-                gracePeriodExpiresDate = null,
-                ownershipType = OwnershipType.PURCHASED,
-                periodType = PeriodType.NORMAL,
-                refundedAt = null,
-                storeTransactionId = null,
-                requestDate = Date(),
-                autoResumeDate = null,
-                displayName = null,
-                price = null,
-                productPlanIdentifier = "monthly",
-                managementURL = Uri.parse("https://example.com/manage"),
-            )
+            "old_product" to olderExpiredSubscription,
+            "latest_product" to latestExpiredSubscription
         )
 
-        val model = CustomerCenterViewModelImpl(
-            purchases = purchases,
-            locale = Locale.US,
-            colorScheme = TestData.Constants.currentColorScheme,
-            isDarkMode = false
+        val mockProduct = createGoogleStoreProduct(
+            productId = "latest_product",
+            basePlanId = "monthly",
+            name = "Latest Product"
         )
+        coEvery { purchases.awaitGetProduct("latest_product", null) } returns mockProduct
 
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    val paths = state.supportedPathsForManagementScreen ?: emptyList()
-                    assertThat(paths)
-                        .withFailMessage("Not expected REFUND_REQUEST path for APP_STORE. Paths: $paths")
-                        .noneMatch { it.type == HelpPath.PathType.REFUND_REQUEST }
-                    assertThat(paths)
-                        .withFailMessage("Not expected CHANGE_PLANS path for APP_STORE. Paths: $paths")
-                        .noneMatch { it.type == HelpPath.PathType.CHANGE_PLANS }
-                    cancel()
-                }
-            }
-        }
+        val model = setupViewModel()
 
-        job.join()
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).hasSize(1)
+        val purchase = successState.purchases.first()
+        assertThat(purchase.product?.id).isEqualTo("latest_product:monthly")
+        assertThat(purchase.isExpired).isTrue()
     }
 
-    // Helper method to setup common mocks
+    @Test
+    fun `loadCustomerCenter returns empty when no purchases at all`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+        every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
+
+        val model = setupViewModel()
+
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).isEmpty()
+    }
+
+    @Test
+    fun `expired subscription should not show CANCEL path`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns emptyList()
+
+        val expiredDate = Date(System.currentTimeMillis() - 3 * 24 * 60 * 60 * 1000) // 3 days ago
+        val purchaseDate = expiredDate.subtract(Duration.parse("7d"))
+
+        val expiredSubscription = SubscriptionInfo(
+            productIdentifier = "expired_product",
+            purchaseDate = purchaseDate,
+            originalPurchaseDate = purchaseDate,
+            expiresDate = expiredDate,
+            store = Store.PLAY_STORE,
+            unsubscribeDetectedAt = Date(),
+            isSandbox = false,
+            billingIssuesDetectedAt = null,
+            gracePeriodExpiresDate = null,
+            ownershipType = OwnershipType.PURCHASED,
+            periodType = PeriodType.NORMAL,
+            refundedAt = null,
+            storeTransactionId = null,
+            requestDate = Date(),
+            autoResumeDate = null,
+            displayName = null,
+            price = null,
+            productPlanIdentifier = null,
+            managementURL = Uri.parse("https://play.google.com/store/account/subscriptions"),
+        )
+
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "expired_product" to expiredSubscription
+        )
+
+        val mockProduct = createGoogleStoreProduct(
+            productId = "expired_product",
+            basePlanId = "monthly",
+            name = "Expired Product"
+        )
+        coEvery { purchases.awaitGetProduct("expired_product", null) } returns mockProduct
+
+        val model = setupViewModel()
+
+        val successState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(successState.purchases).hasSize(1)
+        val purchase = successState.purchases.first()
+        assertThat(purchase.isExpired).isTrue()
+
+        val paths = successState.mainScreenPaths
+        assertThat(paths)
+            .withFailMessage("Expected CANCEL path to not be present for expired subscription. Paths: $paths")
+            .noneMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL }
+        
+        // Should have paths from NO_ACTIVE screen (MISSING_PURCHASE and CUSTOM_URL)
+        assertThat(paths)
+            .withFailMessage("Expected MISSING_PURCHASE path from NO_ACTIVE screen. Paths: $paths")
+            .anyMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.MISSING_PURCHASE && it.id == "restore_id" }
+        assertThat(paths)
+            .withFailMessage("Expected CUSTOM_URL path from NO_ACTIVE screen. Paths: $paths")
+            .anyMatch { it.type == CustomerCenterConfigData.HelpPath.PathType.CUSTOM_URL && it.id == "support_id" }
+    }
+
     private fun setupPurchasesMock() {
         every { purchases.customerCenterListener } returns null
         coEvery { purchases.awaitGetProduct(any(), any()) } returns null
@@ -1689,10 +2297,23 @@ class CustomerCenterViewModelTests {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
-        every { purchases.syncPurchases() } just Runs
+        coEvery { purchases.awaitSyncPurchases() } returns customerInfo
+        every { purchases.preferredUILocaleOverride } returns null
+        coEvery { purchases.awaitGetVirtualCurrencies() } returns mockk()
+        every { purchases.invalidateVirtualCurrenciesCache() } just Runs
 
         every { configData.getManagementScreen() } returns screens[Screen.ScreenType.MANAGEMENT]
         every { configData.getNoActiveScreen() } returns screens[Screen.ScreenType.NO_ACTIVE]
+        every { configData.localization } returns CustomerCenterConfigData.Localization(
+            locale = "en_US",
+            localizedStrings = mapOf(
+                "cancel" to "Cancel",
+            )
+        )
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = false,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
 
         every { customerInfo.managementURL } returns null
         every { customerInfo.activeSubscriptions } returns setOf()
@@ -1700,10 +2321,11 @@ class CustomerCenterViewModelTests {
         every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
         every { customerInfo.nonSubscriptionTransactions } returns emptyList()
     }
-    private suspend fun TestScope.setupSuccessLoadScreen(
+
+    private suspend fun setupSuccessLoadScreen(
         originalPath: HelpPath,
         model: CustomerCenterViewModelImpl,
-    ) {
+    ): CustomerCenterState.Success {
         // Set up the state as Success
         val managementScreen = Screen(
             type = Screen.ScreenType.MANAGEMENT,
@@ -1735,44 +2357,39 @@ class CustomerCenterViewModelTests {
 
         // Wait for initial state to load
         model.loadCustomerCenter()
-        val job = launch {
-            model.state.collect { state ->
-                if (state is CustomerCenterState.Success) {
-                    cancel()
-                }
-            }
-        }
-        job.join()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        return state
     }
 
     private fun createSubscriptionOption(
         productId: String,
         basePlanId: String,
-        offerId: String,
+        offerId: String?,
         firstPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
         firstPhasePrice: Double = 0.0,
         secondPhasePeriod: Period = Period(value = 1, unit = Period.Unit.MONTH, "P1M"),
         secondPhasePrice: Double = 9.99,
+        pricingPhases: List<PricingPhase> = listOf(
+            stubPricingPhase(
+                billingCycleCount = 1,
+                billingPeriod = firstPhasePeriod,
+                price = firstPhasePrice,
+                recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
+            ),
+            stubPricingPhase(
+                billingCycleCount = 0,
+                billingPeriod = secondPhasePeriod,
+                price = secondPhasePrice,
+                recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
+            )
+        ),
     ): GoogleSubscriptionOption {
         return stubGoogleSubscriptionOption(
             productId = productId,
             basePlanId = basePlanId,
             productDetails = mockk(),
             offerId = offerId,
-            pricingPhases = listOf(
-                stubPricingPhase(
-                    billingCycleCount = 1,
-                    billingPeriod = firstPhasePeriod,
-                    price = firstPhasePrice,
-                    recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
-                ),
-                stubPricingPhase(
-                    billingCycleCount = 0,
-                    billingPeriod = secondPhasePeriod,
-                    price = secondPhasePrice,
-                    recurrenceMode = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
-                )
-            ),
+            pricingPhases = pricingPhases,
             tags = listOf(SharedConstants.RC_CUSTOMER_CENTER_TAG)
         )
     }
@@ -1844,4 +2461,567 @@ class CustomerCenterViewModelTests {
         )
     }
 
+    private fun examplePromotionalOffer() = CustomerCenterConfigTestData.customerCenterData()
+        .screens[Screen.ScreenType.MANAGEMENT]!!.paths[1].promotionalOffer
+
+    @Test
+    fun `onCustomActionSelected calls listener with correct action identifier from actionIdentifier field`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+        
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionData = com.revenuecat.purchases.customercenter.CustomActionData(
+            actionIdentifier = "delete_user",
+            purchaseIdentifier = "monthly_sub"
+        )
+        
+        model.onCustomActionSelected(customActionData)
+        
+        verify { directListener.onCustomActionSelected("delete_user", "monthly_sub") }
+        verify { purchasesListener.onCustomActionSelected("delete_user", "monthly_sub") }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION uses actionIdentifier when available`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "path_123",
+            title = "Delete Account",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = "delete_user"
+        )
+        
+        val purchaseInfo = createMockPurchaseInformation("monthly_sub")
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, purchaseInfo)
+        
+        verify { directListener.onCustomActionSelected("delete_user", "monthly_sub") }
+        verify { purchasesListener.onCustomActionSelected("delete_user", "monthly_sub") }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION ignores action when actionIdentifier is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "legacy_action_id",
+            title = "Rate App",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = null
+        )
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, null)
+        
+        verify(exactly = 0) { directListener.onCustomActionSelected(any(), any()) }
+        verify(exactly = 0) { purchasesListener.onCustomActionSelected(any(), any()) }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION includes purchase identifier when available`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "path_id",
+            title = "Contact Support",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = "contact_support"
+        )
+        
+        val purchaseInfo = createMockPurchaseInformation("annual_plan")
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, purchaseInfo)
+        
+        verify { directListener.onCustomActionSelected("contact_support", "annual_plan") }
+        verify { purchasesListener.onCustomActionSelected("contact_support", "annual_plan") }
+    }
+
+    @Test
+    fun `pathButtonPressed with CUSTOM_ACTION passes null purchase identifier when no purchase info`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+        
+        val customActionPath = HelpPath(
+            id = "path_id",
+            title = "General Action",
+            type = HelpPath.PathType.CUSTOM_ACTION,
+            actionIdentifier = "general_action"
+        )
+        
+        model.pathButtonPressed(mockk(relaxed = true), customActionPath, null)
+        
+        verify { directListener.onCustomActionSelected("general_action", null) }
+        verify { purchasesListener.onCustomActionSelected("general_action", null) }
+    }
+
+    @Test
+    fun `cancel path strips base plan from product ID in Play Store URL`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.paywall_tester"
+
+        val intentSlot = slot<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        val mockProduct = mockk<GoogleStoreProduct>(relaxed = true)
+        every { mockProduct.productId } returns "paywall_tester.subs"
+        every { mockProduct.id } returns "paywall_tester.subs:monthly"
+        coEvery { purchases.awaitGetProduct(any(), any()) } returns mockProduct
+
+        val purchaseInfo = PurchaseInformation(
+            title = "Basic",
+            pricePaid = PriceDetails.Paid("\$4.99"),
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
+            store = Store.PLAY_STORE,
+            managementURL = null,
+            product = mockProduct,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+        model.selectPurchase(purchaseInfo)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        model.pathButtonPressed(
+            context,
+            HelpPath(
+                id = "test_id",
+                title = "Cancel",
+                type = HelpPath.PathType.CANCEL
+            ),
+            purchaseInfo
+        )
+
+        assertThat(intentSlot.captured.data.toString())
+            .isEqualTo("https://play.google.com/store/account/subscriptions?sku=paywall_tester.subs&package=com.revenuecat.paywall_tester")
+    }
+
+    private fun createMockPurchaseInformation(productId: String): PurchaseInformation {
+        val mockProduct = mockk<StoreProduct>()
+        every { mockProduct.id } returns productId
+
+        return mockk<PurchaseInformation>().apply {
+            every { product } returns mockProduct
+        }
+    }
+
+    @Test
+    fun `cancel path for Amazon store tries deep link first`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        val amazonManagementUrl = Uri.parse("https://www.amazon.com/gp/mas/your-account/myapps/yoursubscriptions")
+        val purchaseInfo = PurchaseInformation(
+            title = "Basic",
+            pricePaid = PriceDetails.Paid("\$4.99"),
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
+            store = Store.AMAZON,
+            managementURL = amazonManagementUrl,
+            product = null,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+        model.selectPurchase(purchaseInfo)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        model.pathButtonPressed(
+            context,
+            HelpPath(
+                id = "test_id",
+                title = "Cancel",
+                type = HelpPath.PathType.CANCEL
+            ),
+            purchaseInfo
+        )
+
+        assertThat(intentSlot.captured.data.toString())
+            .isEqualTo("amzn://apps/library/subscriptions")
+    }
+
+    @Test
+    fun `cancel path for Amazon store falls back to management URL when deep link fails`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val directListener = mockk<CustomerCenterListener>(relaxed = true)
+        val purchasesListener = mockk<CustomerCenterListener>(relaxed = true)
+        every { purchases.customerCenterListener } returns purchasesListener
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = mutableListOf<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } throws
+            android.content.ActivityNotFoundException() andThen Unit
+
+        val amazonManagementUrl = Uri.parse("https://www.amazon.com/gp/mas/your-account/myapps/yoursubscriptions")
+        val purchaseInfo = PurchaseInformation(
+            title = "Basic",
+            pricePaid = PriceDetails.Paid("\$4.99"),
+            expirationOrRenewal = ExpirationOrRenewal.Renewal("June 1st, 2024"),
+            store = Store.AMAZON,
+            managementURL = amazonManagementUrl,
+            product = null,
+            isSubscription = true,
+            isExpired = false,
+            isTrial = false,
+            isCancelled = false,
+            isLifetime = false,
+        )
+
+        val model = CustomerCenterViewModelImpl(
+            purchases = purchases,
+            locale = Locale.US,
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            listener = directListener
+        )
+
+        model.loadCustomerCenter()
+        model.state.first { it is CustomerCenterState.Success }
+        model.selectPurchase(purchaseInfo)
+        model.state.first { state ->
+            state is CustomerCenterState.Success &&
+            state.currentDestination is CustomerCenterDestination.SelectedPurchaseDetail
+        }
+
+        model.pathButtonPressed(
+            context,
+            HelpPath(
+                id = "test_id",
+                title = "Cancel",
+                type = HelpPath.PathType.CANCEL
+            ),
+            purchaseInfo
+        )
+
+        // First call was the deep link attempt, second is the fallback
+        assertThat(intentSlot).hasSize(2)
+        assertThat(intentSlot[0].data.toString())
+            .isEqualTo("amzn://apps/library/subscriptions")
+        assertThat(intentSlot[1].data.toString())
+            .isEqualTo("https://www.amazon.com/gp/mas/your-account/myapps/yoursubscriptions")
+    }
+
+    @Test
+    fun `loadCustomerCenter loads virtual currencies when displayVirtualCurrencies is true`(): Unit = runBlocking {
+        setupPurchasesMock()
+        
+        val mockVirtualCurrencies = mockk<VirtualCurrencies>()
+        coEvery { purchases.awaitGetVirtualCurrencies() } returns mockVirtualCurrencies
+        every { purchases.invalidateVirtualCurrenciesCache() } just Runs
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.virtualCurrencies).isEqualTo(mockVirtualCurrencies)
+        verify(exactly = 1) { purchases.invalidateVirtualCurrenciesCache() }
+        coVerify(exactly = 1) { purchases.awaitGetVirtualCurrencies() }
+    }
+
+    @Test
+    fun `loadCustomerCenter does not load virtual currencies when displayVirtualCurrencies is false`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = false)
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.virtualCurrencies).isNull()
+        verify(exactly = 0) { purchases.invalidateVirtualCurrenciesCache() }
+        coVerify(exactly = 0) { purchases.awaitGetVirtualCurrencies() }
+    }
+
+    @Test
+    fun `loadCustomerCenter does not load virtual currencies when displayVirtualCurrencies is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = null,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.virtualCurrencies).isNull()
+        verify(exactly = 0) { purchases.invalidateVirtualCurrenciesCache() }
+        coVerify(exactly = 0) { purchases.awaitGetVirtualCurrencies() }
+    }
+
+    @Test
+    fun `showVirtualCurrencyBalances navigates to virtual currency balances screen when displayVirtualCurrencies is true`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        val model = setupViewModel()
+
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        model.showVirtualCurrencyBalances()
+        
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination).isInstanceOf(CustomerCenterDestination.VirtualCurrencyBalances::class.java)
+        assertThat(updatedState.navigationButtonType).isEqualTo(CustomerCenterState.NavigationButtonType.BACK)
+        
+        val destination = updatedState.currentDestination as CustomerCenterDestination.VirtualCurrencyBalances
+        assertThat(destination.title).isEqualTo("In-App Currencies")
+    }
+
+    @Test
+    fun `showVirtualCurrencyBalances does nothing when displayVirtualCurrencies is false`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(displayVirtualCurrencies = false)
+
+        val model = setupViewModel()
+        
+        val initialState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialDestination = initialState.currentDestination
+        
+        model.showVirtualCurrencyBalances()
+        
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination).isEqualTo(initialDestination)
+    }
+
+    @Test
+    fun `showVirtualCurrencyBalances does nothing when displayVirtualCurrencies is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayVirtualCurrencies = null,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+
+        val model = setupViewModel()
+        
+        val initialState = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialDestination = initialState.currentDestination
+        
+        model.showVirtualCurrencyBalances()
+        
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination).isEqualTo(initialDestination)
+    }
+
+    @Test
+    fun `showVirtualCurrencyBalances does nothing when state is not Success`(): Unit = runBlocking {
+        setupPurchasesMock()
+        coEvery { purchases.awaitCustomerCenterConfigData() } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.UnknownError, "Test error")
+        )
+        
+        val model = setupViewModel()
+        
+        val errorState = model.state.filterIsInstance<CustomerCenterState.Error>().first()
+        
+        model.showVirtualCurrencyBalances()
+        
+        val currentState = model.state.value
+        assertThat(currentState).isEqualTo(errorState)
+        assertThat(currentState).isInstanceOf(CustomerCenterState.Error::class.java)
+    }
+
+    @Test
+    fun `refreshCustomerCenter uses FETCH_CURRENT not syncPurchases`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        clearMocks(purchases, answers = false, recordedCalls = true)
+
+        model.refreshCustomerCenter()
+
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
+        coVerify(exactly = 0) { purchases.awaitSyncPurchases() }
+    }
+
+    @Test
+    fun `onActivityResumed refreshes customer center after launching manage subscriptions`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var customerCenterConfigCalls = 0
+        coEvery { purchases.awaitCustomerCenterConfigData() } coAnswers {
+            customerCenterConfigCalls++
+            configData
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val initialCalls = customerCenterConfigCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
+            every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && customerCenterConfigCalls <= initialCalls) {
+            Thread.sleep(25)
+        }
+        assertThat(customerCenterConfigCalls).isGreaterThan(initialCalls)
+        coVerify(atLeast = 1) { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) }
+    }
+
+    @Test
+    fun `onActivityStarted skips refresh when onActivityResumed will handle it`(): Unit = runBlocking {
+        setupPurchasesMock()
+
+        var fetchCurrentCalls = 0
+        coEvery { purchases.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT) } coAnswers {
+            fetchCurrentCalls++
+            customerInfo
+        }
+
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+        val callsAfterInitialLoad = fetchCurrentCalls
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.packageName } returns "com.revenuecat.test"
+        val product = mockk<GoogleStoreProduct>(relaxed = true) {
+            every { id } returns "monthly_sub"
+            every { productId } returns "monthly_sub"
+        }
+        val purchaseInformation = mockk<PurchaseInformation> {
+            every { store } returns Store.PLAY_STORE
+            every { this@mockk.product } returns product
+            every { managementURL } returns null
+        }
+        val cancelPath = HelpPath(
+            id = "cancel",
+            title = "Cancel",
+            type = HelpPath.PathType.CANCEL,
+        )
+
+        model.pathButtonPressed(context, cancelPath, purchaseInformation)
+        verify(timeout = 2_000) { context.startActivity(any()) }
+
+        // Simulate lifecycle: stop -> start -> resume
+        model.onActivityStopped(isChangingConfigurations = false)
+        model.onActivityStarted()
+        model.onActivityResumed()
+
+        val deadline = System.currentTimeMillis() + 2_000
+        while (System.currentTimeMillis() < deadline && fetchCurrentCalls < callsAfterInitialLoad + 1) {
+            Thread.sleep(25)
+        }
+        // Only one additional refresh from onActivityResumed, none from onActivityStarted
+        assertThat(fetchCurrentCalls).isEqualTo(callsAfterInitialLoad + 1)
+    }
 }

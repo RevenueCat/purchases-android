@@ -882,9 +882,8 @@ internal class PresentedStackPartialTests {
             }
         }
 
-        @Suppress("MaxLineLength")
         @Test
-        fun `Should create successfully if the PartialStackComponent has no ColorAlias, alias map is empty`() {
+        fun `Should create successfully without color aliases when alias map is empty`() {
             // Arrange, Act
             val actualResult = PresentedStackPartial(
                 from = PartialStackComponent(
@@ -1315,6 +1314,8 @@ private fun createStackComponentStyle(
             scrollOrientation = stack.overflow?.toOrientation(stack.dimension),
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = com.revenuecat.purchases.paywalls.components.CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         )
     )

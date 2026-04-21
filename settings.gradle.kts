@@ -1,4 +1,7 @@
+import java.nio.file.Files
+
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         // fetch plugins from google maven (https://maven.google.com)
         google {
@@ -23,6 +26,36 @@ pluginManagement {
         // fallback for the rest of the dependencies
         mavenCentral()
     }
+}
+
+val samsungIapSdkDir = file("$rootDir/libs")
+val isCiBuild = System.getenv("CI").equals("true", ignoreCase = true)
+
+/**
+ * Returns true only when the expected Samsung IAP AAR (versioned from
+ * `gradle/libs.versions.toml`) is present in the SDK directory.
+ */
+private fun Settings.isSamsungIAPAARPresent(samsungIAPSDKDir: File): Boolean {
+    if (!samsungIAPSDKDir.exists()) {
+        return false
+    }
+
+    val samsungIapVersion = readVersionFromCatalog("samsungIap")
+    return samsungIapVersion != null &&
+        samsungIAPSDKDir.resolve("samsung-iap-$samsungIapVersion.aar").isFile
+}
+
+/**
+ * Reads a version entry from `gradle/libs.versions.toml` without relying on the
+ * version catalog extension (not available during settings evaluation).
+ */
+private fun Settings.readVersionFromCatalog(versionKey: String): String? {
+    val catalogFile = rootDir.resolve("gradle/libs.versions.toml")
+    if (!catalogFile.isFile) return null
+
+    val lineRegex = Regex("^\\s*$versionKey\\s*=\\s*\"([^\"]+)\"\\s*$")
+    return Files.readAllLines(catalogFile.toPath())
+        .firstNotNullOfOrNull { line -> lineRegex.find(line)?.groupValues?.get(1) }
 }
 
 dependencyResolutionManagement {
@@ -46,15 +79,52 @@ dependencyResolutionManagement {
             }
         }
 
-        // fetch plugins from gradle plugin portal (https://plugins.gradle.org)
-        gradlePluginPortal()
-
         // fallback for the rest of the dependencies
         mavenCentral()
+
+        // Local Samsung IAP SDK AAR
+        flatDir {
+            dirs(samsungIapSdkDir)
+        }
+
+        if (isCiBuild) {
+            val samsungIapMavenUrl = System.getenv("SAMSUNG_IAP_MAVEN_URL")
+            val ghPackagesUser = System.getenv("READ_GH_PACKAGES_USER")
+            val ghPackagesPat = System.getenv("READ_GH_PACKAGES_PAT")
+
+            if (!samsungIapMavenUrl.isNullOrBlank() &&
+                !ghPackagesUser.isNullOrBlank() &&
+                !ghPackagesPat.isNullOrBlank()
+            ) {
+                maven {
+                    url = uri(samsungIapMavenUrl)
+                    credentials {
+                        username = ghPackagesUser
+                        password = ghPackagesPat
+                    }
+                    metadataSources {
+                        artifact()
+                    }
+                    content {
+                        includeGroup("com.samsung.android")
+                    }
+                }
+            }
+        }
     }
 }
 
 include(":feature:amazon")
+val samsungIAPAARPresent = isSamsungIAPAARPresent(samsungIapSdkDir)
+gradle.beforeProject {
+    if (this == rootProject) {
+        extra["hasSamsungIapAar"] = samsungIAPAARPresent
+    }
+}
+if (samsungIAPAARPresent) {
+    include(":feature:galaxy")
+}
+include(":feature:admob")
 include(":integration-tests")
 include(":purchases")
 include(":examples:purchase-tester")
@@ -62,9 +132,14 @@ include(":api-tester")
 include(":ui:debugview")
 include(":ui:revenuecatui")
 include(":bom")
+include(":codegen")
 include(":examples:paywall-tester")
 include(":test-apps:testpurchasesandroidcompatibility")
 include(":test-apps:testpurchasesuiandroidcompatibility")
 include(":examples:web-purchase-redemption-sample")
+include(":examples:admob-sample")
+include(":examples:vanilla-ad-tracker-sample")
 include(":dokka-hide-internal")
 include(":baselineprofile")
+include(":test-apps:e2etests")
+include(":examples:rcttester")

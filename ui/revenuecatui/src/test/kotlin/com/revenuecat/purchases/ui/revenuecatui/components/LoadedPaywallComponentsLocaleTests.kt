@@ -50,6 +50,7 @@ internal class LoadedPaywallComponentsLocaleTests {
         const val EXPECTED_TEXT_NL = "Hallo, wereld!"
 
         val paywallComponents = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(

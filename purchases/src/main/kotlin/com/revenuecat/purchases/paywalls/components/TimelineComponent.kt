@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -18,35 +19,36 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("timeline")
-class TimelineComponent(
+@Immutable
+public class TimelineComponent(
     @get:JvmSynthetic
     @SerialName("item_spacing")
-    val itemSpacing: Int,
+    public val itemSpacing: Int,
     @get:JvmSynthetic
     @SerialName("text_spacing")
-    val textSpacing: Int,
+    public val textSpacing: Int,
     @get:JvmSynthetic
     @SerialName("column_gutter")
-    val columnGutter: Int,
+    public val columnGutter: Int,
     @get:JvmSynthetic
     @SerialName("icon_alignment")
-    val iconAlignment: IconAlignment,
+    public val iconAlignment: IconAlignment,
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
-    val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+    public val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
     @get:JvmSynthetic
-    val padding: Padding = zero,
+    public val padding: Padding = zero,
     @get:JvmSynthetic
-    val margin: Padding = zero,
+    public val margin: Padding = zero,
     @get:JvmSynthetic
-    val items: List<Item> = emptyList(),
+    public val items: List<Item> = emptyList(),
     @get:JvmSynthetic
-    val overrides: List<ComponentOverride<PartialTimelineComponent>> = emptyList(),
+    public val overrides: List<ComponentOverride<PartialTimelineComponent>> = emptyList(),
 ) : PaywallComponent {
 
     @Serializable(with = TimelineIconAlignmentDeserializer::class)
-    enum class IconAlignment {
+    public enum class IconAlignment {
         // SerialNames are handled by the TimelineIconAlignmentDeserializer.
 
         Title,
@@ -55,30 +57,32 @@ class TimelineComponent(
 
     @Poko
     @Serializable
-    class Item(
+    @Immutable
+    public class Item(
         @get:JvmSynthetic
-        val title: TextComponent,
+        public val title: TextComponent,
         @get:JvmSynthetic
-        val visible: Boolean? = null,
+        public val visible: Boolean? = null,
         @get:JvmSynthetic
-        val description: TextComponent? = null,
+        public val description: TextComponent? = null,
         @get:JvmSynthetic
-        val icon: IconComponent,
+        public val icon: IconComponent,
         @get:JvmSynthetic
-        val connector: Connector? = null,
+        public val connector: Connector? = null,
         @get:JvmSynthetic
-        val overrides: List<ComponentOverride<PartialTimelineComponentItem>> = emptyList(),
+        public val overrides: List<ComponentOverride<PartialTimelineComponentItem>> = emptyList(),
     )
 
     @Poko
     @Serializable
-    class Connector(
+    @Immutable
+    public class Connector(
         @get:JvmSynthetic
-        val width: Int,
+        public val width: Int,
         @get:JvmSynthetic
-        val margin: Padding,
+        public val margin: Padding,
         @get:JvmSynthetic
-        val color: ColorScheme,
+        public val color: ColorScheme,
     )
 }
 
@@ -86,37 +90,39 @@ class TimelineComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PartialTimelineComponent(
+@Immutable
+public class PartialTimelineComponent(
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
     @SerialName("item_spacing")
-    val itemSpacing: Int? = null,
+    public val itemSpacing: Int? = null,
     @get:JvmSynthetic
     @SerialName("text_spacing")
-    val textSpacing: Int? = null,
+    public val textSpacing: Int? = null,
     @get:JvmSynthetic
     @SerialName("column_gutter")
-    val columnGutter: Int? = null,
+    public val columnGutter: Int? = null,
     @get:JvmSynthetic
     @SerialName("icon_alignment")
-    val iconAlignment: IconAlignment? = null,
+    public val iconAlignment: IconAlignment? = null,
     @get:JvmSynthetic
-    val size: Size? = null,
+    public val size: Size? = null,
     @get:JvmSynthetic
-    val padding: Padding? = null,
+    public val padding: Padding? = null,
     @get:JvmSynthetic
-    val margin: Padding? = null,
+    public val margin: Padding? = null,
 ) : PartialComponent
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PartialTimelineComponentItem(
+@Immutable
+public class PartialTimelineComponentItem(
     @get:JvmSynthetic
-    val visible: Boolean? = null,
+    public val visible: Boolean? = null,
     @get:JvmSynthetic
-    val connector: TimelineComponent.Connector? = null,
+    public val connector: TimelineComponent.Connector? = null,
 ) : PartialComponent
 
 @OptIn(InternalRevenueCatAPI::class)

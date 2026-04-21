@@ -5,16 +5,17 @@ plugins {
 
 android {
     namespace = "com.revenuecat.testpurchasesandroidcompatibility"
-    compileSdk = 33 // Keeping it at 33 to test compatibility with purchases-android
+    compileSdk = 34 // Keeping it at 34 to test compatibility with purchases-android
 
     defaultConfig {
         applicationId = "com.revenuecat.testpurchasesandroidcompatibility"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 33 // Keeping it at 33 to test compatibility with purchases-android
         versionCode = 1
         versionName = "1.0"
 
         missingDimensionStrategy("apis", "defaults")
+        missingDimensionStrategy("billingclient", "bc8")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled = true
@@ -30,8 +31,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
     }
 }
 

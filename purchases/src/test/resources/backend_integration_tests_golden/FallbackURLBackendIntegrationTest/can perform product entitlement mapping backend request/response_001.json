@@ -1,0 +1,10 @@
+{
+  "statusCode": 502,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "960",
+    "Content-Type": "text\/html",
+    "Server": "CloudFront"
+  },
+  "body": null
+}

@@ -1,28 +1,31 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import dev.drewhamilton.poko.Poko
 
 /**
  * Defines an option for purchasing a Google subscription
  */
-data class GoogleSubscriptionOption @JvmOverloads constructor(
+@Poko
+public class GoogleSubscriptionOption @JvmOverloads constructor(
     /**
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be basePlanId:offerId
      */
-    val productId: String,
+    public val productId: String,
 
     /**
      * The id of the base plan that this `GoogleSubscriptionOption` belongs to.
      */
-    val basePlanId: String,
+    public val basePlanId: String,
 
     /**
      * If this represents an offer, the offerId set in the Play Console.
      * Null otherwise.
      */
-    val offerId: String?,
+    public val offerId: String?,
 
     /**
      * Pricing phases defining a user's payment plan for the product over time.
@@ -39,13 +42,13 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
      * The `ProductDetails` object this `GoogleSubscriptionOption` was created from.
      * Use to get underlying BillingClient information.
      */
-    val productDetails: ProductDetails,
+    public val productDetails: ProductDetails,
 
     /**
      * The token used to purchase this `GoogleSubscriptionOption`, whether it represents
      * a base plan or an offer.
      */
-    val offerToken: String,
+    public val offerToken: String,
 
     /**
      * The context from which this subscription option was obtained.
@@ -69,7 +72,7 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
                 "productDetails, offerToken, PresentedOfferingContext(offeringIdentifier = presentedOfferingId))",
         ),
     )
-    constructor(
+    public constructor(
         productId: String,
         basePlanId: String,
         offerId: String?,
@@ -120,11 +123,26 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override val purchasingData: PurchasingData
         get() = GooglePurchasingData.Subscription(
             productId,
             id,
             productDetails,
             offerToken,
+            primaryPricingPhase?.billingPeriod,
+            addOnProducts = emptyList(),
         )
+
+    /**
+     * The "primary" pricing phase for the description, defined by either the first infinitely recurring phase,
+     * or if no infinitely recurring phase is found, then the last one.
+     */
+    private val primaryPricingPhase: PricingPhase?
+        get() {
+            val infiniteRecurringPricingPhase = pricingPhases
+                .firstOrNull { it.recurrenceMode == RecurrenceMode.INFINITE_RECURRING }
+
+            return infiniteRecurringPricingPhase ?: pricingPhases.lastOrNull()
+        }
 }

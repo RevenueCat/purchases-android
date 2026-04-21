@@ -13,7 +13,6 @@ import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
 import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.LogHandler
-import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.infoLog
@@ -11,12 +12,15 @@ import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.subscriberattributes.caching.AppUserID
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributeMap
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.getStringValueForPrimitive
 import java.util.Observable
 
+@Suppress("TooManyFunctions")
 internal class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
     private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
+    private val automaticDeviceIdentifierCollectionEnabled: Boolean,
 ) {
 
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
@@ -126,6 +130,7 @@ internal class SubscriberAttributesManager(
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     @Synchronized
     fun markAsSynced(
         appUserID: String,
@@ -157,6 +162,93 @@ internal class SubscriberAttributesManager(
     }
 
     /**
+     * Convenience function to set attribution data from AppsFlyer's conversion data.
+     */
+    @Suppress("CyclomaticComplexMethod")
+    fun setAppsFlyerConversionData(appUserID: String, data: Map<*, *>?) {
+        if (data == null) {
+            return
+        }
+
+        val attributes = mutableMapOf<String, String?>()
+
+        val mediaSource = data.getStringValueForPrimitive("media_source")
+        if (mediaSource != null) {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = mediaSource
+        } else if (data.getStringValueForPrimitive("af_status")?.equals("Organic", ignoreCase = true) == true) {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = "Organic"
+        }
+
+        data.getStringValueForPrimitive("campaign")?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Campaign.backendKey] = it
+        }
+
+        val adGroup = data.getStringValueForPrimitive("adgroup") ?: data.getStringValueForPrimitive("adset")
+        adGroup?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.AdGroup.backendKey] = it
+        }
+
+        val ad = data.getStringValueForPrimitive("af_ad") ?: data.getStringValueForPrimitive("ad_id")
+        ad?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Ad.backendKey] = it
+        }
+
+        val keyword = data.getStringValueForPrimitive("af_keywords") ?: data.getStringValueForPrimitive("keyword")
+        keyword?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Keyword.backendKey] = it
+        }
+
+        val creative = data.getStringValueForPrimitive("creative") ?: data.getStringValueForPrimitive("af_creative")
+        creative?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Creative.backendKey] = it
+        }
+
+        if (attributes.isNotEmpty()) {
+            setAttributes(attributes, appUserID)
+        }
+    }
+
+    /**
+     * Convenience function to set attribution data from Appstack's attribution params.
+     */
+    fun setAppstackAttributionParams(appUserID: String, data: Map<String, String>, applicationContext: Application) {
+        val attributes = mutableMapOf<String, String?>()
+
+        data["appstack_adnetwork"]?.takeIf { it.isNotBlank() }?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.MediaSource.backendKey] = it
+            attributes["appstack_adnetwork"] = it
+        }
+        data["appstack_campaign"]?.takeIf { it.isNotBlank() }?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Campaign.backendKey] = it
+            attributes["appstack_campaign"] = it
+        }
+        data["appstack_adset"]?.takeIf { it.isNotBlank() }?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.AdGroup.backendKey] = it
+            attributes["appstack_adset"] = it
+        }
+        data["appstack_ad"]?.takeIf { it.isNotBlank() }?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Ad.backendKey] = it
+            attributes["appstack_ad"] = it
+        }
+        data["appstack_keywords"]?.takeIf { it.isNotBlank() }?.also {
+            attributes[SubscriberAttributeKey.CampaignParameters.Keyword.backendKey] = it
+            attributes["appstack_keywords"] = it
+        }
+
+        listOf("fbclid", "gclid", "wbraid", "gbraid", "ttclid").forEach { key ->
+            data[key]?.takeIf { it.isNotBlank() }?.also { attributes[key] = it }
+        }
+
+        if (attributes.isNotEmpty()) {
+            setAttributes(attributes, appUserID)
+        }
+
+        data["appstack_id"]?.takeIf { it.isNotBlank() }?.let { appstackId ->
+            setAttributionID(SubscriberAttributeKey.AttributionIds.Appstack, appstackId, appUserID, applicationContext)
+        }
+    }
+
+    /**
      * Collect GPS ID, ANDROID ID and sets IP to true automatically
      */
     fun collectDeviceIdentifiers(
@@ -178,9 +270,16 @@ internal class SubscriberAttributesManager(
         appUserID: String,
         applicationContext: Application,
     ) {
-        getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+        val setAttributes: (deviceIdentifiers: Map<String, String?>) -> Unit = { deviceIdentifiers ->
             val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
             setAttributes(attributesToSet, appUserID)
+        }
+        if (automaticDeviceIdentifierCollectionEnabled) {
+            getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
+                setAttributes(deviceIdentifiers)
+            }
+        } else {
+            setAttributes(emptyMap())
         }
     }
 

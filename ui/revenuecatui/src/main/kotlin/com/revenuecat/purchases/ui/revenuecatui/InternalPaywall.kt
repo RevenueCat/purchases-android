@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
@@ -15,17 +17,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -38,12 +45,17 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
@@ -54,7 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ViewModelForwarding")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
@@ -71,7 +83,13 @@ internal fun InternalPaywall(
         viewModel.refreshStateIfColorsChanged(colorScheme = colorScheme, isDark = isDark)
     }
 
-    val state = viewModel.state.collectAsState().value
+    val state = viewModel.state.collectAsStateWithLifecycle().value
+
+    val componentInteractionTracker = remember(viewModel) {
+        PaywallComponentInteractionTracker { data ->
+            viewModel.trackComponentInteraction(data)
+        }
+    }
 
     PaywallTheme(fontProvider = options.fontProvider) {
         AnimatedVisibility(
@@ -94,7 +112,7 @@ internal fun InternalPaywall(
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
             if (state is PaywallState.Loaded.Legacy) {
-                LoadedPaywall(state = state, viewModel = viewModel)
+                LoadedPaywall(state = state, viewModel = viewModel, isDarkTheme = isDark)
             } else {
                 Logger.e(
                     "State is not loaded while transitioning animation. This may happen if state changes from " +
@@ -111,14 +129,27 @@ internal fun InternalPaywall(
         exit = fadeOut(animationSpec = defaultAnimation()),
     ) {
         if (state is PaywallState.Loaded.Components) {
-            viewModel.trackPaywallImpressionIfNeeded()
+            val paywallComponents = state.offering.paywallComponents
+            if (paywallComponents != null) {
+                LaunchedEffect(
+                    state.offering.identifier,
+                    paywallComponents.data.id,
+                    paywallComponents.data.revision,
+                    options.mode,
+                    state.locale.toString(),
+                    isDark,
+                ) {
+                    viewModel.trackPaywallImpressionIfNeeded()
+                }
+            }
             LoadedPaywallComponents(
                 state = state,
                 clickHandler = rememberPaywallActionHandler(viewModel),
+                componentInteractionTracker = componentInteractionTracker,
             )
         } else {
             Logger.e(
-                "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
+                "State is not loaded while transitioning animation. This may happen if state changes " +
                     "from being loaded to a different state. This should not happen.",
             )
         }
@@ -153,32 +184,82 @@ internal fun InternalPaywall(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
-private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
-    viewModel.trackPaywallImpressionIfNeeded()
-    val backgroundColor = state.templateConfiguration.getCurrentColors().background
-    Box(
-        modifier = Modifier
-            .conditional(state.isInFullScreenMode) {
-                Modifier
-                    .fillMaxHeight()
-                    .background(backgroundColor)
-            }
-            .conditional(!state.isInFullScreenMode) {
-                Modifier
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = UIConstant.defaultCornerRadius,
-                            topEnd = UIConstant.defaultCornerRadius,
+private fun LoadedPaywall(
+    state: PaywallState.Loaded.Legacy,
+    viewModel: PaywallViewModel,
+    isDarkTheme: Boolean,
+) {
+    val configuration = LocalConfiguration.current
+    val localeLanguageTags = configuration.locales.toLanguageTags()
+    val offering = state.offering
+    val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.data?.revision
+    val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+    LaunchedEffect(
+        offering.identifier,
+        paywallIdentifier,
+        paywallRevision,
+        state.templateConfiguration.mode,
+        localeLanguageTags,
+        isDarkTheme,
+    ) {
+        viewModel.trackPaywallImpressionIfNeeded()
+    }
+    val context = LocalContext.current
+    val activity = context.getActivity()
+
+    if (state.validationWarning != null) {
+        val defaultBackground = MaterialTheme.colorScheme.background
+        val defaultOnSurface = MaterialTheme.colorScheme.onSurface
+        Box(
+            modifier = Modifier.screenModeBackground(state.isInFullScreenMode, defaultBackground),
+        ) {
+            DefaultPaywallView(
+                packages = state.templateConfiguration.packages.all,
+                selectedPackage = state.selectedPackage.value,
+                warning = state.validationWarning,
+                onSelectPackage = viewModel::selectPackage,
+                onPurchase = {
+                    val rcPackage = state.selectedPackage.value.rcPackage
+                    viewModel.trackComponentInteraction(
+                        paywallPurchaseButtonAction(
+                            componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
+                            componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
+                            componentUrl = null,
+                            currentPackageIdentifier = rcPackage.identifier,
+                            currentProductIdentifier = rcPackage.product.paywallProductIdentifier(),
                         ),
                     )
-                    .background(backgroundColor)
-            },
+                    viewModel.purchaseSelectedPackage(activity)
+                },
+                onRestore = {
+                    viewModel.trackComponentInteraction(
+                        componentType = PaywallComponentType.BUTTON,
+                        componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+                        componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+                    )
+                    viewModel.restorePurchases()
+                },
+            )
+            CloseButton(
+                shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+                color = defaultOnSurface,
+                actionInProgress = viewModel.actionInProgress.value,
+                onClick = viewModel::closePaywall,
+            )
+        }
+        return
+    }
+
+    val backgroundColor = state.templateConfiguration.getCurrentColors().background
+    Box(
+        modifier = Modifier.screenModeBackground(state.isInFullScreenMode, backgroundColor),
     ) {
         val configuration = state.configurationWithOverriddenLocale()
 
         CompositionLocalProvider(
-            LocalActivity provides LocalContext.current.getActivity(),
+            LocalActivity provides activity,
             LocalContext provides state.contextWithConfiguration(configuration),
             LocalConfiguration provides configuration,
         ) {
@@ -205,6 +286,7 @@ private fun TemplatePaywall(state: PaywallState.Loaded.Legacy, viewModel: Paywal
     }
 }
 
+@Stable
 @Composable
 internal fun getPaywallViewModel(
     options: PaywallOptions,
@@ -257,8 +339,26 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     if (activity == null) {
                         Logger.e("Activity is null, not initiating package purchase")
                     } else {
-                        viewModel.handlePackagePurchase(activity, pkg = action.rcPackage)
+                        viewModel.handlePackagePurchase(
+                            activity,
+                            pkg = action.rcPackage,
+                            resolvedOffer = action.resolvedOffer,
+                        )
                     }
+
+                is PaywallAction.External.LaunchWebCheckout -> {
+                    val url = viewModel.getWebCheckoutUrl(action)
+                    if (url == null) {
+                        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
+                    } else {
+                        viewModel.invalidateCustomerInfoCache()
+                        context.handleUrlDestination(url, action.openMethod)
+                        if (action.autoDismiss) {
+                            Logger.d("Auto-dismissing paywall after launching web checkout.")
+                            viewModel.closePaywall()
+                        }
+                    }
+                }
 
                 is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
                 is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
@@ -289,3 +389,20 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
 
     URLOpener.openURL(this, url, openingMethod)
 }
+
+private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this
+    .conditional(isInFullScreenMode) {
+        Modifier
+            .fillMaxHeight()
+            .background(backgroundColor)
+    }
+    .conditional(!isInFullScreenMode) {
+        Modifier
+            .clip(
+                RoundedCornerShape(
+                    topStart = UIConstant.defaultCornerRadius,
+                    topEnd = UIConstant.defaultCornerRadius,
+                ),
+            )
+            .background(backgroundColor)
+    }

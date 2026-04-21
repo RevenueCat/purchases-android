@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -12,6 +14,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class OfflineEntitlementsManager(
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
@@ -47,7 +50,6 @@ internal class OfflineEntitlementsManager(
         isServerError: Boolean,
     ) = isServerError && isOfflineEntitlementsEnabled()
 
-    @Suppress("FunctionOnlyReturningConstant")
     fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
         onSuccess: (CustomerInfo) -> Unit,
@@ -116,10 +118,12 @@ internal class OfflineEntitlementsManager(
     }
 
     // We disable offline entitlements in observer mode (finishTransactions = true) since it doesn't
-    // provide any value and simplifies operations in that mode.
+    // provide any value and simplifies operations in that mode. Also on test store, since we don't have a store
+    // to store purchases in the client.
     private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions &&
         appConfig.enableOfflineEntitlements &&
-        !appConfig.customEntitlementComputation
+        !appConfig.customEntitlementComputation &&
+        appConfig.store != Store.TEST_STORE
 }
 
 private typealias OfflineCustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>

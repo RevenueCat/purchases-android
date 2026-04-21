@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
@@ -9,7 +10,8 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("sticky_footer")
-class StickyFooterComponent(
+@Immutable
+public class StickyFooterComponent(
     @get:JvmSynthetic
-    val stack: StackComponent,
+    public val stack: StackComponent,
 ) : PaywallComponent

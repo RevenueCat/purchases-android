@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.amazon
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
@@ -7,9 +8,11 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import dev.drewhamilton.poko.Poko
 import org.json.JSONObject
 
-data class AmazonStoreProduct @JvmOverloads constructor(
+@Poko
+public class AmazonStoreProduct @JvmOverloads constructor(
 
     /**
      * The productId
@@ -64,17 +67,17 @@ data class AmazonStoreProduct @JvmOverloads constructor(
     /**
      * The icon URL of the product.
      */
-    val iconUrl: String,
+    public val iconUrl: String,
 
     /**
      * The [Period] of a subscription's free trial. Null for INAPP.
      */
-    val freeTrialPeriod: Period?,
+    public val freeTrialPeriod: Period?,
 
     /**
      * JSONObject representing the original [Product] class from Amazon.
      */
-    val originalProductJSON: JSONObject,
+    public val originalProductJSON: JSONObject,
 
     /**
      * The context from which this product was obtained.
@@ -92,7 +95,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
                 "presentedOfferingIdentifier)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         type: ProductType,
         title: String,
@@ -129,7 +132,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
                 "PresentedOfferingContext(presentedOfferingIdentifier))",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         type: ProductType,
         name: String,
@@ -189,6 +192,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
      *
      * Creates a copy of this `AmazonStoreProduct` with the specified `offeringId` set.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     @Deprecated(
         "Replaced with copyWithPresentedOfferingContext",
         ReplaceWith("copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))"),
@@ -199,7 +203,9 @@ data class AmazonStoreProduct @JvmOverloads constructor(
         return copyWithPresentedOfferingContext(newPresentedOfferingContext)
     }
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+    public override fun copyWithPresentedOfferingContext(
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): StoreProduct {
         return AmazonStoreProduct(
             this.id,
             this.type,
@@ -217,9 +223,9 @@ data class AmazonStoreProduct @JvmOverloads constructor(
         )
     }
 
-    override fun equals(other: Any?) = other is AmazonStoreProduct &&
+    public override fun equals(other: Any?): Boolean = other is AmazonStoreProduct &&
         ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    public override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**
@@ -228,7 +234,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
  * `freeTrialPeriod`
  * `iconUrl`
  */
-val StoreProduct.amazonProduct: AmazonStoreProduct?
+public val StoreProduct.amazonProduct: AmazonStoreProduct?
     get() = this as? AmazonStoreProduct
 
 /**

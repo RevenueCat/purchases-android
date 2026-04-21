@@ -1,0 +1,266 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "9421",
+    "Content-Type": "application\/json",
+    "access-control-allow-origin": "*",
+    "access-control-expose-headers": "X-Request-Id",
+    "server": "envoy"
+  },
+  "body": {
+    "customer_center": {
+      "appearance": {
+        "dark": {
+          "accent_color": "#ffffff",
+          "background_color": "#000000",
+          "button_background_color": "#ffffff",
+          "button_text_color": "#000000",
+          "text_color": "#ffffff"
+        },
+        "light": {
+          "accent_color": "#000000",
+          "background_color": "#ffffff",
+          "button_background_color": "#000000",
+          "button_text_color": "#ffffff",
+          "text_color": "#000000"
+        }
+      },
+      "change_plans": [],
+      "localization": {
+        "locale": "en",
+        "localized_strings": {
+          "actions_section_title": "Actions",
+          "active": "Active",
+          "amazon_store": "Amazon Store",
+          "amazon_subscription_manage": "You have an active subscription from the Amazon Appstore. You can manage your subscription in the Amazon Appstore app.",
+          "app_store": "App Store",
+          "apple_subscription_manage": "You can manage your subscription by using the App Store app on an Apple device.",
+          "badge_cancelled": "Cancelled",
+          "badge_free_trial": "Free Trial",
+          "badge_free_trial_cancelled": "Cancelled trial",
+          "badge_lifetime": "Lifetime",
+          "billing_cycle": "Billing cycle",
+          "billing_issue_detected_at": "Billing Issue Detected At",
+          "buy_subscription": "Buy Subscription",
+          "cancel": "Cancel",
+          "card_store_promotional": "Via Support",
+          "characters_remaining": "{{ count }} characters",
+          "check_past_purchases": "Check past purchases",
+          "contact_support": "Contact support",
+          "copy_title": "Copy",
+          "current_price": "Price",
+          "debug": "Debug",
+          "default_body": "Please describe your issue or question.",
+          "default_subject": "Support Request",
+          "description": "Description",
+          "discounted_recurring_payment_then_price": "{{ discounted_recurring_payment_price_per_period }} for {{ discounted_recurring_payment_cycles }} periods, then {{ price }}",
+          "discounted_recurring_then_price": "{{ sub_offer_price }} during {{ sub_offer_duration }}, then {{ price }}",
+          "dismiss": "Dismiss",
+          "done": "Done",
+          "email": "Email",
+          "enter_email": "Enter your email",
+          "expired": "Expired",
+          "expires": "Expires",
+          "expires_on_date_without_changes": "Expires on {{ date }} without further charges.",
+          "external_store": "External",
+          "free": "Free",
+          "free_trial_discounted_recurring_payment_then_price": "Try {{ sub_offer_duration }} for free, then {{ discounted_recurring_payment_price_per_period }} for {{ discounted_recurring_payment_cycles }} periods, and {{ price }} thereafter",
+          "free_trial_discounted_then_price": "{{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} during {{ sub_offer_duration_2 }}, and {{ price }} thereafter",
+          "free_trial_single_payment_then_price": "{{ sub_offer_duration }} for free, then {{ sub_offer_duration_2 }} for {{ sub_offer_price_2 }}, and {{ price }} thereafter",
+          "free_trial_then_price": "{{ sub_offer_duration }} free, then {{ price }}",
+          "free_trial_until_date": "Free trial until {{ date }}",
+          "galaxy_store": "Galaxy Store",
+          "going_to_check_purchases": "Let’s take a look! We’re going to check your account for missing purchases.",
+          "google_play_store": "Google Play Store",
+          "google_subscription_manage": "You have an active subscription from the Google Play Store",
+          "grace_period_expires_at": "Grace Period Expires At",
+          "history_latest_purchase_date": "Latest Purchase date",
+          "inactive": "Inactive",
+          "introductory_price": "Introductory Price",
+          "invalid_email_error": "Please enter a valid email address",
+          "ios_promo_offer_button_free_trial": "{{ duration }} for free",
+          "ios_promo_offer_button_recurring_discount": "{{ price }} during {{ duration }}",
+          "ios_promo_offer_button_regular_price": "then {{ price }}",
+          "ios_promo_offer_button_upfront_payment": "{{ duration }} for {{ price }}",
+          "last_charge_was": "Last charge: {{ price }}",
+          "mac_app_store": "Mac App Store",
+          "manage_subscription": "Manage your subscription",
+          "never": "Never",
+          "next_billing_date": "Next billing date",
+          "next_billing_date_on": "Next billing date: {{ date }}",
+          "next_renewal": "Next Renewal",
+          "no": "No",
+          "no_subscriptions_found": "No Subscriptions found",
+          "no_thanks": "No, thanks",
+          "no_virtual_currency_balances_found": "It doesn't look like you've purchased any in-app currencies.",
+          "original_download_date": "Original Download Date",
+          "paid_price": "Paid price",
+          "period_type": "Period Type",
+          "platform_mismatch": "Platform mismatch",
+          "please_contact_support": "Please contact support to manage your subscription.",
+          "price_afterwards": "{{ price }} afterwards.",
+          "price_expires_on_date_without_changes": "{{ price }}. Expires on {{ date }} without changes.",
+          "price_paid": "Paid {{ price }}",
+          "product_id": "Product ID",
+          "product_name": "Product name",
+          "promotional": "Promotional",
+          "purchase_info_expired_on_date": "Expired on {{ date }}",
+          "purchase_info_expires_on_date": "Expires on {{ date }}",
+          "purchase_info_purchased_on_date": "Purchased on {{ date }}",
+          "purchase_info_renews_on_date": "Renews on {{ date }}",
+          "purchases_not_found": "No past purchases",
+          "purchases_not_recovered": "We could not find any purchases with your account. If you think this is an error, please contact support.",
+          "purchases_recovered": "Purchases restored",
+          "purchases_recovered_explanation": "We restored your past purchases and applied them to your account.",
+          "purchases_restoring": "Restoring...",
+          "purchases_section_title": "Purchases",
+          "refund_canceled": "Refund canceled",
+          "refund_error_generic": "An error occurred while processing the refund request. Please try again.",
+          "refund_granted": "Refund requested",
+          "refund_status": "Refund status",
+          "refund_success": "Apple has received the refund request",
+          "refunded_at": "Refunded At",
+          "renews_on_date": "Renews on {{ date }}",
+          "renews_on_date_for_price": "Your next charge is {{ price }} on {{ date }}.",
+          "restore_purchases": "Restore purchases",
+          "resubscribe": "Resubscribe",
+          "sandbox": "Sandbox",
+          "screen_management_see_all_purchases": "See all purchases",
+          "screen_purchase_history_account_details_title": "Account Details",
+          "screen_purchase_history_active_subscriptions_title": "Active Subscriptions",
+          "screen_purchase_history_expired_subscriptions_title": "Expired Subscriptions",
+          "screen_purchase_history_original_purchase_date": "Original Download Date",
+          "screen_purchase_history_others_title": "Others",
+          "screen_purchase_history_title": "Purchase History",
+          "screen_purchase_history_user_id": "User ID",
+          "see_all_virtual_currencies": "See all in-app currencies",
+          "sent": "Sent",
+          "shared_through_family_member": "Shared through family member",
+          "single_payment_then_price": "{{ sub_offer_duration }} for {{ sub_offer_price }}, then {{ price }}",
+          "status": "Status",
+          "store": "Store",
+          "stripe": "Stripe",
+          "sub_earliest_expiration": "This is your subscription with the earliest expiration date.",
+          "sub_earliest_renewal": "This is your subscription with the earliest billing date.",
+          "sub_expired": "This subscription has expired.",
+          "submit_ticket": "Submit ticket",
+          "subscriptions_section_title": "Subscriptions",
+          "support_ticket_create": "Create a support ticket",
+          "support_ticket_failed": "Failed to send, please try again.",
+          "test_store": "Test Store",
+          "transaction_id": "TransactionID",
+          "trial_period": "Trial Period",
+          "try_check_restore": "We can try checking your Apple account for any previous purchases",
+          "type_one_time_purchase": "One-time purchase",
+          "type_subscription": "Subscription",
+          "unknown": "Unknown",
+          "unknown_store": "Unknown",
+          "unsubscribed_at": "Unsubscribed At",
+          "update_warning_description": "Downloading the latest version of the app may help solve the problem.",
+          "update_warning_ignore": "Continue",
+          "update_warning_title": "Update available",
+          "update_warning_update": "Update",
+          "virtual_currency_balances_screen_header": "In-App Currencies",
+          "web_store": "Web",
+          "web_subscription_manage": "You have an active subscription that was purchased on the web. You can manage your subscription using the button below.",
+          "yes": "Yes",
+          "you_have_lifetime": "Your active lifetime subscription",
+          "you_have_promo": "You’ve been granted a subscription that doesn’t renew",
+          "you_may_have_duplicated_subscriptions_subtitle": "You might be subscribed both on the web and through the App Store. To avoid being charged twice, please cancel your iOS subscription in your device settings.",
+          "you_may_have_duplicated_subscriptions_title": "You may have duplicated subscriptions"
+        }
+      },
+      "screens": {
+        "MANAGEMENT": {
+          "paths": [
+            {
+              "id": "ownmsldfow",
+              "title": "Restore past purchases",
+              "type": "MISSING_PURCHASE"
+            },
+            {
+              "id": "nfoaiodifj9",
+              "title": "Change plans",
+              "type": "CHANGE_PLANS"
+            },
+            {
+              "feedback_survey": {
+                "options": [
+                  {
+                    "id": "cancel_survey_too_expensive",
+                    "title": "Too expensive",
+                    "title_in_default_locale": "Too expensive"
+                  },
+                  {
+                    "id": "cancel_survey_usage",
+                    "title": "Don't use the app",
+                    "title_in_default_locale": "Don't use the app"
+                  },
+                  {
+                    "id": "cancel_survey_mistake",
+                    "title": "Bought by mistake",
+                    "title_in_default_locale": "Bought by mistake"
+                  }
+                ],
+                "title": "Why are you cancelling?"
+              },
+              "id": "jnkasldfhas",
+              "title": "Cancel subscription",
+              "type": "CANCEL"
+            },
+            {
+              "id": "nwodkdnfaoeb",
+              "refund_window": "forever",
+              "title": "Request a refund",
+              "type": "REFUND_REQUEST"
+            }
+          ],
+          "title": "How can we help?",
+          "type": "MANAGEMENT"
+        },
+        "NO_ACTIVE": {
+          "paths": [
+            {
+              "id": "9q9719171o",
+              "title": "Restore past purchases",
+              "type": "MISSING_PURCHASE"
+            }
+          ],
+          "subtitle": "We can check for previous purchases",
+          "title": "No subscriptions found",
+          "type": "NO_ACTIVE"
+        }
+      },
+      "support": {
+        "display_purchase_history_link": false,
+        "display_user_details_section": true,
+        "display_virtual_currencies": false,
+        "email": "",
+        "should_warn_customer_to_update": true,
+        "support_tickets": {
+          "allow_creation": false,
+          "customer_details": {
+            "active_entitlements": false,
+            "app_user_id": false,
+            "att_consent": false,
+            "country": false,
+            "device_version": false,
+            "email": false,
+            "facebook_anon_id": false,
+            "idfa": false,
+            "idfv": false,
+            "ip": false,
+            "last_opened": false,
+            "last_seen_app_version": false,
+            "total_spent": false,
+            "user_since": false
+          },
+          "customer_type": "not_active"
+        }
+      }
+    },
+    "itunes_track_id": null,
+    "last_published_app_version": null
+  }
+}

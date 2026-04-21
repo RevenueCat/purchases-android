@@ -8,15 +8,17 @@ package com.revenuecat.purchases
 import android.Manifest
 import android.app.Activity
 import android.app.Application
+import android.app.backup.BackupManager
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.test.platform.app.InstrumentationRegistry
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -35,16 +37,18 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.FontLoader
+import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.PurchaseParamsValidator
+import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
@@ -77,11 +81,16 @@ internal open class BasePurchasesTest {
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
+    protected val mockBackupManager = mockk<BackupManager>()
     internal val mockEventsManager = mockk<EventsManager>()
+    internal val mockAdEventsManager = mockk<EventsManager>()
     internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     internal val mockLifecycleOwner = mockk<LifecycleOwner>()
     internal val mockLifecycle = mockk<Lifecycle>()
     internal val mockFontLoader = mockk<FontLoader>()
+    internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
+    internal val mockPurchaseParamsValidator = mockk<PurchaseParamsValidator>()
+    private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected lateinit var appConfig: AppConfig
@@ -132,16 +141,40 @@ internal open class BasePurchasesTest {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         } just Runs
         every {
-            mockEventsManager.flushEvents()
+            mockEventsManager.flushEvents(any())
         } just Runs
+        every {
+            mockAdEventsManager.flushEvents(any())
+        } just Runs
+        every {
+            mockEventsManager.debugEventListener = any()
+        } just Runs
+        every {
+            mockEventsManager.debugEventListener
+        } returns null
         every {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
+
+        every { mockBlockstoreHelper.storeUserIdIfNeeded(any()) } just Runs
+        every {
+            mockBlockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+        every {
+            mockBlockstoreHelper.clearUserIdBackupIfNeeded(captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+        every { mockBackupManager.dataChanged() } just Runs
 
         every { mockLifecycle.addObserver(any()) } just Runs
         every { mockLifecycle.removeObserver(any()) } just Runs
 
         every { mockDateProvider.now } returns Date()
+
+        every { mockPurchaseParamsValidator.validate(any()) } returns Result.Success(Unit)
 
         if (shouldConfigureOnSetUp) {
             anonymousSetup(false)
@@ -159,10 +192,13 @@ internal open class BasePurchasesTest {
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
             mockEventsManager,
+            mockAdEventsManager,
             mockWebPurchasesRedemptionHelper,
             mockLifecycleOwner,
             mockLifecycle,
             mockFontLoader,
+            mockBlockstoreHelper,
+            mockBackupManager,
         )
     }
 
@@ -222,9 +258,11 @@ internal open class BasePurchasesTest {
                 postTransactionAndConsumeIfNeeded(
                     purchase = any(),
                     storeProduct = any(),
+                    subscriptionOptionForProductIDs = any(),
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
+                    sdkOriginated = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -237,11 +275,9 @@ internal open class BasePurchasesTest {
             every {
                 postTokenWithoutConsuming(
                     purchaseToken = any(),
-                    storeUserID = any(),
                     receiptInfo = any(),
                     isRestore = any(),
                     appUserID = any(),
-                    marketplace = any(),
                     initiationSource = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
@@ -348,7 +384,7 @@ internal open class BasePurchasesTest {
         } just Runs
     }
 
-    protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings? {
+    protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings {
         val offerings: Offerings = mockk()
         every {
             mockOfferingsManager.getOfferings(
@@ -394,8 +430,16 @@ internal open class BasePurchasesTest {
         purchaseToken: String,
         productType: ProductType
     ): StoreTransaction {
-        val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
-            productIds = listOf(productId),
+        return getMockedStoreTransaction(listOf(productId), purchaseToken, productType)
+    }
+
+    protected fun getMockedStoreTransaction(
+        productIds: List<String>,
+        purchaseToken: String,
+        productType: ProductType
+    ): StoreTransaction {
+        val p: Purchase = stubGooglePurchase(
+            productIds = productIds,
             purchaseToken = purchaseToken
         )
 
@@ -406,7 +450,11 @@ internal open class BasePurchasesTest {
         anonymous: Boolean,
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
+        uiPreviewMode: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
+        apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
+        enableSimulatedStore: Boolean = false,
+        store: Store = Store.PLAY_STORE,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -414,11 +462,13 @@ internal open class BasePurchasesTest {
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE,
+            store = store,
             isDebugBuild = false,
+            apiKeyValidationResult = apiKeyValidationResult,
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,
+                uiPreviewMode = uiPreviewMode,
             )
         )
         val postTransactionsHelper = PostTransactionWithProductDetailsHelper(mockBillingAbstract, mockPostReceiptHelper)
@@ -443,6 +493,7 @@ internal open class BasePurchasesTest {
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager,
             eventsManager = mockEventsManager,
+            adEventsManager = mockAdEventsManager,
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
             dispatcher = SyncDispatcher(),
@@ -450,8 +501,17 @@ internal open class BasePurchasesTest {
             webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
             processLifecycleOwnerProvider = { mockLifecycleOwner },
             fontLoader = mockFontLoader,
+            localeProvider = DefaultLocaleProvider(),
+            virtualCurrencyManager = mockVirtualCurrencyManager,
+            blockstoreHelper = mockBlockstoreHelper,
+            backupManager = mockBackupManager,
+            purchaseParamsValidator = mockPurchaseParamsValidator,
+            workflowManager = mockk(relaxed = true),
         )
-        purchases = Purchases(purchasesOrchestrator)
+
+        purchases = Purchases(
+            purchasesOrchestrator = purchasesOrchestrator,
+        )
         Purchases.sharedInstance = purchases
         purchasesOrchestrator.state = purchasesOrchestrator.state.copy(appInBackground = false)
     }
@@ -529,11 +589,17 @@ internal open class BasePurchasesTest {
             acknowledged = acknowledged
         )
 
+        val subscriptionOptionIdForProductIDs =
+            subscriptionOptionId
+                ?.takeIf { productType == ProductType.SUBS }
+                ?.let { mapOf(productId to it) }
+
         return listOf(
             p.toStoreTransaction(
                 productType,
                 presentedOfferingContext,
-                if (productType == ProductType.SUBS) subscriptionOptionId else null
+                if (productType == ProductType.SUBS) subscriptionOptionId else null,
+                subscriptionOptionIdForProductIDs
             )
         )
     }

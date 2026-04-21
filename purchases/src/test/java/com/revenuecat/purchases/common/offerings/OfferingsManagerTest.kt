@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.common.offerings
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
@@ -27,6 +30,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
+@Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class OfferingsManagerTest {
@@ -61,14 +65,25 @@ class OfferingsManagerTest {
         mockDiagnosticsTracker()
 
         offeringsManager = OfferingsManager(
-            cache,
-            backend,
-            offeringsFactory,
-            offeringImagePreDownloader,
-            mockDiagnosticsTracker,
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
         )
     }
+
+    // region clearInMemoryOfferingsCache
+
+    @Test
+    fun `clearInMemoryOfferingsCache delegates to cache`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        offeringsManager.clearInMemoryOfferingsCache()
+        verify(exactly = 1) { cache.clearInMemoryOfferingsCache() }
+    }
+
+    // endregion clearInMemoryOfferingsCache
 
     // region onAppForeground
 
@@ -118,7 +133,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("Expected success but got error: $it") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
@@ -140,7 +155,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = true,
             onError = { fail("Expected success but got error: $it") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
@@ -164,7 +179,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { Assert.fail("should be a success") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isNotNull
@@ -194,7 +209,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = true,
             onError = { Assert.fail("should be a success") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isNotNull
@@ -225,7 +240,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { Assert.fail("should be a success") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isNotNull
@@ -249,7 +264,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { Assert.fail("should be a success") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isEqualTo(offerings)
@@ -274,7 +289,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = true,
             onError = { fail("should be a success") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isEqualTo(offerings)
@@ -300,7 +315,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { Assert.fail("should be a success") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isNotNull
@@ -311,7 +326,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `get offerings error is called if server error and no cached response`() {
+    fun `get offerings error is called if behavior should fallback and no cached response`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -328,7 +343,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { purchasesError = it },
-            onSuccess = { fail("Should be error") }
+            onSuccess = { fail("Should be error") },
         )
 
         assertThat(purchasesError).isNotNull
@@ -338,7 +353,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `get offerings success is called if server error and cached response`() {
+    fun `get offerings success is called if behavior should fallback and cached response`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -357,21 +372,25 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("Should be success") },
-            onSuccess = { receivedOfferings = it }
+            onSuccess = { receivedOfferings = it },
         )
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
         verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
-        verify(exactly = 1) { offeringsFactory.createOfferings(
-            offeringsJSON = backendResponse,
-            onError = any(),
-            onSuccess = any()
-        ) }
+        verify(exactly = 1) {
+            offeringsFactory.createOfferings(
+                offeringsJSON = backendResponse,
+                originalDataSource = HTTPResponseOriginalSource.MAIN,
+                loadedFromDiskCache = true,
+                onError = any(),
+                onSuccess = any(),
+            )
+        }
     }
 
     @Test
-    fun `get offerings error is called if cached response but not a server error`() {
+    fun `get offerings error is called if cached response but behavior should not fallback`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -380,7 +399,10 @@ class OfferingsManagerTest {
         } just Runs
 
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
-        mockBackendResponseError(error = expectedError, isServerError = false)
+        mockBackendResponseError(
+            error = expectedError,
+            errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+        )
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
@@ -391,7 +413,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { receivedError = it },
-            onSuccess = { fail("Should be success") }
+            onSuccess = { fail("Should be success") },
         )
 
         assertThat(receivedError).isEqualTo(expectedError)
@@ -421,7 +443,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { receivedError = it },
-            onSuccess = { fail("Should be error") }
+            onSuccess = { fail("Should be error") },
         )
 
         assertThat(receivedError).isEqualTo(expectedError)
@@ -443,7 +465,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("should be a success") },
-            onSuccess = {}
+            onSuccess = {},
         )
 
         verify(exactly = 1) {
@@ -461,7 +483,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("should be a success") },
-            onSuccess = {}
+            onSuccess = {},
         )
 
         verify(exactly = 0) {
@@ -488,7 +510,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("should be a success") },
-            onSuccess = {}
+            onSuccess = {},
         )
 
         verify(exactly = 1) {
@@ -510,7 +532,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("should be a success") },
-            onSuccess = {}
+            onSuccess = {},
         )
 
         verify(exactly = 1) {
@@ -532,7 +554,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("should be a success") },
-            onSuccess = { }
+            onSuccess = { },
         )
 
         verify(exactly = 1) {
@@ -544,65 +566,7 @@ class OfferingsManagerTest {
     fun `getOfferings tracks result event on success with NOT_FOUND cache`() {
         mockOfferingsFactory(
             requestedProductIds = setOf(productId),
-            notFoundProductIds = emptySet()
-        )
-        every { cache.cachedOfferings } returns null
-        mockDeviceCache()
-
-        offeringsManager.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("should be a success") },
-            onSuccess = { }
-        )
-
-        verify(exactly = 1) {
-            mockDiagnosticsTracker.trackGetOfferingsResult(
-                requestedProductIds = setOf(productId),
-                notFoundProductIds = emptySet(),
-                errorMessage = null,
-                errorCode = null,
-                verificationResult = null,
-                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_FOUND,
-                responseTime = any()
-            )
-        }
-    }
-
-
-    @Test
-    fun `getOfferings tracks result event on error with NOT_FOUND cache`() {
-        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
-        mockBackendResponseError(error = expectedError, isServerError = false)
-        every { cache.cachedOfferings } returns null
-        every { cache.cachedOfferingsResponse } returns null
-        mockDeviceCache(wasSuccessful = false)
-
-        offeringsManager.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { },
-            onSuccess = { fail("should be error") }
-        )
-
-        verify(exactly = 1) {
-            mockDiagnosticsTracker.trackGetOfferingsResult(
-                requestedProductIds = null,
-                notFoundProductIds = null,
-                errorMessage = expectedError.message,
-                errorCode = expectedError.code.code,
-                verificationResult = null,
-                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_FOUND,
-                responseTime = any()
-            )
-        }
-    }
-
-    @Test
-    fun `getOfferings with fetchCurrent tracks result event on success`() {
-        mockOfferingsFactory(
-            requestedProductIds = setOf(productId),
-            notFoundProductIds = emptySet()
+            notFoundProductIds = emptySet(),
         )
         every { cache.cachedOfferings } returns null
         mockDeviceCache()
@@ -612,7 +576,67 @@ class OfferingsManagerTest {
             appInBackground = false,
             onError = { fail("should be a success") },
             onSuccess = { },
-            fetchCurrent = true
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = setOf(productId),
+                notFoundProductIds = emptySet(),
+                errorMessage = null,
+                errorCode = null,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_FOUND,
+                responseTime = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getOfferings tracks result event on error with NOT_FOUND cache`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        mockBackendResponseError(
+            error = expectedError,
+            errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+        )
+        every { cache.cachedOfferings } returns null
+        every { cache.cachedOfferingsResponse } returns null
+        mockDeviceCache(wasSuccessful = false)
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { },
+            onSuccess = { fail("should be error") },
+        )
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                requestedProductIds = null,
+                notFoundProductIds = null,
+                errorMessage = expectedError.message,
+                errorCode = expectedError.code.code,
+                verificationResult = null,
+                cacheStatus = DiagnosticsTracker.CacheStatus.NOT_FOUND,
+                responseTime = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getOfferings with fetchCurrent tracks result event on success`() {
+        mockOfferingsFactory(
+            requestedProductIds = setOf(productId),
+            notFoundProductIds = emptySet(),
+        )
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { },
+            fetchCurrent = true,
         )
 
         verify(exactly = 1) {
@@ -623,7 +647,7 @@ class OfferingsManagerTest {
                 errorCode = null,
                 verificationResult = null,
                 cacheStatus = DiagnosticsTracker.CacheStatus.NOT_CHECKED,
-                responseTime = any()
+                responseTime = any(),
             )
         }
     }
@@ -631,7 +655,10 @@ class OfferingsManagerTest {
     @Test
     fun `getOfferings with fetchCurrent tracks result event on error`() {
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
-        mockBackendResponseError(error = expectedError, isServerError = false)
+        mockBackendResponseError(
+            error = expectedError,
+            errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+        )
         every { cache.cachedOfferings } returns null
         mockDeviceCache(wasSuccessful = false)
 
@@ -640,7 +667,7 @@ class OfferingsManagerTest {
             appInBackground = false,
             onError = { },
             onSuccess = { fail("should be error") },
-            fetchCurrent = true
+            fetchCurrent = true,
         )
 
         verify(exactly = 1) {
@@ -651,7 +678,7 @@ class OfferingsManagerTest {
                 errorCode = expectedError.code.code,
                 verificationResult = null,
                 cacheStatus = DiagnosticsTracker.CacheStatus.NOT_CHECKED,
-                responseTime = any()
+                responseTime = any(),
             )
         }
     }
@@ -660,7 +687,7 @@ class OfferingsManagerTest {
     fun `getOfferings tracks result event on success from STALE cache`() {
         mockOfferingsFactory(
             requestedProductIds = setOf(productId),
-            notFoundProductIds = emptySet()
+            notFoundProductIds = emptySet(),
         )
         every { cache.cachedOfferings } returns testOfferings
         mockDeviceCache()
@@ -670,7 +697,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("should be a success") },
-            onSuccess = { }
+            onSuccess = { },
         )
 
         verify(exactly = 1) {
@@ -681,7 +708,7 @@ class OfferingsManagerTest {
                 errorCode = null,
                 verificationResult = null,
                 cacheStatus = DiagnosticsTracker.CacheStatus.STALE,
-                responseTime = any()
+                responseTime = any(),
             )
         }
     }
@@ -690,7 +717,7 @@ class OfferingsManagerTest {
     fun `getOfferings tracks result event on success from VALID cache`() {
         mockOfferingsFactory(
             requestedProductIds = setOf(productId),
-            notFoundProductIds = emptySet()
+            notFoundProductIds = emptySet(),
         )
         every { cache.cachedOfferings } returns testOfferings
         mockDeviceCache()
@@ -700,7 +727,7 @@ class OfferingsManagerTest {
             appUserId,
             appInBackground = false,
             onError = { fail("should be a success") },
-            onSuccess = { }
+            onSuccess = { },
         )
 
         verify(exactly = 1) {
@@ -711,12 +738,97 @@ class OfferingsManagerTest {
                 errorCode = null,
                 verificationResult = null,
                 cacheStatus = DiagnosticsTracker.CacheStatus.VALID,
-                responseTime = any()
+                responseTime = any(),
             )
         }
     }
 
     // endregion
+
+    // region UI Preview Mode
+
+    @Test
+    fun `getOfferings returns empty Offerings and does not call backend when uiPreviewMode is true`() {
+        val previewOfferingsManager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            uiPreviewMode = true,
+        )
+
+        var receivedOfferings: Offerings? = null
+        previewOfferingsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected success but got error: $it") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNotNull
+        val offerings = receivedOfferings!!
+        assertThat(offerings.current).isNull()
+        assertThat(offerings.all).isEmpty()
+        verify(exactly = 0) {
+            backend.getOfferings(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `onAppForeground does not fetch when uiPreviewMode is true`() {
+        val previewOfferingsManager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            uiPreviewMode = true,
+        )
+        mockCacheStale(offeringsStale = true)
+        mockDeviceCache()
+
+        previewOfferingsManager.onAppForeground(appUserId)
+
+        verify(exactly = 0) {
+            backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
+        }
+    }
+
+    @Test
+    fun `fetchAndCacheOfferings does not call backend and invokes onSuccess with empty result when uiPreviewMode is true`() {
+        val previewOfferingsManager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            uiPreviewMode = true,
+        )
+
+        var receivedResult: OfferingsResultData? = null
+        previewOfferingsManager.fetchAndCacheOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected no error: $it") },
+            onSuccess = { receivedResult = it },
+        )
+
+        verify(exactly = 0) {
+            backend.getOfferings(any(), any(), any(), any())
+        }
+        assertThat(receivedResult).isNotNull
+        val result = receivedResult!!
+        assertThat(result.offerings.current).isNull()
+        assertThat(result.offerings.all).isEmpty()
+        assertThat(result.requestedProductIds).isEmpty()
+        assertThat(result.notFoundProductIds).isEmpty()
+    }
+
+    // endregion UI Preview Mode
 
     // region helpers
 
@@ -724,24 +836,34 @@ class OfferingsManagerTest {
         offerings: Offerings = testOfferings,
         requestedProductIds: Set<String> = setOf(productId),
         notFoundProductIds: Set<String> = emptySet(),
-        error: PurchasesError? = null
+        error: PurchasesError? = null,
     ) {
         if (error == null) {
             every {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
+                    originalDataSource = any(),
+                    loadedFromDiskCache = any(),
                     onError = any(),
-                    onSuccess = captureLambda()
+                    onSuccess = captureLambda(),
                 )
             } answers {
-                lambda<(OfferingsResultData) -> Unit>().captured.invoke(OfferingsResultData(offerings, requestedProductIds, notFoundProductIds))
+                lambda<(OfferingsResultData) -> Unit>().captured.invoke(
+                    OfferingsResultData(
+                        offerings,
+                        requestedProductIds,
+                        notFoundProductIds,
+                    ),
+                )
             }
         } else {
             every {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
+                    originalDataSource = any(),
+                    loadedFromDiskCache = any(),
                     onError = captureLambda(),
-                    onSuccess = any()
+                    onSuccess = any(),
                 )
             } answers {
                 lambda<(PurchasesError) -> Unit>().captured.invoke(error)
@@ -753,24 +875,24 @@ class OfferingsManagerTest {
         every {
             backend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(response))
+            lambda<(JSONObject, HTTPResponseOriginalSource) -> Unit>().captured.invoke(JSONObject(response), HTTPResponseOriginalSource.MAIN)
         }
     }
 
     private fun mockBackendResponseError(
         error: PurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError),
-        isServerError: Boolean = true
+        errorBehavior: GetOfferingsErrorHandlingBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
     ) {
         every {
             backend.getOfferings(any(), any(), any(), captureLambda())
         } answers {
-            lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(error, isServerError)
+            lambda<(PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit>().captured.invoke(error, errorBehavior)
         }
     }
 
     private fun mockCacheStale(
         offeringsStale: Boolean = false,
-        appInBackground: Boolean = false
+        appInBackground: Boolean = false,
     ) {
         every {
             cache.isOfferingsCacheStale(appInBackground)
@@ -789,6 +911,22 @@ class OfferingsManagerTest {
 
     private fun mockDiagnosticsTracker() {
         every { mockDiagnosticsTracker.trackGetOfferingsStarted() } just runs
-        every { mockDiagnosticsTracker.trackGetOfferingsResult(any(), any(), any(), any(), any(), any(), any()) } just runs
+        every {
+            mockDiagnosticsTracker.trackGetOfferingsResult(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        } just runs
     }
+
+    private fun Offerings.copy(current: Offering?): Offerings =
+        Offerings(
+            current = current,
+            all = this.all,
+        )
 }

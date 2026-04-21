@@ -12,10 +12,13 @@ internal object PaywallValidationErrorStrings {
     const val MISSING_TIER_CONFIGURATIONS = "There are required tier configurations missing for: '%s'."
     const val MISSING_STRING_LOCALIZATION = "Missing string localization for property with id: '%s'"
     const val MISSING_IMAGE_LOCALIZATION = "Missing image localization for property with id: '%s'"
+    const val MISSING_VIDEO_LOCALIZATION = "Missing video localization for property with id: '%s'"
     const val MISSING_STRING_LOCALIZATION_WITH_LOCALE =
         "Missing string localization for property with id: '%s', for locale: '%s'."
     const val MISSING_IMAGE_LOCALIZATION_WITH_LOCALE =
         "Missing image localization for property with id: '%s', for locale: '%s'."
+    const val MISSING_VIDEO_LOCALIZATION_WITH_LOCALE =
+        "Missing video localization for property with id: '%s', for locale: '%s'."
     const val ALL_LOCALIZATIONS_MISSING_FOR_LOCALE =
         "All localizations for locale '%s' are missing."
     const val ALL_VARIABLE_LOCALIZATIONS_MISSING_FOR_LOCALE =
@@ -23,10 +26,6 @@ internal object PaywallValidationErrorStrings {
     const val MISSING_PACKAGE =
         "The Paywall references a package with id '%s', but Offering '%s' does not contain such a package. " +
             "It has these packages instead: [%s]. Either add the missing package to the Offering or remove it from " +
-            "the Paywall."
-    const val MISSING_ALL_PACKAGES =
-        "Could not find any packages referenced by paywall in Offering '%s'. These packages were found: " +
-            "[%s]. Either add the correct packages to the Offering or remove them from " +
             "the Paywall."
     const val MISSING_COLOR_ALIAS = "Aliased color '%s' does not exist."
     const val ALIASED_COLOR_IS_ALIAS = "Aliased color '%s' has an aliased value '%s', which is not allowed."

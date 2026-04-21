@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.header.HeaderComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
@@ -14,6 +16,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter.StickyFo
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.HeaderComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
@@ -25,12 +29,15 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggl
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlButtonView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlToggleView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabsComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.video.VideoComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
 /**
  * A Composable that can show any [ComponentStyle].
@@ -43,30 +50,54 @@ internal fun ComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) = when (style) {
     is StackComponentStyle -> StackComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     is TextComponentStyle -> TextComponentView(
         style = style,
         state = state,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     is ImageComponentStyle -> ImageComponentView(style = style, state = state, modifier = modifier)
-    is ButtonComponentStyle -> ButtonComponentView(style = style, state = state, onClick = onClick, modifier = modifier)
+    is VideoComponentStyle -> {
+        VideoComponentView(
+            style = style,
+            state = state,
+            modifier = modifier,
+        )
+    }
+    is ButtonComponentStyle -> ButtonComponentView(
+        style = style,
+        state = state,
+        onClick = onClick,
+        modifier = modifier,
+        componentInteractionTracker = componentInteractionTracker,
+    )
+    is HeaderComponentStyle -> HeaderComponentView(
+        style = style,
+        state = state,
+        clickHandler = onClick,
+        modifier = modifier,
+    )
     is StickyFooterComponentStyle -> StickyFooterComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     is PackageComponentStyle -> PackageComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     is IconComponentStyle -> IconComponentView(style = style, state = state, modifier = modifier)
@@ -75,12 +106,14 @@ internal fun ComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     is TabsComponentStyle -> TabsComponentView(
         style = style,
         state = state,
         clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     // This is a special Stack that has TabControlButtonComponentStyle children.
@@ -88,6 +121,7 @@ internal fun ComponentView(
         style = style.stack,
         state = state,
         clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     // This is a special Stack that has a TabControlToggleComponentStyle child.
@@ -95,16 +129,26 @@ internal fun ComponentView(
         style = style.stack,
         state = state,
         clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     is TabControlButtonComponentStyle -> TabControlButtonView(
         style = style,
         state = state,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
     is TabControlToggleComponentStyle -> TabControlToggleView(
         style = style,
         state = state,
+        componentInteractionTracker = componentInteractionTracker,
+        modifier = modifier,
+    )
+    is CountdownComponentStyle -> CountdownComponentView(
+        style = style,
+        state = state,
+        onClick = onClick,
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
     )
 }

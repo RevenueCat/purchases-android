@@ -1,23 +1,28 @@
 package com.revenuecat.purchases.common.offerings
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
-import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
+import com.revenuecat.purchases.utils.copy
 import org.json.JSONObject
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class OfferingsCache(
     private val deviceCache: DeviceCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
         dateProvider = dateProvider,
     ),
-    private val localeProvider: LocaleProvider = DefaultLocaleProvider(),
+    private val localeProvider: LocaleProvider,
 ) {
+    companion object {
+        const val ORIGINAL_SOURCE_KEY = "rc_original_source"
+    }
 
     private var cachedLanguageTags: String? = null
 
@@ -30,8 +35,11 @@ internal class OfferingsCache(
 
     @Synchronized
     fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
+        val finalJsonToCache = offeringsResponse.copy(deep = false).apply {
+            put(ORIGINAL_SOURCE_KEY, offerings.originalSource)
+        }
         offeringsCachedObject.cacheInstance(offerings)
-        deviceCache.cacheOfferingsResponse(offeringsResponse)
+        deviceCache.cacheOfferingsResponse(finalJsonToCache)
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
         cachedLanguageTags = String(localeProvider.currentLocalesLanguageTags.toCharArray())
     }
@@ -48,6 +56,12 @@ internal class OfferingsCache(
         offeringsCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider) ||
             // Locale-based staleness
             cachedLanguageTags != localeProvider.currentLocalesLanguageTags
+
+    @Synchronized
+    fun clearInMemoryOfferingsCache() {
+        offeringsCachedObject.clearCache()
+        cachedLanguageTags = null
+    }
 
     @Synchronized
     fun forceCacheStale() {

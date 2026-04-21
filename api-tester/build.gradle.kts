@@ -1,38 +1,17 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.revenuecat.api.tester.application)
+    alias(libs.plugins.compose.compiler)
 }
 
-apply(from = "$rootDir/base-application.gradle")
-
 android {
-    flavorDimensions += "apis"
-
-    productFlavors {
-        create("defaults") {
-            dimension = "apis"
-            isDefault = true
-        }
-        create("customEntitlementComputation") {
-            dimension = "apis"
-        }
-    }
-
     defaultConfig {
         minSdk = 24 // RevenueCat UI requires 24
+        missingDimensionStrategy("billingclient", "bc8")
     }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-    }
-
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.8"
     }
 
     buildFeatures {
@@ -51,9 +30,25 @@ android {
     namespace = "com.revenuecat.api_tester_kotlin"
 }
 
+val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
+if (hasSamsungIapAar) {
+    android.sourceSets.getByName("main").java.srcDir("src/galaxy/kotlin")
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+    }
+}
+
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
+    if (hasSamsungIapAar) {
+        implementation(project(":feature:galaxy"))
+    }
+    defaultsImplementation(project(":feature:admob"))
+    defaultsImplementation(libs.google.mobile.ads)
     implementation(project(":ui:debugview"))
     implementation(project(":ui:revenuecatui"))
 

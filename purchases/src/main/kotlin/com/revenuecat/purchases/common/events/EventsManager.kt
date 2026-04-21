@@ -1,24 +1,37 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.common.events
 
+import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventListener
+import com.revenuecat.purchases.DebugEventName
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.utils.EventsFileHelper
+import com.revenuecat.purchases.utils.RateLimiter
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Manages the tracking, storing, and syncing of events in RevenueCat.
@@ -29,24 +42,38 @@ import java.util.UUID
  * @property eventsDispatcher Dispatches event-related operations.
  * @property postEvents Function for sending events to the backend.
  */
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class EventsManager(
     private val appSessionID: UUID = Companion.appSessionID,
-    private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>,
+    private val legacyEventsFileHelper: EventsFileHelper<PaywallStoredEvent>?,
     private val fileHelper: EventsFileHelper<BackendStoredEvent>,
     private val identityManager: IdentityManager,
     private val eventsDispatcher: Dispatcher,
     private val postEvents: (
         EventsRequest,
+        Delay,
         () -> Unit,
         (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) -> Unit,
+    private val priorityFlushRateLimiter: RateLimiter = RateLimiter(
+        maxCallsInPeriod = 5,
+        periodSeconds = 60.seconds,
+    ),
 ) {
 
     companion object {
         private const val FLUSH_COUNT = 50
+        private const val MAX_FLUSH_BATCHES = 10
         private const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         internal const val EVENTS_FILE_PATH_NEW = "RevenueCat/event_store/event_store.jsonl"
+        internal const val AD_EVENTS_FILE_PATH = "RevenueCat/event_store/ad_event_store.jsonl"
         internal val appSessionID: UUID = UUID.randomUUID()
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val FILE_SIZE_LIMIT_KB = 2048.0
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val EVENTS_TO_CLEAR_ON_LIMIT = 50
 
         @OptIn(ExperimentalSerializationApi::class)
         private val json = Json {
@@ -54,6 +81,11 @@ internal class EventsManager(
                 polymorphic(BackendStoredEvent::class) {
                     subclass(BackendStoredEvent.CustomerCenter::class, BackendStoredEvent.CustomerCenter.serializer())
                     subclass(BackendStoredEvent.Paywalls::class, BackendStoredEvent.Paywalls.serializer())
+                    subclass(BackendStoredEvent.Ad::class, BackendStoredEvent.Ad.serializer())
+                    subclass(
+                        BackendStoredEvent.CustomPaywall::class,
+                        BackendStoredEvent.CustomPaywall.serializer(),
+                    )
                 }
             }
             explicitNulls = false
@@ -69,6 +101,21 @@ internal class EventsManager(
             return EventsFileHelper(
                 fileHelper,
                 EVENTS_FILE_PATH_NEW,
+                { event -> json.encodeToString(BackendStoredEvent.serializer(), event) },
+                { jsonString -> json.decodeFromString(BackendStoredEvent.serializer(), jsonString) },
+            )
+        }
+
+        /**
+         * Creates an `EventsFileHelper` for handling ad events.
+         *
+         * @param fileHelper The file helper used for event storage.
+         * @return An `EventsFileHelper` for `BackendStoredEvent.Ad`.
+         */
+        fun adEvents(fileHelper: FileHelper): EventsFileHelper<BackendStoredEvent> {
+            return EventsFileHelper(
+                fileHelper,
+                AD_EVENTS_FILE_PATH,
                 { event -> json.encodeToString(BackendStoredEvent.serializer(), event) },
                 { jsonString -> json.decodeFromString(BackendStoredEvent.serializer(), jsonString) },
             )
@@ -92,18 +139,48 @@ internal class EventsManager(
 
     @get:Synchronized
     @set:Synchronized
-    private var flushInProgress = false
+    var debugEventListener: DebugEventListener? = null
+        set(value) {
+            field = value
+            val callback: ((DebugEvent) -> Unit)? = value?.let { listener ->
+                {
+                        event: DebugEvent ->
+                    listener.onDebugEventReceived(event)
+                }
+            }
+            fileHelper.debugEventCallback = callback
+        }
+
+    private var flushInProgress = AtomicBoolean(false)
+
+    @get:Synchronized
+    @set:Synchronized
+    private var pendingPriorityFlush = false
 
     @get:Synchronized
     @set:Synchronized
     private var legacyFlushTriggered = false
 
     /**
+     * Checks if the event file size exceeds the limit and clears oldest events if needed.
+     */
+    private fun checkFileSizeAndClearIfNeeded() {
+        val currentFileSizeKB = fileHelper.fileSizeInKB()
+        if (currentFileSizeKB >= FILE_SIZE_LIMIT_KB) {
+            warnLog { "Event store size limit reached. Clearing oldest events to free up space." }
+            fileHelper.clear(EVENTS_TO_CLEAR_ON_LIMIT)
+            debugEventListener?.onDebugEventReceived(
+                DebugEvent(name = DebugEventName.FILE_SIZE_LIMIT_REACHED),
+            )
+        }
+    }
+
+    /**
      * Tracks an event and stores it in the event file for future syncing.
      *
      * @param event The event to be tracked.
      */
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
         enqueue {
@@ -121,11 +198,39 @@ internal class EventsManager(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
+                is AdEvent.Displayed -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.Open -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.Revenue -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.Loaded -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.FailedToLoad -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is CustomPaywallEvent.Impression -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
                 else -> null
             }
 
             if (backendEvent != null) {
+                checkFileSizeAndClearIfNeeded()
                 fileHelper.appendEvent(backendEvent)
+                if (event.isPriorityEvent) {
+                    performPriorityFlush()
+                }
             } else {
                 debugLog { "Backend event not implemented for: $event" }
             }
@@ -136,48 +241,138 @@ internal class EventsManager(
      * Initiates flushing of stored events to the backend.
      */
     @Synchronized
-    fun flushEvents() {
+    fun flushEvents(delay: Delay = Delay.DEFAULT) {
         enqueue {
-            if (flushInProgress) {
+            if (flushInProgress.getAndSet(true)) {
                 debugLog { "Flush already in progress." }
                 return@enqueue
             }
-            flushInProgress = true
+            debugEventListener?.onDebugEventReceived(
+                DebugEvent(name = DebugEventName.FLUSH_STARTED),
+            )
+
+            flushNextBatch(batchNumber = 1, delay = delay)
 
             if (!legacyFlushTriggered) {
                 legacyFlushTriggered = true
                 flushLegacyEvents()
             }
+        }
+    }
 
-            val storedEventsWithNullValues = getStoredEvents()
-            val storedEvents = storedEventsWithNullValues.filterNotNull()
+    /**
+     * Flushes the next batch of events.
+     *
+     * @param batchNumber The current batch number being flushed.
+     */
+    @Suppress("LongMethod")
+    private fun flushNextBatch(batchNumber: Int, delay: Delay) {
+        if (batchNumber > MAX_FLUSH_BATCHES) {
+            verboseLog { "Reached maximum number of flush batches ($MAX_FLUSH_BATCHES). Stopping flush." }
+            onFlushComplete()
+            return
+        }
 
-            if (storedEvents.isEmpty()) {
-                verboseLog { "No new events to sync." }
-                flushInProgress = false
-                return@enqueue
+        val batchStartTimeMillis = System.currentTimeMillis()
+        val storedEventsWithNullValues = getStoredEvents()
+        val storedEvents = storedEventsWithNullValues.filterNotNull()
+
+        if (storedEvents.isEmpty()) {
+            verboseLog { "No new events to sync." }
+            if (batchNumber == 1) {
+                debugEventListener?.onDebugEventReceived(
+                    DebugEvent(name = DebugEventName.FLUSH_SKIPPED_NO_EVENTS),
+                )
             }
+            onFlushComplete()
+            return
+        }
 
-            verboseLog { "New event flush: posting ${storedEvents.size} events." }
-            postEvents(
-                EventsRequest(storedEvents.map { it.toBackendEvent() }),
-                {
-                    verboseLog { "New event flush: success." }
-                    enqueue {
+        verboseLog { "New event flush (batch $batchNumber): posting ${storedEvents.size} events." }
+        postEvents(
+            EventsRequest(storedEvents.map { it.toBackendEvent() }),
+            delay,
+            {
+                verboseLog { "New event flush (batch $batchNumber): success." }
+                debugEventListener?.onDebugEventReceived(
+                    DebugEvent(
+                        name = DebugEventName.FLUSH_COMPLETED,
+                        properties = mapOf(
+                            "batch_number" to batchNumber.toString(),
+                            "elapsed_millis" to (System.currentTimeMillis() - batchStartTimeMillis).toString(),
+                        ),
+                    ),
+                )
+                enqueue {
+                    fileHelper.clear(storedEventsWithNullValues.size)
+                    // Continue flushing next batch
+                    flushNextBatch(batchNumber + 1, delay)
+                }
+            },
+            { error, shouldMarkAsSynced ->
+                errorLog { "New event flush (batch $batchNumber) error: $error." }
+                debugEventListener?.onDebugEventReceived(
+                    DebugEvent(
+                        name = DebugEventName.FLUSH_ERROR,
+                        properties = buildMap {
+                            put("errorCode", error.code.name)
+                            error.underlyingErrorMessage?.let {
+                                put("underlyingErrorMessage", it.take(EventsFileHelper.MAX_EVENT_PROPERTY_SIZE))
+                            }
+                        },
+                    ),
+                )
+                enqueue {
+                    if (shouldMarkAsSynced) {
                         fileHelper.clear(storedEventsWithNullValues.size)
-                        flushInProgress = false
                     }
-                },
-                { error, shouldMarkAsSynced ->
-                    errorLog { "New event flush error: $error." }
-                    enqueue {
-                        if (shouldMarkAsSynced) {
-                            fileHelper.clear(storedEventsWithNullValues.size)
-                        }
-                        flushInProgress = false
-                    }
-                },
-            )
+                    // Stop flushing on error
+                    onFlushComplete()
+                }
+            },
+        )
+    }
+
+    /**
+     * Attempts a priority flush for high-priority events.
+     * If a flush is already in progress, queues the flush to run after completion.
+     * Respects the rate limiter to prevent excessive network requests.
+     *
+     * Must be called from within an enqueue block.
+     */
+    private fun performPriorityFlush() {
+        pendingPriorityFlush = true
+        if (flushInProgress.get()) {
+            debugLog { "Flush in progress. Queuing priority flush." }
+            return
+        }
+        startPendingPriorityFlushIfNeeded()
+    }
+
+    /**
+     * Called when a flush sequence completes (success, no events, max batches, or error).
+     * Marks flush as not in progress, then starts any pending priority flush.
+     */
+    private fun onFlushComplete() {
+        flushInProgress.set(false)
+        startPendingPriorityFlushIfNeeded()
+    }
+
+    /**
+     * Starts a pending priority flush if the rate limiter allows.
+     * Sets `flushInProgress` while flushing to prevent concurrent flushes.
+     */
+    private fun startPendingPriorityFlushIfNeeded() {
+        if (!pendingPriorityFlush) return
+        pendingPriorityFlush = false
+        if (!priorityFlushRateLimiter.shouldProceed()) {
+            debugLog { "Priority flush rate limited. Skipping." }
+        } else if (flushInProgress.getAndSet(true)) {
+            debugLog { "Flush in progress. Queuing priority flush." }
+            pendingPriorityFlush = true
+        } else {
+            debugLog { "Starting priority flush." }
+            flushNextBatch(batchNumber = 1, delay = Delay.NONE)
         }
     }
 
@@ -185,6 +380,8 @@ internal class EventsManager(
      * Flushes legacy paywall events to the backend.
      */
     private fun flushLegacyEvents() {
+        val legacyEventsFileHelper = this.legacyEventsFileHelper
+            ?: return // No legacy events file helper provided; nothing to flush.
         enqueue {
             val storedLegacyEventsWithNullValues = getLegacyPaywallsStoredEvents()
             val storedLegacyEvents = storedLegacyEventsWithNullValues.filterNotNull()
@@ -198,6 +395,7 @@ internal class EventsManager(
             verboseLog { "Legacy event flush: posting ${storedBackendEvents.size} events." }
             postEvents(
                 EventsRequest(storedBackendEvents.map { it.toBackendEvent() }),
+                Delay.LONG,
                 {
                     verboseLog { "Legacy event flush: success." }
                     enqueue { legacyEventsFileHelper.clear(storedLegacyEventsWithNullValues.size) }
@@ -234,7 +432,7 @@ internal class EventsManager(
      */
     private fun getLegacyPaywallsStoredEvents(): List<PaywallStoredEvent?> {
         var events: List<PaywallStoredEvent?> = emptyList()
-        legacyEventsFileHelper.readFile { sequence ->
+        legacyEventsFileHelper?.readFile { sequence ->
             events = sequence.take(FLUSH_COUNT).toList()
         }
         return events

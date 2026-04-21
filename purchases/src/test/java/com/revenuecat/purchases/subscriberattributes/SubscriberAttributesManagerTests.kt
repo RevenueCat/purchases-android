@@ -41,7 +41,8 @@ class SubscriberAttributesManagerTests {
         underTest = SubscriberAttributesManager(
             mockDeviceCache,
             mockBackend,
-            mockDeviceIdentifiersFetcher
+            mockDeviceIdentifiersFetcher,
+            automaticDeviceIdentifierCollectionEnabled = true,
         )
     }
 
@@ -428,6 +429,40 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
+    fun `setting attribution id does not get device identifiers if disabled`() {
+        underTest = SubscriberAttributesManager(
+            mockDeviceCache,
+            mockBackend,
+            mockDeviceIdentifiersFetcher,
+            automaticDeviceIdentifierCollectionEnabled = false,
+        )
+
+        val mockContext = mockk<Application>(relaxed = true)
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID)
+        } returns emptyMap()
+
+        val slot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Adjust,
+            "test-adjust-id",
+            appUserID,
+            mockContext
+        )
+
+
+        verify(exactly = 0) { mockDeviceIdentifiersFetcher.getDeviceIdentifiers(any(), any()) }
+        verify(exactly = 1) { mockDeviceCache.setAttributes(appUserID, any()) }
+        
+        val capturedAttributes = slot.captured
+        val adjustAttribute = capturedAttributes[SubscriberAttributeKey.AttributionIds.Adjust.backendKey]
+        assertThat(adjustAttribute).isNotNull
+        assertThat(adjustAttribute!!.key.backendKey).isEqualTo(SubscriberAttributeKey.AttributionIds.Adjust.backendKey)
+        assertThat(adjustAttribute.value).isEqualTo("test-adjust-id")
+    }
+
+    @Test
     fun `getting unsynchronized attributes calls completion only once`() {
         val mockContext = mockk<Application>(relaxed = true)
         val subscriberAttribute = SubscriberAttribute("key", null, isSynced = false)
@@ -756,6 +791,519 @@ class SubscriberAttributesManagerTests {
         assertThat(facebookID).isNotNull
         assertThat(facebookID!!.value).isEqualTo("facebook_id")
     }
+
+    // region AppsFlyer Attribution Data
+
+    @Test
+    fun `setAppsFlyerConversionData sets all attributes together`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf(
+                "media_source" to "facebook",
+                "campaign" to "summer_sale",
+                "adgroup" to "test_adgroup",
+                "af_ad" to "test_ad",
+                "af_keywords" to "test_keywords",
+                "creative" to "test_creative",
+            ),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(6)
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("facebook")
+        assertThat(captured["\$campaign"]?.value).isEqualTo("summer_sale")
+        assertThat(captured["\$adGroup"]?.value).isEqualTo("test_adgroup")
+        assertThat(captured["\$ad"]?.value).isEqualTo("test_ad")
+        assertThat(captured["\$keyword"]?.value).isEqualTo("test_keywords")
+        assertThat(captured["\$creative"]?.value).isEqualTo("test_creative")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData with null map does nothing`() {
+        underTest.setAppsFlyerConversionData(appUserID, null)
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData with empty map does nothing`() {
+        underTest.setAppsFlyerConversionData(appUserID, emptyMap<String, String>())
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData uses fallback fields when primary fields are missing`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf(
+                "af_status" to "organic",
+                "campaign" to "test_campaign",
+                "adset" to "test_adset",
+                "ad_id" to 12345,
+                "keyword" to "test_keyword",
+                "af_creative" to "test_af_creative",
+            ),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(6)
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("Organic")
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test_campaign")
+        assertThat(captured["\$adGroup"]?.value).isEqualTo("test_adset")
+        assertThat(captured["\$ad"]?.value).isEqualTo("12345")
+        assertThat(captured["\$keyword"]?.value).isEqualTo("test_keyword")
+        assertThat(captured["\$creative"]?.value).isEqualTo("test_af_creative")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData uses primary fields over fallback fields`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf(
+                "media_source" to "facebook",
+                "af_status" to "Organic",
+                "campaign" to "test_campaign",
+                "adgroup" to "test_adgroup",
+                "adset" to "test_adset",
+                "af_ad" to "test_ad",
+                "ad_id" to "12345",
+                "af_keywords" to "test_keywords",
+                "keyword" to "test_keyword",
+                "creative" to "test_creative",
+                "af_creative" to "test_af_creative",
+            ),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(6)
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("facebook")
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test_campaign")
+        assertThat(captured["\$adGroup"]?.value).isEqualTo("test_adgroup")
+        assertThat(captured["\$ad"]?.value).isEqualTo("test_ad")
+        assertThat(captured["\$keyword"]?.value).isEqualTo("test_keywords")
+        assertThat(captured["\$creative"]?.value).isEqualTo("test_creative")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData does not set Organic when af_status is not Organic`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf("af_status" to "Non-organic", "campaign" to "test"),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData handles null values in map`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf("media_source" to null, "campaign" to "test"),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData handles null keys in map`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf(null to "value", "campaign" to "test"),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData handles blank string values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf("media_source" to "", "campaign" to "test"),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData handles whitespace-only string values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf("media_source" to "   ", "campaign" to "test"),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData handles Integer values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf<String?, Any?>("ad_id" to 12345),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$ad"]?.value).isEqualTo("12345")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData handles Long values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf<String?, Any?>("ad_id" to 123456789012345L),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$ad"]?.value).isEqualTo("123456789012345")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData handles Boolean values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf<String?, Any?>("campaign" to true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("true")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData ignores fields with only unrecognized keys`() {
+        underTest.setAppsFlyerConversionData(appUserID, mapOf("unknown_field" to "value"))
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData with typical AppsFlyer conversion data`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf<String?, Any?>(
+                "af_status" to "Non-organic",
+                "media_source" to "googleadwords_int",
+                "campaign" to "summer_promo_2024",
+                "adgroup" to "ad_group_1",
+                "adset" to "ad_set_1",
+                "af_ad" to "ad_creative_1",
+                "ad_id" to 12345,
+                "af_keywords" to "fitness app",
+                "creative" to "video_ad_1",
+                "af_click_lookback" to "7d",
+                "install_time" to "2024-01-15 10:30:00",
+                "click_time" to "2024-01-15 10:25:00",
+            ),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(6)
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("googleadwords_int")
+        assertThat(captured["\$campaign"]?.value).isEqualTo("summer_promo_2024")
+        assertThat(captured["\$adGroup"]?.value).isEqualTo("ad_group_1")
+        assertThat(captured["\$ad"]?.value).isEqualTo("ad_creative_1")
+        assertThat(captured["\$keyword"]?.value).isEqualTo("fitness app")
+        assertThat(captured["\$creative"]?.value).isEqualTo("video_ad_1")
+    }
+
+    @Test
+    fun `setAppsFlyerConversionData with organic AppsFlyer conversion data`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppsFlyerConversionData(
+            appUserID,
+            mapOf<String?, Any?>(
+                "af_status" to "Organic",
+                "install_time" to "2024-01-15 10:30:00",
+            ),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(1)
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("Organic")
+    }
+
+    // endregion
+
+    // region Appstack Attribution Data
+
+    @Test
+    fun `setAppstackAttributionParams sets all campaign and raw attributes`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf(
+                "appstack_adnetwork" to "facebook",
+                "appstack_campaign" to "summer_sale",
+                "appstack_adset" to "test_adset",
+                "appstack_ad" to "test_ad",
+                "appstack_keywords" to "test_keywords",
+                "fbclid" to "fb_click_123",
+                "gclid" to "g_click_456",
+                "wbraid" to "wb_braid_789",
+                "gbraid" to "gb_braid_012",
+                "ttclid" to "tt_click_345",
+            ),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(15)
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("facebook")
+        assertThat(captured["appstack_adnetwork"]?.value).isEqualTo("facebook")
+        assertThat(captured["\$campaign"]?.value).isEqualTo("summer_sale")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("summer_sale")
+        assertThat(captured["\$adGroup"]?.value).isEqualTo("test_adset")
+        assertThat(captured["appstack_adset"]?.value).isEqualTo("test_adset")
+        assertThat(captured["\$ad"]?.value).isEqualTo("test_ad")
+        assertThat(captured["appstack_ad"]?.value).isEqualTo("test_ad")
+        assertThat(captured["\$keyword"]?.value).isEqualTo("test_keywords")
+        assertThat(captured["appstack_keywords"]?.value).isEqualTo("test_keywords")
+        assertThat(captured["fbclid"]?.value).isEqualTo("fb_click_123")
+        assertThat(captured["gclid"]?.value).isEqualTo("g_click_456")
+        assertThat(captured["wbraid"]?.value).isEqualTo("wb_braid_789")
+        assertThat(captured["gbraid"]?.value).isEqualTo("gb_braid_012")
+        assertThat(captured["ttclid"]?.value).isEqualTo("tt_click_345")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams with empty map does nothing`() {
+        underTest.setAppstackAttributionParams(appUserID, emptyMap<String, String>(), mockk(relaxed = true))
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppstackAttributionParams does not call setAttributionID when appstack_id is not present`() {
+        mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_campaign" to "summer_sale"),
+            mockk(relaxed = true),
+        )
+
+        verify(exactly = 0) {
+            mockDeviceIdentifiersFetcher.getDeviceIdentifiers(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppstackAttributionParams calls setAttributionID when appstack_id is present`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(mockContext = mockContext, expectedAdID = "gps_ad_123")
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_id" to "appstack_device_123"),
+            mockContext,
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured[SubscriberAttributeKey.AttributionIds.Appstack.backendKey]?.value)
+            .isEqualTo("appstack_device_123")
+        assertThat(captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]?.value)
+            .isEqualTo("gps_ad_123")
+        assertThat(captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]?.value)
+            .isEqualTo("true")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams stores campaign attributes as both reserved and custom`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_adnetwork" to "google"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured["\$mediaSource"]?.value).isEqualTo("google")
+        assertThat(captured["appstack_adnetwork"]?.value).isEqualTo("google")
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles blank string values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_adnetwork" to "", "appstack_campaign" to "test"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+        assertThat(captured["appstack_adnetwork"]).isNull()
+    }
+
+    @Test
+    fun `setAppstackAttributionParams handles whitespace-only string values`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_adnetwork" to "   ", "appstack_campaign" to "test"),
+            mockk(relaxed = true),
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured["\$campaign"]?.value).isEqualTo("test")
+        assertThat(captured["appstack_campaign"]?.value).isEqualTo("test")
+        assertThat(captured["\$mediaSource"]).isNull()
+        assertThat(captured["appstack_adnetwork"]).isNull()
+    }
+
+    @Test
+    fun `setAppstackAttributionParams ignores fields with only unrecognized keys`() {
+        underTest.setAppstackAttributionParams(appUserID, mapOf("unknown_field" to "value"), mockk(relaxed = true))
+
+        verify(exactly = 0) {
+            mockDeviceCache.setAttributes(any(), any())
+        }
+    }
+
+    @Test
+    fun `setAppstackAttributionParams with only appstack_id`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(mockContext = mockContext, expectedAdID = null)
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf("appstack_id" to "my_appstack_id"),
+            mockContext,
+        )
+
+        val captured = capturingSlot.captured
+        assertThat(captured).isNotNull
+        assertThat(captured[SubscriberAttributeKey.AttributionIds.Appstack.backendKey]?.value)
+            .isEqualTo("my_appstack_id")
+        assertThat(captured["\$mediaSource"]).isNull()
+    }
+
+    @Test
+    fun `setAppstackAttributionParams with typical data`() {
+        val capturingSlot = mockSettingAttributesOnEmptyCache()
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(mockContext = mockContext, expectedAdID = "gps_ad_abc")
+
+        underTest.setAppstackAttributionParams(
+            appUserID,
+            mapOf(
+                "appstack_id" to "device_123",
+                "appstack_adnetwork" to "google",
+                "appstack_campaign" to "promo_2024",
+                "appstack_adset" to "ad_set_1",
+                "appstack_ad" to "ad_1",
+                "appstack_keywords" to "fitness",
+                "fbclid" to "fb_click_abc",
+                "gclid" to "g_click_def",
+                "wbraid" to "wb_123",
+                "gbraid" to "gb_456",
+                "ttclid" to "tt_789",
+                "ignored_field" to "value",
+            ),
+            mockContext,
+        )
+
+        val captured = capturingSlot.captured
+        // Last setAttributes call is from setAttributionID (appstack_id + device identifiers)
+        assertThat(captured[SubscriberAttributeKey.AttributionIds.Appstack.backendKey]?.value)
+            .isEqualTo("device_123")
+        assertThat(captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]?.value)
+            .isEqualTo("gps_ad_abc")
+        // Also verify first setAttributes call had all 15 campaign/raw attrs
+        verify {
+            mockDeviceCache.setAttributes(
+                appUserID,
+                match { attrs ->
+                    attrs.size == 15 &&
+                        attrs["\$mediaSource"]?.value == "google" &&
+                        attrs["appstack_adnetwork"]?.value == "google" &&
+                        attrs["\$campaign"]?.value == "promo_2024" &&
+                        attrs["appstack_campaign"]?.value == "promo_2024" &&
+                        attrs["fbclid"]?.value == "fb_click_abc" &&
+                        attrs["ttclid"]?.value == "tt_789"
+                },
+            )
+        }
+    }
+
+    // endregion
 
     // region copyUnsyncedSubscriberAttributes
 

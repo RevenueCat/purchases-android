@@ -20,7 +20,19 @@ internal data class TabControlButtonComponentStyle(
     @get:JvmSynthetic
     val tabIndex: Int,
     @get:JvmSynthetic
+    val tabId: String,
+    @get:JvmSynthetic
     val stack: StackComponentStyle,
+    @get:JvmSynthetic
+    val tabsComponentName: String? = null,
+    @get:JvmSynthetic
+    val tabButtonName: String? = null,
+    @get:JvmSynthetic
+    val tabIdsOrdered: List<String> = emptyList(),
+    @get:JvmSynthetic
+    val tabContextNamesById: Map<String, String> = emptyMap(),
+    @get:JvmSynthetic
+    val tabsDefaultTabIndex: Int = 0,
 ) : ComponentStyle {
     override val visible: Boolean = stack.visible
     override val size: Size = stack.size
@@ -29,8 +41,6 @@ internal data class TabControlButtonComponentStyle(
 @Immutable
 internal class TabControlToggleComponentStyle(
     @get:JvmSynthetic
-    val defaultValue: Boolean,
-    @get:JvmSynthetic
     val thumbColorOn: ColorStyles,
     @get:JvmSynthetic
     val thumbColorOff: ColorStyles,
@@ -38,6 +48,8 @@ internal class TabControlToggleComponentStyle(
     val trackColorOn: ColorStyles,
     @get:JvmSynthetic
     val trackColorOff: ColorStyles,
+    @get:JvmSynthetic
+    val componentName: String? = null,
 ) : ComponentStyle {
     override val visible: Boolean = true
     override val size: Size = Size(width = Fit, height = Fit)

@@ -10,7 +10,7 @@ internal object VariableProcessor {
     /**
      * Information necessary for computing variables.
      */
-    data class PackageContext(
+    internal data class PackageContext(
         val discountRelativeToMostExpensivePerMonth: Double?,
         val showZeroDecimalPlacePrices: Boolean = false,
     )

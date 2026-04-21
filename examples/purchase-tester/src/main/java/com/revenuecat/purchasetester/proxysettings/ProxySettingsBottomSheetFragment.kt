@@ -16,7 +16,6 @@ class ProxySettingsBottomSheetFragment : BottomSheetDialogFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         binding = FragmentProxySettingsBottomSheetBinding.inflate(inflater)
-        binding.lifecycleOwner = this
 
         viewModel.state.observe(viewLifecycleOwner) { state ->
             when (state) {

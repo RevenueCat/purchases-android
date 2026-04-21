@@ -74,7 +74,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
@@ -388,7 +388,10 @@ private fun ColumnScope.SelectPackageButton(
             .semantics {
                 selected = isSelected
             },
-        onClick = { viewModel.selectPackage(packageInfo) },
+        onClick = {
+            viewModel.trackTemplatePackageRowSelectionIfChanged(state, packageInfo)
+            viewModel.selectPackage(packageInfo)
+        },
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
         contentPadding = PaddingValues(
@@ -423,7 +426,7 @@ private fun ColumnScope.SelectPackageButton(
                 textWithNoIntroOffer = packageInfo.localization.offerDetails,
                 textWithIntroOffer = packageInfo.localization.offerDetailsWithIntroOffer,
                 textWithMultipleIntroOffers = packageInfo.localization.offerDetailsWithMultipleIntroOffers,
-                eligibility = packageInfo.introEligibility,
+                eligibility = packageInfo.offerEligibility,
                 color = textColor,
                 style = MaterialTheme.typography.bodyMedium,
                 allowLinks = false,

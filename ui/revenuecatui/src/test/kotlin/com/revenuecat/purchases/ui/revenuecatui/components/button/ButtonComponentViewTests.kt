@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -57,6 +58,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 class ButtonComponentViewTests {
@@ -96,6 +98,8 @@ class ButtonComponentViewTests {
                             variableLocalizations = nonEmptyMapOf(
                                 LocaleId("en_US") to variableLocalizationKeysForEnUs()
                             ),
+                            countdownDate = null,
+                            countFrom = CountdownComponent.CountFrom.DAYS,
                             overrides = emptyList(),
                         ),
                     ),
@@ -118,6 +122,8 @@ class ButtonComponentViewTests {
                     scrollOrientation = null,
                     rcPackage = null,
                     tabIndex = null,
+                    countdownDate = null,
+                    countFrom = CountdownComponent.CountFrom.DAYS,
                     overrides = emptyList(),
                 ),
                 action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
@@ -382,6 +388,417 @@ class ButtonComponentViewTests {
                     clickHandler = { action ->
                         val purchaseAction = action as PaywallAction.External.PurchasePackage
                         assertThat(purchaseAction.rcPackage).isNull()
+                    },
+                )
+            }
+
+            // Assert
+            onNodeWithText(selectAnnual)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+
+            onNodeWithText(selectMonthly)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+        }
+
+    @Test
+    fun `If a web checkout purchase button is inside a package component, the button should be linked to that specific package`(): Unit =
+        with(composeTestRule) {
+            val ctaPurchaseAnnual = "purchase annual package"
+            val ctaPurchaseMonthly = "purchase monthly package"
+            val stackComponent = StackComponent(
+                components = listOf(
+                    PackageComponent(
+                        packageId = TestData.Packages.annual.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                PurchaseButtonComponent(
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TextComponent(
+                                                text = LocalizationKey("purchase-annual"),
+                                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                            )
+                                        )
+                                    ),
+                                    method = PurchaseButtonComponent.Method.WebCheckout(),
+                                ),
+                            )
+                        )
+                    ),
+                    PackageComponent(
+                        packageId = TestData.Packages.monthly.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                PurchaseButtonComponent(
+                                    stack = StackComponent(
+                                        components = listOf(
+                                            TextComponent(
+                                                text = LocalizationKey("purchase-monthly"),
+                                                color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                            )
+                                        )
+                                    ),
+                                    method = PurchaseButtonComponent.Method.WebCheckout(),
+                                ),
+                            )
+                        )
+                    ),
+                ),
+            )
+            val packages = listOf(TestData.Packages.annual, TestData.Packages.monthly)
+            val styleFactory = StyleFactory(
+                localizations = nonEmptyMapOf(
+                    LocaleId("en_US") to nonEmptyMapOf(
+                        LocalizationKey("purchase-annual") to LocalizationData.Text(ctaPurchaseAnnual),
+                        LocalizationKey("purchase-monthly") to LocalizationData.Text(ctaPurchaseMonthly),
+                    )
+                ),
+                offering = Offering(
+                    identifier = "identifier",
+                    serverDescription = "description",
+                    metadata = emptyMap(),
+                    availablePackages = packages,
+                    webCheckoutURL = URL("https://test-wpl.revenuecat.com"),
+                )
+            )
+            val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
+            val state = FakePaywallState(packages = packages)
+
+            // Act
+            var expectedPackageId: String? = null
+            setContent {
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { clickAction ->
+                        val action = clickAction as PaywallAction.External.LaunchWebCheckout
+                        assertThat(action.customUrl).isNull()
+                        assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
+                        assertThat(action.autoDismiss).isTrue()
+                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
+                        assertThat(packageParamBehavior.rcPackage).isNotNull()
+                        assertThat(packageParamBehavior.rcPackage?.identifier).isEqualTo(expectedPackageId)
+                        assertThat(packageParamBehavior.packageParam).isNull()
+                    },
+                )
+            }
+
+            // Assert
+            expectedPackageId = TestData.Packages.annual.identifier
+            onNodeWithText(ctaPurchaseAnnual)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+
+            expectedPackageId = TestData.Packages.monthly.identifier
+            onNodeWithText(ctaPurchaseMonthly)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+        }
+
+
+    @Test
+    fun `If a web checkout purchase button is not inside a package component, the button should not be linked to any package`(): Unit =
+        with(composeTestRule) {
+            val ctaPurchase = "purchase"
+            val selectAnnual = "select annual package"
+            val selectMonthly = "select monthly package"
+            val stackComponent = StackComponent(
+                components = listOf(
+                    PackageComponent(
+                        packageId = TestData.Packages.annual.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-annual"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PackageComponent(
+                        packageId = TestData.Packages.monthly.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-monthly"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PurchaseButtonComponent(
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("purchase"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        ),
+                        method = PurchaseButtonComponent.Method.WebCheckout(),
+                    ),
+                ),
+            )
+            val packages = listOf(TestData.Packages.annual, TestData.Packages.monthly)
+            val styleFactory = StyleFactory(
+                localizations = nonEmptyMapOf(
+                    LocaleId("en_US") to nonEmptyMapOf(
+                        LocalizationKey("purchase") to LocalizationData.Text(ctaPurchase),
+                        LocalizationKey("select-annual") to LocalizationData.Text(selectAnnual),
+                        LocalizationKey("select-monthly") to LocalizationData.Text(selectMonthly),
+                    )
+                ),
+                offering = Offering(
+                    identifier = "identifier",
+                    serverDescription = "description",
+                    metadata = emptyMap(),
+                    availablePackages = packages,
+                )
+            )
+            val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
+            val state = FakePaywallState(packages = packages)
+
+            // Act
+            setContent {
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { clickAction ->
+                        val action = clickAction as PaywallAction.External.LaunchWebCheckout
+                        assertThat(action.customUrl).isNull()
+                        assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
+                        assertThat(action.autoDismiss).isTrue()
+                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
+                        assertThat(packageParamBehavior.rcPackage).isNull()
+                        assertThat(packageParamBehavior.packageParam).isNull()
+                    },
+                )
+            }
+
+            // Assert
+            onNodeWithText(selectAnnual)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+
+            onNodeWithText(selectMonthly)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+        }
+
+
+    @Test
+    fun `Web product selection web checkout purchase button does not append Package`(): Unit =
+        with(composeTestRule) {
+            val ctaPurchase = "purchase"
+            val selectAnnual = "select annual package"
+            val selectMonthly = "select monthly package"
+            val stackComponent = StackComponent(
+                components = listOf(
+                    PackageComponent(
+                        packageId = TestData.Packages.annual.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-annual"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PackageComponent(
+                        packageId = TestData.Packages.monthly.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-monthly"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PurchaseButtonComponent(
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("purchase"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        ),
+                        method = PurchaseButtonComponent.Method.WebProductSelection(),
+                    ),
+                ),
+            )
+            val packages = listOf(TestData.Packages.annual, TestData.Packages.monthly)
+            val styleFactory = StyleFactory(
+                localizations = nonEmptyMapOf(
+                    LocaleId("en_US") to nonEmptyMapOf(
+                        LocalizationKey("purchase") to LocalizationData.Text(ctaPurchase),
+                        LocalizationKey("select-annual") to LocalizationData.Text(selectAnnual),
+                        LocalizationKey("select-monthly") to LocalizationData.Text(selectMonthly),
+                        LocalizationKey("custom-checkout-url") to LocalizationData.Text("https://custom-checkout.revenuecat.com"),
+                    )
+                ),
+                offering = Offering(
+                    identifier = "identifier",
+                    serverDescription = "description",
+                    metadata = emptyMap(),
+                    availablePackages = packages,
+                )
+            )
+            val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
+            val state = FakePaywallState(packages = packages)
+
+            // Act
+            setContent {
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { clickAction ->
+                        val action = clickAction as PaywallAction.External.LaunchWebCheckout
+                        assertThat(action.customUrl).isNull()
+                        assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
+                        assertThat(action.autoDismiss).isTrue()
+                        assertThat(action.packageParamBehavior).isInstanceOf(
+                            PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend::class.java
+                        )
+                    },
+                )
+            }
+
+            // Assert
+            onNodeWithText(selectAnnual)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+
+            onNodeWithText(selectMonthly)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            onNodeWithText(ctaPurchase)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+        }
+
+    @Test
+    fun `Custom web checkout purchase button uses localized URL`(): Unit =
+        with(composeTestRule) {
+            val ctaPurchase = "purchase"
+            val selectAnnual = "select annual package"
+            val selectMonthly = "select monthly package"
+            val stackComponent = StackComponent(
+                components = listOf(
+                    PackageComponent(
+                        packageId = TestData.Packages.annual.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-annual"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PackageComponent(
+                        packageId = TestData.Packages.monthly.identifier,
+                        isSelectedByDefault = false,
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("select-monthly"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        )
+                    ),
+                    PurchaseButtonComponent(
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("purchase"),
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                )
+                            )
+                        ),
+                        method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                            customUrl = PurchaseButtonComponent.CustomUrl(
+                                urlLid = LocalizationKey("custom-checkout-url"),
+                                packageParam = "my_custom_param",
+                            ),
+                        ),
+                    ),
+                ),
+            )
+            val packages = listOf(TestData.Packages.annual, TestData.Packages.monthly)
+            val styleFactory = StyleFactory(
+                localizations = nonEmptyMapOf(
+                    LocaleId("en_US") to nonEmptyMapOf(
+                        LocalizationKey("purchase") to LocalizationData.Text(ctaPurchase),
+                        LocalizationKey("select-annual") to LocalizationData.Text(selectAnnual),
+                        LocalizationKey("select-monthly") to LocalizationData.Text(selectMonthly),
+                        LocalizationKey("custom-checkout-url") to LocalizationData.Text("https://custom-checkout.revenuecat.com"),
+                    )
+                ),
+                offering = Offering(
+                    identifier = "identifier",
+                    serverDescription = "description",
+                    metadata = emptyMap(),
+                    availablePackages = packages,
+                )
+            )
+            val style = styleFactory.create(stackComponent).getOrThrow().componentStyle as StackComponentStyle
+            val state = FakePaywallState(packages = packages)
+
+            // Act
+            setContent {
+                StackComponentView(
+                    style = style,
+                    state = state,
+                    clickHandler = { clickAction ->
+                        val action = clickAction as PaywallAction.External.LaunchWebCheckout
+                        assertThat(action.customUrl).isEqualTo("https://custom-checkout.revenuecat.com")
+                        assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
+                        assertThat(action.autoDismiss).isTrue()
+                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
+                        assertThat(packageParamBehavior.rcPackage).isNull()
+                        assertThat(packageParamBehavior.packageParam).isEqualTo("my_custom_param")
                     },
                 )
             }

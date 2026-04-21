@@ -83,7 +83,9 @@ class AmazonBackendTest {
         payload = successfulRVSResponse(),
         origin = HTTPResult.Origin.BACKEND,
         requestDate = null,
-        verificationResult = VerificationResult.NOT_REQUESTED
+        verificationResult = VerificationResult.NOT_REQUESTED,
+        isLoadShedderResponse = false,
+        isFallbackURL = false,
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
@@ -95,7 +97,9 @@ class AmazonBackendTest {
             """.trimIndent(),
         origin = HTTPResult.Origin.BACKEND,
         requestDate = null,
-        verificationResult = VerificationResult.NOT_REQUESTED
+        verificationResult = VerificationResult.NOT_REQUESTED,
+        isLoadShedderResponse = false,
+        isFallbackURL = false,
     )
 
     @Test
@@ -106,7 +110,7 @@ class AmazonBackendTest {
                 endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
             )
         } returns successfulResult
 
@@ -128,7 +132,7 @@ class AmazonBackendTest {
                 endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
             )
         } returns unsuccessfulResult
 
@@ -151,7 +155,7 @@ class AmazonBackendTest {
                 endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
             )
         } throws IOException()
 
@@ -174,7 +178,7 @@ class AmazonBackendTest {
                 endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
             )
         } returns successfulResult
 
@@ -191,7 +195,7 @@ class AmazonBackendTest {
                 endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
                 body = null,
                 postFieldsToSign = null,
-                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY"),
             )
         }
     }

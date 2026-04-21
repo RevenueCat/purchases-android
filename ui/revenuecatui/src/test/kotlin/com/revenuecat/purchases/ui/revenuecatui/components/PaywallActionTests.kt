@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.SemanticsNodeInteractionsProvider
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -28,9 +30,11 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -78,9 +82,11 @@ class PaywallActionTests {
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
                 )
 
+                is PaywallAction.External.LaunchWebCheckout,
                 is PaywallAction.External.PurchasePackage -> PurchaseButtonComponent(
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
                 )
+                else -> error("Unexpected PaywallAction: $action")
             }
         }
         val offering = FakeOffering(components, localizations)
@@ -100,6 +106,30 @@ class PaywallActionTests {
         assertEquals(2, viewModel.handleRestorePurchasesCallCount)
         assertEquals(2, viewModel.closePaywallCallCount)
         assertEquals(2, viewModel.handlePackagePurchaseCount)
+    }
+
+    @Test
+    fun `Legacy default paywall restore uses viewModel restorePurchases entrypoint`(): Unit = with(composeTestRule) {
+        // Arrange
+        val offering = TestData.template1Offering
+        val options = PaywallOptions.Builder(dismissRequest = { })
+            .setOffering(offering)
+            .build()
+        val viewModel = MockViewModel(
+            offering = offering,
+            validationWarning = PaywallWarning.Other("warning"),
+            allowsPurchases = true,
+        )
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val restoreText = context.getString(R.string.revenuecatui_restore_purchases)
+
+        // Act
+        setContent { InternalPaywall(options, viewModel) }
+        clickButtonsWithText(LocalizationData.Text(restoreText), expectedCount = 1)
+
+        // Assert
+        assertEquals(1, viewModel.restorePurchasesCallCount)
+        assertEquals(0, viewModel.handleRestorePurchasesCallCount)
     }
 
     private fun SemanticsNodeInteractionsProvider.clickButtonsWithText(
@@ -126,6 +156,9 @@ class PaywallActionTests {
             is PaywallAction.External.PurchasePackage -> error(
                 "PurchasePackage is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
             )
+            is PaywallAction.External.LaunchWebCheckout -> error(
+                "LaunchWebCheckout is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
+            )
         }
 
     private fun PaywallAction.External.NavigateTo.Destination.toButtonDestination(): ButtonComponent.Destination =
@@ -145,6 +178,7 @@ class PaywallActionTests {
         localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
         defaultLocale: LocaleId,
     ): PaywallComponentsData = PaywallComponentsData(
+        id = "paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(

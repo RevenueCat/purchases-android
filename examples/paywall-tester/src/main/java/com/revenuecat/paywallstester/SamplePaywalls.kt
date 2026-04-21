@@ -11,11 +11,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -146,6 +149,7 @@ object SamplePaywalls {
         price = Price(amountMicros = 1_990_000, currencyCode = "USD", formatted = "$1.99"),
         description = "PRO Weekly",
         period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+        presentedOfferingContext = null,
     )
 
     private val monthlyProduct = TestStoreProduct(
@@ -155,7 +159,12 @@ object SamplePaywalls {
         price = Price(amountMicros = 6_990_000, currencyCode = "USD", formatted = "$6.99"),
         description = "PRO Monthly",
         period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
-        freeTrialPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+        freeTrialPricingPhase = PricingPhase(
+            billingPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            billingCycleCount = 1,
+            price = Price(amountMicros = 0, currencyCode = "USD", formatted = "Free"),
+        ),
     )
 
     private val twoMonthProduct = TestStoreProduct(
@@ -165,7 +174,7 @@ object SamplePaywalls {
         price = Price(amountMicros = 14_990_000, currencyCode = "USD", formatted = "$14.99"),
         description = "PRO Two Months",
         period = Period(value = 2, unit = Period.Unit.MONTH, iso8601 = "P2M"),
-        freeTrialPeriod = null,
+        freeTrialPricingPhase = null,
     )
 
     private val threeMonthProduct = TestStoreProduct(
@@ -175,7 +184,12 @@ object SamplePaywalls {
         price = Price(amountMicros = 24_990_000, currencyCode = "USD", formatted = "$24.99"),
         description = "PRO Three Months",
         period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
-        freeTrialPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+        freeTrialPricingPhase = PricingPhase(
+            billingPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            billingCycleCount = 1,
+            price = Price(amountMicros = 0, currencyCode = "USD", formatted = "Free"),
+        ),
     )
 
     private val sixMonthProduct = TestStoreProduct(
@@ -185,7 +199,12 @@ object SamplePaywalls {
         price = Price(amountMicros = 34_990_000, currencyCode = "USD", formatted = "$34.99"),
         description = "PRO Six Months",
         period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
-        freeTrialPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+        freeTrialPricingPhase = PricingPhase(
+            billingPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            billingCycleCount = 1,
+            price = Price(amountMicros = 0, currencyCode = "USD", formatted = "Free"),
+        ),
     )
 
     private val annualProduct = TestStoreProduct(
@@ -195,7 +214,12 @@ object SamplePaywalls {
         price = Price(amountMicros = 53_990_000, currencyCode = "USD", formatted = "$53.99"),
         description = "PRO Annual",
         period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
-        freeTrialPeriod = Period(value = 2, unit = Period.Unit.WEEK, iso8601 = "P2W"),
+        freeTrialPricingPhase = PricingPhase(
+            billingPeriod = Period(value = 2, unit = Period.Unit.WEEK, iso8601 = "P2W"),
+            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            billingCycleCount = 1,
+            price = Price(amountMicros = 0, currencyCode = "USD", formatted = "Free"),
+        ),
     )
 
     private val lifetimeProduct = TestStoreProduct(
@@ -205,55 +229,57 @@ object SamplePaywalls {
         price = Price(amountMicros = 119_490_000, currencyCode = "USD", formatted = "$119.49"),
         description = "Lifetime purchase",
         period = null,
+        presentedOfferingContext = null,
     )
 
     private val weeklyPackage = Package(
         PackageType.WEEKLY.identifier!!,
         PackageType.WEEKLY,
         weeklyProduct,
-        offeringIdentifier,
+        PresentedOfferingContext(offeringIdentifier = offeringIdentifier),
     )
 
     private val monthlyPackage = Package(
         PackageType.MONTHLY.identifier!!,
         PackageType.MONTHLY,
         monthlyProduct,
-        offeringIdentifier,
+        PresentedOfferingContext(offeringIdentifier = offeringIdentifier),
     )
 
     private val twoMonthPackage = Package(
         PackageType.TWO_MONTH.identifier!!,
         PackageType.TWO_MONTH,
         twoMonthProduct,
-        offeringIdentifier,
+        PresentedOfferingContext(offeringIdentifier = offeringIdentifier),
+
     )
 
     private val threeMonthPackage = Package(
         PackageType.THREE_MONTH.identifier!!,
         PackageType.THREE_MONTH,
         threeMonthProduct,
-        offeringIdentifier,
+        PresentedOfferingContext(offeringIdentifier = offeringIdentifier),
     )
 
     private val sixMonthPackage = Package(
         PackageType.SIX_MONTH.identifier!!,
         PackageType.SIX_MONTH,
         sixMonthProduct,
-        offeringIdentifier,
+        PresentedOfferingContext(offeringIdentifier = offeringIdentifier),
     )
 
     private val annualPackage = Package(
         PackageType.ANNUAL.identifier!!,
         PackageType.ANNUAL,
         annualProduct,
-        offeringIdentifier,
+        PresentedOfferingContext(offeringIdentifier = offeringIdentifier),
     )
 
     private val lifetimePackage = Package(
         PackageType.LIFETIME.identifier!!,
         PackageType.LIFETIME,
         lifetimeProduct,
-        offeringIdentifier,
+        PresentedOfferingContext(offeringIdentifier = offeringIdentifier),
     )
 
     val packages = listOf(
@@ -785,6 +811,7 @@ object SamplePaywalls {
 
         return SampleData.Components(
             data = PaywallComponentsData(
+                id = "sample_paywall_id",
                 templateName = "template",
                 assetBaseURL = URL("https://assets.pawwalls.com"),
                 componentsConfig = ComponentsConfig(

@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.animation.AnimatedVisibility
@@ -35,15 +37,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
 
 @Composable
 internal fun PurchaseButton(
@@ -113,7 +119,7 @@ private fun PurchaseButton(
                     val p = selectedPackage.value
                     text = AnnotatedString(
                         introEligibilityText(
-                            eligibility = p.introEligibility,
+                            eligibility = p.offerEligibility,
                             textWithIntroOffer = p.localization.callToActionWithIntroOffer,
                             textWithMultipleIntroOffers = p.localization.callToActionWithMultipleIntroOffers,
                             textWithNoIntroOffer = p.localization.callToAction,
@@ -124,7 +130,19 @@ private fun PurchaseButton(
                     brush = buttonBrush(primaryCTAColor, secondaryCTAColor),
                     shape = ButtonDefaults.shape,
                 ),
-            onClick = { viewModel.purchaseSelectedPackage(activity) },
+            onClick = {
+                val rcPackage = selectedPackage.value.rcPackage
+                viewModel.trackComponentInteraction(
+                    paywallPurchaseButtonAction(
+                        componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
+                        componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
+                        componentUrl = null,
+                        currentPackageIdentifier = rcPackage.identifier,
+                        currentProductIdentifier = rcPackage.product.paywallProductIdentifier(),
+                    ),
+                )
+                viewModel.purchaseSelectedPackage(activity)
+            },
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent, // color set on background
                 contentColor = colors.callToActionForeground,
@@ -143,7 +161,7 @@ private fun PurchaseButton(
                         textWithNoIntroOffer = localization.callToAction,
                         textWithIntroOffer = localization.callToActionWithIntroOffer,
                         textWithMultipleIntroOffers = localization.callToActionWithMultipleIntroOffers,
-                        eligibility = it.introEligibility,
+                        eligibility = it.offerEligibility,
                         color = colors.callToActionForeground,
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleMedium,

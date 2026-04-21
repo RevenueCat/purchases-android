@@ -2,20 +2,34 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.assertTextEquals
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.filterToOne
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
@@ -24,10 +38,13 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -38,14 +55,17 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RCFontWeight
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextLayoutResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
+import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -53,6 +73,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
@@ -66,7 +87,10 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
 import java.net.URL
+import java.util.Date
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RCFontWeight
 
+@Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 class TextComponentViewTests {
 
@@ -312,8 +336,20 @@ class TextComponentViewTests {
         // Arrange
         val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
         val size = Size(Fit, Fit)
-        val blackWeightComponent = TextComponent(text = selectedLocalizationKey, color = color, fontWeightInt = 900, fontWeight = RCFontWeight.LIGHT, size = size)
-        val lightWeightComponent = TextComponent(text = unselectedLocalizationKey, color = color, fontWeightInt = null, fontWeight = RCFontWeight.LIGHT, size = size)
+        val blackWeightComponent = TextComponent(
+            text = selectedLocalizationKey,
+            color = color,
+            fontWeightInt = 900,
+            fontWeight = RCFontWeight.LIGHT,
+            size = size
+        )
+        val lightWeightComponent = TextComponent(
+            text = unselectedLocalizationKey,
+            color = color,
+            fontWeightInt = null,
+            fontWeight = RCFontWeight.LIGHT,
+            size = size
+        )
         val state = FakePaywallState(
             localizations = localizations,
             defaultLocaleIdentifier = localeIdEnUs,
@@ -358,6 +394,7 @@ class TextComponentViewTests {
             }
     }
 
+    @Suppress("LongMethod")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
@@ -392,6 +429,7 @@ class TextComponentViewTests {
             )
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -432,7 +470,7 @@ class TextComponentViewTests {
             .assertPixelColorPercentage(expectedUnselectedBackgroundColor) { percentage -> percentage > 0.4 }
 
         // Select the yearly package
-        state.update(selectedPackage = rcPackage)
+        state.update(rcPackage.identifier)
 
         onNodeWithText(expectedTextSelected)
             .assertIsDisplayed()
@@ -465,7 +503,7 @@ class TextComponentViewTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialTextComponent(
                         text = multipleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
@@ -486,25 +524,26 @@ class TextComponentViewTests {
         setContent { TextComponentView(style = style, state = state) }
 
         // Assert
-        state.update(selectedPackage = packageWithoutIntroOffer)
+        state.update(packageWithoutIntroOffer.identifier)
         onNodeWithText(expectedTextIneligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedIneligibleTextColor)
             .assertPixelColorPercentage(expectedIneligibleBackgroundColor) { percentage -> percentage > 0.4 }
 
-        state.update(selectedPackage = packageWithSingleIntroOffer)
+        state.update(packageWithSingleIntroOffer.identifier)
         onNodeWithText(expectedTextSingleEligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedSingleEligibleTextColor)
             .assertPixelColorPercentage(expectedSingleEligibleBackgroundColor) { percentage -> percentage > 0.4 }
 
-        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        state.update(packageWithMultipleIntroOffers.identifier)
         onNodeWithText(expectedTextMultipleEligibleEnUs)
             .assertIsDisplayed()
             .assertTextColorEquals(expectedMultiEligibleTextColor)
             .assertPixelColorPercentage(expectedMultiEligibleBackgroundColor) { percentage -> percentage > 0.4 }
     }
 
+    @Suppress("LongMethod")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
@@ -530,7 +569,7 @@ class TextComponentViewTests {
                     )
                 ),
                 ComponentOverride(
-                    conditions = listOf(ComponentOverride.Condition.MultipleIntroOffers),
+                    conditions = listOf(ComponentOverride.Condition.MultiplePhaseOffers),
                     properties = PartialTextComponent(
                         text = multipleEligibleLocalizationKey,
                         color = ColorScheme(ColorInfo.Hex(expectedMultiEligibleTextColor.toArgb())),
@@ -555,6 +594,7 @@ class TextComponentViewTests {
             stack = StackComponent(components = listOf(textComponent)),
         )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
@@ -591,11 +631,20 @@ class TextComponentViewTests {
             offering = offering,
         )
         val noIntroOfferPackageComponentStyle =
-            styleFactory.create(noIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
+            styleFactory
+                .create(noIntroOfferPackageComponent)
+                .getOrThrow()
+                .componentStyle as PackageComponentStyle
         val singleIntroOfferPackageComponentStyle =
-            styleFactory.create(singleIntroOfferPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
+            styleFactory
+                .create(singleIntroOfferPackageComponent)
+                .getOrThrow()
+                .componentStyle as PackageComponentStyle
         val multipleIntroOffersPackageComponentStyle =
-            styleFactory.create(multipleIntroOffersPackageComponent).getOrThrow().componentStyle as PackageComponentStyle
+            styleFactory
+                .create(multipleIntroOffersPackageComponent)
+                .getOrThrow()
+                .componentStyle as PackageComponentStyle
 
         // Act
         setContent {
@@ -644,11 +693,11 @@ class TextComponentViewTests {
 
         // Make sure the selected package does not influence the package used to pick the override properties.
         assertAll()
-        state.update(selectedPackage = packageWithoutIntroOffer)
+        state.update(packageWithoutIntroOffer.identifier)
         assertAll()
-        state.update(selectedPackage = packageWithSingleIntroOffer)
+        state.update(packageWithSingleIntroOffer.identifier)
         assertAll()
-        state.update(selectedPackage = packageWithMultipleIntroOffers)
+        state.update(packageWithMultipleIntroOffers.identifier)
         assertAll()
     }
 
@@ -721,7 +770,7 @@ class TextComponentViewTests {
             components = listOf(component),
             packages = listOf(packageWithSingleIntroOffer)
         ).apply {
-            update(selectedPackage = packageWithSingleIntroOffer)
+            update(packageWithSingleIntroOffer.identifier)
         }
 
         // Act
@@ -735,6 +784,7 @@ class TextComponentViewTests {
         onNodeWithText(expectedTextNlNl).assertIsDisplayed()
     }
 
+    @Suppress("LongMethod")
     @Test
     fun `Should update variable values when the selected package changes`(): Unit = with(composeTestRule) {
         // Arrange
@@ -755,19 +805,26 @@ class TextComponentViewTests {
             text = selectedPackageTextKey,
             color = textColor,
         )
-        val packageComponent = PackageComponent(
+        val yearlyPackageComponent = PackageComponent(
             packageId = packageYearly.identifier,
             isSelectedByDefault = true,
             stack = StackComponent(components = emptyList()),
         )
+        val monthlyPackageComponent = PackageComponent(
+            packageId = packageMonthly.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(components = listOf(
                         selectedComponent,
-                        packageComponent,
+                        yearlyPackageComponent,
+                        monthlyPackageComponent,
                     )),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
@@ -805,7 +862,7 @@ class TextComponentViewTests {
 
         // Assert
         // Select monthly
-        state.update(selectedPackage = packageMonthly)
+        state.update(packageMonthly.identifier)
 
         onNodeWithText(expectedTextYearly)
             .assertIsNotDisplayed()
@@ -813,7 +870,7 @@ class TextComponentViewTests {
             .assertIsDisplayed()
 
         // Select yearly
-        state.update(selectedPackage = packageYearly)
+        state.update(packageYearly.identifier)
 
         onNodeWithText(expectedTextYearly)
             .assertIsDisplayed()
@@ -821,6 +878,7 @@ class TextComponentViewTests {
             .assertIsNotDisplayed()
     }
 
+    @Suppress("LongMethod")
     @Test
     fun `Should correctly show or hide price decimals`(): Unit = with(composeTestRule) {
         // Arrange
@@ -831,25 +889,32 @@ class TextComponentViewTests {
         val countryWithoutDecimals = "MX"
         val textKey = LocalizationKey("key_selected")
         val textWithPriceVariable = LocalizationData.Text("Price: {{ product.price }}")
-        val expectedTextWithDecimals = "Price: \$ 2.00"
-        val expectedTextWithoutDecimals = "Price: MX\$1"
+        val expectedTextWithDecimals = "Price: $2.00"
+        val expectedTextWithDecimalsNl = "Price: US$\u00a02,00"
+        val expectedTextWithoutDecimals = "Price: $1"
         val localizations = nonEmptyMapOf(
             defaultLocaleIdentifier to nonEmptyMapOf(
                 textKey to textWithPriceVariable,
             )
         )
         val component = TextComponent(text = textKey, color = textColor)
-        val packageComponent = PackageComponent(
+        val usdPackageComponent = PackageComponent(
             packageId = usdPackage.identifier,
             isSelectedByDefault = false,
             stack = StackComponent(components = emptyList()),
         )
+        val mxnPackageComponent = PackageComponent(
+            packageId = mxnPackage.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(component, packageComponent)),
+                    stack = StackComponent(components = listOf(component, usdPackageComponent, mxnPackageComponent)),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                     stickyFooter = null,
                 ),
@@ -872,15 +937,15 @@ class TextComponentViewTests {
         val stateWithNullStoreFrontCountryCode = offering.toComponentsPaywallState(
             validationResult = validated,
             storefrontCountryCode = null
-        ).apply { update(selectedPackage = usdPackage) }
+        ).apply { update(usdPackage.identifier) }
         val stateWithNlStoreFrontCountryCode = offering.toComponentsPaywallState(
             validationResult = validated,
             storefrontCountryCode = "NL",
-        ).apply { update(selectedPackage = usdPackage) }
+        ).apply { update(usdPackage.identifier) }
         val stateWithMxStoreFrontCountryCode = offering.toComponentsPaywallState(
             validationResult = validated,
             storefrontCountryCode = countryWithoutDecimals,
-        ).apply { update(selectedPackage = mxnPackage) }
+        ).apply { update(mxnPackage.identifier) }
 
         val styleFactory = StyleFactory(
             localizations = localizations,
@@ -918,13 +983,209 @@ class TextComponentViewTests {
         onNodeWithTag("country-nl")
             .assertIsDisplayed()
             .onChild()
-            .assertTextEquals(expectedTextWithDecimals)
+            .assertTextEquals(expectedTextWithDecimalsNl)
 
         onNodeWithTag("country-mx")
             .assertIsDisplayed()
             .onChild()
             .assertTextEquals(expectedTextWithoutDecimals)
     }
+
+    @Test
+    fun `Countdown variables should be processed without a selected package`(): Unit = with(composeTestRule) {
+        val countdownDate = Date(System.currentTimeMillis() + 2 * 24 * 60 * 60 * 1000)
+        val countdownTextKey = LocalizationKey("countdown_text")
+        val countdownText = "{{ count_days_without_zero }}d {{ count_hours_without_zero }}h"
+        val countdownLocalizations = nonEmptyMapOf(
+            localeIdEnUs to nonEmptyMapOf(
+                countdownTextKey to LocalizationData.Text(countdownText),
+            ),
+        )
+
+        val textStyle = TextComponentStyle(
+            texts = nonEmptyMapOf(localeIdEnUs to countdownText),
+            color = ColorStyles(ColorStyle.Solid(Color.Black)),
+            fontSize = 15,
+            fontWeight = null,
+            fontSpec = null,
+            textAlign = null,
+            horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+            backgroundColor = null,
+            visible = true,
+            size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
+            padding = PaddingValues(0.dp),
+            margin = PaddingValues(0.dp),
+            rcPackage = null,
+            tabIndex = null,
+            countdownDate = countdownDate,
+            countFrom = CountdownComponent.CountFrom.DAYS,
+            variableLocalizations = nonEmptyMapOf(
+                localeIdEnUs to variableLocalizationKeysForEnUs()
+            ),
+            overrides = emptyList(),
+        )
+
+        val state = FakePaywallState(
+            localizations = countdownLocalizations,
+            defaultLocaleIdentifier = localeIdEnUs,
+            packages = emptyList(),
+        )
+
+        setContent {
+            TextComponentView(
+                style = textStyle,
+                state = state,
+                modifier = Modifier.testTag("countdown_text")
+            )
+        }
+
+        val node = onNodeWithTag("countdown_text").onChild()
+
+        val actualText = node.fetchSemanticsNode().config
+            .first { it.key.name == "Text" }
+            .value
+            .toString()
+
+        assertThat(actualText).doesNotContain("{{")
+        assertThat(actualText).doesNotContain("}}")
+        assertThat(actualText).containsPattern("\\d+d \\d+h")
+    }
+
+    @Test
+    fun `Markdown link click reports TEXT component interaction with url and component name`(): Unit =
+        with(composeTestRule) {
+            val expectedUrl = "https://example.com/terms?q=1"
+            val expectedComponentName = "body_text_1"
+            val tracked = mutableListOf<PaywallComponentInteractionData>()
+            val delegatedUris = mutableListOf<String>()
+
+            val textStyle = TextComponentStyle(
+                texts = nonEmptyMapOf(
+                    localeIdEnUs to "Read [our terms]($expectedUrl) for details",
+                ),
+                color = ColorStyles(ColorStyle.Solid(Color.Black)),
+                fontSize = 15,
+                fontWeight = null,
+                fontSpec = null,
+                textAlign = null,
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                backgroundColor = null,
+                visible = true,
+                size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
+                padding = PaddingValues(0.dp),
+                margin = PaddingValues(0.dp),
+                rcPackage = null,
+                tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
+                variableLocalizations = nonEmptyMapOf(
+                    localeIdEnUs to variableLocalizationKeysForEnUs(),
+                ),
+                overrides = emptyList(),
+                componentName = expectedComponentName,
+            )
+
+            val state = FakePaywallState(
+                localizations = localizations,
+                defaultLocaleIdentifier = localeIdEnUs,
+                packages = emptyList(),
+            )
+
+            setContent {
+                MaterialTheme {
+                    CompositionLocalProvider(
+                        LocalUriHandler provides object : UriHandler {
+                            override fun openUri(uri: String) {
+                                delegatedUris += uri
+                            }
+                        },
+                    ) {
+                        TextComponentView(
+                            style = textStyle,
+                            state = state,
+                            modifier = Modifier.testTag("markdown_link_text"),
+                            componentInteractionTracker = PaywallComponentInteractionTracker { tracked += it },
+                        )
+                    }
+                }
+            }
+
+            clickMarkdownLink("markdown_link_text", "our terms")
+
+            assertThat(tracked).hasSize(1)
+            val interaction = tracked.first()
+            assertThat(interaction.componentType).isEqualTo(PaywallComponentType.TEXT)
+            assertThat(interaction.componentName).isEqualTo(expectedComponentName)
+            assertThat(interaction.componentValue).isEqualTo("navigate_to_url")
+            assertThat(interaction.componentUrl).isEqualTo(expectedUrl)
+            assertThat(delegatedUris).containsExactly(expectedUrl)
+        }
+
+    @Test
+    fun `Markdown link click reports null component name when style has no component name`(): Unit =
+        with(composeTestRule) {
+            val expectedUrl = "https://example.com/privacy"
+            val tracked = mutableListOf<PaywallComponentInteractionData>()
+
+            val textStyle = TextComponentStyle(
+                texts = nonEmptyMapOf(
+                    localeIdEnUs to "[Privacy policy]($expectedUrl)",
+                ),
+                color = ColorStyles(ColorStyle.Solid(Color.Black)),
+                fontSize = 15,
+                fontWeight = null,
+                fontSpec = null,
+                textAlign = null,
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                backgroundColor = null,
+                visible = true,
+                size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
+                padding = PaddingValues(0.dp),
+                margin = PaddingValues(0.dp),
+                rcPackage = null,
+                tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
+                variableLocalizations = nonEmptyMapOf(
+                    localeIdEnUs to variableLocalizationKeysForEnUs(),
+                ),
+                overrides = emptyList(),
+                componentName = null,
+            )
+
+            val state = FakePaywallState(
+                localizations = localizations,
+                defaultLocaleIdentifier = localeIdEnUs,
+                packages = emptyList(),
+            )
+
+            setContent {
+                MaterialTheme {
+                    CompositionLocalProvider(
+                        LocalUriHandler provides object : UriHandler {
+                            override fun openUri(uri: String) {
+                            }
+                        },
+                    ) {
+                        TextComponentView(
+                            style = textStyle,
+                            state = state,
+                            modifier = Modifier.testTag("privacy_link_text"),
+                            componentInteractionTracker = PaywallComponentInteractionTracker { tracked += it },
+                        )
+                    }
+                }
+            }
+
+            clickMarkdownLink("privacy_link_text", "Privacy policy")
+
+            assertThat(tracked).hasSize(1)
+            val interaction = tracked.first()
+            assertThat(interaction.componentType).isEqualTo(PaywallComponentType.TEXT)
+            assertThat(interaction.componentName).isNull()
+            assertThat(interaction.componentValue).isEqualTo("navigate_to_url")
+            assertThat(interaction.componentUrl).isEqualTo(expectedUrl)
+        }
 
     /**
      * This is a very naive way of checking the background color: by just looking at the 16 top-left pixels. It works
@@ -935,4 +1196,35 @@ class TextComponentViewTests {
      */
     private fun SemanticsNodeInteraction.assertBackgroundColorEquals(color: Color): SemanticsNodeInteraction =
         assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = color)
+
+    /**
+     * Clicks within the bounding box of [linkSubstring] inside the paragraph [Text] under a [Markdown] [Column]
+     * tagged with [columnTestTag] (Column → paragraph Box → Text).
+     */
+    private fun ComposeContentTestRule.clickMarkdownLink(columnTestTag: String, linkSubstring: String) {
+        val hasTextLayout = SemanticsMatcher("GetTextLayoutResult") { node ->
+            node.config.getOrNull(SemanticsActions.GetTextLayoutResult) != null
+        }
+        val textNode = onAllNodes(hasTextLayout, useUnmergedTree = true)
+            .filterToOne(hasAnyAncestor(hasTestTag(columnTestTag)))
+        val layout = readTextLayoutResult(textNode)
+        val plainText = layout.layoutInput.text.text
+        val startIndex = plainText.indexOf(linkSubstring)
+        assertThat(startIndex).isGreaterThanOrEqualTo(0)
+        val charIndex = startIndex + (linkSubstring.length / 2).coerceAtMost(linkSubstring.lastIndex)
+        val box = layout.getBoundingBox(charIndex)
+        textNode.performTouchInput {
+            down(box.center)
+            up()
+        }
+    }
+
+    private fun readTextLayoutResult(node: SemanticsNodeInteraction): TextLayoutResult {
+        val results = mutableListOf<TextLayoutResult>()
+        val property = node.fetchSemanticsNode().config.getOrNull(SemanticsActions.GetTextLayoutResult)
+            ?: error("Missing GetTextLayoutResult semantics")
+        val action = property.action ?: error("Missing GetTextLayoutResult action")
+        action.invoke(results)
+        return results.first()
+    }
 }

@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -58,6 +59,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
@@ -70,6 +72,7 @@ internal fun TabsComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val tabsState = rememberUpdatedTabsComponentState(
@@ -102,6 +105,7 @@ internal fun TabsComponentView(
             style = tab.stack,
             state = state,
             clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
         )
     }
 }
@@ -129,6 +133,7 @@ private fun TabsComponentView_Preview() {
         children = listOf(
             TabControlButtonComponentStyle(
                 tabIndex = 0,
+                tabId = "t0",
                 stack = previewStackComponentStyle(
                     children = listOf(
                         previewTextComponentStyle(
@@ -143,6 +148,7 @@ private fun TabsComponentView_Preview() {
             ),
             TabControlButtonComponentStyle(
                 tabIndex = 1,
+                tabId = "t1",
                 stack = previewStackComponentStyle(
                     children = listOf(
                         previewTextComponentStyle(
@@ -157,6 +163,7 @@ private fun TabsComponentView_Preview() {
             ),
             TabControlButtonComponentStyle(
                 tabIndex = 2,
+                tabId = "t2",
                 stack = previewStackComponentStyle(
                     children = listOf(
                         previewTextComponentStyle(
@@ -287,5 +294,7 @@ private fun previewStackComponentStyle(
         scrollOrientation = null,
         rcPackage = null,
         tabIndex = tabIndex,
+        countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
         overrides = emptyList(),
     )

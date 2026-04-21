@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -48,6 +49,8 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
+        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
     }
 
     @Test
@@ -118,9 +121,28 @@ class PurchasesConfigurationTest {
     }
 
     @Test
+    fun `PurchasesConfiguration sets automaticDeviceIdentifierCollectionEnabled correctly`() {
+        val purchasesConfiguration = builder.automaticDeviceIdentifierCollectionEnabled(false).build()
+        assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isFalse
+    }
+
+    @Test
     fun `PurchasesConfiguration trims api key`() {
         val purchasesConfiguration = PurchasesConfiguration.Builder(context, "  test-api-key  ").build()
         assertThat(purchasesConfiguration.apiKey).isEqualTo("test-api-key")
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets preferredUILocaleOverride correctly`() {
+        val localeOverride = "de_DE"
+        val purchasesConfiguration = builder.preferredUILocaleOverride(localeOverride).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo(localeOverride)
+    }
+
+    @Test
+    fun `PurchasesConfiguration handles null preferredUILocaleOverride`() {
+        val purchasesConfiguration = builder.preferredUILocaleOverride(null).build()
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
     }
 
     @Test
@@ -137,5 +159,17 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.context.isDeviceProtectedStorageCompat).isTrue()
         assertThat(purchasesConfiguration.context).isEqualTo(context)
         assertThat(purchasesConfiguration.context).isNotEqualTo(applicationContext)
+    }
+
+    @Test
+    fun `PurchasesConfiguration galaxyBillingMode defaults to production`() {
+        val purchasesConfiguration = builder.build()
+        assertThat(purchasesConfiguration.galaxyBillingMode).isEqualTo(GalaxyBillingMode.PRODUCTION)
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets galaxyBillingMode correctly`() {
+        val purchasesConfiguration = builder.galaxyBillingMode(GalaxyBillingMode.TEST).build()
+        assertThat(purchasesConfiguration.galaxyBillingMode).isEqualTo(GalaxyBillingMode.TEST)
     }
 }

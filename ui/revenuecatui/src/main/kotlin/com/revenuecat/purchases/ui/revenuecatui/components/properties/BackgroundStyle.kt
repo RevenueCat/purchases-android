@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
@@ -54,17 +57,39 @@ internal sealed interface BackgroundStyle {
         @get:JvmSynthetic val contentScale: ContentScale,
         @get:JvmSynthetic val colorOverlay: ColorStyle?,
     ) : BackgroundStyle
+
+    data class Video(
+        @get:JvmSynthetic val sources: ThemeVideoUrls,
+        @get:JvmSynthetic val fallbackImage: ThemeImageUrls,
+        @get:JvmSynthetic val loop: Boolean,
+        @get:JvmSynthetic val muteAudio: Boolean,
+        @get:JvmSynthetic val contentScale: ContentScale,
+        @get:JvmSynthetic val colorOverlay: ColorStyles?,
+    ) : BackgroundStyle
 }
 
 /**
  * Background properties with resolved colors.
  */
+@Stable
 internal sealed interface BackgroundStyles {
     @JvmInline
+    @Immutable
     value class Color(@get:JvmSynthetic val color: ColorStyles) : BackgroundStyles
 
+    @Immutable
     data class Image(
         @get:JvmSynthetic val sources: ThemeImageUrls,
+        @get:JvmSynthetic val contentScale: ContentScale,
+        @get:JvmSynthetic val colorOverlay: ColorStyles?,
+    ) : BackgroundStyles
+
+    @Immutable
+    data class Video(
+        @get:JvmSynthetic val sources: ThemeVideoUrls,
+        @get:JvmSynthetic val fallbackImage: ThemeImageUrls,
+        @get:JvmSynthetic val loop: Boolean,
+        @get:JvmSynthetic val muteAudio: Boolean,
         @get:JvmSynthetic val contentScale: ContentScale,
         @get:JvmSynthetic val colorOverlay: ColorStyles?,
     ) : BackgroundStyles
@@ -91,11 +116,28 @@ internal fun Background.toBackgroundStyles(
                         colorOverlay = colorOverlay,
                     )
                 }
+
+        is Background.Video ->
+            colorOverlay
+                ?.toColorStyles(aliases = aliases)
+                .orSuccessfullyNull()
+                .map { colorOverlay ->
+                    BackgroundStyles.Video(
+                        sources = value,
+                        fallbackImage = fallbackImage,
+                        loop = loop,
+                        muteAudio = muteAudio,
+                        contentScale = fitMode.toContentScale(),
+                        colorOverlay = colorOverlay,
+                    )
+                }
+
         is Background.Unknown -> Result.Error(
             nonEmptyListOf(PaywallValidationError.UnsupportedBackgroundType(background = this)),
         )
     }
 
+@Stable
 @Composable
 @JvmSynthetic
 internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundStyle =
@@ -118,8 +160,21 @@ internal fun rememberBackgroundStyle(background: BackgroundStyles): BackgroundSt
                 )
             }
         }
+        is BackgroundStyles.Video -> {
+            remember(background) {
+                BackgroundStyle.Video(
+                    sources = background.sources,
+                    fallbackImage = background.fallbackImage,
+                    loop = background.loop,
+                    muteAudio = background.muteAudio,
+                    contentScale = background.contentScale,
+                    colorOverlay = background.colorOverlay,
+                )
+            }
+        }
     }
 
+@Stable
 @Composable
 private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: ContentScale): AsyncImagePainter {
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }

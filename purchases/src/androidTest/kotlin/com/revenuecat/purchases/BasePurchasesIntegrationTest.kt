@@ -1,55 +1,64 @@
 package com.revenuecat.purchases
 
 import android.content.Context
-import android.preference.PreferenceManager
 import androidx.lifecycle.lifecycleScope
 import androidx.test.ext.junit.rules.activityScenarioRule
+import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.fail
 import org.junit.After
-import org.junit.BeforeClass
+import org.junit.Assume.assumeTrue
+import org.junit.Before
 import org.junit.Rule
 import java.net.URL
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
-open class BasePurchasesIntegrationTest {
+abstract class BasePurchasesIntegrationTest {
 
-    companion object {
-        @BeforeClass
-        @JvmStatic
-        fun setupClass() {
-            if (!canRunIntegrationTests()) {
-                error("You need to set required constants in Constants.kt")
-            }
-        }
-
-        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
-            Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
-            Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
-    }
+    /**
+     * Must be overridden in every concrete test subclass to specify which backend
+     * environment to run against. There is no default — this forces each test class
+     * to explicitly declare its target environment.
+     */
+    abstract val environmentConfig: Constants.EnvironmentConfig
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
 
     protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
-    protected open val initialForceServerErrors: Boolean = false
     protected open val initialForceSigningErrors: Boolean = false
 
     protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
-    protected val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
+    protected val proxyUrl get() = Constants.proxyUrl.takeIf { it.isNotEmpty() }
 
     internal lateinit var mockBillingAbstract: BillingAbstract
+
+    internal val expectedCustomerInfoOriginalSource get() = if (
+        Constants.backendEnvironment == Constants.BackendEnvironment.PRODUCTION
+    ) {
+        CustomerInfoOriginalSource.MAIN
+    } else {
+        CustomerInfoOriginalSource.LOAD_SHEDDER
+    }
 
     internal var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
     private var latestStateListener: BillingAbstract.StateListener? = null
@@ -62,16 +71,49 @@ open class BasePurchasesIntegrationTest {
 
     private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
+    private val transactionMetadataSharedPrefsNameTemplate =
+        "com.revenuecat.purchases.transaction_metadata.%s"
 
-    protected val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
+    internal open var forceServerErrorsStrategy: ForceServerErrorStrategy? = null
+    internal var forceServerErrorStrategyDelegate: ForceServerErrorStrategy = object : ForceServerErrorStrategy {
+        override val serverErrorURL: String
+            get() = forceServerErrorsStrategy?.serverErrorURL ?: super.serverErrorURL
+        override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+            return forceServerErrorsStrategy?.shouldForceServerError(baseURL, endpoint) ?: false
+        }
+        override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
+            return forceServerErrorsStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)
+        }
+    }
+
+    protected val entitlementsToVerify get() = Constants.activeEntitlementIdsToVerify
         .split(",")
         .map { it.trim() }
         .filter { it.isNotEmpty() }
 
+    @Before
+    fun setActiveEnvironment() {
+        val config = environmentConfig
+        Constants.activeConfig = config
+        val env = config.backendEnvironment
+        require(config.apiKey.isNotEmpty()) {
+            "Missing API key for $env. Set the corresponding property in local.properties or pass it via -P flag."
+        }
+        require(config.googlePurchaseToken.isNotEmpty()) {
+            "Missing Google purchase token for $env. " +
+                "Set the corresponding property in local.properties or pass it via -P flag."
+        }
+        require(config.productIdToPurchase.isNotEmpty()) {
+            "Missing product ID for $env. Set the corresponding property in local.properties or pass it via -P flag."
+        }
+    }
+
     @After
     fun tearDown() {
         _activity = null
+        forceServerErrorsStrategy = null
         Purchases.resetSingleton()
+        leakcanary.LeakAssertions.assertNoLeaks()
     }
 
     // region helpers
@@ -81,7 +123,6 @@ open class BasePurchasesIntegrationTest {
         initialSharedPreferences: Map<String, String> = emptyMap(),
         entitlementVerificationMode: EntitlementVerificationMode? = null,
         initialActivePurchases: Map<String, StoreTransaction> = initialActivePurchasesToUse,
-        forceServerErrors: Boolean = initialForceServerErrors,
         forceSigningErrors: Boolean = initialForceSigningErrors,
         appUserID: String? = null,
         postSetupTestCallback: (MainActivity) -> Unit = {},
@@ -110,7 +151,7 @@ open class BasePurchasesIntegrationTest {
                 appUserID ?: testUserId,
                 mockBillingAbstract,
                 entitlementVerificationMode,
-                forceServerErrors,
+                forceServerErrorStrategyDelegate,
                 forceSigningErrors,
             )
 
@@ -122,13 +163,24 @@ open class BasePurchasesIntegrationTest {
         activityScenarioRule.scenario.onActivity(block)
     }
 
-    protected fun simulateSdkRestart(
+    internal fun simulateSdkRestart(
         context: Context,
         entitlementVerificationMode: EntitlementVerificationMode? = null,
-        forceServerErrors: Boolean = false,
+        forceServerErrorsStrategy: ForceServerErrorStrategy? = null,
+        initialActivePurchases: Map<String, StoreTransaction>? = null,
     ) {
+        initialActivePurchases?.let {
+            mockActivePurchases(initialActivePurchases)
+        }
+        this.forceServerErrorsStrategy = forceServerErrorsStrategy
         Purchases.resetSingleton()
-        Purchases.configureSdk(context, testUserId, mockBillingAbstract, entitlementVerificationMode, forceServerErrors)
+        Purchases.configureSdk(
+            context,
+            testUserId,
+            mockBillingAbstract,
+            entitlementVerificationMode,
+            forceServerErrorStrategyDelegate,
+        )
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {
@@ -171,7 +223,10 @@ open class BasePurchasesIntegrationTest {
     }
 
     private fun clearAllSharedPreferences(context: Context) {
-        PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
+        context.getSharedPreferences(
+            RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
+            Context.MODE_PRIVATE,
+        ).edit().clear().commit()
         context.getSharedPreferences(
             eTagsSharedPreferencesNameTemplate.format(context.packageName),
             Context.MODE_PRIVATE,
@@ -180,15 +235,76 @@ open class BasePurchasesIntegrationTest {
             diagnosticsSharedPreferencesNameTemplate.format(context.packageName),
             Context.MODE_PRIVATE,
         ).edit().clear().commit()
+        context.getSharedPreferences(
+            transactionMetadataSharedPrefsNameTemplate.format(Constants.apiKey),
+            Context.MODE_PRIVATE,
+        ).edit().clear().commit()
     }
 
     private fun writeSharedPreferences(context: Context, values: Map<String, String>) {
-        val editor = PreferenceManager.getDefaultSharedPreferences(context).edit()
+        val editor = context.getSharedPreferences(
+            RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
+            Context.MODE_PRIVATE,
+        ).edit()
         values.forEach { (key, value) ->
             editor.putString(key, value)
         }
         editor.commit()
     }
 
+    protected suspend fun waitForProductEntitlementMappingToUpdate() {
+        suspendCoroutine { continuation ->
+            Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
+                .updateProductEntitlementMappingCacheIfStale {
+                    if (it != null) {
+                        continuation.resumeWithException(
+                            AssertionError("Expected to get product entitlement mapping but got error: $it"),
+                        )
+                    } else {
+                        continuation.resume(Unit)
+                    }
+                }
+        }
+    }
+
+    protected fun waitForProductEntitlementMappingToUpdate(completion: () -> Unit) {
+        Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
+            .updateProductEntitlementMappingCacheIfStale {
+                if (it != null) {
+                    fail("Expected to get product entitlement mapping but got error: $it")
+                } else {
+                    completion()
+                }
+            }
+    }
+
+    protected fun confirmProductionBackendEnvironment() {
+        confirmSupportedBackendEnvironment(setOf(Constants.BackendEnvironment.PRODUCTION))
+    }
+
+    protected fun confirmSupportedBackendEnvironment(backendEnvironments: Set<Constants.BackendEnvironment>) {
+        assumeTrue(
+            "Test will not run in ${Constants.backendEnvironment} environment. " +
+                "It will only run in these environments: ${backendEnvironments.joinToString()}.",
+            Constants.backendEnvironment in backendEnvironments,
+        )
+    }
+
     // endregion
+
+    // region assertions
+
+    protected fun assertAcknowledgePurchaseDidNotHappen() {
+        verify(exactly = 0) {
+            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
+        }
+    }
+
+    protected fun assertAcknowledgePurchaseDidHappen(timeout: Duration = testTimeout) {
+        verify(timeout = timeout.inWholeMilliseconds) {
+            mockBillingAbstract.consumeAndSave(any(), any(), any(), initiationSource = any())
+        }
+    }
+
+    // endregion assertions
 }

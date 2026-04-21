@@ -18,6 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +34,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.revenuecat.paywallstester.SamplePaywalls
 import com.revenuecat.paywallstester.SamplePaywallsLoader
+import com.revenuecat.paywallstester.ui.screens.main.customvariables.CustomVariablesHolder
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.CustomerInfo
@@ -107,6 +110,7 @@ private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
 @Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
+    modifier: Modifier = Modifier,
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
 ) {
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
@@ -124,7 +128,7 @@ fun PaywallsScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.testTag("paywall_screen"),
+        modifier = modifier.testTag("paywall_screen"),
     ) {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
@@ -208,6 +212,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
             .setDismissRequest(onDismiss)
             .setOffering(currentState.offering)
             .setFontProvider(currentState.fontProvider)
+            .setCustomVariables(CustomVariablesHolder.customVariables)
             .setCustomPurchaseLogic(currentState.purchaseLogic)
             .build(),
     )
@@ -235,8 +240,12 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
     }
 }
 
+@Stable
 private sealed class DisplayPaywallState {
+
+    @Immutable
     object None : DisplayPaywallState()
+
     data class FullScreen
     constructor(
         val offering: Offering? = null,

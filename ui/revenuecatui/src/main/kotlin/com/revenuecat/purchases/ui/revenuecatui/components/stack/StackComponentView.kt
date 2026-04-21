@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
@@ -44,6 +44,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -60,6 +62,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -72,6 +75,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -85,13 +89,15 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.BadgeStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 internal fun StackComponentView(
     style: StackComponentStyle,
@@ -99,6 +105,7 @@ internal fun StackComponentView(
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
     contentAlpha: Float = 1f,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -120,6 +127,7 @@ internal fun StackComponentView(
                     badge.stackStyle,
                     badge.alignment,
                     clickHandler,
+                    componentInteractionTracker,
                     contentAlpha,
                     modifier,
                 )
@@ -135,6 +143,7 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment.isTop,
                         clickHandler,
+                        componentInteractionTracker,
                         contentAlpha,
                         modifier,
                     )
@@ -146,6 +155,7 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment,
                         clickHandler,
+                        componentInteractionTracker,
                         contentAlpha,
                         modifier,
                     )
@@ -153,10 +163,25 @@ internal fun StackComponentView(
             }
 
             Badge.Style.Nested ->
-                MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier, badge)
+                MainStackComponent(
+                    stackState = stackState,
+                    state = state,
+                    clickHandler = clickHandler,
+                    componentInteractionTracker = componentInteractionTracker,
+                    contentAlpha = contentAlpha,
+                    modifier = modifier,
+                    nestedBadge = badge,
+                )
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier)
+        MainStackComponent(
+            stackState = stackState,
+            state = state,
+            clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
+            contentAlpha = contentAlpha,
+            modifier = modifier,
+        )
     }
 }
 
@@ -168,17 +193,25 @@ private fun StackWithOverlaidBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler, contentAlpha)
+        MainStackComponent(
+            stackState = stackState,
+            state = state,
+            clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
+            contentAlpha = contentAlpha,
+        )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
         }
         OverlaidBadge(
             badgeStack,
             state,
+            componentInteractionTracker,
             alignment,
             mainStackBorderWidthPx,
             modifier = Modifier.padding(stackState.margin),
@@ -197,6 +230,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     topBadge: Boolean,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -213,6 +247,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                componentInteractionTracker,
                 contentAlpha,
                 shouldApplyShadow = false,
             )
@@ -232,6 +267,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 ),
                 state,
                 clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
             )
         }.first()
         val badgePlaceable = badgeMeasurable.measure(constraints)
@@ -361,6 +397,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
 ) {
@@ -433,20 +470,30 @@ private fun StackWithShortEdgeToEdgeBadge(
             }
         }
     }
-    MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier) {
+    MainStackComponent(
+        stackState = stackState,
+        state = state,
+        clickHandler = clickHandler,
+        componentInteractionTracker = componentInteractionTracker,
+        contentAlpha = contentAlpha,
+        modifier = modifier,
+    ) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
             clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
             modifier = Modifier.align(alignment.toAlignment()),
         )
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun BoxScope.OverlaidBadge(
     badgeStack: StackComponentStyle,
     state: PaywallState.Loaded.Components,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     alignment: TwoDimensionalAlignment,
     mainStackBorderWidthPx: Float?,
     modifier: Modifier = Modifier,
@@ -455,6 +502,7 @@ private fun BoxScope.OverlaidBadge(
         badgeStack,
         state,
         {},
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier
             .align(alignment.toAlignment())
             .layout { measurable, constraints ->
@@ -475,13 +523,14 @@ private fun MainStackComponent(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
 ) {
-    val systemBarInsets = WindowInsets.systemBars
+    val safeDrawingInsets = WindowInsets.safeDrawing
 
     // Show the right container composable depending on the dimension.
     val stack: @Composable (Modifier) -> Unit = { rootModifier ->
@@ -513,10 +562,11 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .conditional(stackState.applyTopWindowInsets && !child.ignoreTopWindowInsets) {
-                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
                                 .alpha(contentAlpha),
                         )
@@ -539,6 +589,7 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
                             modifier = Modifier
                                 .conditional(child.size.height == Fill) { Modifier.weight(1f) }
                                 .conditional(
@@ -546,39 +597,58 @@ private fun MainStackComponent(
                                     // child, except when that child has `ignoreTopWindowInsets` set to true.
                                     stackState.applyTopWindowInsets &&
                                         index == 0 &&
-                                        !child.ignoreTopWindowInsets,
+                                        !child.shouldIgnoreTopWindowInsets,
                                 ) {
-                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
+                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                 }
                                 .alpha(contentAlpha),
                         )
                     }
                 }
 
-                is Dimension.ZLayer -> Box(
-                    modifier = modifier
-                        .size(
-                            size = stackState.size,
-                            horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                            verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                        )
-                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                is Dimension.ZLayer -> {
+                    // Pre-compute the top safe-drawing inset in px for use as a fallback
+                    // when no header height is available. Captured at composition time so
+                    // the Modifier.layout closure can branch at layout time.
+                    val topInsetPx = if (stackState.applyTopWindowInsets && !stackState.ignoreHeaderHeight) {
+                        safeDrawingInsets.getTop(LocalDensity.current)
+                    } else {
+                        0
+                    }
+                    Box(
+                        modifier = modifier
+                            .size(
+                                size = stackState.size,
+                                horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                                verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                            )
+                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                scrollable(state, orientation)
+                            }
+                            .then(rootModifier),
+                        contentAlignment = dimension.alignment.toAlignment(),
+                    ) {
+                        stackState.children.forEach { child ->
+                            val applyTopInsets =
+                                stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets
+                            ComponentView(
+                                style = child,
+                                state = state,
+                                onClick = clickHandler,
+                                componentInteractionTracker = componentInteractionTracker,
+                                modifier = Modifier
+                                    .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
+                                        // Read header height at layout time. If set (hero case),
+                                        // it already includes status bar padding. Otherwise fall
+                                        // back to the safe-drawing top inset.
+                                        headerOrInsetsTopPadding(state, topInsetPx)
+                                    }
+                                    .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
+                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                    }
+                                    .alpha(contentAlpha),
+                            )
                         }
-                        .then(rootModifier),
-                    contentAlignment = dimension.alignment.toAlignment(),
-                ) {
-                    stackState.children.forEach { child ->
-                        ComponentView(
-                            style = child,
-                            state = state,
-                            onClick = clickHandler,
-                            modifier = Modifier
-                                .conditional(stackState.applyTopWindowInsets && !child.ignoreTopWindowInsets) {
-                                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Top))
-                                }
-                                .alpha(contentAlpha),
-                        )
                     }
                 }
             }
@@ -586,13 +656,13 @@ private fun MainStackComponent(
     }
 
     val backgroundStyle = stackState.background?.let { rememberBackgroundStyle(background = it) }
+    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
     val borderStyle = stackState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = if (shouldApplyShadow) {
         stackState.shadow?.let { rememberShadowStyle(shadow = it) }
     } else {
         null
     }
-    val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
 
     val outerShapeModifier = remember(backgroundStyle, shadowStyle) {
         Modifier
@@ -615,14 +685,42 @@ private fun MainStackComponent(
     }
 
     if (nestedBadge == null && overlay == null) {
-        stack(
-            outerShapeModifier
-                .then(borderModifier)
-                .then(innerShapeModifier)
-                .conditional(stackState.applyBottomWindowInsets) {
-                    windowInsetsPadding(systemBarInsets.only(WindowInsetsSides.Bottom))
-                },
-        )
+        if (backgroundStyle is BackgroundStyle.Video) {
+            // Video backgrounds require a Box wrapper with explicit sizing
+            WithOptionalBackgroundOverlay(
+                state = state,
+                background = backgroundStyle,
+                shape = composeShape,
+                modifier = modifier
+                    .size(stackState.size)
+                    .then(outerShapeModifier)
+                    .clip(composeShape)
+                    .then(borderModifier),
+            ) {
+                stack(
+                    Modifier
+                        .then(innerShapeModifier)
+                        .conditional(stackState.applyBottomWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
+                        }
+                        .conditional(stackState.applyHorizontalWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Horizontal))
+                        },
+                )
+            }
+        } else {
+            stack(
+                outerShapeModifier
+                    .then(borderModifier)
+                    .then(innerShapeModifier)
+                    .conditional(stackState.applyBottomWindowInsets) {
+                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
+                    }
+                    .conditional(stackState.applyHorizontalWindowInsets) {
+                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Horizontal))
+                    },
+            )
+        }
     } else if (nestedBadge != null) {
         Box(
             modifier = modifier
@@ -630,13 +728,17 @@ private fun MainStackComponent(
                 .clip(composeShape)
                 .then(borderModifier),
         ) {
-            stack(Modifier.then(innerShapeModifier))
+            WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
+                stack(Modifier.then(innerShapeModifier))
+            }
+
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
-                {},
+                clickHandler = {},
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
+                componentInteractionTracker = componentInteractionTracker,
             )
         }
     } else if (overlay != null) {
@@ -645,7 +747,9 @@ private fun MainStackComponent(
                 .then(outerShapeModifier)
                 .clip(composeShape),
         ) {
-            stack(borderModifier.then(innerShapeModifier))
+            WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
+                stack(borderModifier.then(innerShapeModifier))
+            }
             overlay()
         }
     }
@@ -721,8 +825,12 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         -> false
     }
 
-private val ComponentStyle.ignoreTopWindowInsets: Boolean
-    get() = this is ImageComponentStyle && ignoreTopWindowInsets
+private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
+    get() = when (this) {
+        is ImageComponentStyle -> ignoreTopWindowInsets
+        is VideoComponentStyle -> ignoreTopWindowInsets
+        else -> false
+    }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
@@ -761,6 +869,8 @@ private fun StackComponentView_Preview_Vertical() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -817,6 +927,8 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
                 scrollOrientation = Orientation.Vertical,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -886,6 +998,8 @@ private fun StackComponentView_Preview_Overlay_Badge(
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -959,6 +1073,8 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1012,6 +1128,8 @@ private fun StackComponentView_Preview_Nested_Badge(
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1057,6 +1175,8 @@ private fun StackComponentView_Preview_Horizontal() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1113,6 +1233,8 @@ private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1169,6 +1291,8 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
                 scrollOrientation = Orientation.Horizontal,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1231,6 +1355,8 @@ private fun StackComponentView_Preview_ZLayer() {
                 scrollOrientation = null,
                 rcPackage = null,
                 tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
                 overrides = emptyList(),
             ),
             state = previewEmptyState(),
@@ -1273,6 +1399,8 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
             overrides = emptyList(),
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -1314,6 +1442,8 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
             overrides = emptyList(),
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             badge = null,
         ),
         state = previewEmptyState(),
@@ -1377,6 +1507,8 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing_Fit_Size(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1428,6 +1560,8 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1475,6 +1609,8 @@ private fun StackComponentView_Preview_Distribution_SpaceAround_With_Fill_Childr
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1526,6 +1662,8 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         state = previewEmptyState(),
@@ -1545,7 +1683,10 @@ private fun StackComponentView_Preview_HorizontalDivider() {
                 children = emptyList(),
                 visible = true,
                 size = Size(width = Fill, height = Fixed(1u)),
-                dimension = Dimension.Vertical(alignment = HorizontalAlignment.LEADING, FlexDistribution.SPACE_BETWEEN),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.LEADING,
+                    FlexDistribution.SPACE_BETWEEN,
+                ),
                 spacing = 0.dp,
                 // Explicitly applying vertical margin to make sure it doesn't "eat up" the divider.
                 margin = PaddingValues(vertical = 40.dp),
@@ -1678,9 +1819,27 @@ private fun previewBadge(
             scrollOrientation = null,
             rcPackage = null,
             tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
             overrides = emptyList(),
         ),
         style = style,
         alignment = alignment,
     )
+}
+
+/**
+ * Adds top padding read at layout time: uses [state]'s header height in pixels if set (hero case
+ * where the header already accounts for the status bar), otherwise falls back to [fallbackInsetPx]
+ * (the safe-drawing top inset, pre-computed at composition time).
+ */
+private fun Modifier.headerOrInsetsTopPadding(
+    state: PaywallState.Loaded.Components,
+    fallbackInsetPx: Int,
+): Modifier = this.layout { measurable, constraints ->
+    val topPad = if (state.headerHeightPx > 0) state.headerHeightPx else fallbackInsetPx
+    val placeable = measurable.measure(constraints.offset(vertical = -topPad))
+    layout(placeable.width, placeable.height + topPad) {
+        placeable.place(0, topPad)
+    }
 }

@@ -2,11 +2,14 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.res.AssetManager
 import android.content.res.Resources
 import androidx.annotation.StringRes
+import androidx.compose.ui.text.font.FontFamily
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.ui.revenuecatui.utils.FontFamilyXmlParser
 import java.util.Locale
 
 /**
@@ -21,10 +24,12 @@ internal interface ResourceProvider {
     fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
     fun getResourceIdentifier(name: String, type: String): Int
-    fun getAssetFontPath(name: String): String?
+    fun getXmlFontFamily(resourceId: Int): FontFamily?
+    fun getAssetFontPaths(names: List<String>): Map<String, String>?
     fun getCachedFontFamilyOrStartDownload(
         fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
     ): DownloadedFontFamily?
+    fun getAssetManager(): AssetManager?
 }
 
 internal class PaywallResourceProvider(
@@ -56,12 +61,42 @@ internal class PaywallResourceProvider(
     override fun getResourceIdentifier(name: String, type: String): Int =
         resources.getIdentifier(name, type, packageName)
 
-    override fun getAssetFontPath(name: String): String? {
-        val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+    @Suppress("ReturnCount")
+    override fun getXmlFontFamily(resourceId: Int): FontFamily? {
+        val parser = try {
+            resources.getXml(resourceId)
+        } catch (_: Resources.NotFoundException) {
+            return null
+        }
+        return try {
+            FontFamilyXmlParser.parse(parser)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            // This can happen if the XML is malformed or not a valid font family.
+            // We log the error and return null.
+            val resourceName = resources.getResourceEntryNameOrNull(resourceId)
+            Logger.e("Error parsing XML font family with resource ID ${resourceName ?: resourceId}", e)
+            null
+        } finally {
+            parser.close()
+        }
+    }
 
-        return resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
-            ?.find { it == nameWithExtension }
-            ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+    override fun getAssetFontPaths(names: List<String>): Map<String, String>? {
+        val assetsList = resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
+
+        return names
+            .mapNotNull { name ->
+                val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
+                val path = assetsList?.find { it == nameWithExtension }
+                    ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+                if (path != null) {
+                    name to path
+                } else {
+                    null
+                }
+            }
+            .toMap()
+            .takeIf { it.isNotEmpty() }
     }
 
     override fun getCachedFontFamilyOrStartDownload(
@@ -74,6 +109,10 @@ internal class PaywallResourceProvider(
             null
         }
     }
+
+    override fun getAssetManager(): AssetManager? {
+        return resources.assets
+    }
 }
 
 internal fun Context.toResourceProvider(): ResourceProvider {
@@ -83,3 +122,10 @@ internal fun Context.toResourceProvider(): ResourceProvider {
 private fun Context.applicationName(): String {
     return applicationInfo.loadLabel(packageManager).toString()
 }
+
+private fun Resources.getResourceEntryNameOrNull(resourceId: Int): String? =
+    try {
+        getResourceEntryName(resourceId)
+    } catch (_: Resources.NotFoundException) {
+        null
+    }

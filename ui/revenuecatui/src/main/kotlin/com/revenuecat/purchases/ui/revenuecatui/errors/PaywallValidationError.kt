@@ -35,10 +35,10 @@ internal sealed class PaywallValidationError : Throwable() {
             }
             is MissingStringLocalization -> message
             is MissingImageLocalization -> message
+            is MissingVideoLocalization -> message
             is AllLocalizationsMissing -> message
             is AllVariableLocalizationsMissing -> message
             is MissingPackage -> message
-            is MissingAllPackages -> message
             is MissingColorAlias -> message
             is AliasedColorIsAlias -> message
             is MissingFontAlias -> message
@@ -72,6 +72,14 @@ internal sealed class PaywallValidationError : Throwable() {
             PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION_WITH_LOCALE.format(key.value, locale.value)
         } ?: PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION.format(key.value)
     }
+    data class MissingVideoLocalization(
+        val key: LocalizationKey,
+        val locale: LocaleId? = null,
+    ) : PaywallValidationError() {
+        override val message: String = locale?.let {
+            PaywallValidationErrorStrings.MISSING_VIDEO_LOCALIZATION_WITH_LOCALE.format(key.value, locale.value)
+        } ?: PaywallValidationErrorStrings.MISSING_VIDEO_LOCALIZATION.format(key.value)
+    }
     data class AllLocalizationsMissing(
         val locale: LocaleId,
     ) : PaywallValidationError() {
@@ -92,14 +100,6 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String =
             PaywallValidationErrorStrings.MISSING_PACKAGE
                 .format(missingPackageId, offeringId, allPackageIds.joinToString())
-    }
-    data class MissingAllPackages(
-        val offeringId: String,
-        val allPackageIds: Collection<String>,
-    ) : PaywallValidationError() {
-        override val message: String =
-            PaywallValidationErrorStrings.MISSING_ALL_PACKAGES
-                .format(offeringId, allPackageIds.joinToString())
     }
     data class MissingColorAlias(
         val alias: ColorAlias,

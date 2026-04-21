@@ -1,41 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<layout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
-        xmlns:tools="http://schemas.android.com/tools">
-    <data>
-        <variable
-                name="header"
-                type="String" />
+        xmlns:tools="http://schemas.android.com/tools"
+        android:padding="@dimen/padding_tiny"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
-        <variable
-                name="detail"
-                type="String" />
-    </data>
+    <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/headerView"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="header"/>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
-            android:padding="@dimen/padding_tiny"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+    <androidx.appcompat.widget.AppCompatTextView
+            android:id="@+id/value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/headerView"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:text="value"/>
 
-        <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/headerView"
-                android:textStyle="bold"
-                android:text="@{header}"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:text="header"/>
-
-        <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/value"
-                android:text="@{(detail == null || detail.length() == 0) ? `None` : detail}"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/headerView"
-                app:layout_constraintBottom_toBottomOf="parent"
-                tools:text="value"/>
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-</layout>
+</androidx.constraintlayout.widget.ConstraintLayout>

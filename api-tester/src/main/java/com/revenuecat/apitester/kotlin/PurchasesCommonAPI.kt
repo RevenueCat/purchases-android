@@ -17,20 +17,25 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.awaitCanMakePayments
 import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitGetProductsResult
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitOfferingsResult
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitPurchaseResult
+import com.revenuecat.purchases.awaitStorefrontCountryCode
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
+import com.revenuecat.purchases.getStorefrontCountryCodeWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
@@ -43,6 +48,7 @@ import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
 private class PurchasesCommonAPI {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
@@ -61,6 +67,10 @@ private class PurchasesCommonAPI {
             override fun onReceived(storeProducts: List<StoreProduct>) {}
             override fun onError(error: PurchasesError) {}
         }
+        val getStorefrontCallback = object : GetStorefrontCallback {
+            override fun onReceived(storefrontCountryCode: String) {}
+            override fun onError(error: PurchasesError) {}
+        }
 
         purchases.getOfferings(receiveOfferingsCallback)
 
@@ -70,6 +80,9 @@ private class PurchasesCommonAPI {
         purchases.restorePurchases(receiveCustomerInfoCallback)
 
         val appUserID: String = purchases.appUserID
+
+        val countryCode: String? = purchases.storefrontCountryCode
+        purchases.getStorefrontCountryCode(getStorefrontCallback)
 
         purchases.removeUpdatedCustomerInfoListener()
         purchases.close()
@@ -82,6 +95,7 @@ private class PurchasesCommonAPI {
         purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList)
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @SuppressWarnings("LongParameterList", "EmptyFunctionBlock")
     fun checkPurchasing(
         purchases: Purchases,
@@ -97,12 +111,14 @@ private class PurchasesCommonAPI {
 
         val oldProductId = "old"
         val replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION
+        val galaxyReplacementMode = GalaxyReplacementMode.INSTANT_PRORATED_CHARGE
         val isPersonalizedPrice = true
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
         purchasePackageBuilder
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
+            .galaxyReplacementMode(galaxyReplacementMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
@@ -111,6 +127,7 @@ private class PurchasesCommonAPI {
         purchaseProductBuilder
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
+            .galaxyReplacementMode(galaxyReplacementMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
@@ -119,6 +136,7 @@ private class PurchasesCommonAPI {
         purchaseOptionBuilder
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
+            .galaxyReplacementMode(galaxyReplacementMode)
             .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()
         purchases.purchase(purchaseOptionsParams, purchaseCallback)
@@ -129,6 +147,10 @@ private class PurchasesCommonAPI {
         purchases: Purchases,
         purchaseParams: PurchaseParams,
     ) {
+        purchases.getStorefrontCountryCodeWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: String -> },
+        )
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: Offerings -> },
@@ -163,10 +185,12 @@ private class PurchasesCommonAPI {
         activity: Activity,
         packageToPurchase: Package,
     ) {
+        val storefrontCountryCode: String = purchases.awaitStorefrontCountryCode()
         val offerings: Offerings = purchases.awaitOfferings()
+        val canMakePayments: Boolean = Purchases.awaitCanMakePayments(activity)
+        val canMakePayments2: Boolean = Purchases.awaitCanMakePayments(activity, listOf(BillingFeature.SUBSCRIPTIONS))
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
-        val (transaction, newCustomerInfo) = purchases.awaitPurchase(purchasePackageBuilder.build())
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
     }
@@ -209,6 +233,7 @@ private class PurchasesCommonAPI {
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .store(Store.PLAY_STORE)
             .pendingTransactionsForPrepaidPlansEnabled(true)
+            .automaticDeviceIdentifierCollectionEnabled(true)
             .build()
 
         val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically

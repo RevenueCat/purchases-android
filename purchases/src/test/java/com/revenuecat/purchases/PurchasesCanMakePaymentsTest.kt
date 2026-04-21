@@ -24,6 +24,7 @@ import io.mockk.slot
 import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -104,12 +105,12 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.enablePendingPurchases() } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases(any()) } returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
         every { mockLocalBillingClient.startConnection(any()) } just Runs
 
         Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {}
-        verify(exactly = 1) { mockBuilder.enablePendingPurchases() }
+        verify(exactly = 1) { mockBuilder.enablePendingPurchases(any()) }
     }
 
     fun `canMakePayments returns true for Amazon configurations`() {
@@ -121,6 +122,7 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
             null,
             Store.AMAZON,
             isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
         )
         Purchases.canMakePayments(mockContext, listOf()) {
             assertThat(it).isTrue()
@@ -281,6 +283,29 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
         assertThat(timesReceived).isOne()
     }
 
+    @Test
+    fun `awaitCanMakePayments returns the result similar to the callback variant if billing service disconnects`() = runTest {
+        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
+        setUpMockBillingClientBuilderWithAction(mockLocalBillingClient) {
+            it.onBillingServiceDisconnected()
+        }
+
+        val result = Purchases.awaitCanMakePayments(mockContext, listOf())
+        assertThat(result).isFalse
+        verify(exactly = 1) { mockLocalBillingClient.endConnection() }
+    }
+
+    @Test
+    fun `awaitCanMakePayments with no features and OK BillingResponse returns true similar to callback variant`() = runTest {
+        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
+        setUpMockBillingClientBuilderWithAction(mockLocalBillingClient) {
+            it.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        }
+
+        val result = Purchases.awaitCanMakePayments(mockContext, listOf())
+        assertThat(result).isTrue
+    }
+
     // endregion
 
     // region Private Methods
@@ -288,18 +313,35 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
         return BillingResult.newBuilder().setResponseCode(this).build()
     }
 
-    private fun setUpMockBillingClientBuilderAndListener(
+    private fun setUpMockBillingClientBuilder(
         mockLocalBillingClient: BillingClient,
-    ): CapturingSlot<BillingClientStateListener> {
+    ): BillingClient.Builder {
         mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.enablePendingPurchases() } returns mockBuilder
+        every { mockBuilder.enablePendingPurchases(any()) } returns mockBuilder
         every { mockBuilder.build() } returns mockLocalBillingClient
+        return mockBuilder
+    }
+
+    private fun setUpMockBillingClientBuilderAndListener(
+        mockLocalBillingClient: BillingClient,
+    ): CapturingSlot<BillingClientStateListener> {
+        setUpMockBillingClientBuilder(mockLocalBillingClient)
         val listener = slot<BillingClientStateListener>()
         every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
         return listener
+    }
+
+    private fun setUpMockBillingClientBuilderWithAction(
+        mockLocalBillingClient: BillingClient,
+        onStartConnection: (BillingClientStateListener) -> Unit,
+    ) {
+        setUpMockBillingClientBuilder(mockLocalBillingClient)
+        every { mockLocalBillingClient.startConnection(any()) } answers {
+            onStartConnection(firstArg())
+        }
     }
 
     private fun mockHandlerPost() {

@@ -5,7 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import android.content.Context
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.layout.Column
-import androidx.compose.material.Text
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -15,10 +15,12 @@ import androidx.core.graphics.drawable.toDrawable
 import coil.ImageLoader
 import coil.decode.DataSource
 import coil.request.SuccessResult
+import com.emergetools.snapshots.annotations.EmergeSnapshotConfig
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ProvidePreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -162,7 +164,11 @@ internal class PaywallResourcesProvider : PreviewParameterProvider<PaywallResour
  * 2. `git submodule update upstream/paywall-preview-resources`
  *
  * You'll need to run step 2 every time paywall-preview-resources is updated.
+ *
+ * Regardless of the `@EmergeSnapshotConfig(ignore = true)` annotation, this preview still ends up on Emerge via the
+ * `record-and-upload-paparazzi-revenuecatui-snapshots` CI job, and `PaywallComponentsTemplatePreviewRecorder`.
  */
+@EmergeSnapshotConfig(ignore = true)
 @Preview
 @Composable
 internal fun PaywallComponentsTemplate_Preview(
@@ -177,10 +183,9 @@ internal fun PaywallComponentsTemplate_Preview(
             val validationResult = result.value
             val state = offering.toComponentsPaywallState(
                 validationResult = validationResult,
-                activelySubscribedProductIds = emptySet(),
-                purchasedNonSubscriptionProductIds = emptySet(),
                 storefrontCountryCode = "US",
                 dateProvider = { Date(MILLIS_2025_04_23) },
+                purchases = MockPurchasesType(),
             )
 
             ProvidePreviewImageLoader(PaywallTemplateImageLoader(LocalContext.current, parentFolder)) {

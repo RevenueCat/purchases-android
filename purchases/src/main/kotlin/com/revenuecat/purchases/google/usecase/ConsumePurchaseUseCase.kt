@@ -2,6 +2,7 @@ package com.revenuecat.purchases.google.usecase
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.ConsumeParams
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.LogIntent
@@ -10,12 +11,15 @@ import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toHumanReadableDescription
 import com.revenuecat.purchases.strings.PurchaseStrings
 
-internal class ConsumePurchaseUseCaseParams(
+internal class ConsumePurchaseUseCaseParams
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val purchaseToken: String,
     val initiationSource: PostReceiptInitiationSource,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class ConsumePurchaseUseCase(
     private val useCaseParams: ConsumePurchaseUseCaseParams,
     val onReceive: (purchaseToken: String) -> Unit,

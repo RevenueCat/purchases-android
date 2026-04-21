@@ -27,10 +27,17 @@ internal sealed interface PaywallValidationResult {
             template = template,
             errors = nonEmptyListOf(error),
         )
+
+        /**
+         * Helper to get the first warning for display in the default paywall.
+         */
+        val warning: PaywallWarning?
+            get() = errors?.head?.let { PaywallWarning.from(it) }
     }
 
     data class Components(
         val stack: ComponentStyle,
+        val header: ComponentStyle?,
         val stickyFooter: ComponentStyle?,
         val background: BackgroundStyles,
         /**
@@ -45,6 +52,7 @@ internal sealed interface PaywallValidationResult {
         val variableDataProvider: VariableDataProvider,
         val packages: AvailablePackages,
         val initialSelectedTabIndex: Int?,
+        val mainStackHasHeroImage: Boolean = false,
     ) : PaywallValidationResult {
         // If a Components Paywall has an error, it will be reflected as a Legacy type so we can use the Legacy
         // fallback.

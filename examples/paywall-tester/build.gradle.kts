@@ -1,10 +1,23 @@
+import java.util.Properties
+
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.revenuecat.android.application)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.baselineprofile)
 }
 
-apply(from = "$rootDir/base-application.gradle")
+val localProperties = Properties().apply {
+    val localPropsFile = rootProject.file("local.properties")
+    if (localPropsFile.exists()) {
+        localPropsFile.inputStream().use { load(it) }
+    }
+}
+
+fun resolveProperty(name: String, default: String = ""): String {
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+    return localProperties.getProperty(name) ?: default
+}
 
 android {
     namespace = "com.revenuecat.paywallstester"
@@ -17,9 +30,42 @@ android {
 
         missingDimensionStrategy("apis", "defaults")
 
+        flavorDimensions += "billingclient"
+
+        productFlavors {
+            create("bc8") {
+                dimension = "billingclient"
+                isDefault = true
+            }
+            create("bc7") {
+                dimension = "billingclient"
+            }
+        }
+
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_A",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_A")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_B",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_B")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_A_LABEL",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_A_LABEL")}\"",
+        )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_API_KEY_B_LABEL",
+            "\"${resolveProperty("PAYWALL_TESTER_API_KEY_B_LABEL")}\"",
+        )
     }
 
     signingConfigs {
@@ -51,6 +97,12 @@ android {
                 "proguard-rules.pro",
             )
         }
+        create("nonMinifiedRelease") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+        }
     }
 
     compileOptions {
@@ -58,23 +110,22 @@ android {
         targetCompatibility = JavaVersion.VERSION_1_8
     }
 
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
-
     buildFeatures {
+        buildConfig = true
         compose = true
         viewBinding = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.8"
     }
 
     packaging {
         resources {
             excludes += setOf("/META-INF/{AL2.0,LGPL2.1}")
         }
+    }
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
     }
 }
 
@@ -111,6 +162,7 @@ dependencies {
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
+    debugImplementation(libs.leakcanary.android)
 
     baselineProfile(project(":baselineprofile")) {
         attributes {

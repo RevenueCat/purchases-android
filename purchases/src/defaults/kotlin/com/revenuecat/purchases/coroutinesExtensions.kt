@@ -4,26 +4,11 @@ import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-
-/**
- * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
- * If there is any error, it will return null and log said error.
- * Coroutine friendly version of [Purchases.getStorefrontCountryCode].
- *
- * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
- * @return The Store country code in ISO-3166-1 alpha2.
- */
-suspend fun Purchases.awaitStorefrontCountryCode(): String {
-    return suspendCoroutine { continuation ->
-        getStorefrontCountryCodeWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
-        )
-    }
-}
 
 /**
  * Get latest available customer info.
@@ -37,7 +22,7 @@ suspend fun Purchases.awaitStorefrontCountryCode(): String {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitCustomerInfo(
+public suspend fun Purchases.awaitCustomerInfo(
     fetchPolicy: CacheFetchPolicy = CacheFetchPolicy.default(),
 ): CustomerInfo {
     return suspendCoroutine { continuation ->
@@ -61,7 +46,7 @@ suspend fun Purchases.awaitCustomerInfo(
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
+public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
     return suspendCoroutine { continuation ->
         logInWith(
             appUserID,
@@ -84,7 +69,7 @@ suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitLogOut(): CustomerInfo {
+public suspend fun Purchases.awaitLogOut(): CustomerInfo {
     return suspendCoroutine { continuation ->
         logOutWith(
             onSuccess = { continuation.resume(it) },
@@ -105,7 +90,7 @@ suspend fun Purchases.awaitLogOut(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
+public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
     return suspendCoroutine { continuation ->
         syncPurchasesWith(
             onSuccess = continuation::resume,
@@ -132,11 +117,43 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
+public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
     return suspendCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Sets attribution data from Appstack's attribution params, then syncs attributes and fetches
+ * offerings so that Appstack-based targeting is applied before the coroutine returns.
+ *
+ * Note: Offerings retrieval is rate limited to 5 calls per minute. If the rate limit is reached,
+ * cached offerings will be returned instead.
+ *
+ * Pass the map received from `AppstackAttributionSdk.getAttributionParams()` directly to this method.
+ * The SDK will extract relevant attribution information and set the appropriate attributes.
+ * Note that this method will never unset any attributes. To unset an attribute, call the individual
+ * setter with a `null` value.
+ *
+ * Coroutine friendly version of [Purchases.setAppstackAttributionParams].
+ *
+ * @param data The attribution params map from `AppstackAttributionSdk.getAttributionParams()`.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error syncing attributes or fetching offerings.
+ * @return [Offerings] targeted with Appstack attribution data.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String, String>): Offerings {
+    return suspendCoroutine { continuation ->
+        setAppstackAttributionParams(
+            data,
+            syncAttributesAndOfferingsListener(
+                onSuccess = continuation::resume,
+                onError = { continuation.resumeWithException(PurchasesException(it)) },
+            ),
         )
     }
 }
@@ -158,7 +175,7 @@ suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
+public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
     return suspendCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
             onSuccess = continuation::resume,
@@ -177,7 +194,7 @@ suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
+public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
     return suspendCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
             override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
@@ -188,5 +205,80 @@ suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData 
                 continuation.resumeWithException(PurchasesException(error))
             }
         })
+    }
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * Coroutine friendly version of [Purchases.getVirtualCurrencies].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if an error occurred while fetching
+ * the virtual currencies.
+ *
+ * @return The [VirtualCurrencies] with the subscriber's virtual currencies.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
+    return suspendCoroutine { continuation ->
+        getVirtualCurrenciesWith(
+            onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) locale. **Note:** this locale only has a region set.
+ * If there is any error, it will return null and log said error.
+ * Coroutine friendly version of [Purchases.getStorefrontLocale].
+ *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always throw an error.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
+ * @return The Store locale. **Note:** this locale only has a region set.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitStorefrontLocale(): Locale {
+    return suspendCoroutine { continuation ->
+        getStorefrontLocaleWith(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Result of creating a support ticket.
+ *
+ * @property success Boolean indicating whether the ticket was successfully sent.
+ */
+@InternalRevenueCatAPI
+public data class CreateSupportTicketResult(
+    public val success: Boolean,
+)
+
+/**
+ * Creates a support ticket for the current user.
+ * Coroutine friendly version of [Purchases.createSupportTicket].
+ *
+ * @param email The user's email address for the support ticket.
+ * @param description The description of the support request.
+ * @return [CreateSupportTicketResult] indicating whether the ticket was successfully sent.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error creating the support ticket.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+@InternalRevenueCatAPI
+public suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
+    return suspendCoroutine { continuation ->
+        createSupportTicket(
+            email = email,
+            description = description,
+            onSuccess = { wasSent -> continuation.resume(CreateSupportTicketResult(success = wasSent)) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
     }
 }

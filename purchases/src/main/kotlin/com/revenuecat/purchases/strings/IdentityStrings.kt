@@ -3,6 +3,7 @@ package com.revenuecat.purchases.strings
 internal object IdentityStrings {
     const val LOGGING_IN = "Logging in from %s -> %s"
     const val LOG_IN_SUCCESSFUL = "Logged in successfully as %s. Created: %s"
+    const val ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL = "Successfully aliased old user ID %s to current user ID %s."
     const val LOG_IN_ERROR_MISSING_APP_USER_ID = "Error logging in: appUserID can't be null, empty or blank"
     const val IDENTIFYING_APP_USER_ID = "Identifying App User ID: %s"
     const val EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS = "Identifying with empty App User ID will be " +
@@ -15,4 +16,6 @@ internal object IdentityStrings {
     const val SWITCHING_USER = "Switching to user %s."
     const val SWITCHING_USER_SAME_APP_USER_ID = "switchUser called with the same appUserID as the current user %s. " +
         "This has no effect."
+    const val CONFIGURING_WITH_PREVIEW_MODE_USER_ID = "Configuring with UI preview mode user ID"
+    const val OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE = "Operation not supported in UI preview mode"
 }

@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -71,6 +72,9 @@ class OfflineEntitlementsManagerTest {
         every {
             appConfig.enableOfflineEntitlements
         } returns true
+        every {
+            appConfig.store
+        } returns Store.PLAY_STORE
 
         offlineEntitlementsManager = OfflineEntitlementsManager(
             backend,
@@ -196,6 +200,13 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if custom entitlements computation mode`() {
         every { appConfig.customEntitlementComputation } returns true
+        val isServerError = true
+        assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
+    }
+
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if using test store`() {
+        every { appConfig.store } returns Store.TEST_STORE
         val isServerError = true
         assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
     }

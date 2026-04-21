@@ -1,6 +1,8 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.models.StoreProduct
+import dev.drewhamilton.poko.Poko
+import java.net.URL
 
 /**
  * Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements
@@ -9,12 +11,16 @@ import com.revenuecat.purchases.models.StoreProduct
  * @property product [StoreProduct] assigned to this package.
  * @property offering offering Id this package was returned from.
  * @property presentedOfferingContext [PresentedOfferingContext] from which this package was obtained.
+ * @property webCheckoutURL If the Offering has an associated Web Purchase Link with a product in this package,
+ * this will be the URL for it linking directly to purchase this package.
  */
-data class Package(
-    val identifier: String,
-    val packageType: PackageType,
-    val product: StoreProduct,
-    val presentedOfferingContext: PresentedOfferingContext,
+@Poko
+public class Package @JvmOverloads constructor(
+    public val identifier: String,
+    public val packageType: PackageType,
+    public val product: StoreProduct,
+    public val presentedOfferingContext: PresentedOfferingContext,
+    public val webCheckoutURL: URL? = null,
 ) {
     @Deprecated(
         "Use constructor with presentedOfferingContext instead",
@@ -23,7 +29,7 @@ data class Package(
                 "PresentedOfferingContext(offeringIdentifier = offering))",
         ),
     )
-    constructor(
+    public constructor(
         identifier: String,
         packageType: PackageType,
         product: StoreProduct,
@@ -33,20 +39,31 @@ data class Package(
         packageType,
         product,
         PresentedOfferingContext(offeringIdentifier = offering),
+        webCheckoutURL = null,
     )
 
     @Deprecated(
         "Use presentedOfferingContext.offeringIdentifier instead",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val offering: String
+    public val offering: String
         get() = presentedOfferingContext.offeringIdentifier ?: ""
+
+    internal fun copy(presentedOfferingContext: PresentedOfferingContext): Package {
+        return Package(
+            identifier = this.identifier,
+            packageType = this.packageType,
+            product = this.product.copyWithPresentedOfferingContext(presentedOfferingContext),
+            presentedOfferingContext = presentedOfferingContext,
+            webCheckoutURL = this.webCheckoutURL,
+        )
+    }
 }
 
 /**
  *  Enumeration of all possible Package types.
  */
-enum class PackageType(val identifier: String?) {
+public enum class PackageType(public val identifier: String?) {
     /**
      * A package that was defined with a custom identifier.
      */

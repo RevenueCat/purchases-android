@@ -1,5 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -7,7 +8,7 @@ import com.revenuecat.purchases.models.TestStoreProduct
 
 @Suppress("unused", "UNUSED_VARIABLE", "LongMethod", "DEPRECATION")
 private class TestStoreProductAPI {
-    fun checkConstructor(price: Price, period: Period?) {
+    fun checkConstructor(price: Price, period: Period?, presentedOfferingContext: PresentedOfferingContext?) {
         TestStoreProduct(
             id = "ID",
             title = "title",
@@ -73,6 +74,15 @@ private class TestStoreProductAPI {
             description = "description",
             period = period,
             introPrice = price,
+        )
+        TestStoreProduct(
+            id = "ID",
+            name = "name",
+            title = "title",
+            price = price,
+            description = "description",
+            period = period,
+            presentedOfferingContext = presentedOfferingContext,
         )
     }
 

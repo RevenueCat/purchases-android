@@ -9,4 +9,5 @@ internal class PurchaseContext(
     val presentedOfferingContext: PresentedOfferingContext?,
     val selectedSubscriptionOptionId: String?,
     val replacementMode: GoogleReplacementMode?,
+    val subscriptionOptionIdForProductIDs: Map<String, String>?,
 )

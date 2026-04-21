@@ -49,7 +49,6 @@ Sometimes you might need to release a patch on a version that's not the latest. 
 Fixing timeouts when closing repository
 =========
 Sonatype might fail when performing the `closeAndRelease` step. Fortunately, we can close and release manually if the publish task succeeds.
-- Head to https://oss.sonatype.org/#stagingRepositories, login using the credentials in 1Password
-- That link should redirect you to the Staging Repositories section, if it doesn't go to that section on the left hand side of the website, under the Build Promotion section.
+- Head to https://central.sonatype.com/publishing/deployments, login using the credentials in 1Password
 - You should see one staging repository there. If there are more than one, drop all of them and rerun the failing job in CircleCI.
 - Select the only repository available, then do Close. When close finishes, do Release and automatically drop the repository.

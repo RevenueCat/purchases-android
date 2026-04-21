@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
-import android.content.res.AssetManager
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -11,15 +10,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
+import com.revenuecat.purchases.ui.revenuecatui.components.countdown.rememberCountdownState
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -27,85 +30,126 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.resolve
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
+@Stable
 @JvmSynthetic
 @Composable
 internal fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     paywallState: PaywallState.Loaded.Components,
-): TextComponentState =
-    rememberUpdatedTextComponentState(
-        style = style,
-        localeProvider = { paywallState.locale },
-        selectedPackageProvider = { paywallState.selectedPackageInfo?.rcPackage },
-        selectedTabIndexProvider = { paywallState.selectedTabIndex },
-    )
+): TextComponentState = rememberUpdatedTextComponentState(
+    style = style,
+    localeProvider = { paywallState.locale },
+    selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
+    selectedTabIndexProvider = { paywallState.selectedTabIndex },
+    selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
+    customVariablesProvider = { paywallState.mergedCustomVariables },
+)
 
+@Suppress("LongParameterList")
+@Stable
 @JvmSynthetic
 @Composable
-internal fun rememberUpdatedTextComponentState(
+private fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
     localeProvider: () -> Locale,
-    selectedPackageProvider: () -> Package?,
+    selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
+    selectedOfferEligibilityProvider: () -> OfferEligibility,
+    customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val context = LocalContext.current
+
+    val countdownState = style.countdownDate?.let { date ->
+        rememberCountdownState(date)
+    }
 
     return remember(style) {
         TextComponentState(
             initialWindowSize = windowSize,
             style = style,
             localeProvider = localeProvider,
-            selectedPackageProvider = selectedPackageProvider,
+            selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
-            assets = context.resources.assets,
+            selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            customVariablesProvider = customVariablesProvider,
         )
     }.apply {
         update(
             windowSize = windowSize,
+            countdownTime = countdownState?.countdownTime,
         )
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
-    private val selectedPackageProvider: () -> Package?,
+    private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
-    private val assets: AssetManager,
+    private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+    private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
-    private val selected by derivedStateOf {
-        if (style.rcPackage != null) {
-            style.rcPackage.identifier == selectedPackageProvider()?.identifier
-        } else if (style.tabIndex != null) {
-            style.tabIndex == selectedTabIndexProvider()
-        } else {
-            false
-        }
-    }
+
+    private val packageAwareDelegate = PackageAwareDelegate(
+        style = style,
+        selectedPackageInfoProvider = selectedPackageInfoProvider,
+        selectedTabIndexProvider = selectedTabIndexProvider,
+        selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+    )
+
+    /**
+     * The current countdown time, if this text is inside a countdown component.
+     *
+     * Updated every second via [update] when countdown is active. Triggers recomposition
+     * to update countdown variables (e.g., {{ count_hours_without_zero }}) in the text.
+     * Null if this text is not inside a countdown component.
+     */
+    var countdownTime by mutableStateOf<CountdownTime?>(null)
+        private set
+
     private val localeId by derivedStateOf { localeProvider().toLocaleId() }
 
     /**
      * The package to take variable values from and to consider for intro offer eligibility.
      */
     val applicablePackage by derivedStateOf {
-        style.rcPackage ?: selectedPackageProvider()
+        style.rcPackage ?: selectedPackageInfoProvider()?.rcPackage
     }
+
+    val subscriptionOption: SubscriptionOption? by derivedStateOf {
+        style.resolvedOffer?.subscriptionOption ?: selectedPackageInfoProvider()?.resolvedOffer?.subscriptionOption
+    }
+
+    /**
+     * How countdown variables should be displayed (component hours vs total hours).
+     */
+    @get:JvmSynthetic
+    val countFrom: CountdownComponent.CountFrom
+        get() = style.countFrom
 
     private val presentedPartial by derivedStateOf {
         val windowCondition = ScreenCondition.from(windowSize)
-        val componentState = if (selected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
-        val introOfferEligibility = applicablePackage?.introEligibility ?: IntroOfferEligibility.INELIGIBLE
+        val componentState =
+            if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, introOfferEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            packageAwareDelegate.offerEligibility,
+            componentState,
+            conditionContext = ConditionContext(
+                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                customVariables = customVariablesProvider(),
+            ),
+        )
     }
 
     @get:JvmSynthetic
@@ -143,7 +187,7 @@ internal class TextComponentState(
 
     @get:JvmSynthetic
     val fontFamily by derivedStateOf {
-        fontSpec?.resolve(assets = assets, weight = fontWeight ?: FontWeight.Normal, style = FontStyle.Normal)
+        fontSpec?.resolve(weight = fontWeight ?: FontWeight.Normal, style = FontStyle.Normal)
     }
 
     @get:JvmSynthetic
@@ -171,7 +215,9 @@ internal class TextComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        countdownTime: CountdownTime? = this.countdownTime,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        this.countdownTime = countdownTime
     }
 }

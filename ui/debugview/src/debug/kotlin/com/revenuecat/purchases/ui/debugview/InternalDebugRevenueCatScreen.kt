@@ -11,11 +11,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesTransactionException
@@ -49,7 +49,7 @@ internal fun InternalDebugRevenueCatScreen(
             .padding(bottom = 16.dp),
     ) {
         val currentActivity = activity ?: LocalContext.current.findActivity()
-        val state = viewModel.state.collectAsState().value
+        val state = viewModel.state.collectAsStateWithLifecycle().value
         DisplayToastMessageIfNeeded(viewModel, state = state)
         Text(
             text = "RevenueCat Debug Menu",

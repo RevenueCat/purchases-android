@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -80,10 +82,15 @@ internal fun RemoteImage(
     )
 }
 
+@Stable
 private sealed class ImageSource {
+
+    @Immutable
     data class Local(@DrawableRes val resource: Int) : ImageSource() {
         override val data: Any = resource
     }
+
+    @Immutable
     data class Remote(val urlString: String) : ImageSource() {
         override val data: Any = urlString
     }

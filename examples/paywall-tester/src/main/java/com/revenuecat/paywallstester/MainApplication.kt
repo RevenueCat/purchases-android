@@ -4,15 +4,19 @@ import android.app.Application
 import android.util.Log
 import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DebugEventListener
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.models.StoreTransaction
 
 private const val TAG = "MainApplication"
 
 class MainApplication : Application() {
 
+    @OptIn(InternalRevenueCatAPI::class)
     override fun onCreate() {
         super.onCreate()
 
@@ -21,6 +25,9 @@ class MainApplication : Application() {
         val apiKey = ApiKeyStore(this).getLastUsedApiKey()
         val configurePurchases = ConfigurePurchasesUseCase(this)
         configurePurchases(apiKey)
+        Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
+            Log.d(TAG, "DebugEvent: ${event.name} ${event.properties}")
+        }
         Purchases.sharedInstance.customerCenterListener =
             object : CustomerCenterListener {
                 override fun onRestoreStarted() {
@@ -49,6 +56,21 @@ class MainApplication : Application() {
                         "CustomerCenterListener: onFeedbackSurveyCompleted called with option ID: " +
                             feedbackSurveyOptionId,
                     )
+                }
+
+                override fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
+                    Log.d(
+                        TAG,
+                        "CustomerCenterListener: onCustomActionSelected called with action: $actionIdentifier, " +
+                            "purchaseIdentifier: $purchaseIdentifier",
+                    )
+                }
+
+                override fun onPromotionalOfferSucceeded(
+                    customerInfo: CustomerInfo,
+                    transaction: StoreTransaction,
+                ) {
+                    Log.d(TAG, "CustomerCenterListener: onPromotionalOfferSucceeded called")
                 }
             }
     }

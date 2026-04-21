@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -49,6 +50,7 @@ internal fun Shadow.toShadowStyles(
             )
         }
 
+@Stable
 @Composable
 @JvmSynthetic
 internal fun rememberShadowStyle(shadow: ShadowStyles): ShadowStyle {

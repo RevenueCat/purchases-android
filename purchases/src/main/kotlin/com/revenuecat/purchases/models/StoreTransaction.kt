@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.utils.JSONObjectParceler
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -15,97 +17,150 @@ import org.json.JSONObject
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class StoreTransaction(
+@Poko
+public class StoreTransaction @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
     /**
      * Unique Google order identifier for the purchased transaction.
      *
      * Only available for non-restored Google purchases. Always null for Amazon.
      */
-    val orderId: String?,
+    public val orderId: String?,
 
     /**
      * Product IDs purchased.
      *
-     * If size > 1, indicates that a multi-line purchase occurred, which RevenueCat does not support.
-     * Only the first productId will be processed by the SDK.
+     * If size > 1, indicates that a multi-line purchase occurred.
      */
-    val productIds: List<String>,
+    public val productIds: List<String>,
 
     /**
      * Type of the product associated with the purchase.
      */
-    val type: ProductType,
+    public val type: ProductType,
 
     /**
      * Time the product was purchased, in milliseconds since the epoch.
      */
-    val purchaseTime: Long,
+    public val purchaseTime: Long,
 
     /**
      * Token that uniquely identifies a purchase.
      */
-    val purchaseToken: String,
+    public val purchaseToken: String,
 
     /**
      * State of the purchase.
      */
-    val purchaseState: PurchaseState,
+    public val purchaseState: PurchaseState,
 
     /**
      * Whether the subscription renews automatically.
      *
      * Null for Google restored purchases.
      */
-    val isAutoRenewing: Boolean?,
+    public val isAutoRenewing: Boolean?,
 
     /**
      * String containing the signature of the Google purchase data that was signed with the private key of
-     * the developer. Always null for Amazon.
+     * the developer. Always null for Amazon and Galaxy.
      */
-    val signature: String?,
+    public val signature: String?,
 
     /**
      * Returns a JSONObject format that contains details about the purchase.
      */
-    val originalJson: JSONObject,
+    public val originalJson: JSONObject,
 
     /**
      * Context of the offering that was presented when making the purchase.
      */
-    val presentedOfferingContext: PresentedOfferingContext?,
+    public val presentedOfferingContext: PresentedOfferingContext?,
 
     /**
-     * Amazon's store user id. Null for Google
+     * Amazon's store user id. Null for Google and Galaxy
      */
-    val storeUserID: String?,
+    public val storeUserID: String?,
 
     /**
      * One of [PurchaseType] indicating the type of purchase.
      */
-    val purchaseType: PurchaseType,
+    public val purchaseType: PurchaseType,
 
     /**
-     * Amazon's marketplace. Null for Google
+     * Amazon's marketplace. Null for Google and Galaxy
      */
-    val marketplace: String?,
+    public val marketplace: String?,
 
     /**
      * The id of the SubscriptionOption purchased.
      * In Google, this will be calculated from the basePlanId and offerId
      * Null for restored transactions and purchases initiated outside of the app.
      */
-    val subscriptionOptionId: String?,
+    public val subscriptionOptionId: String?,
+
+    /**
+     * The id of the SubscriptionOption purchased for each product ID.
+     *
+     * In Google, this will be calculated from the basePlanId and offerId
+     * Null in Google for restored transactions and purchases initiated outside of the app.
+     * Null for Amazon and Galaxy purchases.
+     */
+    // We've marked this with @get:JvmSynthetic because its synthesized
+    // getter was not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
+    // applied to it, and there doesn't appear to be a way to do so.
+    // We can remove this @get:JvmSynthetic annotation when we remove the experimental annotation from this
+    // property.
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @get:JvmSynthetic
+    public val subscriptionOptionIdForProductIDs: Map<String, String>?,
 
     /**
      * The replacementMode used to perform the upgrade/downgrade of this purchase.
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
      * This is not available for Amazon purchases.
      */
-    val replacementMode: ReplacementMode?,
+    public val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    public constructor(
+        orderId: String?,
+        productIds: List<String>,
+        type: ProductType,
+        purchaseTime: Long,
+        purchaseToken: String,
+        purchaseState: PurchaseState,
+        isAutoRenewing: Boolean?,
+        signature: String?,
+        originalJson: JSONObject,
+        presentedOfferingContext: PresentedOfferingContext?,
+        storeUserID: String?,
+        purchaseType: PurchaseType,
+        marketplace: String?,
+        subscriptionOptionId: String?,
+        replacementMode: ReplacementMode?,
+    ) : this(
+        orderId = orderId,
+        productIds = productIds,
+        type = type,
+        purchaseTime = purchaseTime,
+        purchaseToken = purchaseToken,
+        purchaseState = purchaseState,
+        isAutoRenewing = isAutoRenewing,
+        signature = signature,
+        originalJson = originalJson,
+        presentedOfferingContext = presentedOfferingContext,
+        storeUserID = storeUserID,
+        purchaseType = purchaseType,
+        marketplace = marketplace,
+        subscriptionOptionId = subscriptionOptionId,
+        subscriptionOptionIdForProductIDs = emptyMap(),
+        replacementMode = replacementMode,
+    )
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Deprecated("Use constructor with presentedOfferingContext instead")
-    constructor(
+    public constructor(
         orderId: String?,
         productIds: List<String>,
         type: ProductType,
@@ -136,6 +191,7 @@ data class StoreTransaction(
         purchaseType,
         marketplace,
         subscriptionOptionId,
+        emptyMap(),
         replacementMode,
     )
 
@@ -146,7 +202,7 @@ data class StoreTransaction(
         "Use presentedOfferingContext",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val presentedOfferingIdentifier: String?
+    public val presentedOfferingIdentifier: String?
         get() = presentedOfferingContext?.offeringIdentifier
 
     /**
@@ -157,12 +213,12 @@ data class StoreTransaction(
         "Replaced with productIds",
         ReplaceWith("productIds"),
     )
-    val skus: List<String>
+    public val skus: List<String>
         get() = productIds
 
-    override fun equals(other: Any?) = other is StoreTransaction &&
+    public override fun equals(other: Any?): Boolean = other is StoreTransaction &&
         ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()
+    public override fun hashCode(): Int = ComparableData(this).hashCode()
 }
 
 /**
@@ -204,8 +260,9 @@ private data class ComparableData(
     )
 }
 
-enum class PurchaseType {
+public enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
     AMAZON_PURCHASE,
+    GALAXY_PURCHASE,
 }

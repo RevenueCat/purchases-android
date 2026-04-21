@@ -4,6 +4,8 @@ import android.graphics.Color
 import android.os.Build
 import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
 import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
@@ -18,24 +20,26 @@ private const val COLOR_WHITE_HEX = 0xFFFFFF
 /**
  * Represents a color to be used by `RevenueCatUI`.
  */
-data class PaywallColor(
+@InternalRevenueCatAPI
+@Poko
+public class PaywallColor(
     /**
      * The original Hex representation for this color.
      */
-    val stringRepresentation: String,
+    public val stringRepresentation: String,
     /**
      * The underlying `Color`.
      */
     @RequiresApi(Build.VERSION_CODES.O)
-    val underlyingColor: Color?,
+    public val underlyingColor: Color?,
 ) {
     /**
      * The color converted to a @ColorInt representation
      */
     @ColorInt
-    val colorInt: Int = parseRGBAColor(stringRepresentation)
+    public val colorInt: Int = parseRGBAColor(stringRepresentation)
 
-    object Serializer : KSerializer<PaywallColor> {
+    public object Serializer : KSerializer<PaywallColor> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PaywallColor", PrimitiveKind.STRING)
 
         override fun deserialize(decoder: Decoder): PaywallColor {
@@ -50,7 +54,7 @@ data class PaywallColor(
     /**
      * Creates a color from a Hex string: `#RRGGBB` or `#RRGGBBAA`.
      */
-    constructor(stringRepresentation: String) : this(
+    public constructor(stringRepresentation: String) : this(
         stringRepresentation,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Color.valueOf(parseRGBAColor(stringRepresentation))
@@ -59,7 +63,7 @@ data class PaywallColor(
         },
     )
 
-    constructor(@ColorInt colorInt: Int) : this(
+    public constructor(@ColorInt colorInt: Int) : this(
         stringRepresentation = String.format(Locale.US, COLOR_HEX_FORMAT, COLOR_WHITE_HEX and colorInt),
         underlyingColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Color.valueOf(colorInt)

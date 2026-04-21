@@ -6,37 +6,39 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.responses.SubscriptionInfoResponse
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
+import dev.drewhamilton.poko.Poko
 import kotlinx.parcelize.Parcelize
 import org.json.JSONObject
 import java.util.Date
 import java.util.Locale
 
 @Parcelize
-data class Transaction(
-    val transactionIdentifier: String,
+@Poko
+public class Transaction(
+    public val transactionIdentifier: String,
     @Deprecated(
         "Use transactionIdentifier instead",
         ReplaceWith("transactionIdentifier"),
     )
-    val revenuecatId: String,
-    val productIdentifier: String,
+    public val revenuecatId: String,
+    public val productIdentifier: String,
     @Deprecated(
         "Use productIdentifier instead",
         ReplaceWith("productIdentifier"),
     )
-    val productId: String,
-    val purchaseDate: Date,
-    val storeTransactionId: String?,
-    val store: Store,
-    val displayName: String?,
-    val isSandbox: Boolean = false,
-    val originalPurchaseDate: Date?,
-    val price: Price?,
+    public val productId: String,
+    public val purchaseDate: Date,
+    public val storeTransactionId: String?,
+    public val store: Store,
+    public val displayName: String?,
+    public val isSandbox: Boolean = false,
+    public val originalPurchaseDate: Date?,
+    public val price: Price?,
 ) : Parcelable {
 
     @Deprecated(
         message = """
-            Use the constructor with all fields instead. This constructor is missing the new fields: displayName, 
+            Use the constructor with all fields instead. This constructor is missing the new fields: displayName,
             isSandbox, originalPurchaseDate, and price
             """,
         replaceWith = ReplaceWith(
@@ -44,7 +46,7 @@ data class Transaction(
                 "storeTransactionId, store, displayName, isSandbox, originalPurchaseDate, price)",
         ),
     )
-    constructor(
+    public constructor(
         transactionIdentifier: String,
         revenuecatId: String,
         productIdentifier: String,

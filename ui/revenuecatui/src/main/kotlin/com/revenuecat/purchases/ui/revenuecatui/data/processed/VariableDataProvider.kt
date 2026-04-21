@@ -14,6 +14,8 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPerPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.util.Currency
 import java.util.Locale
@@ -33,44 +35,64 @@ internal class VariableDataProvider(
             "Application Name"
         }
 
-    fun localizedPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPrice(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         return rcPackage.product.price.localized(locale, showZeroDecimalPlacePrices)
     }
 
-    fun localizedPricePerDay(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerDay(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerDay = rcPackage.product.pricePerDay(locale) ?: return null
         return if (showZeroDecimalPlacePrices && pricePerDay.endsIn00Cents()) {
             pricePerDay.getTruncatedFormatted(locale)
         } else {
-            pricePerDay.formatted
+            pricePerDay.getFormatted(locale)
         }
     }
 
-    fun localizedPricePerWeek(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerWeek(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerWeek = rcPackage.product.pricePerWeek(locale) ?: return null
 
         return if (showZeroDecimalPlacePrices && pricePerWeek.endsIn00Cents()) {
             pricePerWeek.getTruncatedFormatted(locale)
         } else {
-            pricePerWeek.formatted
+            pricePerWeek.getFormatted(locale)
         }
     }
 
-    fun localizedPricePerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerMonth(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerMonth = rcPackage.product.pricePerMonth(locale) ?: return null
         return if (showZeroDecimalPlacePrices && pricePerMonth.endsIn00Cents()) {
             pricePerMonth.getTruncatedFormatted(locale)
         } else {
-            pricePerMonth.formatted
+            pricePerMonth.getFormatted(locale)
         }
     }
 
-    fun localizedPricePerYear(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedPricePerYear(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
         val pricePerYear = rcPackage.product.pricePerYear(locale) ?: return null
         return if (showZeroDecimalPlacePrices && pricePerYear.endsIn00Cents()) {
             pricePerYear.getTruncatedFormatted(locale)
         } else {
-            pricePerYear.formatted
+            pricePerYear.getFormatted(locale)
         }
     }
 
@@ -81,10 +103,12 @@ internal class VariableDataProvider(
     ): String? {
         val firstIntroPrice = getFirstIntroOfferToApply(rcPackage)?.price ?: return null
 
-        return if (showZeroDecimalPlacePrices && firstIntroPrice.endsIn00Cents()) {
+        return if (firstIntroPrice.amountMicros == 0L) {
+            firstIntroPrice.formatted
+        } else if (showZeroDecimalPlacePrices && firstIntroPrice.endsIn00Cents()) {
             firstIntroPrice.getTruncatedFormatted(locale)
         } else {
-            firstIntroPrice.formatted
+            firstIntroPrice.getFormatted(locale)
         }
     }
 
@@ -93,13 +117,14 @@ internal class VariableDataProvider(
         locale: Locale,
         showZeroDecimalPlacePrices: Boolean,
     ): String? {
-        // always round if rounding on
         val secondIntroPrice = getSecondIntroOfferToApply(rcPackage)?.price ?: return null
 
-        return if (showZeroDecimalPlacePrices && secondIntroPrice.endsIn00Cents()) {
+        return if (secondIntroPrice.amountMicros == 0L) {
+            secondIntroPrice.formatted
+        } else if (showZeroDecimalPlacePrices && secondIntroPrice.endsIn00Cents()) {
             secondIntroPrice.getTruncatedFormatted(locale)
         } else {
-            secondIntroPrice.formatted
+            secondIntroPrice.getFormatted(locale)
         }
     }
 
@@ -152,22 +177,35 @@ internal class VariableDataProvider(
         return getSecondIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
 
-    fun localizedPricePerPeriod(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPricePerPeriod(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         val product = rcPackage.product
         return product.period?.let {
-            return product.price.localizedPerPeriod(it, locale, showZeroDecimalPlacePrices)
+            product.price.localizedPerPeriod(it, locale, showZeroDecimalPlacePrices)
         } ?: product.price.localized(locale, showZeroDecimalPlacePrices)
     }
 
-    fun localizedPricePerPeriodFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-        val localizedPrice = rcPackage.product.price.localized(locale, showZeroDecimalPlacePrices)
-        return rcPackage.product.period?.let { period ->
-            val formattedPeriod = period.localizedUnitPeriod(locale)
+    fun localizedPricePerPeriodFull(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
+        val product = rcPackage.product
+        val localizedPrice = product.price.localized(locale, showZeroDecimalPlacePrices)
+        return product.period?.let {
+            val formattedPeriod = it.localizedUnitPeriod(locale)
             "$localizedPrice/$formattedPeriod"
         } ?: localizedPrice
     }
 
-    fun localizedPriceAndPerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPriceAndPerMonth(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         if (!rcPackage.isSubscription || rcPackage.isMonthly) {
             return localizedPricePerPeriod(rcPackage, locale, showZeroDecimalPlacePrices)
         }
@@ -177,7 +215,11 @@ internal class VariableDataProvider(
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
-    fun localizedPriceAndPerMonthFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+    fun localizedPriceAndPerMonthFull(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String {
         if (!rcPackage.isSubscription || rcPackage.isMonthly) {
             return localizedPricePerPeriodFull(rcPackage, locale, showZeroDecimalPlacePrices)
         }
@@ -241,6 +283,23 @@ internal fun Price.endsIn00Cents(): Boolean {
     val normalPrice = amountMicros / MICRO_MULTIPLIER
     val roundedPrice = Math.round(normalPrice * 100) / 100.0
     return roundedPrice * 100 % 100 == 0.0
+}
+
+/**
+ * Returns price formatted for the given locale using the price's currency code.
+ * Uses BigDecimal arithmetic to avoid floating-point precision issues.
+ */
+internal fun Price.getFormatted(locale: Locale = Locale.getDefault()): String {
+    val currency = Currency.getInstance(currencyCode)
+    val fractionDigits = currency.defaultFractionDigits.coerceAtLeast(0)
+    val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
+        this.currency = currency
+        maximumFractionDigits = fractionDigits
+        minimumFractionDigits = fractionDigits
+    }
+    val amount = BigDecimal.valueOf(amountMicros)
+        .divide(BigDecimal.valueOf(MICRO_MULTIPLIER.toLong()), fractionDigits, RoundingMode.DOWN)
+    return numberFormat.format(amount)
 }
 
 /**

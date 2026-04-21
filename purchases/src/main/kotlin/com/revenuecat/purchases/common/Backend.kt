@@ -9,31 +9,38 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
+import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrenciesFactory
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+import java.net.URL
 
 internal const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 internal const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -48,7 +55,11 @@ internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, Po
 internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
-internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias OfferingsCallback = Pair<
+    (JSONObject, HTTPResponseOriginalSource) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
+    >
 
 /** @suppress */
 internal typealias PostReceiptDataSuccessCallback = (PostReceiptResponse) -> Unit
@@ -64,23 +75,41 @@ internal typealias PostReceiptDataErrorCallback = (
 internal typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 
 /** @suppress */
+internal typealias AliasCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+
+/** @suppress */
 internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
 internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
+@OptIn(InternalRevenueCatAPI::class)
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
+internal typealias CreateSupportTicketCallback = Pair<(Boolean) -> Unit, (PurchasesError) -> Unit>
+
 internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
+
+internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit, (PurchasesError) -> Unit>
+
+internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
+
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias WorkflowDetailCallback = Pair<(WorkflowDetailResponse) -> Unit, (PurchasesError) -> Unit>
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
     SHOULD_NOT_CONSUME,
+}
+
+internal enum class GetOfferingsErrorHandlingBehavior {
+    SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
+    SHOULD_NOT_FALLBACK,
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -96,6 +125,12 @@ internal class Backend(
         private const val APP_USER_ID = "app_user_id"
         private const val FETCH_TOKEN = "fetch_token"
         private const val NEW_APP_USER_ID = "new_app_user_id"
+
+        /**
+         * This version should be bumped whenever there is a change to the payload of POST receipt that the backend
+         * may need to handle differently. It should be kept in sync with the iOS SDK.
+         */
+        private const val POST_RECEIPT_PAYLOAD_VERSION = 1
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal val json = Json {
@@ -113,10 +148,14 @@ internal class Backend(
     @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var offeringsCallbacks = mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<OfferingsCallback>>()
+    @Volatile var offeringsCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<OfferingsCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var aliasCallbacks = mutableMapOf<CallbackCacheKey, MutableList<AliasCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
@@ -131,7 +170,21 @@ internal class Backend(
     @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
 
     @get:Synchronized @set:Synchronized
+    @Volatile var createSupportTicketCallbacks = mutableMapOf<String, MutableList<CreateSupportTicketCallback>>()
+
+    @get:Synchronized @set:Synchronized
     @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var virtualCurrenciesCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<VirtualCurrenciesCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var workflowDetailCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowDetailCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -212,11 +265,10 @@ internal class Backend(
         finishTransactions: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
-        storeAppUserID: String?,
-        @SuppressWarnings("UnusedPrivateMember")
-        marketplace: String? = null,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
+        // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataStore
+        purchasesAreCompletedBy: PurchasesAreCompletedBy,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -227,13 +279,13 @@ internal class Backend(
             finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
-            storeAppUserID,
+            purchasesAreCompletedBy.toString(),
         )
 
         val body = mapOf(
             FETCH_TOKEN to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
-            "platform_product_ids" to receiptInfo.platformProductIds?.map { it.asMap },
+            "platform_product_ids" to receiptInfo.platformProductIds,
             APP_USER_ID to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
@@ -242,15 +294,18 @@ internal class Backend(
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
             "observer_mode" to !finishTransactions,
+            "purchase_completed_by" to purchasesAreCompletedBy.name.lowercase(),
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
             "normal_duration" to receiptInfo.duration,
-            "store_user_id" to storeAppUserID,
+            "store_user_id" to receiptInfo.storeUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
+            "proration_mode" to receiptInfo.replacementMode?.backendName,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "sdk_originated" to receiptInfo.sdkOriginated,
+            "payload_version" to POST_RECEIPT_PAYLOAD_VERSION,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(
@@ -259,8 +314,8 @@ internal class Backend(
         )
 
         val extraHeaders = mapOf(
-            "price_string" to receiptInfo.storeProduct?.price?.formatted,
-            "marketplace" to marketplace,
+            "price_string" to receiptInfo.formattedPrice,
+            "marketplace" to receiptInfo.marketplace,
         ).filterNotNullValues()
 
         val call = object : Dispatcher.AsyncCall() {
@@ -325,8 +380,8 @@ internal class Backend(
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        onSuccess: (JSONObject) -> Unit,
-        onError: (PurchasesError, isServerError: Boolean) -> Unit,
+        onSuccess: (JSONObject, HTTPResponseOriginalSource) -> Unit,
+        onError: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
         val path = endpoint.getPath()
@@ -344,11 +399,10 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                val isServerError = false
                 synchronized(this@Backend) {
                     offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
-                    onError(error, isServerError)
+                    onError(error, GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS)
                 }
             }
 
@@ -358,15 +412,20 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body)
+                            onSuccess(result.body, result.originalDataSource)
                         } catch (e: JSONException) {
-                            val isServerError = false
-                            onError(e.toPurchasesError().also { errorLog(it) }, isServerError)
+                            val errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
+                            onError(e.toPurchasesError().also { errorLog(it) }, errorBehavior)
                         }
                     } else {
+                        val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
+                            GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
+                        } else {
+                            GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK
+                        }
                         onError(
                             result.toPurchasesError().also { errorLog(it) },
-                            RCHTTPStatusCodes.isServerError(result.responseCode),
+                            errorBehavior,
                         )
                     }
                 }
@@ -442,6 +501,57 @@ internal class Backend(
         }
     }
 
+    fun aliasUsers(
+        oldAppUserID: String,
+        newAppUserID: String,
+        onSuccessHandler: () -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val cacheKey = listOfNotNull(
+            oldAppUserID,
+            newAppUserID,
+        )
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                val body = mapOf(
+                    APP_USER_ID to oldAppUserID,
+                    NEW_APP_USER_ID to newAppUserID,
+                )
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    Endpoint.AliasUsers(oldAppUserID),
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    aliasCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                if (result.isSuccessful()) {
+                    synchronized(this@Backend) {
+                        aliasCallbacks.remove(cacheKey)
+                    }?.forEach { (onSuccessHandler, _) ->
+                        onSuccessHandler()
+                    }
+                } else {
+                    onError(result.toPurchasesError().also { errorLog(it) })
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            aliasCallbacks.addCallback(call, dispatcher, cacheKey, onSuccessHandler to onErrorHandler)
+        }
+    }
+
     fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
@@ -498,6 +608,8 @@ internal class Backend(
 
     fun postEvents(
         paywallEventRequest: EventsRequest,
+        baseURL: URL,
+        delay: Delay,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
@@ -515,8 +627,8 @@ internal class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    AppConfig.paywallEventsURL,
-                    Endpoint.PostPaywallEvents,
+                    baseURL,
+                    Endpoint.PostEvents,
                     body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
@@ -550,7 +662,7 @@ internal class Backend(
                 eventsDispatcher,
                 paywallEventRequest.cacheKey,
                 onSuccessHandler to onErrorHandler,
-                Delay.LONG,
+                delay,
             )
         }
     }
@@ -587,7 +699,7 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(ProductEntitlementMapping.fromJson(result.body))
+                            onSuccess(ProductEntitlementMapping.fromNetwork(result.body, result))
                         } catch (e: JSONException) {
                             onError(e.toPurchasesError().also { errorLog(it) })
                         }
@@ -667,6 +779,70 @@ internal class Backend(
         }
     }
 
+    fun postCreateSupportTicket(
+        appUserID: String,
+        email: String,
+        description: String,
+        onSuccessHandler: (Boolean) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.PostCreateSupportTicket
+        val path = endpoint.getPath()
+        val body = mapOf(
+            APP_USER_ID to appUserID,
+            "customer_email" to email,
+            "issue_description" to description,
+        )
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    createSupportTicketCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    createSupportTicketCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val wasSent = result.body.optBoolean("sent", false)
+                            onSuccessHandler(wasSent)
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            createSupportTicketCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccessHandler to onErrorHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
     @Suppress("NestedBlockDepth")
     fun postRedeemWebPurchase(
         appUserID: String,
@@ -737,6 +913,194 @@ internal class Backend(
                 dispatcher,
                 path,
                 onResultHandler,
+                Delay.NONE,
+            )
+        }
+    }
+
+    fun getVirtualCurrencies(
+        appUserID: String,
+        appInBackground: Boolean,
+        onSuccess: (VirtualCurrencies) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetVirtualCurrencies(userId = appUserID)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    virtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    virtualCurrenciesCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val virtualCurrencies = VirtualCurrenciesFactory.buildVirtualCurrencies(
+                                httpResult = result,
+                            )
+                            onSuccessHandler(virtualCurrencies)
+                        } catch (e: JSONException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            virtualCurrenciesCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getWorkflow(
+        appUserID: String,
+        workflowId: String,
+        appInBackground: Boolean,
+        onSuccess: (WorkflowDetailResponse) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    workflowDetailCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    workflowDetailCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccessHandler(
+                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payload),
+                            )
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            workflowDetailCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getWebBillingProducts(
+        appUserID: String,
+        productIds: Set<String>,
+        onSuccess: (WebBillingProductsResponse) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.WebBillingGetProducts(appUserID, productIds)
+        val path = endpoint.getPath()
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    webBillingProductsCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    webBillingProductsCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val productsResponse = json.decodeFromString<WebBillingProductsResponse>(
+                                result.payload,
+                            )
+                            onSuccessHandler(productsResponse)
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            webBillingProductsCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccess to onError,
                 Delay.NONE,
             )
         }
@@ -822,23 +1186,3 @@ internal fun PricingPhase.toMap(): Map<String, Any?> {
         "priceCurrencyCode" to this.price.currencyCode,
     )
 }
-
-/**
- * [GoogleReplacementMode] used to be `GoogleProrationMode`. The backend still expects these values, hence this enum.
- */
-private enum class LegacyProrationMode {
-    IMMEDIATE_WITHOUT_PRORATION,
-    IMMEDIATE_WITH_TIME_PRORATION,
-    IMMEDIATE_AND_CHARGE_FULL_PRICE,
-    IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
-    DEFERRED,
-}
-
-private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
-    get() = when (this) {
-        GoogleReplacementMode.WITHOUT_PRORATION -> LegacyProrationMode.IMMEDIATE_WITHOUT_PRORATION
-        GoogleReplacementMode.WITH_TIME_PRORATION -> LegacyProrationMode.IMMEDIATE_WITH_TIME_PRORATION
-        GoogleReplacementMode.CHARGE_FULL_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
-        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
-        GoogleReplacementMode.DEFERRED -> LegacyProrationMode.DEFERRED
-    }

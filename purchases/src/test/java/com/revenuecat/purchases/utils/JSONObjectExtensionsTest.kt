@@ -73,4 +73,30 @@ class JSONObjectExtensionsTest {
             ),
         )
     }
+
+    fun `test copy not deep`() {
+        val jsonObject = JSONObject(fromMap)
+        val jsonObjectCopy = jsonObject.copy(deep = false)
+
+        jsonObject.getJSONObject("dictionary").put("new_value_key", "new_value")
+
+        assertThat(jsonObjectCopy.getJSONObject("dictionary").getString("new_value_key")).isEqualTo("new_value")
+
+        jsonObject.put("new_top_level_key", "new_top_level_value")
+
+        assertThat(jsonObjectCopy.has("new_top_level_key")).isFalse
+    }
+
+    fun `test copy deep`() {
+        val jsonObject = JSONObject(fromMap)
+        val jsonObjectCopy = jsonObject.copy(deep = true)
+
+        jsonObject.getJSONObject("dictionary").put("new_value_key", "new_value")
+
+        assertThat(jsonObjectCopy.getJSONObject("dictionary").has("new_value_key")).isFalse
+
+        jsonObject.put("new_top_level_key", "new_top_level_value")
+
+        assertThat(jsonObjectCopy.has("new_top_level_key")).isFalse
+    }
 }

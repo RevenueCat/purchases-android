@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
@@ -50,11 +50,33 @@ class BackendPaywallEventTest {
                 appUserID = "appUserID",
                 sessionID = "sessionID",
                 offeringID = "offeringID",
+                paywallID = "paywallID",
                 paywallRevision = 5,
                 timestamp = 123456789,
                 displayMode = "footer",
                 darkMode = true,
                 localeIdentifier = "en_US",
+            )
+        )
+    ).map { it.toBackendEvent() })
+
+    private val exitOfferEventRequest = EventsRequest(listOf(
+        BackendStoredEvent.Paywalls(
+            BackendEvent.Paywalls(
+                id = "exit-offer-id",
+                version = 1,
+                type = PaywallEventType.EXIT_OFFER.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallID = "paywallID",
+                paywallRevision = 3,
+                timestamp = 123456789,
+                displayMode = "fullscreen",
+                darkMode = false,
+                localeIdentifier = "en_US",
+                exitOfferType = "dismiss",
+                exitOfferingID = "exit-offering-id",
             )
         )
     ).map { it.toBackendEvent() })
@@ -100,6 +122,8 @@ class BackendPaywallEventTest {
         mockHttpResult()
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = {},
             onErrorHandler = { _, _ -> },
         )
@@ -114,6 +138,7 @@ class BackendPaywallEventTest {
                         "\"app_user_id\":\"appUserID\"," +
                         "\"session_id\":\"sessionID\"," +
                         "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
                         "\"paywall_revision\":5," +
                         "\"timestamp\":123456789," +
                         "\"display_mode\":\"footer\"," +
@@ -126,11 +151,48 @@ class BackendPaywallEventTest {
     }
 
     @Test
+    fun `postPaywallEvents posts exit offer events correctly`() {
+        mockHttpResult()
+        backend.postEvents(
+            exitOfferEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
+            onSuccessHandler = {},
+            onErrorHandler = { _, _ -> },
+        )
+        verifyCallWithBody(
+            "{" +
+                "\"events\":[" +
+                    "{" +
+                        "\"discriminator\":\"paywalls\"," +
+                        "\"id\":\"exit-offer-id\"," +
+                        "\"version\":1," +
+                        "\"type\":\"paywall_exit_offer\"," +
+                        "\"app_user_id\":\"appUserID\"," +
+                        "\"session_id\":\"sessionID\"," +
+                        "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
+                        "\"paywall_revision\":3," +
+                        "\"timestamp\":123456789," +
+                        "\"display_mode\":\"fullscreen\"," +
+                        "\"dark_mode\":false," +
+                        "\"locale\":\"en_US\"," +
+                        "\"exit_offer_type\":\"dismiss\"," +
+                        "\"exit_offering_id\":\"exit-offering-id\"" +
+                    "}" +
+                "]" +
+            "}"
+        )
+    }
+
+    @Test
     fun `postPaywallEvents calls success handler`() {
         mockHttpResult()
         var successCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { successCalled = true },
             onErrorHandler = { _, _ -> fail("Expected success") },
         )
@@ -143,6 +205,8 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, _ -> errorCalled = true },
         )
@@ -155,6 +219,8 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse
@@ -170,6 +236,8 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse
@@ -185,6 +253,8 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isTrue
@@ -211,6 +281,8 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isTrue
@@ -227,6 +299,8 @@ class BackendPaywallEventTest {
         var errorCalled = false
         backend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isFalse()
@@ -242,11 +316,15 @@ class BackendPaywallEventTest {
         val lock = CountDownLatch(2)
         asyncBackend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },
         )
         asyncBackend.postEvents(
             paywallEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
             onSuccessHandler = { lock.countDown() },
             onErrorHandler = { _, _ -> },
         )
@@ -255,7 +333,7 @@ class BackendPaywallEventTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,
-                Endpoint.PostPaywallEvents,
+                Endpoint.PostEvents,
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -269,7 +347,7 @@ class BackendPaywallEventTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,
-                Endpoint.PostPaywallEvents,
+                Endpoint.PostEvents,
                 body = expectedBody,
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -299,7 +377,9 @@ class BackendPaywallEventTest {
                 "{}",
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED
+                VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
             )
         }
     }

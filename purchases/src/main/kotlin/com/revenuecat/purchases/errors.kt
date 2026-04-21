@@ -1,10 +1,11 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import kotlinx.parcelize.Parcelize
 import java.io.Serializable
 
-typealias PurchasesErrorCallback = (PurchasesError) -> Unit
+public typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
 /**
  * This class represents an error
@@ -13,17 +14,18 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
  * error that originated this.
  */
 @Parcelize
-class PurchasesError(
-    val code: PurchasesErrorCode,
-    val underlyingErrorMessage: String? = null,
+@Immutable
+public class PurchasesError(
+    public val code: PurchasesErrorCode,
+    public val underlyingErrorMessage: String? = null,
 ) : Parcelable, Serializable {
 
-    companion object {
+    public companion object {
         private const val serialVersionUID = 81719171L
     }
 
     // Message explaining the error
-    val message: String
+    public val message: String
         get() = code.description
 
     override fun toString(): String {
@@ -50,8 +52,8 @@ class PurchasesError(
 }
 
 @SuppressWarnings("MagicNumber")
-enum class PurchasesErrorCode(val code: Int, val description: String) {
-    UnknownError(0, "Unknown error."),
+public enum class PurchasesErrorCode(public val code: Int, public val description: String) {
+    UnknownError(0, "Unknown error. Check the underlying error for more details."),
     PurchaseCancelledError(1, "Purchase was cancelled."),
     StoreProblemError(2, "There was a problem with the store."),
     PurchaseNotAllowedError(3, "The device or user is not allowed to make the purchase."),
@@ -90,4 +92,5 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
         36,
         "Request failed signature verification. Please see https://rev.cat/trusted-entitlements for more info.",
     ),
+    TestStoreSimulatedPurchaseError(42, "Purchase failure simulated successfully in Test Store."),
 }

@@ -17,6 +17,8 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
+    override val environmentConfig get() = Constants.customEntitlementComputation
+
     private val userID = "integrationTestAppUserID"
 
     @Before
@@ -73,7 +75,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         assertThat(offerings.current?.availablePackages?.get(0)?.product?.sku)
             .isEqualTo(Constants.productIdToPurchase)
 
-        simulateSdkRestart(activity, forceServerErrors = true)
+        simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
 
         val newOfferings = Purchases.sharedInstance.awaitOfferings()
 

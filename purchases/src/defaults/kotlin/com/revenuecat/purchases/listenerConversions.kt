@@ -4,7 +4,8 @@ import android.app.Activity
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
-import com.revenuecat.purchases.interfaces.GetStorefrontCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
+import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -12,6 +13,8 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import java.util.Locale
 
 internal fun logInSuccessListener(
     onSuccess: (customerInfo: CustomerInfo, created: Boolean) -> Unit?,
@@ -78,6 +81,19 @@ internal fun getAmazonLWAConsentStatusListener(
     }
 }
 
+internal fun getVirtualCurrenciesCallback(
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+    onError: (error: PurchasesError) -> Unit,
+) = object : GetVirtualCurrenciesCallback {
+    override fun onReceived(virtualCurrencies: VirtualCurrencies) {
+        onSuccess(virtualCurrencies)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
 @OptIn(InternalRevenueCatAPI::class)
 internal fun getCustomerCenterConfigDataListener(
     onSuccess: (CustomerCenterConfigData) -> Unit,
@@ -93,28 +109,6 @@ internal fun getCustomerCenterConfigDataListener(
 }
 
 /**
- * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
- * If there is any error, it will return null and log said error.
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-@Suppress("unused")
-fun Purchases.getStorefrontCountryCodeWith(
-    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: (storefrontCountryCode: String) -> Unit,
-) {
-    getStorefrontCountryCode(object : GetStorefrontCallback {
-        override fun onReceived(storefrontCountryCode: String) {
-            onSuccess(storefrontCountryCode)
-        }
-
-        override fun onError(error: PurchasesError) {
-            onError(error)
-        }
-    })
-}
-
-/**
  * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
@@ -125,7 +119,7 @@ fun Purchases.getStorefrontCountryCodeWith(
     "Use purchase() and PurchaseParams.Builder instead",
     ReplaceWith("purchase()"),
 )
-fun Purchases.purchaseProductWith(
+public fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
@@ -145,7 +139,7 @@ fun Purchases.purchaseProductWith(
     "Use purchaseWith and PurchaseParams.Builder instead",
     ReplaceWith("purchaseWith()"),
 )
-fun Purchases.purchasePackageWith(
+public fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
@@ -162,7 +156,7 @@ fun Purchases.purchasePackageWith(
  * @param [onError] Will be called after the call has completed with an error.
  */
 @Suppress("unused")
-fun Purchases.logInWith(
+public fun Purchases.logInWith(
     appUserID: String,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (customerInfo: CustomerInfo, created: Boolean) -> Unit,
@@ -177,7 +171,7 @@ fun Purchases.logInWith(
  * @param [onError] Will be called if there was an error with the purchase.
  */
 @Suppress("unused")
-fun Purchases.logOutWith(
+public fun Purchases.logOutWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
 ) {
@@ -191,7 +185,7 @@ fun Purchases.logOutWith(
  * @param onError Will be called if there was an error with the purchase.
  */
 @Suppress("unused")
-fun Purchases.getCustomerInfoWith(
+public fun Purchases.getCustomerInfoWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
 ) {
@@ -206,7 +200,7 @@ fun Purchases.getCustomerInfoWith(
  * @param onError Will be called if there was an error with the purchase.
  */
 @Suppress("unused")
-fun Purchases.getCustomerInfoWith(
+public fun Purchases.getCustomerInfoWith(
     fetchPolicy: CacheFetchPolicy,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
@@ -229,7 +223,7 @@ fun Purchases.getCustomerInfoWith(
  * @warning This function could take a relatively long time to execute, depending on the amount of purchases
  * the user has. Consider that when waiting for this operation to complete.
  */
-fun Purchases.syncPurchasesWith(
+public fun Purchases.syncPurchasesWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (CustomerInfo) -> Unit,
 ) {
@@ -251,7 +245,7 @@ fun Purchases.syncPurchasesWith(
  * @param [onSuccess] Called when all attributes are synced and offerings are fetched.
  */
 @Suppress("unused")
-fun Purchases.syncAttributesAndOfferingsIfNeededWith(
+public fun Purchases.syncAttributesAndOfferingsIfNeededWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (Offerings) -> Unit,
 ) {
@@ -272,11 +266,53 @@ fun Purchases.syncAttributesAndOfferingsIfNeededWith(
  * @param [onSuccess] Called when the consent status was successfully fetched.
  */
 @Suppress("unused")
-fun Purchases.getAmazonLWAConsentStatusWith(
+public fun Purchases.getAmazonLWAConsentStatusWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (AmazonLWAConsentStatus) -> Unit,
 ) {
     getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
+}
+
+/**
+ * Fetches the virtual currencies for the current subscriber.
+ *
+ * @param [onSuccess] Will be called after the call has completed successfully
+ * with a [VirtualCurrencies] object.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+public fun Purchases.getVirtualCurrenciesWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (virtualCurrencies: VirtualCurrencies) -> Unit,
+) {
+    getVirtualCurrencies(
+        callback = getVirtualCurrenciesCallback(onSuccess, onError),
+    )
+}
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) locale. **Note:** this locale only has a region set.
+ * If there is any error, it will return null and log said error.
+ *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
+ *
+ * @param [onSuccess] Will be called after the call has completed.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public fun Purchases.getStorefrontLocaleWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (storefrontLocale: Locale) -> Unit,
+) {
+    getStorefrontLocale(object : GetStorefrontLocaleCallback {
+        override fun onReceived(storefrontLocale: Locale) {
+            onSuccess(storefrontLocale)
+        }
+
+        override fun onError(error: PurchasesError) {
+            onError(error)
+        }
+    })
 }
 
 // region Deprecated
@@ -291,7 +327,7 @@ fun Purchases.getAmazonLWAConsentStatusWith(
     "Replaced with getProductsWith() which returns both subscriptions and non-subscriptions",
     ReplaceWith("getProductsWith()"),
 )
-fun Purchases.getSubscriptionSkusWith(
+public fun Purchases.getSubscriptionSkusWith(
     skus: List<String>,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit,
@@ -309,7 +345,7 @@ fun Purchases.getSubscriptionSkusWith(
     "Replaced with getProductsWith() which returns both subscriptions and non-subscriptions",
     ReplaceWith("getProductsWith()"),
 )
-fun Purchases.getNonSubscriptionSkusWith(
+public fun Purchases.getNonSubscriptionSkusWith(
     skus: List<String>,
     onError: (error: PurchasesError) -> Unit,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit,

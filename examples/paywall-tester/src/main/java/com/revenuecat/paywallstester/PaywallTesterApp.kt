@@ -9,10 +9,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.revenuecat.paywallstester.ui.screens.AppScreen
+import com.revenuecat.paywallstester.ui.screens.main.CustomerCenterScreen
 import com.revenuecat.paywallstester.ui.screens.main.MainScreen
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreen
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModel
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.PaywallFooterScreen
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 
 @Composable
 fun PaywallTesterApp(
@@ -53,6 +55,9 @@ private fun AppNavHost(
                             .plus("/$placementId"),
                     )
                 },
+                navigateToCustomerCenterScreen = {
+                    navController.navigate(AppScreen.CustomerCenter.route)
+                },
             )
         }
         composable(
@@ -84,6 +89,9 @@ private fun AppNavHost(
             PaywallFooterScreen(
                 dismissRequest = navController::popBackStack,
             )
+        }
+        composable(route = AppScreen.CustomerCenter.route) {
+            CustomerCenterScreen(dismissRequest = navController::popBackStack)
         }
     }
 }

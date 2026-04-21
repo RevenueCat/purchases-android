@@ -4,11 +4,13 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 
 internal object Constants {
     const val GOOGLE_PLAY_MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
+    const val GALAXY_STORE_MANAGEMENT_URL = "samsungapps://SubscriptionList/"
+    const val AMAZON_STORE_MANAGEMENT_URL = "amzn://apps/library/subscriptions"
     const val SUBS_ID_BASE_PLAN_ID_SEPARATOR = ":"
 }
 
 @InternalRevenueCatAPI
-object SharedConstants {
-    const val RC_CUSTOMER_CENTER_TAG = "rc-customer-center"
-    const val MICRO_MULTIPLIER = 1_000_000.0
+public object SharedConstants {
+    public const val RC_CUSTOMER_CENTER_TAG: String = "rc-customer-center"
+    public const val MICRO_MULTIPLIER: Double = 1_000_000.0
 }

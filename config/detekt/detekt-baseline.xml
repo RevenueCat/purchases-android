@@ -33,7 +33,6 @@
     <ID>Filename:productTypeConversions.kt$com.revenuecat.purchases.amazon.productTypeConversions.kt</ID>
     <ID>Filename:productTypeConversions.kt$com.revenuecat.purchases.google.productTypeConversions.kt</ID>
     <ID>Filename:purchaseExtensions.kt$com.revenuecat.purchases.common.purchaseExtensions.kt</ID>
-    <ID>Filename:purchaseHistoryRecordExtensions.kt$com.revenuecat.purchases.common.purchaseHistoryRecordExtensions.kt</ID>
     <ID>Filename:purchaseStateConversions.kt$com.revenuecat.purchases.google.purchaseStateConversions.kt</ID>
     <ID>Filename:purchasesExtensions.kt$com.revenuecat.purchases.purchasesExtensions.kt</ID>
     <ID>Filename:storeProductConversions.kt$com.revenuecat.purchases.amazon.storeProductConversions.kt</ID>
@@ -165,6 +164,8 @@
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
+    <ID>TooManyFunctions:CoroutinesExtensionsCommon.kt$com.revenuecat.purchases.CoroutinesExtensionsCommon.kt</ID>
+    <ID>TooManyFunctions:coroutinesExtensions.kt$com.revenuecat.purchases.coroutinesExtensions.kt</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>
     <ID>ViewModelForwarding:AppInfoScreen.kt$LoginDialog(viewModel) { showLogInDialog = false }</ID>

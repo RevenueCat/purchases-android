@@ -20,6 +20,8 @@ import com.revenuecat.purchases.utils.replaceJsonNullWithKotlinNull
 import com.revenuecat.purchases.utils.toMap
 import com.revenuecat.purchases.withPresentedContext
 import org.json.JSONObject
+import java.net.MalformedURLException
+import java.net.URL
 
 internal abstract class OfferingParser {
 
@@ -32,7 +34,13 @@ internal abstract class OfferingParser {
      * Note: this may return an empty Offerings.
      */
     @OptIn(InternalRevenueCatAPI::class)
-    fun createOfferings(offeringsJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offerings {
+    @JvmOverloads
+    fun createOfferings(
+        offeringsJson: JSONObject,
+        productsById: Map<String, List<StoreProduct>>,
+        originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+        loadedFromDiskCache: Boolean = false,
+    ): Offerings {
         log(LogIntent.DEBUG) { OfferingStrings.BUILDING_OFFERINGS.format(productsById.size) }
 
         val jsonOfferings = offeringsJson.getJSONArray("offerings")
@@ -95,6 +103,8 @@ internal abstract class OfferingParser {
             all = offerings,
             placements = placements,
             targeting = targeting,
+            originalSource = originalSource,
+            loadedFromDiskCache = loadedFromDiskCache,
         )
     }
 
@@ -147,6 +157,8 @@ internal abstract class OfferingParser {
             null
         }
 
+        val webCheckoutURL = offeringJson.getWebCheckoutURL()
+
         return if (availablePackages.isNotEmpty()) {
             Offering(
                 offeringIdentifier,
@@ -155,6 +167,7 @@ internal abstract class OfferingParser {
                 availablePackages,
                 paywallData,
                 paywallComponents,
+                webCheckoutURL,
             )
         } else {
             null
@@ -171,16 +184,30 @@ internal abstract class OfferingParser {
         val product = findMatchingProduct(productsById, packageJson)
 
         val packageType = packageIdentifier.toPackageType()
+
+        val webCheckoutURL = packageJson.getWebCheckoutURL()
+
         return product?.let {
             Package(
                 packageIdentifier,
                 packageType,
                 product.copyWithPresentedOfferingContext(presentedOfferingContext),
                 presentedOfferingContext,
+                webCheckoutURL,
             )
         }
     }
 }
+
+private fun JSONObject.getWebCheckoutURL(): URL? =
+    this.optString("web_checkout_url").takeUnless { it.isNullOrEmpty() }?.let { urlString ->
+        try {
+            URL(urlString)
+        } catch (e: MalformedURLException) {
+            errorLog(e) { "Error parsing web checkout URL: $urlString" }
+            null
+        }
+    }
 
 private fun String.toPackageType(): PackageType =
     PackageType.values().firstOrNull { it.identifier == this }

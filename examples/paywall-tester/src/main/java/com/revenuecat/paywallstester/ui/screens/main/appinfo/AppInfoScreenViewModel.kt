@@ -11,6 +11,7 @@ import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,11 +24,13 @@ interface AppInfoScreenViewModel {
     data class UiState(
         val appUserID: String,
         val apiKeyDescription: String,
+        val activeEntitlements: List<String>,
     ) {
         companion object {
             val Empty = UiState(
                 appUserID = "",
                 apiKeyDescription = "",
+                activeEntitlements = emptyList(),
             )
         }
     }
@@ -37,6 +40,7 @@ interface AppInfoScreenViewModel {
     fun logIn(newAppUserId: String)
     fun logOut()
     fun switchApiKey(newApiKey: String)
+    fun refresh()
 }
 
 internal class AppInfoScreenViewModelImpl(
@@ -64,6 +68,9 @@ internal class AppInfoScreenViewModelImpl(
     init {
         updateAppUserID()
         updateApiKeyDescription()
+        viewModelScope.launch {
+            updateActiveEntitlements()
+        }
     }
 
     override fun logIn(newAppUserId: String) {
@@ -94,6 +101,13 @@ internal class AppInfoScreenViewModelImpl(
         updateApiKeyDescription()
     }
 
+    override fun refresh() {
+        viewModelScope.launch {
+            updateAppUserID()
+            updateActiveEntitlements()
+        }
+    }
+
     private fun updateAppUserID() {
         _state.update { it.copy(appUserID = Purchases.sharedInstance.appUserID) }
     }
@@ -108,5 +122,15 @@ internal class AppInfoScreenViewModelImpl(
                 },
             )
         }
+    }
+
+    private suspend fun updateActiveEntitlements() {
+        val customerInfo = try {
+            Purchases.sharedInstance.awaitCustomerInfo()
+        } catch (e: PurchasesException) {
+            _state.update { it.copy(activeEntitlements = listOf("Error fetching entitlements: ${e.message}")) }
+            return
+        }
+        _state.update { it.copy(activeEntitlements = customerInfo.entitlements.active.keys.sorted()) }
     }
 }

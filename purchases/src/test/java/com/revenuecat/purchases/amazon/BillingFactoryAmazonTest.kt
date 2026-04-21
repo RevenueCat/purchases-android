@@ -6,9 +6,11 @@ import com.revenuecat.purchases.BillingFactory
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,6 +24,7 @@ class BillingFactoryAmazonTest {
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
         val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
+        val mockBackend = mockk<Backend>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.AMAZON,
@@ -32,6 +35,8 @@ class BillingFactoryAmazonTest {
             mockDiagnosticsTracker,
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            GalaxyBillingMode.TEST,
+            backend = mockBackend,
         )
     }
 
@@ -40,6 +45,7 @@ class BillingFactoryAmazonTest {
         val mockApplication = mockk<Application>(relaxed = true)
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
+        val mockBackend = mockk<Backend>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.AMAZON,
@@ -50,6 +56,8 @@ class BillingFactoryAmazonTest {
             diagnosticsTrackerIfEnabled = null,
             stateProvider = PurchasesStateCache(PurchasesState()),
             pendingTransactionsForPrepaidPlansEnabled = true,
+            GalaxyBillingMode.TEST,
+            backend = mockBackend,
         )
     }
 }

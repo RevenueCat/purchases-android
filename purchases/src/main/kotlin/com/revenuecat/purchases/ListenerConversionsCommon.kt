@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -74,14 +75,14 @@ internal fun receiveCustomerInfoCallback(
  * @param [onError] Will be called after an error fetching offerings.
  */
 @Suppress("unused")
-fun Purchases.getOfferingsWith(
+public fun Purchases.getOfferingsWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (offerings: Offerings) -> Unit,
 ) {
     getOfferings(receiveOfferingsCallback(onSuccess, onError))
 }
 
-fun Purchases.purchaseWith(
+public fun Purchases.purchaseWith(
     purchaseParams: PurchaseParams,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
@@ -96,7 +97,7 @@ fun Purchases.purchaseWith(
  * @param [onGetStoreProducts] Will be called after fetching StoreProducts
  */
 @Suppress("unused")
-fun Purchases.getProductsWith(
+public fun Purchases.getProductsWith(
     productIds: List<String>,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit,
@@ -113,7 +114,7 @@ fun Purchases.getProductsWith(
  * have been able to be successfully fetched from the store. Not found products will be ignored.
  */
 @Suppress("unused")
-fun Purchases.getProductsWith(
+public fun Purchases.getProductsWith(
     productIds: List<String>,
     type: ProductType?,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
@@ -135,9 +136,33 @@ fun Purchases.getProductsWith(
  * @param [onSuccess] Will be called after the call has completed.
  * @param [onError] Will be called after the call has completed with an error.
  */
-fun Purchases.restorePurchasesWith(
+public fun Purchases.restorePurchasesWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
 ) {
     restorePurchases(receiveCustomerInfoCallback(onSuccess, onError))
+}
+
+/**
+ * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
+ * If there is any error, it will return null and log said error.
+ *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
+ * @param [onSuccess] Will be called after the call has completed.
+ * @param [onError] Will be called after the call has completed with an error.
+ */
+@Suppress("unused")
+public fun Purchases.getStorefrontCountryCodeWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (storefrontCountryCode: String) -> Unit,
+) {
+    getStorefrontCountryCode(object : GetStorefrontCallback {
+        override fun onReceived(storefrontCountryCode: String) {
+            onSuccess(storefrontCountryCode)
+        }
+
+        override fun onError(error: PurchasesError) {
+            onError(error)
+        }
+    })
 }

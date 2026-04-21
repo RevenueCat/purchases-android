@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.identity
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
@@ -21,7 +23,11 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import java.util.Locale
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
     private val deviceCache: DeviceCache,
@@ -31,12 +37,19 @@ internal class IdentityManager(
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
+    private val uiPreviewMode: Boolean = false,
 ) {
+    companion object {
+        private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+        internal const val UI_PREVIEW_MODE_APP_USER_ID = "\$RC_PREVIEW_MODE_USER"
+
+        fun isUserIDAnonymous(appUserID: String): Boolean {
+            return anonymousIdRegex.matches(appUserID)
+        }
+    }
 
     val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
-
-    private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
 
     // region Public functions
 
@@ -44,15 +57,21 @@ internal class IdentityManager(
     fun configure(
         appUserID: String?,
     ) {
-        if (appUserID?.isBlank() == true) {
-            log(LogIntent.WARNING) { IdentityStrings.EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS }
+        val appUserIDToUse = when {
+            uiPreviewMode -> {
+                log(LogIntent.USER) { IdentityStrings.CONFIGURING_WITH_PREVIEW_MODE_USER_ID }
+                UI_PREVIEW_MODE_APP_USER_ID
+            }
+            appUserID.isNullOrBlank() -> {
+                if (appUserID?.isBlank() == true) {
+                    log(LogIntent.WARNING) { IdentityStrings.EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS }
+                }
+                deviceCache.getCachedAppUserID()
+                    ?: deviceCache.getLegacyCachedAppUserID()
+                    ?: generateRandomID()
+            }
+            else -> appUserID
         }
-
-        val appUserIDToUse = appUserID
-            ?.takeUnless { it.isBlank() }
-            ?: deviceCache.getCachedAppUserID()
-            ?: deviceCache.getLegacyCachedAppUserID()
-            ?: generateRandomID()
         log(LogIntent.USER) { IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse) }
 
         val cacheEditor = deviceCache.startEditing()
@@ -66,11 +85,49 @@ internal class IdentityManager(
         }
     }
 
+    suspend fun aliasCurrentUserIdTo(
+        oldAppUserID: String,
+    ) {
+        val newAppUserID = currentAppUserID
+        return suspendCoroutine { continuation ->
+            backend.aliasUsers(
+                oldAppUserID = oldAppUserID,
+                newAppUserID = newAppUserID,
+                onSuccessHandler = {
+                    synchronized(this@IdentityManager) {
+                        log(LogIntent.USER) {
+                            IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
+                        }
+                        offeringsCache.clearCache()
+                        deviceCache.clearCustomerInfoCache(newAppUserID)
+                        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+                    }
+                    continuation.resume(Unit)
+                },
+                onErrorHandler = { error ->
+                    continuation.resumeWithException(PurchasesException(error))
+                },
+            )
+        }
+    }
+
     fun logIn(
         newAppUserID: String,
         onSuccess: (CustomerInfo, Boolean) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID ||
+            newAppUserID == UI_PREVIEW_MODE_APP_USER_ID
+        ) {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    IdentityStrings.OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE,
+                ).also { errorLog(it) },
+            )
+            return
+        }
+
         if (newAppUserID.isBlank()) {
             onError(
                 PurchasesError(
@@ -109,12 +166,32 @@ internal class IdentityManager(
     }
 
     fun switchUser(newAppUserID: String) {
+        if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID ||
+            newAppUserID == UI_PREVIEW_MODE_APP_USER_ID
+        ) {
+            errorLog(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    IdentityStrings.OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE,
+                ),
+            )
+            return
+        }
         debugLog { IdentityStrings.SWITCHING_USER.format(newAppUserID) }
         resetAndSaveUserID(newAppUserID)
     }
 
     @Synchronized
     fun logOut(completion: ((PurchasesError?) -> Unit)) {
+        if (currentAppUserID == UI_PREVIEW_MODE_APP_USER_ID) {
+            completion(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    IdentityStrings.OPERATION_NOT_SUPPORTED_IN_PREVIEW_MODE,
+                ).also { errorLog(it) },
+            )
+            return
+        }
         if (currentUserIsAnonymous()) {
             log(LogIntent.RC_ERROR) { IdentityStrings.LOG_OUT_CALLED_ON_ANONYMOUS_USER }
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
@@ -163,10 +240,6 @@ internal class IdentityManager(
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
             backend.verificationMode != SignatureVerificationMode.Disabled
-    }
-
-    private fun isUserIDAnonymous(appUserID: String): Boolean {
-        return anonymousIdRegex.matches(appUserID)
     }
 
     private fun generateRandomID(): String {

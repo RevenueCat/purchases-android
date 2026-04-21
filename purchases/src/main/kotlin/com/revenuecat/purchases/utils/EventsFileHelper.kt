@@ -1,5 +1,10 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.utils
 
+import com.revenuecat.purchases.DebugEvent
+import com.revenuecat.purchases.DebugEventName
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
@@ -15,12 +20,36 @@ internal open class EventsFileHelper<T : Event> (
     private val eventSerializer: ((T) -> String)? = null,
     private val eventDeserializer: ((String) -> T)? = null,
 ) {
+    companion object {
+        const val MAX_EVENT_PROPERTY_SIZE = 80
+    }
+
+    var debugEventCallback: ((DebugEvent) -> Unit)? = null
+
     @Synchronized
     fun appendEvent(event: T) {
-        fileHelper.appendToFile(
-            filePath,
-            (eventSerializer?.invoke(event) ?: event.toString()) + "\n",
-        )
+        try {
+            fileHelper.appendToFile(
+                filePath,
+                (eventSerializer?.invoke(event) ?: event.toString()) + "\n",
+            )
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.APPEND_EVENT_EXCEPTION,
+                    properties = buildMap {
+                        put("exceptionType", e::class.simpleName ?: "Unknown")
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
+                    },
+                ),
+            )
+            throw e
+        }
+    }
+
+    @Synchronized
+    fun fileSizeInKB(): Double {
+        return fileHelper.fileSizeInKB(filePath)
     }
 
     @Synchronized
@@ -51,7 +80,17 @@ internal open class EventsFileHelper<T : Event> (
 
     @Synchronized
     fun clear(eventsToDeleteCount: Int) {
-        fileHelper.removeFirstLinesFromFile(filePath, eventsToDeleteCount)
+        fileHelper.removeFirstLinesFromFile(filePath, eventsToDeleteCount) { e ->
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.REMOVE_LINES_EXCEPTION,
+                    properties = buildMap {
+                        put("exceptionType", e::class.simpleName ?: "Unknown")
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
+                    },
+                ),
+            )
+        }
     }
 
     @Synchronized
@@ -62,13 +101,40 @@ internal open class EventsFileHelper<T : Event> (
     }
 
     private fun mapToEvent(string: String): T? {
-        val eventDeserializer = eventDeserializer ?: return null
+        val eventDeserializer = eventDeserializer
+        if (eventDeserializer == null) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.DESERIALIZATION_ERROR,
+                    properties = emptyMap(),
+                ),
+            )
+            return null
+        }
         return try {
             eventDeserializer(string)
         } catch (e: SerializationException) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.DESERIALIZATION_ERROR,
+                    properties = buildMap {
+                        put("exceptionType", "SerializationException")
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
+                    },
+                ),
+            )
             errorLog(e) { "Error parsing event from file: $string" }
             null
         } catch (e: IllegalArgumentException) {
+            debugEventCallback?.invoke(
+                DebugEvent(
+                    name = DebugEventName.DESERIALIZATION_ERROR,
+                    properties = buildMap {
+                        put("exceptionType", "IllegalArgumentException")
+                        e.message?.let { put("message", it.take(MAX_EVENT_PROPERTY_SIZE)) }
+                    },
+                ),
+            )
             errorLog(e) { "Error parsing event from file: $string" }
             null
         }

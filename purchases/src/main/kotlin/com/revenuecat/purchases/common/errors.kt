@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import org.json.JSONException
 import java.io.IOException
@@ -32,6 +34,7 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidSubscriberAttributes(7263),
     BackendInvalidSubscriberAttributesBody(7264),
     BackendSubscriberAttributesAreBeingUpdated(7629),
+    BackendPaymentNotComplete(7651),
     BackendRequestAlreadyInProgress(7638),
     BackendProductIDsMalformed(7662),
     BackendInvalidWebRedemptionToken(7849),
@@ -57,6 +60,13 @@ internal fun Exception.toPurchasesError(): PurchasesError {
         is SignatureVerificationException -> {
             PurchasesError(PurchasesErrorCode.SignatureVerificationError, localizedMessage)
         }
+        is NullPointerReadingErrorStreamException -> {
+            PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "In some devices, there seems to be an error when trying to parse the error response. " +
+                    "Original error message: ${cause?.localizedMessage ?: localizedMessage}",
+            )
+        }
         else -> PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage)
     }
 }
@@ -64,6 +74,7 @@ internal fun Exception.toPurchasesError(): PurchasesError {
 private fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
+@OptIn(InternalRevenueCatAPI::class)
 internal fun HTTPResult.toPurchasesError(): PurchasesError {
     val errorCode = backendErrorCode
     val errorMessage = backendErrorMessage ?: ""
@@ -108,6 +119,7 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendRequestAlreadyInProgress,
         BackendErrorCode.BackendSubscriberAttributesAreBeingUpdated,
         -> PurchasesErrorCode.OperationAlreadyInProgressError
+        BackendErrorCode.BackendPaymentNotComplete -> PurchasesErrorCode.PaymentPendingError
         BackendErrorCode.BackendCouldNotCreateAlias -> PurchasesErrorCode.ConfigurationError
         BackendErrorCode.BackendProductIDsMalformed -> PurchasesErrorCode.UnsupportedError
         BackendErrorCode.BackendInvalidWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError

@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
@@ -13,7 +14,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -24,18 +28,33 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabControlToggl
 import com.revenuecat.purchases.ui.revenuecatui.composables.Switch
 import com.revenuecat.purchases.ui.revenuecatui.composables.SwitchDefaults
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
 @Composable
 internal fun TabControlToggleView(
     style: TabControlToggleComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val checked by remember { derivedStateOf { state.selectedTabIndex > 0 } }
 
     Switch(
         checked = checked,
-        onCheckedChange = { state.update(selectedTabIndex = if (it) 1 else 0) },
+        onCheckedChange = {
+            val newTabIndex = if (it) 1 else 0
+            if (newTabIndex == state.selectedTabIndex) {
+                return@Switch
+            }
+            state.update(selectedTabIndex = newTabIndex)
+            componentInteractionTracker.track(
+                PaywallComponentInteractionData(
+                    componentType = PaywallComponentType.SWITCH,
+                    componentName = style.componentName,
+                    componentValue = if (it) "on" else "off",
+                ),
+            )
+        },
         modifier = modifier
             .size(style.size),
         colors = SwitchDefaults.colors(
@@ -58,9 +77,9 @@ private class CheckedPreviewProvider : PreviewParameterProvider<Boolean> {
 private fun TabControlToggleView_Preview(
     @PreviewParameter(CheckedPreviewProvider::class) checked: Boolean,
 ) {
+    val initialTabIndex = if (checked) 1 else 0
     TabControlToggleView(
         style = TabControlToggleComponentStyle(
-            defaultValue = checked,
             thumbColorOn = ColorStyles(
                 light = ColorStyle.Solid(color = Color.Red),
                 dark = ColorStyle.Solid(color = Color.Blue),
@@ -78,7 +97,7 @@ private fun TabControlToggleView_Preview(
                 dark = ColorStyle.Solid(color = Color.Yellow),
             ),
         ),
-        state = previewEmptyState(),
+        state = previewEmptyState(initialSelectedTabIndex = initialTabIndex),
     )
 }
 
@@ -102,7 +121,6 @@ private fun TabControlToggleView_Gradient_Preview() {
 
     TabControlToggleView(
         style = TabControlToggleComponentStyle(
-            defaultValue = false,
             thumbColorOn = ColorStyles(
                 light = ColorInfo.Gradient.Radial(
                     points = pointsRgb,

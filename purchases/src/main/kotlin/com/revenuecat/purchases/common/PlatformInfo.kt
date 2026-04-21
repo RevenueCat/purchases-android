@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.common
 
-data class PlatformInfo(
-    val flavor: String,
-    val version: String?,
+import dev.drewhamilton.poko.Poko
+
+@Poko
+public class PlatformInfo(
+    public val flavor: String,
+    public val version: String?,
 )

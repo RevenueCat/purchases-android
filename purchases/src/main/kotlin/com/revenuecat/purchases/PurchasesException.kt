@@ -1,13 +1,18 @@
 package com.revenuecat.purchases
 
-open class PurchasesException(val error: PurchasesError) : Exception() {
+public open class PurchasesException internal constructor(
+    public val error: PurchasesError,
+    internal val overridenMessage: String? = null,
+) : Exception() {
 
-    val code: PurchasesErrorCode
+    public constructor(error: PurchasesError) : this(error, null)
+
+    public val code: PurchasesErrorCode
         get() = error.code
 
-    val underlyingErrorMessage: String?
+    public val underlyingErrorMessage: String?
         get() = error.underlyingErrorMessage
 
     override val message: String
-        get() = error.message
+        get() = overridenMessage ?: error.message
 }

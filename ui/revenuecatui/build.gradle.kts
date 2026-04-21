@@ -1,33 +1,27 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    alias(libs.plugins.android.library)
-    alias(libs.plugins.dokka)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.revenuecat.public.library)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.poko)
-    alias(libs.plugins.metalava)
-    alias(libs.plugins.baselineprofile)
 }
-
-// Conditional Maven Publish plugin application
-if (!project.properties["ANDROID_VARIANT_TO_PUBLISH"].toString().contains("customEntitlementComputation")) {
-    apply(plugin = "com.vanniktech.maven.publish")
-}
-
-// Apply shared library config
-apply(from = "${rootProject.projectDir}/library.gradle")
 
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
 
-    flavorDimensions += "apis"
+    // billingclient dimension is added for bc7/bc8 support
+    flavorDimensions += "billingclient"
     productFlavors {
-        create("defaults") {
-            dimension = "apis"
+        create("bc8") {
+            dimension = "billingclient"
             isDefault = true
+        }
+        create("bc7") {
+            dimension = "billingclient"
         }
     }
 
@@ -53,10 +47,6 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.4.8"
     }
 
     packaging {
@@ -89,6 +79,22 @@ metalava {
     )
 }
 
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions {
+        if (project.findProperty("revenuecat.enableComposeCompilerReports") == "true") {
+            val composeMetricsDir = "${project.layout.buildDirectory.get().asFile.absolutePath}/compose_metrics"
+            freeCompilerArgs.addAll(
+                listOf(
+                    "-P",
+                    "plugin:androidx.compose.compiler.plugins.kotlin:reportsDestination=$composeMetricsDir",
+                    "-P",
+                    "plugin:androidx.compose.compiler.plugins.kotlin:metricsDestination=$composeMetricsDir",
+                ),
+            )
+        }
+    }
+}
+
 dependencies {
     api(project(":purchases"))
 
@@ -119,7 +125,9 @@ dependencies {
     implementation(libs.commonmark)
     implementation(libs.commonmark.strikethrough)
 
-    compileOnly(libs.emerge.snapshots.annotations)
+    implementation(libs.kotlinx.serialization.json)
+
+    compileOnly(libs.emerge.snapshots.runtime)
 
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
@@ -127,7 +135,6 @@ dependencies {
     testImplementation(libs.bundles.test)
     testImplementation(libs.coil.test)
     testImplementation(libs.coroutines.test)
-    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.androidx.test.compose)
     testImplementation(libs.androidx.test.compose.manifest)
     testImplementation(libs.hamcrest.core)
@@ -141,26 +148,34 @@ dependencies {
 }
 
 tasks.dokkaHtmlPartial.configure {
-    dokkaSourceSets.named("main") {
-        reportUndocumented.set(true)
-        includeNonPublic.set(false)
-        skipDeprecated.set(true)
-
-        externalDocumentationLink {
-            url.set(
-                uri("https://developer.android.com/reference/package-list").toURL(),
-            )
+    dokkaSourceSets {
+        named("defaultsBc7") {
+            suppress.set(true)
         }
-        sourceLink {
-            localDirectory.set(
-                file("src/main/kotlin"),
-            )
-            remoteUrl.set(
-                uri(
-                    "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
-                ).toURL(),
-            )
-            remoteLineSuffix.set("#L")
+        named("defaultsBc8") {
+            dependsOn("main")
+        }
+        named("main") {
+            reportUndocumented.set(true)
+            includeNonPublic.set(false)
+            skipDeprecated.set(true)
+
+            externalDocumentationLink {
+                url.set(
+                    uri("https://developer.android.com/reference/package-list").toURL(),
+                )
+            }
+            sourceLink {
+                localDirectory.set(
+                    file("src/main/kotlin"),
+                )
+                remoteUrl.set(
+                    uri(
+                        "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
+                    ).toURL(),
+                )
+                remoteLineSuffix.set("#L")
+            }
         }
     }
 }
