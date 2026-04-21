@@ -80,7 +80,7 @@ public data class PublishedWorkflow(
 )
 
 @InternalRevenueCatAPI
-public data class WorkflowFetchResult(
+public data class WorkflowResult(
     val workflow: PublishedWorkflow,
     val enrolledVariants: Map<String, String>?,
 )

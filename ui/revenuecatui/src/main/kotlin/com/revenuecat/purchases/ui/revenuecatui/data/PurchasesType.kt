@@ -20,7 +20,7 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
+import com.revenuecat.purchases.common.workflows.WorkflowResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -67,7 +67,7 @@ internal interface PurchasesType {
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
 
     @Throws(PurchasesException::class)
-    suspend fun awaitGetWorkflow(workflowId: String): WorkflowFetchResult
+    suspend fun awaitGetWorkflow(workflowId: String): WorkflowResult
 }
 
 @Suppress("TooManyFunctions")
@@ -138,7 +138,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     }
 
     @Throws(PurchasesException::class)
-    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowFetchResult {
+    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowResult {
         return purchases.awaitGetWorkflow(workflowId)
     }
 }

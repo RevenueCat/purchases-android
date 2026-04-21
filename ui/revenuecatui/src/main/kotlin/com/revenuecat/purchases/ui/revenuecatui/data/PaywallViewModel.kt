@@ -21,7 +21,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
+import com.revenuecat.purchases.common.workflows.WorkflowResult
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -671,7 +671,7 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private suspend fun updateStateFromWorkflow(fetchResult: WorkflowFetchResult) {
+    private suspend fun updateStateFromWorkflow(fetchResult: WorkflowResult) {
         val workflow = fetchResult.workflow
 
         val step = workflow.steps[workflow.initialStepId]

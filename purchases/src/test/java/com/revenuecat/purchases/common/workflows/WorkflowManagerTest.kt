@@ -33,12 +33,12 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getWorkflow resolves inline response into WorkflowFetchResult`() {
+    fun `getWorkflow resolves inline response into WorkflowResult`() {
         val response = WorkflowDetailResponse(
             action = WorkflowResponseAction.INLINE,
             data = mockk(),
         )
-        val expectedResult = WorkflowFetchResult(
+        val expectedResult = WorkflowResult(
             workflow = response.data!!,
             enrolledVariants = null,
         )
@@ -57,7 +57,7 @@ class WorkflowManagerTest {
             successSlot.captured(response)
         }
 
-        var result: WorkflowFetchResult? = null
+        var result: WorkflowResult? = null
         workflowManager.getWorkflow(
             appUserID = "user_1",
             workflowId = "wf_1",
