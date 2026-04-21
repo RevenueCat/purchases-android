@@ -172,32 +172,28 @@ internal class BillingWrapper(
     }
 
     private fun performStartConnection() {
-        synchronized(this@BillingWrapper) {
+        val clientToStart = synchronized(this@BillingWrapper) {
             if (billingClient == null) {
                 billingClient = clientFactory.buildClient(this)
             }
-
             reconnectionAlreadyScheduled = false
+            billingClient?.takeIf { !it.isReady }
+        } ?: return
 
-            billingClient?.let {
-                if (!it.isReady) {
-                    log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(it) }
-                    diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
-                    try {
-                        it.startConnection(this)
-                    } catch (e: IllegalStateException) {
-                        log(LogIntent.GOOGLE_ERROR) {
-                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
-                        }
-                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
-                        sendErrorsToAllPendingRequests(error)
-                    } catch (e: SecurityException) {
-                        errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
-                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
-                        sendErrorsToAllPendingRequests(error)
-                    }
-                }
+        log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(clientToStart) }
+        diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
+        try {
+            clientToStart.startConnection(this)
+        } catch (e: IllegalStateException) {
+            log(LogIntent.GOOGLE_ERROR) {
+                BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
             }
+            val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+            sendErrorsToAllPendingRequests(error)
+        } catch (e: SecurityException) {
+            errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
+            val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+            sendErrorsToAllPendingRequests(error)
         }
     }
 

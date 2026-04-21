@@ -298,6 +298,21 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `performStartConnection releases the wrapper monitor before calling BillingClient startConnection`() {
+        var heldLockDuringStartConnection = true
+        every { mockClient.startConnection(any()) } answers {
+            heldLockDuringStartConnection = Thread.holdsLock(wrapper)
+        }
+        every { mockClient.isReady } returns false
+
+        wrapper.startConnection()
+
+        assertThat(heldLockDuringStartConnection)
+            .`as`("BillingClient#startConnection must not run while we hold the wrapper monitor")
+            .isFalse
+    }
+
+    @Test
     fun defersCallUntilConnected() {
         every { mockClient.isReady } returns false
 
