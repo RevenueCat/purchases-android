@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseParams
@@ -59,6 +60,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -643,10 +646,15 @@ internal class PaywallViewModelImpl(
             }
             if (workflowParams != null) {
                 val (offeringId, presentedOfferingContext) = workflowParams
-                updateStateFromWorkflow(
-                    purchases.awaitGetWorkflow(offeringId),
-                    presentedOfferingContext,
-                )
+                coroutineScope {
+                    val fetchResultDeferred = async { purchases.awaitGetWorkflow(offeringId) }
+                    val offeringsDeferred = async { purchases.awaitOfferings() }
+                    updateStateFromWorkflow(
+                        fetchResultDeferred.await(),
+                        offeringsDeferred.await(),
+                        presentedOfferingContext,
+                    )
+                }
                 return
             }
         }
@@ -685,6 +693,7 @@ internal class PaywallViewModelImpl(
     @Suppress("ReturnCount")
     private suspend fun updateStateFromWorkflow(
         fetchResult: WorkflowResult,
+        offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         val workflow = fetchResult.workflow
@@ -723,7 +732,6 @@ internal class PaywallViewModelImpl(
             return
         }
 
-        val offerings = purchases.awaitOfferings()
         val baseOffering = offerings[offeringId]
         if (baseOffering == null) {
             _state.value = PaywallState.Error(
