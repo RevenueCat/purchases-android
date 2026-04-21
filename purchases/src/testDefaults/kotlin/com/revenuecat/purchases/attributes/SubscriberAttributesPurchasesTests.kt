@@ -132,6 +132,7 @@ class SubscriberAttributesPurchasesTests {
             localeProvider = DefaultLocaleProvider(),
             virtualCurrencyManager = virtualCurrencyManagerMock,
             purchaseParamsValidator = purchaseParamsValidator,
+            workflowManager = mockk(relaxed = true),
         )
 
         underTest = Purchases(purchasesOrchestrator)
