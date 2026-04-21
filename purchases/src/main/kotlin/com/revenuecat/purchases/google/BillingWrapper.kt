@@ -172,17 +172,19 @@ internal class BillingWrapper(
     }
 
     private fun performStartConnection() {
-        val clientToStart = synchronized(this@BillingWrapper) {
-            if (billingClient == null) {
-                billingClient = clientFactory.buildClient(this)
-            }
-            reconnectionAlreadyScheduled = false
-            billingClient?.takeIf { !it.isReady }
-        } ?: return
-
-        log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(clientToStart) }
-        diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
         try {
+            // Keep the monitor scope limited to state mutation so the slow `startConnection(...)`
+            // call below doesn't hold off main-thread callers that synchronize on this wrapper.
+            val clientToStart = synchronized(this@BillingWrapper) {
+                if (billingClient == null) {
+                    billingClient = clientFactory.buildClient(this)
+                }
+                reconnectionAlreadyScheduled = false
+                billingClient?.takeIf { !it.isReady }
+            } ?: return
+
+            log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(clientToStart) }
+            diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
             clientToStart.startConnection(this)
         } catch (e: IllegalStateException) {
             log(LogIntent.GOOGLE_ERROR) {
@@ -194,6 +196,12 @@ internal class BillingWrapper(
             errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
             val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
             sendErrorsToAllPendingRequests(error)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            // Preserve pre-background-thread behavior: any other throwable would have surfaced
+            // as an uncaught exception on the main thread and crashed the app. Rethrow on the
+            // main thread so the failure is visible in the same way.
+            errorLog(e) { "Unexpected error while starting the billing connection" }
+            mainHandler.post { throw e }
         }
     }
 

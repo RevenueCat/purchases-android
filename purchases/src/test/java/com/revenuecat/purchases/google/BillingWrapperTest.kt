@@ -76,6 +76,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -310,6 +311,41 @@ class BillingWrapperTest {
         assertThat(heldLockDuringStartConnection)
             .`as`("BillingClient#startConnection must not run while we hold the wrapper monitor")
             .isFalse
+    }
+
+    @Test
+    fun `if building the BillingClient throws, the exception is rethrown on the main thread`() {
+        val throwingFactory = mockk<BillingWrapper.ClientFactory>()
+        val buildError = RuntimeException("build failed")
+        every { throwingFactory.buildClient(any()) } throws buildError
+
+        val crashingWrapper = BillingWrapper(
+            throwingFactory,
+            handler,
+            handler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        crashingWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        val thrown = assertThrows(RuntimeException::class.java) {
+            crashingWrapper.startConnection()
+        }
+        assertThat(thrown).isSameAs(buildError)
+    }
+
+    @Test
+    fun `if starting connection throws an unexpected exception, the exception is rethrown on the main thread`() {
+        val connectError = IllegalArgumentException("unexpected")
+        every { mockClient.isReady } returns false
+        every { mockClient.startConnection(any()) } throws connectError
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            wrapper.startConnection()
+        }
+        assertThat(thrown).isSameAs(connectError)
     }
 
     @Test
