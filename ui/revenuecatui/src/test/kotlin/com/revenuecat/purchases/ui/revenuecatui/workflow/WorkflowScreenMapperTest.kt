@@ -47,7 +47,8 @@ class WorkflowScreenMapperTest {
         componentsConfig = componentsConfig,
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleId,
-        offeringId = "offering_id",
+        offeringInternalId = "ofrnge1b3eee5c1",
+        offeringIdentifier = "offering_id"
     )
 
     @Test
