@@ -633,11 +633,22 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        if (BuildConfig.USE_WORKFLOWS_ENDPOINT &&
-            offeringSelection is OfferingSelection.IdAndPresentedOfferingContext
-        ) {
-            updateStateFromWorkflow(purchases.awaitGetWorkflow(offeringSelection.offeringId))
-            return
+        if (BuildConfig.USE_WORKFLOWS_ENDPOINT) {
+            val workflowParams: Pair<String, PresentedOfferingContext?>? = when (offeringSelection) {
+                is OfferingSelection.IdAndPresentedOfferingContext ->
+                    offeringSelection.offeringId to offeringSelection.presentedOfferingContext
+                is OfferingSelection.OfferingType ->
+                    offeringSelection.offeringType.identifier to offeringSelection.offeringType.presentedOfferingContext
+                is OfferingSelection.None -> null
+            }
+            if (workflowParams != null) {
+                val (offeringId, presentedOfferingContext) = workflowParams
+                updateStateFromWorkflow(
+                    purchases.awaitGetWorkflow(offeringId),
+                    presentedOfferingContext,
+                )
+                return
+            }
         }
 
         val currentOffering: Offering? = when (offeringSelection) {
@@ -650,6 +661,7 @@ internal class PaywallViewModelImpl(
                     offering?.copy(presentedOfferingContext)
                 } ?: offering
             }
+
             is OfferingSelection.None -> {
                 val offerings = purchases.awaitOfferings()
                 offerings.current
@@ -671,7 +683,10 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private suspend fun updateStateFromWorkflow(fetchResult: WorkflowResult) {
+    private suspend fun updateStateFromWorkflow(
+        fetchResult: WorkflowResult,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
         val workflow = fetchResult.workflow
 
         val step = workflow.steps[workflow.initialStepId]
@@ -725,9 +740,10 @@ internal class PaywallViewModelImpl(
             paywallComponents = paywallComponents,
             webCheckoutURL = baseOffering.webCheckoutURL,
         )
+        val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
 
         _state.value = calculateState(
-            offering,
+            offeringWithContext,
             _colorScheme.value,
             purchases.storefrontCountryCode,
             options.mode,
