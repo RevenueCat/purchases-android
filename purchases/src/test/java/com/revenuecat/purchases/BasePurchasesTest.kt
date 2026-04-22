@@ -236,7 +236,7 @@ internal open class BasePurchasesTest {
             }
 
             every {
-                startConnectionOnMainThread()
+                startConnection()
             } just Runs
         }
     }

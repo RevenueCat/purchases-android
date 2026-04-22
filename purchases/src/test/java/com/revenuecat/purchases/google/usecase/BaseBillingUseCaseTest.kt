@@ -83,13 +83,14 @@ internal open class BaseBillingUseCaseTest {
         wrapper = BillingWrapper(
             mockClientFactory,
             handler,
+            handler,
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
             mockDateProvider
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
-        wrapper.startConnectionOnMainThread()
+        wrapper.startConnection()
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
