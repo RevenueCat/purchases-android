@@ -563,7 +563,6 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    @InternalRevenueCatAPI
     fun getWorkflow(
         workflowId: String,
         onSuccess: (WorkflowDataResult) -> Unit,
