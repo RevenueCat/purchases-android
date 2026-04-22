@@ -105,23 +105,23 @@ internal class AmazonBilling(
 
     private var connected = false
 
-    override fun startConnection() {
+    override fun startConnection(delayMilliseconds: Long) {
+        // Start connection has to be called on onCreate, otherwise Amazon fails to detect the foregrounded Activity
+        // Be careful with doing mainHandler.post since that will not guarantee that it's called in onCreate
+        // runOnUIThread checks if the function is called in the UI thread and doesn't do post, so we are good since
+        // startConnection is called on the main thread
+        runOnUIThread {
+            performStartConnection()
+        }
+    }
+
+    private fun performStartConnection() {
         if (!shouldFinishTransactions()) return
 
         purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
         stateListener?.onConnected()
         executePendingRequests()
-    }
-
-    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        // Start connection has to be called on onCreate, otherwise Amazon fails to detect the foregrounded Activity
-        // Be careful with doing mainHandler.post since that will not guarantee that it's called in onCreate
-        // runOnUIThread checks if the function is called in the UI thread and doesn't do post, so we are good since
-        // startConnectionOnMainThread is called on the main thread
-        runOnUIThread {
-            startConnection()
-        }
     }
 
     @SuppressWarnings("EmptyFunctionBlock")
@@ -645,7 +645,7 @@ internal class AmazonBilling(
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (!isConnected()) {
-                startConnectionOnMainThread()
+                startConnection()
             } else {
                 executePendingRequests()
             }

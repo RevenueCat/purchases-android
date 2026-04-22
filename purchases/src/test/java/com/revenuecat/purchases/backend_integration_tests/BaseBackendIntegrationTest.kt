@@ -131,7 +131,13 @@ internal abstract class BaseBackendIntegrationTest {
             requestResponseListener = goldenFileRecorder
         )
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
-        backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
+        backend = Backend(
+            appConfig,
+            dispatcher,
+            diagnosticsDispatcher,
+            httpClient,
+            backendHelper,
+        )
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {

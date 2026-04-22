@@ -61,7 +61,7 @@ class SubscriberAttributesPosterTests {
         dispatcher,
         dispatcher,
         mockClient,
-        backendHelper
+        backendHelper,
     )
     private var subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
 

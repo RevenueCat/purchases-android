@@ -60,6 +60,8 @@ public class StackComponent(
     public val overflow: Overflow? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
+    @get:JvmSynthetic
+    public val name: String? = null,
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)
@@ -104,6 +106,8 @@ public class PartialStackComponent(
     public val badge: Badge? = null,
     @get:JvmSynthetic
     public val overflow: StackComponent.Overflow? = null,
+    @get:JvmSynthetic
+    public val name: String? = null,
 ) : PartialComponent
 
 @OptIn(InternalRevenueCatAPI::class)

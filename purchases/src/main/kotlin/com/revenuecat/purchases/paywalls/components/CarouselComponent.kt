@@ -68,6 +68,8 @@ public class CarouselComponent(
     public val autoAdvance: AutoAdvancePages? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
+    @get:JvmSynthetic
+    public val name: String? = null,
 ) : PaywallComponent {
 
     @Poko

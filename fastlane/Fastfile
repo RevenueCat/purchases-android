@@ -574,7 +574,7 @@ platform :android do
       end
     end
 
-    if ENV['NOTIFY_SLACK'] == 'true'
+    if options[:notify_slack]&.to_s == 'true'
       slack_backend_integration_test_results(environment: backend_environment, success: success)
     end
     ping_heartbeat_monitor(url: ENV['HEARTBEAT_MONITOR_URL_BACKEND_INTEGRATION_TESTS'])

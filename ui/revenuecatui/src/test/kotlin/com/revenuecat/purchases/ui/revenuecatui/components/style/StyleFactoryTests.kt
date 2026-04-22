@@ -706,6 +706,161 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `TabControlToggleComponentStyle componentName matches enclosing TabsComponent name for analytics`() {
+        val tabsName = "plan_toggle_tabs"
+        val component = TabsComponent(
+            name = tabsName,
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(tabsName)
+    }
+
+    @Test
+    fun `TabControlToggleComponentStyle componentName falls back to toggle name when TabsComponent is unnamed`() {
+        val toggleOnlyName = "toggle_only"
+        val component = TabsComponent(
+            name = null,
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            name = toggleOnlyName,
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(toggleOnlyName)
+    }
+
+    @Test
+    fun `TabControlToggleComponentStyle componentName falls back to toggle name when TabsComponent name is blank`() {
+        val toggleOnlyName = "toggle_only"
+        val component = TabsComponent(
+            name = "",
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            name = toggleOnlyName,
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(toggleOnlyName)
+    }
+
+    @Test
     fun `Should fail to create a TabControlComponent outside of a TabComponent`() {
         // Arrange
         // TabControlComponent has 2 Stack ancestors, but no Tab.

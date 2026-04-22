@@ -286,12 +286,12 @@ jobs:
                 file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
-            RESULTS_DIR="build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>"
-            mkdir -p $RESULTS_DIR
-            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
-          path: build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>
+          path: build/test-results-collected
       - store_artifacts:
           path: build/reports
 
@@ -337,12 +337,12 @@ jobs:
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
-            RESULTS_DIR="build/test-results-galaxy"
-            mkdir -p $RESULTS_DIR
-            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
-          path: build/test-results-galaxy
+          path: build/test-results-collected
       - store_artifacts:
           path: build/reports
 
@@ -590,9 +590,7 @@ jobs:
       - run:
           name: Build and run purchases integration tests
           command: |
-            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
-          environment:
-            NOTIFY_SLACK: "<< parameters.notify_slack >>"
+            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>' notify_slack:'<< parameters.notify_slack >>'
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
