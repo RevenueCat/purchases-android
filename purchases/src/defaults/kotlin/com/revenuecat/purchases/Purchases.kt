@@ -46,6 +46,9 @@ import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -395,14 +398,17 @@ public class Purchases internal constructor(
         purchasesOrchestrator.getOfferings(listener)
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @InternalRevenueCatAPI
     @JvmSynthetic
-    internal fun getWorkflow(
+    @Throws(PurchasesException::class)
+    public suspend fun awaitGetWorkflow(
         workflowId: String,
-        onError: (PurchasesError) -> Unit,
-        onSuccess: (WorkflowResult) -> Unit,
-    ) {
-        purchasesOrchestrator.getWorkflow(workflowId, onSuccess, onError)
+    ): WorkflowResult = suspendCoroutine { continuation ->
+        purchasesOrchestrator.getWorkflow(
+            workflowId = workflowId,
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
     }
 
     /**
