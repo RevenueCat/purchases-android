@@ -902,11 +902,6 @@ jobs:
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - run:
-          name: Set GitHub token environment variable
-          command: |
-            echo "export GITHUB_TOKEN=$GITHUB_TOKEN" >> $BASH_ENV
-            source $BASH_ENV
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -1201,7 +1196,7 @@ workflows:
     jobs:
       - generate-baseline-profiles:
           context:
-            - github-api-token
+            - github-bot-public
 
   manual-trigger-bump:
     when:
