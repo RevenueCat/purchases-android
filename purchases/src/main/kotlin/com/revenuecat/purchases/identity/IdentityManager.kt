@@ -94,6 +94,9 @@ internal class IdentityManager(
                 oldAppUserID = oldAppUserID,
                 newAppUserID = newAppUserID,
                 onSuccessHandler = {
+                    // Cache wipe runs unconditionally: the backend alias has already committed
+                    // server-side, so local caches must be cleared to stay consistent even if
+                    // the caller cancelled mid-flight. safeResume then no-ops if cancelled.
                     synchronized(this@IdentityManager) {
                         log(LogIntent.USER) {
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
