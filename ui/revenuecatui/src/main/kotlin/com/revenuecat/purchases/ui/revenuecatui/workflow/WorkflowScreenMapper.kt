@@ -10,8 +10,9 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 
 internal object WorkflowScreenMapper {
 
-    fun toPaywallComponentsData(screen: WorkflowScreen): PaywallComponentsData =
+    fun toPaywallComponentsData(screen: WorkflowScreen, screenId: String): PaywallComponentsData =
         PaywallComponentsData(
+            id = screenId,
             templateName = screen.templateName,
             assetBaseURL = screen.assetBaseURL,
             componentsConfig = screen.componentsConfig,
@@ -20,9 +21,9 @@ internal object WorkflowScreenMapper {
             revision = screen.revision,
         )
 
-    fun toPaywallComponents(screen: WorkflowScreen, uiConfig: UiConfig): Offering.PaywallComponents =
+    fun toPaywallComponents(screen: WorkflowScreen, screenId: String, uiConfig: UiConfig): Offering.PaywallComponents =
         Offering.PaywallComponents(
             uiConfig = uiConfig,
-            data = toPaywallComponentsData(screen),
+            data = toPaywallComponentsData(screen, screenId),
         )
 }

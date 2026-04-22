@@ -52,8 +52,10 @@ class WorkflowScreenMapperTest {
 
     @Test
     fun `toPaywallComponentsData maps all screen fields correctly`() {
-        val data = WorkflowScreenMapper.toPaywallComponentsData(screen)
+        val screenId = "screen_abc"
+        val data = WorkflowScreenMapper.toPaywallComponentsData(screen, screenId)
 
+        assertThat(data.id).isEqualTo(screenId)
         assertThat(data.templateName).isEqualTo(screen.templateName)
         assertThat(data.assetBaseURL).isEqualTo(screen.assetBaseURL)
         assertThat(data.componentsConfig).isEqualTo(screen.componentsConfig)
@@ -64,10 +66,11 @@ class WorkflowScreenMapperTest {
 
     @Test
     fun `toPaywallComponents uses provided uiConfig`() {
+        val screenId = "screen_abc"
         val uiConfig = UiConfig()
-        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, uiConfig)
+        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, uiConfig)
 
         assertThat(paywallComponents.uiConfig).isEqualTo(uiConfig)
-        assertThat(paywallComponents.data).isEqualTo(WorkflowScreenMapper.toPaywallComponentsData(screen))
+        assertThat(paywallComponents.data).isEqualTo(WorkflowScreenMapper.toPaywallComponentsData(screen, screenId))
     }
 }

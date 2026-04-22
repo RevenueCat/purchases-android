@@ -691,7 +691,7 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private suspend fun updateStateFromWorkflow(
+    private fun updateStateFromWorkflow(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -722,7 +722,7 @@ internal class PaywallViewModelImpl(
             return
         }
 
-        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, workflow.uiConfig)
+        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, workflow.uiConfig)
 
         val offeringId = screen.offeringIdentifier
         if (offeringId == null) {
