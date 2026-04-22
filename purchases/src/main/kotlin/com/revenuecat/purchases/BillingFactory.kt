@@ -39,11 +39,11 @@ internal object BillingFactory {
                 backend = backend,
             )
             Store.PLAY_STORE -> BillingWrapper(
-                BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
-                Handler(application.mainLooper),
-                cache,
-                diagnosticsTrackerIfEnabled,
-                stateProvider,
+                clientFactory = BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
+                mainHandler = Handler(application.mainLooper),
+                deviceCache = cache,
+                diagnosticsTrackerIfEnabled = diagnosticsTrackerIfEnabled,
+                purchasesStateProvider = stateProvider,
             )
             Store.AMAZON -> {
                 try {
