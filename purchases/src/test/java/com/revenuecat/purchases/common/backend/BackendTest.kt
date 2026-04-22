@@ -123,7 +123,7 @@ class BackendTest {
         dispatcher,
         dispatcher,
         mockClient,
-        backendHelper
+        backendHelper,
     )
     private val asyncDispatcher = spyk(
         Dispatcher(
@@ -150,7 +150,7 @@ class BackendTest {
             )
         ),
         mockClient,
-        asyncBackendHelper
+        asyncBackendHelper,
     )
     private val appUserID = "jerry"
     private val storeProduct = stubStoreProduct("productID")
