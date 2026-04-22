@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseParams
@@ -21,6 +22,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -28,6 +30,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -56,6 +59,9 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -630,7 +636,30 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        val currentOffering: Offering? = when (val offeringSelection = offeringSelection) {
+        if (BuildConfig.USE_WORKFLOWS_ENDPOINT) {
+            val workflowParams: Pair<String, PresentedOfferingContext?>? = when (offeringSelection) {
+                is OfferingSelection.IdAndPresentedOfferingContext ->
+                    offeringSelection.offeringId to offeringSelection.presentedOfferingContext
+                is OfferingSelection.OfferingType ->
+                    offeringSelection.offeringType.identifier to offeringSelection.offeringType.presentedOfferingContext
+                is OfferingSelection.None -> null
+            }
+            if (workflowParams != null) {
+                val (offeringId, presentedOfferingContext) = workflowParams
+                coroutineScope {
+                    val fetchResultDeferred = async { purchases.awaitGetWorkflow(offeringId) }
+                    val offeringsDeferred = async { purchases.awaitOfferings() }
+                    updateStateFromWorkflow(
+                        fetchResultDeferred.await(),
+                        offeringsDeferred.await(),
+                        presentedOfferingContext,
+                    )
+                }
+                return
+            }
+        }
+
+        val currentOffering: Offering? = when (offeringSelection) {
             is OfferingSelection.OfferingType -> offeringSelection.offeringType
             is OfferingSelection.IdAndPresentedOfferingContext -> {
                 val offerings = purchases.awaitOfferings()
@@ -659,6 +688,74 @@ internal class PaywallViewModelImpl(
                 options.mode,
             )
         }
+    }
+
+    @Suppress("ReturnCount")
+    private fun updateStateFromWorkflow(
+        fetchResult: WorkflowDataResult,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
+        val workflow = fetchResult.workflow
+
+        val step = workflow.steps[workflow.initialStepId]
+        if (step == null) {
+            _state.value = PaywallState.Error(
+                "Initial step '${workflow.initialStepId}' not found in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val screenId = step.screenId
+        if (screenId == null) {
+            _state.value = PaywallState.Error(
+                "Initial step '${step.id}' has no screen_id in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val screen = workflow.screens[screenId]
+        if (screen == null) {
+            _state.value = PaywallState.Error(
+                "Screen '$screenId' not found in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val offeringId = screen.offeringIdentifier
+        if (offeringId == null) {
+            _state.value = PaywallState.Error(
+                "Screen '$screenId' has no offering_id in workflow '${workflow.id}'",
+            )
+            return
+        }
+
+        val baseOffering = offerings[offeringId]
+        if (baseOffering == null) {
+            _state.value = PaywallState.Error(
+                "Offering '$offeringId' not found for screen '$screenId'",
+            )
+            return
+        }
+
+        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, workflow.uiConfig)
+
+        val offering = Offering(
+            identifier = baseOffering.identifier,
+            serverDescription = baseOffering.serverDescription,
+            metadata = baseOffering.metadata,
+            availablePackages = baseOffering.availablePackages,
+            paywallComponents = paywallComponents,
+            webCheckoutURL = baseOffering.webCheckoutURL,
+        )
+        val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
+
+        _state.value = calculateState(
+            offeringWithContext,
+            _colorScheme.value,
+            purchases.storefrontCountryCode,
+            options.mode,
+        )
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
