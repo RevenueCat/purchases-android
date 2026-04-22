@@ -12,7 +12,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.getCustomerInfoWith
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
 
 /**
  * CompositionLocal containing the current Activity.
@@ -37,7 +36,7 @@ internal fun windowAspectRatio(): Float {
 internal suspend fun shouldDisplayPaywall(shouldDisplayBlock: (CustomerInfo) -> Boolean): Boolean {
     return suspendCancellableCoroutine { continuation ->
         shouldDisplayPaywall(shouldDisplayBlock) {
-            if (continuation.isActive) continuation.resume(it)
+            continuation.safeResume(it)
         }
     }
 }

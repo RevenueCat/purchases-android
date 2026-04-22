@@ -11,6 +11,8 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.identity.IdentityManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,8 +20,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 internal class BlockstoreHelper
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -141,8 +141,8 @@ constructor(
             .build()
         return suspendCancellableCoroutine { cont ->
             blockstoreClient.retrieveBytes(retrieveRequest)
-                .addOnSuccessListener { if (cont.isActive) cont.resume(it.blockstoreDataMap) }
-                .addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }
+                .addOnSuccessListener { cont.safeResume(it.blockstoreDataMap) }
+                .addOnFailureListener { cont.safeResumeWithException(it) }
         }
     }
 
@@ -170,9 +170,9 @@ constructor(
             blockstoreClient.storeBytes(storeRequest)
                 .addOnSuccessListener {
                     debugLog { "Block store: User ID: $userId stored in Block store." }
-                    if (cont.isActive) cont.resume(Unit)
+                    cont.safeResume(Unit)
                 }
-                .addOnFailureListener { if (cont.isActive) cont.resumeWithException(it) }
+                .addOnFailureListener { cont.safeResumeWithException(it) }
         }
     }
 }

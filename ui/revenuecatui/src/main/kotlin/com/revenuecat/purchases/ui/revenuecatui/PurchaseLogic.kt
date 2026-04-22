@@ -6,9 +6,9 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.helpers.safeResume
 import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
 
 /**
  * Interface for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
@@ -223,7 +223,7 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
     final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performPurchaseWithCompletion(activity, rcPackage) { result ->
-                if (continuation.isActive) continuation.resume(result)
+                continuation.safeResume(result)
             }
         }
 
@@ -234,7 +234,7 @@ public abstract class PurchaseLogicWithCallback : PurchaseLogic {
     final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
-                if (continuation.isActive) continuation.resume(result)
+                continuation.safeResume(result)
             }
         }
 }
@@ -293,7 +293,7 @@ public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
     ): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performPurchaseWithCompletion(activity, params) { result ->
-                if (continuation.isActive) continuation.resume(result)
+                continuation.safeResume(result)
             }
         }
 
@@ -304,7 +304,7 @@ public abstract class PaywallPurchaseLogicWithCallback : PaywallPurchaseLogic {
     final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCancellableCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
-                if (continuation.isActive) continuation.resume(result)
+                continuation.safeResume(result)
             }
         }
 }

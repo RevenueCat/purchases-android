@@ -34,17 +34,16 @@ class BillingClientAcknowledgeHelper(private val billingClient: BillingClient) {
                 .setPurchaseToken(purchaseToken)
                 .build()
             billingClient.acknowledgePurchase(params) { billingResult ->
-                if (!continuation.isActive) return@acknowledgePurchase
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     Log.d(TAG, "Acknowledged purchase: $purchaseToken")
-                    continuation.resume(true)
+                    if (continuation.isActive) continuation.resume(true)
                 } else {
                     Log.e(
                         TAG,
                         "Failed to acknowledge purchase: ${billingResult.responseCode} " +
                             "- ${billingResult.debugMessage}",
                     )
-                    continuation.resume(false)
+                    if (continuation.isActive) continuation.resume(false)
                 }
             }
         }
@@ -64,17 +63,16 @@ class BillingClientAcknowledgeHelper(private val billingClient: BillingClient) {
                 .setPurchaseToken(purchaseToken)
                 .build()
             billingClient.consumeAsync(params) { billingResult, _ ->
-                if (!continuation.isActive) return@consumeAsync
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     Log.d(TAG, "Consumed purchase: $purchaseToken")
-                    continuation.resume(true)
+                    if (continuation.isActive) continuation.resume(true)
                 } else {
                     Log.e(
                         TAG,
                         "Failed to consume purchase: ${billingResult.responseCode} " +
                             "- ${billingResult.debugMessage}",
                     )
-                    continuation.resume(false)
+                    if (continuation.isActive) continuation.resume(false)
                 }
             }
         }

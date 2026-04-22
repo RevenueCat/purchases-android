@@ -121,7 +121,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
                 val launchResult = billingClient.launchBillingFlow(activity, flowParams)
                 if (launchResult.responseCode != BillingClient.BillingResponseCode.OK) {
                     purchaseContinuation = null
-                    continuation.resume(PurchaseUpdateResult(launchResult, null))
+                    if (continuation.isActive) continuation.resume(PurchaseUpdateResult(launchResult, null))
                 }
             }
         }
@@ -136,7 +136,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
         val continuation = purchaseContinuation
         purchaseContinuation = null
         if (continuation != null) {
-            continuation.resume(PurchaseUpdateResult(billingResult, purchases))
+            if (continuation.isActive) continuation.resume(PurchaseUpdateResult(billingResult, purchases))
         } else {
             Log.w(TAG, "Received onPurchasesUpdated but no continuation was set")
         }

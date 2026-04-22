@@ -1,14 +1,14 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 /**
  * Get latest available customer info.
@@ -28,8 +28,8 @@ public suspend fun Purchases.awaitCustomerInfo(
     return suspendCancellableCoroutine { continuation ->
         getCustomerInfoWith(
             fetchPolicy,
-            onSuccess = { if (continuation.isActive) continuation.resume(it) },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -51,9 +51,9 @@ public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
         logInWith(
             appUserID,
             onSuccess = { customerInfo, created ->
-                if (continuation.isActive) continuation.resume(LogInResult(customerInfo, created))
+                continuation.safeResume(LogInResult(customerInfo, created))
             },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -72,8 +72,8 @@ public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
 public suspend fun Purchases.awaitLogOut(): CustomerInfo {
     return suspendCancellableCoroutine { continuation ->
         logOutWith(
-            onSuccess = { if (continuation.isActive) continuation.resume(it) },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -93,8 +93,8 @@ public suspend fun Purchases.awaitLogOut(): CustomerInfo {
 public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
     return suspendCancellableCoroutine { continuation ->
         syncPurchasesWith(
-            onSuccess = { if (continuation.isActive) continuation.resume(it) },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -120,8 +120,8 @@ public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
 public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
     return suspendCancellableCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
-            onSuccess = { if (continuation.isActive) continuation.resume(it) },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -151,8 +151,8 @@ public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String,
         setAppstackAttributionParams(
             data,
             syncAttributesAndOfferingsListener(
-                onSuccess = { if (continuation.isActive) continuation.resume(it) },
-                onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+                onSuccess = { continuation.safeResume(it) },
+                onError = { continuation.safeResumeWithException(PurchasesException(it)) },
             ),
         )
     }
@@ -178,8 +178,8 @@ public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String,
 public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
     return suspendCancellableCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
-            onSuccess = { if (continuation.isActive) continuation.resume(it) },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -198,11 +198,11 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
     return suspendCancellableCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
             override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
-                if (continuation.isActive) continuation.resume(customerCenterConfig)
+                continuation.safeResume(customerCenterConfig)
             }
 
             override fun onError(error: PurchasesError) {
-                if (continuation.isActive) continuation.resumeWithException(PurchasesException(error))
+                continuation.safeResumeWithException(PurchasesException(error))
             }
         })
     }
@@ -223,8 +223,8 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
     return suspendCancellableCoroutine { continuation ->
         getVirtualCurrenciesWith(
-            onSuccess = { if (continuation.isActive) continuation.resume(it) },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -244,8 +244,8 @@ public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
 public suspend fun Purchases.awaitStorefrontLocale(): Locale {
     return suspendCancellableCoroutine { continuation ->
         getStorefrontLocaleWith(
-            onSuccess = { if (continuation.isActive) continuation.resume(it) },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -278,9 +278,9 @@ public suspend fun Purchases.awaitCreateSupportTicket(email: String, description
             email = email,
             description = description,
             onSuccess = { wasSent ->
-                if (continuation.isActive) continuation.resume(CreateSupportTicketResult(success = wasSent))
+                continuation.safeResume(CreateSupportTicketResult(success = wasSent))
             },
-            onError = { if (continuation.isActive) continuation.resumeWithException(PurchasesException(it)) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }

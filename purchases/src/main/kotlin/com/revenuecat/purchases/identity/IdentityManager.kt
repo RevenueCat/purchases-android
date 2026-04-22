@@ -17,6 +17,8 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -24,8 +26,6 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -102,10 +102,10 @@ internal class IdentityManager(
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
-                    if (continuation.isActive) continuation.resume(Unit)
+                    continuation.safeResume(Unit)
                 },
                 onErrorHandler = { error ->
-                    if (continuation.isActive) continuation.resumeWithException(PurchasesException(error))
+                    continuation.safeResumeWithException(PurchasesException(error))
                 },
             )
         }

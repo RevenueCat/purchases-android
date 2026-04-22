@@ -7,6 +7,8 @@ import com.revenuecat.purchases.backup.RevenueCatBackupAgent
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
@@ -25,8 +27,6 @@ import java.net.URL
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -256,13 +256,12 @@ abstract class BasePurchasesIntegrationTest {
         suspendCancellableCoroutine { continuation ->
             Purchases.sharedInstance.purchasesOrchestrator.offlineEntitlementsManager
                 .updateProductEntitlementMappingCacheIfStale {
-                    if (!continuation.isActive) return@updateProductEntitlementMappingCacheIfStale
                     if (it != null) {
-                        continuation.resumeWithException(
+                        continuation.safeResumeWithException(
                             AssertionError("Expected to get product entitlement mapping but got error: $it"),
                         )
                     } else {
-                        continuation.resume(Unit)
+                        continuation.safeResume(Unit)
                     }
                 }
         }
