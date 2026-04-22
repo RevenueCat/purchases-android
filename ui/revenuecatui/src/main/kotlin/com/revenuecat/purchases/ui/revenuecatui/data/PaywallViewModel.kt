@@ -722,8 +722,6 @@ internal class PaywallViewModelImpl(
             return
         }
 
-        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, workflow.uiConfig)
-
         val offeringId = screen.offeringIdentifier
         if (offeringId == null) {
             _state.value = PaywallState.Error(
@@ -739,6 +737,8 @@ internal class PaywallViewModelImpl(
             )
             return
         }
+
+        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, workflow.uiConfig)
 
         val offering = Offering(
             identifier = baseOffering.identifier,
