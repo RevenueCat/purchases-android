@@ -38,7 +38,7 @@ class WorkflowManagerTest {
             action = WorkflowResponseAction.INLINE,
             data = mockk(),
         )
-        val expectedResult = WorkflowResult(
+        val expectedResult = WorkflowDataResult(
             workflow = response.data!!,
             enrolledVariants = null,
         )
@@ -57,7 +57,7 @@ class WorkflowManagerTest {
             successSlot.captured(response)
         }
 
-        var result: WorkflowResult? = null
+        var result: WorkflowDataResult? = null
         workflowManager.getWorkflow(
             appUserID = "user_1",
             workflowId = "wf_1",

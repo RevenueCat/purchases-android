@@ -28,7 +28,7 @@ internal class WorkflowManager(
         appUserID: String,
         workflowId: String,
         appInBackground: Boolean,
-        onSuccess: (WorkflowResult) -> Unit,
+        onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         backend.getWorkflow(

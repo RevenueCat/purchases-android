@@ -7,7 +7,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationExcepti
 import com.revenuecat.purchases.models.Checksum
 
 /**
- * Resolves a [WorkflowDetailResponse] envelope into a [WorkflowResult]
+ * Resolves a [WorkflowDetailResponse] envelope into a [WorkflowDataResult]
  * by handling inline data or CDN fetching + checksum validation.
  */
 internal class WorkflowDetailResolver(
@@ -15,7 +15,7 @@ internal class WorkflowDetailResolver(
 ) {
 
     @Throws(IllegalStateException::class, SignatureVerificationException::class)
-    suspend fun resolve(response: WorkflowDetailResponse): WorkflowResult {
+    suspend fun resolve(response: WorkflowDetailResponse): WorkflowDataResult {
         val workflow = when (response.action) {
             WorkflowResponseAction.INLINE -> {
                 response.data
@@ -29,7 +29,7 @@ internal class WorkflowDetailResolver(
                 WorkflowJsonParser.parsePublishedWorkflow(json)
             }
         }
-        return WorkflowResult(
+        return WorkflowDataResult(
             workflow = workflow,
             enrolledVariants = response.enrolledVariants,
         )

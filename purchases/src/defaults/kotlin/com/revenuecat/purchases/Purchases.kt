@@ -15,7 +15,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.workflows.WorkflowResult
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -403,7 +403,7 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetWorkflow(
         workflowId: String,
-    ): WorkflowResult = suspendCoroutine { continuation ->
+    ): WorkflowDataResult = suspendCoroutine { continuation ->
         purchasesOrchestrator.getWorkflow(
             workflowId = workflowId,
             onSuccess = continuation::resume,
