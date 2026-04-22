@@ -1,9 +1,9 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.core.HttpClient
+import com.revenuecat.purchases.core.HttpException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import uniffi.purchases_core.HttpClient
-import uniffi.purchases_core.HttpException
 import java.net.URL
 
 /**

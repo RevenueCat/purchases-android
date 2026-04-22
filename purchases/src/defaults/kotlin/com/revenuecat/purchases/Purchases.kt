@@ -15,10 +15,11 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
-import uniffi.purchases_core.add
-import uniffi.purchases_core.fetchWithNative
-import uniffi.purchases_core.performOperation
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.core.OperationMode
+import com.revenuecat.purchases.core.add
+import com.revenuecat.purchases.core.fetchWithNative
+import com.revenuecat.purchases.core.performOperation
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -49,8 +50,6 @@ import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import uniffi.purchases_core.HttpException
-import uniffi.purchases_core.OperationMode
 import java.net.URL
 import java.util.Locale
 import kotlin.coroutines.resume
