@@ -24,6 +24,7 @@ internal fun ButtonComponentStyle.Action.componentInteraction(localeUrl: String?
         is ButtonComponentStyle.Action.WebCheckout,
         is ButtonComponentStyle.Action.WebProductSelection,
         is ButtonComponentStyle.Action.CustomWebCheckout,
+        is ButtonComponentStyle.Action.Workflow,
         -> null
     }
 
@@ -52,5 +53,6 @@ internal fun ButtonComponentStyle.Action.isPurchaseRelated(): Boolean =
         is ButtonComponentStyle.Action.RestorePurchases,
         is ButtonComponentStyle.Action.NavigateBack,
         is ButtonComponentStyle.Action.NavigateTo,
+        is ButtonComponentStyle.Action.Workflow,
         -> false
     }

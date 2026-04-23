@@ -109,5 +109,8 @@ internal class ButtonComponentState(
                     ),
                 )
             }
+            // Should not reach here: Action.Workflow will be handled before calling toPaywallAction.
+            // Reached only if componentId is null (misconfigured button).
+            is ButtonComponentStyle.Action.Workflow -> PaywallAction.External.NavigateBack
         }
 }
