@@ -27,7 +27,7 @@ public class ButtonComponent(
     @get:JvmSynthetic public val stack: StackComponent,
     @get:JvmSynthetic public val transition: PaywallTransition? = null,
     @get:JvmSynthetic public val name: String? = null,
-    @get:JvmSynthetic @SerialName("id") public val id: String? = null,
+    @get:JvmSynthetic public val id: String? = null,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
