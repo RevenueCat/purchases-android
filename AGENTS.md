@@ -184,6 +184,16 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 - Located in `backend_integration_tests` packages
 - See `local.properties.example` for all configurable properties
 
+### Pointing at a local purchases-core
+
+To iterate on `purchases-core` alongside this SDK without publishing, add to `local.properties`:
+
+```
+purchases.core.local.path=../purchases-core/android
+```
+
+`settings.gradle.kts` runs Gradle as a composite build with `includeBuild(...)` and a `dependencySubstitution` block, so `libs.purchases.core` (`com.revenuecat.purchases:purchases-core`) resolves to the local project. The included build owns a `buildRustNativeLibs` task wired into each variant's `pre<Variant>Build` that runs `scripts/build-android.sh` with proper input/output tracking — Gradle skips it when Rust sources haven't changed; cargo is incremental when they have. The path may be absolute or relative to the repo root. Leaving the key unset restores the published GitHub Packages dep.
+
 ### Sample Applications
 - **MagicWeather**: Standard sample app
 - **MagicWeatherCompose**: Compose-based sample

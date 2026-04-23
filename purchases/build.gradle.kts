@@ -227,7 +227,7 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    implementation("com.revenuecat.purchases:purchases-core:0.0.0-rust-SNAPSHOT")
+    implementation(libs.purchases.core)
     "bc8Api"(libs.billing.bc8)
     "bc7Api"(libs.billing.bc7)
 
