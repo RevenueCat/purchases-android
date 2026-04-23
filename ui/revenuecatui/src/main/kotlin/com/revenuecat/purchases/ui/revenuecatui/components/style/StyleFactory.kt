@@ -631,6 +631,7 @@ internal class StyleFactory(
                 action = action,
                 transition = component.transition,
                 componentName = component.name,
+                componentId = component.id,
             )
         }
     }

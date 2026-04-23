@@ -21,6 +21,8 @@ internal data class ButtonComponentStyle(
     val transition: PaywallTransition? = null,
     @get:JvmSynthetic
     val componentName: String? = null,
+    @get:JvmSynthetic
+    val componentId: String? = null,
 ) : ComponentStyle {
 
     internal sealed interface Action {
