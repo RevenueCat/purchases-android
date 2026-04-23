@@ -3,7 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -42,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterActivity
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
@@ -363,7 +366,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                 is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
                 is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
                     is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
-                        Logger.w("Customer Center is not yet implemented on Android.")
+                        context.launchCustomerCenter()
 
                     is PaywallAction.External.NavigateTo.Destination.Url -> context.handleUrlDestination(
                         url = destination.url,
@@ -388,6 +391,23 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
     }
 
     URLOpener.openURL(this, url, openingMethod)
+}
+
+internal fun Context.launchCustomerCenter() {
+    try {
+        val intent = CustomerCenterActivity.createIntent(this)
+        // LocalContext can sometimes be backed by Application context.
+        if (getActivity() == null) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Logger.e("Customer Center activity was not found when launched from paywall", e)
+    } catch (e: SecurityException) {
+        Logger.e("Unable to launch Customer Center from paywall due to security restrictions", e)
+    } catch (e: IllegalArgumentException) {
+        Logger.e("Failed to launch Customer Center from paywall", e)
+    }
 }
 
 private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this
