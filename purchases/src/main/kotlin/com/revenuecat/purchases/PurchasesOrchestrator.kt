@@ -51,7 +51,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.WorkflowFetchResult
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -270,7 +270,7 @@ internal class PurchasesOrchestrator(
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
-        billing.startConnectionOnMainThread()
+        billing.startConnection()
 
         dispatch {
             // This needs to happen after the billing client listeners have been set. This is because
@@ -563,10 +563,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    @InternalRevenueCatAPI
     fun getWorkflow(
         workflowId: String,
-        onSuccess: (WorkflowFetchResult) -> Unit,
+        onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         workflowManager.getWorkflow(

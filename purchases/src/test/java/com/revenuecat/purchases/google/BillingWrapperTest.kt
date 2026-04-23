@@ -76,6 +76,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,6 +91,7 @@ class BillingWrapperTest {
     internal companion object {
         const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
         const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
+        private const val THREAD_JOIN_TIMEOUT_MS = 5_000L
     }
 
     private var onConnectedCalled: Boolean = false
@@ -161,15 +163,16 @@ class BillingWrapperTest {
         mockDetailsList = listOf(mockProductDetails())
 
         wrapper = BillingWrapper(
-            mockClientFactory,
-            handler,
-            mockDeviceCache,
-            mockDiagnosticsTracker,
-            purchasesStateProvider,
-            mockDateProvider
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            backgroundHandler = handler,
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
-        wrapper.startConnectionOnMainThread()
+        wrapper.startConnection()
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
@@ -216,6 +219,133 @@ class BillingWrapperTest {
         verify {
             mockClient.startConnection(billingClientStateListener!!)
         }
+    }
+
+    @Test
+    fun `startConnection schedules the connection on the background handler, not the main handler`() {
+        val mockMainHandler = mockk<Handler>()
+        val mockBackgroundHandler = mockk<Handler>()
+        every { mockMainHandler.postDelayed(any(), any()) } returns true
+        every { mockMainHandler.post(any()) } returns true
+        every { mockBackgroundHandler.postDelayed(any(), any()) } returns true
+        every { mockBackgroundHandler.post(any()) } returns true
+
+        val routedWrapper = BillingWrapper(
+            mockClientFactory,
+            mockMainHandler,
+            mockBackgroundHandler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        routedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        routedWrapper.startConnection()
+
+        verify(exactly = 1) { mockBackgroundHandler.postDelayed(any(), 0L) }
+        verify(exactly = 0) { mockMainHandler.postDelayed(any(), any<Long>()) }
+        verify(exactly = 0) { mockMainHandler.post(any()) }
+    }
+
+    @Test
+    fun `endConnection posts cleanup on the background handler, not the main handler`() {
+        val mockMainHandler = mockk<Handler>()
+        val mockBackgroundHandler = mockk<Handler>()
+        every { mockMainHandler.postDelayed(any(), any()) } returns true
+        every { mockMainHandler.post(any()) } returns true
+        every { mockBackgroundHandler.postDelayed(any(), any()) } returns true
+        every { mockBackgroundHandler.post(any()) } returns true
+
+        val routedWrapper = BillingWrapper(
+            mockClientFactory,
+            mockMainHandler,
+            mockBackgroundHandler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        routedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        routedWrapper.close()
+
+        verify(exactly = 1) { mockBackgroundHandler.post(any()) }
+        verify(exactly = 0) { mockMainHandler.post(any()) }
+    }
+
+    @Test
+    fun `close quits the background HandlerThread owned by BillingWrapper`() {
+        val selfOwnedWrapper = BillingWrapper(
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            // backgroundHandler omitted -> BillingWrapper creates and owns a HandlerThread
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider
+        )
+        selfOwnedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        val ownedThread = selfOwnedWrapper.ownedBackgroundThread
+        assertThat(ownedThread).`as`("BillingWrapper should own a HandlerThread when none is injected").isNotNull
+        assertThat(ownedThread!!.name).isEqualTo("revenuecat-billing")
+        assertThat(ownedThread.isAlive).isTrue
+
+        selfOwnedWrapper.close()
+        ownedThread.join(THREAD_JOIN_TIMEOUT_MS)
+
+        assertThat(ownedThread.isAlive).isFalse
+    }
+
+    @Test
+    fun `performStartConnection releases the wrapper monitor before calling BillingClient startConnection`() {
+        var heldLockDuringStartConnection = true
+        every { mockClient.startConnection(any()) } answers {
+            heldLockDuringStartConnection = Thread.holdsLock(wrapper)
+        }
+        every { mockClient.isReady } returns false
+
+        wrapper.startConnection()
+
+        assertThat(heldLockDuringStartConnection)
+            .`as`("BillingClient#startConnection must not run while we hold the wrapper monitor")
+            .isFalse
+    }
+
+    @Test
+    fun `if building the BillingClient throws, the exception is rethrown on the main thread`() {
+        val throwingFactory = mockk<BillingWrapper.ClientFactory>()
+        val buildError = RuntimeException("build failed")
+        every { throwingFactory.buildClient(any()) } throws buildError
+
+        val crashingWrapper = BillingWrapper(
+            throwingFactory,
+            handler,
+            handler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        crashingWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        val thrown = assertThrows(RuntimeException::class.java) {
+            crashingWrapper.startConnection()
+        }
+        assertThat(thrown).isSameAs(buildError)
+    }
+
+    @Test
+    fun `if starting connection throws an unexpected exception, the exception is rethrown on the main thread`() {
+        val connectError = IllegalArgumentException("unexpected")
+        every { mockClient.isReady } returns false
+        every { mockClient.startConnection(any()) } throws connectError
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            wrapper.startConnection()
+        }
+        assertThat(thrown).isSameAs(connectError)
     }
 
     @Test
@@ -1374,9 +1504,9 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `startConnectionOnMainThread tracks diagnostics call with correct parameters`() {
+    fun `startConnection tracks diagnostics call with correct parameters`() {
         // Arrange, Act, Assert
-        // Our test setup() method calls startConnectionOnMainThread().
+        // Our test setup() method calls startConnection().
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
     }
 
