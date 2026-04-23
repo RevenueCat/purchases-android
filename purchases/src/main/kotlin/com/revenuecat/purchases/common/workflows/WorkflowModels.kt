@@ -21,7 +21,7 @@ import java.net.URL
 @Serializable
 public data class WorkflowTriggerAction(
     val type: String,
-    @SerialName("step_id") val stepId: String? = null,
+    @SerialName("value") val stepId: String? = null,
 )
 
 @InternalRevenueCatAPI
