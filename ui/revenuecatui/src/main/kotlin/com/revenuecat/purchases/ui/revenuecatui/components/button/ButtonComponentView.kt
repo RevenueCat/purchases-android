@@ -164,13 +164,15 @@ internal fun ButtonComponentView(
                     )
                 } else {
                     val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
-                    style.action.componentInteraction(urlForEvent)?.let { interaction ->
+                    val interaction = paywallAction.workflowInteraction()
+                        ?: style.action.componentInteraction(urlForEvent)
+                    interaction?.let {
                         componentInteractionTracker.track(
                             PaywallComponentInteractionData(
                                 componentType = PaywallComponentType.BUTTON,
                                 componentName = style.componentName,
-                                componentValue = interaction.value,
-                                componentUrl = interaction.url,
+                                componentValue = it.value,
+                                componentUrl = it.url,
                             ),
                         )
                     }

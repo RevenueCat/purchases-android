@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 
 /**
@@ -38,6 +39,13 @@ private fun ButtonComponentStyle.Action.NavigateTo.Destination.componentInteract
             ButtonComponentInteraction(value = componentInteractionValue, url = localeUrl)
         is ButtonComponentStyle.Action.NavigateTo.Destination.Sheet ->
             ButtonComponentInteraction(value = "navigate_to_sheet")
+    }
+
+internal fun PaywallAction.workflowInteraction(): ButtonComponentInteraction? =
+    if (this is PaywallAction.External.Workflow) {
+        ButtonComponentInteraction(value = "workflow")
+    } else {
+        null
     }
 
 /**

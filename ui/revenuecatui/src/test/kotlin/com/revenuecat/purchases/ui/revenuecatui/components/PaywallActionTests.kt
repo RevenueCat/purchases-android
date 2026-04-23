@@ -159,6 +159,9 @@ class PaywallActionTests {
             is PaywallAction.External.LaunchWebCheckout -> error(
                 "LaunchWebCheckout is not a ButtonComponent.Action. It is handled by PurchaseButtonComponent instead."
             )
+            is PaywallAction.External.Workflow -> error(
+                "Workflow is a runtime workflow navigation action, not a ButtonComponent.Action."
+            )
         }
 
     private fun PaywallAction.External.NavigateTo.Destination.toButtonDestination(): ButtonComponent.Destination =

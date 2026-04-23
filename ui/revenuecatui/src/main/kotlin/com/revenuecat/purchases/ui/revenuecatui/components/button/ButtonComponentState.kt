@@ -48,6 +48,12 @@ internal class ButtonComponentState(
 
     @get:JvmSynthetic
     val action by derivedStateOf {
+        if (style.action is ButtonComponentStyle.Action.Workflow) {
+            val componentId = style.componentId
+            if (componentId != null) {
+                return@derivedStateOf PaywallAction.External.Workflow(componentId)
+            }
+        }
         val localeId = localeProvider().toLocaleId()
 
         style.action.toPaywallAction(localeId)
@@ -110,8 +116,8 @@ internal class ButtonComponentState(
                     ),
                 )
             }
-            // Workflow buttons are normally intercepted before toPaywallAction() is called.
-            // Reaching this is unexpected and indicates a misconfigured button (e.g. null componentId).
+            // Should not reach here: Action.Workflow is handled before calling toPaywallAction.
+            // Reached only if componentId is null (misconfigured button).
             is ButtonComponentStyle.Action.Workflow -> {
                 Logger.e("ButtonComponentState: reached toPaywallAction for Workflow action — componentId may be null")
                 PaywallAction.External.NavigateBack
