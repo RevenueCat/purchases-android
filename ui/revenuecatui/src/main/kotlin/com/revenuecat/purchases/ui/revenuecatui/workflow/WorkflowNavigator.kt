@@ -1,8 +1,5 @@
-@file:OptIn(InternalRevenueCatAPI::class)
-
 package com.revenuecat.purchases.ui.revenuecatui.workflow
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
