@@ -51,5 +51,6 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         return workflow.steps[prevStepId]
     }
 
-    fun canNavigateBack(): Boolean = backStack.isNotEmpty()
+    val canNavigateBack: Boolean
+        get() = backStack.isNotEmpty()
 }
