@@ -25,7 +25,7 @@ internal fun ButtonComponentStyle.Action.componentInteraction(localeUrl: String?
         is ButtonComponentStyle.Action.WebCheckout,
         is ButtonComponentStyle.Action.WebProductSelection,
         is ButtonComponentStyle.Action.CustomWebCheckout,
-        is ButtonComponentStyle.Action.Workflow,
+        is ButtonComponentStyle.Action.WorkflowTrigger,
         -> null
     }
 
@@ -42,8 +42,8 @@ private fun ButtonComponentStyle.Action.NavigateTo.Destination.componentInteract
     }
 
 internal fun PaywallAction.workflowInteraction(): ButtonComponentInteraction? =
-    if (this is PaywallAction.External.Workflow) {
-        ButtonComponentInteraction(value = "workflow")
+    if (this is PaywallAction.External.WorkflowTrigger) {
+        ButtonComponentInteraction(value = "workflow_trigger")
     } else {
         null
     }
@@ -61,6 +61,6 @@ internal fun ButtonComponentStyle.Action.isPurchaseRelated(): Boolean =
         is ButtonComponentStyle.Action.RestorePurchases,
         is ButtonComponentStyle.Action.NavigateBack,
         is ButtonComponentStyle.Action.NavigateTo,
-        is ButtonComponentStyle.Action.Workflow,
+        is ButtonComponentStyle.Action.WorkflowTrigger,
         -> false
     }

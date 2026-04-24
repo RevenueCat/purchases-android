@@ -870,7 +870,7 @@ internal class ButtonComponentTests {
                           "type": "workflow"
                         }
                         """.trimIndent(),
-                        deserialized = ButtonComponent.Action.Workflow,
+                        deserialized = ButtonComponent.Action.WorkflowTrigger,
                     ),
                 ),
                 arrayOf(

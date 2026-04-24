@@ -26,7 +26,7 @@ internal sealed interface PaywallAction {
 
         object RestorePurchases : External
         object NavigateBack : External
-        data class Workflow(val componentId: String) : External
+        data class WorkflowTrigger(val componentId: String) : External
         data class PurchasePackage(
             val rcPackage: Package?,
             val resolvedOffer: ResolvedOffer? = null,
