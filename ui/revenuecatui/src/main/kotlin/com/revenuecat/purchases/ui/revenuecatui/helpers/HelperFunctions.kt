@@ -11,8 +11,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.getCustomerInfoWith
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * CompositionLocal containing the current Activity.
@@ -35,7 +34,11 @@ internal fun windowAspectRatio(): Float {
  * Evaluates [shouldDisplayBlock] with the current CustomerInfo to determine if a paywall should be displayed.
  */
 internal suspend fun shouldDisplayPaywall(shouldDisplayBlock: (CustomerInfo) -> Boolean): Boolean {
-    return suspendCoroutine { continuation -> shouldDisplayPaywall(shouldDisplayBlock, continuation::resume) }
+    return suspendCancellableCoroutine { continuation ->
+        shouldDisplayPaywall(shouldDisplayBlock) {
+            continuation.safeResume(it)
+        }
+    }
 }
 
 /**

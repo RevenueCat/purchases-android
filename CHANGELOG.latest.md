@@ -1,5 +1,7 @@
 ## RevenueCat SDK
 ### 🐞 Bugfixes
+* fix(customer-center): prefer active entitlement when decorating subsc… (#3313) via Guilherme (@GuilhermeMota93)
+* fix: migrate `await*` coroutines to `suspendCancellableCoroutine` to prevent `IllegalStateException` when callbacks fire more than once. **Behavior change:** `CancellationException` now propagates from public `await*` functions — callers wrapping these in a broad `catch (e: Exception)` should re-throw `CancellationException` to preserve structured concurrency.
 * fix: move Google BillingClient connection off the main thread (#3369) via Toni Rico (@tonidero)
 * [EXTERNAL] fix(google): guard showInAppMessages against BillingClient runtime crashes (#3367) by @matteinn (#3368) via Monika Mateska (@MonikaMateska)
 

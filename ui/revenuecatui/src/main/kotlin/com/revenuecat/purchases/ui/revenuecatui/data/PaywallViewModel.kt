@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.safeResume
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
@@ -70,8 +71,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 @Suppress("TooManyFunctions")
 @Stable
@@ -371,8 +370,8 @@ internal class PaywallViewModelImpl(
         val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for listener.onRestoreInitiated to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
-                continuation.resume(shouldResume)
-            } ?: continuation.resume(true)
+                continuation.safeResume(shouldResume)
+            } ?: continuation.safeResume(true)
         }
 
         val detail = if (shouldResume) "will" else "will not"
@@ -510,10 +509,10 @@ internal class PaywallViewModelImpl(
     ) {
         // Call onPurchasePackageInitiated and wait for resume() to be called
 
-        val shouldResume = suspendCoroutine { continuation ->
+        val shouldResume = suspendCancellableCoroutine { continuation ->
             listener?.onPurchasePackageInitiated(packageToPurchase) { shouldResume ->
-                continuation.resume(shouldResume)
-            } ?: continuation.resume(true)
+                continuation.safeResume(shouldResume)
+            } ?: continuation.safeResume(true)
         }
 
         if (!shouldResume) {
