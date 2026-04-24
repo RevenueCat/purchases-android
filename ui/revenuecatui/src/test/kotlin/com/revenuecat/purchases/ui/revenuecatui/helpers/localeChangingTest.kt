@@ -12,11 +12,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTextReplacement
+import com.revenuecat.purchases.ui.revenuecatui.extensions.rcLayoutDirection
 import java.util.Locale
 
 /**
@@ -43,7 +45,10 @@ internal fun <T> ComposeContentTestRule.localeChangingTest(
 
         val arrangeResult = arrange()
 
-        CompositionLocalProvider(LocalConfiguration provides configuration) {
+        CompositionLocalProvider(
+            LocalConfiguration provides configuration,
+            LocalLayoutDirection provides configuration.rcLayoutDirection(),
+        ) {
             // The content under test, and a TextField to change the locale.
             Column {
                 act(arrangeResult)

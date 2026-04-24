@@ -9,6 +9,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -530,6 +531,8 @@ internal class MockViewModel(
         get() = _actionError
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
+    override val localeList: StateFlow<LocaleListCompat> = MutableStateFlow(LocaleListCompat.getDefault())
+    override val preferredUILocaleOverrideHonorsLayoutDirection: StateFlow<Boolean> = MutableStateFlow(false)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
         return state.value.loadedLegacy()

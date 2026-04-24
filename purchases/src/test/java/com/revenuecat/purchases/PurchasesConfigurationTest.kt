@@ -51,6 +51,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
         assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
         assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
+        assertThat(purchasesConfiguration.preferredUILocaleOverrideHonorsLayoutDirection).isFalse()
     }
 
     @Test
@@ -137,12 +138,25 @@ class PurchasesConfigurationTest {
         val localeOverride = "de_DE"
         val purchasesConfiguration = builder.preferredUILocaleOverride(localeOverride).build()
         assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo(localeOverride)
+        assertThat(purchasesConfiguration.preferredUILocaleOverrideHonorsLayoutDirection).isFalse()
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets preferredUILocaleOverrideHonorsLayoutDirection correctly`() {
+        val localeOverride = "ar_SA"
+        val purchasesConfiguration = builder
+            .preferredUILocaleOverride(localeOverride, honorLayoutDirection = true)
+            .build()
+
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo(localeOverride)
+        assertThat(purchasesConfiguration.preferredUILocaleOverrideHonorsLayoutDirection).isTrue()
     }
 
     @Test
     fun `PurchasesConfiguration handles null preferredUILocaleOverride`() {
         val purchasesConfiguration = builder.preferredUILocaleOverride(null).build()
         assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
+        assertThat(purchasesConfiguration.preferredUILocaleOverrideHonorsLayoutDirection).isFalse()
     }
 
     @Test

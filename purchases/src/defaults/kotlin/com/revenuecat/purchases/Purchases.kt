@@ -1097,8 +1097,14 @@ public class Purchases internal constructor(
         @Synchronized get() = purchasesOrchestrator.preferredUILocaleOverride
 
     /**
+     * Whether RevenueCatUI should derive layout direction from the preferred UI locale override.
+     */
+    public val preferredUILocaleOverrideHonorsLayoutDirection: Boolean
+        @Synchronized get() = purchasesOrchestrator.preferredUILocaleOverrideHonorsLayoutDirection
+
+    /**
      * Override the preferred UI locale for RevenueCat UI components at runtime.
-     * This affects both API requests and UI rendering.
+     * This affects API requests and UI text localization.
      *
      * If the locale changes, this will automatically clear the offerings cache and trigger
      * a background refetch to get paywall templates with the correct localizations.
@@ -1107,6 +1113,29 @@ public class Purchases internal constructor(
      */
     public fun overridePreferredUILocale(localeString: String?): Boolean {
         return purchasesOrchestrator.overridePreferredUILocale(localeString)
+    }
+
+    /**
+     * Override the preferred UI locale for RevenueCat UI components at runtime.
+     *
+     * If [honorLayoutDirection] is true, RevenueCatUI will also derive layout direction from this locale.
+     * Defaults to false through the one-parameter overload to preserve existing layout behavior.
+     *
+     * If the locale changes, this will automatically clear the offerings cache and trigger
+     * a background refetch to get paywall templates with the correct localizations. Changing only
+     * [honorLayoutDirection] does not refetch offerings.
+     *
+     * @param localeString The locale string (e.g., "es-ES", "en-US") or null to use system default
+     * @param honorLayoutDirection Whether RevenueCatUI should derive layout direction from this locale.
+     */
+    public fun overridePreferredUILocale(localeString: String?, honorLayoutDirection: Boolean): Boolean {
+        return purchasesOrchestrator.overridePreferredUILocale(localeString, honorLayoutDirection)
+    }
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public fun addPreferredUILocaleOverrideChangeListener(listener: () -> Unit): () -> Unit {
+        return purchasesOrchestrator.addPreferredUILocaleOverrideChangeListener(listener)
     }
 
     /**

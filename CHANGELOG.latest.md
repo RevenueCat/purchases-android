@@ -6,6 +6,9 @@
 * [EXTERNAL] fix(google): guard showInAppMessages against BillingClient runtime crashes (#3367) by @matteinn (#3368) via Monika Mateska (@MonikaMateska)
 
 ## RevenueCatUI SDK
+### 🐞 Bugfixes
+* `RevenueCatUI` Paywalls and Customer Center can now opt in to deriving layout direction from `overridePreferredUILocale` by passing `honorLayoutDirection = true`. Paywalls V2 can also use the dashboard `layout_direction` setting to match locale or force RTL/LTR.
+
 ### Paywallv2
 #### 🐞 Bugfixes
 * Add Workflows network layer (#3300) via Cesar de la Vega (@vegaro)

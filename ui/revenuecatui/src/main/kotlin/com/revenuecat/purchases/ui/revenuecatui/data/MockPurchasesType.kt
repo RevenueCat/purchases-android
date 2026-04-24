@@ -21,6 +21,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 @Suppress("TooManyFunctions")
 internal class MockPurchasesType(
     override val preferredUILocaleOverride: String? = null,
+    override val preferredUILocaleOverrideHonorsLayoutDirection: Boolean = false,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,
     override val customerCenterListener: CustomerCenterListener? = null,
@@ -52,6 +53,9 @@ internal class MockPurchasesType(
     }
     override fun track(event: FeatureEvent) {
         // No-op for mock
+    }
+    override fun addPreferredUILocaleOverrideChangeListener(listener: () -> Unit): () -> Unit {
+        return {}
     }
     override suspend fun awaitSyncPurchases(): CustomerInfo {
         throw NotImplementedError("Mock implementation for previews only")
