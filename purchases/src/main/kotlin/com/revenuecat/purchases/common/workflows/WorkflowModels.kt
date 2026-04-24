@@ -19,8 +19,22 @@ import java.net.URL
 
 @InternalRevenueCatAPI
 @Serializable
+public enum class WorkflowTriggerType {
+    @SerialName("on_press")
+    ON_PRESS,
+}
+
+@InternalRevenueCatAPI
+@Serializable
+public enum class WorkflowTriggerActionType {
+    @SerialName("step")
+    STEP,
+}
+
+@InternalRevenueCatAPI
+@Serializable
 public data class WorkflowTriggerAction(
-    val type: String,
+    val type: WorkflowTriggerActionType,
     @SerialName("step_id") val stepId: String? = null,
 )
 
@@ -28,7 +42,7 @@ public data class WorkflowTriggerAction(
 @Serializable
 public data class WorkflowTrigger(
     val name: String,
-    val type: String,
+    val type: WorkflowTriggerType,
     @SerialName("action_id") val actionId: String,
     @SerialName("component_id") val componentId: String,
 )

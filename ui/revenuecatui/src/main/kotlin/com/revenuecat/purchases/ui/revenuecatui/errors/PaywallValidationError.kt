@@ -137,4 +137,10 @@ internal sealed class PaywallValidationError : Throwable() {
         override val message: String = PaywallValidationErrorStrings.ROOT_COMPONENT_UNSUPPORTED_PROPERTIES
             .format(component::class.java.simpleName)
     }
+    data class WorkflowButtonMissingComponentId(
+        val componentName: String?,
+    ) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.WORKFLOW_BUTTON_MISSING_COMPONENT_ID
+            .format(componentName ?: "<unnamed>")
+    }
 }
