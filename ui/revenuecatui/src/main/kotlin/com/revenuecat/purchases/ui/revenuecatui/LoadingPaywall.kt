@@ -3,17 +3,21 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -38,6 +42,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
+import com.revenuecat.purchases.ui.revenuecatui.extensions.ProvideLayoutDirection
+import com.revenuecat.purchases.ui.revenuecatui.extensions.resolveLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
@@ -52,9 +58,14 @@ import kotlinx.coroutines.flow.asStateFlow
 internal fun LoadingPaywall(
     mode: PaywallMode,
     shouldDisplayDismissButton: Boolean,
+    localeList: LocaleListCompat = LocaleListCompat.getDefault(),
+    honorLayoutDirection: Boolean = false,
     onDismiss: () -> Unit,
 ) {
     val resourceProvider = LocalContext.current.toResourceProvider()
+    val configuration = Configuration(LocalConfiguration.current).apply {
+        localeList.get(0)?.let { setLocale(it) }
+    }
 
     val paywallData: PaywallData = PaywallData.createDefault(
         LoadingPaywallConstants.packages,
@@ -90,7 +101,18 @@ internal fun LoadingPaywall(
         is PaywallState.Loaded.Components,
         -> Box {}
 
-        is PaywallState.Loaded.Legacy -> LoadingPaywall(state, LoadingViewModel(state, resourceProvider), onDismiss)
+        is PaywallState.Loaded.Legacy -> {
+            CompositionLocalProvider(LocalConfiguration provides configuration) {
+                ProvideLayoutDirection(
+                    configuration.resolveLayoutDirection(
+                        editorLayoutDirection = null,
+                        honorPreferredLocaleLayoutDirection = honorLayoutDirection,
+                    ),
+                ) {
+                    LoadingPaywall(state, LoadingViewModel(state, resourceProvider, localeList), onDismiss)
+                }
+            }
+        }
     }
 }
 
@@ -182,6 +204,7 @@ private object LoadingPaywallConstants {
 private class LoadingViewModel(
     state: PaywallState,
     override val resourceProvider: ResourceProvider,
+    localeList: LocaleListCompat,
 ) : PaywallViewModel {
     override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()
@@ -190,6 +213,8 @@ private class LoadingViewModel(
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
+    override val localeList: StateFlow<LocaleListCompat> = MutableStateFlow(localeList).asStateFlow()
+    override val preferredUILocaleOverrideHonorsLayoutDirection: StateFlow<Boolean> = MutableStateFlow(false)
 
     override fun trackPaywallImpressionIfNeeded() = Unit
     override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) = Unit

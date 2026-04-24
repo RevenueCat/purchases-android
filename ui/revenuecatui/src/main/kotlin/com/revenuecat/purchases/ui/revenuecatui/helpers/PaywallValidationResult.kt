@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
@@ -40,6 +41,7 @@ internal sealed interface PaywallValidationResult {
         val header: ComponentStyle?,
         val stickyFooter: ComponentStyle?,
         val background: BackgroundStyles,
+        val layoutDirection: PaywallComponentsLayoutDirection?,
         /**
          * All locales that this paywall supports, with `locales.head` being the default one.
          */

@@ -355,6 +355,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         header = null,
         stickyFooter = null,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White))),
+        layoutDirection = null,
         showPricesWithDecimals = true,
         variableConfig = UiConfig.VariableConfig(),
         variableDataProvider = VariableDataProvider(MockResourceProvider()),

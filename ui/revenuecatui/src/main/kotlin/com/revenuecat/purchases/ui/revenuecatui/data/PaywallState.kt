@@ -16,6 +16,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
@@ -92,6 +93,7 @@ internal sealed interface PaywallState {
             val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
+            val layoutDirection: PaywallComponentsLayoutDirection?,
             val mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
@@ -187,6 +189,11 @@ internal sealed interface PaywallState {
             }
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
+
+            var preferredLocaleOverrideHonorsLayoutDirection by mutableStateOf(
+                purchases.preferredUILocaleOverrideHonorsLayoutDirection,
+            )
+                private set
 
             // We find all available device locales with the same country as the storefront country.
             private val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> by lazy {
@@ -297,8 +304,13 @@ internal sealed interface PaywallState {
                 localeList: FrameworkLocaleList? = null,
                 selectedTabIndex: Int? = null,
                 actionInProgress: Boolean? = null,
+                preferredLocaleOverrideHonorsLayoutDirection: Boolean? = null,
             ) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+                if (preferredLocaleOverrideHonorsLayoutDirection != null) {
+                    this.preferredLocaleOverrideHonorsLayoutDirection =
+                        preferredLocaleOverrideHonorsLayoutDirection
+                }
 
                 if (selectedTabIndex != null) {
                     this.selectedTabIndex = selectedTabIndex

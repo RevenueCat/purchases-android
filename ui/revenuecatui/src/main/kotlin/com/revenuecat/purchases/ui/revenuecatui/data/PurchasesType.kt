@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
@@ -61,6 +62,10 @@ internal interface PurchasesType {
     val customerCenterListener: CustomerCenterListener?
 
     val preferredUILocaleOverride: String?
+
+    val preferredUILocaleOverrideHonorsLayoutDirection: Boolean
+
+    fun addPreferredUILocaleOverrideChangeListener(listener: () -> Unit): () -> Unit
 
     @Throws(PurchasesException::class)
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
@@ -130,6 +135,14 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val preferredUILocaleOverride: String?
         get() = purchases.preferredUILocaleOverride
+
+    override val preferredUILocaleOverrideHonorsLayoutDirection: Boolean
+        get() = purchases.preferredUILocaleOverrideHonorsLayoutDirection
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun addPreferredUILocaleOverrideChangeListener(listener: () -> Unit): () -> Unit {
+        return purchases.addPreferredUILocaleOverrideChangeListener(listener)
+    }
 
     @Throws(PurchasesException::class)
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {

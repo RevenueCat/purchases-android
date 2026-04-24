@@ -2299,6 +2299,8 @@ class CustomerCenterViewModelTests {
         every { purchases.track(any()) } just Runs
         coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
+        every { purchases.preferredUILocaleOverrideHonorsLayoutDirection } returns false
+        every { purchases.addPreferredUILocaleOverrideChangeListener(any()) } returns {}
         coEvery { purchases.awaitGetVirtualCurrencies() } returns mockk()
         every { purchases.invalidateVirtualCurrenciesCache() } just Runs
 

@@ -70,6 +70,7 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -82,6 +83,8 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 @Suppress("TooManyFunctions")
 internal interface CustomerCenterViewModel {
     val state: StateFlow<CustomerCenterState>
+    val localeList: StateFlow<LocaleListCompat>
+    val preferredUILocaleOverrideHonorsLayoutDirection: StateFlow<Boolean>
     val actionError: State<PurchasesError?>
 
     fun pathButtonPressed(
@@ -207,8 +210,20 @@ internal class CustomerCenterViewModelImpl(
     private var wasBackgrounded = false
     private var shouldRefreshOnResume = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
+    override val localeList = _lastLocaleList.asStateFlow()
+    private val _preferredUILocaleOverrideHonorsLayoutDirection = MutableStateFlow(
+        purchases.preferredUILocaleOverrideHonorsLayoutDirection,
+    )
+    override val preferredUILocaleOverrideHonorsLayoutDirection =
+        _preferredUILocaleOverrideHonorsLayoutDirection.asStateFlow()
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
+    private val removePreferredUILocaleOverrideChangeListener =
+        purchases.addPreferredUILocaleOverrideChangeListener {
+            viewModelScope.launch {
+                refreshStateIfLocaleChanged()
+            }
+        }
     override val state = _state
         .onStart {
             val currentState = _state.value
@@ -228,6 +243,11 @@ internal class CustomerCenterViewModelImpl(
     override val actionError: State<PurchasesError?>
         get() = _actionError
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
+
+    override fun onCleared() {
+        removePreferredUILocaleOverrideChangeListener()
+        super.onCleared()
+    }
 
     override fun pathButtonPressed(
         context: Context,
@@ -1113,8 +1133,13 @@ internal class CustomerCenterViewModelImpl(
 
     override fun refreshStateIfLocaleChanged() {
         val currentLocaleList = getCurrentLocaleList()
-        if (_lastLocaleList.value != currentLocaleList) {
+        val currentHonorLayoutDirection = purchases.preferredUILocaleOverrideHonorsLayoutDirection
+        if (
+            _lastLocaleList.value != currentLocaleList ||
+            _preferredUILocaleOverrideHonorsLayoutDirection.value != currentHonorLayoutDirection
+        ) {
             _lastLocaleList.value = currentLocaleList
+            _preferredUILocaleOverrideHonorsLayoutDirection.value = currentHonorLayoutDirection
         }
     }
 
