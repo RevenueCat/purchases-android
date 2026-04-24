@@ -35,6 +35,7 @@ import com.revenuecat.purchases.galaxy.listener.ProductDataResponseListener
 import com.revenuecat.purchases.galaxy.listener.PurchaseResponseListener
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
+import com.revenuecat.purchases.galaxy.logging.warnLog
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.SerialRequestExecutor
 import com.revenuecat.purchases.models.InAppMessageType
@@ -410,7 +411,13 @@ internal class GalaxyBillingWrapper(
         replaceProductInfo?.let { replaceInfo ->
             val replacementMode = when (val mode = replaceInfo.replacementMode) {
                 is StoreReplacementMode -> mode
-                else -> StoreReplacementMode.WITHOUT_PRORATION
+                else -> {
+                    log(LogIntent.GALAXY_WARNING) {
+                        GalaxyStrings.UNEXPECTED_PRORATION_MODE.format(mode?.name ?: "unknown")
+                    }
+
+                    StoreReplacementMode.WITHOUT_PRORATION
+                }
             }
 
             serialRequestExecutor.executeSerially { finish ->

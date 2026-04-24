@@ -141,6 +141,9 @@ internal object GalaxyStrings {
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
         " with an error of IAP_ERROR_NONE."
+
+    const val UNEXPECTED_PRORATION_MODE = "Unexpected replacement mode for Galaxy purchase: %s. " +
+        "Falling back to WITHOUT_PRORATION."
 }
 
 internal fun HelperDefine.OperationMode.description(): String = when (this) {
