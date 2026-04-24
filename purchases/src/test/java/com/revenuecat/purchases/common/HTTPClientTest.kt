@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.api.BuildConfig
@@ -1288,6 +1289,46 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     // endregion Timeout Management
+}
+
+@RunWith(ParameterizedRobolectricTestRunner::class)
+internal class ParameterizedXPlatformHeaderTest(
+    private val store: Store,
+    private val expectedHeader: String,
+) : BaseHTTPClientTest() {
+
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "store={0}")
+        fun parameters(): Collection<Array<Any>> {
+            return listOf(
+                arrayOf(Store.PLAY_STORE, "android"),
+                arrayOf(Store.AMAZON, "amazon"),
+                arrayOf(Store.GALAXY, "galaxy"),
+            )
+        }
+    }
+
+    @Before
+    fun setupClient() {
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        client = createClient(appConfig = createAppConfig(store = store))
+    }
+
+    @Test
+    fun `sends expected platform header for store`() {
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint.getPath(),
+            HTTPResult.createResult()
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+        assertThat(request.getHeader("X-Platform")).isEqualTo(expectedHeader)
+    }
 }
 
 @RunWith(ParameterizedRobolectricTestRunner::class)

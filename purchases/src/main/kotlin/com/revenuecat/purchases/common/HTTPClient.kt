@@ -514,6 +514,7 @@ internal class HTTPClient(
 
     private fun getXPlatformHeader() = when (appConfig.store) {
         Store.AMAZON -> "amazon"
+        Store.GALAXY -> "galaxy"
         else -> "android"
     }
 
