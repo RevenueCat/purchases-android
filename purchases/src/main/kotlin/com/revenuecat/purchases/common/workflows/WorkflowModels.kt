@@ -8,7 +8,9 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
+import com.revenuecat.purchases.utils.serializers.PolymorphicSerializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
@@ -18,17 +20,42 @@ import kotlinx.serialization.json.JsonObject
 import java.net.URL
 
 @InternalRevenueCatAPI
-@Serializable
-public data class WorkflowTriggerAction(
-    val type: String,
-    @SerialName("step_id") val stepId: String? = null,
+@Serializable(with = WorkflowTriggerTypeDeserializer::class)
+public enum class WorkflowTriggerType {
+    @SerialName("on_press")
+    ON_PRESS,
+    UNKNOWN,
+}
+
+internal object WorkflowTriggerTypeDeserializer : EnumDeserializerWithDefault<WorkflowTriggerType>(
+    defaultValue = WorkflowTriggerType.UNKNOWN,
+)
+
+@InternalRevenueCatAPI
+@Serializable(with = WorkflowTriggerActionSerializer::class)
+public sealed class WorkflowTriggerAction {
+    @InternalRevenueCatAPI
+    @Serializable
+    public data class Step(@SerialName("step_id") val stepId: String) : WorkflowTriggerAction()
+
+    @InternalRevenueCatAPI
+    @Serializable
+    public object Unknown : WorkflowTriggerAction()
+}
+
+internal object WorkflowTriggerActionSerializer : PolymorphicSerializerWithDefault<WorkflowTriggerAction>(
+    baseClass = WorkflowTriggerAction::class,
+    unknownSerializer = WorkflowTriggerAction.Unknown.serializer(),
+    serializers = mapOf(
+        "step" to ("step_id" to WorkflowTriggerAction.Step.serializer()),
+    ),
 )
 
 @InternalRevenueCatAPI
 @Serializable
 public data class WorkflowTrigger(
     val name: String,
-    val type: String,
+    val type: WorkflowTriggerType,
     @SerialName("action_id") val actionId: String,
     @SerialName("component_id") val componentId: String,
 )
