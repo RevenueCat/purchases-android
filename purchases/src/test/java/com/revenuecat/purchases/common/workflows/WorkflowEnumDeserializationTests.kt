@@ -33,24 +33,25 @@ internal class WorkflowTriggerTypeDeserializationTests(
 }
 
 @RunWith(Parameterized::class)
-internal class WorkflowTriggerActionTypeDeserializationTests(
+internal class WorkflowTriggerActionDeserializationTests(
     private val serialized: String,
-    private val expected: WorkflowTriggerActionType,
+    private val expected: WorkflowTriggerAction,
 ) {
 
     companion object {
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun parameters(): Collection<*> = listOf(
-            arrayOf("\"step\"", WorkflowTriggerActionType.STEP),
-            arrayOf("\"navigate\"", WorkflowTriggerActionType.UNKNOWN),
-            arrayOf("\"some_future_unknown_action_type\"", WorkflowTriggerActionType.UNKNOWN),
+            arrayOf("""{"type":"step","step_id":"s1"}""", WorkflowTriggerAction.Step(stepId = "s1")),
+            arrayOf("""{"type":"step"}""", WorkflowTriggerAction.Unknown),
+            arrayOf("""{"type":"navigate"}""", WorkflowTriggerAction.Unknown),
+            arrayOf("""{"type":"some_future_unknown_action_type"}""", WorkflowTriggerAction.Unknown),
         )
     }
 
     @Test
-    fun `Should properly deserialize WorkflowTriggerActionType`() {
-        val actual = JsonTools.json.decodeFromString<WorkflowTriggerActionType>(serialized)
+    fun `Should properly deserialize WorkflowTriggerAction`() {
+        val actual = JsonTools.json.decodeFromString<WorkflowTriggerAction>(serialized)
         assertThat(actual).isEqualTo(expected)
     }
 }

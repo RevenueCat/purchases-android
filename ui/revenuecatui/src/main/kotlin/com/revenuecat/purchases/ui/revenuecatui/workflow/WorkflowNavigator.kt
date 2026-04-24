@@ -2,7 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.workflow
 
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowStep
-import com.revenuecat.purchases.common.workflows.WorkflowTriggerActionType
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,14 +29,11 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("No trigger action found for actionId '${trigger.actionId}' in step '${step.id}'")
             return null
         }
-        if (action.type != WorkflowTriggerActionType.STEP) {
-            Logger.w("Unknown workflow trigger action type '${action.type}' — ignoring")
+        if (action !is WorkflowTriggerAction.Step) {
+            Logger.w("Unknown workflow trigger action type for actionId '${trigger.actionId}' — ignoring")
             return null
         }
-        val stepId = action.stepId ?: run {
-            Logger.w("Trigger action '${trigger.actionId}' has no step_id")
-            return null
-        }
+        val stepId = action.stepId
         val nextStep = workflow.steps[stepId] ?: run {
             Logger.w("Step '$stepId' not found in workflow '${workflow.id}'")
             return null

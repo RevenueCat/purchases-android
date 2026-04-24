@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
-import com.revenuecat.purchases.common.workflows.WorkflowTriggerActionType
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import org.assertj.core.api.Assertions.assertThat
@@ -32,7 +31,7 @@ class WorkflowNavigatorTest {
             ),
         ),
         triggerActions = mapOf(
-            "action-next" to WorkflowTriggerAction(type = WorkflowTriggerActionType.STEP, stepId = "step-2"),
+            "action-next" to WorkflowTriggerAction.Step(stepId = "step-2"),
         ),
     )
 
@@ -49,7 +48,7 @@ class WorkflowNavigatorTest {
             ),
         ),
         triggerActions = mapOf(
-            "action-finish" to WorkflowTriggerAction(type = WorkflowTriggerActionType.STEP, stepId = "step-3"),
+            "action-finish" to WorkflowTriggerAction.Step(stepId = "step-3"),
         ),
     )
 
@@ -171,7 +170,7 @@ class WorkflowNavigatorTest {
                 ),
             ),
             triggerActions = mapOf(
-                "ax" to WorkflowTriggerAction(type = WorkflowTriggerActionType.UNKNOWN),
+                "ax" to WorkflowTriggerAction.Unknown,
             ),
         )
         val wfl = workflow.copy(
@@ -225,7 +224,7 @@ class WorkflowNavigatorTest {
                 ),
             ),
             triggerActions = mapOf(
-                "ax" to WorkflowTriggerAction(type = WorkflowTriggerActionType.STEP, stepId = "step-nonexistent"),
+                "ax" to WorkflowTriggerAction.Step(stepId = "step-nonexistent"),
             ),
         )
         val wfl = workflow.copy(
