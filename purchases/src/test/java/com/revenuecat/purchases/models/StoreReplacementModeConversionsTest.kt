@@ -127,4 +127,11 @@ class StoreReplacementModeConversionsTest {
     fun `fromName is case sensitive`() {
         assertThat(StoreReplacementMode.fromName("deferred")).isNull()
     }
+
+    @Test
+    fun `toString returns store replacement mode name`() {
+        storeReplacementModes.forEach { mode ->
+            assertThat(mode.toString()).isEqualTo(mode.name)
+        }
+    }
 }

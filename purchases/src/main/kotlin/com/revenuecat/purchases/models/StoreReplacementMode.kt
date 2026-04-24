@@ -10,6 +10,8 @@ public abstract class StoreReplacementMode internal constructor(
     override val name: String,
 ) : ReplacementMode {
 
+    override fun toString(): String = name
+
     @Parcelize
     private object WithoutProration : StoreReplacementMode("WITHOUT_PRORATION")
 
