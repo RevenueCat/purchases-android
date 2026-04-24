@@ -51,6 +51,21 @@ class PolymorphicSerializerWithDefaultTest {
         object Unknown : TaggedEvent()
     }
 
+    @Serializable(with = MappedEventSerializer::class)
+    private sealed class MappedEvent {
+        @Serializable
+        data class Press(@SerialName("button_id") val buttonId: String) : MappedEvent()
+
+        @Serializable
+        object Unknown : MappedEvent()
+    }
+
+    private object MappedEventSerializer : PolymorphicSerializerWithDefault<MappedEvent>(
+        baseClass = MappedEvent::class,
+        unknownSerializer = MappedEvent.Unknown.serializer(),
+        serializers = mapOf("press" to ("button_id" to MappedEvent.Press.serializer())),
+    )
+
     private object TaggedEventSerializer : PolymorphicSerializerWithDefault<TaggedEvent>(
         baseClass = TaggedEvent::class,
         unknownSerializer = TaggedEvent.Unknown.serializer(),
@@ -119,5 +134,41 @@ class PolymorphicSerializerWithDefaultTest {
             """{"type":"click","target_id":"btn-1","extra":"ignored"}""",
         )
         assertThat(result).isEqualTo(Event.Click(targetId = "btn-1"))
+    }
+
+    @Test
+    fun `serializers map dispatches to correct serializer when required field is present`() {
+        val result = json.decodeFromString<MappedEvent>("""{"type":"press","button_id":"ok"}""")
+        assertThat(result).isEqualTo(MappedEvent.Press(buttonId = "ok"))
+    }
+
+    @Test
+    fun `serializers map falls back when required field is absent`() {
+        val result = json.decodeFromString<MappedEvent>("""{"type":"press"}""")
+        assertThat(result).isEqualTo(MappedEvent.Unknown)
+    }
+
+    @Test
+    fun `serializers map falls back when required field is a JSON object`() {
+        val result = json.decodeFromString<MappedEvent>("""{"type":"press","button_id":{"nested":"value"}}""")
+        assertThat(result).isEqualTo(MappedEvent.Unknown)
+    }
+
+    @Test
+    fun `serializers map falls back when required field is a JSON array`() {
+        val result = json.decodeFromString<MappedEvent>("""{"type":"press","button_id":["a","b"]}""")
+        assertThat(result).isEqualTo(MappedEvent.Unknown)
+    }
+
+    @Test
+    fun `falls back to default when type field is a JSON object`() {
+        val result = json.decodeFromString<Event>("""{"type":{"nested":"value"},"target_id":"btn-1"}""")
+        assertThat(result).isEqualTo(Event.Unknown)
+    }
+
+    @Test
+    fun `falls back to default when type field is a JSON array`() {
+        val result = json.decodeFromString<Event>("""{"type":["a","b"],"target_id":"btn-1"}""")
+        assertThat(result).isEqualTo(Event.Unknown)
     }
 }

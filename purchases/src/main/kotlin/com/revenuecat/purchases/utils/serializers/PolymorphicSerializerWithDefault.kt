@@ -4,13 +4,14 @@ import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.reflect.KClass
 
 /** Returns true only when [key] is present in the object and its value is a non-null JSON primitive. */
 internal fun JsonObject.hasNonNullField(key: String): Boolean =
-    this[key]?.jsonPrimitive?.contentOrNull != null
+    (this[key] as? JsonPrimitive)?.contentOrNull != null
 
 /**
  * [JsonContentPolymorphicSerializer] that dispatches on a string discriminator field and
@@ -29,7 +30,7 @@ internal abstract class PolymorphicSerializerWithDefault<T : Any>(
 
     final override fun selectDeserializer(element: JsonElement): DeserializationStrategy<T> {
         val obj = element.jsonObject
-        val type = obj[typeField]?.jsonPrimitive?.content ?: return unknownSerializer
+        val type = (obj[typeField] as? JsonPrimitive)?.content ?: return unknownSerializer
         return serializers[type]
             ?.let { (requiredField, serializer) ->
                 if (obj.hasNonNullField(requiredField)) serializer else unknownSerializer
