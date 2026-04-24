@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -27,7 +28,7 @@ internal class WorkflowTriggerTypeDeserializationTests(
     @Test
     fun `Should properly deserialize WorkflowTriggerType`() {
         val actual = JsonTools.json.decodeFromString<WorkflowTriggerType>(serialized)
-        assert(actual == expected)
+        assertThat(actual).isEqualTo(expected)
     }
 }
 
@@ -50,6 +51,6 @@ internal class WorkflowTriggerActionTypeDeserializationTests(
     @Test
     fun `Should properly deserialize WorkflowTriggerActionType`() {
         val actual = JsonTools.json.decodeFromString<WorkflowTriggerActionType>(serialized)
-        assert(actual == expected)
+        assertThat(actual).isEqualTo(expected)
     }
 }
