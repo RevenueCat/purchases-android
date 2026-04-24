@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.workflow
 
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerActionType
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,17 +19,17 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
     fun currentStep(): WorkflowStep? = workflow.steps[_currentStepId.value]
 
     @Suppress("ReturnCount")
-    fun triggerAction(componentId: String): WorkflowStep? {
+    fun triggerAction(componentId: String, triggerType: WorkflowTriggerType): WorkflowStep? {
         val step = currentStep() ?: return null
-        val trigger = step.triggers.firstOrNull { it.componentId == componentId } ?: run {
-            Logger.w("No trigger found for componentId '$componentId' in step '${step.id}'")
+        val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType } ?: run {
+            Logger.w("No trigger found for componentId '$componentId' and type '$triggerType' in step '${step.id}'")
             return null
         }
         val action = step.triggerActions[trigger.actionId] ?: run {
             Logger.w("No trigger action found for actionId '${trigger.actionId}' in step '${step.id}'")
             return null
         }
-        if (action.type != "step") {
+        if (action.type != WorkflowTriggerActionType.STEP) {
             Logger.w("Unknown workflow trigger action type '${action.type}' — ignoring")
             return null
         }

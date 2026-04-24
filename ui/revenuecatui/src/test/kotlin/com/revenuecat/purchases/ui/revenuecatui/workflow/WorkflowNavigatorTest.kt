@@ -78,7 +78,7 @@ class WorkflowNavigatorTest {
     @Test
     fun `triggerAction navigates to next step`() {
         val navigator = WorkflowNavigator(workflow)
-        val result = navigator.triggerAction("btn-next")
+        val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isEqualTo(step2)
         assertThat(navigator.currentStep()).isEqualTo(step2)
         assertThat(navigator.currentStepId.value).isEqualTo("step-2")
@@ -87,8 +87,8 @@ class WorkflowNavigatorTest {
     @Test
     fun `triggerAction supports step type on second step`() {
         val navigator = WorkflowNavigator(workflow)
-        navigator.triggerAction("btn-next")
-        val result = navigator.triggerAction("btn-finish")
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        val result = navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isEqualTo(step3)
         assertThat(navigator.currentStep()).isEqualTo(step3)
     }
@@ -96,7 +96,7 @@ class WorkflowNavigatorTest {
     @Test
     fun `triggerAction with unknown componentId returns null and does not navigate`() {
         val navigator = WorkflowNavigator(workflow)
-        val result = navigator.triggerAction("btn-unknown")
+        val result = navigator.triggerAction("btn-unknown", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
         assertThat(navigator.currentStep()).isEqualTo(step1)
     }
@@ -110,14 +110,14 @@ class WorkflowNavigatorTest {
     @Test
     fun `canNavigateBack is true after forward navigation`() {
         val navigator = WorkflowNavigator(workflow)
-        navigator.triggerAction("btn-next")
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         assertThat(navigator.canNavigateBack).isTrue()
     }
 
     @Test
     fun `navigateBack returns to previous step`() {
         val navigator = WorkflowNavigator(workflow)
-        navigator.triggerAction("btn-next")
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         val result = navigator.navigateBack()
         assertThat(result).isEqualTo(step1)
         assertThat(navigator.currentStep()).isEqualTo(step1)
@@ -133,7 +133,7 @@ class WorkflowNavigatorTest {
     @Test
     fun `navigateBack restores canNavigateBack to false after popping last entry`() {
         val navigator = WorkflowNavigator(workflow)
-        navigator.triggerAction("btn-next")
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         navigator.navigateBack()
         assertThat(navigator.canNavigateBack).isFalse()
     }
@@ -141,8 +141,8 @@ class WorkflowNavigatorTest {
     @Test
     fun `multiple forward and back navigations work correctly`() {
         val navigator = WorkflowNavigator(workflow)
-        navigator.triggerAction("btn-next")
-        navigator.triggerAction("btn-finish")
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
         assertThat(navigator.currentStep()).isEqualTo(step3)
 
         val back1 = navigator.navigateBack()
@@ -163,7 +163,12 @@ class WorkflowNavigatorTest {
             type = "screen",
             screenId = "screen-x",
             triggers = listOf(
-                WorkflowTrigger(name = "X", type = WorkflowTriggerType.ON_PRESS, actionId = "action-missing", componentId = "btn-x"),
+                WorkflowTrigger(
+                    name = "X",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-missing",
+                    componentId = "btn-x",
+                ),
             ),
             triggerActions = emptyMap(),
         )
@@ -172,7 +177,7 @@ class WorkflowNavigatorTest {
             steps = mapOf("step-x" to stepWithMissingAction),
         )
         val navigator = WorkflowNavigator(wfl)
-        val result = navigator.triggerAction("btn-x")
+        val result = navigator.triggerAction("btn-x", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
         assertThat(navigator.currentStep()).isEqualTo(stepWithMissingAction)
     }
@@ -184,7 +189,12 @@ class WorkflowNavigatorTest {
             type = "screen",
             screenId = "screen-x",
             triggers = listOf(
-                WorkflowTrigger(name = "X", type = WorkflowTriggerType.ON_PRESS, actionId = "ax", componentId = "btn-x"),
+                WorkflowTrigger(
+                    name = "X",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "ax",
+                    componentId = "btn-x",
+                ),
             ),
             triggerActions = mapOf(
                 "ax" to WorkflowTriggerAction(type = WorkflowTriggerActionType.STEP, stepId = "step-nonexistent"),
@@ -195,7 +205,7 @@ class WorkflowNavigatorTest {
             steps = mapOf("step-x" to stepWithMissingTarget),
         )
         val navigator = WorkflowNavigator(wfl)
-        val result = navigator.triggerAction("btn-x")
+        val result = navigator.triggerAction("btn-x", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
         assertThat(navigator.currentStep()).isEqualTo(stepWithMissingTarget)
     }
