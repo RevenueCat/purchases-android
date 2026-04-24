@@ -1513,5 +1513,4 @@ internal class ParameterizedConnectionFailureFallbackTest(
             fallbackServer.shutdown()
         }
     }
-
 }
