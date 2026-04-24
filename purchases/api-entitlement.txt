@@ -306,15 +306,15 @@ package com.revenuecat.purchases {
   @dev.drewhamilton.poko.Poko public final class PurchaseParams {
     ctor public PurchaseParams(com.revenuecat.purchases.PurchaseParams.Builder builder);
     method public com.revenuecat.purchases.PurchaseParams.Builder getBuilder();
-    method public com.revenuecat.purchases.models.GalaxyReplacementMode getGalaxyReplacementMode();
-    method public com.revenuecat.purchases.models.GoogleReplacementMode getGoogleReplacementMode();
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode getGoogleReplacementMode();
     method public String? getOldProductId();
+    method public com.revenuecat.purchases.models.StoreReplacementMode getReplacementMode();
     method public Boolean? isPersonalizedPrice();
     property public final com.revenuecat.purchases.PurchaseParams.Builder builder;
-    property public final com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode;
-    property public final com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode;
+    property @Deprecated public final com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode;
     property public final Boolean? isPersonalizedPrice;
     property public final String? oldProductId;
+    property public final com.revenuecat.purchases.models.StoreReplacementMode replacementMode;
   }
 
   public static class PurchaseParams.Builder {
@@ -325,11 +325,11 @@ package com.revenuecat.purchases {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnStoreProducts(java.util.List<? extends com.revenuecat.purchases.models.StoreProduct> addOnStoreProducts);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder addOnSubscriptionOptions(java.util.List<? extends com.revenuecat.purchases.models.SubscriptionOption> addOnSubscriptionOptions);
     method public com.revenuecat.purchases.PurchaseParams build();
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchaseParams.Builder galaxyReplacementMode(com.revenuecat.purchases.models.GalaxyReplacementMode galaxyReplacementMode);
-    method public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
+    method @Deprecated public final com.revenuecat.purchases.PurchaseParams.Builder googleReplacementMode(com.revenuecat.purchases.models.GoogleReplacementMode googleReplacementMode);
     method public final com.revenuecat.purchases.PurchaseParams.Builder isPersonalizedPrice(boolean isPersonalizedPrice);
     method public final com.revenuecat.purchases.PurchaseParams.Builder oldProductId(String oldProductId);
     method public final com.revenuecat.purchases.PurchaseParams.Builder presentedOfferingContext(com.revenuecat.purchases.PresentedOfferingContext presentedOfferingContext);
+    method public final com.revenuecat.purchases.PurchaseParams.Builder replacementMode(com.revenuecat.purchases.models.StoreReplacementMode replacementMode);
   }
 
   @dev.drewhamilton.poko.Poko public final class PurchaseResult {
@@ -1055,19 +1055,6 @@ package com.revenuecat.purchases.models {
     enum_constant public static final com.revenuecat.purchases.models.BillingFeature SUBSCRIPTIONS_UPDATE;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlinx.parcelize.Parcelize public enum GalaxyReplacementMode implements com.revenuecat.purchases.ReplacementMode {
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode DEFERRED;
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_NO_PRORATION;
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_PRORATED_CHARGE;
-    enum_constant public static final com.revenuecat.purchases.models.GalaxyReplacementMode INSTANT_PRORATED_DATE;
-    field public static final com.revenuecat.purchases.models.GalaxyReplacementMode.Companion Companion;
-  }
-
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static final class GalaxyReplacementMode.Companion {
-    method public com.revenuecat.purchases.models.GalaxyReplacementMode getDefault();
-    property public final com.revenuecat.purchases.models.GalaxyReplacementMode default;
-  }
-
   @dev.drewhamilton.poko.Poko public final class GoogleInstallmentsInfo implements com.revenuecat.purchases.models.InstallmentsInfo {
     ctor public GoogleInstallmentsInfo(int commitmentPaymentsCount, int renewalCommitmentPaymentsCount);
     method public int getCommitmentPaymentsCount();
@@ -1102,23 +1089,23 @@ package com.revenuecat.purchases.models {
     property public final String token;
   }
 
-  public enum GoogleReplacementMode implements com.revenuecat.purchases.ReplacementMode {
-    method public int describeContents();
-    method public int getPlayBillingClientMode();
-    method public void writeToParcel(android.os.Parcel out, int flags);
-    property public final int playBillingClientMode;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_FULL_PRICE;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_PRORATED_PRICE;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode DEFERRED;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode WITHOUT_PRORATION;
-    enum_constant public static final com.revenuecat.purchases.models.GoogleReplacementMode WITH_TIME_PRORATION;
-    field public static final com.revenuecat.purchases.models.GoogleReplacementMode.CREATOR CREATOR;
+  @Deprecated public enum GoogleReplacementMode implements com.revenuecat.purchases.ReplacementMode {
+    method @Deprecated public int describeContents();
+    method @Deprecated public int getPlayBillingClientMode();
+    method @Deprecated public void writeToParcel(android.os.Parcel out, int flags);
+    property @Deprecated public final int playBillingClientMode;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_FULL_PRICE;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode CHARGE_PRORATED_PRICE;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode DEFERRED;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode WITHOUT_PRORATION;
+    enum_constant @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode WITH_TIME_PRORATION;
+    field @Deprecated public static final com.revenuecat.purchases.models.GoogleReplacementMode.CREATOR CREATOR;
   }
 
-  public static final class GoogleReplacementMode.CREATOR implements android.os.Parcelable.Creator<com.revenuecat.purchases.models.GoogleReplacementMode?> {
-    method public com.revenuecat.purchases.models.GoogleReplacementMode? createFromParcel(android.os.Parcel in);
-    method public com.revenuecat.purchases.models.GoogleReplacementMode? fromPlayBillingClientMode(@com.android.billingclient.api.BillingFlowParams.SubscriptionUpdateParams.ReplacementMode Integer? playBillingClientMode);
-    method public com.revenuecat.purchases.models.GoogleReplacementMode?[] newArray(int size);
+  @Deprecated public static final class GoogleReplacementMode.CREATOR implements android.os.Parcelable.Creator<com.revenuecat.purchases.models.GoogleReplacementMode?> {
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode? createFromParcel(android.os.Parcel in);
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode? fromPlayBillingClientMode(@com.android.billingclient.api.BillingFlowParams.SubscriptionUpdateParams.ReplacementMode Integer? playBillingClientMode);
+    method @Deprecated public com.revenuecat.purchases.models.GoogleReplacementMode?[] newArray(int size);
   }
 
   @dev.drewhamilton.poko.Poko public final class GoogleStoreProduct implements com.revenuecat.purchases.models.StoreProduct {
@@ -1348,6 +1335,20 @@ package com.revenuecat.purchases.models {
     property public abstract com.revenuecat.purchases.models.SubscriptionOptions? subscriptionOptions;
     property public abstract String title;
     property public abstract com.revenuecat.purchases.ProductType type;
+  }
+
+  public abstract class StoreReplacementMode implements com.revenuecat.purchases.ReplacementMode {
+    method public String getName();
+    property public String name;
+    field public static final com.revenuecat.purchases.models.StoreReplacementMode CHARGE_FULL_PRICE;
+    field public static final com.revenuecat.purchases.models.StoreReplacementMode CHARGE_PRORATED_PRICE;
+    field public static final com.revenuecat.purchases.models.StoreReplacementMode.Companion Companion;
+    field public static final com.revenuecat.purchases.models.StoreReplacementMode DEFERRED;
+    field public static final com.revenuecat.purchases.models.StoreReplacementMode WITHOUT_PRORATION;
+    field public static final com.revenuecat.purchases.models.StoreReplacementMode WITH_TIME_PRORATION;
+  }
+
+  public static final class StoreReplacementMode.Companion {
   }
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {

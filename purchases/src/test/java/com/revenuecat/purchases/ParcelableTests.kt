@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
@@ -21,6 +22,14 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 class ParcelableTests {
+
+    private val storeReplacementModes = listOf(
+        StoreReplacementMode.WITHOUT_PRORATION,
+        StoreReplacementMode.WITH_TIME_PRORATION,
+        StoreReplacementMode.CHARGE_FULL_PRICE,
+        StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        StoreReplacementMode.DEFERRED,
+    )
 
     @Test
     fun `EntitlementInfo is Parcelable`() = testParcelization(getEntitlementInfo())
@@ -92,6 +101,13 @@ class ParcelableTests {
     fun `GoogleReplacementMode is Parcelable`() {
         GoogleReplacementMode.values().forEach { testParcelization(it, true) }
         val nullMode: GoogleReplacementMode? = null
+        testParcelization(nullMode, true)
+    }
+
+    @Test
+    fun `StoreReplacementMode is Parcelable`() {
+        storeReplacementModes.forEach { testParcelization(it, true) }
+        val nullMode: StoreReplacementMode? = null
         testParcelization(nullMode, true)
     }
 
