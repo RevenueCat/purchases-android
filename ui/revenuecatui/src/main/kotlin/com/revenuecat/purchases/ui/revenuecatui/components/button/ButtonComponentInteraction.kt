@@ -40,7 +40,7 @@ private fun ButtonComponentStyle.Action.NavigateTo.Destination.componentInteract
 
 internal fun PaywallAction.workflowInteraction(): ButtonComponentInteraction? =
     if (this is PaywallAction.External.WorkflowTrigger) {
-        ButtonComponentInteraction(value = "workflow")
+        ButtonComponentInteraction(value = "workflow_trigger")
     } else {
         null
     }
