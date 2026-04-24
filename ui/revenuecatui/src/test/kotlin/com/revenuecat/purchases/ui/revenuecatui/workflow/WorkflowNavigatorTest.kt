@@ -102,6 +102,14 @@ class WorkflowNavigatorTest {
     }
 
     @Test
+    fun `triggerAction with mismatched trigger type returns null and does not navigate`() {
+        val navigator = WorkflowNavigator(workflow)
+        val result = navigator.triggerAction("btn-next", WorkflowTriggerType.UNKNOWN)
+        assertThat(result).isNull()
+        assertThat(navigator.currentStep()).isEqualTo(step1)
+    }
+
+    @Test
     fun `canNavigateBack is false on initial step`() {
         val navigator = WorkflowNavigator(workflow)
         assertThat(navigator.canNavigateBack).isFalse()
