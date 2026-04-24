@@ -43,6 +43,7 @@ internal class WorkflowTriggerActionDeserializationTests(
         @Parameterized.Parameters(name = "{0}")
         fun parameters(): Collection<*> = listOf(
             arrayOf("""{"type":"step","step_id":"s1"}""", WorkflowTriggerAction.Step(stepId = "s1")),
+            arrayOf("""{"type":"step","step_id":null}""", WorkflowTriggerAction.Unknown),
             arrayOf("""{"type":"step"}""", WorkflowTriggerAction.Unknown),
             arrayOf("""{"type":"navigate"}""", WorkflowTriggerAction.Unknown),
             arrayOf("""{"type":"some_future_unknown_action_type"}""", WorkflowTriggerAction.Unknown),

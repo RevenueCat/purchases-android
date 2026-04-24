@@ -13,7 +13,6 @@ import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
 import com.revenuecat.purchases.utils.serializers.PolymorphicSerializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.Contextual
-import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -47,15 +46,10 @@ public sealed class WorkflowTriggerAction {
 internal object WorkflowTriggerActionSerializer : PolymorphicSerializerWithDefault<WorkflowTriggerAction>(
     baseClass = WorkflowTriggerAction::class,
     unknownSerializer = WorkflowTriggerAction.Unknown.serializer(),
-) {
-    override fun selectByType(
-        type: String,
-        element: JsonObject,
-    ): DeserializationStrategy<WorkflowTriggerAction>? = when (type) {
-        "step" -> if (element["step_id"] != null) WorkflowTriggerAction.Step.serializer() else null
-        else -> null
-    }
-}
+    serializers = mapOf(
+        "step" to ("step_id" to WorkflowTriggerAction.Step.serializer()),
+    ),
+)
 
 @InternalRevenueCatAPI
 @Serializable
