@@ -863,6 +863,17 @@ internal class ButtonComponentTests {
                     ),
                 ),
                 arrayOf(
+                    "workflow",
+                    Args(
+                        serialized = """
+                        {
+                          "type": "workflow"
+                        }
+                        """.trimIndent(),
+                        deserialized = ButtonComponent.Action.Workflow,
+                    ),
+                ),
+                arrayOf(
                     "unknown",
                     Args(
                         serialized = """

@@ -722,6 +722,7 @@ internal class StyleFactory(
             is ButtonComponent.Action.RestorePurchases -> Result.Success(ButtonComponentStyle.Action.RestorePurchases)
             is ButtonComponent.Action.NavigateTo -> convertDestination(action.destination)
                 .map { destination -> destination?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
+            is ButtonComponent.Action.Workflow -> Result.Success(ButtonComponentStyle.Action.Workflow)
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Action.Unknown -> Result.Success(null)
         }
