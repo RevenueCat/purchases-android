@@ -10,20 +10,14 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
+import com.revenuecat.purchases.utils.serializers.PolymorphicSerializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.Contextual
-import kotlinx.serialization.KSerializer
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.net.URL
 
 @InternalRevenueCatAPI
@@ -42,29 +36,24 @@ internal object WorkflowTriggerTypeDeserializer : EnumDeserializerWithDefault<Wo
 @Serializable(with = WorkflowTriggerActionSerializer::class)
 public sealed class WorkflowTriggerAction {
     @InternalRevenueCatAPI
-    public data class Step(val stepId: String) : WorkflowTriggerAction()
+    @Serializable
+    public data class Step(@SerialName("step_id") val stepId: String) : WorkflowTriggerAction()
 
     @InternalRevenueCatAPI
+    @Serializable
     public object Unknown : WorkflowTriggerAction()
 }
 
-internal object WorkflowTriggerActionSerializer : KSerializer<WorkflowTriggerAction> {
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("WorkflowTriggerAction")
-
-    override fun deserialize(decoder: Decoder): WorkflowTriggerAction {
-        val element = (decoder as JsonDecoder).decodeJsonElement().jsonObject
-        return when (element["type"]?.jsonPrimitive?.content) {
-            "step" -> {
-                val stepId = element["step_id"]?.jsonPrimitive?.content
-                    ?: return WorkflowTriggerAction.Unknown
-                WorkflowTriggerAction.Step(stepId = stepId)
-            }
-            else -> WorkflowTriggerAction.Unknown
-        }
-    }
-
-    override fun serialize(encoder: Encoder, value: WorkflowTriggerAction) {
-        throw NotImplementedError("Serialization is not implemented because it is not needed.")
+internal object WorkflowTriggerActionSerializer : PolymorphicSerializerWithDefault<WorkflowTriggerAction>(
+    baseClass = WorkflowTriggerAction::class,
+    unknownSerializer = WorkflowTriggerAction.Unknown.serializer(),
+) {
+    override fun selectByType(
+        type: String,
+        element: JsonObject,
+    ): DeserializationStrategy<WorkflowTriggerAction>? = when (type) {
+        "step" -> if (element["step_id"] != null) WorkflowTriggerAction.Step.serializer() else null
+        else -> null
     }
 }
 
