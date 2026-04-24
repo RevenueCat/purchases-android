@@ -287,6 +287,13 @@ private fun PaywallAction.navigationUrlForComponentInteraction(): String? =
         else -> null
     }
 
+private fun PaywallAction.workflowInteraction(): ButtonComponentInteraction? =
+    if (this is PaywallAction.External.WorkflowTrigger) {
+        ButtonComponentInteraction(value = "workflow_trigger")
+    } else {
+        null
+    }
+
 /**
  * Resolves the [Package] used for purchase / web-checkout analytics: explicit package on the button style when
  * present, otherwise the paywall's currently selected package.
