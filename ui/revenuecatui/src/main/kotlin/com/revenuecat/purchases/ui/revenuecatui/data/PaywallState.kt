@@ -120,6 +120,7 @@ internal sealed interface PaywallState {
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
+            val isWorkflowActive: Boolean = false,
         ) : Loaded {
 
             /**

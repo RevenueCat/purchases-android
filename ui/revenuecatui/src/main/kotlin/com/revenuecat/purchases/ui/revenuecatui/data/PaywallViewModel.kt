@@ -22,7 +22,10 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -60,6 +63,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -105,6 +109,14 @@ internal interface PaywallViewModel {
         )
     }
     fun closePaywall(result: PaywallResult? = null)
+
+    fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType)
+
+    /**
+     * Handles back navigation within a workflow. Returns true if consumed by the workflow
+     * (previous step rendered), false to fall through to dismiss.
+     */
+    fun handleBackNavigation(): Boolean
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
     fun invalidateCustomerInfoCache()
@@ -165,6 +177,11 @@ internal class PaywallViewModelImpl(
         get() = options.purchaseLogic
 
     private var paywallPresentationData: PaywallEvent.Data? = null
+
+    private var workflowNavigator: WorkflowNavigator? = null
+    private var currentWorkflowResult: WorkflowDataResult? = null
+    private var currentWorkflowOfferings: Offerings? = null
+    private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
 
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
@@ -696,19 +713,33 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         val workflow = fetchResult.workflow
-
-        val step = workflow.steps[workflow.initialStepId]
-        if (step == null) {
+        val initialStep = workflow.steps[workflow.initialStepId]
+        if (initialStep == null) {
             _state.value = PaywallState.Error(
                 "Initial step '${workflow.initialStepId}' not found in workflow '${workflow.id}'",
             )
             return
         }
 
+        currentWorkflowResult = fetchResult
+        currentWorkflowOfferings = offerings
+        currentWorkflowPresentedOfferingContext = presentedOfferingContext
+        workflowNavigator = WorkflowNavigator(workflow)
+
+        buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
+    }
+
+    @Suppress("ReturnCount")
+    private fun buildStateFromStep(
+        step: WorkflowStep,
+        workflow: PublishedWorkflow,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
         val screenId = step.screenId
         if (screenId == null) {
             _state.value = PaywallState.Error(
-                "Initial step '${step.id}' has no screen_id in workflow '${workflow.id}'",
+                "Step '${step.id}' has no screen_id in workflow '${workflow.id}'",
             )
             return
         }
@@ -750,11 +781,32 @@ internal class PaywallViewModelImpl(
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
 
         _state.value = calculateState(
-            offeringWithContext,
-            _colorScheme.value,
-            purchases.storefrontCountryCode,
-            options.mode,
+            offering = offeringWithContext,
+            colorScheme = _colorScheme.value,
+            storefrontCountryCode = purchases.storefrontCountryCode,
+            mode = options.mode,
+            isWorkflowActive = true,
         )
+    }
+
+    @Suppress("ReturnCount")
+    override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) {
+        val navigator = workflowNavigator ?: return
+        val result = currentWorkflowResult ?: return
+        val offerings = currentWorkflowOfferings ?: return
+        val newStep = navigator.triggerAction(componentId, triggerType) ?: return
+        buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
+    }
+
+    @Suppress("ReturnCount")
+    override fun handleBackNavigation(): Boolean {
+        val navigator = workflowNavigator ?: return false
+        if (!navigator.canNavigateBack) return false
+        val newStep = navigator.navigateBack() ?: return false
+        val result = currentWorkflowResult ?: return false
+        val offerings = currentWorkflowOfferings ?: return false
+        buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
+        return true
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
@@ -781,6 +833,7 @@ internal class PaywallViewModelImpl(
         colorScheme: ColorScheme,
         storefrontCountryCode: String?,
         mode: PaywallMode,
+        isWorkflowActive: Boolean = false,
     ): PaywallState {
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
@@ -819,6 +872,7 @@ internal class PaywallViewModelImpl(
                 purchases = purchases,
                 customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
+                isWorkflowActive = isWorkflowActive,
             )
         }
     }

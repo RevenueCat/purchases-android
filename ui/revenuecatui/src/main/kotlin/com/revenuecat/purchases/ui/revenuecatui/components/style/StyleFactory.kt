@@ -634,6 +634,12 @@ internal class StyleFactory(
                 componentId = component.id,
             )
         }
+    }.flatMap { style ->
+        if (style?.action is ButtonComponentStyle.Action.Workflow && style.componentId == null) {
+            Result.Error(nonEmptyListOf(PaywallValidationError.WorkflowButtonMissingComponentId(component.name)))
+        } else {
+            Result.Success(style)
+        }
     }
 
     private fun StyleFactoryScope.createPackageComponentStyle(

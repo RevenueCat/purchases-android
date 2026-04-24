@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.coerceIn
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -144,7 +145,10 @@ internal fun ButtonComponentView(
                 )
             },
             modifier = modifier.clickable(enabled = !anyActionInProgress) {
-                val paywallAction = buttonState.action
+                val paywallAction = buttonState.workflowComponentId
+                    ?.let { PaywallAction.External.Workflow(it, WorkflowTriggerType.ON_PRESS) }
+                    ?: buttonState.action
+                    ?: return@clickable
                 myActionInProgress = true
                 state.update(actionInProgress = true)
                 if (style.action.isPurchaseRelated()) {
