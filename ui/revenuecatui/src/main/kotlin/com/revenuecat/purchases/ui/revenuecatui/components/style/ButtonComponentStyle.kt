@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
-import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -28,7 +27,7 @@ internal data class ButtonComponentStyle(
     internal sealed interface Action {
         object RestorePurchases : Action
         object NavigateBack : Action
-        object Workflow : Action
+        object WorkflowTrigger : Action
 
         @get:JvmSynthetic
         val description: String
