@@ -28,6 +28,14 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PurchaseParamsTest {
 
+    private val storeReplacementModes = listOf(
+        StoreReplacementMode.WITHOUT_PRORATION,
+        StoreReplacementMode.WITH_TIME_PRORATION,
+        StoreReplacementMode.CHARGE_FULL_PRICE,
+        StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        StoreReplacementMode.DEFERRED,
+    )
+
     @Test
     fun `Initializing with Package sets proper presentedOfferingIdentifier`() {
         val storeProduct = stubStoreProduct("abc")
@@ -124,7 +132,7 @@ class PurchaseParamsTest {
     fun `replacementMode set on builder is reflected in PurchaseParams`() {
         val storeProduct = stubStoreProduct("abc")
 
-        StoreReplacementMode.values().forEach { replacementMode ->
+        storeReplacementModes.forEach { replacementMode ->
             val purchaseParams = PurchaseParams.Builder(
                 mockk(),
                 storeProduct
@@ -148,7 +156,7 @@ class PurchaseParamsTest {
             StoreReplacementMode.DEFERRED to GoogleReplacementMode.DEFERRED,
         )
 
-        StoreReplacementMode.values().forEach { replacementMode ->
+        storeReplacementModes.forEach { replacementMode ->
             val purchaseParams = PurchaseParams.Builder(
                 mockk(),
                 storeProduct

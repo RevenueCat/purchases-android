@@ -12,42 +12,45 @@ private data class StoreReplacementModeMapping(
     val googleReplacementMode: GoogleReplacementMode,
 )
 
-// This mapping table doesn't include the Galaxy mappings from StoreReplacementMode -> HelperDefine.ProrationMode
-// because the Galaxy SDK isn't available in the main purchases module. Those conversions are located in the galaxy
-// module's StoreReplacementModeConversions.kt file.
-private val StoreReplacementMode.mapping: StoreReplacementModeMapping
-    get() = when (this) {
-        StoreReplacementMode.WITHOUT_PRORATION -> StoreReplacementModeMapping(
+private val storeReplacementModeMappings: Map<StoreReplacementMode, StoreReplacementModeMapping> =
+    mapOf(
+        StoreReplacementMode.WITHOUT_PRORATION to StoreReplacementModeMapping(
             playBillingClientMode = BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITHOUT_PRORATION,
             legacyPlayBackendName = "IMMEDIATE_WITHOUT_PRORATION",
             galaxyBackendName = "INSTANT_NO_PRORATION",
             googleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION,
-        )
-        StoreReplacementMode.WITH_TIME_PRORATION -> StoreReplacementModeMapping(
+        ),
+        StoreReplacementMode.WITH_TIME_PRORATION to StoreReplacementModeMapping(
             playBillingClientMode = BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITH_TIME_PRORATION,
             legacyPlayBackendName = "IMMEDIATE_WITH_TIME_PRORATION",
             galaxyBackendName = "INSTANT_PRORATED_DATE",
             googleReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION,
-        )
-        StoreReplacementMode.CHARGE_FULL_PRICE -> StoreReplacementModeMapping(
+        ),
+        StoreReplacementMode.CHARGE_FULL_PRICE to StoreReplacementModeMapping(
             playBillingClientMode = BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE,
             legacyPlayBackendName = "IMMEDIATE_AND_CHARGE_FULL_PRICE",
             galaxyBackendName = null,
             googleReplacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
-        )
-        StoreReplacementMode.CHARGE_PRORATED_PRICE -> StoreReplacementModeMapping(
+        ),
+        StoreReplacementMode.CHARGE_PRORATED_PRICE to StoreReplacementModeMapping(
             playBillingClientMode = BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE,
             legacyPlayBackendName = "IMMEDIATE_AND_CHARGE_PRORATED_PRICE",
             galaxyBackendName = "INSTANT_PRORATED_CHARGE",
             googleReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
-        )
-        StoreReplacementMode.DEFERRED -> StoreReplacementModeMapping(
+        ),
+        StoreReplacementMode.DEFERRED to StoreReplacementModeMapping(
             playBillingClientMode = BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED,
             legacyPlayBackendName = "DEFERRED",
             galaxyBackendName = "DEFERRED",
             googleReplacementMode = GoogleReplacementMode.DEFERRED,
-        )
-    }
+        ),
+    )
+
+// This mapping table doesn't include the Galaxy mappings from StoreReplacementMode -> HelperDefine.ProrationMode
+// because the Galaxy SDK isn't available in the main purchases module. Those conversions are located in the galaxy
+// module's StoreReplacementModeConversions.kt file.
+private val StoreReplacementMode.mapping: StoreReplacementModeMapping
+    get() = storeReplacementModeMappings.getValue(this)
 
 @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode
 internal fun StoreReplacementMode.toPlayBillingClientMode(): Int {

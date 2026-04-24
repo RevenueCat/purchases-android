@@ -8,6 +8,14 @@ import org.junit.Test
 
 class ReplacementModeTest {
 
+    private val storeReplacementModes = listOf(
+        StoreReplacementMode.WITHOUT_PRORATION,
+        StoreReplacementMode.WITH_TIME_PRORATION,
+        StoreReplacementMode.CHARGE_FULL_PRICE,
+        StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        StoreReplacementMode.DEFERRED,
+    )
+
     @Test
     fun `google replacement modes map to legacy backend names`() {
         val expectations = mapOf(
@@ -42,11 +50,11 @@ class ReplacementModeTest {
             StoreReplacementMode.DEFERRED to "DEFERRED",
         )
 
-        StoreReplacementMode.values().forEach { mode ->
+        storeReplacementModes.forEach { mode ->
             assertThat(expectations).containsKey(mode)
             assertThat(mode.backendName(Store.PLAY_STORE)).isEqualTo(expectations.getValue(mode))
         }
-        assertThat(expectations.size).isEqualTo(StoreReplacementMode.values().size)
+        assertThat(expectations.size).isEqualTo(storeReplacementModes.size)
     }
 
     @Test
@@ -58,7 +66,7 @@ class ReplacementModeTest {
             StoreReplacementMode.DEFERRED to "DEFERRED",
         )
 
-        StoreReplacementMode.values().forEach { mode ->
+        storeReplacementModes.forEach { mode ->
             if (mode == StoreReplacementMode.CHARGE_FULL_PRICE) {
                 assertThat(mode.backendName(Store.GALAXY)).isNull()
             } else {
@@ -66,7 +74,7 @@ class ReplacementModeTest {
                 assertThat(mode.backendName(Store.GALAXY)).isEqualTo(expectations.getValue(mode))
             }
         }
-        assertThat(expectations.size).isEqualTo(StoreReplacementMode.values().size - 1)
+        assertThat(expectations.size).isEqualTo(storeReplacementModes.size - 1)
     }
 
     @Test

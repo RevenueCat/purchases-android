@@ -81,11 +81,8 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
 
             when (type) {
                 "StoreReplacementMode" -> {
-                    try {
-                        StoreReplacementMode.valueOf(name)
-                    } catch (e: IllegalArgumentException) {
-                        throw SerializationException("Invalid StoreReplacementMode name: $name", e)
-                    }
+                    StoreReplacementMode.fromName(name)
+                        ?: throw SerializationException("Invalid StoreReplacementMode name: $name")
                 }
                 "GoogleReplacementMode" -> {
                     try {

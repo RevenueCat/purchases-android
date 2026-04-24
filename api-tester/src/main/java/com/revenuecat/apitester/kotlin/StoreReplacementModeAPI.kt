@@ -5,13 +5,10 @@ import com.revenuecat.purchases.models.StoreReplacementMode
 @Suppress("unused", "UNUSED_VARIABLE")
 private class StoreReplacementModeAPI {
     fun check(mode: StoreReplacementMode) {
-        when (mode) {
-            StoreReplacementMode.WITHOUT_PRORATION,
-            StoreReplacementMode.WITH_TIME_PRORATION,
-            StoreReplacementMode.CHARGE_FULL_PRICE,
-            StoreReplacementMode.CHARGE_PRORATED_PRICE,
-            StoreReplacementMode.DEFERRED,
-            -> {}
-        }.exhaustive
+        val withoutProration: StoreReplacementMode = StoreReplacementMode.WITHOUT_PRORATION
+        val withTimeProration: StoreReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION
+        val chargeFullPrice: StoreReplacementMode = StoreReplacementMode.CHARGE_FULL_PRICE
+        val chargeProratedPrice: StoreReplacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE
+        val deferred: StoreReplacementMode = StoreReplacementMode.DEFERRED
     }
 }

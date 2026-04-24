@@ -440,7 +440,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun showReplacementModePicker(callback: (StoreReplacementMode?, Error?) -> Unit) {
-        val replacementModeOptions = StoreReplacementMode.values()
+        val replacementModeOptions = arrayOf(
+            StoreReplacementMode.WITHOUT_PRORATION,
+            StoreReplacementMode.WITH_TIME_PRORATION,
+            StoreReplacementMode.CHARGE_FULL_PRICE,
+            StoreReplacementMode.CHARGE_PRORATED_PRICE,
+            StoreReplacementMode.DEFERRED,
+        )
         var selectedReplacementMode: StoreReplacementMode? = null
 
         val replacementModeNames = replacementModeOptions.map { it.name }.toTypedArray()

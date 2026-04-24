@@ -14,6 +14,14 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class StoreReplacementModeConversionsTest {
 
+    private val storeReplacementModes = listOf(
+        StoreReplacementMode.WITHOUT_PRORATION,
+        StoreReplacementMode.WITH_TIME_PRORATION,
+        StoreReplacementMode.CHARGE_FULL_PRICE,
+        StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        StoreReplacementMode.DEFERRED,
+    )
+
     @Test
     fun `supported store replacement modes map to Galaxy proration modes`() {
         val expectations = mapOf(
@@ -23,19 +31,19 @@ class StoreReplacementModeConversionsTest {
             StoreReplacementMode.DEFERRED to HelperDefine.ProrationMode.DEFERRED,
         )
 
-        StoreReplacementMode.values()
+        storeReplacementModes
             .filter { it != StoreReplacementMode.CHARGE_FULL_PRICE }
             .forEach { mode ->
                 val expected = expectations[mode] ?: error("Missing expected mapping for $mode")
                 assertThat(mode.toGalaxyReplacementMode()).isEqualTo(expected)
             }
 
-        assertThat(expectations.size).isEqualTo(StoreReplacementMode.values().size - 1)
+        assertThat(expectations.size).isEqualTo(storeReplacementModes.size - 1)
     }
 
     @Test
     fun `only charge full price is excluded from supported Galaxy mappings`() {
-        val unsupportedModes = StoreReplacementMode.values()
+        val unsupportedModes = storeReplacementModes
             .filter { mode ->
                 runCatching { mode.toGalaxyReplacementMode() }.isFailure
             }

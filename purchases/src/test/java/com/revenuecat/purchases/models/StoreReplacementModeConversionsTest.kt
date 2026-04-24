@@ -10,6 +10,14 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class StoreReplacementModeConversionsTest {
 
+    private val storeReplacementModes = listOf(
+        StoreReplacementMode.WITHOUT_PRORATION,
+        StoreReplacementMode.WITH_TIME_PRORATION,
+        StoreReplacementMode.CHARGE_FULL_PRICE,
+        StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        StoreReplacementMode.DEFERRED,
+    )
+
     @Test
     fun `all store replacement modes map to Google BillingClient modes`() {
         val expectations = mapOf(
@@ -25,12 +33,12 @@ class StoreReplacementModeConversionsTest {
                 BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED,
         )
 
-        StoreReplacementMode.values().forEach { mode ->
+        storeReplacementModes.forEach { mode ->
             val expected = expectations[mode] ?: error("Missing expected mapping for $mode")
             assertThat(mode.toPlayBillingClientMode()).isEqualTo(expected)
         }
 
-        assertThat(expectations.size).isEqualTo(StoreReplacementMode.values().size)
+        assertThat(expectations.size).isEqualTo(storeReplacementModes.size)
     }
 
     @Test
@@ -49,7 +57,7 @@ class StoreReplacementModeConversionsTest {
             StoreReplacementMode.DEFERRED to "DEFERRED",
         )
 
-        StoreReplacementMode.values().forEach { mode ->
+        storeReplacementModes.forEach { mode ->
             assertThat(mode.storeBackendName(Store.PLAY_STORE)).isEqualTo(playExpectations.getValue(mode))
 
             if (mode == StoreReplacementMode.CHARGE_FULL_PRICE) {
@@ -70,12 +78,12 @@ class StoreReplacementModeConversionsTest {
             StoreReplacementMode.DEFERRED to GoogleReplacementMode.DEFERRED,
         )
 
-        StoreReplacementMode.values().forEach { mode ->
+        storeReplacementModes.forEach { mode ->
             val expected = expectations[mode] ?: error("Missing expected mapping for $mode")
             assertThat(mode.toGoogleReplacementMode()).isEqualTo(expected)
         }
 
-        assertThat(expectations.size).isEqualTo(StoreReplacementMode.values().size)
+        assertThat(expectations.size).isEqualTo(storeReplacementModes.size)
     }
 
     @Test
@@ -101,5 +109,22 @@ class StoreReplacementModeConversionsTest {
         assertThat(StoreReplacementMode.DEFERRED.toStoreReplacementModeOrNull()).isEqualTo(StoreReplacementMode.DEFERRED)
         assertThat(GoogleReplacementMode.DEFERRED.toStoreReplacementModeOrNull()).isEqualTo(StoreReplacementMode.DEFERRED)
         assertThat((null as com.revenuecat.purchases.ReplacementMode?).toStoreReplacementModeOrNull()).isNull()
+    }
+
+    @Test
+    fun `fromName returns matching store replacement mode`() {
+        storeReplacementModes.forEach { mode ->
+            assertThat(StoreReplacementMode.fromName(mode.name)).isEqualTo(mode)
+        }
+    }
+
+    @Test
+    fun `fromName returns null for unknown store replacement mode name`() {
+        assertThat(StoreReplacementMode.fromName("UNKNOWN")).isNull()
+    }
+
+    @Test
+    fun `fromName is case sensitive`() {
+        assertThat(StoreReplacementMode.fromName("deferred")).isNull()
     }
 }
