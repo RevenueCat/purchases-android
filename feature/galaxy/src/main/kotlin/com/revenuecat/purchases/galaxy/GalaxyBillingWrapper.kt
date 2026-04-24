@@ -108,11 +108,7 @@ internal class GalaxyBillingWrapper(
         logWarningIfUnexpectedSamsungIAPVersionFound()
     }
 
-    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        // No-op
-    }
-
-    override fun startConnection() {
+    override fun startConnection(delayMilliseconds: Long) {
         // No-op
     }
 

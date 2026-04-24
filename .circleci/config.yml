@@ -390,7 +390,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.3.0-SNAPSHOT s3://purchases-docs/android/10.3.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.2.1 s3://purchases-docs/android/10.2.1 --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -892,6 +892,29 @@ jobs:
       - store_test_results:
           path: maestro/report.xml
 
+  generate-baseline-profiles:
+    description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Generate baseline profiles
+          command: bundle exec fastlane android generate_baseline_profiles
+          no_output_timeout: 45m
+      - android/save_build_cache
+      - android/save_gradle_cache
+      - store_artifacts:
+          path: purchases/src/main/baseline-prof.txt
+      - store_artifacts:
+          path: ui/revenuecatui/src/main/baseline-prof.txt
+
   update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.2.0
@@ -1164,6 +1187,16 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump
+
+  biweekly-baseline-profiles:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "baseline-profiles", << pipeline.schedule.name >> ]
+    jobs:
+      - generate-baseline-profiles:
+          context:
+            - github-bot-public
 
   manual-trigger-bump:
     when:

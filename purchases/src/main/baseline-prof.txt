@@ -617,7 +617,7 @@ HSPLcom/revenuecat/purchases/common/BillingAbstract;->getPurchasesStateProvider(
 HSPLcom/revenuecat/purchases/common/BillingAbstract;->getPurchasesUpdatedListener()Lcom/revenuecat/purchases/common/BillingAbstract$PurchasesUpdatedListener;
 HSPLcom/revenuecat/purchases/common/BillingAbstract;->setPurchasesUpdatedListener(Lcom/revenuecat/purchases/common/BillingAbstract$PurchasesUpdatedListener;)V
 HSPLcom/revenuecat/purchases/common/BillingAbstract;->setStateListener(Lcom/revenuecat/purchases/common/BillingAbstract$StateListener;)V
-HSPLcom/revenuecat/purchases/common/BillingAbstract;->startConnectionOnMainThread$default(Lcom/revenuecat/purchases/common/BillingAbstract;JILjava/lang/Object;)V
+HSPLcom/revenuecat/purchases/common/BillingAbstract;->startConnection$default(Lcom/revenuecat/purchases/common/BillingAbstract;JILjava/lang/Object;)V
 Lcom/revenuecat/purchases/common/BillingAbstract$PurchasesUpdatedListener;
 Lcom/revenuecat/purchases/common/BillingAbstract$StateListener;
 Lcom/revenuecat/purchases/common/Config;
@@ -1539,9 +1539,9 @@ HSPLcom/revenuecat/purchases/google/BillingWrapper;->queryPurchases(Ljava/lang/S
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->sendErrorsToAllPendingRequests$lambda$66$lambda$65(Lkotlin/jvm/functions/Function1;Lcom/revenuecat/purchases/PurchasesError;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->sendErrorsToAllPendingRequests(Lcom/revenuecat/purchases/PurchasesError;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->showInAppMessagesIfNeeded(Landroid/app/Activity;Ljava/util/List;Lkotlin/jvm/functions/Function0;)V
-HSPLcom/revenuecat/purchases/google/BillingWrapper;->startConnection()V
-HSPLcom/revenuecat/purchases/google/BillingWrapper;->startConnectionOnMainThread$lambda$4(Lcom/revenuecat/purchases/google/BillingWrapper;)V
-HSPLcom/revenuecat/purchases/google/BillingWrapper;->startConnectionOnMainThread(J)V
+HSPLcom/revenuecat/purchases/google/BillingWrapper;->performStartConnection()V
+HSPLcom/revenuecat/purchases/google/BillingWrapper;->startConnection$lambda$4(Lcom/revenuecat/purchases/google/BillingWrapper;)V
+HSPLcom/revenuecat/purchases/google/BillingWrapper;->startConnection(J)V
 Lcom/revenuecat/purchases/google/BillingWrapper$$ExternalSyntheticLambda0;
 HSPLcom/revenuecat/purchases/google/BillingWrapper$$ExternalSyntheticLambda0;-><init>(Lcom/android/billingclient/api/BillingResult;Lcom/revenuecat/purchases/google/BillingWrapper;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper$$ExternalSyntheticLambda0;->run()V
