@@ -157,6 +157,34 @@ class WorkflowNavigatorTest {
     }
 
     @Test
+    fun `triggerAction with unknown action type returns null and does not navigate`() {
+        val stepWithUnknownAction = WorkflowStep(
+            id = "step-x",
+            type = "screen",
+            screenId = "screen-x",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "X",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "ax",
+                    componentId = "btn-x",
+                ),
+            ),
+            triggerActions = mapOf(
+                "ax" to WorkflowTriggerAction(type = WorkflowTriggerActionType.UNKNOWN),
+            ),
+        )
+        val wfl = workflow.copy(
+            initialStepId = "step-x",
+            steps = mapOf("step-x" to stepWithUnknownAction),
+        )
+        val navigator = WorkflowNavigator(wfl)
+        val result = navigator.triggerAction("btn-x", WorkflowTriggerType.ON_PRESS)
+        assertThat(result).isNull()
+        assertThat(navigator.currentStep()).isEqualTo(stepWithUnknownAction)
+    }
+
+    @Test
     fun `triggerAction with actionId not in triggerActions returns null and does not navigate`() {
         val stepWithMissingAction = WorkflowStep(
             id = "step-x",
