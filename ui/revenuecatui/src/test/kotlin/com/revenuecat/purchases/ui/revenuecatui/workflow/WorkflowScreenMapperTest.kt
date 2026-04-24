@@ -5,7 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.workflow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background

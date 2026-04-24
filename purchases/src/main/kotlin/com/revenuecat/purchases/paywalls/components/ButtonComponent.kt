@@ -46,7 +46,7 @@ public class ButtonComponent(
         public object NavigateBack : Action
 
         @Serializable
-        public object Workflow : Action
+        public object WorkflowTrigger : Action
 
         @Serializable
         @Immutable
@@ -148,13 +148,13 @@ private class ActionSurrogate(
             is Action.NavigateBack -> ActionTypeSurrogate.navigate_back
             is Action.NavigateTo -> ActionTypeSurrogate.navigate_to
             is Action.RestorePurchases -> ActionTypeSurrogate.restore_purchases
-            is Action.Workflow -> ActionTypeSurrogate.workflow
+            is Action.WorkflowTrigger -> ActionTypeSurrogate.workflow
         },
         destination = when (action) {
             is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
-            is Action.Workflow,
+            is Action.WorkflowTrigger,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -170,7 +170,7 @@ private class ActionSurrogate(
             is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
-            is Action.Workflow,
+            is Action.WorkflowTrigger,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -198,7 +198,7 @@ private class ActionSurrogate(
             is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
-            is Action.Workflow,
+            is Action.WorkflowTrigger,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -218,7 +218,7 @@ private class ActionSurrogate(
             ActionTypeSurrogate.unknown -> Action.Unknown
             ActionTypeSurrogate.restore_purchases -> Action.RestorePurchases
             ActionTypeSurrogate.navigate_back -> Action.NavigateBack
-            ActionTypeSurrogate.workflow -> Action.Workflow
+            ActionTypeSurrogate.workflow -> Action.WorkflowTrigger
             ActionTypeSurrogate.navigate_to -> Action.NavigateTo(
                 destination = when (destination) {
                     DestinationSurrogate.customer_center -> Destination.CustomerCenter
