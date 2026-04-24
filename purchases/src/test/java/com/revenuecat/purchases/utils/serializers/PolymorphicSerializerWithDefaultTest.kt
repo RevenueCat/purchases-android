@@ -161,6 +161,12 @@ class PolymorphicSerializerWithDefaultTest {
     }
 
     @Test
+    fun `falls back to default when type field is JSON null`() {
+        val result = json.decodeFromString<Event>("""{"type":null,"target_id":"btn-1"}""")
+        assertThat(result).isEqualTo(Event.Unknown)
+    }
+
+    @Test
     fun `falls back to default when type field is a JSON object`() {
         val result = json.decodeFromString<Event>("""{"type":{"nested":"value"},"target_id":"btn-1"}""")
         assertThat(result).isEqualTo(Event.Unknown)

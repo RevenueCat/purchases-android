@@ -30,7 +30,7 @@ internal abstract class PolymorphicSerializerWithDefault<T : Any>(
 
     final override fun selectDeserializer(element: JsonElement): DeserializationStrategy<T> {
         val obj = element.jsonObject
-        val type = (obj[typeField] as? JsonPrimitive)?.content ?: return unknownSerializer
+        val type = (obj[typeField] as? JsonPrimitive)?.contentOrNull ?: return unknownSerializer
         return serializers[type]
             ?.let { (requiredField, serializer) ->
                 if (obj.hasNonNullField(requiredField)) serializer else unknownSerializer
