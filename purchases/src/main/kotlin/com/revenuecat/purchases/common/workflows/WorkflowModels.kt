@@ -8,6 +8,7 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.Contextual
@@ -18,18 +19,28 @@ import kotlinx.serialization.json.JsonObject
 import java.net.URL
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = WorkflowTriggerTypeDeserializer::class)
 public enum class WorkflowTriggerType {
     @SerialName("on_press")
     ON_PRESS,
+    UNKNOWN,
 }
 
+internal object WorkflowTriggerTypeDeserializer : EnumDeserializerWithDefault<WorkflowTriggerType>(
+    defaultValue = WorkflowTriggerType.UNKNOWN,
+)
+
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = WorkflowTriggerActionTypeDeserializer::class)
 public enum class WorkflowTriggerActionType {
     @SerialName("step")
     STEP,
+    UNKNOWN,
 }
+
+internal object WorkflowTriggerActionTypeDeserializer : EnumDeserializerWithDefault<WorkflowTriggerActionType>(
+    defaultValue = WorkflowTriggerActionType.UNKNOWN,
+)
 
 @InternalRevenueCatAPI
 @Serializable
