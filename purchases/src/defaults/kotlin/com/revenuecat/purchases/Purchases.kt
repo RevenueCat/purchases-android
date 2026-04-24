@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -45,6 +46,9 @@ import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -392,6 +396,19 @@ public class Purchases internal constructor(
         listener: ReceiveOfferingsCallback,
     ) {
         purchasesOrchestrator.getOfferings(listener)
+    }
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    @Throws(PurchasesException::class)
+    public suspend fun awaitGetWorkflow(
+        workflowId: String,
+    ): WorkflowDataResult = suspendCoroutine { continuation ->
+        purchasesOrchestrator.getWorkflow(
+            workflowId = workflowId,
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
     }
 
     /**

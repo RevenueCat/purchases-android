@@ -12,7 +12,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import com.revenuecat.purchases.galaxy.GalaxyBillingWrapperFactory
 import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.google.history.PurchaseHistoryManager
 import com.revenuecat.purchases.simulatedstore.SimulatedStoreBillingWrapper
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -40,12 +39,11 @@ internal object BillingFactory {
                 backend = backend,
             )
             Store.PLAY_STORE -> BillingWrapper(
-                BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
-                Handler(application.mainLooper),
-                cache,
-                diagnosticsTrackerIfEnabled,
-                stateProvider,
-                purchaseHistoryManager = PurchaseHistoryManager(application),
+                clientFactory = BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
+                mainHandler = Handler(application.mainLooper),
+                deviceCache = cache,
+                diagnosticsTrackerIfEnabled = diagnosticsTrackerIfEnabled,
+                purchasesStateProvider = stateProvider,
             )
             Store.AMAZON -> {
                 try {

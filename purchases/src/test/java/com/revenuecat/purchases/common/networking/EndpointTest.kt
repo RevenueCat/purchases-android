@@ -22,6 +22,7 @@ class EndpointTest {
         Endpoint.PostEvents,
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
+        Endpoint.GetWorkflow("test-user-id", "wf_test"),
         Endpoint.AliasUsers("test-user-id")
     )
 
@@ -43,6 +44,13 @@ class EndpointTest {
     fun `GetOfferings has correct path`() {
         val endpoint = Endpoint.GetOfferings("test user-id")
         val expectedPath = "/v1/subscribers/test%20user-id/offerings"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetWorkflow has correct path`() {
+        val endpoint = Endpoint.GetWorkflow("test user-id", "wf abc")
+        val expectedPath = "/v1/subscribers/test%20user-id/workflows/wf%20abc"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
@@ -136,6 +144,7 @@ class EndpointTest {
             Endpoint.LogIn,
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
+            Endpoint.GetWorkflow("test-user-id", "wf_1"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
@@ -195,6 +204,7 @@ class EndpointTest {
     fun `needsNonceToPerformSigning is false for expected values`() {
         val expectedEndpoints = listOf(
             Endpoint.GetOfferings("test-user-id"),
+            Endpoint.GetWorkflow("test-user-id", "wf_1"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),

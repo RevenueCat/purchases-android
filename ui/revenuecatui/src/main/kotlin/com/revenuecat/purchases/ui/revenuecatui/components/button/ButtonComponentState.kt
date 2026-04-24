@@ -13,6 +13,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @Stable
 @JvmSynthetic
@@ -108,6 +109,12 @@ internal class ButtonComponentState(
                         packageParam = packageParam,
                     ),
                 )
+            }
+            // Workflow buttons are normally intercepted before toPaywallAction() is called.
+            // Reaching this is unexpected and indicates a misconfigured button (e.g. null componentId).
+            is ButtonComponentStyle.Action.Workflow -> {
+                Logger.e("ButtonComponentState: reached toPaywallAction for Workflow action — componentId may be null")
+                PaywallAction.External.NavigateBack
             }
         }
 }

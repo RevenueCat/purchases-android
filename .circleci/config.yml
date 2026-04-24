@@ -286,12 +286,12 @@ jobs:
                 file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
-            RESULTS_DIR="build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>"
-            mkdir -p $RESULTS_DIR
-            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
-          path: build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>
+          path: build/test-results-collected
       - store_artifacts:
           path: build/reports
 
@@ -337,12 +337,12 @@ jobs:
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
-            RESULTS_DIR="build/test-results-galaxy"
-            mkdir -p $RESULTS_DIR
-            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
-          path: build/test-results-galaxy
+          path: build/test-results-collected
       - store_artifacts:
           path: build/reports
 
@@ -390,7 +390,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/9.29.0-SNAPSHOT s3://purchases-docs/android/9.29.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.2.1 s3://purchases-docs/android/10.2.1 --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -590,9 +590,7 @@ jobs:
       - run:
           name: Build and run purchases integration tests
           command: |
-            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
-          environment:
-            NOTIFY_SLACK: "<< parameters.notify_slack >>"
+            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>' notify_slack:'<< parameters.notify_slack >>'
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
@@ -894,6 +892,29 @@ jobs:
       - store_test_results:
           path: maestro/report.xml
 
+  generate-baseline-profiles:
+    description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Generate baseline profiles
+          command: bundle exec fastlane android generate_baseline_profiles
+          no_output_timeout: 45m
+      - android/save_build_cache
+      - android/save_gradle_cache
+      - store_artifacts:
+          path: purchases/src/main/baseline-prof.txt
+      - store_artifacts:
+          path: ui/revenuecatui/src/main/baseline-prof.txt
+
   update-paywall-preview-resources-submodule:
     docker:
       - image: cimg/ruby:3.2.0
@@ -1166,6 +1187,16 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump
+
+  biweekly-baseline-profiles:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "baseline-profiles", << pipeline.schedule.name >> ]
+    jobs:
+      - generate-baseline-profiles:
+          context:
+            - github-bot-public
 
   manual-trigger-bump:
     when:

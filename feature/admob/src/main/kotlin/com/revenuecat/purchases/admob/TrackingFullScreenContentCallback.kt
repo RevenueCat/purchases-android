@@ -25,9 +25,9 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
  * on the ad object by the caller (see [setUpPaidEventTracking]).
  */
 internal class TrackingFullScreenContentCallback(
-    private val delegate: FullScreenContentCallback?,
+    internal var delegate: FullScreenContentCallback?,
     private val adFormat: AdFormat,
-    private val placement: String?,
+    internal var placement: String?,
     private val adUnitId: String,
     private val responseInfoProvider: () -> ResponseInfo,
 ) : FullScreenContentCallback() {
@@ -81,12 +81,14 @@ internal class TrackingFullScreenContentCallback(
 
 /**
  * Wires [OnPaidEventListener] for revenue tracking on a full-screen ad.
+ *
+ * Placement is read from [placementProvider] at event time so that any show-time override is reflected.
  */
 @Suppress("LongParameterList")
 internal fun setUpPaidEventTracking(
     setListener: (OnPaidEventListener) -> Unit,
     adFormat: AdFormat,
-    placement: String?,
+    placementProvider: () -> String?,
     adUnitId: String,
     responseInfoProvider: () -> ResponseInfo,
     delegate: OnPaidEventListener? = null,
@@ -100,7 +102,7 @@ internal fun setUpPaidEventTracking(
                         networkName = responseInfo.mediationAdapterClassName,
                         mediatorName = AdMediatorName.AD_MOB,
                         adFormat = adFormat,
-                        placement = placement,
+                        placement = placementProvider(),
                         adUnitId = adUnitId,
                         impressionId = responseInfo.responseId.orEmpty(),
                         revenueMicros = adValue.valueMicros,

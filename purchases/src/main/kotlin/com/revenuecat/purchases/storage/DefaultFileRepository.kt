@@ -83,8 +83,9 @@ internal class DefaultFileRepository(
 
     constructor(
         context: Context,
+        subDir: String = DefaultFileCache.DEFAULT_SUBDIR,
     ) : this(
-        fileCacheManager = DefaultFileCache(context),
+        fileCacheManager = DefaultFileCache(context, subDir),
     )
 
     override fun prefetch(urls: List<Pair<URL, Checksum?>>) {
@@ -193,14 +194,20 @@ internal class DefaultFileRepository(
 @OptIn(InternalRevenueCatAPI::class)
 internal class DefaultFileCache(
     private val context: Context,
+    private val subDir: String = DEFAULT_SUBDIR,
 ) : LocalFileCache {
+
+    companion object {
+        internal const val DEFAULT_SUBDIR = "rc_files"
+        private const val BUFFER_SIZE = 256 * 1024 // 256KB
+    }
 
     private val md: MessageDigest by lazy {
         MessageDigest.getInstance("MD5")
     }
 
     private val cacheDir: File by lazy {
-        val dir = File(context.cacheDir, "rc_files")
+        val dir = File(context.cacheDir, subDir)
         if (!dir.exists()) {
             dir.mkdirs()
         }
@@ -301,9 +308,5 @@ internal class DefaultFileCache(
         )
 
         return checksum == computedChecksum
-    }
-
-    companion object {
-        private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 }

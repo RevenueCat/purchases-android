@@ -237,7 +237,7 @@ internal open class BasePurchasesTest {
             }
 
             every {
-                startConnectionOnMainThread()
+                startConnection()
             } just Runs
         }
     }
@@ -507,6 +507,7 @@ internal open class BasePurchasesTest {
             blockstoreHelper = mockBlockstoreHelper,
             backupManager = mockBackupManager,
             purchaseParamsValidator = mockPurchaseParamsValidator,
+            workflowManager = mockk(relaxed = true),
         )
 
         purchases = Purchases(

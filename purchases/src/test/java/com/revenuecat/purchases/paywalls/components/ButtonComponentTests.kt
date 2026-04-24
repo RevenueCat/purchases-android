@@ -66,7 +66,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -108,7 +109,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -153,7 +155,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -205,7 +208,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -257,7 +261,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -309,7 +314,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -397,7 +403,8 @@ internal class ButtonComponentTests {
                                         components = listOf(
                                             TextComponent(
                                                 text = LocalizationKey("7bkohQjzIE"),
-                                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                                color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                                name = "Text",
                                             )
                                         ),
                                     ),
@@ -412,7 +419,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -461,7 +469,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -513,7 +522,8 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
@@ -556,10 +566,56 @@ internal class ButtonComponentTests {
                                 components = listOf(
                                     TextComponent(
                                         text = LocalizationKey("7bkohQjzIE"),
-                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
                                     )
                                 ),
                             )
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "with id",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_back"
+                          },
+                          "id": "btn-next-step",
+                          "stack": {
+                            "type": "stack",
+                            "components": [
+                              {
+                                "color": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                },
+                                "components": [],
+                                "id": "xmpgCrN9Rb",
+                                "name": "Text",
+                                "text_lid": "7bkohQjzIE",
+                                "type": "text"
+                              }
+                            ]
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateBack,
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("7bkohQjzIE"),
+                                        color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                        name = "Text",
+                                    )
+                                ),
+                            ),
+                            id = "btn-next-step",
                         )
                     ),
                 ),
@@ -792,7 +848,8 @@ internal class ButtonComponentTests {
                                     components = listOf(
                                         TextComponent(
                                             text = LocalizationKey("7bkohQjzIE"),
-                                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                            color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                            name = "Text",
                                         )
                                     ),
                                 ),
@@ -803,6 +860,17 @@ internal class ButtonComponentTests {
                                 )
                             )
                         )
+                    ),
+                ),
+                arrayOf(
+                    "workflow",
+                    Args(
+                        serialized = """
+                        {
+                          "type": "workflow"
+                        }
+                        """.trimIndent(),
+                        deserialized = ButtonComponent.Action.Workflow,
                     ),
                 ),
                 arrayOf(

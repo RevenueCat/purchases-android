@@ -37,6 +37,7 @@ internal sealed interface PaywallValidationResult {
 
     data class Components(
         val stack: ComponentStyle,
+        val header: ComponentStyle?,
         val stickyFooter: ComponentStyle?,
         val background: BackgroundStyles,
         /**
@@ -51,6 +52,7 @@ internal sealed interface PaywallValidationResult {
         val variableDataProvider: VariableDataProvider,
         val packages: AvailablePackages,
         val initialSelectedTabIndex: Int?,
+        val mainStackHasHeroImage: Boolean = false,
     ) : PaywallValidationResult {
         // If a Components Paywall has an error, it will be reflected as a Legacy type so we can use the Legacy
         // fallback.

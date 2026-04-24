@@ -11,6 +11,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -196,44 +197,39 @@ internal class TextComponentViewVariablesTests(
         private val productWithUpperCaseName = productYearlyUsdTwoOffers.copy(name = "ANNUAL")
         private val productWithLowerCaseName = productYearlyUsdTwoOffers.copy(name = "annual")
 
-        @Suppress("DEPRECATION")
         private val packageYearlyUsdTwoOffers = Package(
-            packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
-            offering = OFFERING_ID,
+            packageType = PackageType.ANNUAL,
             product = productYearlyUsdTwoOffers,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageMonthlyUsdOneOffer = Package(
-            packageType = PackageType.ANNUAL,
             identifier = "package_monthly",
-            offering = OFFERING_ID,
+            packageType = PackageType.ANNUAL,
             product = productMonthlyUsdOneOffer,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageQuarterlyUsdNoOffers = Package(
-            packageType = PackageType.THREE_MONTH,
             identifier = PackageType.THREE_MONTH.identifier!!,
-            offering = OFFERING_ID,
+            packageType = PackageType.THREE_MONTH,
             product = productQuarterlyUsdNoOffers,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageYearlyMxnOneOffer = Package(
-            packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
-            offering = OFFERING_ID,
+            packageType = PackageType.ANNUAL,
             product = productYearlyMxnOneOffer,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
-        @Suppress("DEPRECATION")
         private val packageYearlyJpyOneOffer = Package(
-            packageType = PackageType.ANNUAL,
             identifier = "package_yearly",
-            offering = OFFERING_ID,
+            packageType = PackageType.ANNUAL,
             product = productYearlyJpyOneOffer,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = OFFERING_ID),
         )
 
         @Suppress("DEPRECIATION")
