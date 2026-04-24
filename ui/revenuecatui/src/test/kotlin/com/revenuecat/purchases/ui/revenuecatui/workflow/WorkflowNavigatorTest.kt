@@ -8,6 +8,8 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerActionType
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import org.assertj.core.api.Assertions.assertThat
 
@@ -24,13 +26,13 @@ class WorkflowNavigatorTest {
         triggers = listOf(
             WorkflowTrigger(
                 name = "Next",
-                type = "on_press",
+                type = WorkflowTriggerType.ON_PRESS,
                 actionId = "action-next",
                 componentId = "btn-next",
             ),
         ),
         triggerActions = mapOf(
-            "action-next" to WorkflowTriggerAction(type = "step", stepId = "step-2"),
+            "action-next" to WorkflowTriggerAction(type = WorkflowTriggerActionType.STEP, stepId = "step-2"),
         ),
     )
 
@@ -41,13 +43,13 @@ class WorkflowNavigatorTest {
         triggers = listOf(
             WorkflowTrigger(
                 name = "Finish",
-                type = "on_press",
+                type = WorkflowTriggerType.ON_PRESS,
                 actionId = "action-finish",
                 componentId = "btn-finish",
             ),
         ),
         triggerActions = mapOf(
-            "action-finish" to WorkflowTriggerAction(type = "step", stepId = "step-3"),
+            "action-finish" to WorkflowTriggerAction(type = WorkflowTriggerActionType.STEP, stepId = "step-3"),
         ),
     )
 
@@ -97,29 +99,6 @@ class WorkflowNavigatorTest {
         val result = navigator.triggerAction("btn-unknown")
         assertThat(result).isNull()
         assertThat(navigator.currentStep()).isEqualTo(step1)
-    }
-
-    @Test
-    fun `triggerAction with unknown action type returns null and does not navigate`() {
-        val stepWithUnknownAction = WorkflowStep(
-            id = "step-x",
-            type = "screen",
-            screenId = "screen-x",
-            triggers = listOf(
-                WorkflowTrigger(name = "X", type = "on_press", actionId = "ax", componentId = "btn-x"),
-            ),
-            triggerActions = mapOf(
-                "ax" to WorkflowTriggerAction(type = "some_unknown_type", stepId = "step-1"),
-            ),
-        )
-        val wfl = workflow.copy(
-            initialStepId = "step-x",
-            steps = mapOf("step-x" to stepWithUnknownAction),
-        )
-        val navigator = WorkflowNavigator(wfl)
-        val result = navigator.triggerAction("btn-x")
-        assertThat(result).isNull()
-        assertThat(navigator.currentStep()).isEqualTo(stepWithUnknownAction)
     }
 
     @Test
@@ -184,7 +163,7 @@ class WorkflowNavigatorTest {
             type = "screen",
             screenId = "screen-x",
             triggers = listOf(
-                WorkflowTrigger(name = "X", type = "on_press", actionId = "action-missing", componentId = "btn-x"),
+                WorkflowTrigger(name = "X", type = WorkflowTriggerType.ON_PRESS, actionId = "action-missing", componentId = "btn-x"),
             ),
             triggerActions = emptyMap(),
         )
@@ -205,10 +184,10 @@ class WorkflowNavigatorTest {
             type = "screen",
             screenId = "screen-x",
             triggers = listOf(
-                WorkflowTrigger(name = "X", type = "on_press", actionId = "ax", componentId = "btn-x"),
+                WorkflowTrigger(name = "X", type = WorkflowTriggerType.ON_PRESS, actionId = "ax", componentId = "btn-x"),
             ),
             triggerActions = mapOf(
-                "ax" to WorkflowTriggerAction(type = "step", stepId = "step-nonexistent"),
+                "ax" to WorkflowTriggerAction(type = WorkflowTriggerActionType.STEP, stepId = "step-nonexistent"),
             ),
         )
         val wfl = workflow.copy(
