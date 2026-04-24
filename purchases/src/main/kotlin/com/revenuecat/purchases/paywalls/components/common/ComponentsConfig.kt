@@ -16,6 +16,22 @@ public class ComponentsConfig(
 )
 
 @InternalRevenueCatAPI
+@Serializable
+public enum class PaywallComponentsLayoutDirection {
+    @SerialName("system")
+    SYSTEM,
+
+    @SerialName("locale")
+    LOCALE,
+
+    @SerialName("rtl")
+    RTL,
+
+    @SerialName("ltr")
+    LTR,
+}
+
+@InternalRevenueCatAPI
 @Poko
 @Serializable
 public class PaywallComponentsConfig(
@@ -26,4 +42,7 @@ public class PaywallComponentsConfig(
     public val stickyFooter: StickyFooterComponent? = null,
     @get:JvmSynthetic
     public val header: HeaderComponent? = null,
+    @get:JvmSynthetic
+    @SerialName("layout_direction")
+    public val layoutDirection: PaywallComponentsLayoutDirection? = null,
 )

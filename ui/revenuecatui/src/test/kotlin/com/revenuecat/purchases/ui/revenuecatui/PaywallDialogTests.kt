@@ -65,6 +65,8 @@ class PaywallDialogTests {
         every { mockPurchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
         every { mockPurchases.storefrontCountryCode } returns "US"
         every { mockPurchases.preferredUILocaleOverride } returns null
+        every { mockPurchases.preferredUILocaleOverrideHonorsLayoutDirection } returns false
+        every { mockPurchases.addPreferredUILocaleOverrideChangeListener(any()) } returns {}
         every { mockPurchases.track(any()) } just Runs
     }
 

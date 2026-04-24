@@ -223,6 +223,8 @@ class PaywallViewModelTest {
         every { purchases.track(any()) } just Runs
         coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
+        every { purchases.preferredUILocaleOverrideHonorsLayoutDirection } returns false
+        every { purchases.addPreferredUILocaleOverrideChangeListener(any()) } returns {}
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -50,6 +51,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
@@ -62,6 +64,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.ProvideLayoutDirection
+import com.revenuecat.purchases.ui.revenuecatui.extensions.resolveLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetClose
@@ -78,9 +82,39 @@ internal fun LoadedPaywallComponents(
     modifier: Modifier = Modifier,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    val configuration = LocalConfiguration.current
-    state.update(localeList = configuration.locales)
+    val baseConfiguration = LocalConfiguration.current
+    state.update(localeList = baseConfiguration.locales)
+    val configuration = Configuration(baseConfiguration).apply {
+        setLocale(state.locale.toJavaLocale())
+    }
 
+    CompositionLocalProvider(
+        LocalConfiguration provides configuration,
+    ) {
+        ProvideLayoutDirection(
+            configuration.resolveLayoutDirection(
+                editorLayoutDirection = state.layoutDirection,
+                honorPreferredLocaleLayoutDirection = state.preferredLocaleOverrideHonorsLayoutDirection,
+            ),
+        ) {
+            LoadedPaywallComponentsContent(
+                state = state,
+                clickHandler = clickHandler,
+                modifier = modifier,
+                componentInteractionTracker = componentInteractionTracker,
+            )
+        }
+    }
+}
+
+@Suppress("LongMethod")
+@Composable
+private fun LoadedPaywallComponentsContent(
+    state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction.External) -> Unit,
+    modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+) {
     val style = state.stack
     val headerComponentStyle = state.header
     val footerComponentStyle = state.stickyFooter

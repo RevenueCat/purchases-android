@@ -3,6 +3,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.animateFloatAsState
@@ -29,9 +30,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -74,7 +78,9 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPur
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreen
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.extensions.ProvideLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.extensions.resolveLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.icons.ArrowBack
 import com.revenuecat.purchases.ui.revenuecatui.icons.Close
@@ -95,13 +101,22 @@ internal fun InternalCustomerCenter(
     val colorScheme = MaterialTheme.colorScheme
     val isDark = isSystemInDarkTheme()
 
+    SideEffect {
+        viewModel.refreshStateIfLocaleChanged()
+    }
+
     LaunchedEffect(colorScheme, isDark) {
         viewModel.refreshColors(colorScheme, isDark)
     }
 
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val localeList by viewModel.localeList.collectAsStateWithLifecycle()
+    val honorLayoutDirection by viewModel.preferredUILocaleOverrideHonorsLayoutDirection.collectAsStateWithLifecycle()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val configuration = Configuration(LocalConfiguration.current).apply {
+        localeList.get(0)?.let { setLocale(it) }
+    }
 
     LaunchedEffect(state !is CustomerCenterState.Success) {
         if (state is CustomerCenterState.NotLoaded) {
@@ -153,54 +168,65 @@ internal fun InternalCustomerCenter(
         )
     }
 
-    InternalCustomerCenter(
-        state,
-        modifier,
-        onAction = { action ->
-            when (action) {
-                is CustomerCenterAction.PathButtonPressed -> {
-                    viewModel.pathButtonPressed(context, action.path, action.purchaseInformation)
-                }
+    CompositionLocalProvider(
+        LocalConfiguration provides configuration,
+    ) {
+        ProvideLayoutDirection(
+            configuration.resolveLayoutDirection(
+                editorLayoutDirection = null,
+                honorPreferredLocaleLayoutDirection = honorLayoutDirection,
+            ),
+        ) {
+            InternalCustomerCenter(
+                state,
+                modifier,
+                onAction = { action ->
+                    when (action) {
+                        is CustomerCenterAction.PathButtonPressed -> {
+                            viewModel.pathButtonPressed(context, action.path, action.purchaseInformation)
+                        }
 
-                is CustomerCenterAction.PerformRestore -> {
-                    coroutineScope.launch {
-                        viewModel.restorePurchases()
+                        is CustomerCenterAction.PerformRestore -> {
+                            coroutineScope.launch {
+                                viewModel.restorePurchases()
+                            }
+                        }
+
+                        is CustomerCenterAction.DismissRestoreDialog ->
+                            coroutineScope.launch {
+                                viewModel.dismissRestoreDialog()
+                            }
+
+                        is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
+                        is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
+                        is CustomerCenterAction.NavigationButtonPressed -> {
+                            viewModel.onNavigationButtonPressed(context, onDismiss)
+                        }
+
+                        is CustomerCenterAction.DismissPromotionalOffer ->
+                            viewModel.dismissPromotionalOffer(context, action.originalPath)
+
+                        is CustomerCenterAction.PurchasePromotionalOffer -> {
+                            val activity = context.getActivity()
+                            coroutineScope.launch {
+                                viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
+                            }
+                        }
+                        is CustomerCenterAction.CustomActionSelected -> {
+                            viewModel.onCustomActionSelected(action.customActionData)
+                        }
+                        is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
+                        is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
+                        is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
+                        is CustomerCenterAction.ShowSupportTicketCreation -> viewModel.showCreateSupportTicket()
+                        is CustomerCenterAction.DismissSupportTicketSuccessSnackbar -> {
+                            viewModel.dismissSupportTicketSuccessSnackbar()
+                        }
                     }
-                }
-
-                is CustomerCenterAction.DismissRestoreDialog ->
-                    coroutineScope.launch {
-                        viewModel.dismissRestoreDialog()
-                    }
-
-                is CustomerCenterAction.ContactSupport -> viewModel.contactSupport(context, action.email)
-                is CustomerCenterAction.OpenURL -> viewModel.openURL(context, action.url)
-                is CustomerCenterAction.NavigationButtonPressed -> {
-                    viewModel.onNavigationButtonPressed(context, onDismiss)
-                }
-
-                is CustomerCenterAction.DismissPromotionalOffer ->
-                    viewModel.dismissPromotionalOffer(context, action.originalPath)
-
-                is CustomerCenterAction.PurchasePromotionalOffer -> {
-                    val activity = context.getActivity()
-                    coroutineScope.launch {
-                        viewModel.onAcceptedPromotionalOffer(action.subscriptionOption, activity)
-                    }
-                }
-                is CustomerCenterAction.CustomActionSelected -> {
-                    viewModel.onCustomActionSelected(action.customActionData)
-                }
-                is CustomerCenterAction.SelectPurchase -> viewModel.selectPurchase(action.purchase)
-                is CustomerCenterAction.ShowPaywall -> viewModel.showPaywall(context)
-                is CustomerCenterAction.ShowVirtualCurrencyBalances -> viewModel.showVirtualCurrencyBalances()
-                is CustomerCenterAction.ShowSupportTicketCreation -> viewModel.showCreateSupportTicket()
-                is CustomerCenterAction.DismissSupportTicketSuccessSnackbar -> {
-                    viewModel.dismissSupportTicketSuccessSnackbar()
-                }
-            }
-        },
-    )
+                },
+            )
+        }
+    }
 }
 
 @Composable

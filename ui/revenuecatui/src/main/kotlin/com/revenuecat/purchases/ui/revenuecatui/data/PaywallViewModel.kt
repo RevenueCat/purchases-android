@@ -81,6 +81,8 @@ internal interface PaywallViewModel {
     val actionError: State<PurchasesError?>
     val purchaseCompleted: State<Boolean>
     val preloadedExitOffering: State<Offering?>
+    val localeList: StateFlow<LocaleListCompat>
+    val preferredUILocaleOverrideHonorsLayoutDirection: StateFlow<Boolean>
 
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
@@ -153,7 +155,19 @@ internal class PaywallViewModelImpl(
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _preloadedExitOffering: MutableState<Offering?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
+    override val localeList = _lastLocaleList.asStateFlow()
+    private val _preferredUILocaleOverrideHonorsLayoutDirection = MutableStateFlow(
+        purchases.preferredUILocaleOverrideHonorsLayoutDirection,
+    )
+    override val preferredUILocaleOverrideHonorsLayoutDirection =
+        _preferredUILocaleOverrideHonorsLayoutDirection.asStateFlow()
     private val _colorScheme = MutableStateFlow(colorScheme)
+    private val removePreferredUILocaleOverrideChangeListener =
+        purchases.addPreferredUILocaleOverrideChangeListener {
+            viewModelScope.launch {
+                refreshStateIfLocaleChanged()
+            }
+        }
 
     private val listener: PaywallListener?
         get() = options.listener
@@ -180,6 +194,11 @@ internal class PaywallViewModelImpl(
         validateState()
     }
 
+    override fun onCleared() {
+        removePreferredUILocaleOverrideChangeListener()
+        super.onCleared()
+    }
+
     fun updateOptions(options: PaywallOptions) {
         val needsUpdateState = this.options.hashCode() != options.hashCode()
         // Some properties not considered for equality (hashCode) may have changed
@@ -192,14 +211,23 @@ internal class PaywallViewModelImpl(
 
     override fun refreshStateIfLocaleChanged() {
         val currentLocaleList = getCurrentLocaleList()
-        if (_lastLocaleList.value != currentLocaleList) {
+        val currentHonorLayoutDirection = purchases.preferredUILocaleOverrideHonorsLayoutDirection
+        val localeChanged = _lastLocaleList.value != currentLocaleList
+        val honorLayoutDirectionChanged =
+            _preferredUILocaleOverrideHonorsLayoutDirection.value != currentHonorLayoutDirection
+
+        if (localeChanged || honorLayoutDirectionChanged) {
             _lastLocaleList.value = currentLocaleList
+            _preferredUILocaleOverrideHonorsLayoutDirection.value = currentHonorLayoutDirection
 
             // If we have a Components paywall state, update its locale instead of recreating the entire state
             val currentState = _state.value
             if (currentState is PaywallState.Loaded.Components) {
-                currentState.update(localeList = currentLocaleList.toFrameworkLocaleList())
-            } else {
+                currentState.update(
+                    localeList = if (localeChanged) currentLocaleList.toFrameworkLocaleList() else null,
+                    preferredLocaleOverrideHonorsLayoutDirection = currentHonorLayoutDirection,
+                )
+            } else if (localeChanged) {
                 updateState()
             }
         }

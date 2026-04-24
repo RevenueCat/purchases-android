@@ -37,6 +37,7 @@ public open class PurchasesConfiguration(builder: Builder) {
     public val pendingTransactionsForPrepaidPlansEnabled: Boolean
     public val automaticDeviceIdentifierCollectionEnabled: Boolean
     public val preferredUILocaleOverride: String?
+    public val preferredUILocaleOverrideHonorsLayoutDirection: Boolean
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public val galaxyBillingMode: GalaxyBillingMode
@@ -61,6 +62,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         this.automaticDeviceIdentifierCollectionEnabled =
             builder.automaticDeviceIdentifierCollectionEnabled
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
+        this.preferredUILocaleOverrideHonorsLayoutDirection =
+            builder.preferredUILocaleOverrideHonorsLayoutDirection
 
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         this.galaxyBillingMode = builder.galaxyBillingMode
@@ -83,7 +86,10 @@ public open class PurchasesConfiguration(builder: Builder) {
             .automaticDeviceIdentifierCollectionEnabled(
                 automaticDeviceIdentifierCollectionEnabled,
             )
-            .preferredUILocaleOverride(preferredUILocaleOverride)
+            .preferredUILocaleOverride(
+                preferredUILocaleOverride,
+                preferredUILocaleOverrideHonorsLayoutDirection,
+            )
             .galaxyBillingMode(galaxyBillingMode)
         if (service != null) {
             builder = builder.service(service)
@@ -129,6 +135,9 @@ public open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var preferredUILocaleOverride: String? = null
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var preferredUILocaleOverrideHonorsLayoutDirection: Boolean = false
 
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         @set:JvmSynthetic
@@ -314,7 +323,22 @@ public open class PurchasesConfiguration(builder: Builder) {
          * importing RevenueCatUI in your project.
          */
         public fun preferredUILocaleOverride(localeString: String?): Builder = apply {
+            preferredUILocaleOverride(localeString, honorLayoutDirection = false)
+        }
+
+        /**
+         * Sets the preferred UI locale for RevenueCat UI components like Paywalls and Customer Center.
+         *
+         * @param localeString The locale string in the format "language_COUNTRY" (e.g., "en_US", "es_ES", "de_DE").
+         *                     Pass null to use the system default locale.
+         * @param honorLayoutDirection Whether RevenueCatUI should also derive layout direction from this locale.
+         */
+        public fun preferredUILocaleOverride(
+            localeString: String?,
+            honorLayoutDirection: Boolean,
+        ): Builder = apply {
             this.preferredUILocaleOverride = localeString
+            this.preferredUILocaleOverrideHonorsLayoutDirection = honorLayoutDirection
         }
 
         /**
@@ -352,6 +376,12 @@ public open class PurchasesConfiguration(builder: Builder) {
         if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
         if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
+        if (
+            preferredUILocaleOverrideHonorsLayoutDirection !=
+            other.preferredUILocaleOverrideHonorsLayoutDirection
+        ) {
+            return false
+        }
 
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         if (galaxyBillingMode != other.galaxyBillingMode) return false
@@ -371,6 +401,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
         result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
+        result = 31 * result + preferredUILocaleOverrideHonorsLayoutDirection.hashCode()
 
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
         result = 31 * result + (galaxyBillingMode.hashCode())
