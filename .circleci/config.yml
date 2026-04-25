@@ -47,12 +47,18 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests, render_paywall]
     default: default
   paywall_tester_track:
     type: enum
     enum: [internal, alpha, beta, production]
     default: alpha
+  render_paywall_api_key:
+    type: string
+    default: ""
+  render_paywall_offering_id:
+    type: string
+    default: ""
 
 commands:
   install-sdkman:
@@ -836,6 +842,46 @@ jobs:
           command: bundle exec fastlane android record_and_push_paywall_template_screenshots target_repository_path:../paywall-rendering-validation
       - android/save_build_cache
 
+  render-paywall:
+    description: "Render a single paywall from offerings JSON fetched from Khepri and upload the screenshot as an artifact"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Install jq
+          command: |
+            if ! command -v jq >/dev/null 2>&1; then
+              sudo apt-get update && sudo apt-get install -y jq
+            fi
+      - run:
+          name: Fetch offerings from RevenueCat
+          command: |
+            mkdir -p /tmp/render-paywall
+            curl -fsSL \
+              -H "Authorization: Bearer $RENDER_PAYWALL_API_KEY" \
+              -H "X-RC-Canary: android-pw" \
+              "https://api.revenuecat.com/v1/subscribers/render-android-paywall/offerings" \
+              -o /tmp/render-paywall/offerings.json
+          environment:
+            RENDER_PAYWALL_API_KEY: << pipeline.parameters.render_paywall_api_key >>
+      - run:
+          name: Render paywall screenshot
+          command: |
+            bash scripts/render-paywall.sh \
+              --input /tmp/render-paywall/offerings.json \
+              --output /tmp/render-paywall/render-paywall.png \
+              --offering-id "$RENDER_PAYWALL_OFFERING_ID"
+          environment:
+            RENDER_PAYWALL_OFFERING_ID: << pipeline.parameters.render_paywall_offering_id >>
+      - store_artifacts:
+          path: /tmp/render-paywall/render-paywall.png
+          destination: render-paywall.png
+      - android/save_gradle_cache
+      - android/save_build_cache
+
   run-revenuecatui-ui-tests:
     description: "Run RevenueCatUI UI tests for Android in CircleCI"
     <<: *android-machine-emulator
@@ -1229,3 +1275,9 @@ workflows:
       equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
     jobs:
       - update-golden-requests-backend-integration-tests
+
+  render-paywall:
+    when:
+      equal: [ render_paywall, << pipeline.parameters.action >> ]
+    jobs:
+      - render-paywall
