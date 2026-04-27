@@ -848,14 +848,25 @@ jobs:
           avd_name: test-revenuecat-ui
           system_image: system-images;android-32;google_apis;x86_64
           install: true
+      # Use a dedicated cache prefix so this job is isolated from the shared
+      # default gradle cache, which became corrupted (truncated
+      # module-metadata.bin entry for androidx.annotation:annotation-experimental).
+      # Bump the suffix to force a fresh cache if this job's cache ever goes bad.
+      - android/restore_gradle_cache:
+          cache_prefix: ui-tests-v1
+      - android/restore_build_cache:
+          cache_prefix: ui-tests-v1
       - android/start_emulator:
           avd_name: test-revenuecat-ui
           post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleBc8DebugAndroidTest
-      - android/restore_gradle_cache
       - run:
           name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
             ./gradlew ui:revenuecatui:connectedBc8DebugAndroidTest
+      - android/save_gradle_cache:
+          cache_prefix: ui-tests-v1
+      - android/save_build_cache:
+          cache_prefix: ui-tests-v1
 
   run-maestro-e2e-tests:
     description: "Run Maestro tests for Paywall Tester app"
