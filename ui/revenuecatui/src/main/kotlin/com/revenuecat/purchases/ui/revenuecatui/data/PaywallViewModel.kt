@@ -801,9 +801,9 @@ internal class PaywallViewModelImpl(
     override fun handleBackNavigation(): Boolean {
         val navigator = workflowNavigator ?: return false
         if (!navigator.canNavigateBack) return false
-        val newStep = navigator.navigateBack() ?: return false
         val result = currentWorkflowResult ?: return false
         val offerings = currentWorkflowOfferings ?: return false
+        val newStep = navigator.navigateBack() ?: return false
         buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
         return true
     }
