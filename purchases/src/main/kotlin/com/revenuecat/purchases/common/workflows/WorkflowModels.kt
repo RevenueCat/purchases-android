@@ -10,13 +10,17 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
-import com.revenuecat.purchases.utils.serializers.PolymorphicSerializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.Contextual
+import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 import java.net.URL
 
 @InternalRevenueCatAPI
@@ -43,13 +47,20 @@ public sealed class WorkflowTriggerAction {
     public object Unknown : WorkflowTriggerAction()
 }
 
-internal object WorkflowTriggerActionSerializer : PolymorphicSerializerWithDefault<WorkflowTriggerAction>(
-    baseClass = WorkflowTriggerAction::class,
-    unknownSerializer = WorkflowTriggerAction.Unknown.serializer(),
-    serializers = mapOf(
-        "step" to ("step_id" to WorkflowTriggerAction.Step.serializer()),
-    ),
-)
+internal object WorkflowTriggerActionSerializer : JsonContentPolymorphicSerializer<WorkflowTriggerAction>(
+    WorkflowTriggerAction::class,
+) {
+    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<WorkflowTriggerAction> {
+        val obj = element.jsonObject
+        val type = (obj["type"] as? JsonPrimitive)?.contentOrNull
+        val stepId = (obj["step_id"] as? JsonPrimitive)?.contentOrNull
+        return if (type == "step" && stepId != null) {
+            WorkflowTriggerAction.Step.serializer()
+        } else {
+            WorkflowTriggerAction.Unknown.serializer()
+        }
+    }
+}
 
 @InternalRevenueCatAPI
 @Serializable
