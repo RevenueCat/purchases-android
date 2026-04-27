@@ -1295,6 +1295,26 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isTrue()
     }
 
+    @Test
+    fun `handleWorkflowAction does nothing when no workflow is loaded`() {
+        val model = create()
+        val stateBefore = model.state.value
+
+        model.handleWorkflowAction("btn-next", com.revenuecat.purchases.common.workflows.WorkflowTriggerType.ON_PRESS)
+
+        assertThat(model.state.value).isEqualTo(stateBefore)
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `handleWorkflowAction does not dismiss paywall when no workflow is loaded`() {
+        val model = create()
+
+        model.handleWorkflowAction("btn-next", com.revenuecat.purchases.common.workflows.WorkflowTriggerType.ON_PRESS)
+
+        assertThat(dismissInvoked).isFalse()
+    }
+
     // region events
 
     @Test
