@@ -362,7 +362,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
 
                 is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
                 is PaywallAction.External.WorkflowTrigger ->
-                    Logger.d("Workflow received for componentId=${action.componentId}")
+                    Logger.d("Workflow received for componentId=${action.componentId} trigger=${action.triggerType}")
                 is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
                     is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")
