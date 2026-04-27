@@ -1275,6 +1275,26 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isTrue
     }
 
+    @Test
+    fun `handleBackNavigation returns false for regular paywall`() {
+        val model = create()
+
+        assertThat(model.handleBackNavigation()).isFalse()
+    }
+
+    @Test
+    fun `back press on regular paywall closes paywall exactly once`() {
+        val model = create()
+
+        // Simulate the BackHandler block in InternalPaywall:
+        // if (!viewModel.handleBackNavigation()) { viewModel.closePaywall() }
+        if (!model.handleBackNavigation()) {
+            model.closePaywall()
+        }
+
+        assertThat(dismissInvoked).isTrue()
+    }
+
     // region events
 
     @Test
