@@ -4,7 +4,7 @@ import com.revenuecat.purchases.ReplacementMode
 import kotlinx.parcelize.Parcelize
 
 /**
- * Enum of possible replacement modes to be used when performing a subscription product change.
+ * Type of possible replacement modes to be used when performing a subscription product change.
  */
 public abstract class StoreReplacementMode internal constructor(
     override val name: String,
@@ -13,19 +13,19 @@ public abstract class StoreReplacementMode internal constructor(
     override fun toString(): String = name
 
     @Parcelize
-    private object WithoutProration : StoreReplacementMode("WITHOUT_PRORATION")
+    public object WithoutProration : StoreReplacementMode("WITHOUT_PRORATION")
 
     @Parcelize
-    private object WithTimeProration : StoreReplacementMode("WITH_TIME_PRORATION")
+    public object WithTimeProration : StoreReplacementMode("WITH_TIME_PRORATION")
 
     @Parcelize
-    private object ChargeFullPrice : StoreReplacementMode("CHARGE_FULL_PRICE")
+    public object ChargeFullPrice : StoreReplacementMode("CHARGE_FULL_PRICE")
 
     @Parcelize
-    private object ChargeProratedPrice : StoreReplacementMode("CHARGE_PRORATED_PRICE")
+    public object ChargeProratedPrice : StoreReplacementMode("CHARGE_PRORATED_PRICE")
 
     @Parcelize
-    private object Deferred : StoreReplacementMode("DEFERRED")
+    public object Deferred : StoreReplacementMode("DEFERRED")
 
     public companion object {
         /**
