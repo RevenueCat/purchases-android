@@ -4,6 +4,8 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -15,6 +17,8 @@ import kotlinx.serialization.Contextual
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -51,13 +55,20 @@ internal object WorkflowTriggerActionSerializer : JsonContentPolymorphicSerializ
     WorkflowTriggerAction::class,
 ) {
     override fun selectDeserializer(element: JsonElement): DeserializationStrategy<WorkflowTriggerAction> {
-        val obj = element.jsonObject
-        val type = (obj["type"] as? JsonPrimitive)?.contentOrNull
-        val stepId = (obj["step_id"] as? JsonPrimitive)?.contentOrNull
-        return if (type == "step" && stepId != null) {
+        val type = (element.jsonObject["type"] as? JsonPrimitive)?.contentOrNull
+        return if (type == "step") {
             WorkflowTriggerAction.Step.serializer()
         } else {
             WorkflowTriggerAction.Unknown.serializer()
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): WorkflowTriggerAction {
+        return try {
+            super.deserialize(decoder)
+        } catch (e: SerializationException) {
+            log(LogIntent.WARNING) { "Failed to deserialize WorkflowTriggerAction, defaulting to Unknown: $e" }
+            WorkflowTriggerAction.Unknown
         }
     }
 }
