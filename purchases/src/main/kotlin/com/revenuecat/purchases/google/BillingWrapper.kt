@@ -68,6 +68,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -337,7 +338,7 @@ internal class BillingWrapper(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
                 subscriptionOptionId,
-                replaceProductInfo?.replacementMode as? StoreReplacementMode?,
+                replaceProductInfo?.replacementMode.toStoreReplacementModeOrNull(),
                 subscriptionOptionIdForProductIDs,
             )
         }

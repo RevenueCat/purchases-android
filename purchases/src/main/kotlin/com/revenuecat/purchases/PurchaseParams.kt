@@ -146,7 +146,7 @@ public class PurchaseParams(public val builder: Builder) {
          * The [GoogleReplacementMode] to use when replacing the given oldProductId. Defaults to
          * [GoogleReplacementMode.WITHOUT_PRORATION].
          *
-         * Only applied for Play Store product changes. Ignored for Amazon Appstore and Galaxy Store purchases.
+         * Applied for Play Store and Galaxy Store product changes. Ignored for Amazon Appstore.
          */
         @Deprecated("Use .replacementMode() instead")
         public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {

@@ -683,6 +683,9 @@ class BillingWrapperTest {
             null,
             null,
         )
+
+        val purchaseContext = wrapper.purchaseContext[oldPurchase.productIds.first()]
+        assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     @Test
