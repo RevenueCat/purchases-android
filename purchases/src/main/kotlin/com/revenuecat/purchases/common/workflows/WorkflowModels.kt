@@ -4,27 +4,19 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
+import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.Contextual
-import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.json.JsonContentPolymorphicSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
 import java.net.URL
 
 @InternalRevenueCatAPI
@@ -51,27 +43,11 @@ public sealed class WorkflowTriggerAction {
     public object Unknown : WorkflowTriggerAction()
 }
 
-internal object WorkflowTriggerActionSerializer : JsonContentPolymorphicSerializer<WorkflowTriggerAction>(
-    WorkflowTriggerAction::class,
-) {
-    override fun selectDeserializer(element: JsonElement): DeserializationStrategy<WorkflowTriggerAction> {
-        val type = (element.jsonObject["type"] as? JsonPrimitive)?.contentOrNull
-        return if (type == "step") {
-            WorkflowTriggerAction.Step.serializer()
-        } else {
-            WorkflowTriggerAction.Unknown.serializer()
-        }
-    }
-
-    override fun deserialize(decoder: Decoder): WorkflowTriggerAction {
-        return try {
-            super.deserialize(decoder)
-        } catch (e: SerializationException) {
-            log(LogIntent.WARNING) { "Failed to deserialize WorkflowTriggerAction, defaulting to Unknown: $e" }
-            WorkflowTriggerAction.Unknown
-        }
-    }
-}
+internal object WorkflowTriggerActionSerializer : SealedDeserializerWithDefault<WorkflowTriggerAction>(
+    serialName = "WorkflowTriggerAction",
+    serializerByType = mapOf("step" to { WorkflowTriggerAction.Step.serializer() }),
+    defaultValue = { WorkflowTriggerAction.Unknown },
+)
 
 @InternalRevenueCatAPI
 @Serializable
