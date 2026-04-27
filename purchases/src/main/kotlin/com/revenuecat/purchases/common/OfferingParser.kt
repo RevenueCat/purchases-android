@@ -87,15 +87,12 @@ internal abstract class OfferingParser {
             val offeringIdsByPlacement = it.optJSONObject("offering_ids_by_placement")
                 ?.toMap<String?>()
                 ?.replaceJsonNullWithKotlinNull()
+                ?: emptyMap()
 
-            return@let offeringIdsByPlacement?.let {
-                Offerings.Placements(
-                    fallbackOfferingId = fallbackOfferingId,
-                    offeringIdsByPlacement = offeringIdsByPlacement,
-                )
-            } ?: run {
-                null
-            }
+            Offerings.Placements(
+                fallbackOfferingId = fallbackOfferingId,
+                offeringIdsByPlacement = offeringIdsByPlacement,
+            )
         }
 
         return Offerings(
