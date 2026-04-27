@@ -22,6 +22,7 @@ public class PurchaseParams(public val builder: Builder) {
 
     @Deprecated("Use replacementMode instead")
     public val googleReplacementMode: GoogleReplacementMode
+        get() = replacementMode.toGoogleReplacementMode()
 
     public val replacementMode: StoreReplacementMode
 
@@ -45,7 +46,6 @@ public class PurchaseParams(public val builder: Builder) {
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
         this.oldProductId = builder.oldProductId
-        this.googleReplacementMode = builder.googleReplacementMode
         this.replacementMode = builder.replacementMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
@@ -98,11 +98,6 @@ public class PurchaseParams(public val builder: Builder) {
 
         @set:JvmSynthetic
         @get:JvmSynthetic
-        @Deprecated("Use replacementMode instead")
-        internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
-
-        @set:JvmSynthetic
-        @get:JvmSynthetic
         internal var replacementMode: StoreReplacementMode = StoreReplacementMode.WITHOUT_PRORATION
 
         /*
@@ -150,7 +145,6 @@ public class PurchaseParams(public val builder: Builder) {
          */
         @Deprecated("Use .replacementMode() instead")
         public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
-            this.googleReplacementMode = googleReplacementMode
             this.replacementMode = googleReplacementMode.toStoreReplacementMode()
         }
 
@@ -163,9 +157,6 @@ public class PurchaseParams(public val builder: Builder) {
          */
         public fun replacementMode(replacementMode: StoreReplacementMode): Builder = apply {
             this.replacementMode = replacementMode
-
-            // We can remove this once we fully remove PurchaseParams.googleReplacementMode
-            this.googleReplacementMode = replacementMode.toGoogleReplacementMode()
         }
 
         /*

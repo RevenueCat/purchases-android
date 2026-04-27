@@ -197,6 +197,36 @@ class PurchaseParamsTest {
         }
     }
 
+    @Test
+    fun `replacementMode and googleReplacementMode setters use last configured value`() {
+        val storeProduct = stubStoreProduct("abc")
+        val purchaseParamsWithStoreReplacementModeLast = PurchaseParams.Builder(
+            mockk(),
+            storeProduct
+        )
+            .googleReplacementMode(GoogleReplacementMode.DEFERRED)
+            .replacementMode(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+            .build()
+
+        assertThat(purchaseParamsWithStoreReplacementModeLast.replacementMode)
+            .isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(purchaseParamsWithStoreReplacementModeLast.googleReplacementMode)
+            .isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+
+        val purchaseParamsWithGoogleReplacementModeLast = PurchaseParams.Builder(
+            mockk(),
+            storeProduct
+        )
+            .replacementMode(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+            .googleReplacementMode(GoogleReplacementMode.DEFERRED)
+            .build()
+
+        assertThat(purchaseParamsWithGoogleReplacementModeLast.replacementMode)
+            .isEqualTo(StoreReplacementMode.DEFERRED)
+        assertThat(purchaseParamsWithGoogleReplacementModeLast.googleReplacementMode)
+            .isEqualTo(GoogleReplacementMode.DEFERRED)
+    }
+
     // region Add-Ons
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
