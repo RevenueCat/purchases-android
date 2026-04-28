@@ -1843,6 +1843,51 @@ private fun StackComponentView_Preview_ContentAlpha() {
     )
 }
 
+// Regression guard: when the parent stack is clickable, the ripple's shape clip must not
+// also clip nested children that draw outside the parent's bounds. Here the inner stack
+// has a generous shadow that should bleed past the outer's rounded edge — if a future
+// change reintroduces a graphics-layer clip on the clickable layout node, the shadow will
+// be visibly clipped at the outer's rounded corners in this preview.
+@Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
+@Composable
+private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = listOf(
+                previewStackComponentStyle(
+                    children = listOf(
+                        previewTextComponentStyle(
+                            text = "Nested",
+                            size = Size(width = Fit, height = Fit),
+                        ),
+                    ),
+                    size = Size(width = Fit, height = Fit),
+                    padding = PaddingValues(all = 16.dp),
+                    margin = PaddingValues(all = 0.dp),
+                    background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
+                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 4.0)),
+                    border = null,
+                    shadow = ShadowStyles(
+                        colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                        radius = 24.dp,
+                        x = 0.dp,
+                        y = 0.dp,
+                    ),
+                ),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = PaddingValues(all = 0.dp),
+            margin = PaddingValues(all = 32.dp),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 32.0)),
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Transparent))),
+            border = null,
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+        onClick = { },
+    )
+}
+
 @Composable
 private fun previewChildren() = listOf(
     previewTextComponentStyle(
