@@ -28,7 +28,8 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         return workflow.steps[action.stepId]
     }
 
-    fun peekBackStep(): WorkflowStep? = backStack.lastOrNull()?.let { workflow.steps[it] }
+    val peekBackStep: WorkflowStep?
+        get() = backStack.lastOrNull()?.let { workflow.steps[it] }
 
     @Suppress("ReturnCount")
     fun triggerAction(componentId: String, triggerType: WorkflowTriggerType): WorkflowStep? {

@@ -808,7 +808,7 @@ internal class PaywallViewModelImpl(
         if (!navigator.canNavigateBack) return false
         val result = currentWorkflowResult ?: return false
         val offerings = currentWorkflowOfferings ?: return false
-        val candidate = navigator.peekBackStep() ?: return false
+        val candidate = navigator.peekBackStep ?: return false
         validateStep(candidate, result.workflow, offerings)?.let { error ->
             Logger.e("Cannot navigate back to step '${candidate.id}': $error")
             return false
