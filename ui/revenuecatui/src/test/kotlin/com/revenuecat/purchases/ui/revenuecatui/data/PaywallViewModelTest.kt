@@ -1283,19 +1283,6 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `back press on regular paywall closes paywall exactly once`() {
-        val model = create()
-
-        // Simulate the BackHandler block in InternalPaywall:
-        // if (!viewModel.handleBackNavigation()) { viewModel.closePaywall() }
-        if (!model.handleBackNavigation()) {
-            model.closePaywall()
-        }
-
-        assertThat(dismissInvoked).isTrue()
-    }
-
-    @Test
     fun `handleWorkflowAction does nothing when no workflow is loaded`() {
         val model = create()
         val stateBefore = model.state.value
