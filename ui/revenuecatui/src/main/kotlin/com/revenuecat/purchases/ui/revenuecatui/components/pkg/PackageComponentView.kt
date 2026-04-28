@@ -36,7 +36,7 @@ internal fun PackageComponentView(
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
         enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
-        onClick = if (style.isSelectable) {
+        onStackClick = if (style.isSelectable) {
             {
                 componentInteractionTracker.track(
                     paywallPackageRowSelection(

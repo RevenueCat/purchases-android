@@ -26,7 +26,7 @@ internal fun TabControlButtonView(
         clickHandler = { },
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
-        onClick = onClick@{
+        onStackClick = onStackClick@{
             val ordered = style.tabIdsOrdered
             val destinationIndex = style.tabIndex
             val resolvedTabIndex = if (ordered.isNotEmpty()) {
@@ -38,7 +38,7 @@ internal fun TabControlButtonView(
                 val originIndex = state.selectedTabIndex.coerceIn(0, ordered.lastIndex)
                 if (originIndex == resolvedTabIndex) {
                     state.update(selectedTabIndex = resolvedTabIndex)
-                    return@onClick
+                    return@onStackClick
                 }
                 val originTabId = ordered[originIndex]
                 val destinationTabId = style.tabId

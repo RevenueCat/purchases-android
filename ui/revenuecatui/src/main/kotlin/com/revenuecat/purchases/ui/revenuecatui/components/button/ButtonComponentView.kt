@@ -137,7 +137,7 @@ internal fun ButtonComponentView(
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = animatedContentAlpha,
                     enabled = !anyActionInProgress,
-                    onClick = {
+                    onStackClick = {
                         val paywallAction = buttonState.action
                         myActionInProgress = true
                         state.update(actionInProgress = true)

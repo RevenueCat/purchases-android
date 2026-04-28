@@ -101,6 +101,23 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteract
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
+/**
+ * Renders a [StackComponentStyle].
+ *
+ * @param clickHandler Action dispatcher invoked by descendants when they fire a [PaywallAction]
+ *   (e.g. a child Button asking the screen to navigate back). This is *outbound*: the stack itself
+ *   does not call this; it just propagates from descendants up to the screen-level handler.
+ *   Distinct from [onStackClick].
+ * @param onStackClick Click callback when this entire stack is tapped. `null` makes the stack
+ *   non-clickable (no ripple, no gesture detection). When non-null, the stack draws a
+ *   shape-clipped Material ripple via a sibling layout so the ripple follows the stack's rounded
+ *   corners without clipping nested children that extend outside the parent's bounds (e.g. badges
+ *   with offsets, shadows). Distinct from [clickHandler].
+ * @param enabled When `false`, the stack stays semantically a button (kept clickable for
+ *   accessibility) but ignores clicks and shows no ripple. Only meaningful when [onStackClick] is
+ *   non-null. Use for transient disabled states such as "purchase in progress" or
+ *   "already-selected package".
+ */
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 internal fun StackComponentView(
@@ -108,7 +125,7 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+    onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
     contentAlpha: Float = 1f,
@@ -137,7 +154,7 @@ internal fun StackComponentView(
                     componentInteractionTracker,
                     contentAlpha,
                     modifier,
-                    onClick = onClick,
+                    onStackClick = onStackClick,
                     enabled = enabled,
                     interactionSource = interactionSource,
                 )
@@ -156,7 +173,7 @@ internal fun StackComponentView(
                         componentInteractionTracker,
                         contentAlpha,
                         modifier,
-                        onClick = onClick,
+                        onStackClick = onStackClick,
                         enabled = enabled,
                         interactionSource = interactionSource,
                     )
@@ -171,7 +188,7 @@ internal fun StackComponentView(
                         componentInteractionTracker,
                         contentAlpha,
                         modifier,
-                        onClick = onClick,
+                        onStackClick = onStackClick,
                         enabled = enabled,
                         interactionSource = interactionSource,
                     )
@@ -186,7 +203,7 @@ internal fun StackComponentView(
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = contentAlpha,
                     modifier = modifier,
-                    onClick = onClick,
+                    onStackClick = onStackClick,
                     enabled = enabled,
                     interactionSource = interactionSource,
                     nestedBadge = badge,
@@ -200,7 +217,7 @@ internal fun StackComponentView(
             componentInteractionTracker = componentInteractionTracker,
             contentAlpha = contentAlpha,
             modifier = modifier,
-            onClick = onClick,
+            onStackClick = onStackClick,
             enabled = enabled,
             interactionSource = interactionSource,
         )
@@ -218,7 +235,7 @@ private fun StackWithOverlaidBadge(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+    onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
 ) {
@@ -229,7 +246,7 @@ private fun StackWithOverlaidBadge(
             clickHandler = clickHandler,
             componentInteractionTracker = componentInteractionTracker,
             contentAlpha = contentAlpha,
-            onClick = onClick,
+            onStackClick = onStackClick,
             enabled = enabled,
             interactionSource = interactionSource,
         )
@@ -261,7 +278,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+    onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
 ) {
@@ -281,7 +298,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 componentInteractionTracker,
                 contentAlpha,
                 shouldApplyShadow = false,
-                onClick = onClick,
+                onStackClick = onStackClick,
                 enabled = enabled,
                 interactionSource = interactionSource,
             )
@@ -434,7 +451,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+    onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
 ) {
@@ -514,7 +531,7 @@ private fun StackWithShortEdgeToEdgeBadge(
         componentInteractionTracker = componentInteractionTracker,
         contentAlpha = contentAlpha,
         modifier = modifier,
-        onClick = onClick,
+        onStackClick = onStackClick,
         enabled = enabled,
         interactionSource = interactionSource,
     ) {
@@ -566,7 +583,7 @@ private fun MainStackComponent(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+    onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
     nestedBadge: BadgeStyle? = null,
@@ -729,22 +746,22 @@ private fun MainStackComponent(
 
     val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
     val indication = LocalIndication.current
-    val clickModifier = if (onClick != null) {
+    val clickModifier = if (onStackClick != null) {
         Modifier.clickable(
             interactionSource = resolvedInteractionSource,
             indication = indication,
             enabled = enabled,
-            onClick = onClick,
+            onClick = onStackClick,
         )
     } else {
         Modifier
     }
-    val plainPathClickModifier = if (onClick != null) {
+    val plainPathClickModifier = if (onStackClick != null) {
         Modifier.clickable(
             interactionSource = resolvedInteractionSource,
             indication = null,
             enabled = enabled,
-            onClick = onClick,
+            onClick = onStackClick,
         )
     } else {
         Modifier
@@ -775,7 +792,7 @@ private fun MainStackComponent(
                         },
                 )
             }
-        } else if (onClick != null) {
+        } else if (onStackClick != null) {
             // Draw the ripple on a sibling Box so the shape clip bounds only the ripple, not
             // nested content that may extend outside the parent (e.g. badges with offsets).
             Box {
@@ -1884,7 +1901,7 @@ private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow()
         ),
         state = previewEmptyState(),
         clickHandler = { },
-        onClick = { },
+        onStackClick = { },
     )
 }
 
