@@ -12,6 +12,9 @@ import kotlinx.parcelize.Parcelize
 public class StoreReplacementMode internal constructor(
     override val name: String,
 ) : ReplacementMode {
+
+    override fun toString(): String { return name }
+
     public companion object {
         /**
          * Old subscription is cancelled, and new subscription takes effect immediately.
