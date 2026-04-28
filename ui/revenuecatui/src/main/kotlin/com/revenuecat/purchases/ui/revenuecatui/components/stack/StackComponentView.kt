@@ -42,6 +42,10 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -593,14 +597,20 @@ private fun MainStackComponent(
     val safeDrawingInsets = WindowInsets.safeDrawing
 
     // Show the right container composable depending on the dimension.
-    val stack: @Composable (Modifier) -> Unit = { rootModifier ->
+    // `outerModifier` is the caller-supplied modifier applied to the actual layout node parents
+    // see. Most paths pass through `modifier` here. The plain stack path with `onStackClick`
+    // wraps the layout in an extra `Box` to keep the ripple's shape clip from clipping
+    // overflowing children, so it puts `modifier` on that wrapper and passes `Modifier` here —
+    // otherwise parent-data modifiers (weight, align) would land on the inner stack and be
+    // dropped by the wrapper.
+    val stack: @Composable (Modifier, Modifier) -> Unit = { outerModifier, rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
         // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
         // to draw "boxes" using whatever stack they please, for instance to create dividers.
         if (stackState.children.isEmpty()) {
             Box(
-                modifier = modifier
+                modifier = outerModifier
                     .size(stackState.size)
                     .then(rootModifier),
             )
@@ -610,7 +620,7 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    modifier = modifier
+                    modifier = outerModifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
@@ -637,7 +647,7 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    modifier = modifier
+                    modifier = outerModifier
                         .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
@@ -676,7 +686,7 @@ private fun MainStackComponent(
                         0
                     }
                     Box(
-                        modifier = modifier
+                        modifier = outerModifier
                             .size(
                                 size = stackState.size,
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
@@ -782,6 +792,7 @@ private fun MainStackComponent(
                     .then(borderModifier),
             ) {
                 stack(
+                    modifier,
                     Modifier
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
@@ -795,8 +806,24 @@ private fun MainStackComponent(
         } else if (onStackClick != null) {
             // Draw the ripple on a sibling Box so the shape clip bounds only the ripple, not
             // nested content that may extend outside the parent (e.g. badges with offsets).
-            Box {
+            // The caller's `modifier` goes on the wrapper Box (not the inner stack) so
+            // parent-data modifiers (weight, align) reach the parent Row/Column/Box.
+            // The inner stack still owns the actual `clickable`; we re-expose `onClick` and
+            // `role = Button` on the wrapper's semantics so callers that find the wrapper by
+            // testTag (or accessibility services) still see the click action — Compose's
+            // semantics merging would otherwise stop at the inner stack's `clickable` merge
+            // boundary instead of bubbling up here.
+            Box(
+                modifier = modifier.semantics {
+                    role = Role.Button
+                    onClick {
+                        if (enabled) onStackClick.invoke()
+                        true
+                    }
+                },
+            ) {
                 stack(
+                    Modifier,
                     outerShapeModifier
                         .then(plainPathClickModifier)
                         .then(borderModifier)
@@ -818,6 +845,7 @@ private fun MainStackComponent(
             }
         } else {
             stack(
+                modifier,
                 outerShapeModifier
                     .then(borderModifier)
                     .then(innerShapeModifier)
@@ -838,7 +866,7 @@ private fun MainStackComponent(
                 .then(borderModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(Modifier.then(innerShapeModifier))
+                stack(modifier, Modifier.then(innerShapeModifier))
             }
 
             StackComponentView(
@@ -858,7 +886,7 @@ private fun MainStackComponent(
                 .then(clickModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(borderModifier.then(innerShapeModifier))
+                stack(modifier, borderModifier.then(innerShapeModifier))
             }
             overlay()
         }
@@ -1858,6 +1886,44 @@ private fun StackComponentView_Preview_ContentAlpha() {
         clickHandler = {},
         contentAlpha = 0.6f,
     )
+}
+
+// Regression guard: a clickable StackComponentView placed in a Column with `Modifier.weight`
+// must still flex to its weighted share. The clickable plain path wraps the layout in an
+// extra Box to host a sibling-clipped ripple; if the caller's `modifier` (and therefore the
+// `weight` parent-data) lands on the inner stack inside that wrapper instead of on the
+// wrapper itself, weight is silently dropped and the two halves below collapse or oversize.
+@Preview(showBackground = true, backgroundColor = 0xFFEEEEEE, widthDp = 240, heightDp = 240)
+@Composable
+private fun StackComponentView_Preview_Clickable_Weighted_Children() {
+    Column(modifier = Modifier.fillMaxSize()) {
+        StackComponentView(
+            style = previewStackComponentStyle(
+                children = listOf(previewTextComponentStyle(text = "Top", size = Size(width = Fit, height = Fit))),
+                size = Size(width = Fill, height = Fill),
+                background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0)),
+                border = null,
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+            modifier = Modifier.weight(1f),
+            onStackClick = { },
+        )
+        StackComponentView(
+            style = previewStackComponentStyle(
+                children = listOf(previewTextComponentStyle(text = "Bottom", size = Size(width = Fit, height = Fit))),
+                size = Size(width = Fill, height = Fill),
+                background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Blue))),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0)),
+                border = null,
+            ),
+            state = previewEmptyState(),
+            clickHandler = { },
+            modifier = Modifier.weight(1f),
+            onStackClick = { },
+        )
+    }
 }
 
 // Regression guard: when the parent stack is clickable, the ripple's shape clip must not
