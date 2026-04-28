@@ -81,7 +81,6 @@ internal fun LoadedPaywallComponents(
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
 
-    val style = state.stack
     val headerComponentStyle = state.header
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
@@ -101,7 +100,7 @@ internal fun LoadedPaywallComponents(
                 ) {
                     // Child 0: main scrollable content.
                     ComponentView(
-                        style = style,
+                        style = state.stack,
                         state = state,
                         onClick = onClick,
                         componentInteractionTracker = componentInteractionTracker,
@@ -147,7 +146,7 @@ internal fun LoadedPaywallComponents(
  * Children: index 0 = main scrollable content, index 1 (optional) = header overlay.
  */
 @Composable
-private fun HeaderOverlayLayout(
+internal fun HeaderOverlayLayout(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
@@ -182,7 +181,7 @@ private fun HeaderOverlayLayout(
  * layout phase from [state.headerHeightPx][PaywallState.Loaded.Components.headerHeightPx], which
  * is set by [HeaderOverlayLayout] earlier in the same layout pass.
  */
-private fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
+internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
     this.layout { measurable, constraints ->
         val topPad = state.headerHeightPx
         val placeable = measurable.measure(constraints.offset(vertical = -topPad))
@@ -191,7 +190,7 @@ private fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Mo
         }
     }
 
-private suspend fun handleClick(
+internal suspend fun handleClick(
     action: PaywallAction,
     state: PaywallState.Loaded.Components,
     externalClickHandler: suspend (PaywallAction.External) -> Unit,
@@ -225,7 +224,7 @@ private suspend fun handleClick(
 /**
  * Shows the provided [sheet] as this [SimpleSheetState]'s sheet content.
  */
-private fun SimpleSheetState.show(
+internal fun SimpleSheetState.show(
     sheet: ButtonComponentStyle.Action.NavigateTo.Destination.Sheet,
     state: PaywallState.Loaded.Components,
     componentInteractionTracker: PaywallComponentInteractionTracker,

@@ -35,6 +35,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
+import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
@@ -144,11 +145,21 @@ internal fun InternalPaywall(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
-            LoadedPaywallComponents(
-                state = state,
-                clickHandler = rememberPaywallActionHandler(viewModel),
-                componentInteractionTracker = componentInteractionTracker,
-            )
+            val workflowState = viewModel.workflowState.value
+            if (workflowState != null) {
+                LoadedWorkflowPaywall(
+                    workflowState = workflowState,
+                    navigationDirection = viewModel.navigationDirection.value,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                    componentInteractionTracker = componentInteractionTracker,
+                )
+            } else {
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                    componentInteractionTracker = componentInteractionTracker,
+                )
+            }
         } else {
             Logger.e(
                 "State is not loaded while transitioning animation. This may happen if state changes " +
