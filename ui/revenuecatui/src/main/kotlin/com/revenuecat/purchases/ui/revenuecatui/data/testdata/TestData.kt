@@ -18,6 +18,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -677,6 +678,23 @@ internal class MockViewModel(
         } else {
             unsupportedMethod("Can't restore purchases")
         }
+    }
+
+    var handleWorkflowActionCallCount = 0
+        private set
+    var handleWorkflowActionParams = mutableListOf<Pair<String, WorkflowTriggerType>>()
+        private set
+    override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) {
+        handleWorkflowActionCallCount++
+        handleWorkflowActionParams.add(componentId to triggerType)
+    }
+
+    var handleBackNavigationCallCount = 0
+        private set
+    var handleBackNavigationResult = false
+    override fun handleBackNavigation(): Boolean {
+        handleBackNavigationCallCount++
+        return handleBackNavigationResult
     }
 
     var clearActionErrorCallCount = 0

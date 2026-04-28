@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
@@ -99,6 +100,8 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: PresentedOfferingContextData? = null,
         @SerialName("exit_offer_type")
         val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
@@ -150,6 +153,31 @@ internal sealed class BackendEvent : Event {
         @SerialName("resulting_product_id")
         val resultingProductIdentifier: String? = null,
     ) : BackendEvent()
+
+    @Serializable
+    data class PresentedOfferingContextData(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    ) {
+        companion object {
+            fun fromContext(
+                context: PresentedOfferingContext,
+            ): PresentedOfferingContextData? {
+                if (context.placementIdentifier == null && context.targetingContext == null) {
+                    return null
+                }
+                return PresentedOfferingContextData(
+                    placementIdentifier = context.placementIdentifier,
+                    targetingRevision = context.targetingContext?.revision,
+                    targetingRuleId = context.targetingContext?.ruleId,
+                )
+            }
+        }
+    }
 
     /**
      * Represents an event related to a custom paywall.

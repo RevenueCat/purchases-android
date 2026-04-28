@@ -19,6 +19,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -231,6 +232,10 @@ private class LoadingViewModel(
     override suspend fun handleRestorePurchases() {
         // no-op
     }
+
+    override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) = Unit
+
+    override fun handleBackNavigation(): Boolean = false
 
     override fun clearActionError() = Unit
 
