@@ -45,4 +45,11 @@ internal sealed class CustomerCenterDestination {
         val data: CreateSupportTicketData,
         override val title: String,
     ) : CustomerCenterDestination()
+
+    data class PurchaseHistory(
+        val activeSubscriptions: List<PurchaseInformation>,
+        val inactiveSubscriptions: List<PurchaseInformation>,
+        val nonSubscriptions: List<PurchaseInformation>,
+        override val title: String,
+    ) : CustomerCenterDestination()
 }

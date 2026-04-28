@@ -315,6 +315,21 @@ public data class CustomerCenterConfigData(
 
             @SerialName("characters_remaining")
             CHARACTERS_REMAINING,
+
+            @SerialName("see_all_purchases")
+            SEE_ALL_PURCHASES,
+
+            @SerialName("purchase_history")
+            PURCHASE_HISTORY,
+
+            @SerialName("active_subscriptions")
+            ACTIVE_SUBSCRIPTIONS,
+
+            @SerialName("expired_subscriptions")
+            EXPIRED_SUBSCRIPTIONS,
+
+            @SerialName("other_purchases")
+            OTHER_PURCHASES,
             ;
 
             public val defaultValue: String
@@ -429,6 +444,11 @@ public data class CustomerCenterConfigData(
                     SUBMIT_TICKET -> "Submit ticket"
                     INVALID_EMAIL_ERROR -> "Please enter a valid email address"
                     CHARACTERS_REMAINING -> "{{ count }} characters"
+                    SEE_ALL_PURCHASES -> "See all purchases"
+                    PURCHASE_HISTORY -> "Purchase History"
+                    ACTIVE_SUBSCRIPTIONS -> "Active Subscriptions"
+                    EXPIRED_SUBSCRIPTIONS -> "Expired Subscriptions"
+                    OTHER_PURCHASES -> "Other Purchases"
                 }
         }
 
@@ -589,6 +609,8 @@ public data class CustomerCenterConfigData(
         public val shouldWarnCustomerToUpdate: Boolean? = null,
         @SerialName("display_virtual_currencies")
         public val displayVirtualCurrencies: Boolean? = null,
+        @SerialName("display_purchase_history")
+        public val displayPurchaseHistoryLink: Boolean? = null,
         @SerialName("support_tickets")
         public val supportTickets: SupportTickets = SupportTickets(),
     ) {

@@ -140,6 +140,8 @@ internal interface CustomerCenterViewModel {
 
     fun showCreateSupportTicket()
 
+    fun showPurchaseHistory()
+
     fun dismissSupportTicketSuccessSnackbar()
 
     /**
@@ -336,6 +338,37 @@ internal class CustomerCenterViewModelImpl(
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(virtualCurrencyBalancesDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun showPurchaseHistory() {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        val allPurchases = state.allPurchases
+        val activeSubscriptions = allPurchases.filter { it.isSubscription && !it.isExpired }
+        val inactiveSubscriptions = allPurchases.filter { it.isSubscription && it.isExpired }
+        val nonSubscriptions = allPurchases.filter { !it.isSubscription }
+        val title = state.customerCenterConfigData.localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_HISTORY,
+        )
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(
+                        CustomerCenterDestination.PurchaseHistory(
+                            activeSubscriptions = activeSubscriptions,
+                            inactiveSubscriptions = inactiveSubscriptions,
+                            nonSubscriptions = nonSubscriptions,
+                            title = title,
+                        ),
+                    ),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
             } else {
@@ -697,12 +730,11 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private suspend fun loadPurchases(
+        customerInfo: CustomerInfo,
         dateFormatter: DateFormatter,
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
     ): List<PurchaseInformation> {
-        val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
-
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
@@ -748,6 +780,54 @@ internal class CustomerCenterViewModelImpl(
             )
         } else {
             emptyList()
+        }
+    }
+
+    private suspend fun loadAllPurchases(
+        customerInfo: CustomerInfo,
+        dateFormatter: DateFormatter,
+        locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
+    ): List<PurchaseInformation> {
+        val allSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
+            .sortedWith(compareByDescending<SubscriptionInfo> { it.isActive }.thenByDescending { it.expiresDate })
+            .map { it.asTransactionDetails() }
+
+        val nonSubscriptions = customerInfo.nonSubscriptionTransactions.map { transaction ->
+            TransactionDetails.NonSubscription(
+                productIdentifier = transaction.productIdentifier,
+                store = transaction.store,
+                price = transaction.price,
+                isSandbox = transaction.isSandbox,
+            )
+        }
+
+        return (allSubscriptions + nonSubscriptions).map { transaction ->
+            val entitlement = customerInfo.entitlements.active.values
+                .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+                ?: customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+
+            val isActivePlayStoreSubscription = transaction.store == Store.PLAY_STORE &&
+                transaction is TransactionDetails.Subscription &&
+                transaction.isActive
+            val product = if (isActivePlayStoreSubscription) {
+                purchases.awaitGetProduct(
+                    transaction.productIdentifier,
+                    (transaction as TransactionDetails.Subscription).productPlanIdentifier,
+                )
+            } else {
+                null
+            }
+
+            PurchaseInformation(
+                entitlementInfo = entitlement,
+                subscribedProduct = product,
+                transaction = transaction,
+                dateFormatter = dateFormatter,
+                locale = locale,
+                localization = localization,
+            )
         }
     }
 
@@ -1016,11 +1096,23 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+            val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
             val purchaseInformationList = loadPurchases(
+                customerInfo = customerInfo,
                 dateFormatter = dateFormatter,
                 locale = locale,
                 localization = customerCenterConfigData.localization,
             )
+            val allPurchaseInformationList = if (customerCenterConfigData.support.displayPurchaseHistoryLink == true) {
+                loadAllPurchases(
+                    customerInfo = customerInfo,
+                    dateFormatter = dateFormatter,
+                    locale = locale,
+                    localization = customerCenterConfigData.localization,
+                )
+            } else {
+                emptyList()
+            }
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
                 purchases.awaitGetVirtualCurrencies()
@@ -1040,6 +1132,7 @@ internal class CustomerCenterViewModelImpl(
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchaseInformationList,
+                allPurchases = allPurchaseInformationList,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
