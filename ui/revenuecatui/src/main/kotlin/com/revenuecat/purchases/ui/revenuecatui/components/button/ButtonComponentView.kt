@@ -4,7 +4,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -137,7 +136,8 @@ internal fun ButtonComponentView(
                     clickHandler = { },
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = animatedContentAlpha,
-                    interactionModifier = Modifier.clickable(enabled = !anyActionInProgress) {
+                    enabled = !anyActionInProgress,
+                    onClick = {
                         val paywallAction = buttonState.action
                         myActionInProgress = true
                         state.update(actionInProgress = true)

@@ -4,8 +4,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import android.content.res.Configuration
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -104,7 +108,9 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
-    interactionModifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
     contentAlpha: Float = 1f,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
@@ -131,7 +137,9 @@ internal fun StackComponentView(
                     componentInteractionTracker,
                     contentAlpha,
                     modifier,
-                    interactionModifier = interactionModifier,
+                    onClick = onClick,
+                    enabled = enabled,
+                    interactionSource = interactionSource,
                 )
             }
 
@@ -148,7 +156,9 @@ internal fun StackComponentView(
                         componentInteractionTracker,
                         contentAlpha,
                         modifier,
-                        interactionModifier = interactionModifier,
+                        onClick = onClick,
+                        enabled = enabled,
+                        interactionSource = interactionSource,
                     )
 
                     else
@@ -161,7 +171,9 @@ internal fun StackComponentView(
                         componentInteractionTracker,
                         contentAlpha,
                         modifier,
-                        interactionModifier = interactionModifier,
+                        onClick = onClick,
+                        enabled = enabled,
+                        interactionSource = interactionSource,
                     )
                 }
             }
@@ -174,7 +186,9 @@ internal fun StackComponentView(
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = contentAlpha,
                     modifier = modifier,
-                    interactionModifier = interactionModifier,
+                    onClick = onClick,
+                    enabled = enabled,
+                    interactionSource = interactionSource,
                     nestedBadge = badge,
                 )
         }
@@ -186,7 +200,9 @@ internal fun StackComponentView(
             componentInteractionTracker = componentInteractionTracker,
             contentAlpha = contentAlpha,
             modifier = modifier,
-            interactionModifier = interactionModifier,
+            onClick = onClick,
+            enabled = enabled,
+            interactionSource = interactionSource,
         )
     }
 }
@@ -202,7 +218,9 @@ private fun StackWithOverlaidBadge(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    interactionModifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
 ) {
     Box(modifier = modifier) {
         MainStackComponent(
@@ -211,7 +229,9 @@ private fun StackWithOverlaidBadge(
             clickHandler = clickHandler,
             componentInteractionTracker = componentInteractionTracker,
             contentAlpha = contentAlpha,
-            interactionModifier = interactionModifier,
+            onClick = onClick,
+            enabled = enabled,
+            interactionSource = interactionSource,
         )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
@@ -241,7 +261,9 @@ private fun StackWithLongEdgeToEdgeBadge(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    interactionModifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
 ) {
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
@@ -259,7 +281,9 @@ private fun StackWithLongEdgeToEdgeBadge(
                 componentInteractionTracker,
                 contentAlpha,
                 shouldApplyShadow = false,
-                interactionModifier = interactionModifier,
+                onClick = onClick,
+                enabled = enabled,
+                interactionSource = interactionSource,
             )
         }.first()
         val stackPlaceable = stackMeasurable.measure(constraints)
@@ -410,7 +434,9 @@ private fun StackWithShortEdgeToEdgeBadge(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    interactionModifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
 ) {
     val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
         is CornerRadiuses.Percentage -> {
@@ -488,7 +514,9 @@ private fun StackWithShortEdgeToEdgeBadge(
         componentInteractionTracker = componentInteractionTracker,
         contentAlpha = contentAlpha,
         modifier = modifier,
-        interactionModifier = interactionModifier,
+        onClick = onClick,
+        enabled = enabled,
+        interactionSource = interactionSource,
     ) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
@@ -538,7 +566,9 @@ private fun MainStackComponent(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
-    interactionModifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
@@ -697,6 +727,29 @@ private fun MainStackComponent(
             .padding(stackState.padding)
     }
 
+    val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
+    val indication = LocalIndication.current
+    val clickModifier = if (onClick != null) {
+        Modifier.clickable(
+            interactionSource = resolvedInteractionSource,
+            indication = indication,
+            enabled = enabled,
+            onClick = onClick,
+        )
+    } else {
+        Modifier
+    }
+    val plainPathClickModifier = if (onClick != null) {
+        Modifier.clickable(
+            interactionSource = resolvedInteractionSource,
+            indication = null,
+            enabled = enabled,
+            onClick = onClick,
+        )
+    } else {
+        Modifier
+    }
+
     if (nestedBadge == null && overlay == null) {
         if (backgroundStyle is BackgroundStyle.Video) {
             // Video backgrounds require a Box wrapper with explicit sizing
@@ -708,7 +761,7 @@ private fun MainStackComponent(
                     .size(stackState.size)
                     .then(outerShapeModifier)
                     .clip(composeShape)
-                    .then(interactionModifier)
+                    .then(clickModifier)
                     .then(borderModifier),
             ) {
                 stack(
@@ -722,11 +775,33 @@ private fun MainStackComponent(
                         },
                 )
             }
+        } else if (onClick != null) {
+            // Draw the ripple on a sibling Box so the shape clip bounds only the ripple, not
+            // nested content that may extend outside the parent (e.g. badges with offsets).
+            Box {
+                stack(
+                    outerShapeModifier
+                        .then(plainPathClickModifier)
+                        .then(borderModifier)
+                        .then(innerShapeModifier)
+                        .conditional(stackState.applyBottomWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
+                        }
+                        .conditional(stackState.applyHorizontalWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Horizontal))
+                        },
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .padding(stackState.margin)
+                        .clip(composeShape)
+                        .indication(resolvedInteractionSource, indication),
+                )
+            }
         } else {
             stack(
                 outerShapeModifier
-                    .conditional(interactionModifier !== Modifier) { clip(composeShape) }
-                    .then(interactionModifier)
                     .then(borderModifier)
                     .then(innerShapeModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
@@ -742,7 +817,7 @@ private fun MainStackComponent(
             modifier = modifier
                 .then(outerShapeModifier)
                 .clip(composeShape)
-                .then(interactionModifier)
+                .then(clickModifier)
                 .then(borderModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
@@ -763,7 +838,7 @@ private fun MainStackComponent(
             modifier = modifier
                 .then(outerShapeModifier)
                 .clip(composeShape)
-                .then(interactionModifier),
+                .then(clickModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
                 stack(borderModifier.then(innerShapeModifier))

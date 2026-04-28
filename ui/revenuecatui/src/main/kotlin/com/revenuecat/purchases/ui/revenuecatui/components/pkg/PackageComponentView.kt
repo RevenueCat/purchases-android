@@ -3,7 +3,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
-import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -36,10 +35,9 @@ internal fun PackageComponentView(
         },
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
-        interactionModifier = if (style.isSelectable) {
-            Modifier.clickable(
-                enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
-            ) {
+        enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
+        onClick = if (style.isSelectable) {
+            {
                 componentInteractionTracker.track(
                     paywallPackageRowSelection(
                         componentName = style.componentName,
@@ -51,7 +49,7 @@ internal fun PackageComponentView(
                 state.update(selectedPackageUniqueId = style.uniqueId)
             }
         } else {
-            Modifier
+            null
         },
     )
 }
