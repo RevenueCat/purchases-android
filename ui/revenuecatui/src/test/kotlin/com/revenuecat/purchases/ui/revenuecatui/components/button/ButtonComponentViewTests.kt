@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -822,5 +823,48 @@ class ButtonComponentViewTests {
                 .assertHasClickAction()
                 .performClick()
         }
+
+    @Test
+    fun `onClick does not fire when action is null (WorkflowTrigger with no componentId)`() {
+        var actionHandleCalledCount = 0
+
+        composeTestRule.setContent {
+            // WorkflowTrigger with componentId = null produces a null action in ButtonComponentState,
+            // so the clickable guard `buttonState.action ?: return@clickable` short-circuits.
+            val style = ButtonComponentStyle(
+                stackComponentStyle = StackComponentStyle(
+                    children = emptyList(),
+                    dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
+                    visible = true,
+                    size = Size(width = Fill, height = Fill),
+                    spacing = 0.dp,
+                    background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Transparent))),
+                    padding = PaddingValues(all = 0.dp),
+                    margin = PaddingValues(all = 0.dp),
+                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0)),
+                    border = null,
+                    shadow = null,
+                    badge = null,
+                    scrollOrientation = null,
+                    rcPackage = null,
+                    tabIndex = null,
+                    countdownDate = null,
+                    countFrom = CountdownComponent.CountFrom.DAYS,
+                    overrides = emptyList(),
+                ),
+                action = ButtonComponentStyle.Action.WorkflowTrigger,
+                componentId = null,
+            )
+            ButtonComponentView(
+                style = style,
+                state = FakePaywallState(TestData.Packages.annual),
+                onClick = { actionHandleCalledCount++ },
+            )
+        }
+
+        composeTestRule.onRoot().performClick()
+
+        assertThat(actionHandleCalledCount).isEqualTo(0)
+    }
 
 }

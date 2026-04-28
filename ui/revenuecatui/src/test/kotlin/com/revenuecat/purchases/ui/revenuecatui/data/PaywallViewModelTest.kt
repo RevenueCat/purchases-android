@@ -34,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -1273,6 +1274,24 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isFalse
         model.closePaywall()
         assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `handleBackNavigation returns false for regular paywall`() {
+        val model = create()
+
+        assertThat(model.handleBackNavigation()).isFalse()
+    }
+
+    @Test
+    fun `handleWorkflowAction does nothing when no workflow is loaded`() {
+        val model = create()
+        val stateBefore = model.state.value
+
+        model.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(model.state.value).isEqualTo(stateBefore)
+        assertThat(dismissInvoked).isFalse()
     }
 
     // region events
