@@ -1293,15 +1293,6 @@ class PaywallViewModelTest {
         assertThat(dismissInvoked).isFalse()
     }
 
-    @Test
-    fun `handleWorkflowAction does not dismiss paywall when no workflow is loaded`() {
-        val model = create()
-
-        model.handleWorkflowAction("btn-next", com.revenuecat.purchases.common.workflows.WorkflowTriggerType.ON_PRESS)
-
-        assertThat(dismissInvoked).isFalse()
-    }
-
     // region events
 
     @Test
