@@ -73,7 +73,9 @@ internal fun InternalPaywall(
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
     BackHandler {
-        viewModel.closePaywall()
+        if (!viewModel.handleBackNavigation()) {
+            viewModel.closePaywall()
+        }
     }
 
     val colorScheme = MaterialTheme.colorScheme
@@ -360,9 +362,15 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     }
                 }
 
-                is PaywallAction.External.NavigateBack -> viewModel.closePaywall()
+                is PaywallAction.External.NavigateBack -> {
+                    if (!viewModel.handleBackNavigation()) {
+                        viewModel.closePaywall()
+                    }
+                }
+
                 is PaywallAction.External.WorkflowTrigger ->
-                    Logger.d("Workflow received for componentId=${action.componentId} trigger=${action.triggerType}")
+                    viewModel.handleWorkflowAction(action.componentId, action.triggerType)
+
                 is PaywallAction.External.NavigateTo -> when (val destination = action.destination) {
                     is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")

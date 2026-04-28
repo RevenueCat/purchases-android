@@ -144,7 +144,7 @@ internal fun ButtonComponentView(
                 )
             },
             modifier = modifier.clickable(enabled = !anyActionInProgress) {
-                val paywallAction = buttonState.action
+                val paywallAction = buttonState.action ?: return@clickable
                 myActionInProgress = true
                 state.update(actionInProgress = true)
                 if (style.action.isPurchaseRelated()) {

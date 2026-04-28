@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
@@ -8,13 +9,13 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.intl.Locale
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @Stable
 @JvmSynthetic
@@ -48,22 +49,11 @@ internal class ButtonComponentState(
 ) {
 
     @get:JvmSynthetic
-    val action by derivedStateOf {
-        if (style.action is ButtonComponentStyle.Action.WorkflowTrigger) {
-            val componentId = style.componentId
-            if (componentId != null) {
-                return@derivedStateOf PaywallAction.External.WorkflowTrigger(
-                    componentId,
-                    WorkflowTriggerType.ON_PRESS,
-                )
-            }
-        }
-        val localeId = localeProvider().toLocaleId()
-
-        style.action.toPaywallAction(localeId)
+    val action: PaywallAction? by derivedStateOf {
+        style.action.toPaywallAction(localeProvider().toLocaleId(), style.componentId)
     }
 
-    private fun ButtonComponentStyle.Action.toPaywallAction(localeId: LocaleId): PaywallAction =
+    private fun ButtonComponentStyle.Action.toPaywallAction(localeId: LocaleId, componentId: String?): PaywallAction? =
         when (this) {
             is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.External.NavigateBack
             is ButtonComponentStyle.Action.NavigateTo -> toPaywallAction(localeId)
@@ -105,11 +95,9 @@ internal class ButtonComponentState(
                     ),
                 )
             }
-            // Should not reach here: Action.WorkflowTrigger is handled before calling toPaywallAction.
-            // Reached only if componentId is null (misconfigured button).
-            is ButtonComponentStyle.Action.WorkflowTrigger -> {
-                Logger.e("ButtonComponentState: reached toPaywallAction for Workflow action — componentId may be null")
-                PaywallAction.External.NavigateBack
+
+            is ButtonComponentStyle.Action.WorkflowTrigger -> componentId?.let {
+                PaywallAction.External.WorkflowTrigger(it, WorkflowTriggerType.ON_PRESS)
             }
         }
 

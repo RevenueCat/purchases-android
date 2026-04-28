@@ -1509,4 +1509,42 @@ class StyleFactoryTests {
         val heroImage = zLayerStack.children[0] as ImageComponentStyle
         assertThat(heroImage.ignoreTopWindowInsets).isTrue()
     }
+
+    @Test
+    fun `Should fail when a WorkflowTrigger button has no component id`() {
+        // Arrange
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.WorkflowTrigger,
+            id = null,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result.isError).isTrue()
+        val errors = result.errorOrNull()!!
+        assertThat(errors.size).isEqualTo(1)
+        assertThat(errors[0]).isInstanceOf(PaywallValidationError.WorkflowButtonMissingComponentId::class.java)
+    }
+
+    @Test
+    fun `Should succeed when a WorkflowTrigger button has a component id`() {
+        // Arrange
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.WorkflowTrigger,
+            id = "btn-workflow",
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result.isSuccess).isTrue()
+        val style = result.getOrNull()!!.componentStyle as ButtonComponentStyle
+        assertThat(style.action).isEqualTo(ButtonComponentStyle.Action.WorkflowTrigger)
+        assertThat(style.componentId).isEqualTo("btn-workflow")
+    }
 }
