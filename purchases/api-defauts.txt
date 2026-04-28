@@ -1460,7 +1460,7 @@ package com.revenuecat.purchases.models {
     property public abstract com.revenuecat.purchases.ProductType type;
   }
 
-  public abstract class StoreReplacementMode implements com.revenuecat.purchases.ReplacementMode {
+  @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class StoreReplacementMode implements com.revenuecat.purchases.ReplacementMode {
     method public String getName();
     property public String name;
     field public static final com.revenuecat.purchases.models.StoreReplacementMode CHARGE_FULL_PRICE;
@@ -1471,27 +1471,7 @@ package com.revenuecat.purchases.models {
     field public static final com.revenuecat.purchases.models.StoreReplacementMode WITH_TIME_PRORATION;
   }
 
-  @kotlinx.parcelize.Parcelize public static final class StoreReplacementMode.ChargeFullPrice extends com.revenuecat.purchases.models.StoreReplacementMode {
-    field public static final com.revenuecat.purchases.models.StoreReplacementMode.ChargeFullPrice INSTANCE;
-  }
-
-  @kotlinx.parcelize.Parcelize public static final class StoreReplacementMode.ChargeProratedPrice extends com.revenuecat.purchases.models.StoreReplacementMode {
-    field public static final com.revenuecat.purchases.models.StoreReplacementMode.ChargeProratedPrice INSTANCE;
-  }
-
   public static final class StoreReplacementMode.Companion {
-  }
-
-  @kotlinx.parcelize.Parcelize public static final class StoreReplacementMode.Deferred extends com.revenuecat.purchases.models.StoreReplacementMode {
-    field public static final com.revenuecat.purchases.models.StoreReplacementMode.Deferred INSTANCE;
-  }
-
-  @kotlinx.parcelize.Parcelize public static final class StoreReplacementMode.WithTimeProration extends com.revenuecat.purchases.models.StoreReplacementMode {
-    field public static final com.revenuecat.purchases.models.StoreReplacementMode.WithTimeProration INSTANCE;
-  }
-
-  @kotlinx.parcelize.Parcelize public static final class StoreReplacementMode.WithoutProration extends com.revenuecat.purchases.models.StoreReplacementMode {
-    field public static final com.revenuecat.purchases.models.StoreReplacementMode.WithoutProration INSTANCE;
   }
 
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize @kotlinx.parcelize.TypeParceler public final class StoreTransaction implements android.os.Parcelable {

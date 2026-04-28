@@ -97,7 +97,7 @@ class ParcelableTests {
 
     @Test
     fun `StoreReplacementMode is Parcelable`() {
-        storeReplacementModes.forEach { testParcelization(it, true) }
+        storeReplacementModes.forEach { testParcelization(it) }
         val nullMode: StoreReplacementMode? = null
         testParcelization(nullMode, true)
     }
