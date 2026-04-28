@@ -355,7 +355,7 @@ class ReceiptInfoTest {
                 "price":0.99,
                 "currency":"USD",
                 "replacementMode":{
-                    "type":"StoreReplacementMode",
+                    "type":"GoogleReplacementMode",
                     "name":"WITH_TIME_PRORATION"
                 }
             }
@@ -388,7 +388,7 @@ class ReceiptInfoTest {
     }
 
     @Test
-    fun `ReceiptInfo with GoogleReplacementMode serializes as StoreReplacementMode and deserializes to StoreReplacementMode`() {
+    fun `ReceiptInfo with GoogleReplacementMode serializes as GoogleReplacementMode and deserializes to StoreReplacementMode`() {
         val original = ReceiptInfo(
             productIDs = listOf(productIdentifier),
             price = 0.99,
@@ -407,7 +407,7 @@ class ReceiptInfoTest {
                 "price":0.99,
                 "currency":"USD",
                 "replacementMode":{
-                    "type":"StoreReplacementMode",
+                    "type":"GoogleReplacementMode",
                     "name":"WITH_TIME_PRORATION"
                 }
             }

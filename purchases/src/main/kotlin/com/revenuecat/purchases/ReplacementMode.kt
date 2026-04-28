@@ -5,6 +5,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.legacyPlayBackendName
 import com.revenuecat.purchases.models.storeBackendName
+import com.revenuecat.purchases.models.toGoogleReplacementMode
 import com.revenuecat.purchases.models.toStoreReplacementMode
 import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import kotlinx.android.parcel.IgnoredOnParcel
@@ -53,15 +54,15 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
     }
 
     override fun serialize(encoder: Encoder, value: ReplacementMode) {
-        // Always encode to StoreReplacementMode since GoogleReplacementMode is deprecated
         encoder.encodeStructure(descriptor) {
             val normalizedValue = when (value) {
                 is GoogleReplacementMode -> value.toStoreReplacementMode()
                 is StoreReplacementMode -> value
                 else -> throw SerializationException("Unknown ReplacementMode type: ${value::class.simpleName}")
             }
-            encodeStringElement(descriptor, 0, "StoreReplacementMode")
-            encodeStringElement(descriptor, 1, normalizedValue.name)
+            // Keep writing GoogleReplacementMode to maintain backwards compatibility with older SDKs.
+            encodeStringElement(descriptor, 0, "GoogleReplacementMode")
+            encodeStringElement(descriptor, 1, normalizedValue.toGoogleReplacementMode().name)
         }
     }
 

@@ -577,7 +577,7 @@ class LocalTransactionMetadataStoreTest {
     }
 
     @Test
-    fun `LocalTransactionMetadata with StoreReplacementMode serializes correctly`() {
+    fun `LocalTransactionMetadata with StoreReplacementMode serializes as GoogleReplacementMode for backwards compatibility`() {
         val receiptInfoWithReplacementMode = receiptInfo.copy(
             replacementMode = StoreReplacementMode.DEFERRED,
         )
@@ -591,7 +591,7 @@ class LocalTransactionMetadataStoreTest {
         val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
         val deserialized = json.decodeFromString(LocalTransactionMetadata.serializer(), jsonString)
 
-        assertThat(jsonString).contains("\"type\":\"StoreReplacementMode\"")
+        assertThat(jsonString).contains("\"type\":\"GoogleReplacementMode\"")
         assertThat(deserialized.receiptInfo.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
