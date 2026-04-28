@@ -793,6 +793,11 @@ internal class PaywallViewModelImpl(
         val navigator = workflowNavigator ?: return
         val result = currentWorkflowResult ?: return
         val offerings = currentWorkflowOfferings ?: return
+        val candidate = navigator.peekTriggerStep(componentId, triggerType) ?: return
+        validateStep(candidate, result.workflow, offerings)?.let { error ->
+            Logger.e("Cannot navigate to step '${candidate.id}': $error")
+            return
+        }
         val newStep = navigator.triggerAction(componentId, triggerType) ?: return
         buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
     }
@@ -803,9 +808,27 @@ internal class PaywallViewModelImpl(
         if (!navigator.canNavigateBack) return false
         val result = currentWorkflowResult ?: return false
         val offerings = currentWorkflowOfferings ?: return false
+        val candidate = navigator.peekBackStep() ?: return false
+        validateStep(candidate, result.workflow, offerings)?.let { error ->
+            Logger.e("Cannot navigate back to step '${candidate.id}': $error")
+            return false
+        }
         val newStep = navigator.navigateBack() ?: return false
         buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
         return true
+    }
+
+    @Suppress("ReturnCount")
+    private fun validateStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): String? {
+        val screenId = step.screenId
+            ?: return "Step '${step.id}' has no screen_id in workflow '${workflow.id}'"
+        val screen = workflow.screens[screenId]
+            ?: return "Screen '$screenId' not found in workflow '${workflow.id}'"
+        val offeringId = screen.offeringIdentifier
+            ?: return "Screen '$screenId' has no offering_id in workflow '${workflow.id}'"
+        offerings[offeringId]
+            ?: return "Offering '$offeringId' not found for screen '$screenId'"
+        return null
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {

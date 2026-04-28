@@ -34,6 +34,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -1287,7 +1288,7 @@ class PaywallViewModelTest {
         val model = create()
         val stateBefore = model.state.value
 
-        model.handleWorkflowAction("btn-next", com.revenuecat.purchases.common.workflows.WorkflowTriggerType.ON_PRESS)
+        model.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         assertThat(model.state.value).isEqualTo(stateBefore)
         assertThat(dismissInvoked).isFalse()
