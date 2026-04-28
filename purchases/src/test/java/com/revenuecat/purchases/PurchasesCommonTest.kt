@@ -2679,6 +2679,22 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `overridePreferredUILocale stops notifying removed listener`() {
+        var listenerInvocations = 0
+        val removeListener = Purchases.sharedInstance.purchasesOrchestrator
+            .addPreferredUILocaleOverrideChangeListener { listenerInvocations++ }
+
+        removeListener()
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(
+            null,
+            honorLayoutDirection = true,
+        )
+
+        assertThat(result).isFalse
+        assertThat(listenerInvocations).isEqualTo(0)
+    }
+
+    @Test
     fun `overridePreferredUILocale with locale only preserves layout direction flag`() {
         every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
         mockOfferingsManagerGetOfferings()

@@ -30,6 +30,8 @@ class PurchasesConfigurationTest {
         applicationContext = mockk()
         every { context.applicationContext } returns applicationContext
         every { context.isDeviceProtectedStorage } returns false
+        every { applicationContext.applicationContext } returns applicationContext
+        every { applicationContext.isDeviceProtectedStorage } returns false
 
         builder = PurchasesConfiguration.Builder(context, apiKey)
     }
@@ -161,6 +163,33 @@ class PurchasesConfigurationTest {
 
         assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo("ar_SA")
         assertThat(purchasesConfiguration.preferredUILocaleOverrideHonorsLayoutDirection).isTrue()
+    }
+
+    @Test
+    fun `PurchasesConfiguration copy preserves preferredUILocaleOverrideHonorsLayoutDirection`() {
+        val purchasesConfiguration = builder
+            .preferredUILocaleOverride("he_IL", honorLayoutDirection = true)
+            .build()
+
+        val copiedPurchasesConfiguration = purchasesConfiguration.copy(appUserID = "new-app-user-id")
+
+        assertThat(copiedPurchasesConfiguration.appUserID).isEqualTo("new-app-user-id")
+        assertThat(copiedPurchasesConfiguration.preferredUILocaleOverride).isEqualTo("he_IL")
+        assertThat(copiedPurchasesConfiguration.preferredUILocaleOverrideHonorsLayoutDirection).isTrue()
+    }
+
+    @Test
+    fun `PurchasesConfiguration equality and hash code include preferredUILocaleOverrideHonorsLayoutDirection`() {
+        val configurationHonoringLayoutDirection = builder
+            .preferredUILocaleOverride("he_IL", honorLayoutDirection = true)
+            .build()
+        val configurationIgnoringLayoutDirection = PurchasesConfiguration.Builder(context, apiKey)
+            .preferredUILocaleOverride("he_IL", honorLayoutDirection = false)
+            .build()
+
+        assertThat(configurationHonoringLayoutDirection).isNotEqualTo(configurationIgnoringLayoutDirection)
+        assertThat(configurationHonoringLayoutDirection.hashCode())
+            .isNotEqualTo(configurationIgnoringLayoutDirection.hashCode())
     }
 
     @Test
