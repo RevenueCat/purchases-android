@@ -26,6 +26,8 @@ internal fun SelectedPurchaseDetailView(
     localization: CustomerCenterConfigData.Localization,
     purchaseInformation: PurchaseInformation,
     supportedPaths: List<HelpPath>,
+    supportTickets: CustomerCenterConfigData.Support.SupportTickets,
+    hasActiveSubscriptions: Boolean,
     modifier: Modifier = Modifier,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
@@ -51,6 +53,12 @@ internal fun SelectedPurchaseDetailView(
             associatedPurchaseInformation = purchaseInformation,
             supportedPaths = supportedPaths,
             localization = localization,
+            addCreateTicketButton = supportTickets.allowCreation &&
+                if (hasActiveSubscriptions) {
+                    supportTickets.allowsActiveCustomers()
+                } else {
+                    supportTickets.allowsNonActiveCustomers()
+                },
             addContactButton = purchaseInformation.store != Store.PLAY_STORE,
             contactEmail = contactEmail,
             onAction = onAction,
@@ -75,6 +83,8 @@ private fun SelectedPurchaseDetailViewPreview() {
             localization = testData.localization,
             purchaseInformation = purchaseInfo,
             supportedPaths = managementScreen.paths,
+            supportTickets = testData.support.supportTickets,
+            hasActiveSubscriptions = true,
             onAction = {},
         )
     }

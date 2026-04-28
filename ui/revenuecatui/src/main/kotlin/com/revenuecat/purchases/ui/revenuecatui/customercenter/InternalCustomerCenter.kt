@@ -513,6 +513,8 @@ private fun CustomerCenterNavHost(
                     localization = customerCenterState.customerCenterConfigData.localization,
                     purchaseInformation = destination.purchaseInformation,
                     supportedPaths = customerCenterState.detailScreenPaths,
+                    supportTickets = customerCenterState.customerCenterConfigData.support.supportTickets,
+                    hasActiveSubscriptions = customerCenterState.purchases.any { it.isSubscription },
                     onAction = onAction,
                 )
             }
@@ -559,11 +561,9 @@ private fun MainScreenContent(
         configuration.getManagementScreen()?.let { managementScreen ->
             RelevantPurchasesListView(
                 supportedPaths = state.mainScreenPaths,
-                contactEmail = configuration.support.email,
                 virtualCurrencies = state.virtualCurrencies,
                 appearance = configuration.appearance,
                 localization = configuration.localization,
-                supportTickets = configuration.support.supportTickets,
                 onPurchaseSelect = { purchase ->
                     // Only allow selection if there are multiple purchases
                     if (state.purchases.size > 1) {
