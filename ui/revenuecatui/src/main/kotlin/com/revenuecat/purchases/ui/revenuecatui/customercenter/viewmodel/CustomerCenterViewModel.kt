@@ -62,6 +62,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSu
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
+import com.revenuecat.purchases.ui.revenuecatui.helpers.safeResume
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
@@ -76,7 +77,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import java.util.Locale
-import kotlin.coroutines.resume
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @Suppress("TooManyFunctions")
@@ -602,8 +602,8 @@ internal class CustomerCenterViewModelImpl(
         val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for $listenerName to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
-                continuation.resume(shouldResume)
-            } ?: continuation.resume(true)
+                continuation.safeResume(shouldResume)
+            } ?: continuation.safeResume(true)
         }
         val detail = if (shouldResume) "will" else "will not"
         Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
@@ -711,8 +711,10 @@ internal class CustomerCenterViewModelImpl(
 
             if (activeTransactions.isNotEmpty()) {
                 return activeTransactions.map { transaction ->
-                    val entitlement = customerInfo.entitlements.all.values
+                    val entitlement = customerInfo.entitlements.active.values
                         .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+                        ?: customerInfo.entitlements.all.values
+                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
                     createPurchaseInformation(
                         transaction,
@@ -730,8 +732,10 @@ internal class CustomerCenterViewModelImpl(
         // If no active purchases found, try to find the latest expired subscription
         val latestExpiredTransaction = findLatestExpiredSubscription(customerInfo)
         return if (latestExpiredTransaction != null) {
-            val entitlement = customerInfo.entitlements.all.values
+            val entitlement = customerInfo.entitlements.active.values
                 .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
+                ?: customerInfo.entitlements.all.values
+                    .firstOrNull { it.productIdentifier == latestExpiredTransaction.productIdentifier }
 
             listOf(
                 createPurchaseInformation(
@@ -997,6 +1001,7 @@ internal class CustomerCenterViewModelImpl(
         loadCustomerCenter(isRefresh = true)
     }
 
+    @Suppress("LongMethod")
     private suspend fun loadCustomerCenter(isRefresh: Boolean) {
         _state.update { state ->
             if (isRefresh && state is CustomerCenterState.Success) {

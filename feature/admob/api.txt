@@ -9,6 +9,17 @@ package com.revenuecat.purchases.admob {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackRewardedInterstitialAd(com.revenuecat.purchases.ads.events.AdTracker, android.content.Context context, String adUnitId, com.google.android.gms.ads.AdRequest adRequest, optional String? placement, optional com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback? loadCallback, optional com.google.android.gms.ads.FullScreenContentCallback? fullScreenContentCallback, optional com.google.android.gms.ads.OnPaidEventListener? onPaidEventListener);
   }
 
+  public final class FullScreenAdExtensionsKt {
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.appopen.AppOpenAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.interstitial.InterstitialAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.rewarded.RewardedAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingFullScreenContentCallback(com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd, com.google.android.gms.ads.FullScreenContentCallback? callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.appopen.AppOpenAd, android.app.Activity activity, String? placement);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.interstitial.InterstitialAd, android.app.Activity activity, String? placement);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.rewarded.RewardedAd, android.app.Activity activity, String? placement, com.google.android.gms.ads.OnUserEarnedRewardListener onUserEarnedRewardListener);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd, android.app.Activity activity, String? placement, com.google.android.gms.ads.OnUserEarnedRewardListener onUserEarnedRewardListener);
+  }
+
   public final class RCAdMobBannerAd {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackAd(com.google.android.gms.ads.AdView, com.google.android.gms.ads.AdRequest adRequest, optional String? placement, optional com.google.android.gms.ads.AdListener? adListener, optional com.google.android.gms.ads.OnPaidEventListener? onPaidEventListener);
   }

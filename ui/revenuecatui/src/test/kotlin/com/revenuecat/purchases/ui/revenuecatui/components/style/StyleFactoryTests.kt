@@ -8,6 +8,8 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
@@ -704,6 +706,161 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `TabControlToggleComponentStyle componentName matches enclosing TabsComponent name for analytics`() {
+        val tabsName = "plan_toggle_tabs"
+        val component = TabsComponent(
+            name = tabsName,
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(tabsName)
+    }
+
+    @Test
+    fun `TabControlToggleComponentStyle componentName falls back to toggle name when TabsComponent is unnamed`() {
+        val toggleOnlyName = "toggle_only"
+        val component = TabsComponent(
+            name = null,
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            name = toggleOnlyName,
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(toggleOnlyName)
+    }
+
+    @Test
+    fun `TabControlToggleComponentStyle componentName falls back to toggle name when TabsComponent name is blank`() {
+        val toggleOnlyName = "toggle_only"
+        val component = TabsComponent(
+            name = "",
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            name = toggleOnlyName,
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(toggleOnlyName)
+    }
+
+    @Test
     fun `Should fail to create a TabControlComponent outside of a TabComponent`() {
         // Arrange
         // TabControlComponent has 2 Stack ancestors, but no Tab.
@@ -1229,5 +1386,127 @@ class StyleFactoryTests {
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val pkgStyle = (result as Result.Success).value.componentStyle as PackageComponentStyle
         assertThat(pkgStyle.overrides).hasSize(1)
+    }
+
+    @Test
+    fun `Should apply top window insets to HeaderComponent when applyTopWindowInsets is true`() {
+        // Arrange
+        val headerComponent = HeaderComponent(
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = LOCALIZATION_KEY_TEXT_1,
+                        color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    ),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(headerComponent, applyTopWindowInsets = true)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as HeaderComponentStyle
+        assertThat(style.stackComponentStyle.applyTopWindowInsets).isTrue()
+    }
+
+    @Test
+    fun `Should not apply top window insets to HeaderComponent when applyTopWindowInsets is false`() {
+        // Arrange
+        val headerComponent = HeaderComponent(
+            stack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = LOCALIZATION_KEY_TEXT_1,
+                        color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    ),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(headerComponent, applyTopWindowInsets = false)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as HeaderComponentStyle
+        assertThat(style.stackComponentStyle.applyTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should filter out FallbackHeaderComponent from stack children`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                FallbackHeaderComponent,
+                TextComponent(
+                    text = LOCALIZATION_KEY_TEXT_1,
+                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(1)
+        assertThat(style.children[0]).isInstanceOf(TextComponentStyle::class.java)
+    }
+
+    @Test
+    fun `FallbackHeaderComponent should not prevent hero image detection in subsequent ZLayer`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        // FallbackHeaderComponent is injected as the first element of the body stack by the dashboard.
+        // It should not prematurely stop hero image detection.
+        val stackComponent = StackComponent(
+            components = listOf(
+                FallbackHeaderComponent,
+                StackComponent(
+                    components = listOf(
+                        ImageComponent(
+                            source = imageUrls,
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        ),
+                    ),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP,
+                    ),
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val styleResult = (result as Result.Success).value
+        assertThat(styleResult.heroImageDetected).isTrue()
+        val style = styleResult.componentStyle as StackComponentStyle
+        // The root stack should not apply top window insets (the ZLayer child handles it).
+        assertThat(style.applyTopWindowInsets).isFalse()
+        // The ZLayer child should apply top window insets.
+        val zLayerStack = style.children[0] as StackComponentStyle
+        assertThat(zLayerStack.applyTopWindowInsets).isTrue()
+        // The hero image should ignore top window insets.
+        val heroImage = zLayerStack.children[0] as ImageComponentStyle
+        assertThat(heroImage.ignoreTopWindowInsets).isTrue()
     }
 }

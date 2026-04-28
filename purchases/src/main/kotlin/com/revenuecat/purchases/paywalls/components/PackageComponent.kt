@@ -28,6 +28,9 @@ public class PackageComponent(
     @SerialName("play_store_offer")
     public val playStoreOffer: PromoOfferConfig? = null,
     @get:JvmSynthetic
+    @SerialName("name")
+    public val name: String? = null,
+    @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialPackageComponent>> = emptyList(),

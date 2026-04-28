@@ -44,6 +44,7 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Badge
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -92,6 +93,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentS
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
@@ -104,6 +106,7 @@ internal fun StackComponentView(
     modifier: Modifier = Modifier,
     interactionModifier: Modifier = Modifier,
     contentAlpha: Float = 1f,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -125,6 +128,7 @@ internal fun StackComponentView(
                     badge.stackStyle,
                     badge.alignment,
                     clickHandler,
+                    componentInteractionTracker,
                     contentAlpha,
                     modifier,
                     interactionModifier = interactionModifier,
@@ -141,6 +145,7 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment.isTop,
                         clickHandler,
+                        componentInteractionTracker,
                         contentAlpha,
                         modifier,
                         interactionModifier = interactionModifier,
@@ -153,6 +158,7 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment,
                         clickHandler,
+                        componentInteractionTracker,
                         contentAlpha,
                         modifier,
                         interactionModifier = interactionModifier,
@@ -162,22 +168,24 @@ internal fun StackComponentView(
 
             Badge.Style.Nested ->
                 MainStackComponent(
-                    stackState,
-                    state,
-                    clickHandler,
-                    contentAlpha,
-                    modifier,
+                    stackState = stackState,
+                    state = state,
+                    clickHandler = clickHandler,
+                    componentInteractionTracker = componentInteractionTracker,
+                    contentAlpha = contentAlpha,
+                    modifier = modifier,
                     interactionModifier = interactionModifier,
                     nestedBadge = badge,
                 )
         }
     } else {
         MainStackComponent(
-            stackState,
-            state,
-            clickHandler,
-            contentAlpha,
-            modifier,
+            stackState = stackState,
+            state = state,
+            clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
+            contentAlpha = contentAlpha,
+            modifier = modifier,
             interactionModifier = interactionModifier,
         )
     }
@@ -191,16 +199,18 @@ private fun StackWithOverlaidBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
     interactionModifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier) {
         MainStackComponent(
-            stackState,
-            state,
-            clickHandler,
-            contentAlpha,
+            stackState = stackState,
+            state = state,
+            clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
+            contentAlpha = contentAlpha,
             interactionModifier = interactionModifier,
         )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
@@ -209,6 +219,7 @@ private fun StackWithOverlaidBadge(
         OverlaidBadge(
             badgeStack,
             state,
+            componentInteractionTracker,
             alignment,
             mainStackBorderWidthPx,
             modifier = Modifier.padding(stackState.margin),
@@ -227,6 +238,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     topBadge: Boolean,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
     interactionModifier: Modifier = Modifier,
@@ -244,6 +256,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                componentInteractionTracker,
                 contentAlpha,
                 shouldApplyShadow = false,
                 interactionModifier = interactionModifier,
@@ -264,6 +277,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 ),
                 state,
                 clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
             )
         }.first()
         val badgePlaceable = badgeMeasurable.measure(constraints)
@@ -393,6 +407,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
     interactionModifier: Modifier = Modifier,
@@ -467,26 +482,30 @@ private fun StackWithShortEdgeToEdgeBadge(
         }
     }
     MainStackComponent(
-        stackState,
-        state,
-        clickHandler,
-        contentAlpha,
-        modifier,
+        stackState = stackState,
+        state = state,
+        clickHandler = clickHandler,
+        componentInteractionTracker = componentInteractionTracker,
+        contentAlpha = contentAlpha,
+        modifier = modifier,
         interactionModifier = interactionModifier,
     ) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
             clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
             modifier = Modifier.align(alignment.toAlignment()),
         )
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun BoxScope.OverlaidBadge(
     badgeStack: StackComponentStyle,
     state: PaywallState.Loaded.Components,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     alignment: TwoDimensionalAlignment,
     mainStackBorderWidthPx: Float?,
     modifier: Modifier = Modifier,
@@ -495,6 +514,7 @@ private fun BoxScope.OverlaidBadge(
         badgeStack,
         state,
         {},
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier
             .align(alignment.toAlignment())
             .layout { measurable, constraints ->
@@ -515,6 +535,7 @@ private fun MainStackComponent(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
     interactionModifier: Modifier = Modifier,
@@ -554,6 +575,7 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
                                 .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
@@ -580,6 +602,7 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
                             modifier = Modifier
                                 .conditional(child.size.height == Fill) { Modifier.weight(1f) }
                                 .conditional(
@@ -596,30 +619,49 @@ private fun MainStackComponent(
                     }
                 }
 
-                is Dimension.ZLayer -> Box(
-                    modifier = modifier
-                        .size(
-                            size = stackState.size,
-                            horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                            verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                        )
-                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                is Dimension.ZLayer -> {
+                    // Pre-compute the top safe-drawing inset in px for use as a fallback
+                    // when no header height is available. Captured at composition time so
+                    // the Modifier.layout closure can branch at layout time.
+                    val topInsetPx = if (stackState.applyTopWindowInsets && !stackState.ignoreHeaderHeight) {
+                        safeDrawingInsets.getTop(LocalDensity.current)
+                    } else {
+                        0
+                    }
+                    Box(
+                        modifier = modifier
+                            .size(
+                                size = stackState.size,
+                                horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+                                verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+                            )
+                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                scrollable(state, orientation)
+                            }
+                            .then(rootModifier),
+                        contentAlignment = dimension.alignment.toAlignment(),
+                    ) {
+                        stackState.children.forEach { child ->
+                            val applyTopInsets =
+                                stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets
+                            ComponentView(
+                                style = child,
+                                state = state,
+                                onClick = clickHandler,
+                                componentInteractionTracker = componentInteractionTracker,
+                                modifier = Modifier
+                                    .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
+                                        // Read header height at layout time. If set (hero case),
+                                        // it already includes status bar padding. Otherwise fall
+                                        // back to the safe-drawing top inset.
+                                        headerOrInsetsTopPadding(state, topInsetPx)
+                                    }
+                                    .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
+                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                    }
+                                    .alpha(contentAlpha),
+                            )
                         }
-                        .then(rootModifier),
-                    contentAlignment = dimension.alignment.toAlignment(),
-                ) {
-                    stackState.children.forEach { child ->
-                        ComponentView(
-                            style = child,
-                            state = state,
-                            onClick = clickHandler,
-                            modifier = Modifier
-                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                }
-                                .alpha(contentAlpha),
-                        )
                     }
                 }
             }
@@ -710,9 +752,10 @@ private fun MainStackComponent(
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
-                {},
+                clickHandler = {},
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
+                componentInteractionTracker = componentInteractionTracker,
             )
         }
     } else if (overlay != null) {
@@ -1801,4 +1844,20 @@ private fun previewBadge(
         style = style,
         alignment = alignment,
     )
+}
+
+/**
+ * Adds top padding read at layout time: uses [state]'s header height in pixels if set (hero case
+ * where the header already accounts for the status bar), otherwise falls back to [fallbackInsetPx]
+ * (the safe-drawing top inset, pre-computed at composition time).
+ */
+private fun Modifier.headerOrInsetsTopPadding(
+    state: PaywallState.Loaded.Components,
+    fallbackInsetPx: Int,
+): Modifier = this.layout { measurable, constraints ->
+    val topPad = if (state.headerHeightPx > 0) state.headerHeightPx else fallbackInsetPx
+    val placeable = measurable.measure(constraints.offset(vertical = -topPad))
+    layout(placeable.width, placeable.height + topPad) {
+        placeable.place(0, topPad)
+    }
 }

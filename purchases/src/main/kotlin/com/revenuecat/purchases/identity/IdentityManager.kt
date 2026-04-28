@@ -17,15 +17,15 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -89,11 +89,14 @@ internal class IdentityManager(
         oldAppUserID: String,
     ) {
         val newAppUserID = currentAppUserID
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             backend.aliasUsers(
                 oldAppUserID = oldAppUserID,
                 newAppUserID = newAppUserID,
                 onSuccessHandler = {
+                    // Cache wipe runs unconditionally: the backend alias has already committed
+                    // server-side, so local caches must be cleared to stay consistent even if
+                    // the caller cancelled mid-flight. safeResume then no-ops if cancelled.
                     synchronized(this@IdentityManager) {
                         log(LogIntent.USER) {
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
@@ -102,10 +105,10 @@ internal class IdentityManager(
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
-                    continuation.resume(Unit)
+                    continuation.safeResume(Unit)
                 },
                 onErrorHandler = { error ->
-                    continuation.resumeWithException(PurchasesException(error))
+                    continuation.safeResumeWithException(PurchasesException(error))
                 },
             )
         }

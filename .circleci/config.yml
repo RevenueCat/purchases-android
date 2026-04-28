@@ -286,12 +286,12 @@ jobs:
                 file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
-            RESULTS_DIR="build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>"
-            mkdir -p $RESULTS_DIR
-            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
-          path: build/test-results-<< parameters.flavor >>-<< parameters.bc_version >>-<< parameters.build_type >>
+          path: build/test-results-collected
       - store_artifacts:
           path: build/reports
 
@@ -337,12 +337,12 @@ jobs:
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
       - run:
           name: Collect JUnit XMLs
+          when: always
           command: |
-            RESULTS_DIR="build/test-results-galaxy"
-            mkdir -p $RESULTS_DIR
-            find . -path ./$RESULTS_DIR -prune -o -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} $RESULTS_DIR/ \;
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
       - store_test_results:
-          path: build/test-results-galaxy
+          path: build/test-results-collected
       - store_artifacts:
           path: build/reports
 
@@ -390,7 +390,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.2.0-SNAPSHOT s3://purchases-docs/android/10.2.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.3.0-SNAPSHOT s3://purchases-docs/android/10.3.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -590,9 +590,7 @@ jobs:
       - run:
           name: Build and run purchases integration tests
           command: |
-            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>'
-          environment:
-            NOTIFY_SLACK: "<< parameters.notify_slack >>"
+            bundle exec fastlane android run_purchases_integration_tests backend_environment:'<< parameters.backend_environment >>' notify_slack:'<< parameters.notify_slack >>'
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/outputs/androidTest-results
@@ -850,14 +848,25 @@ jobs:
           avd_name: test-revenuecat-ui
           system_image: system-images;android-32;google_apis;x86_64
           install: true
+      # Use a dedicated cache prefix so this job is isolated from the shared
+      # default gradle cache, which became corrupted (truncated
+      # module-metadata.bin entry for androidx.annotation:annotation-experimental).
+      # Bump the suffix to force a fresh cache if this job's cache ever goes bad.
+      - android/restore_gradle_cache:
+          cache_prefix: ui-tests-v1
+      - android/restore_build_cache:
+          cache_prefix: ui-tests-v1
       - android/start_emulator:
           avd_name: test-revenuecat-ui
           post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleBc8DebugAndroidTest
-      - android/restore_gradle_cache
       - run:
           name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
             ./gradlew ui:revenuecatui:connectedBc8DebugAndroidTest
+      - android/save_gradle_cache:
+          cache_prefix: ui-tests-v1
+      - android/save_build_cache:
+          cache_prefix: ui-tests-v1
 
   run-maestro-e2e-tests:
     description: "Run Maestro tests for Paywall Tester app"
@@ -893,6 +902,29 @@ jobs:
           path: ~/.maestro/tests/
       - store_test_results:
           path: maestro/report.xml
+
+  generate-baseline-profiles:
+    description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore_gradle_cache
+      - android/restore_build_cache
+      - run:
+          name: Generate baseline profiles
+          command: bundle exec fastlane android generate_baseline_profiles
+          no_output_timeout: 45m
+      - android/save_build_cache
+      - android/save_gradle_cache
+      - store_artifacts:
+          path: purchases/src/main/baseline-prof.txt
+      - store_artifacts:
+          path: ui/revenuecatui/src/main/baseline-prof.txt
 
   update-paywall-preview-resources-submodule:
     docker:
@@ -1166,6 +1198,16 @@ workflows:
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
       - revenuecat/automatic-bump
+
+  biweekly-baseline-profiles:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "baseline-profiles", << pipeline.schedule.name >> ]
+    jobs:
+      - generate-baseline-profiles:
+          context:
+            - github-bot-public
 
   manual-trigger-bump:
     when:

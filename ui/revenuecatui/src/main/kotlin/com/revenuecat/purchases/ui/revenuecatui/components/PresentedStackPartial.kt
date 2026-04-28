@@ -94,6 +94,7 @@ internal class PresentedStackPartial(
                 shadow = otherPartial?.shadow ?: partial.shadow,
                 badge = otherPartial?.badge ?: partial.badge,
                 overflow = otherPartial?.overflow ?: partial.overflow,
+                name = otherPartial?.name ?: partial.name,
             ),
         )
     }

@@ -51,6 +51,8 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
@@ -152,6 +154,8 @@ internal class PurchasesOrchestrator(
         ),
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
+
+    private val workflowManager: WorkflowManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
@@ -266,7 +270,7 @@ internal class PurchasesOrchestrator(
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
-        billing.startConnectionOnMainThread()
+        billing.startConnection()
 
         dispatch {
             // This needs to happen after the billing client listeners have been set. This is because
@@ -559,6 +563,20 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun getWorkflow(
+        workflowId: String,
+        onSuccess: (WorkflowDataResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        workflowManager.getWorkflow(
+            appUserID = identityManager.currentAppUserID,
+            workflowId = workflowId,
+            appInBackground = state.appInBackground,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
     fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
@@ -791,6 +809,7 @@ internal class PurchasesOrchestrator(
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
         this.backend.close()
+        this.workflowManager.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff

@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.app.Activity
@@ -9,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -23,6 +26,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -567,6 +571,15 @@ internal class MockViewModel(
     override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) {
         trackExitOfferCallCount++
         trackExitOfferParams.add(Pair(exitOfferType, exitOfferingIdentifier))
+    }
+
+    var trackComponentInteractionCallCount = 0
+        private set
+    val trackComponentInteractionParams = mutableListOf<PaywallComponentInteractionData>()
+
+    override fun trackComponentInteraction(data: PaywallComponentInteractionData) {
+        trackComponentInteractionCallCount++
+        trackComponentInteractionParams.add(data)
     }
 
     var refreshStateIfLocaleChangedCallCount = 0
