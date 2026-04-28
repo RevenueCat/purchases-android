@@ -789,20 +789,28 @@ internal class CustomerCenterViewModelImpl(
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
     ): List<PurchaseInformation> {
-        val allSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
-            .sortedWith(compareByDescending<SubscriptionInfo> { it.isActive }.thenByDescending { it.expiresDate })
+        val activeSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
+            .filter { it.isActive }
+            .sortedBy { it.purchaseDate }
             .map { it.asTransactionDetails() }
 
-        val nonSubscriptions = customerInfo.nonSubscriptionTransactions.map { transaction ->
-            TransactionDetails.NonSubscription(
-                productIdentifier = transaction.productIdentifier,
-                store = transaction.store,
-                price = transaction.price,
-                isSandbox = transaction.isSandbox,
-            )
-        }
+        val inactiveSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
+            .filter { !it.isActive }
+            .sortedBy { it.purchaseDate }
+            .map { it.asTransactionDetails() }
 
-        return (allSubscriptions + nonSubscriptions).map { transaction ->
+        val nonSubscriptions = customerInfo.nonSubscriptionTransactions
+            .sortedBy { it.purchaseDate }
+            .map { transaction ->
+                TransactionDetails.NonSubscription(
+                    productIdentifier = transaction.productIdentifier,
+                    store = transaction.store,
+                    price = transaction.price,
+                    isSandbox = transaction.isSandbox,
+                )
+            }
+
+        return (activeSubscriptions + inactiveSubscriptions + nonSubscriptions).map { transaction ->
             val entitlement = customerInfo.entitlements.active.values
                 .firstOrNull { it.productIdentifier == transaction.productIdentifier }
                 ?: customerInfo.entitlements.all.values

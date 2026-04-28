@@ -316,20 +316,20 @@ public data class CustomerCenterConfigData(
             @SerialName("characters_remaining")
             CHARACTERS_REMAINING,
 
-            @SerialName("see_all_purchases")
+            @SerialName("screen_management_see_all_purchases")
             SEE_ALL_PURCHASES,
 
-            @SerialName("purchase_history")
+            @SerialName("screen_purchase_history_title")
             PURCHASE_HISTORY,
 
-            @SerialName("active_subscriptions")
-            ACTIVE_SUBSCRIPTIONS,
+            @SerialName("subscriptions_section_title")
+            SUBSCRIPTIONS_SECTION_TITLE,
 
-            @SerialName("expired_subscriptions")
-            EXPIRED_SUBSCRIPTIONS,
+            @SerialName("inactive")
+            INACTIVE,
 
-            @SerialName("other_purchases")
-            OTHER_PURCHASES,
+            @SerialName("purchases_section_title")
+            PURCHASES_SECTION_TITLE,
             ;
 
             public val defaultValue: String
@@ -446,9 +446,9 @@ public data class CustomerCenterConfigData(
                     CHARACTERS_REMAINING -> "{{ count }} characters"
                     SEE_ALL_PURCHASES -> "See all purchases"
                     PURCHASE_HISTORY -> "Purchase History"
-                    ACTIVE_SUBSCRIPTIONS -> "Active Subscriptions"
-                    EXPIRED_SUBSCRIPTIONS -> "Expired Subscriptions"
-                    OTHER_PURCHASES -> "Other Purchases"
+                    SUBSCRIPTIONS_SECTION_TITLE -> "Subscriptions"
+                    INACTIVE -> "Inactive"
+                    PURCHASES_SECTION_TITLE -> "Purchases"
                 }
         }
 

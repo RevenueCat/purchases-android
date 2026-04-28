@@ -43,7 +43,7 @@ internal fun PurchaseHistoryView(
             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.SECTION_SPACING))
             Text(
                 text = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.ACTIVE_SUBSCRIPTIONS,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SUBSCRIPTIONS_SECTION_TITLE,
                 ),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -62,7 +62,7 @@ internal fun PurchaseHistoryView(
             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.SECTION_SPACING))
             Text(
                 text = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.EXPIRED_SUBSCRIPTIONS,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.INACTIVE,
                 ),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
@@ -81,7 +81,7 @@ internal fun PurchaseHistoryView(
             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.SECTION_SPACING))
             Text(
                 text = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.OTHER_PURCHASES,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASES_SECTION_TITLE,
                 ),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
