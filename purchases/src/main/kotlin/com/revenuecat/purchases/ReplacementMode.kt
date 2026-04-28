@@ -1,8 +1,13 @@
 package com.revenuecat.purchases
 
 import android.os.Parcelable
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
+import com.revenuecat.purchases.models.legacyPlayBackendName
+import com.revenuecat.purchases.models.storeBackendName
+import com.revenuecat.purchases.models.toGoogleReplacementMode
+import com.revenuecat.purchases.models.toStoreReplacementMode
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import kotlinx.android.parcel.IgnoredOnParcel
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
@@ -25,37 +30,22 @@ public interface ReplacementMode : Parcelable {
 }
 
 /**
- * [GoogleReplacementMode] used to be `GoogleProrationMode`. The backend still expects these values, hence this enum.
- */
-private enum class LegacyProrationMode {
-    IMMEDIATE_WITHOUT_PRORATION,
-    IMMEDIATE_WITH_TIME_PRORATION,
-    IMMEDIATE_AND_CHARGE_FULL_PRICE,
-    IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
-    DEFERRED,
-}
-
-private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
-    get() = when (this) {
-        GoogleReplacementMode.WITHOUT_PRORATION -> LegacyProrationMode.IMMEDIATE_WITHOUT_PRORATION
-        GoogleReplacementMode.WITH_TIME_PRORATION -> LegacyProrationMode.IMMEDIATE_WITH_TIME_PRORATION
-        GoogleReplacementMode.CHARGE_FULL_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
-        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
-        GoogleReplacementMode.DEFERRED -> LegacyProrationMode.DEFERRED
-    }
-
-/**
  * Returns the backend name for this [ReplacementMode].
  * For [GoogleReplacementMode], this returns the legacy proration mode name.
- * For [GalaxyReplacementMode], this returns the enum name directly.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Deprecated("Use ReplacementMode.backendName(store: Store) instead")
 internal val ReplacementMode.backendName: String
     get() = when (this) {
-        is GoogleReplacementMode -> this.asLegacyProrationMode.name
-        is GalaxyReplacementMode -> this.name
+        is GoogleReplacementMode -> this.toStoreReplacementMode().legacyPlayBackendName()
+        is StoreReplacementMode -> this.legacyPlayBackendName()
         else -> this.name
     }
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal fun ReplacementMode.backendName(store: Store): String? {
+    return this.toStoreReplacementModeOrNull()?.storeBackendName(store)
+}
 
 internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ReplacementMode") {
@@ -65,12 +55,14 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
 
     override fun serialize(encoder: Encoder, value: ReplacementMode) {
         encoder.encodeStructure(descriptor) {
-            val type = when (value) {
-                is GoogleReplacementMode -> "GoogleReplacementMode"
+            val normalizedValue = when (value) {
+                is GoogleReplacementMode -> value.toStoreReplacementMode()
+                is StoreReplacementMode -> value
                 else -> throw SerializationException("Unknown ReplacementMode type: ${value::class.simpleName}")
             }
-            encodeStringElement(descriptor, 0, type)
-            encodeStringElement(descriptor, 1, value.name)
+            // Keep writing GoogleReplacementMode to maintain backwards compatibility with older SDKs.
+            encodeStringElement(descriptor, 0, "GoogleReplacementMode")
+            encodeStringElement(descriptor, 1, normalizedValue.toGoogleReplacementMode().name)
         }
     }
 
@@ -89,9 +81,14 @@ internal object ReplacementModeSerializer : KSerializer<ReplacementMode> {
             }
 
             when (type) {
+                "StoreReplacementMode" -> {
+                    StoreReplacementMode.fromName(name)
+                        ?: throw SerializationException("Invalid StoreReplacementMode name: $name")
+                }
                 "GoogleReplacementMode" -> {
                     try {
-                        GoogleReplacementMode.valueOf(name)
+                        // Parse GoogleReplacementMode to StoreReplacementMode
+                        GoogleReplacementMode.valueOf(name).toStoreReplacementMode()
                     } catch (e: IllegalArgumentException) {
                         throw SerializationException("Invalid GoogleReplacementMode name: $name", e)
                     }

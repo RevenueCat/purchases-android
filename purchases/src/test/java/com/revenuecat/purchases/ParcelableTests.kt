@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
@@ -21,6 +22,14 @@ import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 class ParcelableTests {
+
+    private val storeReplacementModes = listOf(
+        StoreReplacementMode.WITHOUT_PRORATION,
+        StoreReplacementMode.WITH_TIME_PRORATION,
+        StoreReplacementMode.CHARGE_FULL_PRICE,
+        StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        StoreReplacementMode.DEFERRED,
+    )
 
     @Test
     fun `EntitlementInfo is Parcelable`() = testParcelization(getEntitlementInfo())
@@ -55,23 +64,14 @@ class ParcelableTests {
     @Test
     fun `StoreTransaction is parcelable`() {
         testParcelization(
-            StoreTransaction(
-                "orderId",
-                listOf("productId1", "productId2"),
-                ProductType.UNKNOWN,
-                0L,
-                "purchaseToken",
-                PurchaseState.PENDING,
-                true,
-                null,
-                JSONObject(emptyMap<String, String>()),
-                "offering_a",
-                "userId",
-                PurchaseType.GOOGLE_PURCHASE,
-                null,
-                "optionId",
-                replacementMode = null
-            )
+            storeTransaction(replacementMode = null)
+        )
+    }
+
+    @Test
+    fun `StoreTransaction with StoreReplacementMode is parcelable`() {
+        testParcelization(
+            storeTransaction(replacementMode = StoreReplacementMode.DEFERRED)
         )
     }
 
@@ -92,6 +92,13 @@ class ParcelableTests {
     fun `GoogleReplacementMode is Parcelable`() {
         GoogleReplacementMode.values().forEach { testParcelization(it, true) }
         val nullMode: GoogleReplacementMode? = null
+        testParcelization(nullMode, true)
+    }
+
+    @Test
+    fun `StoreReplacementMode is Parcelable`() {
+        storeReplacementModes.forEach { testParcelization(it) }
+        val nullMode: StoreReplacementMode? = null
         testParcelization(nullMode, true)
     }
 
@@ -152,4 +159,22 @@ class ParcelableTests {
             verification = VerificationResult.NOT_REQUESTED
         )
     }
+
+    private fun storeTransaction(replacementMode: ReplacementMode?) = StoreTransaction(
+        "orderId",
+        listOf("productId1", "productId2"),
+        ProductType.UNKNOWN,
+        0L,
+        "purchaseToken",
+        PurchaseState.PENDING,
+        true,
+        null,
+        JSONObject(emptyMap<String, String>()),
+        "offering_a",
+        "userId",
+        PurchaseType.GOOGLE_PURCHASE,
+        null,
+        "optionId",
+        replacementMode = replacementMode
+    )
 }

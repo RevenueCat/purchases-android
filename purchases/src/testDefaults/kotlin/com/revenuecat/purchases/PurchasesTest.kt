@@ -29,6 +29,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -274,7 +275,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION,
+            StoreReplacementMode.WITHOUT_PRORATION,
         )
         verify {
             mockBillingAbstract.makePurchaseAsync(
@@ -385,7 +386,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
+                        replaceProductInfo.replacementMode == StoreReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
@@ -420,7 +421,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
+                        replaceProductInfo.replacementMode == StoreReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
@@ -1932,7 +1933,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedReplaceProductInfo = replaceProductInfoSlot.captured
         assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
         assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
-        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -1999,7 +2000,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedReplaceProductInfo = replaceProductInfoSlot.captured
         assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
         assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
-        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

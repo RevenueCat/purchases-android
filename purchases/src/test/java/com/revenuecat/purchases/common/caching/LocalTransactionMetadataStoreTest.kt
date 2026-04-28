@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import io.mockk.Runs
 import io.mockk.every
@@ -573,6 +574,64 @@ class LocalTransactionMetadataStoreTest {
         assertThat(jsonString).isEqualTo(expectedJson)
 
         assertThat(deserialized).isEqualTo(transactionMetadata)
+    }
+
+    @Test
+    fun `LocalTransactionMetadata with StoreReplacementMode serializes as GoogleReplacementMode for backwards compatibility`() {
+        val receiptInfoWithReplacementMode = receiptInfo.copy(
+            replacementMode = StoreReplacementMode.DEFERRED,
+        )
+        val transactionMetadata = LocalTransactionMetadata(
+            token = purchaseToken,
+            receiptInfo = receiptInfoWithReplacementMode,
+            paywallPostReceiptData = paywallData,
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+        )
+
+        val jsonString = json.encodeToString(LocalTransactionMetadata.serializer(), transactionMetadata)
+        val deserialized = json.decodeFromString(LocalTransactionMetadata.serializer(), jsonString)
+
+        assertThat(jsonString).contains("\"type\":\"GoogleReplacementMode\"")
+        assertThat(deserialized.receiptInfo.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
+    }
+
+    @Test
+    fun `LocalTransactionMetadata with legacy GoogleReplacementMode JSON deserializes to StoreReplacementMode`() {
+        // language=json
+        val jsonString = """
+            {
+                "token":"$purchaseToken",
+                "receipt_info":{
+                    "productIDs":["product_id"],
+                    "presentedOfferingContext":{
+                        "offeringIdentifier":"offering_id",
+                        "placementIdentifier":null,
+                        "targetingContext":null
+                    },
+                    "price":4.99,
+                    "formattedPrice":"$4.99",
+                    "currency":"USD",
+                    "replacementMode":{
+                        "type":"GoogleReplacementMode",
+                        "name":"DEFERRED"
+                    }
+                },
+                "paywall_data":{
+                    "paywall_id":"paywall_id",
+                    "session_id":"session_id",
+                    "revision":1,
+                    "display_mode":"full_screen",
+                    "dark_mode":false,
+                    "locale":"en_US",
+                    "offering_id":"offering_id"
+                },
+                "purchases_are_completed_by":"REVENUECAT"
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        val deserialized = json.decodeFromString(LocalTransactionMetadata.serializer(), jsonString)
+
+        assertThat(deserialized.receiptInfo.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     // endregion

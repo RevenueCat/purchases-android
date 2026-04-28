@@ -66,7 +66,9 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -310,7 +312,9 @@ internal class BillingWrapper(
             // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
             // switching from, because the transaction we receive on successful purchase is for the old product.
             val productId =
-                if (replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED) {
+                if (replaceProductInfo?.replacementMode == StoreReplacementMode.DEFERRED ||
+                    replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED
+                ) {
                     replaceProductInfo.oldPurchase.productIds.first()
                 } else {
                     googlePurchasingData.productId
@@ -334,7 +338,7 @@ internal class BillingWrapper(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
                 subscriptionOptionId,
-                replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
+                replaceProductInfo?.replacementMode.toStoreReplacementModeOrNull(),
                 subscriptionOptionIdForProductIDs,
             )
         }
