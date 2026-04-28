@@ -137,8 +137,8 @@ internal fun ButtonComponentView(
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = animatedContentAlpha,
                     enabled = !anyActionInProgress,
-                    onStackClick = {
-                        val paywallAction = buttonState.action
+                    onStackClick = onStackClick@{
+                        val paywallAction = buttonState.action ?: return@onStackClick
                         myActionInProgress = true
                         state.update(actionInProgress = true)
                         if (style.action.isPurchaseRelated()) {
