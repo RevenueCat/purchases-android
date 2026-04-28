@@ -70,7 +70,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
 import java.util.Date
 
-@Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
@@ -81,10 +80,47 @@ internal fun LoadedPaywallComponents(
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
 
-    val headerComponentStyle = state.header
-    val footerComponentStyle = state.stickyFooter
+    val onClick: suspend (PaywallAction) -> Unit = { action ->
+        handleClick(action, state, clickHandler, componentInteractionTracker)
+    }
+
+    PaywallComponentsScaffold(
+        state = state,
+        clickHandler = clickHandler,
+        componentInteractionTracker = componentInteractionTracker,
+        modifier = modifier,
+    ) { hasHeaderOverlay ->
+        ComponentView(
+            style = state.stack,
+            state = state,
+            onClick = onClick,
+            componentInteractionTracker = componentInteractionTracker,
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .conditional(hasHeaderOverlay && !state.mainStackHasHeroImage) {
+                    headerTopPadding(state)
+                },
+        )
+    }
+}
+
+/**
+ * Shared scaffold for all Components-based paywall variants. Handles the background, bottom-sheet,
+ * overlay, header, and sticky footer. Callers supply the main scrollable content as [mainContent],
+ * which receives [hasHeaderOverlay] so it can apply the correct top-padding offset.
+ */
+@Composable
+internal fun PaywallComponentsScaffold(
+    state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction.External) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
+    modifier: Modifier = Modifier,
+    mainContent: @Composable (hasHeaderOverlay: Boolean) -> Unit,
+) {
     val background = rememberBackgroundStyle(state.background)
-    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
+    val headerComponentStyle = state.header
+    val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
     }
 
@@ -98,22 +134,9 @@ internal fun LoadedPaywallComponents(
                     state = state,
                     modifier = Modifier.weight(1f),
                 ) {
-                    // Child 0: main scrollable content.
-                    ComponentView(
-                        style = state.stack,
-                        state = state,
-                        onClick = onClick,
-                        componentInteractionTracker = componentInteractionTracker,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .conditional(
-                                headerComponentStyle != null && !state.mainStackHasHeroImage,
-                            ) {
-                                headerTopPadding(state)
-                            },
-                    )
-                    // Child 1 (optional): header overlay.
+                    // Child 0: caller-supplied main content (scrollable body or slide container).
+                    mainContent(hasHeaderOverlay = headerComponentStyle != null)
+                    // Child 1 (optional): header overlay — measured first by HeaderOverlayLayout.
                     headerComponentStyle?.let { headerStyle ->
                         ComponentView(
                             style = headerStyle,
@@ -123,14 +146,13 @@ internal fun LoadedPaywallComponents(
                         )
                     }
                 }
-                footerComponentStyle?.let {
+                state.stickyFooter?.let { footerStyle ->
                     ComponentView(
-                        style = it,
+                        style = footerStyle,
                         state = state,
                         onClick = onClick,
                         componentInteractionTracker = componentInteractionTracker,
-                        modifier = Modifier
-                            .fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
