@@ -69,6 +69,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PurchaseHistoryDetailView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PurchaseHistoryView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
@@ -200,6 +201,9 @@ internal fun InternalCustomerCenter(
                     viewModel.dismissSupportTicketSuccessSnackbar()
                 }
                 is CustomerCenterAction.ShowPurchaseHistory -> viewModel.showPurchaseHistory()
+                is CustomerCenterAction.ShowPurchaseHistoryDetail -> {
+                    viewModel.showPurchaseHistoryDetail(action.purchase)
+                }
             }
         },
     )
@@ -515,6 +519,7 @@ private fun CustomerCenterNavHost(
                     localization = customerCenterState.customerCenterConfigData.localization,
                     purchaseInformation = destination.purchaseInformation,
                     supportedPaths = customerCenterState.detailScreenPaths,
+                    shouldShowPurchaseHistory = customerCenterState.shouldShowPurchaseHistory,
                     onAction = onAction,
                 )
             }
@@ -538,6 +543,14 @@ private fun CustomerCenterNavHost(
                     activeSubscriptions = destination.activeSubscriptions,
                     inactiveSubscriptions = destination.inactiveSubscriptions,
                     nonSubscriptions = destination.nonSubscriptions,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                    onAction = onAction,
+                )
+            }
+
+            is CustomerCenterDestination.PurchaseHistoryDetail -> {
+                PurchaseHistoryDetailView(
+                    purchase = destination.purchase,
                     localization = customerCenterState.customerCenterConfigData.localization,
                 )
             }

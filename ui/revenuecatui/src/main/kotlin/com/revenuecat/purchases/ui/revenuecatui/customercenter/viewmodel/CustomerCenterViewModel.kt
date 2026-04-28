@@ -20,6 +20,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
@@ -142,6 +143,8 @@ internal interface CustomerCenterViewModel {
 
     fun showPurchaseHistory()
 
+    fun showPurchaseHistoryDetail(purchase: PurchaseInformation)
+
     fun dismissSupportTicketSuccessSnackbar()
 
     /**
@@ -181,6 +184,15 @@ internal sealed class TransactionDetails(
         val managementURL: Uri?,
         override val price: Price?,
         override val isSandbox: Boolean,
+        val purchaseDate: Date? = null,
+        val originalPurchaseDate: Date? = null,
+        val unsubscribeDetectedAt: Date? = null,
+        val billingIssuesDetectedAt: Date? = null,
+        val gracePeriodExpiresDate: Date? = null,
+        val periodType: PeriodType = PeriodType.NORMAL,
+        val refundedAt: Date? = null,
+        val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+        val storeTransactionId: String? = null,
     ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 
     @Immutable
@@ -366,6 +378,31 @@ internal class CustomerCenterViewModelImpl(
                             activeSubscriptions = activeSubscriptions,
                             inactiveSubscriptions = inactiveSubscriptions,
                             nonSubscriptions = nonSubscriptions,
+                            title = title,
+                        ),
+                    ),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun showPurchaseHistoryDetail(purchase: PurchaseInformation) {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        val title = purchase.title ?: state.customerCenterConfigData.localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_HISTORY,
+        )
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(
+                        CustomerCenterDestination.PurchaseHistoryDetail(
+                            purchase = purchase,
                             title = title,
                         ),
                     ),
@@ -1568,5 +1605,14 @@ internal class CustomerCenterViewModelImpl(
         managementURL = managementURL,
         price = price,
         isSandbox = isSandbox,
+        purchaseDate = purchaseDate,
+        originalPurchaseDate = originalPurchaseDate,
+        unsubscribeDetectedAt = unsubscribeDetectedAt,
+        billingIssuesDetectedAt = billingIssuesDetectedAt,
+        gracePeriodExpiresDate = gracePeriodExpiresDate,
+        periodType = periodType,
+        refundedAt = refundedAt,
+        ownershipType = ownershipType,
+        storeTransactionId = storeTransactionId,
     )
 }

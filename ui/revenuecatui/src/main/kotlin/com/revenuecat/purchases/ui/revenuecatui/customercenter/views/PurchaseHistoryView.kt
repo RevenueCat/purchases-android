@@ -18,19 +18,21 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.ExpirationOrRenewal
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PriceDetails
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 internal fun PurchaseHistoryView(
     activeSubscriptions: List<PurchaseInformation>,
     inactiveSubscriptions: List<PurchaseInformation>,
     nonSubscriptions: List<PurchaseInformation>,
     localization: CustomerCenterConfigData.Localization,
+    onAction: (CustomerCenterAction) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -55,6 +57,7 @@ internal fun PurchaseHistoryView(
             PurchaseHistorySection(
                 purchases = activeSubscriptions,
                 localization = localization,
+                onAction = onAction,
             )
         }
 
@@ -74,6 +77,7 @@ internal fun PurchaseHistoryView(
             PurchaseHistorySection(
                 purchases = inactiveSubscriptions,
                 localization = localization,
+                onAction = onAction,
             )
         }
 
@@ -93,6 +97,7 @@ internal fun PurchaseHistoryView(
             PurchaseHistorySection(
                 purchases = nonSubscriptions,
                 localization = localization,
+                onAction = onAction,
             )
         }
 
@@ -104,6 +109,7 @@ internal fun PurchaseHistoryView(
 private fun PurchaseHistorySection(
     purchases: List<PurchaseInformation>,
     localization: CustomerCenterConfigData.Localization,
+    onAction: (CustomerCenterAction) -> Unit,
 ) {
     purchases.forEachIndexed { index, info ->
         if (index > 0) {
@@ -124,7 +130,7 @@ private fun PurchaseHistorySection(
                 .padding(horizontal = CustomerCenterConstants.Layout.HORIZONTAL_PADDING),
             position = position,
             isDetailedView = false,
-            onCardClick = null,
+            onCardClick = { onAction(CustomerCenterAction.ShowPurchaseHistoryDetail(info)) },
         )
     }
 }
@@ -153,6 +159,7 @@ private fun PurchaseHistoryViewPreview() {
                 ),
             ),
             localization = testData.localization,
+            onAction = {},
         )
     }
 }
@@ -182,6 +189,7 @@ private fun PurchaseHistoryViewOnlyExpiredPreview() {
             ),
             nonSubscriptions = emptyList(),
             localization = testData.localization,
+            onAction = {},
         )
     }
 }

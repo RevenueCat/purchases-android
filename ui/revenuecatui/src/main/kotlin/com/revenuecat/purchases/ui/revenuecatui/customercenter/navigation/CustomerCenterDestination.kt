@@ -52,4 +52,9 @@ internal sealed class CustomerCenterDestination {
         val nonSubscriptions: List<PurchaseInformation>,
         override val title: String,
     ) : CustomerCenterDestination()
+
+    data class PurchaseHistoryDetail(
+        val purchase: PurchaseInformation,
+        override val title: String,
+    ) : CustomerCenterDestination()
 }

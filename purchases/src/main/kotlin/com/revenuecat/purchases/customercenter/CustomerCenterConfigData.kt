@@ -330,6 +330,63 @@ public data class CustomerCenterConfigData(
 
             @SerialName("purchases_section_title")
             PURCHASES_SECTION_TITLE,
+
+            @SerialName("product_name")
+            PRODUCT_NAME,
+
+            @SerialName("paid_price")
+            PAID_PRICE,
+
+            @SerialName("status")
+            STATUS,
+
+            @SerialName("next_renewal")
+            NEXT_RENEWAL,
+
+            @SerialName("unsubscribed_at")
+            UNSUBSCRIBED_AT,
+
+            @SerialName("billing_issue_detected_at")
+            BILLING_ISSUE_DETECTED_AT,
+
+            @SerialName("grace_period_expires_at")
+            GRACE_PERIOD_EXPIRES_AT,
+
+            @SerialName("period_type")
+            PERIOD_TYPE,
+
+            @SerialName("refunded_at")
+            REFUNDED_AT,
+
+            @SerialName("history_latest_purchase_date")
+            HISTORY_LATEST_PURCHASE_DATE,
+
+            @SerialName("introductory_price")
+            INTRODUCTORY_PRICE,
+
+            @SerialName("trial_period")
+            TRIAL_PERIOD,
+
+            @SerialName("shared_through_family_member")
+            SHARED_THROUGH_FAMILY_MEMBER,
+
+            @SerialName("product_id")
+            PRODUCT_ID,
+
+            @SerialName("sandbox")
+            SANDBOX,
+
+            @SerialName("transaction_id")
+            TRANSACTION_ID,
+
+            @SerialName("original_download_date")
+            ORIGINAL_DOWNLOAD_DATE,
+
+            @SerialName("yes")
+            ANSWER_YES,
+
+            @SerialName("no")
+            ANSWER_NO,
             ;
 
             public val defaultValue: String
@@ -449,6 +506,25 @@ public data class CustomerCenterConfigData(
                     SUBSCRIPTIONS_SECTION_TITLE -> "Subscriptions"
                     INACTIVE -> "Inactive"
                     PURCHASES_SECTION_TITLE -> "Purchases"
+                    PRODUCT_NAME -> "Product Name"
+                    PAID_PRICE -> "Paid Price"
+                    STATUS -> "Status"
+                    NEXT_RENEWAL -> "Next Renewal"
+                    UNSUBSCRIBED_AT -> "Unsubscribed At"
+                    BILLING_ISSUE_DETECTED_AT -> "Billing Issue Detected At"
+                    GRACE_PERIOD_EXPIRES_AT -> "Grace Period Expires At"
+                    PERIOD_TYPE -> "Period Type"
+                    REFUNDED_AT -> "Refunded At"
+                    HISTORY_LATEST_PURCHASE_DATE -> "Latest Purchase Date"
+                    INTRODUCTORY_PRICE -> "Introductory Price"
+                    TRIAL_PERIOD -> "Trial Period"
+                    SHARED_THROUGH_FAMILY_MEMBER -> "Shared through family member"
+                    PRODUCT_ID -> "Product ID"
+                    SANDBOX -> "Sandbox"
+                    TRANSACTION_ID -> "Transaction ID"
+                    ORIGINAL_DOWNLOAD_DATE -> "Original Download Date"
+                    ANSWER_YES -> "Yes"
+                    ANSWER_NO -> "No"
                 }
         }
 
