@@ -89,7 +89,7 @@ internal fun LoadedPaywallComponents(
         clickHandler = clickHandler,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
-    ) { hasHeaderOverlay ->
+    ) {
         ComponentView(
             style = state.stack,
             state = state,
@@ -98,7 +98,7 @@ internal fun LoadedPaywallComponents(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .conditional(hasHeaderOverlay && !state.mainStackHasHeroImage) {
+                .conditional(state.header != null && !state.mainStackHasHeroImage) {
                     headerTopPadding(state)
                 },
         )
@@ -107,8 +107,7 @@ internal fun LoadedPaywallComponents(
 
 /**
  * Shared scaffold for all Components-based paywall variants. Handles the background, bottom-sheet,
- * overlay, header, and sticky footer. Callers supply the main scrollable content as [mainContent],
- * which receives [hasHeaderOverlay] so it can apply the correct top-padding offset.
+ * overlay, header, and sticky footer. Callers supply the main scrollable content as [mainContent].
  */
 @Composable
 internal fun PaywallComponentsScaffold(
@@ -116,7 +115,7 @@ internal fun PaywallComponentsScaffold(
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     modifier: Modifier = Modifier,
-    mainContent: @Composable (hasHeaderOverlay: Boolean) -> Unit,
+    mainContent: @Composable () -> Unit,
 ) {
     val background = rememberBackgroundStyle(state.background)
     val headerComponentStyle = state.header
@@ -135,7 +134,7 @@ internal fun PaywallComponentsScaffold(
                     modifier = Modifier.weight(1f),
                 ) {
                     // Child 0: caller-supplied main content (scrollable body or slide container).
-                    mainContent(hasHeaderOverlay = headerComponentStyle != null)
+                    mainContent()
                     // Child 1 (optional): header overlay — measured first by HeaderOverlayLayout.
                     headerComponentStyle?.let { headerStyle ->
                         ComponentView(

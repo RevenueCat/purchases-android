@@ -43,12 +43,14 @@ internal fun LoadedWorkflowPaywall(
         navigationDirection = navigationDirection,
     )
 
+    val hasHeaderOverlay = currentState.header != null
+
     PaywallComponentsScaffold(
         state = currentState,
         clickHandler = clickHandler,
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
-    ) { hasHeaderOverlay ->
+    ) {
         // Multi-step slide container: all composed steps are stacked and translated by workflowSlide.
         Box(
             modifier = Modifier
