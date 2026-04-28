@@ -153,6 +153,17 @@ class PurchasesConfigurationTest {
     }
 
     @Test
+    fun `PurchasesConfiguration preserves preferredUILocaleOverrideHonorsLayoutDirection when locale only changes`() {
+        val purchasesConfiguration = builder
+            .preferredUILocaleOverride("he_IL", honorLayoutDirection = true)
+            .preferredUILocaleOverride("ar_SA")
+            .build()
+
+        assertThat(purchasesConfiguration.preferredUILocaleOverride).isEqualTo("ar_SA")
+        assertThat(purchasesConfiguration.preferredUILocaleOverrideHonorsLayoutDirection).isTrue()
+    }
+
+    @Test
     fun `PurchasesConfiguration handles null preferredUILocaleOverride`() {
         val purchasesConfiguration = builder.preferredUILocaleOverride(null).build()
         assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()

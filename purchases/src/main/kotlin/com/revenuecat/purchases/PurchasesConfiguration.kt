@@ -323,7 +323,10 @@ public open class PurchasesConfiguration(builder: Builder) {
          * importing RevenueCatUI in your project.
          */
         public fun preferredUILocaleOverride(localeString: String?): Builder = apply {
-            preferredUILocaleOverride(localeString, honorLayoutDirection = false)
+            preferredUILocaleOverride(
+                localeString,
+                honorLayoutDirection = preferredUILocaleOverrideHonorsLayoutDirection,
+            )
         }
 
         /**

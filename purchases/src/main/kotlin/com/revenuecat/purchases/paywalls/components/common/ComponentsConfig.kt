@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -16,7 +17,7 @@ public class ComponentsConfig(
 )
 
 @InternalRevenueCatAPI
-@Serializable
+@Serializable(with = PaywallComponentsLayoutDirectionDeserializer::class)
 public enum class PaywallComponentsLayoutDirection {
     @SerialName("system")
     SYSTEM,
@@ -30,6 +31,12 @@ public enum class PaywallComponentsLayoutDirection {
     @SerialName("ltr")
     LTR,
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object PaywallComponentsLayoutDirectionDeserializer :
+    EnumDeserializerWithDefault<PaywallComponentsLayoutDirection>(
+        defaultValue = PaywallComponentsLayoutDirection.SYSTEM,
+    )
 
 @InternalRevenueCatAPI
 @Poko

@@ -538,20 +538,25 @@ internal class PurchasesOrchestrator(
      * a paywall or customer center is displayed.
      */
     fun overridePreferredUILocale(localeString: String?): Boolean {
-        return overridePreferredUILocale(localeString, honorLayoutDirection = false)
+        return overridePreferredUILocale(
+            localeString,
+            honorLayoutDirection = _preferredUILocaleOverrideHonorsLayoutDirection,
+        )
     }
 
     fun overridePreferredUILocale(localeString: String?, honorLayoutDirection: Boolean): Boolean {
         val previousLocale = _preferredUILocaleOverride
         val previousHonorLayoutDirection = _preferredUILocaleOverrideHonorsLayoutDirection
+        val localeChanged = previousLocale != localeString
+        val honorLayoutDirectionChanged = previousHonorLayoutDirection != honorLayoutDirection
 
-        if (previousLocale == localeString && previousHonorLayoutDirection == honorLayoutDirection) {
+        if (!localeChanged && !honorLayoutDirectionChanged) {
             debugLog { "Locale unchanged, no fresh fetch needed" }
             return false
         }
 
         synchronized(this) {
-            if (previousLocale != localeString) {
+            if (localeChanged) {
                 _preferredUILocaleOverride = localeString
                 localeProvider.setPreferredLocaleOverride(localeString)
             }
@@ -560,17 +565,17 @@ internal class PurchasesOrchestrator(
 
         notifyPreferredUILocaleOverrideChanged()
 
-        if (previousLocale == localeString) {
+        return if (!localeChanged) {
             debugLog { "Locale layout direction setting changed, no fresh fetch needed" }
-            return false
-        }
-
-        debugLog { "Locale changed, attempting to fetch fresh offerings" }
-        return clearInMemoryCacheAndFetchOfferingsWithRateLimit { offerings, error ->
-            if (offerings != null) {
-                debugLog { "Fresh offerings fetch completed successfully" }
-            } else {
-                debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+            false
+        } else {
+            debugLog { "Locale changed, attempting to fetch fresh offerings" }
+            clearInMemoryCacheAndFetchOfferingsWithRateLimit { offerings, error ->
+                if (offerings != null) {
+                    debugLog { "Fresh offerings fetch completed successfully" }
+                } else {
+                    debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+                }
             }
         }
     }

@@ -87,7 +87,9 @@ internal fun InternalPaywall(
 
     val state = viewModel.state.collectAsStateWithLifecycle().value
     val localeList = viewModel.localeList.collectAsStateWithLifecycle().value
-    val honorLayoutDirection = viewModel.preferredUILocaleOverrideHonorsLayoutDirection.collectAsStateWithLifecycle().value
+    val honorLayoutDirection = viewModel.preferredUILocaleOverrideHonorsLayoutDirection
+        .collectAsStateWithLifecycle()
+        .value
 
     val componentInteractionTracker = remember(viewModel) {
         PaywallComponentInteractionTracker { data ->
@@ -202,7 +204,9 @@ private fun LoadedPaywall(
     val offering = state.offering
     val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.data?.revision
     val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.data?.id
-    val honorLayoutDirection = viewModel.preferredUILocaleOverrideHonorsLayoutDirection.collectAsStateWithLifecycle().value
+    val honorLayoutDirection = viewModel.preferredUILocaleOverrideHonorsLayoutDirection
+        .collectAsStateWithLifecycle()
+        .value
     LaunchedEffect(
         offering.identifier,
         paywallIdentifier,

@@ -2679,6 +2679,25 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `overridePreferredUILocale with locale only preserves layout direction flag`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val flagOnlyResult = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(
+            null,
+            honorLayoutDirection = true,
+        )
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("ar_SA")
+
+        assertThat(flagOnlyResult).isFalse
+        assertThat(result).isTrue
+        assertThat(
+            Purchases.sharedInstance.purchasesOrchestrator.preferredUILocaleOverrideHonorsLayoutDirection,
+        ).isTrue()
+    }
+
+    @Test
     fun `overridePreferredUILocale skips cache clear and fetch when rate limited`() {
         every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
         mockOfferingsManagerGetOfferings()
