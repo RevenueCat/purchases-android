@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -532,6 +533,7 @@ internal class MockViewModel(
         get() = _actionError
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
+    override val navigationDirection: State<NavigationDirection> = mutableStateOf(NavigationDirection.NONE)
     override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {

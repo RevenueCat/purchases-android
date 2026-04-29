@@ -63,6 +63,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.Dispatchers
@@ -112,6 +113,8 @@ internal interface PaywallViewModel {
         )
     }
     fun closePaywall(result: PaywallResult? = null)
+
+    val navigationDirection: State<NavigationDirection>
 
     /**
      * Workflow-related UI state. Non-null when the loaded paywall is a multi-step workflow.
@@ -166,6 +169,8 @@ internal class PaywallViewModelImpl(
         get() = _purchaseCompleted
     override val preloadedExitOffering: State<Offering?>
         get() = _preloadedExitOffering
+    override val navigationDirection: State<NavigationDirection>
+        get() = _navigationDirection
     override val workflowState: State<WorkflowPaywallUiState?>
         get() = _workflowState
 
@@ -174,6 +179,7 @@ internal class PaywallViewModelImpl(
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _preloadedExitOffering: MutableState<Offering?> = mutableStateOf(null)
+    private val _navigationDirection: MutableState<NavigationDirection> = mutableStateOf(NavigationDirection.NONE)
     private val _workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
@@ -658,6 +664,7 @@ internal class PaywallViewModelImpl(
         }
     }
     private fun updateState() {
+        _navigationDirection.value = NavigationDirection.NONE
         viewModelScope.launch {
             try {
                 updateStateFromOffering(options.offeringSelection)
@@ -870,6 +877,10 @@ internal class PaywallViewModelImpl(
             Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
             return
         }
+        // _navigationDirection is intentionally left set until consumed by the next recomposition
+        // (read inside the LaunchedEffect key in rememberWorkflowSlideState) and reset on the
+        // next navigation or full reload.
+        _navigationDirection.value = NavigationDirection.FORWARD
         buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
     }
 
@@ -889,6 +900,7 @@ internal class PaywallViewModelImpl(
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
             return false
         }
+        _navigationDirection.value = NavigationDirection.BACKWARD
         buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
         return true
     }

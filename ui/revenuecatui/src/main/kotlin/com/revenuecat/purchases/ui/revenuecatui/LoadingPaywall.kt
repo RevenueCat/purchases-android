@@ -46,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
+import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -192,6 +193,7 @@ private class LoadingViewModel(
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
+    override val navigationDirection: State<NavigationDirection> = mutableStateOf(NavigationDirection.NONE)
     override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     override fun trackPaywallImpressionIfNeeded() = Unit

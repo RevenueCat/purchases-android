@@ -149,6 +149,7 @@ internal fun InternalPaywall(
             if (workflowState != null) {
                 LoadedWorkflowPaywall(
                     workflowState = workflowState,
+                    navigationDirection = viewModel.navigationDirection.value,
                     clickHandler = rememberPaywallActionHandler(viewModel),
                     componentInteractionTracker = componentInteractionTracker,
                 )
