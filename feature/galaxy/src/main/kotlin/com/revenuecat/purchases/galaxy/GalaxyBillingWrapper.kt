@@ -37,10 +37,10 @@ import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.SerialRequestExecutor
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
@@ -407,22 +407,30 @@ internal class GalaxyBillingWrapper(
 
         val productId = galaxyPurchaseInfo.productId
 
-        if (replaceProductInfo != null) {
-            val galaxyReplacementMode = replaceProductInfo.replacementMode as? GalaxyReplacementMode
-                ?: GalaxyReplacementMode.default
+        replaceProductInfo?.let { replaceInfo ->
+            val replacementMode = when (val mode = replaceInfo.replacementMode) {
+                is StoreReplacementMode -> mode
+                else -> {
+                    log(LogIntent.GALAXY_WARNING) {
+                        GalaxyStrings.UNEXPECTED_PRORATION_MODE.format(mode?.name ?: "unknown")
+                    }
+
+                    StoreReplacementMode.WITHOUT_PRORATION
+                }
+            }
 
             serialRequestExecutor.executeSerially { finish ->
                 changeSubscriptionPlanHandler.changeSubscriptionPlan(
                     appUserID = appUserID,
-                    oldPurchase = replaceProductInfo.oldPurchase,
+                    oldPurchase = replaceInfo.oldPurchase,
                     newProductId = productId,
-                    prorationMode = galaxyReplacementMode,
+                    replacementMode = replacementMode,
                     onSuccess = { receipt ->
                         handleReceipt(
                             receipt = receipt,
                             productId = productId,
                             presentedOfferingContext = presentedOfferingContext,
-                            replacementMode = galaxyReplacementMode,
+                            replacementMode = replacementMode,
                         )
                         finish()
                     },
@@ -432,7 +440,7 @@ internal class GalaxyBillingWrapper(
                     },
                 )
             }
-            return
+            return // Exits makePurchaseAsync
         }
 
         serialRequestExecutor.executeSerially { finish ->
@@ -461,7 +469,7 @@ internal class GalaxyBillingWrapper(
         receipt: PurchaseVo,
         productId: String,
         presentedOfferingContext: PresentedOfferingContext?,
-        replacementMode: GalaxyReplacementMode?,
+        replacementMode: StoreReplacementMode?,
     ) {
         try {
             val storeTransaction = receipt.toStoreTransaction(

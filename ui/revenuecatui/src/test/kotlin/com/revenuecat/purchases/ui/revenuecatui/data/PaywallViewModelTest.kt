@@ -19,7 +19,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
@@ -2155,7 +2155,7 @@ class PaywallViewModelTest {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
         } returns ProductChangeInfo(
             oldProductId = "old_product",
-            replacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
         )
 
         val transaction = mockk<StoreTransaction>()
@@ -2195,7 +2195,7 @@ class PaywallViewModelTest {
                 withArg { builder ->
                     val params = builder.build()
                     assertThat(params.oldProductId).isEqualTo("old_product")
-                    assertThat(params.googleReplacementMode).isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+                    assertThat(params.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
                 },
             )
         }
@@ -2411,7 +2411,7 @@ class PaywallViewModelTest {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
         } returns ProductChangeInfo(
             oldProductId = "old_product",
-            replacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+            replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
         )
 
         val model = PaywallViewModelImpl(
@@ -2439,7 +2439,7 @@ class PaywallViewModelTest {
         assertThat(receivedContext).isNotNull
         assertThat(receivedContext!!.oldProductId).isEqualTo("old_product")
         assertThat(receivedContext.replacementMode)
-            .isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+            .isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
         coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissInvoked).isTrue
     }
@@ -2489,7 +2489,7 @@ class PaywallViewModelTest {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
         } returns ProductChangeInfo(
             oldProductId = "old_product",
-            replacementMode = GoogleReplacementMode.DEFERRED,
+            replacementMode = StoreReplacementMode.DEFERRED,
         )
 
         val model = PaywallViewModelImpl(
@@ -2517,7 +2517,7 @@ class PaywallViewModelTest {
         assertThat(receivedContext).isNotNull
         assertThat(receivedContext!!.oldProductId).isEqualTo("old_product")
         assertThat(receivedContext.replacementMode)
-            .isEqualTo(GoogleReplacementMode.DEFERRED)
+            .isEqualTo(StoreReplacementMode.DEFERRED)
         coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
         assertThat(dismissInvoked).isTrue
     }

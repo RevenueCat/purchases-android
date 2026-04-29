@@ -7,10 +7,11 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
-import com.revenuecat.purchases.models.GalaxyReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
@@ -26,6 +27,14 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class PurchaseParamsTest {
+
+    private val storeReplacementModes = listOf(
+        StoreReplacementMode.WITHOUT_PRORATION,
+        StoreReplacementMode.WITH_TIME_PRORATION,
+        StoreReplacementMode.CHARGE_FULL_PRICE,
+        StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        StoreReplacementMode.DEFERRED,
+    )
 
     @Test
     fun `Initializing with Package sets proper presentedOfferingIdentifier`() {
@@ -108,30 +117,114 @@ class PurchaseParamsTest {
         assertThat(purchasePackageParams.purchasingData).isEqualTo(expectedPurchasingData)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `initializing defaults galaxyReplacementMode to default`() {
+    fun `initializing defaults replacementMode to WITHOUT_PRORATION`() {
         val storeProduct = stubStoreProduct("abc")
         val purchaseParams = PurchaseParams.Builder(
             mockk(),
             storeProduct
         ).build()
 
-        assertThat(purchaseParams.galaxyReplacementMode).isEqualTo(GalaxyReplacementMode.default)
+        assertThat(purchaseParams.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
-    fun `galaxyReplacementMode set on builder is reflected in PurchaseParams`() {
+    fun `replacementMode set on builder is reflected in PurchaseParams`() {
         val storeProduct = stubStoreProduct("abc")
-        val purchaseParams = PurchaseParams.Builder(
+
+        storeReplacementModes.forEach { replacementMode ->
+            val purchaseParams = PurchaseParams.Builder(
+                mockk(),
+                storeProduct
+            )
+                .replacementMode(replacementMode)
+                .build()
+
+            assertThat(purchaseParams.replacementMode).isEqualTo(replacementMode)
+        }
+    }
+
+    // We can remove this test once we fully remove PurchaseParams.googleReplacementMode
+    @Test
+    fun `replacementMode set on builder updates googleReplacementMode in PurchaseParams`() {
+        val storeProduct = stubStoreProduct("abc")
+        val expectations = mapOf(
+            StoreReplacementMode.WITHOUT_PRORATION to GoogleReplacementMode.WITHOUT_PRORATION,
+            StoreReplacementMode.WITH_TIME_PRORATION to GoogleReplacementMode.WITH_TIME_PRORATION,
+            StoreReplacementMode.CHARGE_FULL_PRICE to GoogleReplacementMode.CHARGE_FULL_PRICE,
+            StoreReplacementMode.CHARGE_PRORATED_PRICE to GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+            StoreReplacementMode.DEFERRED to GoogleReplacementMode.DEFERRED,
+        )
+
+        storeReplacementModes.forEach { replacementMode ->
+            val purchaseParams = PurchaseParams.Builder(
+                mockk(),
+                storeProduct
+            )
+                .replacementMode(replacementMode)
+                .build()
+
+            val expectedGoogleReplacementMode =
+                expectations[replacementMode] ?: error("Missing expected Google replacement mode for $replacementMode")
+            assertThat(purchaseParams.googleReplacementMode).isEqualTo(expectedGoogleReplacementMode)
+        }
+    }
+
+    // We can remove this test once we fully remove PurchaseParams.googleReplacementMode
+    @Test
+    fun `googleReplacementMode set on builder updates replacementMode in PurchaseParams`() {
+        val storeProduct = stubStoreProduct("abc")
+        val expectations = mapOf(
+            GoogleReplacementMode.WITHOUT_PRORATION to StoreReplacementMode.WITHOUT_PRORATION,
+            GoogleReplacementMode.WITH_TIME_PRORATION to StoreReplacementMode.WITH_TIME_PRORATION,
+            GoogleReplacementMode.CHARGE_FULL_PRICE to StoreReplacementMode.CHARGE_FULL_PRICE,
+            GoogleReplacementMode.CHARGE_PRORATED_PRICE to StoreReplacementMode.CHARGE_PRORATED_PRICE,
+            GoogleReplacementMode.DEFERRED to StoreReplacementMode.DEFERRED,
+        )
+
+        GoogleReplacementMode.values().forEach { googleReplacementMode ->
+            val purchaseParams = PurchaseParams.Builder(
+                mockk(),
+                storeProduct
+            )
+                .googleReplacementMode(googleReplacementMode)
+                .build()
+
+            val expectedStoreReplacementMode =
+                expectations[googleReplacementMode]
+                    ?: error("Missing expected store replacement mode for $googleReplacementMode")
+            assertThat(purchaseParams.replacementMode).isEqualTo(expectedStoreReplacementMode)
+        }
+    }
+
+    @Test
+    fun `replacementMode and googleReplacementMode setters use last configured value`() {
+        val storeProduct = stubStoreProduct("abc")
+        val purchaseParamsWithStoreReplacementModeLast = PurchaseParams.Builder(
             mockk(),
             storeProduct
         )
-            .galaxyReplacementMode(GalaxyReplacementMode.INSTANT_PRORATED_DATE)
+            .googleReplacementMode(GoogleReplacementMode.DEFERRED)
+            .replacementMode(StoreReplacementMode.CHARGE_PRORATED_PRICE)
             .build()
 
-        assertThat(purchaseParams.galaxyReplacementMode).isEqualTo(GalaxyReplacementMode.INSTANT_PRORATED_DATE)
+        assertThat(purchaseParamsWithStoreReplacementModeLast.replacementMode)
+            .isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(purchaseParamsWithStoreReplacementModeLast.googleReplacementMode)
+            .isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+
+        val purchaseParamsWithGoogleReplacementModeLast = PurchaseParams.Builder(
+            mockk(),
+            storeProduct
+        )
+            .replacementMode(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+            .googleReplacementMode(GoogleReplacementMode.DEFERRED)
+            .build()
+
+        assertThat(purchaseParamsWithGoogleReplacementModeLast.replacementMode)
+            .isEqualTo(StoreReplacementMode.DEFERRED)
+        assertThat(purchaseParamsWithGoogleReplacementModeLast.googleReplacementMode)
+            .isEqualTo(GoogleReplacementMode.DEFERRED)
     }
 
     // region Add-Ons
