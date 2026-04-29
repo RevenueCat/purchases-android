@@ -13,7 +13,7 @@ object Constants {
     val GOOGLE_API_KEY_A_LABEL: String = BuildConfig.PAYWALL_TESTER_API_KEY_A_LABEL.ifEmpty { "API_KEY_A_LABEL" }
     val GOOGLE_API_KEY_B_LABEL: String = BuildConfig.PAYWALL_TESTER_API_KEY_B_LABEL.ifEmpty { "API_KEY_B_LABEL" }
 
-    // Optional: Set `paywallTesterAutoOpenOfferingId` to open an offering directly on app launch.
+    // Optional: Set `PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID` to open an offering directly on app launch.
     val AUTO_OPEN_OFFERING_ID: String = BuildConfig.PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID
 
     // Optional: Set a preferred UI locale override (e.g., "en-US", "es-ES", "fr-FR")
