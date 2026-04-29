@@ -8,6 +8,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -72,7 +73,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.rememberShapeClippedIndication
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.scrollable
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -593,14 +593,17 @@ private fun MainStackComponent(
     val safeDrawingInsets = WindowInsets.safeDrawing
 
     // Show the right container composable depending on the dimension.
-    val stack: @Composable (Modifier) -> Unit = { rootModifier ->
+    // `outerModifier` is the caller-supplied modifier applied to the actual layout node parents
+    // see. The clickable plain path moves it onto a wrapper `Box` (so parent-data modifiers like
+    // `weight`/`align` reach the parent Row/Column) and passes `Modifier` here.
+    val stack: @Composable (Modifier, Modifier) -> Unit = { outerModifier, rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
         // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
         // to draw "boxes" using whatever stack they please, for instance to create dividers.
         if (stackState.children.isEmpty()) {
             Box(
-                modifier = modifier
+                modifier = outerModifier
                     .size(stackState.size)
                     .then(rootModifier),
             )
@@ -610,7 +613,7 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    modifier = modifier
+                    modifier = outerModifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
@@ -637,7 +640,7 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    modifier = modifier
+                    modifier = outerModifier
                         .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
@@ -676,7 +679,7 @@ private fun MainStackComponent(
                         0
                     }
                     Box(
-                        modifier = modifier
+                        modifier = outerModifier
                             .size(
                                 size = stackState.size,
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
@@ -755,19 +758,6 @@ private fun MainStackComponent(
     } else {
         Modifier
     }
-    // Plain stacks use a custom shape-clipped Indication instead of an outer `Modifier.clip`,
-    // so the ripple respects the rounded shape without clipping children that intentionally
-    // overflow the parent (e.g. badges with offsets, overflowing shadows).
-    val plainPathClickModifier = if (onStackClick != null) {
-        Modifier.clickable(
-            interactionSource = resolvedInteractionSource,
-            indication = rememberShapeClippedIndication(composeShape),
-            enabled = enabled,
-            onClick = onStackClick,
-        )
-    } else {
-        Modifier
-    }
 
     if (nestedBadge == null && overlay == null) {
         if (backgroundStyle is BackgroundStyle.Video) {
@@ -784,6 +774,7 @@ private fun MainStackComponent(
                     .then(borderModifier),
             ) {
                 stack(
+                    modifier,
                     Modifier
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
@@ -794,10 +785,50 @@ private fun MainStackComponent(
                         },
                 )
             }
+        } else if (onStackClick != null) {
+            // Wrapper-Box + matchParentSize-sibling pattern. We deliberately split:
+            // - The wrapper `Box` carries the caller's `modifier` (so parent-data modifiers like
+            //   `Modifier.weight` reach the parent Row/Column) and owns the click gesture +
+            //   semantics — this co-locates `OnClick` with the caller's `testTag` / `Role` on
+            //   one merged semantics node.
+            // - The inner stack draws its content (shadow, background, border, padding) without
+            //   any shape clip, so children that intentionally overflow the parent's bounds
+            //   (e.g. badges with offsets, overflowing shadows) remain visible.
+            // - The sibling `Box` provides the shape-clipped Material ripple via
+            //   `Modifier.indication`, sharing the same `InteractionSource` as the wrapper's
+            //   clickable so press events drive its draw.
+            Box(
+                modifier = modifier.clickable(
+                    interactionSource = resolvedInteractionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onStackClick,
+                ),
+            ) {
+                stack(
+                    Modifier,
+                    outerShapeModifier
+                        .then(borderModifier)
+                        .then(innerShapeModifier)
+                        .conditional(stackState.applyBottomWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
+                        }
+                        .conditional(stackState.applyHorizontalWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Horizontal))
+                        },
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .padding(stackState.margin)
+                        .clip(composeShape)
+                        .indication(resolvedInteractionSource, LocalIndication.current),
+                )
+            }
         } else {
             stack(
+                modifier,
                 outerShapeModifier
-                    .then(plainPathClickModifier)
                     .then(borderModifier)
                     .then(innerShapeModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
@@ -817,7 +848,7 @@ private fun MainStackComponent(
                 .then(borderModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(Modifier.then(innerShapeModifier))
+                stack(modifier, Modifier.then(innerShapeModifier))
             }
 
             StackComponentView(
@@ -837,7 +868,7 @@ private fun MainStackComponent(
                 .then(clickModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(borderModifier.then(innerShapeModifier))
+                stack(modifier, borderModifier.then(innerShapeModifier))
             }
             overlay()
         }
