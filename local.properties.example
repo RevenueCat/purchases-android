@@ -11,6 +11,7 @@
 #PAYWALL_TESTER_API_KEY_B=your_key
 #PAYWALL_TESTER_API_KEY_A_LABEL=Key A
 #PAYWALL_TESTER_API_KEY_B_LABEL=Key B
+#PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID=your_offering_id
 
 ## ──────────────────────────────────────────────
 ## Purchase Tester (pre-fills the API key field)
