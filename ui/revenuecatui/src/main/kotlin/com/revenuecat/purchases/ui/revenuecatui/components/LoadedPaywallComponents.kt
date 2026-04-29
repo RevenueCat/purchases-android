@@ -88,6 +88,8 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val mainScrollState = rememberScrollState()
+    // If the root stack already scrolls vertically (overflow = SCROLL on a vertical dimension),
+    // skip the outer verticalScroll — two vertical scroll modifiers on the same axis crashes.
     val shouldWrapMainContentInVerticalScroll =
         (style as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
