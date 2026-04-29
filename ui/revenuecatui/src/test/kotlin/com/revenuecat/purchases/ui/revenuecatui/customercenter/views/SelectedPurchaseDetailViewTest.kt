@@ -32,6 +32,7 @@ class SelectedPurchaseDetailViewTest {
 
     // Play Store purchase: Contact Support never shown, so any button = Create Ticket
     private val playStorePurchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+    private val expiredPlayStorePurchase = CustomerCenterConfigTestData.purchaseInformationYearlyExpired
 
     // Non-Play-Store purchase: Contact Support can show when Create Ticket doesn't
     private val appStorePurchase = PurchaseInformation(
@@ -207,6 +208,34 @@ class SelectedPurchaseDetailViewTest {
         )
 
         composeTestRule.onNodeWithText(contactSupportText).assertDoesNotExist()
+    }
+
+    @Test
+    fun `create ticket not shown when customerType ACTIVE and user has only expired subscriptions`() {
+        renderView(
+            purchase = expiredPlayStorePurchase,
+            tickets = supportTickets(
+                allowCreation = true,
+                customerType = CustomerCenterConfigData.Support.SupportTickets.CustomerType.ACTIVE,
+            ),
+            hasActiveSubscriptions = false,
+        )
+
+        composeTestRule.onNodeWithText(contactSupportText).assertDoesNotExist()
+    }
+
+    @Test
+    fun `create ticket shown when customerType NOT_ACTIVE and user has only expired subscriptions`() {
+        renderView(
+            purchase = expiredPlayStorePurchase,
+            tickets = supportTickets(
+                allowCreation = true,
+                customerType = CustomerCenterConfigData.Support.SupportTickets.CustomerType.NOT_ACTIVE,
+            ),
+            hasActiveSubscriptions = false,
+        )
+
+        composeTestRule.onNodeWithText(contactSupportText).assertExists()
     }
 
     // --- Mutual exclusivity ---

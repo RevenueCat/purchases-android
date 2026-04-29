@@ -514,7 +514,7 @@ private fun CustomerCenterNavHost(
                     purchaseInformation = destination.purchaseInformation,
                     supportedPaths = customerCenterState.detailScreenPaths,
                     supportTickets = customerCenterState.customerCenterConfigData.support.supportTickets,
-                    hasActiveSubscriptions = customerCenterState.purchases.any { it.isSubscription },
+                    hasActiveSubscriptions = customerCenterState.purchases.any { it.isSubscription && !it.isExpired },
                     onAction = onAction,
                 )
             }
