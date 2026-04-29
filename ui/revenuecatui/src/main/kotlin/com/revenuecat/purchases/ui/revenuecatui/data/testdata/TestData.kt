@@ -36,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -53,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -531,6 +533,8 @@ internal class MockViewModel(
         get() = _actionError
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
+    override val navigationDirection: State<NavigationDirection> = mutableStateOf(NavigationDirection.NONE)
+    override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
         return state.value.loadedLegacy()

@@ -63,8 +63,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
+import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -72,6 +75,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -109,6 +113,13 @@ internal interface PaywallViewModel {
         )
     }
     fun closePaywall(result: PaywallResult? = null)
+
+    val navigationDirection: State<NavigationDirection>
+
+    /**
+     * Workflow-related UI state. Non-null when the loaded paywall is a multi-step workflow.
+     */
+    val workflowState: State<WorkflowPaywallUiState?>
 
     fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType)
 
@@ -158,12 +169,18 @@ internal class PaywallViewModelImpl(
         get() = _purchaseCompleted
     override val preloadedExitOffering: State<Offering?>
         get() = _preloadedExitOffering
+    override val navigationDirection: State<NavigationDirection>
+        get() = _navigationDirection
+    override val workflowState: State<WorkflowPaywallUiState?>
+        get() = _workflowState
 
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _preloadedExitOffering: MutableState<Offering?> = mutableStateOf(null)
+    private val _navigationDirection: MutableState<NavigationDirection> = mutableStateOf(NavigationDirection.NONE)
+    private val _workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -182,6 +199,8 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowResult: WorkflowDataResult? = null
     private var currentWorkflowOfferings: Offerings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
+    private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
+    private var preWarmJob: Job? = null
 
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
@@ -229,7 +248,12 @@ internal class PaywallViewModelImpl(
         }
         if (_colorScheme.value != colorScheme) {
             _colorScheme.value = colorScheme
-            updateState()
+            if (workflowNavigator != null) {
+                // Rebuild step states in-place to avoid resetting the user's navigation position.
+                rebuildWorkflowStepStates()
+            } else {
+                updateState()
+            }
         }
     }
 
@@ -640,6 +664,7 @@ internal class PaywallViewModelImpl(
         }
     }
     private fun updateState() {
+        _navigationDirection.value = NavigationDirection.NONE
         viewModelScope.launch {
             try {
                 updateStateFromOffering(options.offeringSelection)
@@ -725,51 +750,75 @@ internal class PaywallViewModelImpl(
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
         workflowNavigator = WorkflowNavigator(workflow)
+        preWarmJob?.cancel()
+        workflowStepStateCache.clear()
+        _workflowState.value = null
 
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
+        preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
 
+    /**
+     * Rebuilds workflow step states with the current color scheme without resetting the
+     * navigator position. Used when colors change while a workflow paywall is active,
+     * so the user is not silently sent back to the first step.
+     */
     @Suppress("ReturnCount")
+    private fun rebuildWorkflowStepStates() {
+        val result = currentWorkflowResult ?: return
+        val offerings = currentWorkflowOfferings ?: return
+        val presentedOfferingContext = currentWorkflowPresentedOfferingContext
+        val navigator = workflowNavigator ?: return
+        val currentStep = navigator.currentStep() ?: return
+
+        preWarmJob?.cancel()
+        workflowStepStateCache.clear()
+        _workflowState.value = null
+
+        buildStateFromStep(currentStep, result.workflow, offerings, presentedOfferingContext)
+        preWarmWorkflowStepCache(result.workflow, offerings, presentedOfferingContext)
+    }
+
     private fun buildStateFromStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
+        val navigator = workflowNavigator ?: return
+        val cached = workflowStepStateCache[step.id]
+        val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
+        if (cached == null && newState is PaywallState.Loaded.Components) {
+            workflowStepStateCache[step.id] = newState
+        }
+        // Set workflowState before _state so a recomposition that lands between the two writes
+        // sees the workflow branch and the correct step, not the single-page branch.
+        _workflowState.value = WorkflowPaywallUiState(
+            currentStepId = step.id,
+            stepStates = workflowStepStateCache.toMap(),
+            backStack = navigator.backStack,
+            reachableStepIds = navigator.reachableSteps(),
+        )
+        _state.value = newState
+    }
+
+    @Suppress("ReturnCount")
+    private fun computeStateForStep(
+        step: WorkflowStep,
+        workflow: PublishedWorkflow,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ): PaywallState {
         val screenId = step.screenId
-        if (screenId == null) {
-            _state.value = PaywallState.Error(
-                "Step '${step.id}' has no screen_id in workflow '${workflow.id}'",
-            )
-            return
-        }
-
+            ?: return PaywallState.Error("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
         val screen = workflow.screens[screenId]
-        if (screen == null) {
-            _state.value = PaywallState.Error(
-                "Screen '$screenId' not found in workflow '${workflow.id}'",
-            )
-            return
-        }
-
+            ?: return PaywallState.Error("Screen '$screenId' not found in workflow '${workflow.id}'")
         val offeringId = screen.offeringIdentifier
-        if (offeringId == null) {
-            _state.value = PaywallState.Error(
-                "Screen '$screenId' has no offering_id in workflow '${workflow.id}'",
-            )
-            return
-        }
-
+            ?: return PaywallState.Error("Screen '$screenId' has no offering_id in workflow '${workflow.id}'")
         val baseOffering = offerings[offeringId]
-        if (baseOffering == null) {
-            _state.value = PaywallState.Error(
-                "Offering '$offeringId' not found for screen '$screenId'",
-            )
-            return
-        }
+            ?: return PaywallState.Error("Offering '$offeringId' not found for screen '$screenId'")
 
         val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, workflow.uiConfig)
-
         val offering = Offering(
             identifier = baseOffering.identifier,
             serverDescription = baseOffering.serverDescription,
@@ -780,12 +829,36 @@ internal class PaywallViewModelImpl(
         )
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
 
-        _state.value = calculateState(
+        return calculateState(
             offering = offeringWithContext,
             colorScheme = _colorScheme.value,
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
         )
+    }
+
+    /**
+     * Eagerly computes and caches states for the remaining workflow steps off the main thread,
+     * so that navigating to them doesn't block on the heavy [calculateState] work.
+     */
+    private fun preWarmWorkflowStepCache(
+        workflow: PublishedWorkflow,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
+        preWarmJob?.cancel()
+        preWarmJob = viewModelScope.launch {
+            for ((stepId, step) in workflow.steps) {
+                if (stepId in workflowStepStateCache) continue
+                val computed = withContext(Dispatchers.Default) {
+                    computeStateForStep(step, workflow, offerings, presentedOfferingContext)
+                }
+                if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
+                    workflowStepStateCache[stepId] = computed
+                    _workflowState.value = _workflowState.value?.copy(stepStates = workflowStepStateCache.toMap())
+                }
+            }
+        }
     }
 
     @Suppress("ReturnCount")
@@ -798,7 +871,16 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate to step '${candidate.id}': $error")
             return
         }
-        val newStep = navigator.triggerAction(componentId, triggerType) ?: return
+        // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
+        // given the peek succeeded, but guard anyway to avoid a hard crash.
+        val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
+            Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
+            return
+        }
+        // _navigationDirection is intentionally left set until consumed by the next recomposition
+        // (read inside the LaunchedEffect key in rememberWorkflowSlideState) and reset on the
+        // next navigation or full reload.
+        _navigationDirection.value = NavigationDirection.FORWARD
         buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
     }
 
@@ -813,7 +895,12 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate back to step '${candidate.id}': $error")
             return false
         }
-        val newStep = navigator.navigateBack() ?: return false
+        // navigateBack should not return null given canNavigateBack is true, but guard to be safe.
+        val newStep = navigator.navigateBack() ?: run {
+            Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
+            return false
+        }
+        _navigationDirection.value = NavigationDirection.BACKWARD
         buildStateFromStep(newStep, result.workflow, offerings, currentWorkflowPresentedOfferingContext)
         return true
     }
