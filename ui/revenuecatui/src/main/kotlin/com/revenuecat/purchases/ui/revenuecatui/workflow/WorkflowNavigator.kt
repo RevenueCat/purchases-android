@@ -5,18 +5,22 @@ import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-
 internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
 
-    private val _currentStepId = MutableStateFlow(workflow.initialStepId)
-    val currentStepId: StateFlow<String> = _currentStepId.asStateFlow()
+    private var currentStepId: String = workflow.initialStepId
 
-    private val backStack = ArrayDeque<String>()
+    private val _backStack = ArrayDeque<String>()
+    val backStack: List<String> get() = _backStack.toList()
 
-    fun currentStep(): WorkflowStep? = workflow.steps[_currentStepId.value]
+    fun currentStep(): WorkflowStep? = workflow.steps[currentStepId]
+
+    fun reachableSteps(): Set<String> {
+        val step = currentStep() ?: return emptySet()
+        return step.triggerActions.values
+            .filterIsInstance<WorkflowTriggerAction.Step>()
+            .map { it.stepId }
+            .toSet()
+    }
 
     @Suppress("ReturnCount")
     fun peekTriggerStep(componentId: String, triggerType: WorkflowTriggerType): WorkflowStep? {
@@ -29,7 +33,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
     }
 
     val peekBackStep: WorkflowStep?
-        get() = backStack.lastOrNull()?.let { workflow.steps[it] }
+        get() = _backStack.lastOrNull()?.let { workflow.steps[it] }
 
     @Suppress("ReturnCount")
     fun triggerAction(componentId: String, triggerType: WorkflowTriggerType): WorkflowStep? {
@@ -51,18 +55,18 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("Step '$stepId' not found in workflow '${workflow.id}'")
             return null
         }
-        backStack.addLast(_currentStepId.value)
-        _currentStepId.value = stepId
+        _backStack.addLast(currentStepId)
+        currentStepId = stepId
         return nextStep
     }
 
     fun navigateBack(): WorkflowStep? {
-        if (backStack.isEmpty()) return null
-        val prevStepId = backStack.removeLast()
-        _currentStepId.value = prevStepId
+        if (_backStack.isEmpty()) return null
+        val prevStepId = _backStack.removeLast()
+        currentStepId = prevStepId
         return workflow.steps[prevStepId]
     }
 
     val canNavigateBack: Boolean
-        get() = backStack.isNotEmpty()
+        get() = _backStack.isNotEmpty()
 }

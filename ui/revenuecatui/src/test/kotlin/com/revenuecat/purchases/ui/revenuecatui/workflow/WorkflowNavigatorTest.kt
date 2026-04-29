@@ -80,7 +80,7 @@ class WorkflowNavigatorTest {
         val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isEqualTo(step2)
         assertThat(navigator.currentStep()).isEqualTo(step2)
-        assertThat(navigator.currentStepId.value).isEqualTo("step-2")
+        assertThat(navigator.currentStep()?.id).isEqualTo("step-2")
     }
 
     @Test
@@ -182,6 +182,163 @@ class WorkflowNavigatorTest {
         assertThat(result).isNull()
         assertThat(navigator.currentStep()).isEqualTo(stepWithUnknownAction)
     }
+
+    // region backStack
+
+    @Test
+    fun `backStack is empty initially`() {
+        val navigator = WorkflowNavigator(workflow)
+        assertThat(navigator.backStack).isEmpty()
+    }
+
+    @Test
+    fun `backStack contains visited step IDs in order after forward navigation`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
+        assertThat(navigator.backStack).containsExactly("step-1", "step-2")
+    }
+
+    @Test
+    fun `backStack shrinks on navigateBack`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
+        navigator.navigateBack()
+        assertThat(navigator.backStack).containsExactly("step-1")
+    }
+
+    // endregion
+
+    // region peekBackStep
+
+    @Test
+    fun `peekBackStep is null on initial step`() {
+        val navigator = WorkflowNavigator(workflow)
+        assertThat(navigator.peekBackStep).isNull()
+    }
+
+    @Test
+    fun `peekBackStep returns previous step after forward navigation`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(navigator.peekBackStep).isEqualTo(step1)
+    }
+
+    @Test
+    fun `peekBackStep does not modify backStack`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.peekBackStep
+        navigator.peekBackStep
+        assertThat(navigator.backStack).containsExactly("step-1")
+    }
+
+    // endregion
+
+    // region peekTriggerStep
+
+    @Test
+    fun `peekTriggerStep returns target step for valid trigger`() {
+        val navigator = WorkflowNavigator(workflow)
+        val result = navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(result).isEqualTo(step2)
+    }
+
+    @Test
+    fun `peekTriggerStep returns null for unknown componentId`() {
+        val navigator = WorkflowNavigator(workflow)
+        val result = navigator.peekTriggerStep("btn-unknown", WorkflowTriggerType.ON_PRESS)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `peekTriggerStep returns null for non-Step trigger action`() {
+        val stepWithUnknownAction = WorkflowStep(
+            id = "step-x",
+            type = "screen",
+            screenId = "screen-x",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "X",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "ax",
+                    componentId = "btn-x",
+                ),
+            ),
+            triggerActions = mapOf("ax" to WorkflowTriggerAction.Unknown),
+        )
+        val wfl = workflow.copy(
+            initialStepId = "step-x",
+            steps = mapOf("step-x" to stepWithUnknownAction),
+        )
+        val navigator = WorkflowNavigator(wfl)
+        assertThat(navigator.peekTriggerStep("btn-x", WorkflowTriggerType.ON_PRESS)).isNull()
+    }
+
+    @Test
+    fun `peekTriggerStep does not mutate navigator state`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(navigator.currentStep()).isEqualTo(step1)
+        assertThat(navigator.backStack).isEmpty()
+    }
+
+    // endregion
+
+    // region reachableSteps
+
+    @Test
+    fun `reachableSteps returns IDs of all steps reachable via triggers`() {
+        val navigator = WorkflowNavigator(workflow)
+        assertThat(navigator.reachableSteps()).containsExactly("step-2")
+    }
+
+    @Test
+    fun `reachableSteps is empty for a step with no triggers`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
+        assertThat(navigator.reachableSteps()).isEmpty()
+    }
+
+    @Test
+    fun `reachableSteps excludes non-Step trigger actions`() {
+        val stepWithMixedActions = WorkflowStep(
+            id = "step-mixed",
+            type = "screen",
+            screenId = "screen-mixed",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-step",
+                    componentId = "btn-step",
+                ),
+                WorkflowTrigger(
+                    name = "Unknown",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-unknown",
+                    componentId = "btn-unknown",
+                ),
+            ),
+            triggerActions = mapOf(
+                "action-step" to WorkflowTriggerAction.Step(stepId = "step-2"),
+                "action-unknown" to WorkflowTriggerAction.Unknown,
+            ),
+        )
+        val wfl = workflow.copy(
+            initialStepId = "step-mixed",
+            steps = mapOf(
+                "step-mixed" to stepWithMixedActions,
+                "step-2" to step2,
+            ),
+        )
+        val navigator = WorkflowNavigator(wfl)
+        assertThat(navigator.reachableSteps()).containsExactly("step-2")
+    }
+
+    // endregion
 
     @Test
     fun `triggerAction with actionId not in triggerActions returns null and does not navigate`() {
