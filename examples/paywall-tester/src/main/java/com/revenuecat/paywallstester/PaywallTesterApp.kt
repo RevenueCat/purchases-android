@@ -15,8 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +51,7 @@ private fun AppNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
 ) {
-    var autoLoadingDone by remember { mutableStateOf(false) }
+    var autoLoadingDone by rememberSaveable { mutableStateOf(false) }
     AutoOpenOffering(navController, onLoadingComplete = { autoLoadingDone = true })
 
     val currentEntry by navController.currentBackStackEntryAsState()
