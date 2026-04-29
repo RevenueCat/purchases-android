@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.17.0
+  revenuecat: revenuecat/sdks-common-config@dev:8aa259ac8067ba610fc70b399bacc2f552bf17bb
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -56,23 +56,12 @@ parameters:
 
 commands:
   install-sdkman:
-    description: Install SDKMAN
+    description: Install SDKMAN and set up Java
     steps:
-      - run:
-          name: Installing SDKMAN
-          command: |
-            if curl -s "https://get.sdkman.io?rcupdate=false" | bash; then
-              echo -e '\nsource "/home/circleci/.sdkman/bin/sdkman-init.sh"' >> $BASH_ENV
-              source $BASH_ENV
-            else
-              echo "Error installing SDKMAN, continuing with default Java" >&2
-            fi
+      - revenuecat/install-sdkman
       - run:
           name: Setup Java environment
-          command: |
-            if ! sdk env install; then
-              echo "Error installing Java SDK through SDKMAN, continuing with default Java" >&2
-            fi
+          command: sdk env install
 
   android-dependencies:
     steps:
