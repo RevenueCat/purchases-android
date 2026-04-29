@@ -367,7 +367,7 @@ internal class CustomerCenterViewModelImpl(
         val inactiveSubscriptions = allPurchases.filter { it.isSubscription && it.isExpired }
         val nonSubscriptions = allPurchases.filter { !it.isSubscription }
         val title = state.customerCenterConfigData.localization.commonLocalizedString(
-            CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_HISTORY,
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_PURCHASE_HISTORY_TITLE,
         )
 
         _state.update { currentState ->
@@ -394,7 +394,7 @@ internal class CustomerCenterViewModelImpl(
         if (state !is CustomerCenterState.Success) return
 
         val title = purchase.title ?: state.customerCenterConfigData.localization.commonLocalizedString(
-            CustomerCenterConfigData.Localization.CommonLocalizedString.PURCHASE_HISTORY,
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_PURCHASE_HISTORY_TITLE,
         )
 
         _state.update { currentState ->

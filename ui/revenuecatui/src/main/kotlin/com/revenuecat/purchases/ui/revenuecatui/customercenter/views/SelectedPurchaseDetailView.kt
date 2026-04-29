@@ -55,7 +55,7 @@ internal fun SelectedPurchaseDetailView(
         if (shouldShowPurchaseHistory) {
             SettingsButton(
                 title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_PURCHASES,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_MANAGEMENT_SEE_ALL_PURCHASES,
                 ),
                 onClick = { onAction(CustomerCenterAction.ShowPurchaseHistory) },
                 config = SettingsButtonConfig(),

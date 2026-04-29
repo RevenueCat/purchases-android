@@ -102,7 +102,7 @@ internal fun RelevantPurchasesListView(
             Spacer(modifier = Modifier.size(CustomerCenterConstants.Layout.SECTION_SPACING))
             SettingsButton(
                 title = localization.commonLocalizedString(
-                    CustomerCenterConfigData.Localization.CommonLocalizedString.SEE_ALL_PURCHASES,
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_MANAGEMENT_SEE_ALL_PURCHASES,
                 ),
                 onClick = { onAction(CustomerCenterAction.ShowPurchaseHistory) },
                 config = SettingsButtonConfig(),

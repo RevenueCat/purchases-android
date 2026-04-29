@@ -317,10 +317,10 @@ public data class CustomerCenterConfigData(
             CHARACTERS_REMAINING,
 
             @SerialName("screen_management_see_all_purchases")
-            SEE_ALL_PURCHASES,
+            SCREEN_MANAGEMENT_SEE_ALL_PURCHASES,
 
             @SerialName("screen_purchase_history_title")
-            PURCHASE_HISTORY,
+            SCREEN_PURCHASE_HISTORY_TITLE,
 
             @SerialName("subscriptions_section_title")
             SUBSCRIPTIONS_SECTION_TITLE,
@@ -383,10 +383,10 @@ public data class CustomerCenterConfigData(
             ORIGINAL_DOWNLOAD_DATE,
 
             @SerialName("yes")
-            ANSWER_YES,
+            YES,
 
             @SerialName("no")
-            ANSWER_NO,
+            NO,
             ;
 
             public val defaultValue: String
@@ -501,8 +501,8 @@ public data class CustomerCenterConfigData(
                     SUBMIT_TICKET -> "Submit ticket"
                     INVALID_EMAIL_ERROR -> "Please enter a valid email address"
                     CHARACTERS_REMAINING -> "{{ count }} characters"
-                    SEE_ALL_PURCHASES -> "See all purchases"
-                    PURCHASE_HISTORY -> "Purchase History"
+                    SCREEN_MANAGEMENT_SEE_ALL_PURCHASES -> "See all purchases"
+                    SCREEN_PURCHASE_HISTORY_TITLE -> "Purchase History"
                     SUBSCRIPTIONS_SECTION_TITLE -> "Subscriptions"
                     INACTIVE -> "Inactive"
                     PURCHASES_SECTION_TITLE -> "Purchases"
@@ -523,8 +523,8 @@ public data class CustomerCenterConfigData(
                     SANDBOX -> "Sandbox"
                     TRANSACTION_ID -> "Transaction ID"
                     ORIGINAL_DOWNLOAD_DATE -> "Original Download Date"
-                    ANSWER_YES -> "Yes"
-                    ANSWER_NO -> "No"
+                    YES -> "Yes"
+                    NO -> "No"
                 }
         }
 
