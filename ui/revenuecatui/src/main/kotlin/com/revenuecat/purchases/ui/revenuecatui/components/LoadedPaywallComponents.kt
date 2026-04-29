@@ -119,51 +119,60 @@ internal fun LoadedPaywallComponents(
  * Shared scaffold for all Components-based paywall variants. Handles the background, bottom-sheet,
  * overlay, fixed-header overlay, and sticky footer. Callers supply the main scrollable content as
  * [mainContent] and decide for themselves whether to apply [headerTopPadding] based on [state].
+ * [headerState] can differ from [state] during workflow transitions to keep header visuals stable.
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun PaywallComponentsScaffold(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     modifier: Modifier = Modifier,
+    headerState: PaywallState.Loaded.Components = state,
+    backgroundState: PaywallState.Loaded.Components? = state,
+    statesForHeaderHeight: Iterable<PaywallState.Loaded.Components> = listOf(state),
+    renderStickyFooter: Boolean = true,
     mainContent: @Composable () -> Unit,
 ) {
-    val background = rememberBackgroundStyle(state.background)
+    val background = backgroundState?.let { rememberBackgroundStyle(it.background) }
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
     }
 
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
-        modifier = modifier.background(background),
+        modifier = background?.let { modifier.background(it) } ?: modifier,
     ) {
-        WithOptionalBackgroundOverlay(state, background = background) {
+        WithOptionalBackgroundOverlay(backgroundState ?: state, background = background) {
             Column {
                 HeaderOverlayLayout(
                     state = state,
                     modifier = Modifier.weight(1f),
+                    statesForHeaderHeight = statesForHeaderHeight,
                 ) {
                     // Child 0: caller-supplied main content (scrollable body or slide container).
                     mainContent()
                     // Child 1 (optional): fixed header overlay.
-                    state.header?.let { headerStyle ->
+                    headerState.header?.let { headerStyle ->
                         ComponentView(
                             style = headerStyle,
-                            state = state,
+                            state = headerState,
                             onClick = onClick,
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
-                state.stickyFooter?.let {
-                    ComponentView(
-                        style = it,
-                        state = state,
-                        onClick = onClick,
-                        componentInteractionTracker = componentInteractionTracker,
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                    )
+                if (renderStickyFooter) {
+                    state.stickyFooter?.let {
+                        ComponentView(
+                            style = it,
+                            state = state,
+                            onClick = onClick,
+                            componentInteractionTracker = componentInteractionTracker,
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }
@@ -171,9 +180,8 @@ internal fun PaywallComponentsScaffold(
 }
 
 /**
- * Custom Layout that measures the header overlay first, stores its pixel height in [state],
- * then measures the main content. This ensures the header height is available during the main
- * content's layout phase without requiring a second composition pass.
+ * Custom Layout that measures the fixed header overlay first, stores its pixel height in each
+ * state from [statesForHeaderHeight], then measures the main content.
  *
  * Children: index 0 = main scrollable content, index 1 (optional) = header overlay.
  */
@@ -181,6 +189,7 @@ internal fun PaywallComponentsScaffold(
 internal fun HeaderOverlayLayout(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    statesForHeaderHeight: Iterable<PaywallState.Loaded.Components> = listOf(state),
     content: @Composable () -> Unit,
 ) {
     Layout(
@@ -196,9 +205,10 @@ internal fun HeaderOverlayLayout(
 
         // Store header height so child Modifier.layout blocks can read it in this same pass.
         // Both hero (ZLayer reads it) and non-hero (headerTopPadding reads it) cases need this.
-        state.headerHeightPx = headerPlaceable?.height ?: 0
+        val headerHeight = headerPlaceable?.height ?: 0
+        statesForHeaderHeight.forEach { it.headerHeightPx = headerHeight }
 
-        // Measure main content. Its inner Modifier.layout blocks can now read state.headerHeightPx.
+        // Measure main content. Its inner Modifier.layout blocks can now read headerHeightPx.
         val mainPlaceable = measurables[0].measure(constraints)
 
         layout(constraints.maxWidth, constraints.maxHeight) {

@@ -43,7 +43,9 @@ internal fun WithOptionalBackgroundOverlay(
             }
         }
         else -> {
-            content()
+            Box(modifier = modifier) {
+                content()
+            }
         }
     }
 }

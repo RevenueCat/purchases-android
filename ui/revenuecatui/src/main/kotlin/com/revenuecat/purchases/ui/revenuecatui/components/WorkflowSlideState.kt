@@ -76,20 +76,24 @@ internal class WorkflowSlideState(initialStepId: String) {
 
         if (seenStepId != toStepId) {
             val fromId = seenStepId
-            // Closing the gap before snapTo would cause the flash; we close it as part of
-            // setting up the animation values below.
-            seenStepId = toStepId
 
             if (navigationDirection != NavigationDirection.NONE) {
                 animatingFromStepId = fromId
                 animatingDirection = navigationDirection
                 animatable.snapTo(0f)
+                // Keep the outgoing step/header visible for one frame after binding animation
+                // state. Without this, already-composed targets can show their header before
+                // the first translated frame, creating a header flash over the old background.
+                withFrameNanos {}
+                seenStepId = toStepId
                 animatable.animateTo(
                     targetValue = 1f,
                     animationSpec = tween(SLIDE_DURATION_MS, easing = FastOutSlowInEasing),
                 )
                 animatingFromStepId = null
                 animatingDirection = NavigationDirection.NONE
+            } else {
+                seenStepId = toStepId
             }
         }
 
