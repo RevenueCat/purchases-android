@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -85,6 +87,8 @@ internal fun LoadedPaywallComponents(
     val headerComponentStyle = state.header
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
+    val mainScrollState = rememberScrollState()
+    val shouldWrapMainContentInVerticalScroll = (style as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
     }
@@ -107,7 +111,9 @@ internal fun LoadedPaywallComponents(
                         componentInteractionTracker = componentInteractionTracker,
                         modifier = Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
+                            .conditional(shouldWrapMainContentInVerticalScroll) {
+                                verticalScroll(mainScrollState)
+                            }
                             .conditional(
                                 headerComponentStyle != null && !state.mainStackHasHeroImage,
                             ) {
