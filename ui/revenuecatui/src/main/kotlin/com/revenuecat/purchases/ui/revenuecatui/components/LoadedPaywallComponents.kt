@@ -88,7 +88,8 @@ internal fun LoadedPaywallComponents(
     val footerComponentStyle = state.stickyFooter
     val background = rememberBackgroundStyle(state.background)
     val mainScrollState = rememberScrollState()
-    val shouldWrapMainContentInVerticalScroll = (style as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
+    val shouldWrapMainContentInVerticalScroll =
+        (style as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
     }
