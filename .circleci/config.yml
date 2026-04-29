@@ -56,7 +56,7 @@ parameters:
 
 commands:
   install-sdkman:
-    description: Install SDKMAN (via revenuecat orb) and run `sdk env install` to set up Java
+    description: Install SDKMAN and set up Java
     steps:
       - revenuecat/install-sdkman
       - run:
