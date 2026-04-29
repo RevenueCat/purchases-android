@@ -201,6 +201,9 @@ internal sealed class TransactionDetails(
         override val store: Store,
         override val price: Price?,
         override val isSandbox: Boolean,
+        val purchaseDate: Date? = null,
+        val originalPurchaseDate: Date? = null,
+        val storeTransactionId: String? = null,
     ) : TransactionDetails(productIdentifier, store, price, isSandbox)
 }
 
@@ -844,6 +847,9 @@ internal class CustomerCenterViewModelImpl(
                     store = transaction.store,
                     price = transaction.price,
                     isSandbox = transaction.isSandbox,
+                    purchaseDate = transaction.purchaseDate,
+                    originalPurchaseDate = transaction.originalPurchaseDate,
+                    storeTransactionId = transaction.storeTransactionId,
                 )
             }
 
@@ -902,6 +908,9 @@ internal class CustomerCenterViewModelImpl(
                     store = it.store,
                     price = it.price,
                     isSandbox = it.isSandbox,
+                    purchaseDate = it.purchaseDate,
+                    originalPurchaseDate = it.originalPurchaseDate,
+                    storeTransactionId = it.storeTransactionId,
                 )
 
                 else -> null

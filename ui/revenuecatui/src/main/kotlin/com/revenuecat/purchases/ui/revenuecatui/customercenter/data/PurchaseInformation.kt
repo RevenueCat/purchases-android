@@ -79,8 +79,14 @@ internal data class PurchaseInformation(
         isTrial = determineTrialStatus(entitlementInfo, transaction),
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
         isLifetime = determineLifetimeStatus(entitlementInfo, transaction),
-        purchaseDate = (transaction as? TransactionDetails.Subscription)?.purchaseDate,
-        originalPurchaseDate = (transaction as? TransactionDetails.Subscription)?.originalPurchaseDate,
+        purchaseDate = when (transaction) {
+            is TransactionDetails.Subscription -> transaction.purchaseDate
+            is TransactionDetails.NonSubscription -> transaction.purchaseDate
+        },
+        originalPurchaseDate = when (transaction) {
+            is TransactionDetails.Subscription -> transaction.originalPurchaseDate
+            is TransactionDetails.NonSubscription -> transaction.originalPurchaseDate
+        },
         unsubscribeDetectedAt = (transaction as? TransactionDetails.Subscription)?.unsubscribeDetectedAt,
         billingIssuesDetectedAt = (transaction as? TransactionDetails.Subscription)?.billingIssuesDetectedAt,
         gracePeriodExpiresDate = (transaction as? TransactionDetails.Subscription)?.gracePeriodExpiresDate,
@@ -91,7 +97,10 @@ internal data class PurchaseInformation(
             ?: OwnershipType.UNKNOWN,
         isSandbox = transaction.isSandbox,
         productIdentifier = transaction.productIdentifier,
-        storeTransactionId = (transaction as? TransactionDetails.Subscription)?.storeTransactionId,
+        storeTransactionId = when (transaction) {
+            is TransactionDetails.Subscription -> transaction.storeTransactionId
+            is TransactionDetails.NonSubscription -> transaction.storeTransactionId
+        },
     )
 
     fun renewalString(
