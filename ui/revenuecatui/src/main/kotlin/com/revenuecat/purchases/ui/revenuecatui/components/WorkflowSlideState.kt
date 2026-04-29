@@ -61,6 +61,9 @@ internal class WorkflowSlideState(initialStepId: String) {
     internal var animatingDirection by mutableStateOf(NavigationDirection.NONE)
         private set
 
+    internal var pinnedHeaderStepId by mutableStateOf<String?>(null)
+        private set
+
     // 1f = "fully arrived"; animation runs from 0f (off-screen) to 1f (on-screen).
     internal val animatable = Animatable(1f)
 
@@ -76,20 +79,36 @@ internal class WorkflowSlideState(initialStepId: String) {
 
         if (seenStepId != toStepId) {
             val fromId = seenStepId
-            // Closing the gap before snapTo would cause the flash; we close it as part of
-            // setting up the animation values below.
-            seenStepId = toStepId
 
             if (navigationDirection != NavigationDirection.NONE) {
+                val fromStepState = stepStates[fromId]
+                val toStepState = stepStates[toStepId]
+                pinnedHeaderStepId = if (
+                    fromStepState?.mainStackHasHeroImage == true &&
+                    toStepState?.mainStackHasHeroImage == false &&
+                    fromStepState.header != null
+                ) {
+                    fromId
+                } else {
+                    null
+                }
                 animatingFromStepId = fromId
                 animatingDirection = navigationDirection
                 animatable.snapTo(0f)
+                // Keep the outgoing step/header visible for one frame after binding animation
+                // state. Without this, already-composed targets can show their header before
+                // the first translated frame, creating a header flash over the old background.
+                withFrameNanos {}
+                seenStepId = toStepId
                 animatable.animateTo(
                     targetValue = 1f,
                     animationSpec = tween(SLIDE_DURATION_MS, easing = FastOutSlowInEasing),
                 )
                 animatingFromStepId = null
                 animatingDirection = NavigationDirection.NONE
+                pinnedHeaderStepId = null
+            } else {
+                seenStepId = toStepId
             }
         }
 
