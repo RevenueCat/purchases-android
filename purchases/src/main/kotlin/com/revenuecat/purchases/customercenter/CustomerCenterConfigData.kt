@@ -685,7 +685,7 @@ public data class CustomerCenterConfigData(
         public val shouldWarnCustomerToUpdate: Boolean? = null,
         @SerialName("display_virtual_currencies")
         public val displayVirtualCurrencies: Boolean? = null,
-        @SerialName("display_purchase_history")
+        @SerialName("display_purchase_history_link")
         public val displayPurchaseHistoryLink: Boolean? = null,
         @SerialName("support_tickets")
         public val supportTickets: SupportTickets = SupportTickets(),

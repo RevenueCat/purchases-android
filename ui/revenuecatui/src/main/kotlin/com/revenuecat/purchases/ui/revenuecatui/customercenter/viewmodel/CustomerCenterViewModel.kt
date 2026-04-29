@@ -847,7 +847,11 @@ internal class CustomerCenterViewModelImpl(
                 )
             }
 
-        return (activeSubscriptions + inactiveSubscriptions + nonSubscriptions).map { transaction ->
+        val transactions = activeSubscriptions +
+            inactiveSubscriptions +
+            nonSubscriptions
+
+        return transactions.map { transaction ->
             val entitlement = customerInfo.entitlements.active.values
                 .firstOrNull { it.productIdentifier == transaction.productIdentifier }
                 ?: customerInfo.entitlements.all.values
