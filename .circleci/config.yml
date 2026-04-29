@@ -56,23 +56,14 @@ parameters:
 
 commands:
   install-sdkman:
-    description: Install SDKMAN
+    description: Install SDKMAN from a pinned, SHA256-verified GitHub release
     steps:
       - run:
           name: Installing SDKMAN
-          command: |
-            if curl -s "https://get.sdkman.io?rcupdate=false" | bash; then
-              echo -e '\nsource "/home/circleci/.sdkman/bin/sdkman-init.sh"' >> $BASH_ENV
-              source $BASH_ENV
-            else
-              echo "Error installing SDKMAN, continuing with default Java" >&2
-            fi
+          command: bash .circleci/scripts/install-sdkman.sh
       - run:
           name: Setup Java environment
-          command: |
-            if ! sdk env install; then
-              echo "Error installing Java SDK through SDKMAN, continuing with default Java" >&2
-            fi
+          command: sdk env install
 
   android-dependencies:
     steps:
