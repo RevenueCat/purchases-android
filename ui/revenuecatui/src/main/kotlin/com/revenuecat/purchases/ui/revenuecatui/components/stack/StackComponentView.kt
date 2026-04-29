@@ -109,14 +109,18 @@ import androidx.compose.ui.geometry.Size as ComposeSize
  *   does not call this; it just propagates from descendants up to the screen-level handler.
  *   Distinct from [onStackClick].
  * @param onStackClick Click callback when this entire stack is tapped. `null` makes the stack
- *   non-clickable (no ripple, no gesture detection). When non-null, the stack draws a
- *   shape-clipped Material ripple via a sibling layout so the ripple follows the stack's rounded
- *   corners without clipping nested children that extend outside the parent's bounds (e.g. badges
- *   with offsets, shadows). Distinct from [clickHandler].
- * @param enabled When `false`, the stack stays semantically a button (kept clickable for
- *   accessibility) but ignores clicks and shows no ripple. Only meaningful when [onStackClick] is
- *   non-null. Use for transient disabled states such as "purchase in progress" or
- *   "already-selected package".
+ *   non-clickable (no ripple, no gesture detection). When non-null, the stack draws a Material
+ *   ripple clipped to the stack's shape. Distinct from [clickHandler].
+ *
+ *   Overflow-safe drawing — i.e. nested children that extend outside the parent's bounds (badges
+ *   with offsets, drop shadows) staying visible during press — is currently only guaranteed for
+ *   the *plain* render path: stacks with no video background, no nested badge, and no overlay.
+ *   On those other paths a `clip(composeShape)` still gates descendant rendering, so overflowing
+ *   children can be cropped while the ripple is active.
+ * @param enabled When `false`, the underlying `Modifier.clickable` is gated off — clicks and the
+ *   ripple are suppressed, and the node is announced as disabled to accessibility services. Only
+ *   meaningful when [onStackClick] is non-null. Use for transient disabled states such as
+ *   "purchase in progress" or "already-selected package".
  */
 @Suppress("LongMethod", "LongParameterList")
 @Composable
