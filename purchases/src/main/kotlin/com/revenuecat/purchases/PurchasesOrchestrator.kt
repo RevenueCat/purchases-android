@@ -108,6 +108,7 @@ import java.net.URL
 import java.util.Collections
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.CopyOnWriteArraySet
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -245,6 +246,15 @@ internal class PurchasesOrchestrator(
 
     val preferredUILocaleOverride: String?
         get() = _preferredUILocaleOverride
+
+    @Volatile
+    private var _preferredUILocaleOverrideHonorsLayoutDirection: Boolean =
+        initialConfiguration.preferredUILocaleOverrideHonorsLayoutDirection
+
+    val preferredUILocaleOverrideHonorsLayoutDirection: Boolean
+        get() = _preferredUILocaleOverrideHonorsLayoutDirection
+
+    private val preferredUILocaleOverrideChangeListeners = CopyOnWriteArraySet<() -> Unit>()
 
     init {
         // Initialize locale provider with the initial preferred locale override
@@ -527,25 +537,58 @@ internal class PurchasesOrchestrator(
      * a paywall or customer center is displayed.
      */
     fun overridePreferredUILocale(localeString: String?): Boolean {
-        val previousLocale = _preferredUILocaleOverride
+        return overridePreferredUILocale(
+            localeString,
+            honorLayoutDirection = _preferredUILocaleOverrideHonorsLayoutDirection,
+        )
+    }
 
-        if (previousLocale == localeString) {
+    fun overridePreferredUILocale(localeString: String?, honorLayoutDirection: Boolean): Boolean {
+        val previousLocale = _preferredUILocaleOverride
+        val previousHonorLayoutDirection = _preferredUILocaleOverrideHonorsLayoutDirection
+        val localeChanged = previousLocale != localeString
+        val honorLayoutDirectionChanged = previousHonorLayoutDirection != honorLayoutDirection
+
+        if (!localeChanged && !honorLayoutDirectionChanged) {
             debugLog { "Locale unchanged, no fresh fetch needed" }
             return false
         }
 
         synchronized(this) {
-            _preferredUILocaleOverride = localeString
-            localeProvider.setPreferredLocaleOverride(localeString)
+            if (localeChanged) {
+                _preferredUILocaleOverride = localeString
+                localeProvider.setPreferredLocaleOverride(localeString)
+            }
+            _preferredUILocaleOverrideHonorsLayoutDirection = honorLayoutDirection
         }
 
-        debugLog { "Locale changed, attempting to fetch fresh offerings" }
-        return clearInMemoryCacheAndFetchOfferingsWithRateLimit { offerings, error ->
-            if (offerings != null) {
-                debugLog { "Fresh offerings fetch completed successfully" }
-            } else {
-                debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+        notifyPreferredUILocaleOverrideChanged()
+
+        return if (!localeChanged) {
+            debugLog { "Locale layout direction setting changed, no fresh fetch needed" }
+            false
+        } else {
+            debugLog { "Locale changed, attempting to fetch fresh offerings" }
+            clearInMemoryCacheAndFetchOfferingsWithRateLimit { offerings, error ->
+                if (offerings != null) {
+                    debugLog { "Fresh offerings fetch completed successfully" }
+                } else {
+                    debugLog { "Fresh offerings fetch failed: ${error?.message}" }
+                }
             }
+        }
+    }
+
+    fun addPreferredUILocaleOverrideChangeListener(listener: () -> Unit): () -> Unit {
+        preferredUILocaleOverrideChangeListeners.add(listener)
+        return {
+            preferredUILocaleOverrideChangeListeners.remove(listener)
+        }
+    }
+
+    private fun notifyPreferredUILocaleOverrideChanged() {
+        preferredUILocaleOverrideChangeListeners.forEach { listener ->
+            listener()
         }
     }
 

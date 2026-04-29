@@ -6,6 +6,9 @@
 * Fix null Placements when offering_ids_by_placement is absent (#3254) via Dan Pannasch (@dpannasch)
 
 ## RevenueCatUI SDK
+### 🐞 Bugfixes
+* `RevenueCatUI` Paywalls and Customer Center can now opt in to deriving layout direction from `overridePreferredUILocale` by passing `honorLayoutDirection = true`. Paywalls V2 can also use the dashboard `layout_direction` setting to match locale or force RTL/LTR.
+
 ### Paywallv2
 #### ✨ New Features
 * Wire multipage workflow navigation into PaywallViewModel (#3381) via Cesar de la Vega (@vegaro)

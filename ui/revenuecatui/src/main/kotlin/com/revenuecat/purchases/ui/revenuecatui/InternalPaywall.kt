@@ -46,7 +46,9 @@ import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallView
+import com.revenuecat.purchases.ui.revenuecatui.extensions.ProvideLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.resolveLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -86,6 +88,10 @@ internal fun InternalPaywall(
     }
 
     val state = viewModel.state.collectAsStateWithLifecycle().value
+    val localeList = viewModel.localeList.collectAsStateWithLifecycle().value
+    val honorLayoutDirection = viewModel.preferredUILocaleOverrideHonorsLayoutDirection
+        .collectAsStateWithLifecycle()
+        .value
 
     val componentInteractionTracker = remember(viewModel) {
         PaywallComponentInteractionTracker { data ->
@@ -102,6 +108,8 @@ internal fun InternalPaywall(
             LoadingPaywall(
                 mode = options.mode,
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+                localeList = localeList,
+                honorLayoutDirection = honorLayoutDirection,
                 onDismiss = viewModel::closePaywall,
             )
         }
@@ -193,11 +201,14 @@ private fun LoadedPaywall(
     viewModel: PaywallViewModel,
     isDarkTheme: Boolean,
 ) {
-    val configuration = LocalConfiguration.current
+    val configuration = state.configurationWithOverriddenLocale()
     val localeLanguageTags = configuration.locales.toLanguageTags()
     val offering = state.offering
     val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.data?.revision
     val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+    val honorLayoutDirection = viewModel.preferredUILocaleOverrideHonorsLayoutDirection
+        .collectAsStateWithLifecycle()
+        .value
     LaunchedEffect(
         offering.identifier,
         paywallIdentifier,
@@ -211,68 +222,72 @@ private fun LoadedPaywall(
     val context = LocalContext.current
     val activity = context.getActivity()
 
-    if (state.validationWarning != null) {
-        val defaultBackground = MaterialTheme.colorScheme.background
-        val defaultOnSurface = MaterialTheme.colorScheme.onSurface
-        Box(
-            modifier = Modifier.screenModeBackground(state.isInFullScreenMode, defaultBackground),
-        ) {
-            DefaultPaywallView(
-                packages = state.templateConfiguration.packages.all,
-                selectedPackage = state.selectedPackage.value,
-                warning = state.validationWarning,
-                onSelectPackage = viewModel::selectPackage,
-                onPurchase = {
-                    val rcPackage = state.selectedPackage.value.rcPackage
-                    viewModel.trackComponentInteraction(
-                        paywallPurchaseButtonAction(
-                            componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
-                            componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
-                            componentUrl = null,
-                            currentPackageIdentifier = rcPackage.identifier,
-                            currentProductIdentifier = rcPackage.product.paywallProductIdentifier(),
-                        ),
-                    )
-                    viewModel.purchaseSelectedPackage(activity)
-                },
-                onRestore = {
-                    viewModel.trackComponentInteraction(
-                        componentType = PaywallComponentType.BUTTON,
-                        componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
-                        componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
-                    )
-                    viewModel.restorePurchases()
-                },
-            )
-            CloseButton(
-                shouldDisplayDismissButton = state.shouldDisplayDismissButton,
-                color = defaultOnSurface,
-                actionInProgress = viewModel.actionInProgress.value,
-                onClick = viewModel::closePaywall,
-            )
-        }
-        return
-    }
-
-    val backgroundColor = state.templateConfiguration.getCurrentColors().background
-    Box(
-        modifier = Modifier.screenModeBackground(state.isInFullScreenMode, backgroundColor),
+    CompositionLocalProvider(
+        LocalActivity provides activity,
+        LocalContext provides state.contextWithConfiguration(configuration),
+        LocalConfiguration provides configuration,
     ) {
-        val configuration = state.configurationWithOverriddenLocale()
-
-        CompositionLocalProvider(
-            LocalActivity provides activity,
-            LocalContext provides state.contextWithConfiguration(configuration),
-            LocalConfiguration provides configuration,
+        ProvideLayoutDirection(
+            configuration.resolveLayoutDirection(
+                editorLayoutDirection = offering.paywallComponents?.data?.componentsConfig?.base?.layoutDirection,
+                honorPreferredLocaleLayoutDirection = honorLayoutDirection,
+            ),
         ) {
-            TemplatePaywall(state = state, viewModel = viewModel)
+            if (state.validationWarning != null) {
+                val defaultBackground = MaterialTheme.colorScheme.background
+                val defaultOnSurface = MaterialTheme.colorScheme.onSurface
+                Box(
+                    modifier = Modifier.screenModeBackground(state.isInFullScreenMode, defaultBackground),
+                ) {
+                    DefaultPaywallView(
+                        packages = state.templateConfiguration.packages.all,
+                        selectedPackage = state.selectedPackage.value,
+                        warning = state.validationWarning,
+                        onSelectPackage = viewModel::selectPackage,
+                        onPurchase = {
+                            val rcPackage = state.selectedPackage.value.rcPackage
+                            viewModel.trackComponentInteraction(
+                                paywallPurchaseButtonAction(
+                                    componentName = PaywallLegacyComponentInteraction.PURCHASE_BUTTON_NAME,
+                                    componentValue = PaywallLegacyComponentInteraction.Value.IN_APP_CHECKOUT,
+                                    componentUrl = null,
+                                    currentPackageIdentifier = rcPackage.identifier,
+                                    currentProductIdentifier = rcPackage.product.paywallProductIdentifier(),
+                                ),
+                            )
+                            viewModel.purchaseSelectedPackage(activity)
+                        },
+                        onRestore = {
+                            viewModel.trackComponentInteraction(
+                                componentType = PaywallComponentType.BUTTON,
+                                componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+                                componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+                            )
+                            viewModel.restorePurchases()
+                        },
+                    )
+                    CloseButton(
+                        shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+                        color = defaultOnSurface,
+                        actionInProgress = viewModel.actionInProgress.value,
+                        onClick = viewModel::closePaywall,
+                    )
+                }
+            } else {
+                val backgroundColor = state.templateConfiguration.getCurrentColors().background
+                Box(
+                    modifier = Modifier.screenModeBackground(state.isInFullScreenMode, backgroundColor),
+                ) {
+                    TemplatePaywall(state = state, viewModel = viewModel)
+                    CloseButton(
+                        shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+                        color = state.currentColors.closeButton,
+                        actionInProgress = viewModel.actionInProgress.value,
+                        onClick = viewModel::closePaywall,
+                    )
+                }
+            }
         }
-        CloseButton(
-            shouldDisplayDismissButton = state.shouldDisplayDismissButton,
-            color = state.currentColors.closeButton,
-            actionInProgress = viewModel.actionInProgress.value,
-            onClick = viewModel::closePaywall,
-        )
     }
 }
 

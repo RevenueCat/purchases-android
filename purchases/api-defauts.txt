@@ -396,6 +396,7 @@ package com.revenuecat.purchases {
     method public void getOfferings(com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback listener);
     method public static com.revenuecat.purchases.common.PlatformInfo getPlatformInfo();
     method @kotlin.jvm.Synchronized public String? getPreferredUILocaleOverride();
+    method @kotlin.jvm.Synchronized public boolean getPreferredUILocaleOverrideHonorsLayoutDirection();
     method public void getProducts(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method public void getProducts(java.util.List<java.lang.String> productIds, optional com.revenuecat.purchases.ProductType? type, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
     method public static java.net.URL? getProxyURL();
@@ -421,6 +422,7 @@ package com.revenuecat.purchases {
     method @Deprecated public void onAppBackgrounded();
     method @Deprecated public void onAppForegrounded();
     method public boolean overridePreferredUILocale(String? localeString);
+    method public boolean overridePreferredUILocale(String? localeString, boolean honorLayoutDirection);
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(android.content.Intent intent);
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(String string);
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
@@ -496,6 +498,7 @@ package com.revenuecat.purchases {
     property public static final com.revenuecat.purchases.LogLevel logLevel;
     property public static final com.revenuecat.purchases.common.PlatformInfo platformInfo;
     property @kotlin.jvm.Synchronized public final String? preferredUILocaleOverride;
+    property @kotlin.jvm.Synchronized public final boolean preferredUILocaleOverrideHonorsLayoutDirection;
     property public static final java.net.URL? proxyURL;
     property @kotlin.jvm.Synchronized public final com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy;
     property public static final com.revenuecat.purchases.Purchases sharedInstance;
@@ -553,6 +556,7 @@ package com.revenuecat.purchases {
     method @Deprecated public final boolean getObserverMode();
     method public final boolean getPendingTransactionsForPrepaidPlansEnabled();
     method public final String? getPreferredUILocaleOverride();
+    method public final boolean getPreferredUILocaleOverrideHonorsLayoutDirection();
     method public final com.revenuecat.purchases.PurchasesAreCompletedBy getPurchasesAreCompletedBy();
     method public final java.util.concurrent.ExecutorService? getService();
     method public final boolean getShowInAppMessagesAutomatically();
@@ -568,6 +572,7 @@ package com.revenuecat.purchases {
     property @Deprecated public final boolean observerMode;
     property public final boolean pendingTransactionsForPrepaidPlansEnabled;
     property public final String? preferredUILocaleOverride;
+    property public final boolean preferredUILocaleOverrideHonorsLayoutDirection;
     property public final com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy;
     property public final java.util.concurrent.ExecutorService? service;
     property public final boolean showInAppMessagesAutomatically;
@@ -588,6 +593,7 @@ package com.revenuecat.purchases {
     method @Deprecated public final com.revenuecat.purchases.PurchasesConfiguration.Builder observerMode(boolean observerMode);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder pendingTransactionsForPrepaidPlansEnabled(boolean pendingTransactionsForPrepaidPlansEnabled);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder preferredUILocaleOverride(String? localeString);
+    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder preferredUILocaleOverride(String? localeString, boolean honorLayoutDirection);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder purchasesAreCompletedBy(com.revenuecat.purchases.PurchasesAreCompletedBy purchasesAreCompletedBy);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder service(java.util.concurrent.ExecutorService service);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder showInAppMessagesAutomatically(boolean showInAppMessagesAutomatically);

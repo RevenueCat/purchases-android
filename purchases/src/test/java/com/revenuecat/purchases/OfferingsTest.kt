@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsLayoutDirection
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.parseRGBAColor
@@ -647,6 +648,31 @@ class OfferingsTest {
     }
 
     @Test
+    fun `createOfferings falls back to system for unknown paywall components layout direction`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+        )
+        val offeringJson = getOfferingJSON(
+            paywallComponents = getPaywallComponentsDataJson(layoutDirection = "future_value"),
+        )
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+
+        // Act
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+
+        // Assert
+        val offering = offerings.all.values.first()
+        assertThat(offering.paywallComponents?.data?.componentsConfig?.base?.layoutDirection)
+            .isEqualTo(PaywallComponentsLayoutDirection.SYSTEM)
+    }
+
+    @Test
     fun `hasPaywall returns true when paywall is not null`() {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
@@ -1037,7 +1063,7 @@ class OfferingsTest {
         }
     }
 
-    private fun getPaywallComponentsDataJson() = JSONObject(
+    private fun getPaywallComponentsDataJson(layoutDirection: String? = null) = JSONObject(
         // language=json
         """
         {
@@ -1069,7 +1095,13 @@ class OfferingsTest {
           "default_locale": "en_US"
         }
         """.trimIndent()
-    )
+    ).apply {
+        layoutDirection?.let {
+            getJSONObject("components_config")
+                .getJSONObject("base")
+                .put("layout_direction", it)
+        }
+    }
 
     private fun getPaywallDataJson() = JSONObject(
         // language=json

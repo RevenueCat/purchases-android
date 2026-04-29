@@ -5,8 +5,10 @@ import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.material3.Text
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -153,6 +155,29 @@ internal class LoadedPaywallComponentsLocaleTests {
                 }
             )
 
+        }
+
+        @Test
+        fun `Should propagate layout direction changes without Activity recreation`(): Unit = with(composeTestRule) {
+            localeChangingTest(
+                arrange = {},
+                act = {
+                    Text(text = LocalLayoutDirection.current.name)
+                },
+                assert = { localeController ->
+                    localeController.setLocale("en-US")
+                    onNodeWithText("Ltr")
+                        .assertIsDisplayed()
+
+                    localeController.setLocale("he")
+                    onNodeWithText("Rtl")
+                        .assertIsDisplayed()
+
+                    localeController.setLocale("ar-SA")
+                    onNodeWithText("Rtl")
+                        .assertIsDisplayed()
+                },
+            )
         }
     }
 }

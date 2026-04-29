@@ -2693,9 +2693,15 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
         mockOfferingsManagerGetOfferings()
 
-        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(
+            "fr_FR",
+            honorLayoutDirection = true,
+        )
 
         assertThat(result).isTrue
+        assertThat(
+            Purchases.sharedInstance.purchasesOrchestrator.preferredUILocaleOverrideHonorsLayoutDirection,
+        ).isTrue()
         verifyOrder {
             mockOfferingsManager.clearInMemoryOfferingsCache()
             mockOfferingsManager.getOfferings(appUserId, any(), any(), any())
@@ -2704,11 +2710,73 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `overridePreferredUILocale returns false if locale unchanged`() {
+        var listenerInvocations = 0
+        val removeListener = Purchases.sharedInstance.purchasesOrchestrator
+            .addPreferredUILocaleOverrideChangeListener { listenerInvocations++ }
+
         val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(null)
 
         assertThat(result).isFalse
+        assertThat(listenerInvocations).isEqualTo(0)
         verify(exactly = 0) { mockOfferingsManager.clearInMemoryOfferingsCache() }
         verify(exactly = 0) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+        removeListener()
+    }
+
+    @Test
+    fun `overridePreferredUILocale updates layout direction flag without fetching if locale unchanged`() {
+        var listenerInvocations = 0
+        val removeListener = Purchases.sharedInstance.purchasesOrchestrator
+            .addPreferredUILocaleOverrideChangeListener { listenerInvocations++ }
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(
+            null,
+            honorLayoutDirection = true,
+        )
+
+        assertThat(result).isFalse
+        assertThat(listenerInvocations).isEqualTo(1)
+        assertThat(
+            Purchases.sharedInstance.purchasesOrchestrator.preferredUILocaleOverrideHonorsLayoutDirection,
+        ).isTrue()
+        verify(exactly = 0) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 0) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+        removeListener()
+    }
+
+    @Test
+    fun `overridePreferredUILocale stops notifying removed listener`() {
+        var listenerInvocations = 0
+        val removeListener = Purchases.sharedInstance.purchasesOrchestrator
+            .addPreferredUILocaleOverrideChangeListener { listenerInvocations++ }
+
+        removeListener()
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(
+            null,
+            honorLayoutDirection = true,
+        )
+
+        assertThat(result).isFalse
+        assertThat(listenerInvocations).isEqualTo(0)
+    }
+
+    @Test
+    fun `overridePreferredUILocale with locale only preserves layout direction flag`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val flagOnlyResult = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(
+            null,
+            honorLayoutDirection = true,
+        )
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("ar_SA")
+
+        assertThat(flagOnlyResult).isFalse
+        assertThat(result).isTrue
+        assertThat(
+            Purchases.sharedInstance.purchasesOrchestrator.preferredUILocaleOverrideHonorsLayoutDirection,
+        ).isTrue()
     }
 
     @Test
