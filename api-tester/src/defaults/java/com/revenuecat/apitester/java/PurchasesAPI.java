@@ -10,6 +10,7 @@ import com.revenuecat.purchases.AmazonLWAConsentStatus;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesAreCompletedBy;
@@ -139,10 +140,21 @@ final class PurchasesAPI {
         VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
 
         // trackCustomPaywallImpression API
+        Offering offering = new Offering(
+                "my-offering",
+                "",
+                new HashMap<>(),
+                new java.util.ArrayList<>()
+        );
+        CustomPaywallImpressionParams paramsWithOfferingObject =
+                new CustomPaywallImpressionParams("my-paywall", offering);
+        Offering offeringObject = paramsWithOfferingObject.getOffering();
         purchases.trackCustomPaywallImpression();
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams());
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall"));
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall", "my-offering"));
+        purchases.trackCustomPaywallImpression(paramsWithOfferingObject);
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams(offering));
     }
 
     static void checkSyncAmazonPurchase(final Purchases purchases,
