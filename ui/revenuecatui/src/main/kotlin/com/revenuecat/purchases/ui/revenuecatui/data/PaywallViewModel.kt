@@ -833,7 +833,7 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate to step '${candidate.id}': $error")
             return
         }
-        val fromStepId = navigator.currentStep()?.id
+        val fromStepId = navigator.currentStep?.id
         // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
         // given the peek succeeded, but guard anyway to avoid a hard crash.
         val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
@@ -861,7 +861,7 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate back to step '${candidate.id}': $error")
             return false
         }
-        val fromStepId = navigator.currentStep()?.id
+        val fromStepId = navigator.currentStep?.id
         // navigateBack should not return null given canNavigateBack is true, but guard to be safe.
         val newStep = navigator.navigateBack() ?: run {
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
