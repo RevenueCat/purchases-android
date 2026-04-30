@@ -706,6 +706,161 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `TabControlToggleComponentStyle componentName matches enclosing TabsComponent name for analytics`() {
+        val tabsName = "plan_toggle_tabs"
+        val component = TabsComponent(
+            name = tabsName,
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(tabsName)
+    }
+
+    @Test
+    fun `TabControlToggleComponentStyle componentName falls back to toggle name when TabsComponent is unnamed`() {
+        val toggleOnlyName = "toggle_only"
+        val component = TabsComponent(
+            name = null,
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            name = toggleOnlyName,
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(toggleOnlyName)
+    }
+
+    @Test
+    fun `TabControlToggleComponentStyle componentName falls back to toggle name when TabsComponent name is blank`() {
+        val toggleOnlyName = "toggle_only"
+        val component = TabsComponent(
+            name = "",
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "0",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+                TabsComponent.Tab(
+                    id = "1",
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(TabControlComponent)
+                            )
+                        )
+                    )
+                ),
+            ),
+            control = TabsComponent.TabControl.Toggle(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlToggleComponent(
+                            name = toggleOnlyName,
+                            defaultValue = true,
+                            thumbColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            thumbColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOn = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                            trackColorOff = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                        ),
+                    )
+                )
+            )
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as TabsComponentStyle
+        val toggleControl = style.control as TabControlStyle.Toggle
+        val toggleStyle = toggleControl.stack.children.single() as TabControlToggleComponentStyle
+        assertThat(toggleStyle.componentName).isEqualTo(toggleOnlyName)
+    }
+
+    @Test
     fun `Should fail to create a TabControlComponent outside of a TabComponent`() {
         // Arrange
         // TabControlComponent has 2 Stack ancestors, but no Tab.
@@ -1353,5 +1508,43 @@ class StyleFactoryTests {
         // The hero image should ignore top window insets.
         val heroImage = zLayerStack.children[0] as ImageComponentStyle
         assertThat(heroImage.ignoreTopWindowInsets).isTrue()
+    }
+
+    @Test
+    fun `Should fail when a WorkflowTrigger button has no component id`() {
+        // Arrange
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.WorkflowTrigger,
+            id = null,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result.isError).isTrue()
+        val errors = result.errorOrNull()!!
+        assertThat(errors.size).isEqualTo(1)
+        assertThat(errors[0]).isInstanceOf(PaywallValidationError.WorkflowButtonMissingComponentId::class.java)
+    }
+
+    @Test
+    fun `Should succeed when a WorkflowTrigger button has a component id`() {
+        // Arrange
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.WorkflowTrigger,
+            id = "btn-workflow",
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result.isSuccess).isTrue()
+        val style = result.getOrNull()!!.componentStyle as ButtonComponentStyle
+        assertThat(style.action).isEqualTo(ButtonComponentStyle.Action.WorkflowTrigger)
+        assertThat(style.componentId).isEqualTo("btn-workflow")
     }
 }

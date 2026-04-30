@@ -35,6 +35,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.FontLoader
@@ -236,7 +237,7 @@ internal open class BasePurchasesTest {
             }
 
             every {
-                startConnectionOnMainThread()
+                startConnection()
             } just Runs
         }
     }
@@ -506,6 +507,7 @@ internal open class BasePurchasesTest {
             blockstoreHelper = mockBlockstoreHelper,
             backupManager = mockBackupManager,
             purchaseParamsValidator = mockPurchaseParamsValidator,
+            workflowManager = mockk(relaxed = true),
         )
 
         purchases = Purchases(
@@ -549,7 +551,8 @@ internal open class BasePurchasesTest {
         purchaseable: Any,
         oldProductId: String? = null,
         isPersonalizedPrice: Boolean? = null,
-        googleReplacementMode: GoogleReplacementMode? = null
+        googleReplacementMode: GoogleReplacementMode? = null,
+        storeReplacementMode: StoreReplacementMode? = null,
     ): PurchaseParams {
         val builder = when (purchaseable) {
             is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
@@ -568,6 +571,9 @@ internal open class BasePurchasesTest {
 
         googleReplacementMode?.let {
             builder!!.googleReplacementMode(googleReplacementMode)
+        }
+        storeReplacementMode?.let {
+            builder!!.replacementMode(storeReplacementMode)
         }
         return builder!!.build()
     }

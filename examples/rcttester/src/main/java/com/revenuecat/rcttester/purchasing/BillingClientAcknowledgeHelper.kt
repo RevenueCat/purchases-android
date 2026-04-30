@@ -7,8 +7,8 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.revenuecat.purchases.ProductType
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Helper class for acknowledging and consuming purchases when purchasesAreCompletedBy
@@ -29,21 +29,21 @@ class BillingClientAcknowledgeHelper(private val billingClient: BillingClient) {
             Log.e(TAG, "Failed to connect BillingClient for acknowledge")
             return false
         }
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val params = AcknowledgePurchaseParams.newBuilder()
                 .setPurchaseToken(purchaseToken)
                 .build()
             billingClient.acknowledgePurchase(params) { billingResult ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     Log.d(TAG, "Acknowledged purchase: $purchaseToken")
-                    continuation.resume(true)
+                    if (continuation.isActive) continuation.resume(true)
                 } else {
                     Log.e(
                         TAG,
                         "Failed to acknowledge purchase: ${billingResult.responseCode} " +
                             "- ${billingResult.debugMessage}",
                     )
-                    continuation.resume(false)
+                    if (continuation.isActive) continuation.resume(false)
                 }
             }
         }
@@ -58,21 +58,21 @@ class BillingClientAcknowledgeHelper(private val billingClient: BillingClient) {
             Log.e(TAG, "Failed to connect BillingClient for consume")
             return false
         }
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             val params = ConsumeParams.newBuilder()
                 .setPurchaseToken(purchaseToken)
                 .build()
             billingClient.consumeAsync(params) { billingResult, _ ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     Log.d(TAG, "Consumed purchase: $purchaseToken")
-                    continuation.resume(true)
+                    if (continuation.isActive) continuation.resume(true)
                 } else {
                     Log.e(
                         TAG,
                         "Failed to consume purchase: ${billingResult.responseCode} " +
                             "- ${billingResult.debugMessage}",
                     )
-                    continuation.resume(false)
+                    if (continuation.isActive) continuation.resume(false)
                 }
             }
         }
@@ -80,12 +80,14 @@ class BillingClientAcknowledgeHelper(private val billingClient: BillingClient) {
 
     private suspend fun ensureConnected(): Boolean {
         if (billingClient.isReady) return true
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             billingClient.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
-                    continuation.resume(
-                        billingResult.responseCode == BillingClient.BillingResponseCode.OK,
-                    )
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            billingResult.responseCode == BillingClient.BillingResponseCode.OK,
+                        )
+                    }
                 }
 
                 override fun onBillingServiceDisconnected() {

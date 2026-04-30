@@ -1,3 +1,71 @@
+## 10.3.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Fix component paywall crash with root vertical overflow (#3404) via Monika Mateska (@MonikaMateska)
+
+### 🔄 Other Changes
+* refactor: extract shared PaywallComponentsScaffold for reuse across paywall variants (#3408) via Cesar de la Vega (@vegaro)
+* build(deps): bump fastlane from 2.233.0 to 2.233.1 (#3406) via dependabot[bot] (@dependabot[bot])
+
+## 10.3.0
+## RevenueCat SDK
+### ✨ New Features
+* Unified StoreReplacementMode API (#3234) via Will Taylor (@fire-at-will)
+* Add placement and targeting context to paywall events (#3253) via Dan Pannasch (@dpannasch)
+### 🐞 Bugfixes
+* Fix null Placements when offering_ids_by_placement is absent (#3254) via Dan Pannasch (@dpannasch)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### ✨ New Features
+* Wire multipage workflow navigation into PaywallViewModel (#3381) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Add `triggerType` to `WorkflowTrigger` (#3393) via Cesar de la Vega (@vegaro)
+* Extract private function `NavigateTo.toPaywallAction` (#3392) via Cesar de la Vega (@vegaro)
+* Bump revenucatui-tests gradle cache key (#3391) via Toni Rico (@tonidero)
+* Create `WorkflowTriggerType` and `WorkflowTriggerActionType` (#3386) via Cesar de la Vega (@vegaro)
+* Update baseline profiles (#3390) via RevenueCat Git Bot (@RCGitBot)
+* Plumb `componentId` through buttons on workflow interactions (#3380) via Cesar de la Vega (@vegaro)
+* Add `ButtonComponent.Action.Workflow` (#3385) via Cesar de la Vega (@vegaro)
+* Add `componentId` to `ButtonCoomponentStyle` (#3384) via Cesar de la Vega (@vegaro)
+* Migrate all suspendCoroutine usages to suspendCancellableCoroutine (#3365) via Jaewoong Eum (@skydoves)
+* Add `WorkflowNavigator` for multipage workflow step navigation (#3379) via Cesar de la Vega (@vegaro)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `b822f01` to `d24ab26` (#3383) via dependabot[bot] (@dependabot[bot])
+* Add `id` field to `ButtonComponent` (#3377) via Cesar de la Vega (@vegaro)
+* Add CI workflows for generating Baseline Profiles (#3372) via Jaewoong Eum (@skydoves)
+* add min sdk level for paywalls and customer center (#2465) via Muhammad-Sharif Moustafa (@mshmoustafa)
+
+## 10.2.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: move Google BillingClient connection off the main thread (#3369) via Toni Rico (@tonidero)
+* [EXTERNAL] fix(google): guard showInAppMessages against BillingClient runtime crashes (#3367) by @matteinn (#3368) via Monika Mateska (@MonikaMateska)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Add Workflows network layer (#3300) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Fix `revenuecat.useWorkflowsEndpoint` compiler flag (#3374) via Cesar de la Vega (@vegaro)
+* Create paywall from workflow response. Add `USE_WORKFLOWS_ENDPOINT` BuildConfig (#3350) via Cesar de la Vega (@vegaro)
+* Refactor: Remove unnecessary lint suppressions (#3373) via cursor[bot] (@cursor[bot])
+* Bump fastlane-plugin-revenuecat_internal from `a1eed48` to `b822f01` (#3371) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.232.2 to 2.233.0 (#3370) via dependabot[bot] (@dependabot[bot])
+* Attempt to fix `AssertionError` "ms is denormalized" in `QueryPurchasesUseCaseTest` (#3361) via Cesar de la Vega (@vegaro)
+* Update baseline profiles (#3296) via Jaewoong Eum (@skydoves)
+* fix: reduce precision for flaky HeaderDirectHeroImage snapshot (#3362) via Cesar de la Vega (@vegaro)
+* Fix test failures reported twice (#3360) via Cesar de la Vega (@vegaro)
+* refactor: extract `updateStateFromOffering` in `PaywallViewModel` (#3359) via Cesar de la Vega (@vegaro)
+* [Fix] Include parent tabs component_name in tab-control switch interaction events (#3358) via Monika Mateska (@MonikaMateska)
+* Refactor: Remove unnecessary lint suppressions (#3348) via cursor[bot] (@cursor[bot])
+* fix: always upload CI test results even when tests fail (#3357) via Cesar de la Vega (@vegaro)
+* refactor: extract `RevenueCatDialogScaffold` (#3355) via Cesar de la Vega (@vegaro)
+* Fix Slack notifications for nightly integration tests (#3354) via Toni Rico (@tonidero)
+* UI events for paywall component interactions (#3287) via Monika Mateska (@MonikaMateska)
+* Bump fastlane-plugin-revenuecat_internal from `20911d1` to `a1eed48` (#3351) via dependabot[bot] (@dependabot[bot])
+
 ## 10.2.0
 ## RevenueCat SDK
 ### ✨ New Features

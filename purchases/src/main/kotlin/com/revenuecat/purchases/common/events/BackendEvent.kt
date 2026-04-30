@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
@@ -99,6 +100,8 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: PresentedOfferingContextData? = null,
         @SerialName("exit_offer_type")
         val exitOfferType: String? = null,
         @SerialName("exit_offering_id")
@@ -111,7 +114,70 @@ internal sealed class BackendEvent : Event {
         val errorCode: Int? = null,
         @SerialName("error_message")
         val errorMessage: String? = null,
+        @SerialName("component_type")
+        val componentType: String? = null,
+        @SerialName("component_name")
+        val componentName: String? = null,
+        @SerialName("component_value")
+        val componentValue: String? = null,
+        @SerialName("component_url")
+        val componentUrl: String? = null,
+        @SerialName("origin_index")
+        val originIndex: Int? = null,
+        @SerialName("destination_index")
+        val destinationIndex: Int? = null,
+        @SerialName("origin_context_name")
+        val originContextName: String? = null,
+        @SerialName("destination_context_name")
+        val destinationContextName: String? = null,
+        @SerialName("default_index")
+        val defaultIndex: Int? = null,
+        @SerialName("origin_package_id")
+        val originPackageIdentifier: String? = null,
+        @SerialName("destination_package_id")
+        val destinationPackageIdentifier: String? = null,
+        @SerialName("default_package_id")
+        val defaultPackageIdentifier: String? = null,
+        @SerialName("origin_product_id")
+        val originProductIdentifier: String? = null,
+        @SerialName("destination_product_id")
+        val destinationProductIdentifier: String? = null,
+        @SerialName("default_product_id")
+        val defaultProductIdentifier: String? = null,
+        @SerialName("current_package_id")
+        val currentPackageIdentifier: String? = null,
+        @SerialName("resulting_package_id")
+        val resultingPackageIdentifier: String? = null,
+        @SerialName("current_product_id")
+        val currentProductIdentifier: String? = null,
+        @SerialName("resulting_product_id")
+        val resultingProductIdentifier: String? = null,
     ) : BackendEvent()
+
+    @Serializable
+    data class PresentedOfferingContextData(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    ) {
+        companion object {
+            fun fromContext(
+                context: PresentedOfferingContext,
+            ): PresentedOfferingContextData? {
+                if (context.placementIdentifier == null && context.targetingContext == null) {
+                    return null
+                }
+                return PresentedOfferingContextData(
+                    placementIdentifier = context.placementIdentifier,
+                    targetingRevision = context.targetingContext?.revision,
+                    targetingRuleId = context.targetingContext?.ruleId,
+                )
+            }
+        }
+    }
 
     /**
      * Represents an event related to a custom paywall.

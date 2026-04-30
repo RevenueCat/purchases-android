@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
@@ -8,6 +9,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.text.intl.Locale
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -46,31 +49,14 @@ internal class ButtonComponentState(
 ) {
 
     @get:JvmSynthetic
-    val action by derivedStateOf {
-        val localeId = localeProvider().toLocaleId()
-
-        style.action.toPaywallAction(localeId)
+    val action: PaywallAction? by derivedStateOf {
+        style.action.toPaywallAction(localeProvider().toLocaleId(), style.componentId)
     }
 
-    private fun ButtonComponentStyle.Action.toPaywallAction(localeId: LocaleId): PaywallAction =
+    private fun ButtonComponentStyle.Action.toPaywallAction(localeId: LocaleId, componentId: String?): PaywallAction? =
         when (this) {
             is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.External.NavigateBack
-            is ButtonComponentStyle.Action.NavigateTo -> when (destination) {
-                is ButtonComponentStyle.Action.NavigateTo.Destination.CustomerCenter ->
-                    PaywallAction.External.NavigateTo(PaywallAction.External.NavigateTo.Destination.CustomerCenter)
-
-                is ButtonComponentStyle.Action.NavigateTo.Destination.Url ->
-                    PaywallAction.External.NavigateTo(
-                        PaywallAction.External.NavigateTo.Destination.Url(
-                            // We will use the URL for the default locale if there's no URL for the current locale.
-                            url = destination.urls.run { getOrDefault(localeId, entry.value) },
-                            method = destination.method,
-                        ),
-                    )
-
-                is ButtonComponentStyle.Action.NavigateTo.Destination.Sheet ->
-                    PaywallAction.Internal.NavigateTo(PaywallAction.Internal.NavigateTo.Destination.Sheet(destination))
-            }
+            is ButtonComponentStyle.Action.NavigateTo -> toPaywallAction(localeId)
 
             is ButtonComponentStyle.Action.PurchasePackage ->
                 PaywallAction.External.PurchasePackage(
@@ -109,5 +95,27 @@ internal class ButtonComponentState(
                     ),
                 )
             }
+
+            is ButtonComponentStyle.Action.WorkflowTrigger -> componentId?.let {
+                PaywallAction.External.WorkflowTrigger(it, WorkflowTriggerType.ON_PRESS)
+            }
+        }
+
+    private fun ButtonComponentStyle.Action.NavigateTo.toPaywallAction(localeId: LocaleId): PaywallAction =
+        when (destination) {
+            is ButtonComponentStyle.Action.NavigateTo.Destination.CustomerCenter ->
+                PaywallAction.External.NavigateTo(PaywallAction.External.NavigateTo.Destination.CustomerCenter)
+
+            is ButtonComponentStyle.Action.NavigateTo.Destination.Url ->
+                PaywallAction.External.NavigateTo(
+                    PaywallAction.External.NavigateTo.Destination.Url(
+                        // We will use the URL for the default locale if there's no URL for the current locale.
+                        url = destination.urls.run { getOrDefault(localeId, entry.value) },
+                        method = destination.method,
+                    ),
+                )
+
+            is ButtonComponentStyle.Action.NavigateTo.Destination.Sheet ->
+                PaywallAction.Internal.NavigateTo(PaywallAction.Internal.NavigateTo.Destination.Sheet(destination))
         }
 }

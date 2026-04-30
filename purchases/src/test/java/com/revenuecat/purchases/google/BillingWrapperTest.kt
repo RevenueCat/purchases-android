@@ -49,9 +49,11 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import com.revenuecat.purchases.models.toPlayBillingClientMode
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
@@ -76,6 +78,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,6 +93,7 @@ class BillingWrapperTest {
     internal companion object {
         const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
         const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
+        private const val THREAD_JOIN_TIMEOUT_MS = 5_000L
     }
 
     private var onConnectedCalled: Boolean = false
@@ -161,15 +165,16 @@ class BillingWrapperTest {
         mockDetailsList = listOf(mockProductDetails())
 
         wrapper = BillingWrapper(
-            mockClientFactory,
-            handler,
-            mockDeviceCache,
-            mockDiagnosticsTracker,
-            purchasesStateProvider,
-            mockDateProvider
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            backgroundHandler = handler,
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
-        wrapper.startConnectionOnMainThread()
+        wrapper.startConnection()
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
@@ -216,6 +221,133 @@ class BillingWrapperTest {
         verify {
             mockClient.startConnection(billingClientStateListener!!)
         }
+    }
+
+    @Test
+    fun `startConnection schedules the connection on the background handler, not the main handler`() {
+        val mockMainHandler = mockk<Handler>()
+        val mockBackgroundHandler = mockk<Handler>()
+        every { mockMainHandler.postDelayed(any(), any()) } returns true
+        every { mockMainHandler.post(any()) } returns true
+        every { mockBackgroundHandler.postDelayed(any(), any()) } returns true
+        every { mockBackgroundHandler.post(any()) } returns true
+
+        val routedWrapper = BillingWrapper(
+            mockClientFactory,
+            mockMainHandler,
+            mockBackgroundHandler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        routedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        routedWrapper.startConnection()
+
+        verify(exactly = 1) { mockBackgroundHandler.postDelayed(any(), 0L) }
+        verify(exactly = 0) { mockMainHandler.postDelayed(any(), any<Long>()) }
+        verify(exactly = 0) { mockMainHandler.post(any()) }
+    }
+
+    @Test
+    fun `endConnection posts cleanup on the background handler, not the main handler`() {
+        val mockMainHandler = mockk<Handler>()
+        val mockBackgroundHandler = mockk<Handler>()
+        every { mockMainHandler.postDelayed(any(), any()) } returns true
+        every { mockMainHandler.post(any()) } returns true
+        every { mockBackgroundHandler.postDelayed(any(), any()) } returns true
+        every { mockBackgroundHandler.post(any()) } returns true
+
+        val routedWrapper = BillingWrapper(
+            mockClientFactory,
+            mockMainHandler,
+            mockBackgroundHandler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        routedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        routedWrapper.close()
+
+        verify(exactly = 1) { mockBackgroundHandler.post(any()) }
+        verify(exactly = 0) { mockMainHandler.post(any()) }
+    }
+
+    @Test
+    fun `close quits the background HandlerThread owned by BillingWrapper`() {
+        val selfOwnedWrapper = BillingWrapper(
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            // backgroundHandler omitted -> BillingWrapper creates and owns a HandlerThread
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            dateProvider = mockDateProvider
+        )
+        selfOwnedWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        val ownedThread = selfOwnedWrapper.ownedBackgroundThread
+        assertThat(ownedThread).`as`("BillingWrapper should own a HandlerThread when none is injected").isNotNull
+        assertThat(ownedThread!!.name).isEqualTo("revenuecat-billing")
+        assertThat(ownedThread.isAlive).isTrue
+
+        selfOwnedWrapper.close()
+        ownedThread.join(THREAD_JOIN_TIMEOUT_MS)
+
+        assertThat(ownedThread.isAlive).isFalse
+    }
+
+    @Test
+    fun `performStartConnection releases the wrapper monitor before calling BillingClient startConnection`() {
+        var heldLockDuringStartConnection = true
+        every { mockClient.startConnection(any()) } answers {
+            heldLockDuringStartConnection = Thread.holdsLock(wrapper)
+        }
+        every { mockClient.isReady } returns false
+
+        wrapper.startConnection()
+
+        assertThat(heldLockDuringStartConnection)
+            .`as`("BillingClient#startConnection must not run while we hold the wrapper monitor")
+            .isFalse
+    }
+
+    @Test
+    fun `if building the BillingClient throws, the exception is rethrown on the main thread`() {
+        val throwingFactory = mockk<BillingWrapper.ClientFactory>()
+        val buildError = RuntimeException("build failed")
+        every { throwingFactory.buildClient(any()) } throws buildError
+
+        val crashingWrapper = BillingWrapper(
+            throwingFactory,
+            handler,
+            handler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
+        crashingWrapper.purchasesUpdatedListener = mockPurchasesListener
+
+        val thrown = assertThrows(RuntimeException::class.java) {
+            crashingWrapper.startConnection()
+        }
+        assertThat(thrown).isSameAs(buildError)
+    }
+
+    @Test
+    fun `if starting connection throws an unexpected exception, the exception is rethrown on the main thread`() {
+        val connectError = IllegalArgumentException("unexpected")
+        every { mockClient.isReady } returns false
+        every { mockClient.startConnection(any()) } throws connectError
+
+        val thrown = assertThrows(IllegalArgumentException::class.java) {
+            wrapper.startConnection()
+        }
+        assertThat(thrown).isSameAs(connectError)
     }
 
     @Test
@@ -368,7 +500,7 @@ class BillingWrapperTest {
         assertThat(purchaseContext?.productType).isEqualTo(ProductType.SUBS)
         assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
         assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(storeProduct.subscriptionOptions!!.first().id)
-        assertThat(purchaseContext?.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
+        assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
     }
 
     @Test
@@ -380,7 +512,7 @@ class BillingWrapperTest {
         val storeProduct = createStoreProductWithoutOffers()
         val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
         val oldPurchase = mockPurchaseRecordWrapper()
-        val replaceInfo = ReplaceProductInfo(oldPurchase, GoogleReplacementMode.DEFERRED)
+        val replaceInfo = ReplaceProductInfo(oldPurchase, StoreReplacementMode.DEFERRED)
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.makePurchaseAsync(
@@ -404,7 +536,7 @@ class BillingWrapperTest {
         assertThat(purchaseContext?.productType).isEqualTo(ProductType.SUBS)
         assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
         assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(storeProduct.subscriptionOptions!!.first().id)
-        assertThat(purchaseContext?.replacementMode).isEqualTo(GoogleReplacementMode.DEFERRED)
+        assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     @Test
@@ -467,7 +599,8 @@ class BillingWrapperTest {
             assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
-            assertThat((upgradeInfo.replacementMode as GoogleReplacementMode?)?.playBillingClientMode).isEqualTo(replacementModeSlot.captured)
+            assertThat((upgradeInfo.replacementMode as StoreReplacementMode?)?.toPlayBillingClientMode())
+                .isEqualTo(replacementModeSlot.captured)
 
             assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
@@ -482,6 +615,77 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+    }
+
+    @Test
+    fun `properly sets billingFlowParams for subscription purchase with deprecated GoogleReplacementMode`() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
+
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        val productDetailsParamsSlot = slot<List<ProductDetailsParams>>()
+        every {
+            mockBuilder.setProductDetailsParamsList(capture(productDetailsParamsSlot))
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setIsOfferPersonalized(any())
+        } returns mockBuilder
+
+        val mockSubscriptionUpdateParamsBuilder =
+            mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val oldPurchaseTokenSlot = slot<String>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setOldPurchaseToken(capture(oldPurchaseTokenSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val replacementModeSlot = slot<Int>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setSubscriptionReplacementMode(capture(replacementModeSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val productId = "product_a"
+        val oldPurchase = mockPurchaseRecordWrapper()
+        val upgradeInfo = ReplaceProductInfo(oldPurchase, GoogleReplacementMode.DEFERRED)
+        val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
+        val storeProduct = productDetails.toStoreProduct(
+            productDetails.subscriptionOfferDetails!!
+        )!!
+
+        every {
+            mockClient.launchBillingFlow(eq(mockActivity), any())
+        } answers {
+            val capturedProductDetailsParams = productDetailsParamsSlot.captured
+
+            assertThat(1).isEqualTo(capturedProductDetailsParams.size)
+            assertThat(productId).isEqualTo(capturedProductDetailsParams[0].zza().productId)
+            assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
+
+            assertThat(oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
+            assertThat(GoogleReplacementMode.DEFERRED.playBillingClientMode).isEqualTo(replacementModeSlot.captured)
+            billingClientOKResult
+        }
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            upgradeInfo,
+            null,
+            null,
+        )
+
+        val purchaseContext = wrapper.purchaseContext[oldPurchase.productIds.first()]
+        assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     @Test
@@ -1374,9 +1578,9 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `startConnectionOnMainThread tracks diagnostics call with correct parameters`() {
+    fun `startConnection tracks diagnostics call with correct parameters`() {
         // Arrange, Act, Assert
-        // Our test setup() method calls startConnectionOnMainThread().
+        // Our test setup() method calls startConnection().
         verify(exactly = 1) { mockDiagnosticsTracker.trackGoogleBillingStartConnection() }
     }
 
@@ -1519,6 +1723,21 @@ class BillingWrapperTest {
 
         wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
             error("Unexpected subscription status change")
+        }
+
+        verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
+    fun `showing inapp messages does not crash when billing client throws runtime exception`() {
+        val activity = mockAttachedActivity()
+        val exception = NullPointerException("Attempt to invoke virtual method on a null object reference")
+        every { mockClient.showInAppMessages(activity, any(), any()) } throws exception
+
+        assertErrorLog(BillingStrings.BILLING_INAPP_MESSAGE_SHOW_EXCEPTION.format(exception), exception) {
+            wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+                error("Unexpected subscription status change")
+            }
         }
 
         verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
@@ -1715,7 +1934,7 @@ class BillingWrapperTest {
         assertThat(purchaseContext?.productType).isEqualTo(ProductType.SUBS)
         assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
         assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(optionId)
-        assertThat(purchaseContext?.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
+        assertThat(purchaseContext?.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
 
         val subscriptionOptionIdForProductIDs = purchaseContext?.subscriptionOptionIdForProductIDs
         assertThat(subscriptionOptionIdForProductIDs).isNotNull
@@ -1794,7 +2013,8 @@ class BillingWrapperTest {
             assertThat(capturedProductDetailsParams[1].zza().productId).isEqualTo(productId2)
             assertThat(capturedProductDetailsParams[1].zza().productType).isEqualTo(subsGoogleProductType)
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
-            assertThat((upgradeInfo.replacementMode as GoogleReplacementMode?)?.playBillingClientMode).isEqualTo(replacementModeSlot.captured)
+            assertThat((upgradeInfo.replacementMode as StoreReplacementMode?)?.toPlayBillingClientMode())
+                .isEqualTo(replacementModeSlot.captured)
 
             assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
@@ -1826,7 +2046,7 @@ class BillingWrapperTest {
 
     private fun mockReplaceSkuInfo(): ReplaceProductInfo {
         val oldPurchase = mockPurchaseRecordWrapper()
-        return ReplaceProductInfo(oldPurchase, GoogleReplacementMode.CHARGE_FULL_PRICE)
+        return ReplaceProductInfo(oldPurchase, StoreReplacementMode.CHARGE_FULL_PRICE)
     }
 
     private fun setUpForObfuscatedAccountIDTests(): BillingFlowParams.Builder {

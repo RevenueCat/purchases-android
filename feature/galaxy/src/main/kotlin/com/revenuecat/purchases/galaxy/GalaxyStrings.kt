@@ -52,12 +52,17 @@ internal object GalaxyStrings {
         "the Galaxy Store is already in progress. Please wait until that request completes and then try again."
     const val CHANGE_SUBSCRIPTION_PLAN_NO_OLD_PRODUCT_ID = "Cannot change subscription plan: the old purchase " +
         "does not have a product ID."
+
+    const val CANNOT_CHANGE_SUBSCRIPTION_PLAN_UNSUPPORTED_REPLACEMENT_MODE = "Cannot change subscription plan: the " +
+        "provided replacement mode is not supported by the Galaxy Store."
     const val GALAXY_STORE_FAILED_TO_ACCEPT_CHANGE_SUBSCRIPTION_PLAN_REQUEST = "The Galaxy Store did not accept " +
         "the subscription plan change request for processing."
     const val CHANGE_SUBSCRIPTION_PLAN_RETURNED_SUCCESS_BUT_NO_RESULT = "The subscription plan change request " +
         "returned no error, but also returned no result. This is likely an issue with the Galaxy Store."
     const val CHANGE_SUBSCRIPTION_PLAN_REQUEST_ERRORED = "An error occurred while changing subscription from " +
         "product ID %s to %s with the Galaxy Store. Error: %s"
+    const val CHARGE_FULL_PRICE_NOT_SUPPORTED = "StoreReplacementMode.CHARGE_FULL_PRICE is not supported for " +
+        "Galaxy Store subscription changes."
 
     // Promotion Eligibility
     const val EMPTY_GET_PROMOTION_ELIGIBILITY_REQUEST = "Received a promotion eligibility request for 0 " +
@@ -136,6 +141,9 @@ internal object GalaxyStrings {
     // Misc
     const val CREATING_PURCHASES_ERROR_FOR_GALAXY_ERROR_NONE = "Creating a PurchasesError for a Galaxy Store error" +
         " with an error of IAP_ERROR_NONE."
+
+    const val UNEXPECTED_PRORATION_MODE = "Unexpected replacement mode for Galaxy purchase: %s. " +
+        "Falling back to WITHOUT_PRORATION."
 }
 
 internal fun HelperDefine.OperationMode.description(): String = when (this) {

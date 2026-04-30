@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
-import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -19,11 +18,20 @@ internal data class ButtonComponentStyle(
     val action: Action,
     @get:JvmSynthetic
     val transition: PaywallTransition? = null,
+    @get:JvmSynthetic
+    val componentName: String? = null,
+    @get:JvmSynthetic
+    val componentId: String? = null,
 ) : ComponentStyle {
 
     internal sealed interface Action {
         object RestorePurchases : Action
         object NavigateBack : Action
+        object WorkflowTrigger : Action
+
+        @get:JvmSynthetic
+        val description: String
+            get() = "unknown"
 
         /**
          * @param rcPackage The package that will be purchased by this button. Will purchase the globally-selected
@@ -32,23 +40,35 @@ internal data class ButtonComponentStyle(
         data class PurchasePackage(
             val rcPackage: Package?,
             val resolvedOffer: ResolvedOffer? = null,
-        ) : Action
+        ) : Action {
+            override val description: String
+                get() = "in_app_checkout"
+        }
         data class WebCheckout(
             val rcPackage: Package?,
             val autoDismiss: Boolean,
             val openMethod: ButtonComponent.UrlMethod,
-        ) : Action
+        ) : Action {
+            override val description: String
+                get() = "web_checkout"
+        }
         data class WebProductSelection(
             val autoDismiss: Boolean,
             val openMethod: ButtonComponent.UrlMethod,
-        ) : Action
+        ) : Action {
+            override val description: String
+                get() = "web_product_selection"
+        }
         data class CustomWebCheckout(
             val urls: NonEmptyMap<LocaleId, String>,
             val autoDismiss: Boolean,
             val openMethod: ButtonComponent.UrlMethod,
             val rcPackage: Package?,
             val packageParam: String?,
-        ) : Action
+        ) : Action {
+            override val description: String
+                get() = "custom_web_checkout"
+        }
 
         @Poko
         class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action {
@@ -57,6 +77,8 @@ internal data class ButtonComponentStyle(
                 data class Url(
                     @get:JvmSynthetic val urls: NonEmptyMap<LocaleId, String>,
                     @get:JvmSynthetic val method: ButtonComponent.UrlMethod,
+                    /** Wire `component_value` for paywall component interaction (terms vs privacy vs generic link). */
+                    @get:JvmSynthetic val componentInteractionValue: String = "navigate_to_url",
                 ) : Destination
 
                 @Immutable

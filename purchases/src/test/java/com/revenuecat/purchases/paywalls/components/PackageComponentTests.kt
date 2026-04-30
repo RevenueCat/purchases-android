@@ -85,7 +85,8 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                    name = "Text",
                                 )
                             ),
                         )
@@ -266,6 +267,29 @@ internal class PackageComponentTests(@Suppress("UNUSED_PARAMETER") name: String,
                                 properties = PartialPackageComponent(visible = false),
                             )
                         ),
+                    )
+                ),
+            ),
+            arrayOf(
+                "optional name",
+                Args(
+                    json = """
+                        {
+                          "type": "package",
+                          "package_id": "${"$"}rc_weekly",
+                          "is_selected_by_default": true,
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "name": "hero_package"
+                        }
+                        """.trimIndent(),
+                    expected = PackageComponent(
+                        packageId = "${"$"}rc_weekly",
+                        isSelectedByDefault = true,
+                        stack = StackComponent(components = emptyList()),
+                        name = "hero_package",
                     )
                 ),
             ),

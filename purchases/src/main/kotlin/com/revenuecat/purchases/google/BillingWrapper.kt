@@ -8,6 +8,7 @@ package com.revenuecat.purchases.google
 import android.app.Activity
 import android.content.Context
 import android.os.Handler
+import android.os.HandlerThread
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import com.android.billingclient.api.BillingClient
@@ -65,7 +66,9 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.toStoreReplacementModeOrNull
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -85,12 +88,24 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
+    backgroundHandler: Handler? = null,
     private val deviceCache: DeviceCache,
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
+
+    // Only non-null when BillingWrapper created the thread itself — used to quit on close.
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val ownedBackgroundThread: HandlerThread? = if (backgroundHandler == null) {
+        HandlerThread("revenuecat-billing").apply { start() }
+    } else {
+        null
+    }
+
+    private val backgroundHandler: Handler =
+        backgroundHandler ?: Handler(ownedBackgroundThread!!.looper)
 
     private companion object {
         /**
@@ -124,7 +139,6 @@ internal class BillingWrapper(
         private val context: Context,
         private val pendingTransactionsForPrepaidPlansEnabled: Boolean,
     ) {
-        @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
             val pendingPurchaseParams = PendingPurchasesParams.newBuilder()
                 .enableOneTimeProducts()
@@ -152,45 +166,49 @@ internal class BillingWrapper(
         }
     }
 
-    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
-        mainHandler.postDelayed(
-            { startConnection() },
+    override fun startConnection(delayMilliseconds: Long) {
+        backgroundHandler.postDelayed(
+            { performStartConnection() },
             delayMilliseconds,
         )
     }
 
-    override fun startConnection() {
-        synchronized(this@BillingWrapper) {
-            if (billingClient == null) {
-                billingClient = clientFactory.buildClient(this)
-            }
-
-            reconnectionAlreadyScheduled = false
-
-            billingClient?.let {
-                if (!it.isReady) {
-                    log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(it) }
-                    diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
-                    try {
-                        it.startConnection(this)
-                    } catch (e: IllegalStateException) {
-                        log(LogIntent.GOOGLE_ERROR) {
-                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
-                        }
-                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
-                        sendErrorsToAllPendingRequests(error)
-                    } catch (e: SecurityException) {
-                        errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
-                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
-                        sendErrorsToAllPendingRequests(error)
-                    }
+    private fun performStartConnection() {
+        try {
+            // Keep the monitor scope limited to state mutation so the slow `startConnection(...)`
+            // call below doesn't hold off main-thread callers that synchronize on this wrapper.
+            val clientToStart = synchronized(this@BillingWrapper) {
+                if (billingClient == null) {
+                    billingClient = clientFactory.buildClient(this)
                 }
+                reconnectionAlreadyScheduled = false
+                billingClient?.takeIf { !it.isReady }
+            } ?: return
+
+            log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_STARTING.format(clientToStart) }
+            diagnosticsTrackerIfEnabled?.trackGoogleBillingStartConnection()
+            clientToStart.startConnection(this)
+        } catch (e: IllegalStateException) {
+            log(LogIntent.GOOGLE_ERROR) {
+                BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e)
             }
+            val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+            sendErrorsToAllPendingRequests(error)
+        } catch (e: SecurityException) {
+            errorLog(e) { BillingStrings.SECURITY_EXCEPTION_WHEN_CONNECTING }
+            val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+            sendErrorsToAllPendingRequests(error)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            // Preserve pre-background-thread behavior: any other throwable would have surfaced
+            // as an uncaught exception on the main thread and crashed the app. Rethrow on the
+            // main thread so the failure is visible in the same way.
+            errorLog(e) { "Unexpected error while starting the billing connection" }
+            mainHandler.post { throw e }
         }
     }
 
     override fun endConnection() {
-        mainHandler.post {
+        backgroundHandler.post {
             synchronized(this@BillingWrapper) {
                 billingClient?.let {
                     log(LogIntent.DEBUG) { BillingStrings.BILLING_CLIENT_ENDING.format(it) }
@@ -201,12 +219,19 @@ internal class BillingWrapper(
         }
     }
 
+    override fun close() {
+        super.close()
+        // quitSafely lets the cleanup runnable enqueued by endConnection() drain before the
+        // looper exits, so the HandlerThread is released without dropping pending work.
+        ownedBackgroundThread?.quitSafely()
+    }
+
     @Synchronized
     private fun executeRequestOnUIThread(delayMilliseconds: Long? = null, request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request to delayMilliseconds)
             if (billingClient?.isReady == false) {
-                startConnectionOnMainThread()
+                startConnection()
             } else {
                 executePendingRequests()
             }
@@ -287,7 +312,9 @@ internal class BillingWrapper(
             // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
             // switching from, because the transaction we receive on successful purchase is for the old product.
             val productId =
-                if (replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED) {
+                if (replaceProductInfo?.replacementMode == StoreReplacementMode.DEFERRED ||
+                    replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED
+                ) {
                     replaceProductInfo.oldPurchase.productIds.first()
                 } else {
                     googlePurchasingData.productId
@@ -311,7 +338,7 @@ internal class BillingWrapper(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
                 subscriptionOptionId,
-                replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
+                replaceProductInfo?.replacementMode.toStoreReplacementModeOrNull(),
                 subscriptionOptionIdForProductIDs,
             )
         }
@@ -738,7 +765,7 @@ internal class BillingWrapper(
         } else {
             log(LogIntent.WARNING) { BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds) }
             reconnectionAlreadyScheduled = true
-            startConnectionOnMainThread(reconnectMilliseconds)
+            startConnection(reconnectMilliseconds)
             reconnectMilliseconds = min(
                 reconnectMilliseconds * 2,
                 RECONNECT_TIMER_MAX_TIME_MILLISECONDS,
@@ -787,19 +814,30 @@ internal class BillingWrapper(
                     debugLog { "Activity is not attached to a window, not showing Google Play in-app message." }
                     return@withConnectedClient
                 }
-                showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
-                    when (val responseCode = inAppMessageResult.responseCode) {
-                        InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
-                            verboseLog { BillingStrings.BILLING_INAPP_MESSAGE_NONE }
-                        }
+                try {
+                    showInAppMessages(
+                        activity,
+                        inAppMessageParams,
+                    ) { inAppMessageResult ->
+                        when (val responseCode = inAppMessageResult.responseCode) {
+                            InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
+                                verboseLog { BillingStrings.BILLING_INAPP_MESSAGE_NONE }
+                            }
 
-                        InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
-                            debugLog { BillingStrings.BILLING_INAPP_MESSAGE_UPDATE }
-                            subscriptionStatusChange()
-                        }
+                            InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
+                                debugLog { BillingStrings.BILLING_INAPP_MESSAGE_UPDATE }
+                                subscriptionStatusChange()
+                            }
 
-                        else -> errorLog { BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode) }
+                            else -> errorLog {
+                                BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(
+                                    responseCode,
+                                )
+                            }
+                        }
                     }
+                } catch (@SuppressWarnings("TooGenericExceptionCaught") e: RuntimeException) {
+                    errorLog(e) { BillingStrings.BILLING_INAPP_MESSAGE_SHOW_EXCEPTION.format(e) }
                 }
             }
         }

@@ -1,11 +1,7 @@
 ## RevenueCat SDK
-### ✨ New Features
-* feat(ads): add possibility to update fullscreen content callback (#3325) via Peter Porfy (@peterporfy)
-* feat(ads): placement override at show time (#3318) via Peter Porfy (@peterporfy)
 ### 🐞 Bugfixes
-* fix(customer-center): prefer active entitlement when decorating subsc… (#3313) via Guilherme (@GuilhermeMota93)
+* Fix component paywall crash with root vertical overflow (#3404) via Monika Mateska (@MonikaMateska)
 
-## RevenueCatUI SDK
-### Paywallv2
-#### ✨ New Features
-* Add new HeaderComponent (#3290) via Cesar de la Vega (@vegaro)
+### 🔄 Other Changes
+* refactor: extract shared PaywallComponentsScaffold for reuse across paywall variants (#3408) via Cesar de la Vega (@vegaro)
+* build(deps): bump fastlane from 2.233.0 to 2.233.1 (#3406) via dependabot[bot] (@dependabot[bot])

@@ -4,19 +4,21 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.galaxy.GalaxyStrings
 import com.revenuecat.purchases.galaxy.IAPHelperProvider
-import com.revenuecat.purchases.galaxy.conversions.toSamsungProrationMode
+import com.revenuecat.purchases.galaxy.conversions.toGalaxyReplacementMode
 import com.revenuecat.purchases.galaxy.listener.ChangeSubscriptionPlanResponseListener
 import com.revenuecat.purchases.galaxy.logging.LogIntent
 import com.revenuecat.purchases.galaxy.logging.log
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.galaxy.utils.isError
 import com.revenuecat.purchases.galaxy.utils.toPurchasesError
-import com.revenuecat.purchases.models.GalaxyReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
+import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.vo.ErrorVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 
@@ -35,13 +37,13 @@ internal class ChangeSubscriptionPlanHandler(
     )
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongMethod")
     @GalaxySerialOperation
     override fun changeSubscriptionPlan(
         appUserID: String,
         oldPurchase: StoreTransaction,
         newProductId: String,
-        prorationMode: GalaxyReplacementMode,
+        replacementMode: StoreReplacementMode,
         onSuccess: (PurchaseVo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -66,6 +68,17 @@ internal class ChangeSubscriptionPlanHandler(
             return
         }
 
+        val samsungProrationMode: HelperDefine.ProrationMode
+        try {
+            samsungProrationMode = replacementMode.toGalaxyReplacementMode()
+        } catch (e: PurchasesException) {
+            log(LogIntent.GALAXY_ERROR) {
+                GalaxyStrings.CANNOT_CHANGE_SUBSCRIPTION_PLAN_UNSUPPORTED_REPLACEMENT_MODE
+            }
+            onError(e.error)
+            return
+        }
+
         inFlightRequest = Request(
             newProductId = newProductId,
             oldProductId = oldProductId,
@@ -83,7 +96,7 @@ internal class ChangeSubscriptionPlanHandler(
         val requestWasDispatched = iapHelper.changeSubscriptionPlan(
             oldItemId = oldProductId,
             newItemId = newProductId,
-            prorationMode = prorationMode.toSamsungProrationMode(),
+            prorationMode = samsungProrationMode,
             obfuscatedAccountId = appUserID.sha256(),
             obfuscatedProfileId = null,
             onChangeSubscriptionPlanListener = this,

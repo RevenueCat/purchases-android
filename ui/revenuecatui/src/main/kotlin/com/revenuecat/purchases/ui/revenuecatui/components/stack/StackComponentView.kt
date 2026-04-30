@@ -4,8 +4,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import android.content.res.Configuration
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -93,9 +97,31 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentS
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
 
+/**
+ * Renders a [StackComponentStyle].
+ *
+ * @param clickHandler Action dispatcher invoked by descendants when they fire a [PaywallAction]
+ *   (e.g. a child Button asking the screen to navigate back). This is *outbound*: the stack itself
+ *   does not call this; it just propagates from descendants up to the screen-level handler.
+ *   Distinct from [onStackClick].
+ * @param onStackClick Click callback when this entire stack is tapped. `null` makes the stack
+ *   non-clickable (no ripple, no gesture detection). When non-null, the stack draws a Material
+ *   ripple clipped to the stack's shape. Distinct from [clickHandler].
+ *
+ *   Overflow-safe drawing — i.e. nested children that extend outside the parent's bounds (badges
+ *   with offsets, drop shadows) staying visible during press — is currently only guaranteed for
+ *   the *plain* render path: stacks with no video background, no nested badge, and no overlay.
+ *   On those other paths a `clip(composeShape)` still gates descendant rendering, so overflowing
+ *   children can be cropped while the ripple is active.
+ * @param enabled When `false`, the underlying `Modifier.clickable` is gated off — clicks and the
+ *   ripple are suppressed, and the node is announced as disabled to accessibility services. Only
+ *   meaningful when [onStackClick] is non-null. Use for transient disabled states such as
+ *   "purchase in progress" or "already-selected package".
+ */
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 internal fun StackComponentView(
@@ -103,7 +129,11 @@ internal fun StackComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    onStackClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
     contentAlpha: Float = 1f,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
@@ -125,8 +155,12 @@ internal fun StackComponentView(
                     badge.stackStyle,
                     badge.alignment,
                     clickHandler,
+                    componentInteractionTracker,
                     contentAlpha,
                     modifier,
+                    onStackClick = onStackClick,
+                    enabled = enabled,
+                    interactionSource = interactionSource,
                 )
             }
 
@@ -140,8 +174,12 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment.isTop,
                         clickHandler,
+                        componentInteractionTracker,
                         contentAlpha,
                         modifier,
+                        onStackClick = onStackClick,
+                        enabled = enabled,
+                        interactionSource = interactionSource,
                     )
 
                     else
@@ -151,17 +189,42 @@ internal fun StackComponentView(
                         badge.stackStyle,
                         badge.alignment,
                         clickHandler,
+                        componentInteractionTracker,
                         contentAlpha,
                         modifier,
+                        onStackClick = onStackClick,
+                        enabled = enabled,
+                        interactionSource = interactionSource,
                     )
                 }
             }
 
             Badge.Style.Nested ->
-                MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier, badge)
+                MainStackComponent(
+                    stackState = stackState,
+                    state = state,
+                    clickHandler = clickHandler,
+                    componentInteractionTracker = componentInteractionTracker,
+                    contentAlpha = contentAlpha,
+                    modifier = modifier,
+                    onStackClick = onStackClick,
+                    enabled = enabled,
+                    interactionSource = interactionSource,
+                    nestedBadge = badge,
+                )
         }
     } else {
-        MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier)
+        MainStackComponent(
+            stackState = stackState,
+            state = state,
+            clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
+            contentAlpha = contentAlpha,
+            modifier = modifier,
+            onStackClick = onStackClick,
+            enabled = enabled,
+            interactionSource = interactionSource,
+        )
     }
 }
 
@@ -173,17 +236,31 @@ private fun StackWithOverlaidBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    onStackClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
 ) {
     Box(modifier = modifier) {
-        MainStackComponent(stackState, state, clickHandler, contentAlpha)
+        MainStackComponent(
+            stackState = stackState,
+            state = state,
+            clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
+            contentAlpha = contentAlpha,
+            onStackClick = onStackClick,
+            enabled = enabled,
+            interactionSource = interactionSource,
+        )
         val mainStackBorderWidthPx = with(LocalDensity.current) {
             stackState.border?.width?.toPx()
         }
         OverlaidBadge(
             badgeStack,
             state,
+            componentInteractionTracker,
             alignment,
             mainStackBorderWidthPx,
             modifier = Modifier.padding(stackState.margin),
@@ -202,8 +279,12 @@ private fun StackWithLongEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     topBadge: Boolean,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    onStackClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
 ) {
     val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
     val composeShape by remember(stackState.shape) { derivedStateOf { stackState.shape.toShape() } }
@@ -218,8 +299,12 @@ private fun StackWithLongEdgeToEdgeBadge(
                 stackState,
                 state,
                 clickHandler,
+                componentInteractionTracker,
                 contentAlpha,
                 shouldApplyShadow = false,
+                onStackClick = onStackClick,
+                enabled = enabled,
+                interactionSource = interactionSource,
             )
         }.first()
         val stackPlaceable = stackMeasurable.measure(constraints)
@@ -237,6 +322,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 ),
                 state,
                 clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
             )
         }.first()
         val badgePlaceable = badgeMeasurable.measure(constraints)
@@ -366,8 +452,12 @@ private fun StackWithShortEdgeToEdgeBadge(
     badgeStack: StackComponentStyle,
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    onStackClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
 ) {
     val adjustedCornerRadiuses: CornerRadiuses = when (val badgeRectangleCorners = badgeStack.shape.cornerRadiuses) {
         is CornerRadiuses.Percentage -> {
@@ -438,20 +528,33 @@ private fun StackWithShortEdgeToEdgeBadge(
             }
         }
     }
-    MainStackComponent(stackState, state, clickHandler, contentAlpha, modifier) {
+    MainStackComponent(
+        stackState = stackState,
+        state = state,
+        clickHandler = clickHandler,
+        componentInteractionTracker = componentInteractionTracker,
+        contentAlpha = contentAlpha,
+        modifier = modifier,
+        onStackClick = onStackClick,
+        enabled = enabled,
+        interactionSource = interactionSource,
+    ) {
         StackComponentView(
             badgeStack.copy(shape = Shape.Rectangle(adjustedCornerRadiuses)),
             state,
             clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
             modifier = Modifier.align(alignment.toAlignment()),
         )
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun BoxScope.OverlaidBadge(
     badgeStack: StackComponentStyle,
     state: PaywallState.Loaded.Components,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     alignment: TwoDimensionalAlignment,
     mainStackBorderWidthPx: Float?,
     modifier: Modifier = Modifier,
@@ -460,6 +563,7 @@ private fun BoxScope.OverlaidBadge(
         badgeStack,
         state,
         {},
+        componentInteractionTracker = componentInteractionTracker,
         modifier = modifier
             .align(alignment.toAlignment())
             .layout { measurable, constraints ->
@@ -480,8 +584,12 @@ private fun MainStackComponent(
     stackState: StackComponentState,
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     contentAlpha: Float,
     modifier: Modifier = Modifier,
+    onStackClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    interactionSource: MutableInteractionSource? = null,
     nestedBadge: BadgeStyle? = null,
     shouldApplyShadow: Boolean = true,
     overlay: (@Composable BoxScope.() -> Unit)? = null,
@@ -489,14 +597,17 @@ private fun MainStackComponent(
     val safeDrawingInsets = WindowInsets.safeDrawing
 
     // Show the right container composable depending on the dimension.
-    val stack: @Composable (Modifier) -> Unit = { rootModifier ->
+    // `outerModifier` is the caller-supplied modifier applied to the actual layout node parents
+    // see. The clickable plain path moves it onto a wrapper `Box` (so parent-data modifiers like
+    // `weight`/`align` reach the parent Row/Column) and passes `Modifier` here.
+    val stack: @Composable (Modifier, Modifier) -> Unit = { outerModifier, rootModifier ->
         val scrollState = stackState.scrollOrientation?.let { rememberScrollState() }
 
         // Columns and Rows don't draw anything if they don't have any children. A Box does. We want users to be able
         // to draw "boxes" using whatever stack they please, for instance to create dividers.
         if (stackState.children.isEmpty()) {
             Box(
-                modifier = modifier
+                modifier = outerModifier
                     .size(stackState.size)
                     .then(rootModifier),
             )
@@ -506,7 +617,7 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    modifier = modifier
+                    modifier = outerModifier
                         .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
@@ -518,6 +629,7 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
                             modifier = Modifier
                                 .conditional(child.size.width == Fill) { Modifier.weight(1f) }
                                 .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
@@ -532,7 +644,7 @@ private fun MainStackComponent(
                     size = stackState.size,
                     dimension = dimension,
                     spacing = stackState.spacing,
-                    modifier = modifier
+                    modifier = outerModifier
                         .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
                         .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                             scrollable(state, orientation)
@@ -544,6 +656,7 @@ private fun MainStackComponent(
                             style = child,
                             state = state,
                             onClick = clickHandler,
+                            componentInteractionTracker = componentInteractionTracker,
                             modifier = Modifier
                                 .conditional(child.size.height == Fill) { Modifier.weight(1f) }
                                 .conditional(
@@ -570,7 +683,7 @@ private fun MainStackComponent(
                         0
                     }
                     Box(
-                        modifier = modifier
+                        modifier = outerModifier
                             .size(
                                 size = stackState.size,
                                 horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
@@ -589,6 +702,7 @@ private fun MainStackComponent(
                                 style = child,
                                 state = state,
                                 onClick = clickHandler,
+                                componentInteractionTracker = componentInteractionTracker,
                                 modifier = Modifier
                                     .conditional(applyTopInsets && !stackState.ignoreHeaderHeight) {
                                         // Read header height at layout time. If set (hero case),
@@ -637,6 +751,18 @@ private fun MainStackComponent(
             .padding(stackState.padding)
     }
 
+    val resolvedInteractionSource = interactionSource ?: remember { MutableInteractionSource() }
+    val clickModifier = if (onStackClick != null) {
+        Modifier.clickable(
+            interactionSource = resolvedInteractionSource,
+            indication = LocalIndication.current,
+            enabled = enabled,
+            onClick = onStackClick,
+        )
+    } else {
+        Modifier
+    }
+
     if (nestedBadge == null && overlay == null) {
         if (backgroundStyle is BackgroundStyle.Video) {
             // Video backgrounds require a Box wrapper with explicit sizing
@@ -648,9 +774,11 @@ private fun MainStackComponent(
                     .size(stackState.size)
                     .then(outerShapeModifier)
                     .clip(composeShape)
+                    .then(clickModifier)
                     .then(borderModifier),
             ) {
                 stack(
+                    modifier,
                     Modifier
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
@@ -661,8 +789,49 @@ private fun MainStackComponent(
                         },
                 )
             }
+        } else if (onStackClick != null) {
+            // Wrapper-Box + matchParentSize-sibling pattern. We deliberately split:
+            // - The wrapper `Box` carries the caller's `modifier` (so parent-data modifiers like
+            //   `Modifier.weight` reach the parent Row/Column) and owns the click gesture +
+            //   semantics — this co-locates `OnClick` with the caller's `testTag` / `Role` on
+            //   one merged semantics node.
+            // - The inner stack draws its content (shadow, background, border, padding) without
+            //   any shape clip, so children that intentionally overflow the parent's bounds
+            //   (e.g. badges with offsets, overflowing shadows) remain visible.
+            // - The sibling `Box` provides the shape-clipped Material ripple via
+            //   `Modifier.indication`, sharing the same `InteractionSource` as the wrapper's
+            //   clickable so press events drive its draw.
+            Box(
+                modifier = modifier.clickable(
+                    interactionSource = resolvedInteractionSource,
+                    indication = null,
+                    enabled = enabled,
+                    onClick = onStackClick,
+                ),
+            ) {
+                stack(
+                    Modifier,
+                    outerShapeModifier
+                        .then(borderModifier)
+                        .then(innerShapeModifier)
+                        .conditional(stackState.applyBottomWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Bottom))
+                        }
+                        .conditional(stackState.applyHorizontalWindowInsets) {
+                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Horizontal))
+                        },
+                )
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .padding(stackState.margin)
+                        .clip(composeShape)
+                        .indication(resolvedInteractionSource, LocalIndication.current),
+                )
+            }
         } else {
             stack(
+                modifier,
                 outerShapeModifier
                     .then(borderModifier)
                     .then(innerShapeModifier)
@@ -679,28 +848,31 @@ private fun MainStackComponent(
             modifier = modifier
                 .then(outerShapeModifier)
                 .clip(composeShape)
+                .then(clickModifier)
                 .then(borderModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(Modifier.then(innerShapeModifier))
+                stack(modifier, Modifier.then(innerShapeModifier))
             }
 
             StackComponentView(
                 nestedBadge.stackStyle,
                 state,
-                {},
+                clickHandler = {},
                 modifier = Modifier
                     .align(nestedBadge.alignment.toAlignment()),
+                componentInteractionTracker = componentInteractionTracker,
             )
         }
     } else if (overlay != null) {
         Box(
             modifier = modifier
                 .then(outerShapeModifier)
-                .clip(composeShape),
+                .clip(composeShape)
+                .then(clickModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(borderModifier.then(innerShapeModifier))
+                stack(modifier, borderModifier.then(innerShapeModifier))
             }
             overlay()
         }
@@ -1699,6 +1871,113 @@ private fun StackComponentView_Preview_ContentAlpha() {
         state = previewEmptyState(),
         clickHandler = {},
         contentAlpha = 0.6f,
+    )
+}
+
+// Regression guard: when the parent stack is clickable, the ripple's shape clip must not
+// also clip nested children that draw outside the parent's bounds. Here the inner stack
+// has a generous shadow that should bleed past the outer's rounded edge — if a future
+// change reintroduces a graphics-layer clip on the clickable layout node, the shadow will
+// be visibly clipped at the outer's rounded corners in this preview.
+@Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
+@Composable
+private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = listOf(
+                previewStackComponentStyle(
+                    children = listOf(
+                        previewTextComponentStyle(
+                            text = "Nested",
+                            size = Size(width = Fit, height = Fit),
+                        ),
+                    ),
+                    size = Size(width = Fit, height = Fit),
+                    padding = PaddingValues(all = 16.dp),
+                    margin = PaddingValues(all = 0.dp),
+                    background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
+                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 4.0)),
+                    border = null,
+                    shadow = ShadowStyles(
+                        colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                        radius = 24.dp,
+                        x = 0.dp,
+                        y = 0.dp,
+                    ),
+                ),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = PaddingValues(all = 0.dp),
+            margin = PaddingValues(all = 32.dp),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 32.0)),
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Transparent))),
+            border = null,
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+        onStackClick = { },
+    )
+}
+
+// This is a regression test. Right now we apply the modifier twice when using a badge like this
+// This makes sure we don't modify this behavior without being aware.
+@Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
+@Composable
+private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Twice() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Inner content",
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = PaddingValues(all = 12.dp),
+            margin = PaddingValues(all = 0.dp),
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 12.0)),
+            border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
+            badge = previewBadge(
+                style = Badge.Style.Nested,
+                alignment = TwoDimensionalAlignment.TOP_TRAILING,
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 6.0)),
+            ),
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+        modifier = Modifier.padding(40.dp),
+    )
+}
+
+// This is a regression test. Right now we apply the modifier twice when using a badge like this
+// This makes sure we don't modify this behavior without being aware.
+@Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
+@Composable
+private fun StackComponentView_Preview_EdgeToEdgeBadge_Caller_Modifier_Applied_Twice() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Inner content",
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = PaddingValues(all = 12.dp),
+            margin = PaddingValues(all = 0.dp),
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 12.0)),
+            border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
+            badge = previewBadge(
+                style = Badge.Style.EdgeToEdge,
+                alignment = TwoDimensionalAlignment.TOP_TRAILING,
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0)),
+            ),
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+        modifier = Modifier.padding(40.dp),
     )
 }
 

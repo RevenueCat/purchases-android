@@ -62,6 +62,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSu
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
+import com.revenuecat.purchases.ui.revenuecatui.helpers.safeResume
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
@@ -76,7 +77,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
 import java.util.Locale
-import kotlin.coroutines.resume
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath.PathDetail.PromotionalOffer.CrossProductPromotion as CrossProductPromotion
 
 @Suppress("TooManyFunctions")
@@ -602,8 +602,8 @@ internal class CustomerCenterViewModelImpl(
         val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for $listenerName to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
-                continuation.resume(shouldResume)
-            } ?: continuation.resume(true)
+                continuation.safeResume(shouldResume)
+            } ?: continuation.safeResume(true)
         }
         val detail = if (shouldResume) "will" else "will not"
         Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")

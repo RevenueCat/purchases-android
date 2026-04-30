@@ -1,8 +1,10 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +19,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.offset
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -53,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -60,26 +64,74 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetClose
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetOpen
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import java.net.URL
 import java.util.Date
 
-@Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
 
-    val style = state.stack
-    val headerComponentStyle = state.header
-    val footerComponentStyle = state.stickyFooter
+    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
+        handleClick(action, state, clickHandler, componentInteractionTracker)
+    }
+
+    // If the root stack already scrolls vertically (overflow = SCROLL on a vertical dimension),
+    // skip the outer verticalScroll — two vertical scroll modifiers on the same axis crashes.
+    val shouldWrapMainContentInVerticalScroll =
+        (state.stack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
+    val mainScrollState = rememberScrollState()
+
+    PaywallComponentsScaffold(
+        state = state,
+        clickHandler = clickHandler,
+        componentInteractionTracker = componentInteractionTracker,
+        modifier = modifier,
+    ) {
+        ComponentView(
+            style = state.stack,
+            state = state,
+            onClick = onClick,
+            componentInteractionTracker = componentInteractionTracker,
+            modifier = Modifier
+                .fillMaxSize()
+                .conditional(shouldWrapMainContentInVerticalScroll) {
+                    verticalScroll(mainScrollState)
+                }
+                .conditional(state.header != null && !state.mainStackHasHeroImage) {
+                    headerTopPadding(state)
+                },
+        )
+    }
+}
+
+/**
+ * Shared scaffold for all Components-based paywall variants. Handles the background, bottom-sheet,
+ * overlay, fixed-header overlay, and sticky footer. Callers supply the main scrollable content as
+ * [mainContent] and decide for themselves whether to apply [headerTopPadding] based on [state].
+ */
+@Composable
+internal fun PaywallComponentsScaffold(
+    state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction.External) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
+    modifier: Modifier = Modifier,
+    mainContent: @Composable () -> Unit,
+) {
     val background = rememberBackgroundStyle(state.background)
-    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction -> handleClick(action, state, clickHandler) }
+    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
+        handleClick(action, state, clickHandler, componentInteractionTracker)
+    }
 
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
@@ -91,22 +143,10 @@ internal fun LoadedPaywallComponents(
                     state = state,
                     modifier = Modifier.weight(1f),
                 ) {
-                    // Child 0: main scrollable content.
-                    ComponentView(
-                        style = style,
-                        state = state,
-                        onClick = onClick,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .conditional(
-                                headerComponentStyle != null && !state.mainStackHasHeroImage,
-                            ) {
-                                headerTopPadding(state)
-                            },
-                    )
-                    // Child 1 (optional): header overlay.
-                    headerComponentStyle?.let { headerStyle ->
+                    // Child 0: caller-supplied main content (scrollable body or slide container).
+                    mainContent()
+                    // Child 1 (optional): fixed header overlay.
+                    state.header?.let { headerStyle ->
                         ComponentView(
                             style = headerStyle,
                             state = state,
@@ -115,11 +155,12 @@ internal fun LoadedPaywallComponents(
                         )
                     }
                 }
-                footerComponentStyle?.let {
+                state.stickyFooter?.let {
                     ComponentView(
                         style = it,
                         state = state,
                         onClick = onClick,
+                        componentInteractionTracker = componentInteractionTracker,
                         modifier = Modifier
                             .fillMaxWidth(),
                     )
@@ -137,7 +178,7 @@ internal fun LoadedPaywallComponents(
  * Children: index 0 = main scrollable content, index 1 (optional) = header overlay.
  */
 @Composable
-private fun HeaderOverlayLayout(
+internal fun HeaderOverlayLayout(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
@@ -172,7 +213,7 @@ private fun HeaderOverlayLayout(
  * layout phase from [state.headerHeightPx][PaywallState.Loaded.Components.headerHeightPx], which
  * is set by [HeaderOverlayLayout] earlier in the same layout pass.
  */
-private fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
+internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
     this.layout { measurable, constraints ->
         val topPad = state.headerHeightPx
         val placeable = measurable.measure(constraints.offset(vertical = -topPad))
@@ -181,23 +222,32 @@ private fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Mo
         }
     }
 
-private suspend fun handleClick(
+internal suspend fun handleClick(
     action: PaywallAction,
     state: PaywallState.Loaded.Components,
     externalClickHandler: suspend (PaywallAction.External) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
     when (action) {
         is PaywallAction.External -> externalClickHandler(action)
         is PaywallAction.Internal -> when (action) {
             is PaywallAction.Internal.NavigateTo -> when (action.destination) {
-                is PaywallAction.Internal.NavigateTo.Destination.Sheet ->
-                    state.sheet.show(action.destination.sheet, state) {
-                        handleClick(
-                            it,
-                            state,
-                            externalClickHandler,
-                        )
+                is PaywallAction.Internal.NavigateTo.Destination.Sheet -> {
+                    val sheet = action.destination.sheet
+                    componentInteractionTracker.track(
+                        paywallPackageSelectionSheetOpen(
+                            sheetComponentName = sheet.name,
+                            rootSelectedPackage = state.selectedPackageInfo?.rcPackage,
+                        ),
+                    )
+                    state.sheet.show(
+                        sheet,
+                        state,
+                        componentInteractionTracker,
+                    ) {
+                        handleClick(it, state, externalClickHandler, componentInteractionTracker)
                     }
+                }
             }
         }
     }
@@ -206,9 +256,10 @@ private suspend fun handleClick(
 /**
  * Shows the provided [sheet] as this [SimpleSheetState]'s sheet content.
  */
-private fun SimpleSheetState.show(
+internal fun SimpleSheetState.show(
     sheet: ButtonComponentStyle.Action.NavigateTo.Destination.Sheet,
     state: PaywallState.Loaded.Components,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
     onClick: suspend (PaywallAction) -> Unit,
 ) {
     show(
@@ -217,6 +268,7 @@ private fun SimpleSheetState.show(
             ComponentView(
                 style = sheet.stack,
                 state = state,
+                componentInteractionTracker = componentInteractionTracker,
                 onClick = { action ->
                     when (action) {
                         is PaywallAction.External.NavigateBack -> hide()
@@ -229,6 +281,15 @@ private fun SimpleSheetState.show(
             )
         },
         onDismiss = {
+            val sheetSelected = state.selectedPackageInfo
+            val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
+            componentInteractionTracker.track(
+                paywallPackageSelectionSheetClose(
+                    sheetComponentName = sheet.name,
+                    sheetSelectedPackage = sheetSelected?.rcPackage,
+                    resultingRootPackage = resulting?.rcPackage,
+                ),
+            )
             state.resetToDefaultPackage()
         },
     )
@@ -256,6 +317,7 @@ private fun LoadedPaywallComponents_BottomSheet_NullSize_Preview() {
     state.sheet.show(
         sheet = previewBottomSheet(size = null),
         state = state,
+        componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
         onClick = { },
     )
 
@@ -275,6 +337,7 @@ private fun LoadedPaywallComponents_BottomSheet_FitSize_Preview() {
     state.sheet.show(
         sheet = previewBottomSheet(size = Size(width = Fit, height = Fit)),
         state = state,
+        componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
         onClick = { },
     )
 

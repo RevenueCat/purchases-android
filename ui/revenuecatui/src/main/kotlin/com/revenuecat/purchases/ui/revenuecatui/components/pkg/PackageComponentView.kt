@@ -1,15 +1,18 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
-import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageRowSelection
 
 @JvmSynthetic
 @Composable
@@ -18,10 +21,15 @@ internal fun PackageComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val packageState = rememberUpdatedPackageComponentState(style = style, paywallState = state)
 
     if (!packageState.visible) return
+
+    val enabled = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
+        state.selectedPackageInfo?.uniqueId != style.uniqueId
+    }
 
     StackComponentView(
         style = style.stackComponentStyle,
@@ -30,10 +38,23 @@ internal fun PackageComponentView(
             // If this package is selectable, a click will select it. No need to pass the click to the clickHandler.
             if (!style.isSelectable) clickHandler(action)
         },
-        modifier = modifier.conditional(style.isSelectable) {
-            clickable(
-                enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
-            ) { state.update(selectedPackageUniqueId = style.uniqueId) }
+        componentInteractionTracker = componentInteractionTracker,
+        modifier = modifier,
+        enabled = enabled,
+        onStackClick = if (style.isSelectable) {
+            {
+                componentInteractionTracker.track(
+                    paywallPackageRowSelection(
+                        componentName = style.componentName,
+                        destination = style.rcPackage,
+                        origin = state.selectedPackageInfo?.rcPackage,
+                        defaultPackage = state.defaultPackageForPackageRowAnalytics(),
+                    ),
+                )
+                state.update(selectedPackageUniqueId = style.uniqueId)
+            }
+        } else {
+            null
         },
     )
 }
