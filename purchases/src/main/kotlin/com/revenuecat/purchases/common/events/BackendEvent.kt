@@ -189,6 +189,8 @@ internal sealed class BackendEvent : Event {
      * @property appSessionID The session ID of the app session when this event occurred.
      * @property timestamp Unix timestamp representing when the event occurred.
      * @property paywallID The identifier of the custom paywall.
+     * @property offeringID The offering ID related to this custom paywall event.
+     * @property presentedOfferingContext The placement and targeting context for the offering, if any.
      */
     @Serializable
     @SerialName("custom_paywall_event")
@@ -205,6 +207,8 @@ internal sealed class BackendEvent : Event {
         val paywallID: String? = null,
         @SerialName("offering_id")
         val offeringID: String? = null,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: CustomPaywallPresentedOfferingContextData? = null,
     ) : BackendEvent()
 
     /**
@@ -256,6 +260,33 @@ internal sealed class BackendEvent : Event {
             @SerialName("is_last_variant_step")
             val isLastVariantStep: Boolean? = null,
         )
+    }
+
+    @Serializable
+    data class CustomPaywallPresentedOfferingContextData(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    ) {
+        companion object {
+            fun from(
+                placementIdentifier: String?,
+                targetingRevision: Int?,
+                targetingRuleId: String?,
+            ): CustomPaywallPresentedOfferingContextData? {
+                if (placementIdentifier == null && targetingRevision == null && targetingRuleId == null) {
+                    return null
+                }
+                return CustomPaywallPresentedOfferingContextData(
+                    placementIdentifier = placementIdentifier,
+                    targetingRevision = targetingRevision,
+                    targetingRuleId = targetingRuleId,
+                )
+            }
+        }
     }
 
     @Serializable
