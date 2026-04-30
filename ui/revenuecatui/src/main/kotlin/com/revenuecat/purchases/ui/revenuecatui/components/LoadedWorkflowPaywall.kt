@@ -179,38 +179,42 @@ private fun WorkflowStepContent(
     val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(stepState.stack)
     val mainScrollState = rememberScrollState()
 
-    WithOptionalBackgroundOverlay(
-        state = stepState,
-        background = background,
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .workflowSlide(slideState, stepId, currentStepId)
             .background(background),
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            ComponentView(
-                style = stepState.stack,
-                state = stepState,
-                onClick = onClick,
-                componentInteractionTracker = tracker,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .conditional(shouldWrapMainContentInVerticalScroll) {
-                        verticalScroll(mainScrollState)
-                    }
-                    .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
-                        headerTopPadding(stepState)
-                    },
-            )
-            stepState.stickyFooter?.let { footerStyle ->
+        WithOptionalBackgroundOverlay(
+            state = stepState,
+            background = background,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 ComponentView(
-                    style = footerStyle,
+                    style = stepState.stack,
                     state = stepState,
                     onClick = onClick,
                     componentInteractionTracker = tracker,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .conditional(shouldWrapMainContentInVerticalScroll) {
+                            verticalScroll(mainScrollState)
+                        }
+                        .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
+                            headerTopPadding(stepState)
+                        },
                 )
+                stepState.stickyFooter?.let { footerStyle ->
+                    ComponentView(
+                        style = footerStyle,
+                        state = stepState,
+                        onClick = onClick,
+                        componentInteractionTracker = tracker,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }
