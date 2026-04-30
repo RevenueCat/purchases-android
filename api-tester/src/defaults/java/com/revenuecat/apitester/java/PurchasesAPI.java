@@ -38,6 +38,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -144,7 +145,7 @@ final class PurchasesAPI {
                 "my-offering",
                 "",
                 new HashMap<>(),
-                new java.util.ArrayList<>()
+                new ArrayList<>()
         );
         CustomPaywallImpressionParams paramsWithOfferingObject =
                 new CustomPaywallImpressionParams("my-paywall", offering);
