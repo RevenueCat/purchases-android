@@ -854,9 +854,9 @@ internal class PaywallViewModelImpl(
                 }
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
                     workflowStepStateCache[stepId] = computed
-                    _workflowState.value = _workflowState.value?.copy(stepStates = workflowStepStateCache.toMap())
                 }
             }
+            _workflowState.value = _workflowState.value?.copy(stepStates = workflowStepStateCache.toMap())
         }
     }
 
