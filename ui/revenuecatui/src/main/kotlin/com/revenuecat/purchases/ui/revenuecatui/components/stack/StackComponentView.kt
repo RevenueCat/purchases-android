@@ -1919,6 +1919,66 @@ private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow()
     )
 }
 
+
+@Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
+@Composable
+private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Once() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Inner content",
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = PaddingValues(all = 12.dp),
+            margin = PaddingValues(all = 0.dp),
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 12.0)),
+            border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
+            badge = previewBadge(
+                style = Badge.Style.Nested,
+                alignment = TwoDimensionalAlignment.TOP_TRAILING,
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 6.0)),
+            ),
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+        modifier = Modifier.padding(40.dp),
+    )
+}
+
+
+@Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
+@Composable
+private fun StackComponentView_Preview_EdgeToEdgeBadge_Caller_Modifier_Applied_Once() {
+    StackComponentView(
+        style = previewStackComponentStyle(
+            children = listOf(
+                previewTextComponentStyle(
+                    text = "Inner content",
+                    size = Size(width = Fit, height = Fit),
+                ),
+            ),
+            size = Size(width = Fit, height = Fit),
+            padding = PaddingValues(all = 12.dp),
+            margin = PaddingValues(all = 0.dp),
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 12.0)),
+            border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
+            badge = previewBadge(
+                style = Badge.Style.EdgeToEdge,
+                alignment = TwoDimensionalAlignment.TOP_TRAILING,
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 0.0)),
+            ),
+        ),
+        state = previewEmptyState(),
+        clickHandler = { },
+        modifier = Modifier.padding(40.dp),
+    )
+}
+
 @Composable
 private fun previewChildren() = listOf(
     previewTextComponentStyle(
