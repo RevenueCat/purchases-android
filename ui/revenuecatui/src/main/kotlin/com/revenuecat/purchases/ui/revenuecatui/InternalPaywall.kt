@@ -68,6 +68,23 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
+@Composable
+private fun PaywallFontScaling(
+    automaticallyScaleFontSize: Boolean?,
+    content: @Composable () -> Unit,
+) {
+    if (automaticallyScaleFontSize == true) {
+        content()
+    } else {
+        val density = LocalDensity.current
+        CompositionLocalProvider(
+            LocalDensity provides Density(density.density, fontScale = 1f),
+        ) {
+            content()
+        }
+    }
+}
+
 @Suppress("LongMethod", "ViewModelForwarding")
 @Composable
 internal fun InternalPaywall(
@@ -146,23 +163,14 @@ internal fun InternalPaywall(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
-            val allowScaledFonts = false
-            if (allowScaledFonts) {
+            PaywallFontScaling(
+                automaticallyScaleFontSize = state.offering.paywallComponents?.data?.automaticallyScaleFontSize,
+            ) {
                 LoadedPaywallComponents(
                     state = state,
                     clickHandler = rememberPaywallActionHandler(viewModel),
                     componentInteractionTracker = componentInteractionTracker,
                 )
-            } else {
-                CompositionLocalProvider(
-                    LocalDensity provides Density(LocalDensity.current.density, fontScale = 1f)
-                ) {
-                    LoadedPaywallComponents(
-                        state = state,
-                        clickHandler = rememberPaywallActionHandler(viewModel),
-                        componentInteractionTracker = componentInteractionTracker,
-                    )
-                }
             }
         } else {
             Logger.e(
