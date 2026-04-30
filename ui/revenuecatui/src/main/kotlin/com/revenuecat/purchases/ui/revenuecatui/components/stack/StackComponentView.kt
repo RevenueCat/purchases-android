@@ -1919,7 +1919,6 @@ private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow()
     )
 }
 
-
 @Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
 @Composable
 private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Once() {
@@ -1948,7 +1947,6 @@ private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Once(
         modifier = Modifier.padding(40.dp),
     )
 }
-
 
 @Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
 @Composable

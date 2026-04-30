@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -26,6 +27,10 @@ internal fun PackageComponentView(
 
     if (!packageState.visible) return
 
+    val enabled = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
+        state.selectedPackageInfo?.uniqueId != style.uniqueId
+    }
+
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
@@ -35,7 +40,7 @@ internal fun PackageComponentView(
         },
         componentInteractionTracker = componentInteractionTracker,
         modifier = modifier,
-        enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
+        enabled = enabled,
         onStackClick = if (style.isSelectable) {
             {
                 componentInteractionTracker.track(
