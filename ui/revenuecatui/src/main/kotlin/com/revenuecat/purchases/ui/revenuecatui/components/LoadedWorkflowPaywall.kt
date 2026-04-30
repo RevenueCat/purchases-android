@@ -220,7 +220,7 @@ internal fun selectWorkflowHeaderStepId(
     transitionState: WorkflowHeaderTransitionState,
 ): String {
     val fromStepId = transitionState.pendingTransition?.fromStepId
-    val direction = transitionState.pendingTransition?.direction ?: NavigationDirection.NONE
+    val direction = transitionState.pendingTransition?.direction
     val fromStepInfo = fromStepId?.let(stepInfoByStepId::get)
     val toStepInfo = stepInfoByStepId[currentStepId]
     val useOutgoingHeader = transitionState.pendingTransition != null &&
@@ -232,7 +232,7 @@ internal fun selectWorkflowHeaderStepId(
 }
 
 private fun shouldUseOutgoingHeader(
-    direction: NavigationDirection,
+    direction: NavigationDirection?,
     fromStepInfo: WorkflowHeaderStepInfo,
     toStepInfo: WorkflowHeaderStepInfo,
 ): Boolean = fromStepInfo.hasHeader &&

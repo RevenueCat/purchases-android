@@ -30,14 +30,14 @@ private const val SLIDE_DURATION_MS = 350
  *
  * @param visibleStepIds step IDs currently held in the Compose slot table.
  * @param animatingFromStepId step ID sliding out; null when idle.
- * @param animatingDirection direction of the active slide; [NavigationDirection.NONE] when idle.
+ * @param animatingDirection direction of the active slide; null when idle.
  * @param animatable drives progress 0f→1f. Created fresh via [key] for each new
  *   [WorkflowPaywallUiState.pendingTransition] so it always starts at 0f.
  */
 internal class WorkflowSlideState(
     val visibleStepIds: Set<String>,
     val animatingFromStepId: String?,
-    val animatingDirection: NavigationDirection,
+    val animatingDirection: NavigationDirection?,
     val animatable: Animatable<Float, AnimationVector1D>,
 )
 
@@ -89,7 +89,7 @@ internal fun rememberWorkflowSlideState(
             setOf(currentStepId)
         },
         animatingFromStepId = pendingTransition?.fromStepId,
-        animatingDirection = pendingTransition?.direction ?: NavigationDirection.NONE,
+        animatingDirection = pendingTransition?.direction,
         animatable = animatable,
     )
 }
