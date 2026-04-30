@@ -1,8 +1,13 @@
 package com.revenuecat.purchases.paywalls.events
 
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
+import com.revenuecat.purchases.utils.stubStoreProduct
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -353,5 +358,241 @@ class CustomPaywallEventTest {
         val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
 
         assertThat(jsonString).contains("\"app_session_id\":\"$appSessionID\"")
+    }
+
+    // region Params: Offering-based init
+
+    @Test
+    fun `CustomPaywallImpressionParams default has null offering`() {
+        val params = CustomPaywallImpressionParams()
+        assertThat(params.offering).isNull()
+    }
+
+    @Test
+    fun `CustomPaywallImpressionParams string-id init does not store offering`() {
+        val params = CustomPaywallImpressionParams(paywallId = "pw", offeringId = "my-offering")
+        assertThat(params.offering).isNull()
+    }
+
+    @Test
+    fun `CustomPaywallImpressionParams Offering-based init populates offeringId from offering`() {
+        val offering = makeOffering(identifier = "my-offering")
+        val params = CustomPaywallImpressionParams(paywallId = "pw", offering = offering)
+
+        assertThat(params.paywallId).isEqualTo("pw")
+        assertThat(params.offeringId).isEqualTo("my-offering")
+    }
+
+    @Test
+    fun `CustomPaywallImpressionParams Offering-based init stores offering`() {
+        val offering = makeOffering(identifier = "my-offering")
+        val params = CustomPaywallImpressionParams(paywallId = "pw", offering = offering)
+
+        assertThat(params.offering).isSameAs(offering)
+    }
+
+    @Test
+    fun `CustomPaywallImpressionParams Offering-only init defaults paywallId to null`() {
+        val offering = makeOffering(identifier = "offering_1")
+        val params = CustomPaywallImpressionParams(offering = offering)
+
+        assertThat(params.paywallId).isNull()
+        assertThat(params.offeringId).isEqualTo("offering_1")
+        assertThat(params.offering).isSameAs(offering)
+    }
+
+    // endregion
+
+    // region Data: placement and targeting fields
+
+    @Test
+    fun `CustomPaywallEvent Data placement and targeting default to null`() {
+        val data = CustomPaywallEvent.Impression.Data(paywallId = "pw", offeringId = "off")
+
+        assertThat(data.placementIdentifier).isNull()
+        assertThat(data.targetingRevision).isNull()
+        assertThat(data.targetingRuleId).isNull()
+    }
+
+    @Test
+    fun `CustomPaywallEvent Data preserves placement and targeting`() {
+        val data = CustomPaywallEvent.Impression.Data(
+            paywallId = "pw",
+            offeringId = "off",
+            placementIdentifier = "home_banner",
+            targetingRevision = 3,
+            targetingRuleId = "rule_abc123",
+        )
+
+        assertThat(data.placementIdentifier).isEqualTo("home_banner")
+        assertThat(data.targetingRevision).isEqualTo(3)
+        assertThat(data.targetingRuleId).isEqualTo("rule_abc123")
+    }
+
+    // endregion
+
+    // region toBackendStoredEvent: presented offering context
+
+    @Test
+    fun `toBackendStoredEvent populates presentedOfferingContext when all fields set`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "pw",
+                offeringId = "off",
+                placementIdentifier = "home_banner",
+                targetingRevision = 3,
+                targetingRuleId = "rule_abc123",
+            ),
+        )
+
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID) as BackendStoredEvent.CustomPaywall
+
+        assertThat(storedEvent.event.presentedOfferingContext).isEqualTo(
+            BackendEvent.CustomPaywallPresentedOfferingContextData(
+                placementIdentifier = "home_banner",
+                targetingRevision = 3,
+                targetingRuleId = "rule_abc123",
+            ),
+        )
+    }
+
+    @Test
+    fun `toBackendStoredEvent populates presentedOfferingContext with placement only`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "pw",
+                offeringId = "off",
+                placementIdentifier = "home_banner",
+            ),
+        )
+
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID) as BackendStoredEvent.CustomPaywall
+
+        assertThat(storedEvent.event.presentedOfferingContext).isEqualTo(
+            BackendEvent.CustomPaywallPresentedOfferingContextData(placementIdentifier = "home_banner"),
+        )
+    }
+
+    @Test
+    fun `toBackendStoredEvent leaves presentedOfferingContext null when all fields null`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "pw", offeringId = "off"),
+        )
+
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID) as BackendStoredEvent.CustomPaywall
+
+        assertThat(storedEvent.event.presentedOfferingContext).isNull()
+    }
+
+    // endregion
+
+    // region Wire encoding: presented_offering_context
+
+    @Test
+    fun `BackendStoredEvent CustomPaywall JSON nests presented_offering_context with all fields`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "pw",
+                offeringId = "off",
+                placementIdentifier = "home_banner",
+                targetingRevision = 3,
+                targetingRuleId = "rule_abc123",
+            ),
+        )
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
+
+        assertThat(jsonString).contains(
+            "\"presented_offering_context\":{" +
+                "\"placement_identifier\":\"home_banner\"," +
+                "\"targeting_revision\":3," +
+                "\"targeting_rule_id\":\"rule_abc123\"" +
+                "}",
+        )
+    }
+
+    @Test
+    fun `BackendStoredEvent CustomPaywall JSON nests presented_offering_context with placement only`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "pw",
+                offeringId = "off",
+                placementIdentifier = "home_banner",
+            ),
+        )
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
+
+        assertThat(jsonString).contains("\"presented_offering_context\":{\"placement_identifier\":\"home_banner\"}")
+        assertThat(jsonString).doesNotContain("\"targeting_revision\"")
+        assertThat(jsonString).doesNotContain("\"targeting_rule_id\"")
+    }
+
+    @Test
+    fun `BackendStoredEvent CustomPaywall JSON omits presented_offering_context when null`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(paywallId = "pw", offeringId = "off"),
+        )
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
+
+        assertThat(jsonString).doesNotContain("presented_offering_context")
+    }
+
+    @Test
+    fun `BackendStoredEvent CustomPaywall JSON roundtrip preserves presented_offering_context`() {
+        val event = CustomPaywallEvent.Impression(
+            creationData = CustomPaywallEvent.Impression.CreationData(id = fixedId, date = fixedDate),
+            data = CustomPaywallEvent.Impression.Data(
+                paywallId = "pw",
+                offeringId = "off",
+                placementIdentifier = "home_banner",
+                targetingRevision = 3,
+                targetingRuleId = "rule_abc123",
+            ),
+        )
+        val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
+
+        val jsonString = json.encodeToString(BackendStoredEvent.serializer(), storedEvent)
+        val decoded = json.decodeFromString(BackendStoredEvent.serializer(), jsonString)
+
+        val decodedEvent = (decoded as BackendStoredEvent.CustomPaywall).event
+        assertThat(decodedEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.CustomPaywallPresentedOfferingContextData(
+                placementIdentifier = "home_banner",
+                targetingRevision = 3,
+                targetingRuleId = "rule_abc123",
+            ),
+        )
+    }
+
+    // endregion
+
+    private fun makeOffering(
+        identifier: String,
+        presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(identifier),
+    ): Offering {
+        val storeProduct = stubStoreProduct("monthly_product")
+        val packageObject = Package(
+            identifier = "\$rc_monthly",
+            packageType = PackageType.MONTHLY,
+            product = storeProduct,
+            presentedOfferingContext = presentedOfferingContext,
+        )
+        return Offering(
+            identifier = identifier,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageObject),
+        )
     }
 }
