@@ -7,6 +7,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 
+@Suppress("LongParameterList")
 internal class PaywallViewModelFactory(
     private val resourceProvider: ResourceProvider,
     private val options: PaywallOptions,
@@ -14,6 +15,7 @@ internal class PaywallViewModelFactory(
     private val isDarkMode: Boolean,
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     private val preview: Boolean = false,
+    private val enqueueImage: (url: String) -> Unit = { },
 ) : ViewModelProvider.NewInstanceFactory() {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -24,6 +26,7 @@ internal class PaywallViewModelFactory(
             isDarkMode = isDarkMode,
             preview = preview,
             shouldDisplayBlock = shouldDisplayBlock,
+            enqueueImage = enqueueImage,
         ) as T
     }
 }
