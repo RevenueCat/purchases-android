@@ -3024,4 +3024,148 @@ class CustomerCenterViewModelTests {
         // Only one additional refresh from onActivityResumed, none from onActivityStarted
         assertThat(fetchCurrentCalls).isEqualTo(callsAfterInitialLoad + 1)
     }
+
+    // region Purchase History navigation
+
+    @Test
+    fun `showPurchaseHistory navigates to PurchaseHistory destination`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        model.showPurchaseHistory()
+
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination)
+            .isInstanceOf(CustomerCenterDestination.PurchaseHistory::class.java)
+        assertThat(updatedState.navigationButtonType)
+            .isEqualTo(CustomerCenterState.NavigationButtonType.BACK)
+        val destination = updatedState.currentDestination as CustomerCenterDestination.PurchaseHistory
+        assertThat(destination.title).isEqualTo("Purchase History")
+    }
+
+    @Test
+    fun `showPurchaseHistoryDetail navigates to PurchaseHistoryDetail with correct purchase and title`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val purchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+        model.showPurchaseHistoryDetail(purchase)
+
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination)
+            .isInstanceOf(CustomerCenterDestination.PurchaseHistoryDetail::class.java)
+        assertThat(updatedState.navigationButtonType)
+            .isEqualTo(CustomerCenterState.NavigationButtonType.BACK)
+        val destination = updatedState.currentDestination as CustomerCenterDestination.PurchaseHistoryDetail
+        assertThat(destination.purchase).isEqualTo(purchase)
+        assertThat(destination.title).isEqualTo(purchase.title)
+    }
+
+    @Test
+    fun `showPurchaseHistoryDetail falls back to Purchase History title when purchase title is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val purchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(title = null)
+        model.showPurchaseHistoryDetail(purchase)
+
+        val destination = (model.state.value as CustomerCenterState.Success)
+            .currentDestination as CustomerCenterDestination.PurchaseHistoryDetail
+        assertThat(destination.title).isEqualTo("Purchase History")
+    }
+
+    // endregion
+
+    // region allPurchases loading
+
+    @Test
+    fun `allPurchases is populated when displayPurchaseHistoryLink is true`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayPurchaseHistoryLink = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "inactive_product" to SubscriptionInfo(
+                productIdentifier = "inactive_product",
+                purchaseDate = Date(System.currentTimeMillis() - 365L * 24 * 60 * 60 * 1000),
+                originalPurchaseDate = null,
+                expiresDate = Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000),
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = null,
+            ),
+        )
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.allPurchases).isNotEmpty
+        assertThat(state.allPurchases.map { it.productIdentifier }).contains("inactive_product")
+    }
+
+    @Test
+    fun `allPurchases is empty when displayPurchaseHistoryLink is false`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayPurchaseHistoryLink = false,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "inactive_product" to SubscriptionInfo(
+                productIdentifier = "inactive_product",
+                purchaseDate = Date(),
+                originalPurchaseDate = null,
+                expiresDate = Date(System.currentTimeMillis() - 1000),
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = null,
+            ),
+        )
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.allPurchases).isEmpty()
+    }
+
+    @Test
+    fun `allPurchases is empty when displayPurchaseHistoryLink is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        // default support mock has no displayPurchaseHistoryLink set (null)
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.allPurchases).isEmpty()
+    }
+
+    // endregion
 }
