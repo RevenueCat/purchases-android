@@ -160,6 +160,7 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
+    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -739,7 +740,7 @@ internal class PaywallViewModelImpl(
 
     private suspend fun updateStateFromWorkflowEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
         var updatedFromWorkflow = false
-        if (BuildConfig.USE_WORKFLOWS_ENDPOINT) {
+        if (useWorkflowsEndpoint) {
             val workflowParams = when (offeringSelection) {
                 is OfferingSelection.IdAndPresentedOfferingContext ->
                     offeringSelection.offeringId to offeringSelection.presentedOfferingContext
