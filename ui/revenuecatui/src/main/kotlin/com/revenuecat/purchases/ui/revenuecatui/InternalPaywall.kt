@@ -27,6 +27,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
@@ -144,11 +146,24 @@ internal fun InternalPaywall(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
-            LoadedPaywallComponents(
-                state = state,
-                clickHandler = rememberPaywallActionHandler(viewModel),
-                componentInteractionTracker = componentInteractionTracker,
-            )
+            val allowScaledFonts = false
+            if (allowScaledFonts) {
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                    componentInteractionTracker = componentInteractionTracker,
+                )
+            } else {
+                CompositionLocalProvider(
+                    LocalDensity provides Density(LocalDensity.current.density, fontScale = 1f)
+                ) {
+                    LoadedPaywallComponents(
+                        state = state,
+                        clickHandler = rememberPaywallActionHandler(viewModel),
+                        componentInteractionTracker = componentInteractionTracker,
+                    )
+                }
+            }
         } else {
             Logger.e(
                 "State is not loaded while transitioning animation. This may happen if state changes " +
