@@ -3,7 +3,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
-import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -26,7 +25,8 @@ internal fun TabControlButtonView(
         // We act like a button, so we're handling the click already.
         clickHandler = { },
         componentInteractionTracker = componentInteractionTracker,
-        modifier = modifier.clickable {
+        modifier = modifier,
+        onStackClick = onStackClick@{
             val ordered = style.tabIdsOrdered
             val destinationIndex = style.tabIndex
             val resolvedTabIndex = if (ordered.isNotEmpty()) {
@@ -38,7 +38,7 @@ internal fun TabControlButtonView(
                 val originIndex = state.selectedTabIndex.coerceIn(0, ordered.lastIndex)
                 if (originIndex == resolvedTabIndex) {
                     state.update(selectedTabIndex = resolvedTabIndex)
-                    return@clickable
+                    return@onStackClick
                 }
                 val originTabId = ordered[originIndex]
                 val destinationTabId = style.tabId
