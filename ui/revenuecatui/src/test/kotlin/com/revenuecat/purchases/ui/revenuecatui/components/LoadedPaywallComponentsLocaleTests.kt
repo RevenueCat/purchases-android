@@ -154,5 +154,50 @@ internal class LoadedPaywallComponentsLocaleTests {
             )
 
         }
+
+        @Test
+        fun `Should render root stack with vertical overflow without nested scroll crash`(): Unit = with(composeTestRule) {
+            val components = PaywallComponentsData(
+                id = "paywall_id",
+                templateName = "template",
+                assetBaseURL = URL("https://assets.pawwalls.com"),
+                componentsConfig = ComponentsConfig(
+                    base = PaywallComponentsConfig(
+                        stack = StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = localizationKey,
+                                    color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                                ),
+                                TestData.Components.monthlyPackageComponent,
+                            ),
+                            overflow = StackComponent.Overflow.SCROLL,
+                        ),
+                        background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                        stickyFooter = null,
+                    ),
+                ),
+                componentsLocalizations = mapOf(
+                    LocaleId("en_US") to mapOf(
+                        localizationKey to LocalizationData.Text(EXPECTED_TEXT_EN),
+                    ),
+                ),
+                defaultLocaleIdentifier = LocaleId("en_US"),
+            )
+            val offering = Offering(
+                identifier = "identifier",
+                serverDescription = "serverDescription",
+                metadata = emptyMap(),
+                availablePackages = listOf(TestData.Packages.monthly),
+                paywallComponents = Offering.PaywallComponents(UiConfig(), components),
+            )
+            val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+            val state = offering.toComponentsPaywallState(validated)
+
+            setContent { LoadedPaywallComponents(state = state, clickHandler = { }) }
+
+            onNodeWithText(EXPECTED_TEXT_EN)
+                .assertIsDisplayed()
+        }
     }
 }
