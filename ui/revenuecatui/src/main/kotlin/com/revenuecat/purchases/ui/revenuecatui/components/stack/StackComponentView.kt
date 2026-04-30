@@ -1919,9 +1919,11 @@ private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow()
     )
 }
 
+// This is a regression test. Right now we apply the modifier twice when using a badge like this
+// This makes sure we don't modify this behavior without being aware.
 @Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
 @Composable
-private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Once() {
+private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Twice() {
     StackComponentView(
         style = previewStackComponentStyle(
             children = listOf(
@@ -1948,9 +1950,11 @@ private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Once(
     )
 }
 
+// This is a regression test. Right now we apply the modifier twice when using a badge like this
+// This makes sure we don't modify this behavior without being aware.
 @Preview(showBackground = true, backgroundColor = 0xFFEEEEEE)
 @Composable
-private fun StackComponentView_Preview_EdgeToEdgeBadge_Caller_Modifier_Applied_Once() {
+private fun StackComponentView_Preview_EdgeToEdgeBadge_Caller_Modifier_Applied_Twice() {
     StackComponentView(
         style = previewStackComponentStyle(
             children = listOf(
