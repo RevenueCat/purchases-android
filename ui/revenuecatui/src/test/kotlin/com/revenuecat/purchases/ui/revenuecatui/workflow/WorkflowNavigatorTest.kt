@@ -188,7 +188,7 @@ class WorkflowNavigatorTest {
     @Test
     fun `backStack is empty initially`() {
         val navigator = WorkflowNavigator(workflow)
-        assertThat(navigator.backStack).isEmpty()
+        assertThat(navigator.backStackSnapshot).isEmpty()
     }
 
     @Test
@@ -196,7 +196,7 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(workflow)
         navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
-        assertThat(navigator.backStack).containsExactly("step-1", "step-2")
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1", "step-2")
     }
 
     @Test
@@ -205,7 +205,7 @@ class WorkflowNavigatorTest {
         navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
         navigator.navigateBack()
-        assertThat(navigator.backStack).containsExactly("step-1")
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1")
     }
 
     // endregion
@@ -231,7 +231,7 @@ class WorkflowNavigatorTest {
         navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         navigator.peekBackStep
         navigator.peekBackStep
-        assertThat(navigator.backStack).containsExactly("step-1")
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1")
     }
 
     // endregion
@@ -281,7 +281,7 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(workflow)
         navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
         assertThat(navigator.currentStep()).isEqualTo(step1)
-        assertThat(navigator.backStack).isEmpty()
+        assertThat(navigator.backStackSnapshot).isEmpty()
     }
 
     // endregion
