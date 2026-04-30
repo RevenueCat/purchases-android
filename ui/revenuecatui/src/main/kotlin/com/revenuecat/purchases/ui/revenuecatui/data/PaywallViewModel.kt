@@ -281,7 +281,12 @@ internal class PaywallViewModelImpl(
         }
         if (_colorScheme.value != colorScheme) {
             _colorScheme.value = colorScheme
-            updateState()
+            if (workflowNavigator != null) {
+                // Rebuild step states in-place to avoid resetting the user's navigation position.
+                rebuildWorkflowStepStates()
+            } else {
+                updateState()
+            }
         }
     }
 
@@ -873,6 +878,27 @@ internal class PaywallViewModelImpl(
 
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
         preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
+    }
+
+    /**
+     * Rebuilds workflow step states with the current color scheme without resetting the
+     * navigator position. Used when colors change while a workflow paywall is active,
+     * so the user is not silently sent back to the first step.
+     */
+    @Suppress("ReturnCount")
+    private fun rebuildWorkflowStepStates() {
+        val result = currentWorkflowResult ?: return
+        val offerings = currentWorkflowOfferings ?: return
+        val presentedOfferingContext = currentWorkflowPresentedOfferingContext
+        val navigator = workflowNavigator ?: return
+        val currentStep = navigator.currentStep ?: return
+
+        preWarmJob?.cancel()
+        workflowStepStateCache.clear()
+        _workflowState.value = null
+
+        buildStateFromStep(currentStep, result.workflow, offerings, presentedOfferingContext)
+        preWarmWorkflowStepCache(result.workflow, offerings, presentedOfferingContext)
     }
 
     private fun buildStateFromStep(
