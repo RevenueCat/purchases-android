@@ -778,7 +778,7 @@ private fun MainStackComponent(
                     .then(borderModifier),
             ) {
                 stack(
-                    modifier,
+                    Modifier,
                     Modifier
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
@@ -852,7 +852,7 @@ private fun MainStackComponent(
                 .then(borderModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(modifier, Modifier.then(innerShapeModifier))
+                stack(Modifier, Modifier.then(innerShapeModifier))
             }
 
             StackComponentView(
@@ -872,7 +872,7 @@ private fun MainStackComponent(
                 .then(clickModifier),
         ) {
             WithOptionalBackgroundOverlay(state, background = backgroundStyle) {
-                stack(modifier, borderModifier.then(innerShapeModifier))
+                stack(Modifier, borderModifier.then(innerShapeModifier))
             }
             overlay()
         }
