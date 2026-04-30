@@ -32,6 +32,8 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
@@ -1543,6 +1545,174 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion track events
+
+    // region trackCustomPaywallImpression presented offering context resolution
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression derives context from cached current offering`() {
+        val context = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "home_banner",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 3, ruleId = "rule_abc123"),
+        )
+        val offering = makeOfferingWithContext(identifier = "current_offering", context = context)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = offering,
+            all = mapOf(offering.identifier to offering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(CustomPaywallImpressionParams(paywallId = "pw"))
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("current_offering")
+        assertThat(data.placementIdentifier).isEqualTo("home_banner")
+        assertThat(data.targetingRevision).isEqualTo(3)
+        assertThat(data.targetingRuleId).isEqualTo("rule_abc123")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression derives context from cached offering matching passed id`() {
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "current_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "current_rule"),
+        )
+        val otherContext = PresentedOfferingContext(
+            offeringIdentifier = "other_offering",
+            placementIdentifier = "other_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 5, ruleId = "other_rule"),
+        )
+        val currentOffering = makeOfferingWithContext("current_offering", currentContext)
+        val otherOffering = makeOfferingWithContext("other_offering", otherContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = currentOffering,
+            all = mapOf(
+                currentOffering.identifier to currentOffering,
+                otherOffering.identifier to otherOffering,
+            ),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offeringId = "other_offering"),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("other_offering")
+        assertThat(data.placementIdentifier).isEqualTo("other_placement")
+        assertThat(data.targetingRevision).isEqualTo(5)
+        assertThat(data.targetingRuleId).isEqualTo("other_rule")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression leaves context null when passed id not in cache`() {
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "current_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "current_rule"),
+        )
+        val currentOffering = makeOfferingWithContext("current_offering", currentContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = currentOffering,
+            all = mapOf(currentOffering.identifier to currentOffering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offeringId = "unknown_offering"),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("unknown_offering")
+        assertThat(data.placementIdentifier).isNull()
+        assertThat(data.targetingRevision).isNull()
+        assertThat(data.targetingRuleId).isNull()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression uses passed offering context`() {
+        val cachedContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "cached_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "cached_rule"),
+        )
+        val cachedOffering = makeOfferingWithContext("current_offering", cachedContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = cachedOffering,
+            all = mapOf(cachedOffering.identifier to cachedOffering),
+        )
+
+        val passedContext = PresentedOfferingContext(
+            offeringIdentifier = "passed_offering",
+            placementIdentifier = "passed_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 7, ruleId = "passed_rule"),
+        )
+        val passedOffering = makeOfferingWithContext("passed_offering", passedContext)
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offering = passedOffering),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("passed_offering")
+        assertThat(data.placementIdentifier).isEqualTo("passed_placement")
+        assertThat(data.targetingRevision).isEqualTo(7)
+        assertThat(data.targetingRuleId).isEqualTo("passed_rule")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression leaves context null when cached offering has no context`() {
+        val offering = makeOfferingWithContext(
+            identifier = "current_offering",
+            context = PresentedOfferingContext("current_offering"),
+        )
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = offering,
+            all = mapOf(offering.identifier to offering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(CustomPaywallImpressionParams(paywallId = "pw"))
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("current_offering")
+        assertThat(data.placementIdentifier).isNull()
+        assertThat(data.targetingRevision).isNull()
+        assertThat(data.targetingRuleId).isNull()
+    }
+
+    private fun makeOfferingWithContext(
+        identifier: String,
+        context: PresentedOfferingContext,
+    ): Offering {
+        val storeProduct = stubStoreProduct("monthly_$identifier")
+        val packageObject = Package(
+            identifier = "\$rc_monthly",
+            packageType = PackageType.MONTHLY,
+            product = storeProduct,
+            presentedOfferingContext = context,
+        )
+        return Offering(
+            identifier = identifier,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageObject),
+        )
+    }
+
+    // endregion trackCustomPaywallImpression presented offering context resolution
 
     @Test
     fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
