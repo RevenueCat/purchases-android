@@ -34,6 +34,12 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.WorkflowScreen
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTrigger
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -1292,6 +1298,130 @@ class PaywallViewModelTest {
 
         assertThat(model.state.value).isEqualTo(stateBefore)
         assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `refreshStateIfColorsChanged on workflow preserves current navigation step`() {
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val stepOne = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = "screen-1",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+        )
+        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1")
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to stepOne, "step-2" to stepTwo),
+            screens = mapOf("screen-1" to workflowScreen),
+            uiConfig = UiConfig(),
+        )
+        coEvery { purchases.awaitGetWorkflow(any()) } returns WorkflowDataResult(workflow, null)
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOfferingSelection(OfferingSelection.IdAndPresentedOfferingContext("wfl-test", null))
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+
+        model.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `refreshStateIfColorsChanged on workflow does not trigger updateState`() {
+        // updateState would re-fetch the workflow and reset the navigator; this test verifies
+        // that rebuildWorkflowStepStates is taken instead, leaving awaitGetWorkflow call count at 1.
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to stepOne),
+            screens = mapOf("screen-1" to workflowScreen),
+            uiConfig = UiConfig(),
+        )
+        coEvery { purchases.awaitGetWorkflow(any()) } returns WorkflowDataResult(workflow, null)
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOfferingSelection(OfferingSelection.IdAndPresentedOfferingContext("wfl-test", null))
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
     }
 
     // region events

@@ -163,6 +163,7 @@ internal class PaywallViewModelImpl(
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
     private val enqueueImage: (url: String) -> Unit = { },
+    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -682,7 +683,7 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        if (BuildConfig.USE_WORKFLOWS_ENDPOINT) {
+        if (useWorkflowsEndpoint) {
             val workflowParams: Pair<String, PresentedOfferingContext?>? = when (offeringSelection) {
                 is OfferingSelection.IdAndPresentedOfferingContext ->
                     offeringSelection.offeringId to offeringSelection.presentedOfferingContext
