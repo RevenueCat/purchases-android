@@ -172,6 +172,9 @@ internal class PurchasesOrchestrator(
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsManager.cachedCurrentOfferingIdentifier
 
+    val cachedOfferings: Offerings?
+        get() = offeringsManager.cachedOfferings
+
     val currentConfiguration: PurchasesConfiguration
         get() = if (initialConfiguration.appUserID == null) {
             initialConfiguration

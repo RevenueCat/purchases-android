@@ -677,11 +677,21 @@ public class Purchases internal constructor(
     @OptIn(InternalRevenueCatAPI::class)
     @JvmOverloads
     public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
+        val cachedOfferings = purchasesOrchestrator.cachedOfferings
+        val resolvedOffering = params.offering
+            ?: params.offeringId?.let { cachedOfferings?.get(it) }
+            ?: if (params.offeringId == null) cachedOfferings?.current else null
+        val presentedOfferingContext = resolvedOffering?.availablePackages?.firstOrNull()?.presentedOfferingContext
+        val offeringId = params.offeringId ?: resolvedOffering?.identifier
+
         purchasesOrchestrator.track(
             CustomPaywallEvent.Impression(
                 data = CustomPaywallEvent.Impression.Data(
                     paywallId = params.paywallId,
-                    offeringId = params.offeringId ?: purchasesOrchestrator.cachedCurrentOfferingIdentifier,
+                    offeringId = offeringId,
+                    placementIdentifier = presentedOfferingContext?.placementIdentifier,
+                    targetingRevision = presentedOfferingContext?.targetingContext?.revision,
+                    targetingRuleId = presentedOfferingContext?.targetingContext?.ruleId,
                 ),
             ),
         )
