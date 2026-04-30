@@ -725,7 +725,7 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private fun updateStateFromWorkflow(
+    internal fun updateStateFromWorkflow(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
