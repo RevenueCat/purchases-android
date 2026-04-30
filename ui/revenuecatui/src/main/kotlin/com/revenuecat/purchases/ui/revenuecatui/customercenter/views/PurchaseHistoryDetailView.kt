@@ -47,7 +47,7 @@ internal fun PurchaseHistoryDetailView(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        DetailSection(modifier = Modifier.padding(ManagementViewHorizontalPadding)) {
+        DetailSection(modifier = Modifier.padding(horizontal = ManagementViewHorizontalPadding)) {
             purchase.title?.let { name ->
                 DetailRow(label = localization.commonLocalizedString(CommonLocalizedString.PRODUCT_NAME), value = name)
             }
@@ -60,7 +60,7 @@ internal fun PurchaseHistoryDetailView(
             DetailRow(label = localization.commonLocalizedString(CommonLocalizedString.PAID_PRICE), value = priceValue)
 
             val statusValue = if (purchase.isExpired) {
-                localization.commonLocalizedString(CommonLocalizedString.INACTIVE)
+                localization.commonLocalizedString(CommonLocalizedString.STATUS_INACTIVE)
             } else {
                 localization.commonLocalizedString(CommonLocalizedString.ACTIVE)
             }

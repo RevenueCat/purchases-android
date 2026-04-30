@@ -539,10 +539,11 @@ private fun CustomerCenterNavHost(
             }
 
             is CustomerCenterDestination.PurchaseHistory -> {
+                val allPurchases = customerCenterState.allPurchases
                 PurchaseHistoryView(
-                    activeSubscriptions = destination.activeSubscriptions,
-                    inactiveSubscriptions = destination.inactiveSubscriptions,
-                    nonSubscriptions = destination.nonSubscriptions,
+                    activeSubscriptions = allPurchases.filter { it.isSubscription && !it.isExpired },
+                    inactiveSubscriptions = allPurchases.filter { it.isSubscription && it.isExpired },
+                    nonSubscriptions = allPurchases.filter { !it.isSubscription },
                     localization = customerCenterState.customerCenterConfigData.localization,
                     onAction = onAction,
                 )

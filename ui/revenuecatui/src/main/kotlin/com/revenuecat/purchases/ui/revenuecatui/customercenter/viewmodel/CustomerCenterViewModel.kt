@@ -68,6 +68,9 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -362,27 +365,14 @@ internal class CustomerCenterViewModelImpl(
     }
 
     override fun showPurchaseHistory() {
-        val state = _state.value
-        if (state !is CustomerCenterState.Success) return
-
-        val allPurchases = state.allPurchases
-        val activeSubscriptions = allPurchases.filter { it.isSubscription && !it.isExpired }
-        val inactiveSubscriptions = allPurchases.filter { it.isSubscription && it.isExpired }
-        val nonSubscriptions = allPurchases.filter { !it.isSubscription }
-        val title = state.customerCenterConfigData.localization.commonLocalizedString(
-            CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_PURCHASE_HISTORY_TITLE,
-        )
-
         _state.update { currentState ->
             if (currentState is CustomerCenterState.Success) {
+                val title = currentState.customerCenterConfigData.localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_PURCHASE_HISTORY_TITLE,
+                )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(
-                        CustomerCenterDestination.PurchaseHistory(
-                            activeSubscriptions = activeSubscriptions,
-                            inactiveSubscriptions = inactiveSubscriptions,
-                            nonSubscriptions = nonSubscriptions,
-                            title = title,
-                        ),
+                        CustomerCenterDestination.PurchaseHistory(title = title),
                     ),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
@@ -857,32 +847,36 @@ internal class CustomerCenterViewModelImpl(
             inactiveSubscriptions +
             nonSubscriptions
 
-        return transactions.map { transaction ->
-            val entitlement = customerInfo.entitlements.active.values
-                .firstOrNull { it.productIdentifier == transaction.productIdentifier }
-                ?: customerInfo.entitlements.all.values
-                    .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+        return coroutineScope {
+            transactions.map { transaction ->
+                async {
+                    val entitlement = customerInfo.entitlements.active.values
+                        .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+                        ?: customerInfo.entitlements.all.values
+                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
 
-            val isActivePlayStoreSubscription = transaction.store == Store.PLAY_STORE &&
-                transaction is TransactionDetails.Subscription &&
-                transaction.isActive
-            val product = if (isActivePlayStoreSubscription) {
-                purchases.awaitGetProduct(
-                    transaction.productIdentifier,
-                    (transaction as TransactionDetails.Subscription).productPlanIdentifier,
-                )
-            } else {
-                null
-            }
+                    val isActivePlayStoreSubscription = transaction.store == Store.PLAY_STORE &&
+                        transaction is TransactionDetails.Subscription &&
+                        transaction.isActive
+                    val product = if (isActivePlayStoreSubscription) {
+                        purchases.awaitGetProduct(
+                            transaction.productIdentifier,
+                            (transaction as TransactionDetails.Subscription).productPlanIdentifier,
+                        )
+                    } else {
+                        null
+                    }
 
-            PurchaseInformation(
-                entitlementInfo = entitlement,
-                subscribedProduct = product,
-                transaction = transaction,
-                dateFormatter = dateFormatter,
-                locale = locale,
-                localization = localization,
-            )
+                    PurchaseInformation(
+                        entitlementInfo = entitlement,
+                        subscribedProduct = product,
+                        transaction = transaction,
+                        dateFormatter = dateFormatter,
+                        locale = locale,
+                        localization = localization,
+                    )
+                }
+            }.awaitAll()
         }
     }
 

@@ -328,6 +328,9 @@ public data class CustomerCenterConfigData(
             @SerialName("inactive")
             INACTIVE,
 
+            @SerialName("status_inactive")
+            STATUS_INACTIVE,
+
             @SerialName("purchases_section_title")
             PURCHASES_SECTION_TITLE,
 
@@ -505,6 +508,7 @@ public data class CustomerCenterConfigData(
                     SCREEN_PURCHASE_HISTORY_TITLE -> "Purchase History"
                     SUBSCRIPTIONS_SECTION_TITLE -> "Subscriptions"
                     INACTIVE -> "Inactive"
+                    STATUS_INACTIVE -> "Inactive"
                     PURCHASES_SECTION_TITLE -> "Purchases"
                     PRODUCT_NAME -> "Product Name"
                     PAID_PRICE -> "Paid Price"
