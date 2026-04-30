@@ -106,12 +106,14 @@ private fun workflowHeaderState(
         currentStepId = currentStepId,
         stepInfoByStepId = headerStepInfo,
         transitionState = WorkflowHeaderTransitionState(
-            pendingTransition = slideState.animatingFromStepId?.let { fromId ->
+            pendingTransition = if (slideState.animatingFromStepId != null && slideState.animatingDirection != null) {
                 WorkflowPendingTransition(
-                    fromStepId = fromId,
+                    fromStepId = slideState.animatingFromStepId,
                     direction = slideState.animatingDirection,
                     id = 0, // id not needed for header selection
                 )
+            } else {
+                null
             },
         ),
     )
