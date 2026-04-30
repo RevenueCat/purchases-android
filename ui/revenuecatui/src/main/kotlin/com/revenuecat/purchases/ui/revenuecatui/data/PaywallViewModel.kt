@@ -45,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.preloadImageUrls
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
@@ -161,6 +162,7 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
+    private val enqueueImage: (url: String) -> Unit = { },
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -202,6 +204,7 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowOfferings: Offerings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
+    private val enqueuedImageUrls = mutableSetOf<String>()
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
@@ -749,6 +752,7 @@ internal class PaywallViewModelImpl(
         workflowNavigator = WorkflowNavigator(workflow)
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
+        enqueuedImageUrls.clear()
         _workflowState.value = null
 
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
@@ -766,7 +770,7 @@ internal class PaywallViewModelImpl(
         val cached = workflowStepStateCache[step.id]
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
         if (cached == null && newState is PaywallState.Loaded.Components) {
-            workflowStepStateCache[step.id] = newState
+            cacheStepState(step.id, newState)
         }
         val pendingTransition = if (fromStepId != null && navigationDirection != NavigationDirection.NONE) {
             WorkflowPendingTransition(
@@ -830,6 +834,18 @@ internal class PaywallViewModelImpl(
     }
 
     /**
+     * Stores a computed step state in the cache and pre-warms Coil's image cache with that step's
+     * image URLs (light, dark, and low-resolution variants), deduplicated across the workflow's
+     * lifetime.
+     */
+    private fun cacheStepState(stepId: String, state: PaywallState.Loaded.Components) {
+        workflowStepStateCache[stepId] = state
+        state.preloadImageUrls()
+            .filter(enqueuedImageUrls::add)
+            .forEach { url -> enqueueImage(url) }
+    }
+
+    /**
      * Eagerly computes and caches states for the remaining workflow steps off the main thread,
      * so that navigating to them doesn't block on the heavy [calculateState] work.
      */
@@ -846,7 +862,7 @@ internal class PaywallViewModelImpl(
                     computeStateForStep(step, workflow, offerings, presentedOfferingContext)
                 }
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
-                    workflowStepStateCache[stepId] = computed
+                    cacheStepState(stepId, computed)
                     _workflowState.value = _workflowState.value?.copy(stepStates = workflowStepStateCache.toMap())
                 }
             }
