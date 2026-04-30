@@ -28,6 +28,7 @@ class PaywallDataTest {
         assertThat(paywall.templateName).isEqualTo("1")
         assertThat(paywall.assetBaseURL).isEqualTo(URL("https://rc-paywalls.s3.amazonaws.com"))
         assertThat(paywall.revision).isEqualTo(7)
+        assertThat(paywall.automaticallyScaleFontSize).isTrue()
         assertThat(paywall.config.packageIds).containsExactly("\$rc_monthly", "\$rc_annual", "custom_package")
         assertThat(paywall.config.defaultPackage).isEqualTo("\$rc_annual")
         assertThat(paywall.config.images.header).isEqualTo("header.webp")
@@ -138,6 +139,13 @@ class PaywallDataTest {
 
         val enConfig = paywall.configForLocale(Locale("fr"))
         assertThat(enConfig).isNull()
+    }
+
+    @Test
+    fun `automaticallyScaleFontSize is null when omitted from JSON`() {
+        val paywall: PaywallData = decode(PAYWALLDATA_MISSING_CURRENT_LOCALE)
+
+        assertThat(paywall.automaticallyScaleFontSize).isNull()
     }
 
     @Test
