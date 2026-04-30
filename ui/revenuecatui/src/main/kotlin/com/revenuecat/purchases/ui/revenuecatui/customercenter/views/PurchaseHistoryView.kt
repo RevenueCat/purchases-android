@@ -142,7 +142,7 @@ private fun PurchaseHistoryViewPreview() {
     CustomerCenterPreviewTheme {
         PurchaseHistoryView(
             activeSubscriptions = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
-            inactiveSubscriptions = listOf(CustomerCenterConfigTestData.purchaseInformationYearlyExpiring),
+            inactiveSubscriptions = listOf(CustomerCenterConfigTestData.purchaseInformationYearlyExpired),
             nonSubscriptions = listOf(
                 PurchaseInformation(
                     title = "Lifetime Access",
@@ -172,7 +172,7 @@ private fun PurchaseHistoryViewOnlyExpiredPreview() {
         PurchaseHistoryView(
             activeSubscriptions = emptyList(),
             inactiveSubscriptions = listOf(
-                CustomerCenterConfigTestData.purchaseInformationYearlyExpiring,
+                CustomerCenterConfigTestData.purchaseInformationYearlyExpired,
                 PurchaseInformation(
                     title = "Monthly Plan",
                     pricePaid = PriceDetails.Paid("$4.99"),

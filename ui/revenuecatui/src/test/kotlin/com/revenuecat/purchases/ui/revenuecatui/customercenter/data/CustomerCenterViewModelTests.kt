@@ -3167,5 +3167,41 @@ class CustomerCenterViewModelTests {
         assertThat(state.allPurchases).isEmpty()
     }
 
+    @Test
+    fun `allPurchases maps non-subscription purchaseDate, originalPurchaseDate, and storeTransactionId`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayPurchaseHistoryLink = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        val purchaseDate = Date(1_700_000_000_000L)
+        val originalPurchaseDate = Date(1_690_000_000_000L)
+        val txId = "tx-abc-123"
+        every { customerInfo.nonSubscriptionTransactions } returns listOf(
+            Transaction(
+                transactionIdentifier = "rev_id",
+                revenuecatId = "rev_id",
+                productIdentifier = "lifetime_product",
+                productId = "lifetime_product",
+                purchaseDate = purchaseDate,
+                storeTransactionId = txId,
+                store = Store.PLAY_STORE,
+                displayName = null,
+                isSandbox = false,
+                originalPurchaseDate = originalPurchaseDate,
+                price = null,
+            )
+        )
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val nonSub = state.allPurchases.firstOrNull { it.productIdentifier == "lifetime_product" }
+        assertThat(nonSub).isNotNull
+        assertThat(nonSub!!.purchaseDate).isEqualTo(purchaseDate)
+        assertThat(nonSub.originalPurchaseDate).isEqualTo(originalPurchaseDate)
+        assertThat(nonSub.storeTransactionId).isEqualTo(txId)
+    }
+
     // endregion
 }
