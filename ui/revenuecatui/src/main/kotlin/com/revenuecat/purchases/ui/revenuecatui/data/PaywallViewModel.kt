@@ -233,7 +233,9 @@ internal class PaywallViewModelImpl(
             // If we have a Components paywall state, update its locale instead of recreating the entire state
             val currentState = _state.value
             if (currentState is PaywallState.Loaded.Components) {
-                currentState.update(localeList = currentLocaleList.toFrameworkLocaleList())
+                val localeFrameworkList = currentLocaleList.toFrameworkLocaleList()
+                currentState.update(localeList = localeFrameworkList)
+                workflowStepStateCache.values.forEach { it.update(localeList = localeFrameworkList) }
             } else {
                 updateState()
             }
