@@ -846,7 +846,6 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        preWarmJob?.cancel()
         preWarmJob = viewModelScope.launch {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
