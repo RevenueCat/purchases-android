@@ -775,11 +775,17 @@ internal class PaywallViewModelImpl(
         }
         // Set workflowState before _state so a recomposition that lands between the two writes
         // sees the workflow branch and the correct step, not the single-page branch.
-        _workflowState.value = WorkflowPaywallUiState(
-            currentStepId = step.id,
-            stepStates = workflowStepStateCache.toMap(),
-            pendingTransition = pendingTransition,
-        )
+        // On error, clear workflowState so the UI falls through to the normal error path rather
+        // than entering workflow mode with a currentStepId absent from stepStates.
+        _workflowState.value = if (newState is PaywallState.Loaded.Components) {
+            WorkflowPaywallUiState(
+                currentStepId = step.id,
+                stepStates = workflowStepStateCache.toMap(),
+                pendingTransition = pendingTransition,
+            )
+        } else {
+            null
+        }
         _state.value = newState
     }
 
