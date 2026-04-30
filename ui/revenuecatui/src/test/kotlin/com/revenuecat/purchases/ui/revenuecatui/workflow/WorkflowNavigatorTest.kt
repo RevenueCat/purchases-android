@@ -71,7 +71,7 @@ class WorkflowNavigatorTest {
     @Test
     fun `currentStep returns initial step`() {
         val navigator = WorkflowNavigator(workflow)
-        assertThat(navigator.currentStep()).isEqualTo(step1)
+        assertThat(navigator.currentStep).isEqualTo(step1)
     }
 
     @Test
@@ -79,8 +79,8 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(workflow)
         val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isEqualTo(step2)
-        assertThat(navigator.currentStep()).isEqualTo(step2)
-        assertThat(navigator.currentStepId.value).isEqualTo("step-2")
+        assertThat(navigator.currentStep).isEqualTo(step2)
+        assertThat(navigator.currentStep?.id).isEqualTo("step-2")
     }
 
     @Test
@@ -89,7 +89,7 @@ class WorkflowNavigatorTest {
         navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         val result = navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isEqualTo(step3)
-        assertThat(navigator.currentStep()).isEqualTo(step3)
+        assertThat(navigator.currentStep).isEqualTo(step3)
     }
 
     @Test
@@ -97,7 +97,7 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(workflow)
         val result = navigator.triggerAction("btn-unknown", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
-        assertThat(navigator.currentStep()).isEqualTo(step1)
+        assertThat(navigator.currentStep).isEqualTo(step1)
     }
 
     @Test
@@ -119,7 +119,7 @@ class WorkflowNavigatorTest {
         navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         val result = navigator.navigateBack()
         assertThat(result).isEqualTo(step1)
-        assertThat(navigator.currentStep()).isEqualTo(step1)
+        assertThat(navigator.currentStep).isEqualTo(step1)
     }
 
     @Test
@@ -142,16 +142,16 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(workflow)
         navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
         navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
-        assertThat(navigator.currentStep()).isEqualTo(step3)
+        assertThat(navigator.currentStep).isEqualTo(step3)
 
         val back1 = navigator.navigateBack()
         assertThat(back1).isEqualTo(step2)
-        assertThat(navigator.currentStep()).isEqualTo(step2)
+        assertThat(navigator.currentStep).isEqualTo(step2)
         assertThat(navigator.canNavigateBack).isTrue()
 
         val back2 = navigator.navigateBack()
         assertThat(back2).isEqualTo(step1)
-        assertThat(navigator.currentStep()).isEqualTo(step1)
+        assertThat(navigator.currentStep).isEqualTo(step1)
         assertThat(navigator.canNavigateBack).isFalse()
     }
 
@@ -180,8 +180,111 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(wfl)
         val result = navigator.triggerAction("btn-x", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
-        assertThat(navigator.currentStep()).isEqualTo(stepWithUnknownAction)
+        assertThat(navigator.currentStep).isEqualTo(stepWithUnknownAction)
     }
+
+    // region backStack
+
+    @Test
+    fun `backStack is empty initially`() {
+        val navigator = WorkflowNavigator(workflow)
+        assertThat(navigator.backStackSnapshot).isEmpty()
+    }
+
+    @Test
+    fun `backStack contains visited step IDs in order after forward navigation`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1", "step-2")
+    }
+
+    @Test
+    fun `backStack shrinks on navigateBack`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS)
+        navigator.navigateBack()
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1")
+    }
+
+    // endregion
+
+    // region peekBackStep
+
+    @Test
+    fun `peekBackStep is null on initial step`() {
+        val navigator = WorkflowNavigator(workflow)
+        assertThat(navigator.peekBackStep).isNull()
+    }
+
+    @Test
+    fun `peekBackStep returns previous step after forward navigation`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(navigator.peekBackStep).isEqualTo(step1)
+    }
+
+    @Test
+    fun `peekBackStep does not modify backStack`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        navigator.peekBackStep
+        navigator.peekBackStep
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1")
+    }
+
+    // endregion
+
+    // region peekTriggerStep
+
+    @Test
+    fun `peekTriggerStep returns target step for valid trigger`() {
+        val navigator = WorkflowNavigator(workflow)
+        val result = navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(result).isEqualTo(step2)
+    }
+
+    @Test
+    fun `peekTriggerStep returns null for unknown componentId`() {
+        val navigator = WorkflowNavigator(workflow)
+        val result = navigator.peekTriggerStep("btn-unknown", WorkflowTriggerType.ON_PRESS)
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `peekTriggerStep returns null for non-Step trigger action`() {
+        val stepWithUnknownAction = WorkflowStep(
+            id = "step-x",
+            type = "screen",
+            screenId = "screen-x",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "X",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "ax",
+                    componentId = "btn-x",
+                ),
+            ),
+            triggerActions = mapOf("ax" to WorkflowTriggerAction.Unknown),
+        )
+        val wfl = workflow.copy(
+            initialStepId = "step-x",
+            steps = mapOf("step-x" to stepWithUnknownAction),
+        )
+        val navigator = WorkflowNavigator(wfl)
+        assertThat(navigator.peekTriggerStep("btn-x", WorkflowTriggerType.ON_PRESS)).isNull()
+    }
+
+    @Test
+    fun `peekTriggerStep does not mutate navigator state`() {
+        val navigator = WorkflowNavigator(workflow)
+        navigator.peekTriggerStep("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(navigator.currentStep).isEqualTo(step1)
+        assertThat(navigator.backStackSnapshot).isEmpty()
+    }
+
+    // endregion
 
     @Test
     fun `triggerAction with actionId not in triggerActions returns null and does not navigate`() {
@@ -206,7 +309,7 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(wfl)
         val result = navigator.triggerAction("btn-x", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
-        assertThat(navigator.currentStep()).isEqualTo(stepWithMissingAction)
+        assertThat(navigator.currentStep).isEqualTo(stepWithMissingAction)
     }
 
     @Test
@@ -234,6 +337,6 @@ class WorkflowNavigatorTest {
         val navigator = WorkflowNavigator(wfl)
         val result = navigator.triggerAction("btn-x", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
-        assertThat(navigator.currentStep()).isEqualTo(stepWithMissingTarget)
+        assertThat(navigator.currentStep).isEqualTo(stepWithMissingTarget)
     }
 }
