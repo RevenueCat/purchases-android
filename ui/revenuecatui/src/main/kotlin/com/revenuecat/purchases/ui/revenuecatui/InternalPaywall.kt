@@ -29,8 +29,10 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.request.ImageRequest
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
@@ -48,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.defaultpaywall.DefaultPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.getImageLoaderTyped
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -306,6 +309,7 @@ internal fun getPaywallViewModel(
     shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
+    val enqueueImage = rememberImageEnqueuer(applicationContext)
     val viewModel = viewModel<PaywallViewModelImpl>(
         key = options.hashCode().toString(),
         factory = PaywallViewModelFactory(
@@ -315,10 +319,21 @@ internal fun getPaywallViewModel(
             isSystemInDarkTheme(),
             shouldDisplayBlock = shouldDisplayBlock,
             preview = isInPreviewMode(),
+            enqueueImage = enqueueImage,
         ),
     )
     viewModel.updateOptions(options)
     return viewModel
+}
+
+@Composable
+private fun rememberImageEnqueuer(applicationContext: Context): (String) -> Unit {
+    val imageLoader = remember(applicationContext) { Purchases.getImageLoaderTyped(applicationContext) }
+    return remember(applicationContext, imageLoader) {
+        fun(url: String) {
+            imageLoader.enqueue(ImageRequest.Builder(applicationContext).data(url).build())
+        }
+    }
 }
 
 @ReadOnlyComposable
