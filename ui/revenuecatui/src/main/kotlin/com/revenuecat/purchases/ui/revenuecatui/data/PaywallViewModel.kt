@@ -755,14 +755,14 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
-        navigationDirection: NavigationDirection = NavigationDirection.NONE,
+        navigationDirection: NavigationDirection? = null,
     ) {
         val cached = workflowStepStateCache[step.id]
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
-        val pendingTransition = if (fromStepId != null && navigationDirection != NavigationDirection.NONE) {
+        val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,
                 direction = navigationDirection,
