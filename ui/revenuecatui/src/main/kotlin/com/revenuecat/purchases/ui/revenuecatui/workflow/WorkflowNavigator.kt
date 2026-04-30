@@ -16,11 +16,12 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
 
     private val backStack = ArrayDeque<String>()
 
-    fun currentStep(): WorkflowStep? = workflow.steps[_currentStepId.value]
+    val currentStep: WorkflowStep?
+        get() = workflow.steps[_currentStepId.value]
 
     @Suppress("ReturnCount")
     fun peekTriggerStep(componentId: String, triggerType: WorkflowTriggerType): WorkflowStep? {
-        val step = currentStep() ?: return null
+        val step = currentStep ?: return null
         val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType }
             ?: return null
         val action = step.triggerActions[trigger.actionId] ?: return null
@@ -33,7 +34,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
 
     @Suppress("ReturnCount")
     fun triggerAction(componentId: String, triggerType: WorkflowTriggerType): WorkflowStep? {
-        val step = currentStep() ?: return null
+        val step = currentStep ?: return null
         val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType } ?: run {
             Logger.w("No trigger found for componentId '$componentId' and type '$triggerType' in step '${step.id}'")
             return null
