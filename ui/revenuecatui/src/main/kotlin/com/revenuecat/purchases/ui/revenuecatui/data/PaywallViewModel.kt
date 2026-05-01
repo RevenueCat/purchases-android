@@ -73,6 +73,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.yield
+import java.net.URI
+import java.net.URISyntaxException
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -469,6 +472,11 @@ internal class PaywallViewModelImpl(
                     shouldDisplayBlock?.let {
                         if (!it(customerInfo)) {
                             _purchaseCompleted.value = true
+                            if (listener != null) {
+                                // Give listener implementations a chance to flush any posted main-thread work
+                                // before the paywall dismisses itself.
+                                yield()
+                            }
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             options.dismissRequest()
                         }
@@ -630,6 +638,11 @@ internal class PaywallViewModelImpl(
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                    if (listener != null) {
+                        // Give listener implementations a chance to flush any posted main-thread work
+                        // before the paywall dismisses itself.
+                        yield()
+                    }
                     Logger.d("Dismissing paywall after purchase")
                     options.dismissRequest()
                 }
