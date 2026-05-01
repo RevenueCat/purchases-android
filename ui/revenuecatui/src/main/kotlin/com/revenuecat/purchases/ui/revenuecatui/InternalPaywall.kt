@@ -261,12 +261,15 @@ private fun LoadedPaywall(
         modifier = Modifier.screenModeBackground(state.isInFullScreenMode, backgroundColor),
     ) {
         val configuration = state.configurationWithOverriddenLocale()
+        val layoutDirection = remember(state.templateConfiguration.locale) {
+            state.templateConfiguration.locale.toLayoutDirection()
+        }
 
         CompositionLocalProvider(
             LocalActivity provides activity,
             LocalContext provides state.contextWithConfiguration(configuration),
             LocalConfiguration provides configuration,
-            LocalLayoutDirection provides state.templateConfiguration.locale.toLayoutDirection(),
+            LocalLayoutDirection provides layoutDirection,
         ) {
             TemplatePaywall(state = state, viewModel = viewModel)
         }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -95,8 +96,11 @@ internal fun LoadedPaywallComponents(
     val shouldWrapMainContentInVerticalScroll =
         (state.stack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
     val mainScrollState = rememberScrollState()
+    val layoutDirection = remember(state.locale) {
+        state.locale.toJavaLocale().toLayoutDirection()
+    }
 
-    CompositionLocalProvider(LocalLayoutDirection provides state.locale.toJavaLocale().toLayoutDirection()) {
+    CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         PaywallComponentsScaffold(
             state = state,
             clickHandler = clickHandler,
