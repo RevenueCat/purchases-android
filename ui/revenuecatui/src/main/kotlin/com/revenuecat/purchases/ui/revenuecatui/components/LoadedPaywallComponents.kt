@@ -11,12 +11,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -49,6 +52,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
@@ -69,6 +73,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetClose
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetOpen
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
 import java.net.URL
 import java.util.Date
 
@@ -91,27 +96,32 @@ internal fun LoadedPaywallComponents(
     val shouldWrapMainContentInVerticalScroll =
         (state.stack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
     val mainScrollState = rememberScrollState()
+    val layoutDirection = remember(state.locale) {
+        state.locale.toJavaLocale().toLayoutDirection()
+    }
 
-    PaywallComponentsScaffold(
-        state = state,
-        clickHandler = clickHandler,
-        componentInteractionTracker = componentInteractionTracker,
-        modifier = modifier,
-    ) {
-        ComponentView(
-            style = state.stack,
+    CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+        PaywallComponentsScaffold(
             state = state,
-            onClick = onClick,
+            clickHandler = clickHandler,
             componentInteractionTracker = componentInteractionTracker,
-            modifier = Modifier
-                .fillMaxSize()
-                .conditional(shouldWrapMainContentInVerticalScroll) {
-                    verticalScroll(mainScrollState)
-                }
-                .conditional(state.header != null && !state.mainStackHasHeroImage) {
-                    headerTopPadding(state)
-                },
-        )
+            modifier = modifier,
+        ) {
+            ComponentView(
+                style = state.stack,
+                state = state,
+                onClick = onClick,
+                componentInteractionTracker = componentInteractionTracker,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .conditional(shouldWrapMainContentInVerticalScroll) {
+                        verticalScroll(mainScrollState)
+                    }
+                    .conditional(state.header != null && !state.mainStackHasHeroImage) {
+                        headerTopPadding(state)
+                    },
+            )
+        }
     }
 }
 
