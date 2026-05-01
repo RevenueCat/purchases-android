@@ -63,6 +63,11 @@ public class PaywallData(
      * The default locale to be used on a paywall if the preferred languages aren't found.
      */
     @SerialName("default_locale") public val defaultLocale: String? = null,
+
+    /**
+     * When true, font sizes scale automatically for accessibility; when false or absent, default UI behavior applies.
+     */
+    @SerialName("automatically_scale_font_size") public val automaticallyScaleFontSize: Boolean? = null,
 ) {
 
     /**
@@ -157,6 +162,7 @@ public class PaywallData(
         localizationByTier: Map<String, Map<String, LocalizedConfiguration>> = this.localizationByTier,
         zeroDecimalPlaceCountries: List<String> = this.zeroDecimalPlaceCountries,
         defaultLocale: String? = this.defaultLocale,
+        automaticallyScaleFontSize: Boolean? = this.automaticallyScaleFontSize,
     ): PaywallData = PaywallData(
         templateName = templateName,
         config = config,
@@ -166,6 +172,7 @@ public class PaywallData(
         localizationByTier = localizationByTier,
         zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         defaultLocale = defaultLocale,
+        automaticallyScaleFontSize = automaticallyScaleFontSize,
     )
 
     /**
