@@ -32,6 +32,9 @@ internal sealed class CustomPaywallEvent : FeatureEvent {
         internal class Data(
             val paywallId: String?,
             val offeringId: String? = null,
+            val placementIdentifier: String? = null,
+            val targetingRevision: Int? = null,
+            val targetingRuleId: String? = null,
         )
     }
 }

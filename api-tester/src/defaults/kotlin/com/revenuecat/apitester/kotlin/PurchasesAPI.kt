@@ -9,6 +9,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Purchases.Companion.sharedInstance
@@ -141,10 +142,21 @@ private class PurchasesAPI {
         val defaultParams = CustomPaywallImpressionParams()
         val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
         val paramsWithOffering = CustomPaywallImpressionParams(paywallId = "my-paywall", offeringId = "my-offering")
+        val offering = Offering(
+            identifier = "my-offering",
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        val paramsWithOfferingObject = CustomPaywallImpressionParams(paywallId = "my-paywall", offering = offering)
+        val paramsOfferingObjectOnly = CustomPaywallImpressionParams(offering = offering)
+        val offeringObject: Offering? = paramsWithOfferingObject.offering
         purchases.trackCustomPaywallImpression()
         purchases.trackCustomPaywallImpression(defaultParams)
         purchases.trackCustomPaywallImpression(paramsWithId)
         purchases.trackCustomPaywallImpression(paramsWithOffering)
+        purchases.trackCustomPaywallImpression(paramsWithOfferingObject)
+        purchases.trackCustomPaywallImpression(paramsOfferingObjectOnly)
     }
 
     @Suppress("LongParameterList")

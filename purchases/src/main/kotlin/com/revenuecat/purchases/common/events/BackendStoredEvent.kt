@@ -342,6 +342,11 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
             timestamp = creationData.date.time,
             paywallID = data.paywallId,
             offeringID = data.offeringId,
+            presentedOfferingContext = BackendEvent.CustomPaywallPresentedOfferingContextData.from(
+                placementIdentifier = data.placementIdentifier,
+                targetingRevision = data.targetingRevision,
+                targetingRuleId = data.targetingRuleId,
+            ),
         ),
     )
 }
