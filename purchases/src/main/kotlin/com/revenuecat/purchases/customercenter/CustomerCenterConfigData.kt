@@ -315,6 +315,81 @@ public data class CustomerCenterConfigData(
 
             @SerialName("characters_remaining")
             CHARACTERS_REMAINING,
+
+            @SerialName("screen_management_see_all_purchases")
+            SCREEN_MANAGEMENT_SEE_ALL_PURCHASES,
+
+            @SerialName("screen_purchase_history_title")
+            SCREEN_PURCHASE_HISTORY_TITLE,
+
+            @SerialName("subscriptions_section_title")
+            SUBSCRIPTIONS_SECTION_TITLE,
+
+            @SerialName("inactive")
+            INACTIVE,
+
+            @SerialName("status_inactive")
+            STATUS_INACTIVE,
+
+            @SerialName("purchases_section_title")
+            PURCHASES_SECTION_TITLE,
+
+            @SerialName("product_name")
+            PRODUCT_NAME,
+
+            @SerialName("paid_price")
+            PAID_PRICE,
+
+            @SerialName("status")
+            STATUS,
+
+            @SerialName("next_renewal")
+            NEXT_RENEWAL,
+
+            @SerialName("unsubscribed_at")
+            UNSUBSCRIBED_AT,
+
+            @SerialName("billing_issue_detected_at")
+            BILLING_ISSUE_DETECTED_AT,
+
+            @SerialName("grace_period_expires_at")
+            GRACE_PERIOD_EXPIRES_AT,
+
+            @SerialName("period_type")
+            PERIOD_TYPE,
+
+            @SerialName("refunded_at")
+            REFUNDED_AT,
+
+            @SerialName("history_latest_purchase_date")
+            HISTORY_LATEST_PURCHASE_DATE,
+
+            @SerialName("introductory_price")
+            INTRODUCTORY_PRICE,
+
+            @SerialName("trial_period")
+            TRIAL_PERIOD,
+
+            @SerialName("shared_through_family_member")
+            SHARED_THROUGH_FAMILY_MEMBER,
+
+            @SerialName("product_id")
+            PRODUCT_ID,
+
+            @SerialName("sandbox")
+            SANDBOX,
+
+            @SerialName("transaction_id")
+            TRANSACTION_ID,
+
+            @SerialName("original_download_date")
+            ORIGINAL_DOWNLOAD_DATE,
+
+            @SerialName("yes")
+            YES,
+
+            @SerialName("no")
+            NO,
             ;
 
             public val defaultValue: String
@@ -429,6 +504,31 @@ public data class CustomerCenterConfigData(
                     SUBMIT_TICKET -> "Submit ticket"
                     INVALID_EMAIL_ERROR -> "Please enter a valid email address"
                     CHARACTERS_REMAINING -> "{{ count }} characters"
+                    SCREEN_MANAGEMENT_SEE_ALL_PURCHASES -> "See all purchases"
+                    SCREEN_PURCHASE_HISTORY_TITLE -> "Purchase History"
+                    SUBSCRIPTIONS_SECTION_TITLE -> "Subscriptions"
+                    INACTIVE -> "Inactive"
+                    STATUS_INACTIVE -> "Inactive"
+                    PURCHASES_SECTION_TITLE -> "Purchases"
+                    PRODUCT_NAME -> "Product Name"
+                    PAID_PRICE -> "Paid Price"
+                    STATUS -> "Status"
+                    NEXT_RENEWAL -> "Next Renewal"
+                    UNSUBSCRIBED_AT -> "Unsubscribed At"
+                    BILLING_ISSUE_DETECTED_AT -> "Billing Issue Detected At"
+                    GRACE_PERIOD_EXPIRES_AT -> "Grace Period Expires At"
+                    PERIOD_TYPE -> "Period Type"
+                    REFUNDED_AT -> "Refunded At"
+                    HISTORY_LATEST_PURCHASE_DATE -> "Latest Purchase Date"
+                    INTRODUCTORY_PRICE -> "Introductory Price"
+                    TRIAL_PERIOD -> "Trial Period"
+                    SHARED_THROUGH_FAMILY_MEMBER -> "Shared through family member"
+                    PRODUCT_ID -> "Product ID"
+                    SANDBOX -> "Sandbox"
+                    TRANSACTION_ID -> "Transaction ID"
+                    ORIGINAL_DOWNLOAD_DATE -> "Original Download Date"
+                    YES -> "Yes"
+                    NO -> "No"
                 }
         }
 
@@ -589,6 +689,8 @@ public data class CustomerCenterConfigData(
         public val shouldWarnCustomerToUpdate: Boolean? = null,
         @SerialName("display_virtual_currencies")
         public val displayVirtualCurrencies: Boolean? = null,
+        @SerialName("display_purchase_history_link")
+        public val displayPurchaseHistoryLink: Boolean? = null,
         @SerialName("support_tickets")
         public val supportTickets: SupportTickets = SupportTickets(),
     ) {
