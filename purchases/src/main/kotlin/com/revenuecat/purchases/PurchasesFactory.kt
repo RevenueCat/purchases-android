@@ -42,6 +42,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResolver
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -209,6 +210,8 @@ internal class PurchasesFactory(
                 coilImageDownloader = coilImageDownloader,
             )
 
+            val workflowsCache = WorkflowsCache()
+
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
             // Override used for integration tests.
@@ -263,6 +266,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesManager,
                 offeringsCache,
+                workflowsCache,
                 backend,
                 offlineEntitlementsManager,
                 dispatcher,
@@ -364,6 +368,7 @@ internal class PurchasesFactory(
                     paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
                     offeringFontPreDownloader = offeringFontPreDownloader,
                 ),
+                workflowsCache = workflowsCache,
             )
 
             val offeringsManager = OfferingsManager(
