@@ -42,6 +42,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResolver
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -202,6 +203,7 @@ internal class PurchasesFactory(
                 backendHelper,
             )
 
+            val workflowsCache = WorkflowsCache()
             val workflowManager = WorkflowManager(
                 backend = backend,
                 workflowDetailResolver = WorkflowDetailResolver(
@@ -209,6 +211,7 @@ internal class PurchasesFactory(
                         fileRepository = DefaultFileRepository(contextForStorage, "rc_compiled_workflows"),
                     ),
                 ),
+                workflowsCache = workflowsCache,
             )
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
@@ -264,6 +267,7 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesManager,
                 offeringsCache,
+                workflowsCache,
                 backend,
                 offlineEntitlementsManager,
                 dispatcher,

@@ -17,6 +17,7 @@ import java.io.IOException
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
+    private val workflowsCache: WorkflowsCache,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -31,6 +32,11 @@ internal class WorkflowManager(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        val cached = workflowsCache.cachedWorkflow(workflowId)
+        if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
+            onSuccess(cached)
+            return
+        }
         backend.getWorkflow(
             appUserID = appUserID,
             workflowId = workflowId,
@@ -38,7 +44,9 @@ internal class WorkflowManager(
             onSuccess = { response ->
                 scope.launch {
                     try {
-                        onSuccess(workflowDetailResolver.resolve(response))
+                        val result = workflowDetailResolver.resolve(response)
+                        workflowsCache.cacheWorkflow(workflowId, result)
+                        onSuccess(result)
                     } catch (e: IllegalStateException) {
                         onError(e.toPurchasesError())
                     } catch (e: IOException) {
