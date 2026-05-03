@@ -342,6 +342,12 @@ internal sealed interface PaywallState {
                         ?: selectedPackageByTab[selectedTabIndex]
             }
 
+            internal fun selectPackageIfExists(uniqueId: String) {
+                if (findPackageInfoByUniqueId(uniqueId) != null) {
+                    update(uniqueId)
+                }
+            }
+
             fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? =
                 packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
                     ?: initialSelectedPackageOutsideTabs

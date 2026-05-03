@@ -9,7 +9,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
@@ -106,6 +109,46 @@ class PaywallViewModelWorkflowTest {
         triggers = emptyList(),
         triggerActions = emptyMap(),
     )
+
+    // Two-package fixture: monthly (default) + annual, for propagation tests.
+    private val annualPackageComponent = PackageComponent(
+        packageId = PackageType.ANNUAL.identifier!!,
+        isSelectedByDefault = false,
+        stack = StackComponent(components = emptyList()),
+    )
+    // PackageComponent uses @Poko (not a data class), so reconstruct rather than .copy().
+    private val monthlyPackageComponentDefault = PackageComponent(
+        packageId = PackageType.MONTHLY.identifier!!,
+        isSelectedByDefault = true,
+        stack = StackComponent(components = emptyList()),
+    )
+    private val twoPackageComponentsConfig = ComponentsConfig(
+        base = PaywallComponentsConfig(
+            stack = StackComponent(
+                components = listOf(monthlyPackageComponentDefault, annualPackageComponent),
+            ),
+            background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+            stickyFooter = null,
+        ),
+    )
+
+    private fun makeTwoPackageWorkflow(): Pair<WorkflowDataResult, Offerings> {
+        val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
+        val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
+        val wfl = workflow.copy(
+            screens = mapOf(screenId1 to screen1, screenId2 to screen2),
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        val offerings = Offerings(offering, mapOf(offeringId to offering))
+        return WorkflowDataResult(workflow = wfl, enrolledVariants = null) to offerings
+    }
 
     private val workflow = PublishedWorkflow(
         id = "wfl-test",
@@ -230,6 +273,27 @@ class PaywallViewModelWorkflowTest {
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         assertThat(vm.workflowState.value?.stepStates?.get("step-2")).isSameAs(firstState)
+    }
+
+    @Test
+    fun `selected package on step 1 propagates to step 2 on first visit`() {
+        val (fetchResult2, offerings2) = makeTwoPackageWorkflow()
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult2, offerings2, null)
+
+        // Switch step-1 to annual (non-default) before navigating away.
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1State).isNotNull()
+        step1State!!.update(PackageType.ANNUAL.identifier!!)
+        assertThat(step1State.selectedPackageInfo?.uniqueId).isEqualTo(PackageType.ANNUAL.identifier)
+
+        // Navigate to step-2 for the first time.
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val step2State = vm.workflowState.value?.stepStates?.get("step-2")
+        assertThat(step2State).isNotNull()
+        assertThat(step2State!!.selectedPackageInfo?.uniqueId)
+            .isEqualTo(PackageType.ANNUAL.identifier)
     }
 
     // endregion

@@ -764,11 +764,22 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
+        inheritedSelectedPackageUniqueId: String? = null,
     ) {
         val cached = workflowStepStateCache[step.id]
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
+        }
+        // On forward navigation, apply the globally selected package to this step so the
+        // user's selection from the previous step is reflected here — even if the step was
+        // pre-warmed with the default package. Back navigation must not touch the cached
+        // state; it must be restored exactly as the user left it.
+        if (navigationDirection == NavigationDirection.FORWARD &&
+            inheritedSelectedPackageUniqueId != null &&
+            newState is PaywallState.Loaded.Components
+        ) {
+            newState.selectPackageIfExists(inheritedSelectedPackageUniqueId)
         }
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
@@ -872,6 +883,9 @@ internal class PaywallViewModelImpl(
             return
         }
         val fromStepId = navigator.currentStep?.id
+        val inheritedSelectedPackageUniqueId = fromStepId?.let {
+            workflowStepStateCache[it]?.selectedPackageInfo?.uniqueId
+        }
         // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
         // given the peek succeeded, but guard anyway to avoid a hard crash.
         val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
@@ -885,6 +899,7 @@ internal class PaywallViewModelImpl(
             currentWorkflowPresentedOfferingContext,
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.FORWARD,
+            inheritedSelectedPackageUniqueId = inheritedSelectedPackageUniqueId,
         )
     }
 
