@@ -30,6 +30,7 @@ internal data class WorkflowHeaderStepInfo(
     val hasHeader: Boolean,
 )
 
+@Suppress("LongParameterList")
 @Composable
 internal fun LoadedWorkflowPaywall(
     workflowState: WorkflowPaywallUiState,
@@ -37,6 +38,7 @@ internal fun LoadedWorkflowPaywall(
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     modifier: Modifier = Modifier,
+    transition: WorkflowTransitionAnimation = WorkflowTransitionAnimation.Slide(),
 ) {
     val currentStepId = workflowState.currentStepId
     val stepStates = workflowState.stepStates
@@ -51,6 +53,7 @@ internal fun LoadedWorkflowPaywall(
     val slideState = rememberWorkflowSlideState(
         workflowState = workflowState,
         onTransitionComplete = onTransitionComplete,
+        transition = transition,
     )
 
     val headerState = workflowHeaderState(
