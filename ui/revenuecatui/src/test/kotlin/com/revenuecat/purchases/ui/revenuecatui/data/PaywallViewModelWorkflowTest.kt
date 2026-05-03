@@ -296,6 +296,70 @@ class PaywallViewModelWorkflowTest {
             .isEqualTo(PackageType.ANNUAL.identifier)
     }
 
+    @Test
+    fun `back navigation returns step state with the selection the user left on it`() {
+        val (fetchResult2, offerings2) = makeTwoPackageWorkflow()
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult2, offerings2, null)
+
+        // Switch step-1 to annual before navigating forward.
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")!!
+        step1State.update(PackageType.ANNUAL.identifier!!)
+
+        // Navigate to step-2 and complete the transition.
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+
+        // Navigate back to step-1.
+        vm.handleBackNavigation()
+
+        // The cached step-1 state object must be the exact same instance with annual still selected.
+        val step1StateAfterBack = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1StateAfterBack).isSameAs(step1State)
+        assertThat(step1StateAfterBack?.selectedPackageInfo?.uniqueId)
+            .isEqualTo(PackageType.ANNUAL.identifier)
+    }
+
+    @Test
+    fun `two rapid forward navigations from same step do not corrupt state`() {
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+
+        // Two calls before any transition completes.
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        val firstPendingId = vm.workflowState.value?.pendingTransition?.id
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        // The second tap is a no-op: currentStep is already step-2, which has no triggers.
+        // The pending transition ID must not have changed.
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(vm.workflowState.value?.pendingTransition?.id).isEqualTo(firstPendingId)
+    }
+
+    @Test
+    fun `custom variables from options are visible on step 2`() {
+        val customVars = mapOf("highlight_color" to CustomVariableValue.String("gold"))
+        val vmWithVars = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .setCustomVariables(customVars)
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+        vmWithVars.updateStateFromWorkflow(fetchResult, testOfferings, null)
+
+        vmWithVars.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val step2State = vmWithVars.workflowState.value?.stepStates?.get("step-2")
+        assertThat(step2State).isNotNull()
+        assertThat(
+            (step2State!!.mergedCustomVariables["highlight_color"] as? CustomVariableValue.String)?.value,
+        ).isEqualTo("gold")
+    }
+
     // endregion
 
     // region onTransitionComplete
