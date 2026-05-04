@@ -292,8 +292,10 @@ class PaywallViewModelWorkflowTest {
 
         val step2State = vm.workflowState.value?.stepStates?.get("step-2")
         assertThat(step2State).isNotNull()
+        // Step-2 has its own packages (monthly default), so its own selection wins.
+        // The context package is the fallback only when there is no own selection.
         assertThat(step2State!!.selectedPackageInfo?.uniqueId)
-            .isEqualTo(PackageType.ANNUAL.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
     }
 
     @Test
@@ -392,6 +394,21 @@ class PaywallViewModelWorkflowTest {
         vm.onTransitionComplete(staleId)
 
         assertThat(vm.workflowState.value?.pendingTransition?.id).isEqualTo(currentId)
+    }
+
+    // endregion
+
+    // region context package
+
+    @Test
+    fun `setContextPackage is callable on step state`() {
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1State).isNotNull()
+        // Just verify the API exists — behavioral tests come in Task 2.
+        step1State!!.setContextPackage(null)
     }
 
     // endregion

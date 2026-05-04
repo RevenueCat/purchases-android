@@ -771,16 +771,6 @@ internal class PaywallViewModelImpl(
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
-        // On forward navigation, apply the globally selected package to this step so the
-        // user's selection from the previous step is reflected here — even if the step was
-        // pre-warmed with the default package. Back navigation must not touch the cached
-        // state; it must be restored exactly as the user left it.
-        if (navigationDirection == NavigationDirection.FORWARD &&
-            inheritedSelectedPackageUniqueId != null &&
-            newState is PaywallState.Loaded.Components
-        ) {
-            newState.selectPackageIfExists(inheritedSelectedPackageUniqueId)
-        }
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,

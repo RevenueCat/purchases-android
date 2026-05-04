@@ -248,8 +248,14 @@ internal sealed interface PaywallState {
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
+            private var contextPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
+
+            internal fun setContextPackage(info: SelectedPackageInfo?) {
+                contextPackageInfo = info
+            }
+
             val selectedPackageInfo by derivedStateOf {
-                selectedPackageUniqueId?.let { uniqueId ->
+                val ownSelection = selectedPackageUniqueId?.let { uniqueId ->
                     findPackageInfoByUniqueId(uniqueId)?.let { info ->
                         SelectedPackageInfo(
                             rcPackage = info.pkg,
@@ -259,6 +265,7 @@ internal sealed interface PaywallState {
                         )
                     }
                 }
+                ownSelection ?: contextPackageInfo
             }
 
             private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {
@@ -340,12 +347,6 @@ internal sealed interface PaywallState {
                     packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
                         ?: initialSelectedPackageOutsideTabs
                         ?: selectedPackageByTab[selectedTabIndex]
-            }
-
-            internal fun selectPackageIfExists(uniqueId: String) {
-                if (findPackageInfoByUniqueId(uniqueId) != null) {
-                    update(uniqueId)
-                }
             }
 
             fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? =
