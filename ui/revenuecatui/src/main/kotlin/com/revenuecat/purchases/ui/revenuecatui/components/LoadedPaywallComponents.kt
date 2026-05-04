@@ -171,7 +171,7 @@ internal fun PaywallComponentsScaffold(
                     state = state,
                     modifier = Modifier.weight(1f),
                 ) {
-                    // Child 0: caller-supplied main content (scrollable body).
+                    // Child 0: caller-supplied main content.
                     mainContent()
                     // Child 1 (optional): fixed header overlay.
                     headerContent?.invoke()
@@ -238,7 +238,6 @@ internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): M
  * Returns `false` when the root stack already scrolls vertically (overflow = SCROLL on a vertical
  * dimension), because two vertical scroll modifiers on the same axis crash at runtime.
  */
-@JvmSynthetic
 internal fun shouldWrapMainContentInVerticalScroll(rootStack: ComponentStyle): Boolean =
     (rootStack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
 
