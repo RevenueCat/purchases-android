@@ -66,6 +66,8 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,6 +75,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -199,6 +202,7 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowOfferings: Offerings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
+    private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
     private data class PaywallPresentationFingerprint(
@@ -745,10 +749,12 @@ internal class PaywallViewModelImpl(
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
         workflowNavigator = WorkflowNavigator(workflow)
+        preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
 
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
+        preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
 
     private fun buildStateFromStep(
@@ -829,6 +835,30 @@ internal class PaywallViewModelImpl(
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
         )
+    }
+
+    /**
+     * Eagerly computes and caches states for the remaining workflow steps off the main thread,
+     * so that navigating to them doesn't block on the heavy [calculateState] work.
+     */
+    private fun preWarmWorkflowStepCache(
+        workflow: PublishedWorkflow,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+    ) {
+        preWarmJob = viewModelScope.launch {
+            for ((stepId, step) in workflow.steps) {
+                if (stepId in workflowStepStateCache) continue
+                val computed = withContext(Dispatchers.Default) {
+                    computeStateForStep(step, workflow, offerings, presentedOfferingContext)
+                }
+                if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
+                    workflowStepStateCache[stepId] = computed
+                    computed.update(localeList = _lastLocaleList.value.toFrameworkLocaleList())
+                }
+            }
+            _workflowState.value = _workflowState.value?.copy(stepStates = workflowStepStateCache.toMap())
+        }
     }
 
     @Suppress("ReturnCount")
