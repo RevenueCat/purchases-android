@@ -32,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
@@ -132,11 +133,67 @@ class PaywallViewModelWorkflowTest {
         ),
     )
 
+    // Component config with NO PackageComponent — simulates an early "info" screen.
+    private val noPackagesComponentsConfig = ComponentsConfig(
+        base = PaywallComponentsConfig(
+            stack = StackComponent(components = emptyList()),
+            background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+            stickyFooter = null,
+        ),
+    )
+
     private fun makeTwoPackageWorkflow(): Pair<WorkflowDataResult, Offerings> {
         val screen1 = makeScreen(screenId1).copy(componentsConfig = twoPackageComponentsConfig)
         val screen2 = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
         val wfl = workflow.copy(
             screens = mapOf(screenId1 to screen1, screenId2 to screen2),
+        )
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        val offerings = Offerings(offering, mapOf(offeringId to offering))
+        return WorkflowDataResult(workflow = wfl, enrolledVariants = null) to offerings
+    }
+
+    private fun makeContextPackageWorkflow(): Pair<WorkflowDataResult, Offerings> {
+        val earlyScreen = makeScreen(screenId1).copy(componentsConfig = noPackagesComponentsConfig)
+        val terminalScreen = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
+
+        val earlyStep = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = screenId1,
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            paramValues = mapOf(
+                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
+            ),
+        )
+        val terminalStep = WorkflowStep(
+            id = "step-2",
+            type = "screen",
+            screenId = screenId2,
+            triggers = emptyList(),
+            triggerActions = emptyMap(),
+            paramValues = mapOf(
+                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
+            ),
+        )
+        val wfl = workflow.copy(
+            steps = mapOf("step-1" to earlyStep, "step-2" to terminalStep),
+            screens = mapOf(screenId1 to earlyScreen, screenId2 to terminalScreen),
         )
         val offering = Offering(
             identifier = offeringId,
@@ -409,6 +466,20 @@ class PaywallViewModelWorkflowTest {
         assertThat(step1State).isNotNull()
         // Just verify the API exists — behavioral tests come in Task 2.
         step1State!!.setContextPackage(null)
+    }
+
+    @Test
+    fun `default_package_id in paramValues is applied as context on step with no own packages`() {
+        val (result, offerings) = makeContextPackageWorkflow()
+        val vm = createVm()
+
+        vm.updateStateFromWorkflow(result, offerings, null)
+
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1State).isNotNull()
+        // Step-1 has no PackageComponents → hasAnyPackages is false → context from default_package_id.
+        assertThat(step1State!!.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.ANNUAL.identifier)
     }
 
     // endregion

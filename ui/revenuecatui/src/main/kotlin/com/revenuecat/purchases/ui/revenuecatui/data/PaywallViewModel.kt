@@ -69,6 +69,8 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -770,6 +772,32 @@ internal class PaywallViewModelImpl(
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
+            // Apply default_package_id from the step's paramValues as context for steps that have
+            // no own package components (e.g. early "info" screens in a multipage workflow).
+            if (!newState.hasAnyPackages) {
+                val defaultPackageId = step.paramValues["default_package_id"]
+                    ?.jsonPrimitive?.contentOrNull
+                if (defaultPackageId != null) {
+                    val screenId = step.screenId
+                    val screenOfferingId = screenId?.let { workflow.screens[it]?.offeringIdentifier }
+                    val baseOffering = screenOfferingId?.let { offerings[it] }
+                    val contextPackage = baseOffering?.availablePackages
+                        ?.firstOrNull { it.identifier == defaultPackageId }
+                    if (contextPackage != null) {
+                        newState.setContextPackage(
+                            PaywallState.Loaded.Components.SelectedPackageInfo(
+                                rcPackage = contextPackage,
+                                resolvedOffer = null,
+                                uniqueId = contextPackage.identifier,
+                                offerEligibility = calculateOfferEligibility(
+                                    resolvedOffer = null,
+                                    rcPackage = contextPackage,
+                                ),
+                            ),
+                        )
+                    }
+                }
+            }
         }
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(

@@ -254,6 +254,9 @@ internal sealed interface PaywallState {
                 contextPackageInfo = info
             }
 
+            internal val hasAnyPackages: Boolean
+                get() = packages.hasAnyPackages
+
             val selectedPackageInfo by derivedStateOf {
                 val ownSelection = selectedPackageUniqueId?.let { uniqueId ->
                     findPackageInfoByUniqueId(uniqueId)?.let { info ->
