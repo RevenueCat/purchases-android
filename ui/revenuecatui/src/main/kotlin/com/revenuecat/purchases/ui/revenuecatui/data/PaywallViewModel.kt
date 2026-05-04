@@ -766,8 +766,6 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
-        // TODO: remove in Task 4 — replaced by contextPackageInfo mechanism
-        inheritedSelectedPackageUniqueId: String? = null,
     ) {
         val cached = workflowStepStateCache[step.id]
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
@@ -916,9 +914,6 @@ internal class PaywallViewModelImpl(
             return
         }
         val fromStepId = navigator.currentStep?.id
-        val inheritedSelectedPackageUniqueId = fromStepId?.let {
-            workflowStepStateCache[it]?.selectedPackageInfo?.uniqueId
-        }
         // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
         // given the peek succeeded, but guard anyway to avoid a hard crash.
         val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
@@ -932,7 +927,6 @@ internal class PaywallViewModelImpl(
             currentWorkflowPresentedOfferingContext,
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.FORWARD,
-            inheritedSelectedPackageUniqueId = inheritedSelectedPackageUniqueId,
         )
     }
 

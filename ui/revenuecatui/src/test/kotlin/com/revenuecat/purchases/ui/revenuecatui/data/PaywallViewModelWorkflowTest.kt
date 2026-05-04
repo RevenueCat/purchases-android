@@ -333,29 +333,6 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `selected package on step 1 propagates to step 2 on first visit`() {
-        val (fetchResult2, offerings2) = makeTwoPackageWorkflow()
-        val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult2, offerings2, null)
-
-        // Switch step-1 to annual (non-default) before navigating away.
-        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
-        assertThat(step1State).isNotNull()
-        step1State!!.update(PackageType.ANNUAL.identifier!!)
-        assertThat(step1State.selectedPackageInfo?.uniqueId).isEqualTo(PackageType.ANNUAL.identifier)
-
-        // Navigate to step-2 for the first time.
-        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
-
-        val step2State = vm.workflowState.value?.stepStates?.get("step-2")
-        assertThat(step2State).isNotNull()
-        // Step-2 has its own packages (monthly default), so its own selection wins.
-        // The context package is the fallback only when there is no own selection.
-        assertThat(step2State!!.selectedPackageInfo?.uniqueId)
-            .isEqualTo(PackageType.MONTHLY.identifier)
-    }
-
-    @Test
     fun `back navigation returns step state with the selection the user left on it`() {
         val (fetchResult2, offerings2) = makeTwoPackageWorkflow()
         val vm = createVm()
