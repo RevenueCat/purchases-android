@@ -806,7 +806,8 @@ internal class PaywallViewModelImpl(
         // falls back to their contextPackageInfo.
         if (navigationDirection == NavigationDirection.BACKWARD &&
             fromStepId != null &&
-            newState is PaywallState.Loaded.Components
+            newState is PaywallState.Loaded.Components &&
+            !newState.hasAnyPackages
         ) {
             val leavingStepPackage = workflowStepStateCache[fromStepId]?.selectedPackageInfo
             if (leavingStepPackage != null) {
