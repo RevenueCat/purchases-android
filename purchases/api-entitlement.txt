@@ -478,8 +478,8 @@ package com.revenuecat.purchases {
 
   public static final class PurchasesConfigurationForCustomEntitlementsComputationMode.Builder {
     ctor public PurchasesConfigurationForCustomEntitlementsComputationMode.Builder(android.content.Context context, String apiKey, String appUserID);
-    method public com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode build();
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode.Builder applyObfuscatedAccountIdToSubscriptionChanges(boolean enabled);
+    method public com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode build();
     method public com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode.Builder pendingTransactionsForPrepaidPlansEnabled(boolean enabled);
     method public com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode.Builder showInAppMessagesAutomatically(boolean enabled);
   }
