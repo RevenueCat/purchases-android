@@ -616,5 +616,36 @@ class PaywallViewModelWorkflowTest {
             .isEqualTo(PackageType.MONTHLY.identifier)
     }
 
+    @Test
+    fun `own package selection on packaged step wins over backward-propagated context`() {
+        val (result, offerings) = makeContextPackageWorkflow()
+        val vm = createVm()
+        vm.updateStateFromWorkflow(result, offerings, null)
+
+        // Navigate to terminal step-2 (has packages, default is MONTHLY from twoPackageComponentsConfig).
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+
+        // step-2's own default is MONTHLY — context from step-1 (ANNUAL) should not interfere.
+        val step2State = vm.workflowState.value?.stepStates?.get("step-2")
+        assertThat(step2State).isNotNull()
+        // step-2 has its own packages → own selection wins → must NOT return context from step-1.
+        assertThat(step2State!!.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+
+        // Navigate back to step-1 with ANNUAL selected on step-2.
+        step2State.update(PackageType.ANNUAL.identifier!!)
+        vm.handleBackNavigation()
+
+        // Now navigate forward to step-2 again.
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+
+        // step-2's own cached selection (ANNUAL) must still win — not overwritten by step-1's context.
+        val step2StateAgain = vm.workflowState.value?.stepStates?.get("step-2")
+        assertThat(step2StateAgain?.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.ANNUAL.identifier)
+    }
+
     // endregion
 }

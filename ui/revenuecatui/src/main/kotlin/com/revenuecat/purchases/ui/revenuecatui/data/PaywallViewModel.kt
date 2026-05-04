@@ -771,30 +771,34 @@ internal class PaywallViewModelImpl(
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
-            // Apply default_package_id from the step's paramValues as context for steps that have
-            // no own package components (e.g. early "info" screens in a multipage workflow).
-            if (!newState.hasAnyPackages) {
-                val defaultPackageId = (step.paramValues["default_package_id"] as? JsonPrimitive)
-                    ?.contentOrNull
-                if (defaultPackageId != null) {
-                    val screenId = step.screenId
-                    val screenOfferingId = screenId?.let { workflow.screens[it]?.offeringIdentifier }
-                    val baseOffering = screenOfferingId?.let { offerings[it] }
-                    val contextPackage = baseOffering?.availablePackages
-                        ?.firstOrNull { it.identifier == defaultPackageId }
-                    if (contextPackage != null) {
-                        newState.setContextPackage(
-                            PaywallState.Loaded.Components.SelectedPackageInfo(
-                                rcPackage = contextPackage,
+        }
+        // Apply default_package_id from the step's paramValues as context for steps that have
+        // no own package components (e.g. early "info" screens in a multipage workflow).
+        // Runs for both fresh and pre-warmed steps; skipped if context is already set.
+        if (newState is PaywallState.Loaded.Components &&
+            !newState.hasAnyPackages &&
+            newState.selectedPackageInfo == null
+        ) {
+            val defaultPackageId = (step.paramValues["default_package_id"] as? JsonPrimitive)
+                ?.contentOrNull
+            if (defaultPackageId != null) {
+                val screenId = step.screenId
+                val screenOfferingId = screenId?.let { workflow.screens[it]?.offeringIdentifier }
+                val baseOffering = screenOfferingId?.let { offerings[it] }
+                val contextPackage = baseOffering?.availablePackages
+                    ?.firstOrNull { it.identifier == defaultPackageId }
+                if (contextPackage != null) {
+                    newState.setContextPackage(
+                        PaywallState.Loaded.Components.SelectedPackageInfo(
+                            rcPackage = contextPackage,
+                            resolvedOffer = null,
+                            uniqueId = contextPackage.identifier,
+                            offerEligibility = calculateOfferEligibility(
                                 resolvedOffer = null,
-                                uniqueId = contextPackage.identifier,
-                                offerEligibility = calculateOfferEligibility(
-                                    resolvedOffer = null,
-                                    rcPackage = contextPackage,
-                                ),
+                                rcPackage = contextPackage,
                             ),
-                        )
-                    }
+                        ),
+                    )
                 }
             }
         }
