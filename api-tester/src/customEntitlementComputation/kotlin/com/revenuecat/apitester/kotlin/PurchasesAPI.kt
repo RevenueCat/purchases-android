@@ -19,6 +19,7 @@ private class PurchasesAPI {
                     apiKey = "",
                     appUserID = "",
                 )
+                .applyObfuscatedAccountIdToSubscriptionChanges(true)
                 .showInAppMessagesAutomatically(false)
                 .pendingTransactionsForPrepaidPlansEnabled(false)
                 .build(),

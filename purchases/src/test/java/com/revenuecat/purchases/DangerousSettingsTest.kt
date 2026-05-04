@@ -14,6 +14,12 @@ class DangerousSettingsTest {
     }
 
     @Test
+    fun `default applyObfuscatedAccountIdToSubscriptionChanges is false`() {
+        val dangerousSettings = DangerousSettings()
+        assertThat(dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges).isFalse
+    }
+
+    @Test
     fun `default autoSyncPurchases is true`() {
         val dangerousSettings = DangerousSettings()
         assertThat(dangerousSettings.autoSyncPurchases).isTrue
@@ -32,5 +38,6 @@ class DangerousSettingsTest {
         assertThat(dangerousSettings.uiPreviewMode).isTrue
         assertThat(dangerousSettings.autoSyncPurchases).isFalse
         assertThat(dangerousSettings.customEntitlementComputation).isFalse
+        assertThat(dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges).isFalse
     }
 }

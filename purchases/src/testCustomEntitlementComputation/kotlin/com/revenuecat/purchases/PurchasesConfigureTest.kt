@@ -34,10 +34,25 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `Configuring in custom entitlements mode enables dangerous setting`() {
+    fun `Configuring in custom entitlements mode sets dangerous settings`() {
         Purchases.configureInCustomEntitlementsComputationMode(mockContext, "api", "appUserId")
+        val dangerousSettings = Purchases.sharedInstance.purchasesOrchestrator.appConfig.dangerousSettings
+        assertThat(dangerousSettings.customEntitlementComputation).isTrue
+        assertThat(dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges).isFalse
+    }
+
+    @Test
+    fun `Configuring in custom entitlements mode propagates applyObfuscatedAccountIdToSubscriptionChanges`() {
+        Purchases.configureInCustomEntitlementsComputationMode(
+            PurchasesConfigurationForCustomEntitlementsComputationMode
+                .Builder(mockContext, "api", "appUserId")
+                .applyObfuscatedAccountIdToSubscriptionChanges(true)
+                .build(),
+        )
+
         assertThat(
-            Purchases.sharedInstance.purchasesOrchestrator.appConfig.dangerousSettings.customEntitlementComputation
+            Purchases.sharedInstance.purchasesOrchestrator.appConfig.dangerousSettings
+                .applyObfuscatedAccountIdToSubscriptionChanges,
         ).isTrue
     }
 }

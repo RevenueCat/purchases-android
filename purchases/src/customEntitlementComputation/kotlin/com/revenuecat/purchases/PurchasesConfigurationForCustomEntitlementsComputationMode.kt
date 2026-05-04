@@ -13,6 +13,7 @@ public class PurchasesConfigurationForCustomEntitlementsComputationMode internal
     internal val appUserID: String,
     internal val showInAppMessagesAutomatically: Boolean,
     internal val pendingTransactionsForPrepaidPlansEnabled: Boolean,
+    internal val applyObfuscatedAccountIdToSubscriptionChanges: Boolean,
 ) {
     /**
      * @param context: the Application context object of your Application.
@@ -26,6 +27,7 @@ public class PurchasesConfigurationForCustomEntitlementsComputationMode internal
     ) {
         private var showInAppMessagesAutomatically: Boolean = true
         private var pendingTransactionsForPrepaidPlansEnabled: Boolean = true
+        private var applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false
 
         /**
          * Enable this setting to show in-app messages from Google Play automatically. Default is enabled.
@@ -48,6 +50,15 @@ public class PurchasesConfigurationForCustomEntitlementsComputationMode internal
         }
 
         /**
+         * Enable this setting to set the Google Play `obfuscatedAccountId` when performing subscription product
+         * changes (upgrades or downgrades). Default is disabled.
+         */
+        public fun applyObfuscatedAccountIdToSubscriptionChanges(enabled: Boolean): Builder {
+            applyObfuscatedAccountIdToSubscriptionChanges = enabled
+            return this
+        }
+
+        /**
          * Creates a [PurchasesConfigurationForCustomEntitlementsComputationMode] instance with the specified
          * properties.
          */
@@ -58,6 +69,7 @@ public class PurchasesConfigurationForCustomEntitlementsComputationMode internal
                 appUserID = appUserID,
                 showInAppMessagesAutomatically = showInAppMessagesAutomatically,
                 pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled,
+                applyObfuscatedAccountIdToSubscriptionChanges = applyObfuscatedAccountIdToSubscriptionChanges,
             )
     }
 }

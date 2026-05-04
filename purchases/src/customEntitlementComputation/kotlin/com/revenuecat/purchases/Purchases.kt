@@ -328,7 +328,13 @@ public class Purchases internal constructor(
             val purchasesConfiguration = with(configuration) {
                 PurchasesConfiguration.Builder(context, apiKey)
                     .appUserID(appUserID)
-                    .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                    .dangerousSettings(
+                        DangerousSettings(
+                            customEntitlementComputation = true,
+                            applyObfuscatedAccountIdToSubscriptionChanges =
+                                applyObfuscatedAccountIdToSubscriptionChanges,
+                        ),
+                    )
                     .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
                     .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
                     .build()
