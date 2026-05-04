@@ -52,7 +52,12 @@ public class PurchasesConfigurationForCustomEntitlementsComputationMode internal
         /**
          * Enable this setting to set the Google Play `obfuscatedAccountId` when performing subscription product
          * changes (upgrades or downgrades). Default is disabled.
+         *
+         * @warning Enabling this setting can make a product change fail if a previous transaction in the subscription
+         * had a different `obfuscatedAccountId`.
+         *
          */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         public fun applyObfuscatedAccountIdToSubscriptionChanges(enabled: Boolean): Builder {
             applyObfuscatedAccountIdToSubscriptionChanges = enabled
             return this

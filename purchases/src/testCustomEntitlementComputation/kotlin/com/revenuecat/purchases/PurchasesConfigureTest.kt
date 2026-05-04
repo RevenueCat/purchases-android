@@ -42,6 +42,7 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
     }
 
     @Test
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun `Configuring in custom entitlements mode propagates applyObfuscatedAccountIdToSubscriptionChanges`() {
         Purchases.configureInCustomEntitlementsComputationMode(
             PurchasesConfigurationForCustomEntitlementsComputationMode
