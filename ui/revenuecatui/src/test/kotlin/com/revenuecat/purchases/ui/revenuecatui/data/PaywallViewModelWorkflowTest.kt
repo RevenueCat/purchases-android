@@ -435,17 +435,6 @@ class PaywallViewModelWorkflowTest {
     // region context package
 
     @Test
-    fun `setContextPackage is callable on step state`() {
-        val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
-
-        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
-        assertThat(step1State).isNotNull()
-        // Just verify the API exists — behavioral tests come in Task 2.
-        step1State!!.setContextPackage(null)
-    }
-
-    @Test
     fun `default_package_id in paramValues is applied as context on step with no own packages`() {
         val (result, offerings) = makeContextPackageWorkflow()
         val vm = createVm()

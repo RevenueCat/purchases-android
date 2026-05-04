@@ -69,8 +69,6 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -78,6 +76,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -774,7 +774,8 @@ internal class PaywallViewModelImpl(
         }
         // Apply default_package_id from the step's paramValues as context for steps that have
         // no own package components (e.g. early "info" screens in a multipage workflow).
-        // Runs for both fresh and pre-warmed steps; skipped if context is already set.
+        // Runs for both fresh and pre-warmed steps. Skipped when selectedPackageInfo is already
+        // non-null from a prior backward-propagation call.
         if (newState is PaywallState.Loaded.Components &&
             !newState.hasAnyPackages &&
             newState.selectedPackageInfo == null
