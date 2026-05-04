@@ -54,6 +54,8 @@ internal data class PurchaseInformation(
     val isSandbox: Boolean = false,
     val productIdentifier: String = "",
     val storeTransactionId: String? = null,
+    // Stable source identifier used to re-resolve purchase history details after customer info refreshes.
+    val purchaseHistoryEntryId: String = "",
 ) {
 
     constructor(
@@ -101,6 +103,7 @@ internal data class PurchaseInformation(
             is TransactionDetails.Subscription -> transaction.storeTransactionId
             is TransactionDetails.NonSubscription -> transaction.storeTransactionId
         },
+        purchaseHistoryEntryId = transaction.purchaseHistoryEntryId,
     )
 
     fun renewalString(

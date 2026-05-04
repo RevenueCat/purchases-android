@@ -51,7 +51,7 @@ internal sealed class CustomerCenterDestination {
     ) : CustomerCenterDestination()
 
     data class PurchaseHistoryDetail(
-        val purchase: PurchaseInformation,
+        val purchaseHistoryEntryId: String,
         override val title: String,
     ) : CustomerCenterDestination()
 }

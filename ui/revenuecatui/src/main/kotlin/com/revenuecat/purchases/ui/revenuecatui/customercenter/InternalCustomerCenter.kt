@@ -550,10 +550,14 @@ private fun CustomerCenterNavHost(
             }
 
             is CustomerCenterDestination.PurchaseHistoryDetail -> {
-                PurchaseHistoryDetailView(
-                    purchase = destination.purchase,
-                    localization = customerCenterState.customerCenterConfigData.localization,
-                )
+                customerCenterState.allPurchases
+                    .firstOrNull { it.purchaseHistoryEntryId == destination.purchaseHistoryEntryId }
+                    ?.let { purchase ->
+                        PurchaseHistoryDetailView(
+                            purchase = purchase,
+                            localization = customerCenterState.customerCenterConfigData.localization,
+                        )
+                    }
             }
         }
     }

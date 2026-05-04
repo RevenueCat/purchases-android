@@ -3045,7 +3045,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `showPurchaseHistoryDetail navigates to PurchaseHistoryDetail with correct purchase and title`(): Unit = runBlocking {
+    fun `showPurchaseHistoryDetail navigates to PurchaseHistoryDetail with correct purchase id and title`(): Unit = runBlocking {
         setupPurchasesMock()
         val model = setupViewModel()
         model.state.filterIsInstance<CustomerCenterState.Success>().first()
@@ -3059,7 +3059,7 @@ class CustomerCenterViewModelTests {
         assertThat(updatedState.navigationButtonType)
             .isEqualTo(CustomerCenterState.NavigationButtonType.BACK)
         val destination = updatedState.currentDestination as CustomerCenterDestination.PurchaseHistoryDetail
-        assertThat(destination.purchase).isEqualTo(purchase)
+        assertThat(destination.purchaseHistoryEntryId).isEqualTo(purchase.purchaseHistoryEntryId)
         assertThat(destination.title).isEqualTo(purchase.title)
     }
 
@@ -3201,6 +3201,77 @@ class CustomerCenterViewModelTests {
         assertThat(nonSub!!.purchaseDate).isEqualTo(purchaseDate)
         assertThat(nonSub.originalPurchaseDate).isEqualTo(originalPurchaseDate)
         assertThat(nonSub.storeTransactionId).isEqualTo(txId)
+    }
+
+    @Test
+    fun `allPurchases emits unique purchase history entry ids`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayPurchaseHistoryLink = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "subscription_product" to SubscriptionInfo(
+                productIdentifier = "subscription_product",
+                purchaseDate = Date(1_700_000_000_000L),
+                originalPurchaseDate = null,
+                expiresDate = Date(1_800_000_000_000L),
+                store = Store.PLAY_STORE,
+                unsubscribeDetectedAt = null,
+                isSandbox = false,
+                billingIssuesDetectedAt = null,
+                gracePeriodExpiresDate = null,
+                ownershipType = OwnershipType.PURCHASED,
+                periodType = PeriodType.NORMAL,
+                refundedAt = null,
+                storeTransactionId = null,
+                requestDate = Date(),
+                autoResumeDate = null,
+                displayName = null,
+                price = null,
+                productPlanIdentifier = "monthly",
+                managementURL = null,
+            ),
+        )
+        every { customerInfo.nonSubscriptionTransactions } returns listOf(
+            Transaction(
+                transactionIdentifier = "non_sub_transaction_1",
+                revenuecatId = "non_sub_transaction_1",
+                productIdentifier = "lifetime_product",
+                productId = "lifetime_product",
+                purchaseDate = Date(1_690_000_000_000L),
+                storeTransactionId = null,
+                store = Store.PLAY_STORE,
+                displayName = null,
+                isSandbox = false,
+                originalPurchaseDate = null,
+                price = null,
+            ),
+            Transaction(
+                transactionIdentifier = "non_sub_transaction_2",
+                revenuecatId = "non_sub_transaction_2",
+                productIdentifier = "lifetime_product",
+                productId = "lifetime_product",
+                purchaseDate = Date(1_695_000_000_000L),
+                storeTransactionId = null,
+                store = Store.PLAY_STORE,
+                displayName = null,
+                isSandbox = false,
+                originalPurchaseDate = null,
+                price = null,
+            ),
+        )
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val entryIds = state.allPurchases.map { it.purchaseHistoryEntryId }
+        assertThat(entryIds).doesNotHaveDuplicates()
+        assertThat(entryIds).containsExactlyInAnyOrder(
+            "subscription:subscription_product",
+            "non_subscription:non_sub_transaction_1",
+            "non_subscription:non_sub_transaction_2",
+        )
     }
 
     // endregion

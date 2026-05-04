@@ -173,6 +173,7 @@ internal sealed class TransactionDetails(
     open val store: Store,
     open val price: Price?,
     open val isSandbox: Boolean,
+    open val purchaseHistoryEntryId: String,
 ) {
 
     @Immutable
@@ -187,6 +188,7 @@ internal sealed class TransactionDetails(
         val managementURL: Uri?,
         override val price: Price?,
         override val isSandbox: Boolean,
+        override val purchaseHistoryEntryId: String = "",
         val purchaseDate: Date? = null,
         val originalPurchaseDate: Date? = null,
         val unsubscribeDetectedAt: Date? = null,
@@ -196,7 +198,7 @@ internal sealed class TransactionDetails(
         val refundedAt: Date? = null,
         val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
         val storeTransactionId: String? = null,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId)
 
     @Immutable
     data class NonSubscription(
@@ -204,10 +206,11 @@ internal sealed class TransactionDetails(
         override val store: Store,
         override val price: Price?,
         override val isSandbox: Boolean,
+        override val purchaseHistoryEntryId: String = "",
         val purchaseDate: Date? = null,
         val originalPurchaseDate: Date? = null,
         val storeTransactionId: String? = null,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId)
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
@@ -395,7 +398,7 @@ internal class CustomerCenterViewModelImpl(
                 currentState.copy(
                     navigationState = currentState.navigationState.push(
                         CustomerCenterDestination.PurchaseHistoryDetail(
-                            purchase = purchase,
+                            purchaseHistoryEntryId = purchase.purchaseHistoryEntryId,
                             title = title,
                         ),
                     ),
@@ -837,6 +840,7 @@ internal class CustomerCenterViewModelImpl(
                     store = transaction.store,
                     price = transaction.price,
                     isSandbox = transaction.isSandbox,
+                    purchaseHistoryEntryId = nonSubscriptionHistoryEntryId(transaction.transactionIdentifier),
                     purchaseDate = transaction.purchaseDate,
                     originalPurchaseDate = transaction.originalPurchaseDate,
                     storeTransactionId = transaction.storeTransactionId,
@@ -902,6 +906,7 @@ internal class CustomerCenterViewModelImpl(
                     store = it.store,
                     price = it.price,
                     isSandbox = it.isSandbox,
+                    purchaseHistoryEntryId = nonSubscriptionHistoryEntryId(it.transactionIdentifier),
                     purchaseDate = it.purchaseDate,
                     originalPurchaseDate = it.originalPurchaseDate,
                     storeTransactionId = it.storeTransactionId,
@@ -1612,6 +1617,7 @@ internal class CustomerCenterViewModelImpl(
         managementURL = managementURL,
         price = price,
         isSandbox = isSandbox,
+        purchaseHistoryEntryId = subscriptionHistoryEntryId(productIdentifier),
         purchaseDate = purchaseDate,
         originalPurchaseDate = originalPurchaseDate,
         unsubscribeDetectedAt = unsubscribeDetectedAt,
@@ -1622,4 +1628,9 @@ internal class CustomerCenterViewModelImpl(
         ownershipType = ownershipType,
         storeTransactionId = storeTransactionId,
     )
+
+    private fun subscriptionHistoryEntryId(productIdentifier: String): String = "subscription:$productIdentifier"
+
+    private fun nonSubscriptionHistoryEntryId(transactionIdentifier: String): String =
+        "non_subscription:$transactionIdentifier"
 }
