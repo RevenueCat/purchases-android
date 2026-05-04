@@ -4,7 +4,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -137,52 +136,54 @@ internal fun ButtonComponentView(
                     clickHandler = { },
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = animatedContentAlpha,
+                    enabled = !anyActionInProgress,
+                    onStackClick = onStackClick@{
+                        val paywallAction = buttonState.action ?: return@onStackClick
+                        myActionInProgress = true
+                        state.update(actionInProgress = true)
+                        if (style.action.isPurchaseRelated()) {
+                            val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
+                            val componentUrl = resolvedWebCheckoutInteractionUrl(
+                                paywallAction = paywallAction,
+                                state = state,
+                            )
+                            componentInteractionTracker.track(
+                                paywallPurchaseButtonAction(
+                                    componentName = style.componentName,
+                                    componentValue = style.action.description,
+                                    componentUrl = componentUrl,
+                                    currentPackageIdentifier = currentPackage?.identifier,
+                                    currentProductIdentifier = currentPackage?.product?.paywallProductIdentifier(),
+                                ),
+                            )
+                        } else {
+                            val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
+                            val interaction = paywallAction.workflowInteraction()
+                                ?: style.action.componentInteraction(urlForEvent)
+                            interaction?.let {
+                                componentInteractionTracker.track(
+                                    PaywallComponentInteractionData(
+                                        componentType = PaywallComponentType.BUTTON,
+                                        componentName = style.componentName,
+                                        componentValue = it.value,
+                                        componentUrl = it.url,
+                                    ),
+                                )
+                            }
+                        }
+                        coroutineScope.launch {
+                            onClick(paywallAction)
+                            myActionInProgress = false
+                            state.update(actionInProgress = false)
+                        }
+                    },
                 )
                 CircularProgressIndicator(
                     modifier = Modifier.alpha(animatedProgressAlpha),
                     color = progressColorFor(style.stackComponentStyle.background),
                 )
             },
-            modifier = modifier.clickable(enabled = !anyActionInProgress) {
-                val paywallAction = buttonState.action ?: return@clickable
-                myActionInProgress = true
-                state.update(actionInProgress = true)
-                if (style.action.isPurchaseRelated()) {
-                    val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
-                    val componentUrl = resolvedWebCheckoutInteractionUrl(
-                        paywallAction = paywallAction,
-                        state = state,
-                    )
-                    componentInteractionTracker.track(
-                        paywallPurchaseButtonAction(
-                            componentName = style.componentName,
-                            componentValue = style.action.description,
-                            componentUrl = componentUrl,
-                            currentPackageIdentifier = currentPackage?.identifier,
-                            currentProductIdentifier = currentPackage?.product?.paywallProductIdentifier(),
-                        ),
-                    )
-                } else {
-                    val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
-                    val interaction = paywallAction.workflowInteraction()
-                        ?: style.action.componentInteraction(urlForEvent)
-                    interaction?.let {
-                        componentInteractionTracker.track(
-                            PaywallComponentInteractionData(
-                                componentType = PaywallComponentType.BUTTON,
-                                componentName = style.componentName,
-                                componentValue = it.value,
-                                componentUrl = it.url,
-                            ),
-                        )
-                    }
-                }
-                coroutineScope.launch {
-                    onClick(paywallAction)
-                    myActionInProgress = false
-                    state.update(actionInProgress = false)
-                }
-            },
+            modifier = modifier,
             measurePolicy = { measurables, constraints ->
                 val stack = measurables[0].measure(constraints)
                 // Ensure that the progress indicator is not bigger than the stack.

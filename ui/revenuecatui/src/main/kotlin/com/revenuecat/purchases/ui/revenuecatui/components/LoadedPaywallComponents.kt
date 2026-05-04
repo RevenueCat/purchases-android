@@ -4,18 +4,22 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -48,6 +52,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
@@ -55,6 +60,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -67,10 +73,10 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetClose
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageSelectionSheetOpen
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
 import java.net.URL
 import java.util.Date
 
-@Suppress("LongMethod")
 @Composable
 internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
@@ -81,9 +87,57 @@ internal fun LoadedPaywallComponents(
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
 
-    val style = state.stack
-    val headerComponentStyle = state.header
-    val footerComponentStyle = state.stickyFooter
+    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
+        handleClick(action, state, clickHandler, componentInteractionTracker)
+    }
+
+    // If the root stack already scrolls vertically (overflow = SCROLL on a vertical dimension),
+    // skip the outer verticalScroll — two vertical scroll modifiers on the same axis crashes.
+    val shouldWrapMainContentInVerticalScroll =
+        (state.stack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
+    val mainScrollState = rememberScrollState()
+    val layoutDirection = remember(state.locale) {
+        state.locale.toJavaLocale().toLayoutDirection()
+    }
+
+    CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
+        PaywallComponentsScaffold(
+            state = state,
+            clickHandler = clickHandler,
+            componentInteractionTracker = componentInteractionTracker,
+            modifier = modifier,
+        ) {
+            ComponentView(
+                style = state.stack,
+                state = state,
+                onClick = onClick,
+                componentInteractionTracker = componentInteractionTracker,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .conditional(shouldWrapMainContentInVerticalScroll) {
+                        verticalScroll(mainScrollState)
+                    }
+                    .conditional(state.header != null && !state.mainStackHasHeroImage) {
+                        headerTopPadding(state)
+                    },
+            )
+        }
+    }
+}
+
+/**
+ * Shared scaffold for all Components-based paywall variants. Handles the background, bottom-sheet,
+ * overlay, fixed-header overlay, and sticky footer. Callers supply the main scrollable content as
+ * [mainContent] and decide for themselves whether to apply [headerTopPadding] based on [state].
+ */
+@Composable
+internal fun PaywallComponentsScaffold(
+    state: PaywallState.Loaded.Components,
+    clickHandler: suspend (PaywallAction.External) -> Unit,
+    componentInteractionTracker: PaywallComponentInteractionTracker,
+    modifier: Modifier = Modifier,
+    mainContent: @Composable () -> Unit,
+) {
     val background = rememberBackgroundStyle(state.background)
     val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
@@ -99,23 +153,10 @@ internal fun LoadedPaywallComponents(
                     state = state,
                     modifier = Modifier.weight(1f),
                 ) {
-                    // Child 0: main scrollable content.
-                    ComponentView(
-                        style = style,
-                        state = state,
-                        onClick = onClick,
-                        componentInteractionTracker = componentInteractionTracker,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .conditional(
-                                headerComponentStyle != null && !state.mainStackHasHeroImage,
-                            ) {
-                                headerTopPadding(state)
-                            },
-                    )
-                    // Child 1 (optional): header overlay.
-                    headerComponentStyle?.let { headerStyle ->
+                    // Child 0: caller-supplied main content (scrollable body or slide container).
+                    mainContent()
+                    // Child 1 (optional): fixed header overlay.
+                    state.header?.let { headerStyle ->
                         ComponentView(
                             style = headerStyle,
                             state = state,
@@ -124,7 +165,7 @@ internal fun LoadedPaywallComponents(
                         )
                     }
                 }
-                footerComponentStyle?.let {
+                state.stickyFooter?.let {
                     ComponentView(
                         style = it,
                         state = state,
@@ -147,7 +188,7 @@ internal fun LoadedPaywallComponents(
  * Children: index 0 = main scrollable content, index 1 (optional) = header overlay.
  */
 @Composable
-private fun HeaderOverlayLayout(
+internal fun HeaderOverlayLayout(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
@@ -182,7 +223,7 @@ private fun HeaderOverlayLayout(
  * layout phase from [state.headerHeightPx][PaywallState.Loaded.Components.headerHeightPx], which
  * is set by [HeaderOverlayLayout] earlier in the same layout pass.
  */
-private fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
+internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
     this.layout { measurable, constraints ->
         val topPad = state.headerHeightPx
         val placeable = measurable.measure(constraints.offset(vertical = -topPad))
@@ -191,7 +232,7 @@ private fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Mo
         }
     }
 
-private suspend fun handleClick(
+internal suspend fun handleClick(
     action: PaywallAction,
     state: PaywallState.Loaded.Components,
     externalClickHandler: suspend (PaywallAction.External) -> Unit,
@@ -225,7 +266,7 @@ private suspend fun handleClick(
 /**
  * Shows the provided [sheet] as this [SimpleSheetState]'s sheet content.
  */
-private fun SimpleSheetState.show(
+internal fun SimpleSheetState.show(
     sheet: ButtonComponentStyle.Action.NavigateTo.Destination.Sheet,
     state: PaywallState.Loaded.Components,
     componentInteractionTracker: PaywallComponentInteractionTracker,

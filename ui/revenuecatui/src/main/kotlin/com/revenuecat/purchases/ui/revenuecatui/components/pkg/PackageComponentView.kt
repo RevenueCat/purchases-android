@@ -3,15 +3,14 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.pkg
 
-import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPackageRowSelection
 
@@ -28,6 +27,10 @@ internal fun PackageComponentView(
 
     if (!packageState.visible) return
 
+    val enabled = remember(state.selectedPackageInfo?.uniqueId, style.uniqueId) {
+        state.selectedPackageInfo?.uniqueId != style.uniqueId
+    }
+
     StackComponentView(
         style = style.stackComponentStyle,
         state = state,
@@ -36,10 +39,10 @@ internal fun PackageComponentView(
             if (!style.isSelectable) clickHandler(action)
         },
         componentInteractionTracker = componentInteractionTracker,
-        modifier = modifier.conditional(style.isSelectable) {
-            clickable(
-                enabled = state.selectedPackageInfo?.uniqueId != style.uniqueId,
-            ) {
+        modifier = modifier,
+        enabled = enabled,
+        onStackClick = if (style.isSelectable) {
+            {
                 componentInteractionTracker.track(
                     paywallPackageRowSelection(
                         componentName = style.componentName,
@@ -50,6 +53,8 @@ internal fun PackageComponentView(
                 )
                 state.update(selectedPackageUniqueId = style.uniqueId)
             }
+        } else {
+            null
         },
     )
 }

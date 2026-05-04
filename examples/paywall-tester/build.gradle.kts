@@ -66,6 +66,11 @@ android {
             "PAYWALL_TESTER_API_KEY_B_LABEL",
             "\"${resolveProperty("PAYWALL_TESTER_API_KEY_B_LABEL")}\"",
         )
+        buildConfigField(
+            "String",
+            "PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID",
+            "\"${resolveProperty("PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID")}\"",
+        )
     }
 
     signingConfigs {

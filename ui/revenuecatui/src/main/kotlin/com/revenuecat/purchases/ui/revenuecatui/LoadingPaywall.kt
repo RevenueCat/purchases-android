@@ -35,6 +35,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PlaceholderDefaults
 import com.revenuecat.purchases.ui.revenuecatui.composables.placeholder
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -191,6 +192,7 @@ private class LoadingViewModel(
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
     override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
+    override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     override fun trackPaywallImpressionIfNeeded() = Unit
     override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) = Unit
@@ -236,6 +238,8 @@ private class LoadingViewModel(
     override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) = Unit
 
     override fun handleBackNavigation(): Boolean = false
+
+    override fun onTransitionComplete(transitionId: Int) = Unit
 
     override fun clearActionError() = Unit
 
