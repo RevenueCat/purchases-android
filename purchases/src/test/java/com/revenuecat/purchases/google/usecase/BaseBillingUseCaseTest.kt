@@ -87,7 +87,7 @@ internal open class BaseBillingUseCaseTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            dateProvider = mockDateProvider,
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnection()

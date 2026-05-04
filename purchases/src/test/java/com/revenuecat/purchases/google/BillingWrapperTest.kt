@@ -239,7 +239,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            dateProvider = mockDateProvider,
         )
         routedWrapper.purchasesUpdatedListener = mockPurchasesListener
 
@@ -266,7 +266,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            dateProvider = mockDateProvider,
         )
         routedWrapper.purchasesUpdatedListener = mockPurchasesListener
 
@@ -328,7 +328,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            dateProvider = mockDateProvider,
         )
         crashingWrapper.purchasesUpdatedListener = mockPurchasesListener
 
