@@ -800,6 +800,19 @@ internal class PaywallViewModelImpl(
                 }
             }
         }
+        // On backward navigation, propagate the leaving step's actual selected package
+        // as context on the destination step. This chains correctly through multi-step
+        // back-navigation because selectedPackageInfo on packageless steps already
+        // falls back to their contextPackageInfo.
+        if (navigationDirection == NavigationDirection.BACKWARD &&
+            fromStepId != null &&
+            newState is PaywallState.Loaded.Components
+        ) {
+            val leavingStepPackage = workflowStepStateCache[fromStepId]?.selectedPackageInfo
+            if (leavingStepPackage != null) {
+                newState.setContextPackage(leavingStepPackage)
+            }
+        }
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,

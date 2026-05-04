@@ -482,5 +482,162 @@ class PaywallViewModelWorkflowTest {
             .isEqualTo(PackageType.ANNUAL.identifier)
     }
 
+    @Test
+    fun `back navigation from terminal propagates user selection to early step context`() {
+        val (result, offerings) = makeContextPackageWorkflow()
+        val vm = createVm()
+        vm.updateStateFromWorkflow(result, offerings, null)
+
+        // Navigate to terminal step (step-2).
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+
+        // User selects MONTHLY on the terminal step (different from annual default).
+        val terminalState = vm.workflowState.value?.stepStates?.get("step-2")
+        assertThat(terminalState).isNotNull()
+        terminalState!!.update(PackageType.MONTHLY.identifier!!)
+        assertThat(terminalState.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+
+        // Navigate back.
+        vm.handleBackNavigation()
+
+        // Step-1 (no own packages) must now reflect "monthly" as its context.
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1State?.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
+    @Test
+    fun `back navigation chains context through multiple packageless steps`() {
+        // Build a three-step workflow:
+        // step-A: no packages, default_package_id = ANNUAL, screen-A
+        // step-B: no packages, default_package_id = ANNUAL, screen-B
+        // step-C: terminal with two packages (MONTHLY default + ANNUAL), default_package_id = ANNUAL, screen-C
+        val screenAId = "screen-A"
+        val screenBId = "screen-B"
+        val screenCId = "screen-C"
+        val threeStepOfferingId = "three_step_offering"
+
+        val earlyScreen1 = WorkflowScreen(
+            name = screenAId,
+            templateName = "template_v2",
+            revision = 1,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = noPackagesComponentsConfig,
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleId,
+            offeringIdentifier = threeStepOfferingId,
+        )
+        val earlyScreen2 = WorkflowScreen(
+            name = screenBId,
+            templateName = "template_v2",
+            revision = 1,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = noPackagesComponentsConfig,
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleId,
+            offeringIdentifier = threeStepOfferingId,
+        )
+        val terminalScreen3 = WorkflowScreen(
+            name = screenCId,
+            templateName = "template_v2",
+            revision = 1,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = twoPackageComponentsConfig,
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleId,
+            offeringIdentifier = threeStepOfferingId,
+        )
+
+        val stepA = WorkflowStep(
+            id = "step-A",
+            type = "screen",
+            screenId = screenAId,
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-B")),
+            paramValues = mapOf(
+                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
+            ),
+        )
+        val stepB = WorkflowStep(
+            id = "step-B",
+            type = "screen",
+            screenId = screenBId,
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-C")),
+            paramValues = mapOf(
+                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
+            ),
+        )
+        val stepC = WorkflowStep(
+            id = "step-C",
+            type = "screen",
+            screenId = screenCId,
+            triggers = emptyList(),
+            triggerActions = emptyMap(),
+            paramValues = mapOf(
+                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
+            ),
+        )
+        val threeStepWorkflow = PublishedWorkflow(
+            id = "wfl-three-step",
+            displayName = "Three Step",
+            initialStepId = "step-A",
+            steps = mapOf("step-A" to stepA, "step-B" to stepB, "step-C" to stepC),
+            screens = mapOf(screenAId to earlyScreen1, screenBId to earlyScreen2, screenCId to terminalScreen3),
+            uiConfig = UiConfig(),
+            metadata = emptyMap(),
+        )
+        val threeStepOffering = Offering(
+            identifier = threeStepOfferingId,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        val threeStepOfferings = Offerings(threeStepOffering, mapOf(threeStepOfferingId to threeStepOffering))
+        val wflResult = WorkflowDataResult(workflow = threeStepWorkflow, enrolledVariants = null)
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(wflResult, threeStepOfferings, null)
+
+        // Navigate step-A → step-B → step-C.
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+
+        // Select MONTHLY on terminal step-C.
+        val terminalState = vm.workflowState.value?.stepStates?.get("step-C")!!
+        terminalState.update(PackageType.MONTHLY.identifier!!)
+
+        // Back step-C → step-B.
+        vm.handleBackNavigation()
+        assertThat(vm.workflowState.value?.stepStates?.get("step-B")?.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+
+        // Complete the transition then back step-B → step-A (context chains through step-B's selectedPackageInfo).
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleBackNavigation()
+        assertThat(vm.workflowState.value?.stepStates?.get("step-A")?.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
     // endregion
 }
