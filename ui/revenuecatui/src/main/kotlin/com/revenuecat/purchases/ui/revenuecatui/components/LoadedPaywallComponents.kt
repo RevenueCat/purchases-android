@@ -171,7 +171,7 @@ internal fun PaywallComponentsScaffold(
                     state = state,
                     modifier = Modifier.weight(1f),
                 ) {
-                    // Child 0: caller-supplied main content (scrollable body).
+                    // Child 0: caller-supplied main content.
                     mainContent()
                     // Child 1 (optional): fixed header overlay.
                     headerContent?.invoke()
