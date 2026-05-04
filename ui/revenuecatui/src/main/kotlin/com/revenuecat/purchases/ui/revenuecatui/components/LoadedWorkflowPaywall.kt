@@ -1,5 +1,6 @@
 @file:JvmSynthetic
 @file:OptIn(InternalRevenueCatAPI::class)
+@file:Suppress("MatchingDeclarationName")
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
