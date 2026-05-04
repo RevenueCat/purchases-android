@@ -24,10 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 
-internal data class WorkflowHeaderTransitionState(
-    val pendingTransition: WorkflowPendingTransition?,
-)
-
 internal data class WorkflowHeaderStepInfo(
     val hasHeroImage: Boolean,
     val hasHeader: Boolean,
@@ -105,17 +101,15 @@ private fun workflowHeaderState(
     val headerStepId = selectWorkflowHeaderStepId(
         currentStepId = currentStepId,
         stepInfoByStepId = headerStepInfo,
-        transitionState = WorkflowHeaderTransitionState(
-            pendingTransition = if (slideState.animatingFromStepId != null && slideState.animatingDirection != null) {
-                WorkflowPendingTransition(
-                    fromStepId = slideState.animatingFromStepId,
-                    direction = slideState.animatingDirection,
-                    id = 0, // id not needed for header selection
-                )
-            } else {
-                null
-            },
-        ),
+        pendingTransition = if (slideState.animatingFromStepId != null && slideState.animatingDirection != null) {
+            WorkflowPendingTransition(
+                fromStepId = slideState.animatingFromStepId,
+                direction = slideState.animatingDirection,
+                id = 0, // id not needed for header selection
+            )
+        } else {
+            null
+        },
     )
 
     return stepStates[headerStepId] ?: currentState
@@ -141,7 +135,6 @@ private fun WorkflowStepsContent(
                 WorkflowStepContent(
                     stepId = stepId,
                     stepState = stepState,
-                    isCurrent = stepId == currentStepId,
                     currentStepId = currentStepId,
                     slideState = slideState,
                     clickHandler = clickHandler,
@@ -163,12 +156,12 @@ private fun WorkflowStepsContent(
 private fun WorkflowStepContent(
     stepId: String,
     stepState: PaywallState.Loaded.Components,
-    isCurrent: Boolean,
     currentStepId: String,
     slideState: WorkflowSlideState,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
+    val isCurrent = stepId == currentStepId
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         if (isCurrent) {
             handleClick(action, stepState, clickHandler, componentInteractionTracker)
@@ -223,18 +216,18 @@ private fun WorkflowStepContent(
 internal fun selectWorkflowHeaderStepId(
     currentStepId: String,
     stepInfoByStepId: Map<String, WorkflowHeaderStepInfo>,
-    transitionState: WorkflowHeaderTransitionState,
+    pendingTransition: WorkflowPendingTransition?,
 ): String {
-    val fromStepId = transitionState.pendingTransition?.fromStepId
-    val direction = transitionState.pendingTransition?.direction
+    val fromStepId = pendingTransition?.fromStepId
+    val direction = pendingTransition?.direction
     val fromStepInfo = fromStepId?.let(stepInfoByStepId::get)
     val toStepInfo = stepInfoByStepId[currentStepId]
-    val useOutgoingHeader = transitionState.pendingTransition != null &&
+    val useOutgoingHeader = pendingTransition != null &&
         fromStepInfo != null &&
         toStepInfo != null &&
         shouldUseOutgoingHeader(direction, fromStepInfo, toStepInfo)
 
-    return if (useOutgoingHeader) fromStepId ?: currentStepId else currentStepId
+    return if (useOutgoingHeader) fromStepId!! else currentStepId
 }
 
 private fun shouldUseOutgoingHeader(

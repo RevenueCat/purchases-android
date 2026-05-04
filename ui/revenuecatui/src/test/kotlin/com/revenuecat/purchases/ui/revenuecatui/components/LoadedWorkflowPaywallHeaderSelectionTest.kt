@@ -15,9 +15,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
                 "from" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(
-                pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
-            ),
+            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
         )
 
         assertThat(selected).isEqualTo("from")
@@ -31,7 +29,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
                 "from" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(pendingTransition = null),
+            pendingTransition = null,
         )
 
         assertThat(selected).isEqualTo("target")
@@ -45,9 +43,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
                 "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(
-                pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
-            ),
+            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
         )
 
         assertThat(selected).isEqualTo("target")
@@ -61,9 +57,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
                 "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(
-                pendingTransition = WorkflowPendingTransition("from", NavigationDirection.BACKWARD, 1),
-            ),
+            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.BACKWARD, 1),
         )
 
         assertThat(selected).isEqualTo("target")
@@ -77,9 +71,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
                 "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(
-                pendingTransition = WorkflowPendingTransition("from", NavigationDirection.BACKWARD, 1),
-            ),
+            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.BACKWARD, 1),
         )
 
         assertThat(selected).isEqualTo("from")
@@ -93,9 +85,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
                 "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(
-                pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
-            ),
+            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
         )
 
         assertThat(selected).isEqualTo("target")
@@ -109,9 +99,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
                 "from" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = false),
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(
-                pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
-            ),
+            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
         )
 
         assertThat(selected).isEqualTo("target")
@@ -124,7 +112,7 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
             stepInfoByStepId = mapOf(
                 "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
             ),
-            transitionState = WorkflowHeaderTransitionState(pendingTransition = null),
+            pendingTransition = null,
         )
 
         assertThat(selected).isEqualTo("target")
