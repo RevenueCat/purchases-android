@@ -69,8 +69,8 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -766,6 +766,7 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
+        // TODO: remove in Task 4 — replaced by contextPackageInfo mechanism
         inheritedSelectedPackageUniqueId: String? = null,
     ) {
         val cached = workflowStepStateCache[step.id]
@@ -775,8 +776,8 @@ internal class PaywallViewModelImpl(
             // Apply default_package_id from the step's paramValues as context for steps that have
             // no own package components (e.g. early "info" screens in a multipage workflow).
             if (!newState.hasAnyPackages) {
-                val defaultPackageId = step.paramValues["default_package_id"]
-                    ?.jsonPrimitive?.contentOrNull
+                val defaultPackageId = (step.paramValues["default_package_id"] as? JsonPrimitive)
+                    ?.contentOrNull
                 if (defaultPackageId != null) {
                     val screenId = step.screenId
                     val screenOfferingId = screenId?.let { workflow.screens[it]?.offeringIdentifier }
