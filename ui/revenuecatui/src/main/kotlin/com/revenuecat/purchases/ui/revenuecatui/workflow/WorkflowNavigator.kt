@@ -10,7 +10,7 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
     private var currentStepId: String = workflow.initialStepId
 
     private val backStack = ArrayDeque<String>()
-    val backStackSnapshot: List<String> get() = backStack
+    val backStackSnapshot: List<String> get() = backStack.toList()
 
     val currentStep: WorkflowStep? get() = workflow.steps[currentStepId]
 

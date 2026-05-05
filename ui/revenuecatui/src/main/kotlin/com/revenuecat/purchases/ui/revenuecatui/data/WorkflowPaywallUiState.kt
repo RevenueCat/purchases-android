@@ -7,7 +7,8 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
  * Snapshot of the workflow-related state the UI needs to render a multi-step paywall.
  *
  * Non-null when the loaded paywall is a workflow; null otherwise. Updated atomically when the
- * user navigates between steps; [stepStates] grows lazily as steps are visited.
+ * user navigates between steps and when the background pre-warm finishes computing additional
+ * step states.
  */
 @Stable
 internal data class WorkflowPaywallUiState(

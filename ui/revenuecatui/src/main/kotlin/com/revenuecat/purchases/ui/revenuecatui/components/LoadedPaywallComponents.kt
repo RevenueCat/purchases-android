@@ -55,11 +55,13 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleBottomSheetScaffold
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
@@ -87,14 +89,11 @@ internal fun LoadedPaywallComponents(
     val configuration = LocalConfiguration.current
     state.update(localeList = configuration.locales)
 
-    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
+    val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, state, clickHandler, componentInteractionTracker)
     }
 
-    // If the root stack already scrolls vertically (overflow = SCROLL on a vertical dimension),
-    // skip the outer verticalScroll — two vertical scroll modifiers on the same axis crashes.
-    val shouldWrapMainContentInVerticalScroll =
-        (state.stack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
+    val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(state.stack)
     val mainScrollState = rememberScrollState()
     val layoutDirection = remember(state.locale) {
         state.locale.toJavaLocale().toLayoutDirection()
@@ -103,9 +102,28 @@ internal fun LoadedPaywallComponents(
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         PaywallComponentsScaffold(
             state = state,
-            clickHandler = clickHandler,
-            componentInteractionTracker = componentInteractionTracker,
             modifier = modifier,
+            headerContent = state.header?.let { headerStyle ->
+                {
+                    ComponentView(
+                        style = headerStyle,
+                        state = state,
+                        onClick = onClick,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            footerContent = state.stickyFooter?.let { footerStyle ->
+                {
+                    ComponentView(
+                        style = footerStyle,
+                        state = state,
+                        onClick = onClick,
+                        componentInteractionTracker = componentInteractionTracker,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
         ) {
             ComponentView(
                 style = state.stack,
@@ -127,25 +145,25 @@ internal fun LoadedPaywallComponents(
 
 /**
  * Shared scaffold for all Components-based paywall variants. Handles the background, bottom-sheet,
- * overlay, fixed-header overlay, and sticky footer. Callers supply the main scrollable content as
- * [mainContent] and decide for themselves whether to apply [headerTopPadding] based on [state].
+ * and fixed-header overlay layout. Callers supply [mainContent] (the scrollable body) plus optional
+ * [headerContent] and [footerContent] composables.
+ *
+ * Pass [background] = null to skip background painting (e.g. workflow paywalls render per-step
+ * backgrounds inside their sliding surfaces).
  */
+@Suppress("LongParameterList")
 @Composable
 internal fun PaywallComponentsScaffold(
     state: PaywallState.Loaded.Components,
-    clickHandler: suspend (PaywallAction.External) -> Unit,
-    componentInteractionTracker: PaywallComponentInteractionTracker,
     modifier: Modifier = Modifier,
+    background: BackgroundStyle? = rememberBackgroundStyle(state.background),
+    headerContent: (@Composable () -> Unit)? = null,
+    footerContent: (@Composable () -> Unit)? = null,
     mainContent: @Composable () -> Unit,
 ) {
-    val background = rememberBackgroundStyle(state.background)
-    val onClick: suspend (PaywallAction) -> Unit = { action: PaywallAction ->
-        handleClick(action, state, clickHandler, componentInteractionTracker)
-    }
-
     SimpleBottomSheetScaffold(
         sheetState = state.sheet,
-        modifier = modifier.background(background),
+        modifier = background?.let { modifier.background(it) } ?: modifier,
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
             Column {
@@ -153,37 +171,20 @@ internal fun PaywallComponentsScaffold(
                     state = state,
                     modifier = Modifier.weight(1f),
                 ) {
-                    // Child 0: caller-supplied main content (scrollable body or slide container).
+                    // Child 0: caller-supplied main content.
                     mainContent()
                     // Child 1 (optional): fixed header overlay.
-                    state.header?.let { headerStyle ->
-                        ComponentView(
-                            style = headerStyle,
-                            state = state,
-                            onClick = onClick,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                    headerContent?.invoke()
                 }
-                state.stickyFooter?.let {
-                    ComponentView(
-                        style = it,
-                        state = state,
-                        onClick = onClick,
-                        componentInteractionTracker = componentInteractionTracker,
-                        modifier = Modifier
-                            .fillMaxWidth(),
-                    )
-                }
+                footerContent?.invoke()
             }
         }
     }
 }
 
 /**
- * Custom Layout that measures the header overlay first, stores its pixel height in [state],
- * then measures the main content. This ensures the header height is available during the main
- * content's layout phase without requiring a second composition pass.
+ * Custom Layout that measures the fixed header overlay first, stores its pixel height in [state],
+ * then measures the main content.
  *
  * Children: index 0 = main scrollable content, index 1 (optional) = header overlay.
  */
@@ -231,6 +232,14 @@ internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): M
             placeable.place(0, topPad)
         }
     }
+
+/**
+ * Returns whether the caller should wrap [rootStack] in an outer `verticalScroll` modifier.
+ * Returns `false` when the root stack already scrolls vertically (overflow = SCROLL on a vertical
+ * dimension), because two vertical scroll modifiers on the same axis crash at runtime.
+ */
+internal fun shouldWrapMainContentInVerticalScroll(rootStack: ComponentStyle): Boolean =
+    (rootStack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
 
 internal suspend fun handleClick(
     action: PaywallAction,
