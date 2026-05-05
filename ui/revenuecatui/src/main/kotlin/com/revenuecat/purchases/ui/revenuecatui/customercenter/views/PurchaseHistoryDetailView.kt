@@ -60,7 +60,7 @@ internal fun PurchaseHistoryDetailView(
             DetailRow(label = localization.commonLocalizedString(CommonLocalizedString.PAID_PRICE), value = priceValue)
 
             val statusValue = if (purchase.isExpired) {
-                localization.commonLocalizedString(CommonLocalizedString.STATUS_INACTIVE)
+                localization.commonLocalizedString(CommonLocalizedString.INACTIVE)
             } else {
                 localization.commonLocalizedString(CommonLocalizedString.ACTIVE)
             }
