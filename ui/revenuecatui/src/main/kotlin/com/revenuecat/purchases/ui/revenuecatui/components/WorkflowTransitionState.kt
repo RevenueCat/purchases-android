@@ -14,6 +14,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.graphicsLayer
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
@@ -134,15 +135,21 @@ internal fun Modifier.workflowTransition(
     stepId: String,
     currentStepId: String,
 ): Modifier = graphicsLayer {
-    val progress = state.animatable.value
-    when (state) {
-        is WorkflowTransitionState.SlideInOut -> {
-            val directionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
-            translationX = when (stepId) {
-                currentStepId -> (1f - progress) * directionFactor * size.width
-                state.animatingFromStepId -> -progress * directionFactor * size.width
-                else -> 2f * size.width
-            }
+    applyWorkflowTransition(state, stepId, currentStepId, progress = state.animatable.value)
+}
+
+private fun GraphicsLayerScope.applyWorkflowTransition(
+    state: WorkflowTransitionState,
+    stepId: String,
+    currentStepId: String,
+    progress: Float,
+): Unit = when (state) {
+    is WorkflowTransitionState.SlideInOut -> {
+        val directionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
+        translationX = when (stepId) {
+            currentStepId -> (1f - progress) * directionFactor * size.width
+            state.animatingFromStepId -> -progress * directionFactor * size.width
+            else -> 2f * size.width
         }
     }
 }
