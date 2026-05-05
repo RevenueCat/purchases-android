@@ -753,12 +753,12 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
 
-        // Pre-compute the fallback step so its default package is available in cache
+        // Pre-compute the package step so its default package is available in cache
         // for early packageless steps to use as context.
-        val fallbackStepId = workflow.singleStepFallbackId
-        val fallbackStep = fallbackStepId?.let { workflow.steps[it] }
-        if (fallbackStep != null && fallbackStep.id != initialStep.id) {
-            buildStateFromStep(fallbackStep, workflow, offerings, presentedOfferingContext)
+        val stepWithPackagesId = workflow.singleStepFallbackId
+        val stepWithPackages = stepWithPackagesId?.let { workflow.steps[it] }
+        if (stepWithPackages != null && stepWithPackages.id != initialStep.id) {
+            buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
         }
 
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
@@ -778,17 +778,17 @@ internal class PaywallViewModelImpl(
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
-        // Apply the fallback step's default package as context for steps that have no own
+        // Apply the package step's default package as context for steps that have no own
         // package components. Runs for both fresh and pre-warmed steps. Skipped when
         // selectedPackageInfo is already non-null from a prior backward-propagation call.
         if (newState is PaywallState.Loaded.Components &&
             !newState.hasAnyPackages &&
             newState.selectedPackageInfo == null
         ) {
-            val fallbackPackage = workflow.singleStepFallbackId
+            val defaultPackage = workflow.singleStepFallbackId
                 ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
-            if (fallbackPackage != null) {
-                newState.setContextPackage(fallbackPackage)
+            if (defaultPackage != null) {
+                newState.setContextPackage(defaultPackage)
             }
         }
         // On backward navigation, propagate the leaving step's actual selected package
