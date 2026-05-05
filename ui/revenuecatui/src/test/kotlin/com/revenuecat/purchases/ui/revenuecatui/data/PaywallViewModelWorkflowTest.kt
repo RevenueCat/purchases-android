@@ -280,6 +280,28 @@ class PaywallViewModelWorkflowTest {
         enrolledVariants = null,
     )
 
+    private val singleStep = WorkflowStep(
+        id = "step-only",
+        type = "screen",
+        screenId = screenId1,
+        triggers = emptyList(),
+        triggerActions = emptyMap(),
+    )
+
+    private val singleStepWorkflowWithExitOffer = PublishedWorkflow(
+        id = "wfl-single",
+        displayName = "Single Step",
+        initialStepId = "step-only",
+        steps = mapOf("step-only" to singleStep),
+        screens = mapOf(screenId1 to makeScreenWithExitOffer(screenId1)),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+    )
+    private val singleStepFetchResultWithExitOffer = WorkflowDataResult(
+        workflow = singleStepWorkflowWithExitOffer,
+        enrolledVariants = null,
+    )
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -705,4 +727,77 @@ class PaywallViewModelWorkflowTest {
     }
 
     // endregion
+
+    // region exit offers
+
+    @Test
+    fun `preloadExitOffering reads exit offer from last workflow step`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `preloadExitOffering with no exit offer on last step does not set preloaded offering`() = runTest {
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering.value).isNull()
+    }
+
+    @Test
+    fun `preloadExitOffering with unknown exit offering id leaves preloaded offering null`() = runTest {
+        // testOfferings does NOT include exitOfferingId
+        coEvery { purchases.awaitOfferings() } returns testOfferings
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering.value).isNull()
+    }
+
+    @Test
+    fun `closePaywall with preloaded exit offer calls dismissRequestWithExitOffering`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        var receivedExitOffering: Offering? = null
+        val vm = createVm(
+            dismissRequestWithExitOffering = { offering, _ ->
+                receivedExitOffering = offering
+            },
+        )
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        // Confirm the offering was preloaded before testing the close behaviour.
+        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+
+        vm.closePaywall()
+
+        assertThat(receivedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `preloadExitOffering reads exit offer from single-step workflow`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(singleStepFetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    // endregion exit offers
 }

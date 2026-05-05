@@ -313,6 +313,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    // Must be called before any suspension point — reads mutable state on the main thread.
     private fun getExitOfferingId(): String? {
         val workflowResult = currentWorkflowResult
         if (workflowResult != null) {
@@ -336,6 +337,8 @@ internal class PaywallViewModelImpl(
         while (currentStepId !in visited) {
             visited.add(currentStepId)
             val step = workflow.steps[currentStepId] ?: return null
+            // For branching workflows, this picks the first Step action found in insertion order.
+            // Exit offers are expected to be configured on the terminal step of linear (or near-linear) flows.
             val nextStepId = step.triggerActions.values
                 .filterIsInstance<WorkflowTriggerAction.Step>()
                 .firstOrNull()
@@ -343,6 +346,7 @@ internal class PaywallViewModelImpl(
                 ?: return step
             currentStepId = nextStepId
         }
+        Logger.w("Workflow '${workflow.id}' has a cycle in its step graph — cannot determine last step for exit offer")
         return null
     }
 
