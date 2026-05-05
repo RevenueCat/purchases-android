@@ -65,9 +65,10 @@ public class PaywallData(
     @SerialName("default_locale") public val defaultLocale: String? = null,
 
     /**
-     * When true, font sizes scale automatically for accessibility; when false or absent, default UI behavior applies.
+     * When true, font sizes scale automatically for accessibility. When false, that scaling is disabled.
+     * If omitted from JSON, this defaults to true.
      */
-    @SerialName("automatically_scale_font_size") public val automaticallyScaleFontSize: Boolean? = null,
+    @SerialName("automatically_scale_font_size") public val automaticallyScaleFontSize: Boolean = true,
 ) {
 
     /**
@@ -162,7 +163,7 @@ public class PaywallData(
         localizationByTier: Map<String, Map<String, LocalizedConfiguration>> = this.localizationByTier,
         zeroDecimalPlaceCountries: List<String> = this.zeroDecimalPlaceCountries,
         defaultLocale: String? = this.defaultLocale,
-        automaticallyScaleFontSize: Boolean? = this.automaticallyScaleFontSize,
+        automaticallyScaleFontSize: Boolean = this.automaticallyScaleFontSize,
     ): PaywallData = PaywallData(
         templateName = templateName,
         config = config,
