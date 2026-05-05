@@ -103,16 +103,14 @@ private fun workflowHeaderState(
         )
     }
     val pendingTransition = when (transitionState) {
-        is WorkflowTransitionState.SlideInOut -> {
-            val fromStepId = transitionState.animatingFromStepId
-            val direction = transitionState.animatingDirection
-            if (fromStepId != null && direction != null) {
+        is WorkflowTransitionState.SlideInOut -> transitionState.animatingFromStepId?.let { fromStepId ->
+            transitionState.animatingDirection?.let { direction ->
                 WorkflowPendingTransition(
                     fromStepId = fromStepId,
                     direction = direction,
                     id = 0, // id not needed for header selection
                 )
-            } else null
+            }
         }
     }
     val headerStepId = selectWorkflowHeaderStepId(
