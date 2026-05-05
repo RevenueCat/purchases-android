@@ -108,84 +108,6 @@ internal class PaywallComponentsDataTests(
                 ),
             ),
             arrayOf(
-                "automatically_scale_font_size present",
-                Args(
-                    json = """
-                        {
-                          "id": "paywall_id",
-                          "template_name": "components",
-                          "asset_base_url": "https://assets.pawwalls.com",
-                          "components_config": {
-                            "base": {
-                              "stack": {
-                                "type": "stack",
-                                "badge": {
-                                  "stack": {
-                                    "type": "stack",
-                                    "components": []
-                                  },
-                                  "style": "overlay",
-                                  "alignment": "bottom_trailing"
-                                },
-                                "components": []
-                              },
-                              "background": {
-                                "type": "color",
-                                "value": {
-                                  "light": {
-                                    "type": "alias",
-                                    "value": "primary"
-                                  }
-                                }
-                              }
-                            }
-                          },
-                          "components_localizations": {
-                            "en_US": {
-                              "ZvS4Ck5hGM": "Hello"
-                            }
-                          },
-                          "default_locale": "en_US",
-                          "revision": 123,
-                          "automatically_scale_font_size": true
-                        }
-
-                        """.trimIndent(),
-                    expected = PaywallComponentsData(
-                        id = "paywall_id",
-                        templateName = "components",
-                        assetBaseURL = URL("https://assets.pawwalls.com"),
-                        componentsConfig = ComponentsConfig(
-                            base = PaywallComponentsConfig(
-                                stack = StackComponent(
-                                    components = emptyList(),
-                                    badge = Badge(
-                                        stack = StackComponent(
-                                            components = emptyList()
-                                        ),
-                                        style = Badge.Style.Overlay,
-                                        alignment = TwoDimensionalAlignment.BOTTOM_TRAILING
-                                    ),
-                                ),
-                                background = Background.Color(
-                                    value = ColorScheme(
-                                        light = ColorInfo.Alias(ColorAlias("primary"))
-                                    )
-                                )
-                            )
-                        ),
-                        componentsLocalizations = mapOf(
-                            LocaleId("en_US") to mapOf(
-                                LocalizationKey("ZvS4Ck5hGM") to LocalizationData.Text("Hello")
-                            )
-                        ),
-                        defaultLocaleIdentifier = LocaleId("en_US"),
-                        revision = 123,
-                        automaticallyScaleFontSize = true,
-                    )
-                ),
-            ),
-            arrayOf(
                 "revision absent",
                 Args(
                     json = """
@@ -451,6 +373,161 @@ internal class PaywallComponentsDataTests(
                                 offeringId = "exit-offering-id",
                             ),
                         ),
+                    )
+                ),
+            ),
+            arrayOf(
+                "automatically_scale_font_size present",
+                Args(
+                    json = """
+                        {
+                          "id": "paywall_id",
+                          "template_name": "components",
+                          "asset_base_url": "https://assets.pawwalls.com",
+                          "components_config": {
+                            "base": {
+                              "stack": {
+                                "type": "stack",
+                                "badge": {
+                                  "stack": {
+                                    "type": "stack",
+                                    "components": []
+                                  },
+                                  "style": "overlay",
+                                  "alignment": "bottom_trailing"
+                                },
+                                "components": []
+                              },
+                              "background": {
+                                "type": "color",
+                                "value": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "components_localizations": {
+                            "en_US": {
+                              "ZvS4Ck5hGM": "Hello"
+                            }
+                          },
+                          "default_locale": "en_US",
+                          "revision": 123,
+                          "automatically_scale_font_size": false
+                        }
+
+                        """.trimIndent(),
+                    expected = PaywallComponentsData(
+                        id = "paywall_id",
+                        templateName = "components",
+                        assetBaseURL = URL("https://assets.pawwalls.com"),
+                        componentsConfig = ComponentsConfig(
+                            base = PaywallComponentsConfig(
+                                stack = StackComponent(
+                                    components = emptyList(),
+                                    badge = Badge(
+                                        stack = StackComponent(
+                                            components = emptyList()
+                                        ),
+                                        style = Badge.Style.Overlay,
+                                        alignment = TwoDimensionalAlignment.BOTTOM_TRAILING
+                                    ),
+                                ),
+                                background = Background.Color(
+                                    value = ColorScheme(
+                                        light = ColorInfo.Alias(ColorAlias("primary"))
+                                    )
+                                )
+                            )
+                        ),
+                        componentsLocalizations = mapOf(
+                            LocaleId("en_US") to mapOf(
+                                LocalizationKey("ZvS4Ck5hGM") to LocalizationData.Text("Hello")
+                            )
+                        ),
+                        defaultLocaleIdentifier = LocaleId("en_US"),
+                        revision = 123,
+                        automaticallyScaleFontSize = false,
+                    )
+                ),
+            ),
+            arrayOf(
+                "automatically_scale_font_size absent",
+                Args(
+                    json = """
+                        {
+                          "id": "paywall_id",
+                          "template_name": "components",
+                          "asset_base_url": "https://assets.pawwalls.com",
+                          "components_config": {
+                            "base": {
+                              "stack": {
+                                "type": "stack",
+                                "badge": {
+                                  "stack": {
+                                    "type": "stack",
+                                    "components": []
+                                  },
+                                  "style": "overlay",
+                                  "alignment": "bottom_trailing"
+                                },
+                                "components": []
+                              },
+                              "background": {
+                                "type": "color",
+                                "value": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "components_localizations": {
+                            "en_US": {
+                              "ZvS4Ck5hGM": "Hello"
+                            }
+                          },
+                          "default_locale": "en_US",
+                          "revision": 123
+                        }
+
+                        """.trimIndent(),
+                    expected = PaywallComponentsData(
+                        id = "paywall_id",
+                        templateName = "components",
+                        assetBaseURL = URL("https://assets.pawwalls.com"),
+                        componentsConfig = ComponentsConfig(
+                            base = PaywallComponentsConfig(
+                                stack = StackComponent(
+                                    components = emptyList(),
+                                    badge = Badge(
+                                        stack = StackComponent(
+                                            components = emptyList()
+                                        ),
+                                        style = Badge.Style.Overlay,
+                                        alignment = TwoDimensionalAlignment.BOTTOM_TRAILING
+                                    ),
+                                ),
+                                background = Background.Color(
+                                    value = ColorScheme(
+                                        light = ColorInfo.Alias(ColorAlias("primary"))
+                                    )
+                                )
+                            )
+                        ),
+                        componentsLocalizations = mapOf(
+                            LocaleId("en_US") to mapOf(
+                                LocalizationKey("ZvS4Ck5hGM") to LocalizationData.Text("Hello")
+                            )
+                        ),
+                        defaultLocaleIdentifier = LocaleId("en_US"),
+                        revision = 123,
+                        automaticallyScaleFontSize = true,
                     )
                 ),
             ),

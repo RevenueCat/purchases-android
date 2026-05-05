@@ -47,7 +47,7 @@ public class PaywallComponentsData(
     public val productChangeConfig: ProductChangeConfig? = null,
     @get:JvmSynthetic
     @SerialName("automatically_scale_font_size")
-    public val automaticallyScaleFontSize: Boolean? = null,
+    public val automaticallyScaleFontSize: Boolean = true,
 )
 
 @OptIn(InternalRevenueCatAPI::class)

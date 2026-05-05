@@ -70,10 +70,10 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
 @Composable
 private fun PaywallFontScaling(
-    automaticallyScaleFontSize: Boolean?,
+    automaticallyScaleFontSize: Boolean,
     content: @Composable () -> Unit,
 ) {
-    if (automaticallyScaleFontSize == true) {
+    if (automaticallyScaleFontSize) {
         content()
     } else {
         val density = LocalDensity.current
@@ -164,7 +164,7 @@ internal fun InternalPaywall(
                 }
             }
             PaywallFontScaling(
-                automaticallyScaleFontSize = state.offering.paywallComponents?.data?.automaticallyScaleFontSize,
+                automaticallyScaleFontSize = state.offering.paywallComponents?.data?.automaticallyScaleFontSize ?: true,
             ) {
                 LoadedPaywallComponents(
                     state = state,
