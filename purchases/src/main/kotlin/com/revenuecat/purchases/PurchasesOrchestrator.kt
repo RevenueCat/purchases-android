@@ -849,6 +849,46 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    fun showManageSubscriptions(context: Context, callback: ManageSubscriptionsCallback?) {
+        getCustomerInfo(
+            CacheFetchPolicy.CACHED_OR_FETCHED,
+            trackDiagnostics = false,
+            object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    val managementURL = customerInfo.managementURL
+                        ?: appConfig.store.managementUrl?.let { android.net.Uri.parse(it) }
+                    if (managementURL == null) {
+                        val error = PurchasesError(
+                            PurchasesErrorCode.CustomerInfoError,
+                            "No management URL found for current subscription",
+                        )
+                        log(LogIntent.RC_ERROR) { error.message }
+                        callback?.onError(error)
+                        return
+                    }
+                    try {
+                        context.startActivity(
+                            android.content.Intent(android.content.Intent.ACTION_VIEW, managementURL)
+                                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                        callback?.onSuccess()
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        val error = PurchasesError(
+                            PurchasesErrorCode.UnknownError,
+                            "Cannot open subscription management URL: ${e.message}",
+                        )
+                        log(LogIntent.RC_ERROR) { error.message }
+                        callback?.onError(error)
+                    }
+                }
+
+                override fun onError(error: PurchasesError) {
+                    callback?.onError(error)
+                }
+            },
+        )
+    }
+
     fun invalidateCustomerInfoCache() {
         log(LogIntent.DEBUG) { CustomerInfoStrings.INVALIDATING_CUSTOMERINFO_CACHE }
         deviceCache.clearCustomerInfoCache(appUserID)
