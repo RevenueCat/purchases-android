@@ -491,6 +491,7 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getMode
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getPresentedOfferingContext(Lcom/revenuecat/purchases/Offering;)Lcom/revenuecat/purchases/PresentedOfferingContext;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getResourceProvider()Lcom/revenuecat/purchases/ui/revenuecatui/helpers/ResourceProvider;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getState()Lkotlinx/coroutines/flow/StateFlow;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->handleBackNavigation()Z
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->preloadExitOffering()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->presentationFingerprintLegacy(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallMode;Landroidx/core/os/LocaleListCompat;Z)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$PaywallPresentationFingerprint;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->refreshStateIfColorsChanged(Landroidx/compose/material3/ColorScheme;Z)V
@@ -706,6 +707,8 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/ImagePreviewsKt$LocalPrevie
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/ImagePreviewsKt$LocalPreviewImageLoader$1;-><init>()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/ImagePreviewsKt$LocalPreviewImageLoader$1;->invoke()Lcoil/ImageLoader;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/ImagePreviewsKt$LocalPreviewImageLoader$1;->invoke()Ljava/lang/Object;
+Lcom/revenuecat/purchases/ui/revenuecatui/helpers/LocaleHelpersKt;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/LocaleHelpersKt;->toLayoutDirection(Ljava/util/Locale;)Landroidx/compose/ui/unit/LayoutDirection;
 Lcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;-><clinit>()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;-><init>()V

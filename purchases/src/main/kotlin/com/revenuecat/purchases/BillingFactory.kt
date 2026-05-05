@@ -27,6 +27,7 @@ internal object BillingFactory {
         finishTransactions: Boolean,
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
+        applyObfuscatedAccountIdToSubscriptionChanges: Boolean,
         pendingTransactionsForPrepaidPlansEnabled: Boolean,
         galaxyBillingMode: GalaxyBillingMode,
         backend: Backend,
@@ -44,6 +45,7 @@ internal object BillingFactory {
                 deviceCache = cache,
                 diagnosticsTrackerIfEnabled = diagnosticsTrackerIfEnabled,
                 purchasesStateProvider = stateProvider,
+                applyObfuscatedAccountIdToSubscriptionChanges = applyObfuscatedAccountIdToSubscriptionChanges,
             )
             Store.AMAZON -> {
                 try {
