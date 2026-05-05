@@ -76,8 +76,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -755,6 +753,14 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
 
+        // Pre-compute the fallback step so its default package is available in cache
+        // for early packageless steps to use as context.
+        val fallbackStepId = workflow.singleStepFallbackId
+        val fallbackStep = fallbackStepId?.let { workflow.steps[it] }
+        if (fallbackStep != null && fallbackStep.id != initialStep.id) {
+            buildStateFromStep(fallbackStep, workflow, offerings, presentedOfferingContext)
+        }
+
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
         preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
@@ -772,35 +778,17 @@ internal class PaywallViewModelImpl(
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
-        // Apply default_package_id from the step's paramValues as context for steps that have
-        // no own package components (e.g. early "info" screens in a multipage workflow).
-        // Runs for both fresh and pre-warmed steps. Skipped when selectedPackageInfo is already
-        // non-null from a prior backward-propagation call.
+        // Apply the fallback step's default package as context for steps that have no own
+        // package components. Runs for both fresh and pre-warmed steps. Skipped when
+        // selectedPackageInfo is already non-null from a prior backward-propagation call.
         if (newState is PaywallState.Loaded.Components &&
             !newState.hasAnyPackages &&
             newState.selectedPackageInfo == null
         ) {
-            val defaultPackageId = (step.paramValues["default_package_id"] as? JsonPrimitive)
-                ?.contentOrNull
-            if (defaultPackageId != null) {
-                val screenId = step.screenId
-                val screenOfferingId = screenId?.let { workflow.screens[it]?.offeringIdentifier }
-                val baseOffering = screenOfferingId?.let { offerings[it] }
-                val contextPackage = baseOffering?.availablePackages
-                    ?.firstOrNull { it.identifier == defaultPackageId }
-                if (contextPackage != null) {
-                    newState.setContextPackage(
-                        PaywallState.Loaded.Components.SelectedPackageInfo(
-                            rcPackage = contextPackage,
-                            resolvedOffer = null,
-                            uniqueId = contextPackage.identifier,
-                            offerEligibility = calculateOfferEligibility(
-                                resolvedOffer = null,
-                                rcPackage = contextPackage,
-                            ),
-                        ),
-                    )
-                }
+            val fallbackPackage = workflow.singleStepFallbackId
+                ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
+            if (fallbackPackage != null) {
+                newState.setContextPackage(fallbackPackage)
             }
         }
         // On backward navigation, propagate the leaving step's actual selected package

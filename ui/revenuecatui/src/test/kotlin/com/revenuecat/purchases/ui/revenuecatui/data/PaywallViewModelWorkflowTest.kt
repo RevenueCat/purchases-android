@@ -32,7 +32,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
@@ -177,9 +176,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
-            paramValues = mapOf(
-                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
-            ),
+            paramValues = emptyMap(),
         )
         val terminalStep = WorkflowStep(
             id = "step-2",
@@ -187,13 +184,12 @@ class PaywallViewModelWorkflowTest {
             screenId = screenId2,
             triggers = emptyList(),
             triggerActions = emptyMap(),
-            paramValues = mapOf(
-                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
-            ),
+            paramValues = emptyMap(),
         )
         val wfl = workflow.copy(
             steps = mapOf("step-1" to earlyStep, "step-2" to terminalStep),
             screens = mapOf(screenId1 to earlyScreen, screenId2 to terminalScreen),
+            singleStepFallbackId = "step-2",
         )
         val offering = Offering(
             identifier = offeringId,
@@ -435,7 +431,7 @@ class PaywallViewModelWorkflowTest {
     // region context package
 
     @Test
-    fun `default_package_id in paramValues is applied as context on step with no own packages`() {
+    fun `singleStepFallbackId package is applied as context on step with no own packages`() {
         val (result, offerings) = makeContextPackageWorkflow()
         val vm = createVm()
 
@@ -443,9 +439,10 @@ class PaywallViewModelWorkflowTest {
 
         val step1State = vm.workflowState.value?.stepStates?.get("step-1")
         assertThat(step1State).isNotNull()
-        // Step-1 has no PackageComponents → hasAnyPackages is false → context from default_package_id.
+        // Step-1 has no PackageComponents → hasAnyPackages is false → context from fallback step's
+        // default selection. The fallback step (step-2) defaults to MONTHLY.
         assertThat(step1State!!.selectedPackageInfo?.rcPackage?.identifier)
-            .isEqualTo(PackageType.ANNUAL.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
     }
 
     @Test
@@ -477,9 +474,10 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `back navigation chains context through multiple packageless steps`() {
         // Build a three-step workflow:
-        // step-A: no packages, default_package_id = ANNUAL, screen-A
-        // step-B: no packages, default_package_id = ANNUAL, screen-B
-        // step-C: terminal with two packages (MONTHLY default + ANNUAL), default_package_id = ANNUAL, screen-C
+        // step-A: no packages, screen-A
+        // step-B: no packages, screen-B
+        // step-C: terminal with two packages (MONTHLY default + ANNUAL), screen-C
+        // singleStepFallbackId = "step-C"
         val screenAId = "screen-A"
         val screenBId = "screen-B"
         val screenCId = "screen-C"
@@ -529,9 +527,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-B")),
-            paramValues = mapOf(
-                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
-            ),
+            paramValues = emptyMap(),
         )
         val stepB = WorkflowStep(
             id = "step-B",
@@ -546,9 +542,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-C")),
-            paramValues = mapOf(
-                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
-            ),
+            paramValues = emptyMap(),
         )
         val stepC = WorkflowStep(
             id = "step-C",
@@ -556,9 +550,7 @@ class PaywallViewModelWorkflowTest {
             screenId = screenCId,
             triggers = emptyList(),
             triggerActions = emptyMap(),
-            paramValues = mapOf(
-                "default_package_id" to JsonPrimitive(PackageType.ANNUAL.identifier!!),
-            ),
+            paramValues = emptyMap(),
         )
         val threeStepWorkflow = PublishedWorkflow(
             id = "wfl-three-step",
@@ -568,6 +560,7 @@ class PaywallViewModelWorkflowTest {
             screens = mapOf(screenAId to earlyScreen1, screenBId to earlyScreen2, screenCId to terminalScreen3),
             uiConfig = UiConfig(),
             metadata = emptyMap(),
+            singleStepFallbackId = "step-C",
         )
         val threeStepOffering = Offering(
             identifier = threeStepOfferingId,
