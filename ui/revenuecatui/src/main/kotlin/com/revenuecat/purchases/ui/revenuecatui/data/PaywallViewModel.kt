@@ -779,8 +779,8 @@ internal class PaywallViewModelImpl(
             workflowStepStateCache[step.id] = newState
         }
         // Apply the package step's default package as context for steps that have no own
-        // package components. Runs for both fresh and pre-warmed steps. Skipped when
-        // selectedPackageInfo is already non-null from a prior backward-propagation call.
+        // package components. Context is set once on first build and never overwritten, so
+        // back navigation always shows the same content as the initial render.
         if (newState is PaywallState.Loaded.Components &&
             !newState.hasAnyPackages &&
             newState.selectedPackageInfo == null
@@ -789,20 +789,6 @@ internal class PaywallViewModelImpl(
                 ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
             if (defaultPackage != null) {
                 newState.setContextPackage(defaultPackage)
-            }
-        }
-        // On backward navigation, propagate the leaving step's actual selected package
-        // as context on the destination step. This chains correctly through multi-step
-        // back-navigation because selectedPackageInfo on packageless steps already
-        // falls back to their contextPackageInfo.
-        if (navigationDirection == NavigationDirection.BACKWARD &&
-            fromStepId != null &&
-            newState is PaywallState.Loaded.Components &&
-            !newState.hasAnyPackages
-        ) {
-            val leavingStepPackage = workflowStepStateCache[fromStepId]?.selectedPackageInfo
-            if (leavingStepPackage != null) {
-                newState.setContextPackage(leavingStepPackage)
             }
         }
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {

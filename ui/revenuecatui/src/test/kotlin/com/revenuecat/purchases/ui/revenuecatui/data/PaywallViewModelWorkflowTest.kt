@@ -446,33 +446,32 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `back navigation from terminal propagates user selection to early step context`() {
+    fun `back navigation does not overwrite early step context on return`() {
         val (result, offerings) = makeContextPackageWorkflow()
         val vm = createVm()
         vm.updateStateFromWorkflow(result, offerings, null)
 
-        // Navigate to terminal step (step-2).
-        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
-        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
-
-        // User selects MONTHLY on the terminal step (different from annual default).
-        val terminalState = vm.workflowState.value?.stepStates?.get("step-2")
-        assertThat(terminalState).isNotNull()
-        terminalState!!.update(PackageType.MONTHLY.identifier!!)
-        assertThat(terminalState.selectedPackageInfo?.rcPackage?.identifier)
+        // Step-1 initial context is MONTHLY (from singleStepFallbackId → step-2 default).
+        val step1StateBefore = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1StateBefore?.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.MONTHLY.identifier)
 
-        // Navigate back.
-        vm.handleBackNavigation()
+        // Navigate to terminal step (step-2) and select ANNUAL (different from default MONTHLY).
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        val terminalState = vm.workflowState.value?.stepStates?.get("step-2")
+        assertThat(terminalState).isNotNull()
+        terminalState!!.update(PackageType.ANNUAL.identifier!!)
 
-        // Step-1 (no own packages) must now reflect "monthly" as its context.
-        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
-        assertThat(step1State?.selectedPackageInfo?.rcPackage?.identifier)
+        // Navigate back — step-1's context must remain the initial MONTHLY default.
+        vm.handleBackNavigation()
+        val step1StateAfter = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1StateAfter?.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.MONTHLY.identifier)
     }
 
     @Test
-    fun `back navigation chains context through multiple packageless steps`() {
+    fun `back navigation preserves initial context on packageless steps`() {
         // Build a three-step workflow:
         // step-A: no packages, screen-A
         // step-B: no packages, screen-B
@@ -582,16 +581,16 @@ class PaywallViewModelWorkflowTest {
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
 
-        // Select MONTHLY on terminal step-C.
+        // Select ANNUAL on terminal step-C (different from the MONTHLY default the packageless steps use).
         val terminalState = vm.workflowState.value?.stepStates?.get("step-C")!!
-        terminalState.update(PackageType.MONTHLY.identifier!!)
+        terminalState.update(PackageType.ANNUAL.identifier!!)
 
-        // Back step-C → step-B.
+        // Back step-C → step-B: context must stay at initial MONTHLY, not change to ANNUAL.
         vm.handleBackNavigation()
         assertThat(vm.workflowState.value?.stepStates?.get("step-B")?.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.MONTHLY.identifier)
 
-        // Complete the transition then back step-B → step-A (context chains through step-B's selectedPackageInfo).
+        // Complete the transition then back step-B → step-A: still MONTHLY, not ANNUAL.
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
         vm.handleBackNavigation()
         assertThat(vm.workflowState.value?.stepStates?.get("step-A")?.selectedPackageInfo?.rcPackage?.identifier)
@@ -599,31 +598,28 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `own package selection on packaged step wins over backward-propagated context`() {
+    fun `own package selection on packaged step is preserved through back-and-forward navigation`() {
         val (result, offerings) = makeContextPackageWorkflow()
         val vm = createVm()
         vm.updateStateFromWorkflow(result, offerings, null)
 
-        // Navigate to terminal step-2 (has packages, default is MONTHLY from twoPackageComponentsConfig).
+        // Navigate to terminal step-2 (has packages, default is MONTHLY).
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
 
-        // step-2's own default is MONTHLY — context from step-1 (ANNUAL) should not interfere.
         val step2State = vm.workflowState.value?.stepStates?.get("step-2")
         assertThat(step2State).isNotNull()
-        // step-2 has its own packages → own selection wins → must NOT return context from step-1.
         assertThat(step2State!!.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.MONTHLY.identifier)
 
-        // Navigate back to step-1 with ANNUAL selected on step-2.
+        // Select ANNUAL, then navigate back.
         step2State.update(PackageType.ANNUAL.identifier!!)
         vm.handleBackNavigation()
 
-        // Now navigate forward to step-2 again.
+        // Navigate forward to step-2 again — cached selection (ANNUAL) must be preserved.
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
 
-        // step-2's own cached selection (ANNUAL) must still win — not overwritten by step-1's context.
         val step2StateAgain = vm.workflowState.value?.stepStates?.get("step-2")
         assertThat(step2StateAgain?.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.ANNUAL.identifier)
