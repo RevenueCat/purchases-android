@@ -26,28 +26,39 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
  * after navigation already has both surfaces positioned correctly — no gap-detection, no
  * [Animatable.snapTo], no [androidx.compose.runtime.withFrameNanos] required.
  *
- * @param visibleStepIds step IDs currently held in the Compose slot table.
- * @param animatingFromStepId step ID transitioning out; null when idle.
- * @param animatingDirection direction of the active transition; null when idle.
- * @param animatable drives progress 0f→1f. Created fresh via [key] for each new
+ * Each subclass carries only the properties that are meaningful for its animation type, so callers
+ * pattern-match rather than interrogating nullable fields that don't apply.
+ *
+ * @property visibleStepIds step IDs currently held in the Compose slot table.
+ * @property animatingFromStepId step ID transitioning out; null when idle.
+ * @property animatable drives progress 0f→1f. Created fresh via [key] for each new
  *   [WorkflowPaywallUiState.pendingTransition] so it always starts at 0f.
- * @param transition animation type that determines the visual transform applied by
- *   [Modifier.workflowSlide] and the animation spec used to drive [animatable].
  */
-internal class WorkflowSlideState(
-    val visibleStepIds: Set<String>,
-    val animatingFromStepId: String?,
-    val animatingDirection: NavigationDirection?,
-    val animatable: Animatable<Float, AnimationVector1D>,
-    val transition: WorkflowTransitionAnimation,
-) {
+internal sealed class WorkflowTransitionState {
+    abstract val visibleStepIds: Set<String>
+    abstract val animatingFromStepId: String?
+    abstract val animatable: Animatable<Float, AnimationVector1D>
+
+    /**
+     * Both surfaces slide simultaneously: the incoming step translates in from one side while
+     * the outgoing step translates out to the other. [animatingDirection] determines which sides.
+     *
+     * @property animatingDirection direction of the active transition; null when idle.
+     */
+    class SlideInOut(
+        override val visibleStepIds: Set<String>,
+        override val animatingFromStepId: String?,
+        val animatingDirection: NavigationDirection?,
+        override val animatable: Animatable<Float, AnimationVector1D>,
+    ) : WorkflowTransitionState()
+
     companion object {
         const val SLIDE_DURATION_MS = 350
     }
 }
 
 /**
- * Builds a [WorkflowSlideState] from [workflowState].
+ * Builds a [WorkflowTransitionState] from [workflowState].
  *
  * When [WorkflowPaywallUiState.pendingTransition] is non-null:
  * - [key] on the transition id creates a fresh [Animatable] **at 0f during composition**, so
@@ -59,14 +70,14 @@ internal class WorkflowSlideState(
  *   the ViewModel can clear [WorkflowPaywallUiState.pendingTransition].
  *
  * @param transition animation type used for the transition. Defaults to
- *   [WorkflowTransitionAnimation.Slide] for the existing horizontal slide behavior.
+ *   [WorkflowTransitionAnimation.SlideInOut] for the existing horizontal slide behavior.
  */
 @Composable
-internal fun rememberWorkflowSlideState(
+internal fun rememberWorkflowTransitionState(
     workflowState: WorkflowPaywallUiState,
     onTransitionComplete: (transitionId: Int) -> Unit,
-    transition: WorkflowTransitionAnimation = WorkflowTransitionAnimation.Slide(),
-): WorkflowSlideState {
+    transition: WorkflowTransitionAnimation = WorkflowTransitionAnimation.SlideInOut(),
+): WorkflowTransitionState {
     val currentStepId = workflowState.currentStepId
     val pendingTransition = workflowState.pendingTransition
 
@@ -91,23 +102,26 @@ internal fun rememberWorkflowSlideState(
         }
     }
 
-    return WorkflowSlideState(
-        visibleStepIds = if (pendingTransition != null) {
-            setOf(pendingTransition.fromStepId, currentStepId)
-        } else {
-            setOf(currentStepId)
-        },
-        animatingFromStepId = pendingTransition?.fromStepId,
-        animatingDirection = pendingTransition?.direction,
-        animatable = animatable,
-        transition = transition,
-    )
+    val visibleStepIds = if (pendingTransition != null) {
+        setOf(pendingTransition.fromStepId, currentStepId)
+    } else {
+        setOf(currentStepId)
+    }
+
+    return when (transition) {
+        is WorkflowTransitionAnimation.SlideInOut -> WorkflowTransitionState.SlideInOut(
+            visibleStepIds = visibleStepIds,
+            animatingFromStepId = pendingTransition?.fromStepId,
+            animatingDirection = pendingTransition?.direction,
+            animatable = animatable,
+        )
+    }
 }
 
 /**
- * Applies the visual transform for the active [WorkflowSlideState.transition] to a step's content.
+ * Applies the visual transform for the active [WorkflowTransitionState] to a step's content.
  *
- * For [WorkflowTransitionAnimation.Slide], translates horizontally:
+ * For [WorkflowTransitionState.SlideInOut], translates horizontally:
  * - **Current step**: slides from `±width` to `0` as progress goes 0→1.
  * - **Outgoing step**: slides from `0` to `∓width` as progress goes 0→1.
  * - **Other (parked) steps**: positioned far off-screen so the GraphicsLayer skips drawing.
@@ -115,14 +129,14 @@ internal fun rememberWorkflowSlideState(
  * State reads happen inside the layer block so animation frames invalidate the layer without
  * triggering recomposition.
  */
-internal fun Modifier.workflowSlide(
-    state: WorkflowSlideState,
+internal fun Modifier.workflowTransition(
+    state: WorkflowTransitionState,
     stepId: String,
     currentStepId: String,
 ): Modifier = graphicsLayer {
     val progress = state.animatable.value
-    when (state.transition) {
-        is WorkflowTransitionAnimation.Slide -> {
+    when (state) {
+        is WorkflowTransitionState.SlideInOut -> {
             val directionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
             translationX = when (stepId) {
                 currentStepId -> (1f - progress) * directionFactor * size.width
@@ -134,5 +148,5 @@ internal fun Modifier.workflowSlide(
 }
 
 private fun WorkflowTransitionAnimation.toAnimationSpec(): AnimationSpec<Float> = when (this) {
-    is WorkflowTransitionAnimation.Slide -> tween(durationMs, easing = easing)
+    is WorkflowTransitionAnimation.SlideInOut -> tween(durationMs, easing = easing)
 }

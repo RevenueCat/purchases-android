@@ -38,7 +38,7 @@ internal fun LoadedWorkflowPaywall(
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
     modifier: Modifier = Modifier,
-    transition: WorkflowTransitionAnimation = WorkflowTransitionAnimation.Slide(),
+    transition: WorkflowTransitionAnimation = WorkflowTransitionAnimation.SlideInOut(),
 ) {
     val currentStepId = workflowState.currentStepId
     val stepStates = workflowState.stepStates
@@ -50,7 +50,7 @@ internal fun LoadedWorkflowPaywall(
     val configuration = LocalConfiguration.current
     currentState.update(localeList = configuration.locales)
 
-    val slideState = rememberWorkflowSlideState(
+    val transitionState = rememberWorkflowTransitionState(
         workflowState = workflowState,
         onTransitionComplete = onTransitionComplete,
         transition = transition,
@@ -60,7 +60,7 @@ internal fun LoadedWorkflowPaywall(
         currentStepId = currentStepId,
         currentState = currentState,
         stepStates = stepStates,
-        slideState = slideState,
+        transitionState = transitionState,
     )
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, currentState, clickHandler, componentInteractionTracker)
@@ -83,7 +83,7 @@ internal fun LoadedWorkflowPaywall(
         WorkflowStepsContent(
             currentStepId = currentStepId,
             stepStates = stepStates,
-            slideState = slideState,
+            transitionState = transitionState,
             clickHandler = clickHandler,
             componentInteractionTracker = componentInteractionTracker,
         )
@@ -94,7 +94,7 @@ private fun workflowHeaderState(
     currentStepId: String,
     currentState: PaywallState.Loaded.Components,
     stepStates: Map<String, PaywallState.Loaded.Components>,
-    slideState: WorkflowSlideState,
+    transitionState: WorkflowTransitionState,
 ): PaywallState.Loaded.Components {
     val headerStepInfo = stepStates.mapValues { (_, stepState) ->
         WorkflowHeaderStepInfo(
@@ -102,18 +102,23 @@ private fun workflowHeaderState(
             hasHeader = stepState.header != null,
         )
     }
+    val pendingTransition = when (transitionState) {
+        is WorkflowTransitionState.SlideInOut -> {
+            val fromStepId = transitionState.animatingFromStepId
+            val direction = transitionState.animatingDirection
+            if (fromStepId != null && direction != null) {
+                WorkflowPendingTransition(
+                    fromStepId = fromStepId,
+                    direction = direction,
+                    id = 0, // id not needed for header selection
+                )
+            } else null
+        }
+    }
     val headerStepId = selectWorkflowHeaderStepId(
         currentStepId = currentStepId,
         stepInfoByStepId = headerStepInfo,
-        pendingTransition = if (slideState.animatingFromStepId != null && slideState.animatingDirection != null) {
-            WorkflowPendingTransition(
-                fromStepId = slideState.animatingFromStepId,
-                direction = slideState.animatingDirection,
-                id = 0, // id not needed for header selection
-            )
-        } else {
-            null
-        },
+        pendingTransition = pendingTransition,
     )
 
     return stepStates[headerStepId] ?: currentState
@@ -124,23 +129,23 @@ private fun workflowHeaderState(
 private fun WorkflowStepsContent(
     currentStepId: String,
     stepStates: Map<String, PaywallState.Loaded.Components>,
-    slideState: WorkflowSlideState,
+    transitionState: WorkflowTransitionState,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
-    // Multi-step slide container: the current and outgoing steps are stacked and translated by workflowSlide.
+    // Multi-step container: the current and outgoing steps are stacked and translated by workflowTransition.
     // No clipToBounds here — horizontal overflow is bounded by the window/dialog, and adding
     // a top clip causes the hero image (which renders behind the status bar) to get cropped
     // during the slide transition.
     Box(modifier = Modifier.fillMaxSize()) {
-        for (stepId in slideState.visibleStepIds) {
+        for (stepId in transitionState.visibleStepIds) {
             val stepState = stepStates[stepId] ?: continue
             key(stepId) {
                 WorkflowStepContent(
                     stepId = stepId,
                     stepState = stepState,
                     currentStepId = currentStepId,
-                    slideState = slideState,
+                    transitionState = transitionState,
                     clickHandler = clickHandler,
                     componentInteractionTracker = componentInteractionTracker,
                 )
@@ -161,7 +166,7 @@ private fun WorkflowStepContent(
     stepId: String,
     stepState: PaywallState.Loaded.Components,
     currentStepId: String,
-    slideState: WorkflowSlideState,
+    transitionState: WorkflowTransitionState,
     clickHandler: suspend (PaywallAction.External) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
 ) {
@@ -179,7 +184,7 @@ private fun WorkflowStepContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .workflowSlide(slideState, stepId, currentStepId)
+            .workflowTransition(transitionState, stepId, currentStepId)
             .background(background),
     ) {
         WithOptionalBackgroundOverlay(
