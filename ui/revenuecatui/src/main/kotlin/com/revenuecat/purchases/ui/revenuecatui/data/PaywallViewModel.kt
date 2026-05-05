@@ -317,9 +317,10 @@ internal class PaywallViewModelImpl(
     private fun getExitOfferingId(): String? {
         val workflowResult = currentWorkflowResult
         if (workflowResult != null) {
-            val lastStep = findLastWorkflowStep(workflowResult.workflow) ?: return null
-            val screenId = lastStep.screenId ?: return null
-            val screen = workflowResult.workflow.screens[screenId] ?: return null
+            val workflow = workflowResult.workflow
+            val canonicalStep = findCanonicalExitOfferStep(workflow) ?: return null
+            val screenId = canonicalStep.screenId ?: return null
+            val screen = workflow.screens[screenId] ?: return null
             return screen.exitOffers?.dismiss?.offeringId
         }
         val currentState = _state.value
@@ -331,7 +332,15 @@ internal class PaywallViewModelImpl(
         return currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
     }
 
-    private fun findLastWorkflowStep(workflow: PublishedWorkflow): WorkflowStep? {
+    // Resolves the step that holds the workflow's exit offer config. The backend may declare it
+    // explicitly via `single_step_fallback_id`; if absent, we fall back to traversing the step
+    // graph to find the terminal step.
+    private fun findCanonicalExitOfferStep(workflow: PublishedWorkflow): WorkflowStep? {
+        workflow.singleStepFallbackId?.let { fallbackId ->
+            val step = workflow.steps[fallbackId]
+            if (step != null) return step
+            Logger.w("Workflow '${workflow.id}' has single_step_fallback_id '$fallbackId' but no matching step")
+        }
         var currentStepId = workflow.initialStepId
         val visited = mutableSetOf<String>()
         while (currentStepId !in visited) {

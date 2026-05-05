@@ -302,6 +302,26 @@ class PaywallViewModelWorkflowTest {
         enrolledVariants = null,
     )
 
+    // Exit offer is on step-1's screen, not step-2's (the terminal step). Without
+    // single_step_fallback_id, the traversal would land on step-2 and miss the exit offer.
+    private val workflowWithFallbackPointingToFirstStep = PublishedWorkflow(
+        id = "wfl-fallback",
+        displayName = "Fallback Test",
+        initialStepId = "step-1",
+        steps = mapOf("step-1" to step1, "step-2" to step2),
+        screens = mapOf(
+            screenId1 to makeScreenWithExitOffer(screenId1),
+            screenId2 to makeScreen(screenId2),
+        ),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+        singleStepFallbackId = "step-1",
+    )
+    private val fetchResultWithFallback = WorkflowDataResult(
+        workflow = workflowWithFallbackPointingToFirstStep,
+        enrolledVariants = null,
+    )
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -785,6 +805,18 @@ class PaywallViewModelWorkflowTest {
         vm.closePaywall()
 
         assertThat(receivedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `preloadExitOffering uses singleStepFallbackId to locate exit offer`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithFallback, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
     }
 
     @Test
