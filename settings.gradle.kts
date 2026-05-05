@@ -1,4 +1,5 @@
 import java.nio.file.Files
+import java.util.Properties
 
 pluginManagement {
     includeBuild("build-logic")
@@ -25,6 +26,31 @@ pluginManagement {
 
         // fallback for the rest of the dependencies
         mavenCentral()
+    }
+}
+
+// Optional local-development override: point at a local checkout of
+// purchases-core via `purchases.core.local.path=<absolute-or-relative>` in
+// `local.properties`. When set, Gradle runs a composite build and substitutes
+// the published `com.revenuecat.purchases:purchases-core` module with the
+// included build. Unset = default published dep from GitHub Packages.
+val localPurchasesCorePath: String? = run {
+    val f = rootDir.resolve("local.properties")
+    if (!f.exists()) return@run null
+    val props = Properties().apply { f.inputStream().use { load(it) } }
+    props.getProperty("purchases.core.local.path")?.takeIf { it.isNotBlank() }
+}
+if (localPurchasesCorePath != null) {
+    val resolved = rootDir.resolve(localPurchasesCorePath).canonicalFile
+    require(resolved.isDirectory) {
+        "purchases.core.local.path='$localPurchasesCorePath' does not resolve to a directory (resolved: $resolved)"
+    }
+    logger.lifecycle("→ Using local purchases-core at: $resolved")
+    includeBuild(resolved) {
+        dependencySubstitution {
+            substitute(module("com.revenuecat.purchases:purchases-core"))
+                .using(project(":"))
+        }
     }
 }
 
@@ -81,6 +107,16 @@ dependencyResolutionManagement {
 
         // fallback for the rest of the dependencies
         mavenCentral()
+
+        // GitHub Packages for purchases-core Rust library
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/RevenueCat/purchases-core")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: ""
+            }
+        }
 
         // Local Samsung IAP SDK AAR
         flatDir {
