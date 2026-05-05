@@ -239,7 +239,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            dateProvider = mockDateProvider,
         )
         routedWrapper.purchasesUpdatedListener = mockPurchasesListener
 
@@ -266,7 +266,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            dateProvider = mockDateProvider,
         )
         routedWrapper.purchasesUpdatedListener = mockPurchasesListener
 
@@ -328,7 +328,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
-            mockDateProvider
+            dateProvider = mockDateProvider,
         )
         crashingWrapper.purchasesUpdatedListener = mockPurchasesListener
 
@@ -963,6 +963,42 @@ class BillingWrapperTest {
 
         verify(exactly = 0) {
             mockBuilder.setObfuscatedAccountId(any())
+        }
+
+        clearStaticMockk(BillingFlowParams::class)
+    }
+
+    @Test
+    fun `obfuscatedAccountId is set for transfer purchases when enabled`() {
+        every { mockClient.isReady } returns false andThen true
+
+        val enabledWrapper = BillingWrapper(
+            clientFactory = mockClientFactory,
+            mainHandler = handler,
+            backgroundHandler = handler,
+            deviceCache = mockDeviceCache,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            purchasesStateProvider = purchasesStateProvider,
+            applyObfuscatedAccountIdToSubscriptionChanges = true,
+            dateProvider = mockDateProvider,
+        )
+        enabledWrapper.purchasesUpdatedListener = mockPurchasesListener
+        enabledWrapper.startConnection()
+
+        val mockBuilder = setUpForObfuscatedAccountIDTests()
+        val storeProduct = createStoreProductWithoutOffers()
+
+        enabledWrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            mockReplaceSkuInfo(),
+            null,
+        )
+
+        val expectedUserId = appUserId.sha256()
+        verify {
+            mockBuilder.setObfuscatedAccountId(expectedUserId)
         }
 
         clearStaticMockk(BillingFlowParams::class)

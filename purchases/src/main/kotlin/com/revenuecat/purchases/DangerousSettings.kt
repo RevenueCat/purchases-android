@@ -20,8 +20,10 @@ public class DangerousSettings internal constructor(
     internal val customEntitlementComputation: Boolean = false,
 
     internal val uiPreviewMode: Boolean = false,
+
+    internal val applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false,
 ) : Parcelable {
-    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false)
+    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false, false)
 
     public companion object {
         /**
@@ -35,6 +37,7 @@ public class DangerousSettings internal constructor(
             autoSyncPurchases = false,
             customEntitlementComputation = false,
             uiPreviewMode = true,
+            applyObfuscatedAccountIdToSubscriptionChanges = false,
         )
     }
 }

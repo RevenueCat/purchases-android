@@ -326,9 +326,15 @@ public class Purchases internal constructor(
                 infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS }
             }
             val purchasesConfiguration = with(configuration) {
+                val applyObfuscatedAccountId = applyObfuscatedAccountIdToSubscriptionChanges
                 PurchasesConfiguration.Builder(context, apiKey)
                     .appUserID(appUserID)
-                    .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                    .dangerousSettings(
+                        DangerousSettings(
+                            customEntitlementComputation = true,
+                            applyObfuscatedAccountIdToSubscriptionChanges = applyObfuscatedAccountId,
+                        ),
+                    )
                     .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
                     .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
                     .build()
