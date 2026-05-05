@@ -25,6 +25,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
@@ -292,15 +293,7 @@ internal class PaywallViewModelImpl(
     override fun preloadExitOffering() {
         viewModelScope.launch {
             try {
-                val currentState = _state.value
-                val currentOffering = when (currentState) {
-                    is PaywallState.Loaded.Legacy -> currentState.offering
-                    is PaywallState.Loaded.Components -> currentState.offering
-                    else -> null
-                }
-
-                val exitOfferingId = currentOffering?.paywallComponents
-                    ?.data?.exitOffers?.dismiss?.offeringId
+                val exitOfferingId = getExitOfferingId()
                 _preloadedExitOffering.value = if (exitOfferingId != null) {
                     val offerings = purchases.awaitOfferings()
                     offerings[exitOfferingId].also { exitOffering ->
@@ -318,6 +311,39 @@ internal class PaywallViewModelImpl(
                 Logger.e("Failed to preload exit offering", e)
             }
         }
+    }
+
+    private fun getExitOfferingId(): String? {
+        val workflowResult = currentWorkflowResult
+        if (workflowResult != null) {
+            val lastStep = findLastWorkflowStep(workflowResult.workflow) ?: return null
+            val screenId = lastStep.screenId ?: return null
+            val screen = workflowResult.workflow.screens[screenId] ?: return null
+            return screen.exitOffers?.dismiss?.offeringId
+        }
+        val currentState = _state.value
+        val currentOffering = when (currentState) {
+            is PaywallState.Loaded.Legacy -> currentState.offering
+            is PaywallState.Loaded.Components -> currentState.offering
+            else -> null
+        }
+        return currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
+    }
+
+    private fun findLastWorkflowStep(workflow: PublishedWorkflow): WorkflowStep? {
+        var currentStepId = workflow.initialStepId
+        val visited = mutableSetOf<String>()
+        while (currentStepId !in visited) {
+            visited.add(currentStepId)
+            val step = workflow.steps[currentStepId] ?: return null
+            val nextStepId = step.triggerActions.values
+                .filterIsInstance<WorkflowTriggerAction.Step>()
+                .firstOrNull()
+                ?.stepId
+                ?: return step
+            currentStepId = nextStepId
+        }
+        return null
     }
 
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {

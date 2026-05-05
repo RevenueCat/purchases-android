@@ -23,6 +23,8 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.ExitOffer
+import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -30,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -40,6 +43,13 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -48,11 +58,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelWorkflowTest {
 
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
+
+    private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var purchases: PurchasesType
 
@@ -224,8 +237,52 @@ class PaywallViewModelWorkflowTest {
     )
     private val testOfferings = Offerings(testOffering, mapOf(offeringId to testOffering))
 
+    private val exitOfferingId = "exit-offering-id"
+    private val exitOffering = Offering(
+        identifier = exitOfferingId,
+        serverDescription = "",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = null,
+        webCheckoutURL = null,
+    )
+    private val testOfferingsWithExitOffer = Offerings(
+        testOffering,
+        mapOf(offeringId to testOffering, exitOfferingId to exitOffering),
+    )
+
+    private fun makeScreenWithExitOffer(screenId: String) = WorkflowScreen(
+        name = screenId,
+        templateName = "template_v2",
+        revision = 1,
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = componentsConfig,
+        componentsLocalizations = localizations,
+        defaultLocaleIdentifier = defaultLocaleId,
+        offeringIdentifier = offeringId,
+        exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = exitOfferingId)),
+    )
+
+    private val workflowWithExitOffer = PublishedWorkflow(
+        id = "wfl-test-exit",
+        displayName = "Test Exit",
+        initialStepId = "step-1",
+        steps = mapOf("step-1" to step1, "step-2" to step2),
+        screens = mapOf(
+            screenId1 to makeScreen(screenId1),
+            screenId2 to makeScreenWithExitOffer(screenId2),
+        ),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+    )
+    private val fetchResultWithExitOffer = WorkflowDataResult(
+        workflow = workflowWithExitOffer,
+        enrolledVariants = null,
+    )
+
     @Before
     fun setUp() {
+        Dispatchers.setMain(testDispatcher)
         purchases = mockk {
             every { storefrontCountryCode } returns "US"
             every { preferredUILocaleOverride } returns null
@@ -241,17 +298,24 @@ class PaywallViewModelWorkflowTest {
 
     @After
     fun tearDown() {
+        Dispatchers.resetMain()
         clearAllMocks()
     }
 
-    private fun createVm(): PaywallViewModelImpl = PaywallViewModelImpl(
-        resourceProvider = MockResourceProvider(),
-        purchases = purchases,
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        colorScheme = TestData.Constants.currentColorScheme,
-        isDarkMode = false,
-        shouldDisplayBlock = null,
-    )
+    private fun createVm(
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+    ): PaywallViewModelImpl {
+        val builder = PaywallOptions.Builder(dismissRequest = {})
+        dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
+        return PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = builder.build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+    }
 
     // region forward navigation
 
