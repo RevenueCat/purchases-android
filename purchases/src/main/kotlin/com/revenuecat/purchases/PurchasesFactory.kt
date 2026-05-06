@@ -222,6 +222,7 @@ internal class PurchasesFactory(
                 purchasesAreCompletedBy.finishTransactions,
                 diagnosticsTracker,
                 purchasesStateProvider,
+                appConfig.applyObfuscatedAccountIdToSubscriptionChanges,
                 pendingTransactionsForPrepaidPlansEnabled,
                 configuration.galaxyBillingMode,
                 backend,

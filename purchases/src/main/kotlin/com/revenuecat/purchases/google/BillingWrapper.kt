@@ -93,6 +93,7 @@ internal class BillingWrapper(
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
+    private val applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
@@ -1010,6 +1011,12 @@ internal class BillingWrapper(
                         // https://issuetracker.google.com/issues/155005449
                         replaceProductInfo?.let {
                             setUpgradeInfo(it)
+
+                            // Allow setting ObfuscatedAccountID in product changes
+                            // only when explicitly opted in via DangerousSettings
+                            if (applyObfuscatedAccountIdToSubscriptionChanges) {
+                                setObfuscatedAccountId(appUserID.sha256())
+                            }
                         } ?: setObfuscatedAccountId(appUserID.sha256())
 
                         isPersonalizedPrice?.let {
