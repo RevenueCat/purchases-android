@@ -1,38 +1,17 @@
 {
-  "config_version": "2026-04-15T18:09:12Z:8f3c7a12",
-  "api_sources": [
-    {
-      "id": "primary",
-      "url_prefix": "https://api.revenuecat.com",
-      "priority": 0,
-      "weight": 100,
-      "blacklist_time_seconds": 300
-    },
-    {
-      "id": "backup",
-      "url_prefix": "https://api.rc-backup.com",
-      "priority": 1,
-      "weight": 100,
-      "blacklist_time_seconds": 300
-    }
-  ],
-  "asset_sources": [
+  "sources": [
     {
       "id": "cloudfront-primary",
       "url_format": "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",
       "priority": 0,
-      "weight": 100,
-      "blacklist_time_seconds": 600,
-      "test_url": "/health"
+      "weight": 100
     }
   ],
   "manifest": {
     "topics": {
       "product_entitlement_mapping": {
         "DEFAULT": {
-          "asset_blob_ref": "6a4d0f53d9f6b8e2f4dca0fd1c7c4f5e3e1b1ef0f45d989e2f8f8d0d91ec1b6a",
-          "content_type": "application/json",
-          "prefetch": true
+          "blob_ref": "6a4d0f53d9f6b8e2f4dca0fd1c7c4f5e3e1b1ef0f45d989e2f8f8d0d91ec1b6a"
         }
       }
     }

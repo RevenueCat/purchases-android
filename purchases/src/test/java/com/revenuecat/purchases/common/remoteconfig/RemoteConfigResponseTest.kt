@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.networking
+package com.revenuecat.purchases.common.remoteconfig
 
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -14,33 +14,19 @@ class RemoteConfigResponseTest {
     fun `deserializes full payload`() {
         val payload = """
             {
-              "config_version": "v1",
-              "api_sources": [
-                {
-                  "id": "primary",
-                  "url_prefix": "https://api.revenuecat.com",
-                  "priority": 0,
-                  "weight": 100,
-                  "blacklist_time_seconds": 300
-                }
-              ],
-              "asset_sources": [
+              "sources": [
                 {
                   "id": "cloudfront-primary",
                   "url_format": "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",
                   "priority": 0,
-                  "weight": 100,
-                  "blacklist_time_seconds": 600,
-                  "test_url": "/health"
+                  "weight": 100
                 }
               ],
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
                     "DEFAULT": {
-                      "asset_blob_ref": "abc123",
-                      "content_type": "application/json",
-                      "prefetch": true
+                      "blob_ref": "abc123"
                     }
                   }
                 }
@@ -50,114 +36,27 @@ class RemoteConfigResponseTest {
 
         val response = json.decodeFromString<RemoteConfigResponse>(payload)
 
-        assertThat(response.configVersion).isEqualTo("v1")
-        assertThat(response.apiSources).containsExactly(
-            ApiSource(
-                id = "primary",
-                urlPrefix = "https://api.revenuecat.com",
-                priority = 0,
-                weight = 100,
-                blacklistTimeSeconds = 300L,
-            ),
-        )
-        assertThat(response.assetSources).containsExactly(
-            AssetSource(
+        assertThat(response.sources).containsExactly(
+            Source(
                 id = "cloudfront-primary",
                 urlFormat = "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",
                 priority = 0,
                 weight = 100,
-                blacklistTimeSeconds = 600L,
-                testUrl = "/health",
             ),
         )
         assertThat(response.manifest.topics).containsExactly(
             entry(
                 Topic.PRODUCT_ENTITLEMENT_MAPPING,
-                mapOf(
-                    "DEFAULT" to TopicEntry(
-                        assetBlobRef = "abc123",
-                        contentType = "application/json",
-                        prefetch = true,
-                    ),
-                ),
+                mapOf("DEFAULT" to TopicEntry(blobRef = "abc123")),
             ),
         )
     }
 
     @Test
-    fun `AssetSource testUrl is optional and defaults to null`() {
-        val payload = """
-            {
-              "config_version": "v1",
-              "asset_sources": [
-                {
-                  "id": "primary",
-                  "url_format": "https://assets.example/{blob_ref}",
-                  "priority": 0,
-                  "weight": 100,
-                  "blacklist_time_seconds": 60
-                }
-              ]
-            }
-        """.trimIndent()
+    fun `missing sources and manifest fall back to defaults`() {
+        val response = json.decodeFromString<RemoteConfigResponse>("""{}""")
 
-        val response = json.decodeFromString<RemoteConfigResponse>(payload)
-
-        assertThat(response.assetSources).hasSize(1)
-        assertThat(response.assetSources[0].testUrl).isNull()
-    }
-
-    @Test
-    fun `TopicEntry prefetch defaults to false when missing`() {
-        val payload = """
-            {
-              "config_version": "v1",
-              "manifest": {
-                "topics": {
-                  "product_entitlement_mapping": {
-                    "DEFAULT": {
-                      "asset_blob_ref": "xyz",
-                      "content_type": "application/json"
-                    }
-                  }
-                }
-              }
-            }
-        """.trimIndent()
-
-        val response = json.decodeFromString<RemoteConfigResponse>(payload)
-
-        val entry = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]?.get("DEFAULT")
-        assertThat(entry?.prefetch).isFalse
-    }
-
-    @Test
-    fun `missing config_version is rejected`() {
-        val payload = """
-            {
-              "api_sources": [],
-              "asset_sources": []
-            }
-        """.trimIndent()
-
-        assertThatThrownBy { json.decodeFromString<RemoteConfigResponse>(payload) }
-            .isInstanceOf(SerializationException::class.java)
-    }
-
-    @Test
-    fun `wrong type for config_version is rejected`() {
-        val payload = """{"config_version": 12345}"""
-
-        assertThatThrownBy { json.decodeFromString<RemoteConfigResponse>(payload) }
-            .isInstanceOf(SerializationException::class.java)
-    }
-
-    @Test
-    fun `missing api_sources, asset_sources, manifest fall back to defaults`() {
-        val response = json.decodeFromString<RemoteConfigResponse>("""{"config_version": "v1"}""")
-
-        assertThat(response.apiSources).isEmpty()
-        assertThat(response.assetSources).isEmpty()
+        assertThat(response.sources).isEmpty()
         assertThat(response.manifest.topics).isEmpty()
     }
 
@@ -165,65 +64,65 @@ class RemoteConfigResponseTest {
     fun `unknown sibling fields anywhere are ignored`() {
         val payload = """
             {
-              "config_version": "v1",
               "future_top_level": true,
-              "api_sources": [
+              "sources": [
                 {
                   "id": "primary",
-                  "url_prefix": "https://api.example",
+                  "url_format": "https://assets.example/{blob_ref}",
                   "priority": 0,
                   "weight": 100,
-                  "blacklist_time_seconds": 300,
                   "future_field": "ignored"
                 }
               ],
-              "asset_sources": [],
               "manifest": {
+                "future_manifest_field": [],
                 "topics": {
                   "product_entitlement_mapping": {
                     "DEFAULT": {
-                      "asset_blob_ref": "abc",
-                      "content_type": "application/json",
+                      "blob_ref": "abc",
                       "future_per_entry": 7
                     }
                   }
-                },
-                "future_manifest_field": []
+                }
               }
             }
         """.trimIndent()
 
         val response = json.decodeFromString<RemoteConfigResponse>(payload)
 
-        assertThat(response.configVersion).isEqualTo("v1")
-        assertThat(response.apiSources).hasSize(1)
+        assertThat(response.sources).hasSize(1)
+        assertThat(response.sources[0].id).isEqualTo("primary")
         val pem = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
-        assertThat(pem?.get("DEFAULT")?.assetBlobRef).isEqualTo("abc")
+        assertThat(pem?.get("DEFAULT")?.blobRef).isEqualTo("abc")
+    }
+
+    @Test
+    fun `wrong type for sources is rejected`() {
+        val payload = """{"sources": "not-an-array"}"""
+
+        assertThatThrownBy { json.decodeFromString<RemoteConfigResponse>(payload) }
+            .isInstanceOf(SerializationException::class.java)
     }
 
     @Test
     fun `TopicsMapSerializer drops unknown topic names but keeps known ones`() {
         val payload = """
             {
-              "config_version": "v1",
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
                     "DEFAULT": {
-                      "asset_blob_ref": "abc",
-                      "content_type": "application/json"
+                      "blob_ref": "abc"
                     }
                   },
                   "future_topic": {
                     "DEFAULT": {
-                      "asset_blob_ref": "def",
-                      "content_type": "application/json"
+                      "blob_ref": "def"
                     }
                   },
                   "another_unknown": {
                     "DEFAULT": {
-                      "asset_blob_ref": "ghi",
-                      "content_type": "application/json"
+                      "blob_ref": "ghi"
                     }
                   }
                 }
@@ -240,13 +139,11 @@ class RemoteConfigResponseTest {
     fun `TopicsMapSerializer returns empty map when no topics are recognized`() {
         val payload = """
             {
-              "config_version": "v1",
               "manifest": {
                 "topics": {
                   "future_topic": {
                     "DEFAULT": {
-                      "asset_blob_ref": "abc",
-                      "content_type": "application/json"
+                      "blob_ref": "abc"
                     }
                   }
                 }
@@ -263,7 +160,6 @@ class RemoteConfigResponseTest {
     fun `TopicsMapSerializer handles empty topics object`() {
         val payload = """
             {
-              "config_version": "v1",
               "manifest": {"topics": {}}
             }
         """.trimIndent()
@@ -277,18 +173,14 @@ class RemoteConfigResponseTest {
     fun `TopicsMapSerializer preserves multiple variant keys for a known topic`() {
         val payload = """
             {
-              "config_version": "v1",
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
                     "DEFAULT": {
-                      "asset_blob_ref": "default-blob",
-                      "content_type": "application/json"
+                      "blob_ref": "default-blob"
                     },
                     "EXPERIMENT_A": {
-                      "asset_blob_ref": "experiment-blob",
-                      "content_type": "application/json",
-                      "prefetch": true
+                      "blob_ref": "experiment-blob"
                     }
                   }
                 }
@@ -300,7 +192,8 @@ class RemoteConfigResponseTest {
 
         val variants = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
         assertThat(variants?.keys).containsExactlyInAnyOrder("DEFAULT", "EXPERIMENT_A")
-        assertThat(variants?.get("EXPERIMENT_A")?.prefetch).isTrue
+        assertThat(variants?.get("DEFAULT")?.blobRef).isEqualTo("default-blob")
+        assertThat(variants?.get("EXPERIMENT_A")?.blobRef).isEqualTo("experiment-blob")
     }
 
     @Test
@@ -308,11 +201,7 @@ class RemoteConfigResponseTest {
         val manifest = Manifest(
             topics = mapOf(
                 Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf(
-                    "DEFAULT" to TopicEntry(
-                        assetBlobRef = "abc",
-                        contentType = "application/json",
-                        prefetch = true,
-                    ),
+                    "DEFAULT" to TopicEntry(blobRef = "abc"),
                 ),
             ),
         )
@@ -326,34 +215,18 @@ class RemoteConfigResponseTest {
     @Test
     fun `round trip preserves known topics`() {
         val original = RemoteConfigResponse(
-            configVersion = "v1",
-            apiSources = listOf(
-                ApiSource(
-                    id = "primary",
-                    urlPrefix = "https://api.example",
-                    priority = 0,
-                    weight = 100,
-                    blacklistTimeSeconds = 300L,
-                ),
-            ),
-            assetSources = listOf(
-                AssetSource(
+            sources = listOf(
+                Source(
                     id = "cdn",
                     urlFormat = "https://assets.example/{blob_ref}",
                     priority = 0,
                     weight = 100,
-                    blacklistTimeSeconds = 600L,
-                    testUrl = "/health",
                 ),
             ),
             manifest = Manifest(
                 topics = mapOf(
                     Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf(
-                        "DEFAULT" to TopicEntry(
-                            assetBlobRef = "abc",
-                            contentType = "application/json",
-                            prefetch = true,
-                        ),
+                        "DEFAULT" to TopicEntry(blobRef = "abc"),
                     ),
                 ),
             ),

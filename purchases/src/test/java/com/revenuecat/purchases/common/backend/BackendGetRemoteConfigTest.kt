@@ -12,8 +12,8 @@ import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.networking.RemoteConfigResponse
-import com.revenuecat.purchases.common.networking.Topic
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigResponse
+import com.revenuecat.purchases.common.remoteconfig.Topic
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -86,48 +86,35 @@ class BackendGetRemoteConfigTest {
         )
 
         val parsed = response ?: fail("Expected response to be non-null").let { return }
-        assertThat(parsed.configVersion).isEqualTo("2026-04-15T18:09:12Z:8f3c7a12")
-        assertThat(parsed.apiSources).hasSize(2)
-        assertThat(parsed.apiSources[0].id).isEqualTo("primary")
-        assertThat(parsed.apiSources[0].urlPrefix).isEqualTo("https://api.revenuecat.com")
-        assertThat(parsed.apiSources[0].priority).isEqualTo(0)
-        assertThat(parsed.apiSources[0].weight).isEqualTo(100)
-        assertThat(parsed.apiSources[0].blacklistTimeSeconds).isEqualTo(300L)
-        assertThat(parsed.assetSources).hasSize(1)
-        assertThat(parsed.assetSources[0].id).isEqualTo("cloudfront-primary")
-        assertThat(parsed.assetSources[0].urlFormat)
+        assertThat(parsed.sources).hasSize(1)
+        assertThat(parsed.sources[0].id).isEqualTo("cloudfront-primary")
+        assertThat(parsed.sources[0].urlFormat)
             .isEqualTo("https://assets.revenuecat.com/rc_app_1234/{blob_ref}")
-        assertThat(parsed.assetSources[0].testUrl).isEqualTo("/health")
+        assertThat(parsed.sources[0].priority).isEqualTo(0)
+        assertThat(parsed.sources[0].weight).isEqualTo(100)
 
         val pemTopic = parsed.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
         assertThat(pemTopic).isNotNull
         val defaultEntry = pemTopic?.get("DEFAULT")
-        assertThat(defaultEntry?.assetBlobRef)
+        assertThat(defaultEntry?.blobRef)
             .isEqualTo("6a4d0f53d9f6b8e2f4dca0fd1c7c4f5e3e1b1ef0f45d989e2f8f8d0d91ec1b6a")
-        assertThat(defaultEntry?.contentType).isEqualTo("application/json")
-        assertThat(defaultEntry?.prefetch).isTrue
     }
 
     @Test
     fun `getRemoteConfig drops unknown topic names from manifest`() {
         val payloadWithUnknownTopic = """
             {
-              "config_version": "v1",
-              "api_sources": [],
-              "asset_sources": [],
+              "sources": [],
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
                     "DEFAULT": {
-                      "asset_blob_ref": "abc",
-                      "content_type": "application/json",
-                      "prefetch": false
+                      "blob_ref": "abc"
                     }
                   },
                   "future_unknown_topic": {
                     "DEFAULT": {
-                      "asset_blob_ref": "def",
-                      "content_type": "application/json"
+                      "blob_ref": "def"
                     }
                   }
                 }
@@ -153,19 +140,16 @@ class BackendGetRemoteConfigTest {
     fun `getRemoteConfig ignores unknown sibling fields`() {
         val payloadWithExtraFields = """
             {
-              "config_version": "v1",
               "extra_top_level": "ignored",
-              "api_sources": [
+              "sources": [
                 {
                   "id": "primary",
-                  "url_prefix": "https://api.revenuecat.com",
+                  "url_format": "https://assets.example/{blob_ref}",
                   "priority": 0,
                   "weight": 100,
-                  "blacklist_time_seconds": 300,
                   "future_field": true
                 }
               ],
-              "asset_sources": [],
               "manifest": {
                 "topics": {}
               }
@@ -182,7 +166,7 @@ class BackendGetRemoteConfigTest {
         )
 
         assertThat(response).isNotNull
-        assertThat(response?.apiSources).hasSize(1)
+        assertThat(response?.sources).hasSize(1)
     }
 
     @Test
@@ -203,7 +187,7 @@ class BackendGetRemoteConfigTest {
 
     @Test
     fun `getRemoteConfig surfaces serialization errors as PurchasesError`() {
-        mockHttpResult(payload = """{"config_version": 12345}""")
+        mockHttpResult(payload = """{"sources": "not-an-array"}""")
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appUserID = testUserID,

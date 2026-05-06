@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.networking
+package com.revenuecat.purchases.common.remoteconfig
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -11,29 +11,16 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 internal data class RemoteConfigResponse(
-    @SerialName("config_version") val configVersion: String,
-    @SerialName("api_sources") val apiSources: List<ApiSource> = emptyList(),
-    @SerialName("asset_sources") val assetSources: List<AssetSource> = emptyList(),
+    val sources: List<Source> = emptyList(),
     val manifest: Manifest = Manifest(),
 )
 
 @Serializable
-internal data class ApiSource(
-    val id: String,
-    @SerialName("url_prefix") val urlPrefix: String,
-    val priority: Int,
-    val weight: Int,
-    @SerialName("blacklist_time_seconds") val blacklistTimeSeconds: Long,
-)
-
-@Serializable
-internal data class AssetSource(
+internal data class Source(
     val id: String,
     @SerialName("url_format") val urlFormat: String,
     val priority: Int,
     val weight: Int,
-    @SerialName("blacklist_time_seconds") val blacklistTimeSeconds: Long,
-    @SerialName("test_url") val testUrl: String? = null,
 )
 
 @Serializable
@@ -53,9 +40,7 @@ internal enum class Topic(val key: String) {
 
 @Serializable
 internal data class TopicEntry(
-    @SerialName("asset_blob_ref") val assetBlobRef: String,
-    @SerialName("content_type") val contentType: String,
-    val prefetch: Boolean = false,
+    @SerialName("blob_ref") val blobRef: String,
 )
 
 internal object TopicsMapSerializer : KSerializer<Map<Topic, Map<String, TopicEntry>>> {
