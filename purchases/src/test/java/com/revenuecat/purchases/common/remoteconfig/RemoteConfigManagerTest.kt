@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.networking
+package com.revenuecat.purchases.common.remoteconfig
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
@@ -32,25 +32,25 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `single topic with single asset source delegates to fetcher and completes with null`() {
-        val source = assetSource("primary")
+    fun `single topic with single source delegates to fetcher and completes with null`() {
+        val src = source("primary")
         val entry = topicEntry("blob-default")
         val response = response(
-            assetSources = listOf(source),
+            sources = listOf(src),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to entry)),
         )
         mockBackendSuccess(response)
         val capturedTopic = slot<Topic>()
         val capturedVariant = slot<String>()
         val capturedEntry = slot<TopicEntry>()
-        val capturedAssetSource = slot<AssetSource>()
+        val capturedSource = slot<Source>()
         val capturedCompletion = slot<(PurchasesError?) -> Unit>()
         every {
             topicFetcher.fetchTopicIfNeeded(
                 topic = capture(capturedTopic),
                 variant = capture(capturedVariant),
                 topicEntry = capture(capturedEntry),
-                assetSource = capture(capturedAssetSource),
+                source = capture(capturedSource),
                 completion = capture(capturedCompletion),
             )
         } answers { capturedCompletion.captured.invoke(null) }
@@ -67,13 +67,13 @@ class RemoteConfigManagerTest {
         assertThat(capturedTopic.captured).isEqualTo(Topic.PRODUCT_ENTITLEMENT_MAPPING)
         assertThat(capturedVariant.captured).isEqualTo("DEFAULT")
         assertThat(capturedEntry.captured).isEqualTo(entry)
-        assertThat(capturedAssetSource.captured).isEqualTo(source)
+        assertThat(capturedSource.captured).isEqualTo(src)
     }
 
     @Test
-    fun `empty asset_sources skips fetcher and completes with null`() {
+    fun `empty sources skips fetcher and completes with null`() {
         val response = response(
-            assetSources = emptyList(),
+            sources = emptyList(),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
@@ -93,7 +93,7 @@ class RemoteConfigManagerTest {
     @Test
     fun `empty topics map skips fetcher and completes with null`() {
         val response = response(
-            assetSources = listOf(assetSource("primary")),
+            sources = listOf(source("primary")),
             topics = emptyMap(),
         )
         mockBackendSuccess(response)
@@ -113,7 +113,7 @@ class RemoteConfigManagerTest {
     @Test
     fun `topic without DEFAULT variant is skipped`() {
         val response = response(
-            assetSources = listOf(assetSource("primary")),
+            sources = listOf(source("primary")),
             topics = mapOf(
                 Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("EXPERIMENT_A" to topicEntry("blob")),
             ),
@@ -133,35 +133,35 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `selects the first asset source when multiple are available`() {
-        val first = assetSource("first")
-        val second = assetSource("second")
+    fun `selects the first source when multiple are available`() {
+        val first = source("first")
+        val second = source("second")
         val response = response(
-            assetSources = listOf(first, second),
+            sources = listOf(first, second),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
-        val capturedAssetSource = slot<AssetSource>()
+        val capturedSource = slot<Source>()
         val capturedCompletion = slot<(PurchasesError?) -> Unit>()
         every {
             topicFetcher.fetchTopicIfNeeded(
                 topic = any(),
                 variant = any(),
                 topicEntry = any(),
-                assetSource = capture(capturedAssetSource),
+                source = capture(capturedSource),
                 completion = capture(capturedCompletion),
             )
         } answers { capturedCompletion.captured.invoke(null) }
 
         manager.updateRemoteConfigIfNeeded(appUserID = "user", appInBackground = false) {}
 
-        assertThat(capturedAssetSource.captured).isEqualTo(first)
+        assertThat(capturedSource.captured).isEqualTo(first)
     }
 
     @Test
     fun `forwards fetcher error to completion`() {
         val response = response(
-            assetSources = listOf(assetSource("primary")),
+            sources = listOf(source("primary")),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
@@ -172,7 +172,7 @@ class RemoteConfigManagerTest {
                 topic = any(),
                 variant = any(),
                 topicEntry = any(),
-                assetSource = any(),
+                source = any(),
                 completion = capture(capturedCompletion),
             )
         } answers { capturedCompletion.captured.invoke(fetcherError) }
@@ -211,7 +211,7 @@ class RemoteConfigManagerTest {
     @Test
     fun `forwards background flag to backend`() {
         val response = response(
-            assetSources = listOf(assetSource("primary")),
+            sources = listOf(source("primary")),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
@@ -234,7 +234,7 @@ class RemoteConfigManagerTest {
     @Test
     fun `null completion does not crash on success`() {
         val response = response(
-            assetSources = listOf(assetSource("primary")),
+            sources = listOf(source("primary")),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
@@ -244,7 +244,7 @@ class RemoteConfigManagerTest {
                 topic = any(),
                 variant = any(),
                 topicEntry = any(),
-                assetSource = any(),
+                source = any(),
                 completion = capture(capturedCompletion),
             )
         } answers { capturedCompletion.captured.invoke(null) }
@@ -261,24 +261,19 @@ class RemoteConfigManagerTest {
     }
 
     private fun response(
-        assetSources: List<AssetSource>,
+        sources: List<Source>,
         topics: Map<Topic, Map<String, TopicEntry>>,
     ): RemoteConfigResponse = RemoteConfigResponse(
-        configVersion = "v1",
-        apiSources = emptyList(),
-        assetSources = assetSources,
+        sources = sources,
         manifest = Manifest(topics = topics),
     )
 
-    private fun assetSource(id: String) = AssetSource(
+    private fun source(id: String) = Source(
         id = id,
         urlFormat = "https://assets.example/{blob_ref}",
         priority = 0,
         weight = 100,
-        blacklistTimeSeconds = 600L,
-        testUrl = null,
     )
 
-    private fun topicEntry(blobRef: String) =
-        TopicEntry(assetBlobRef = blobRef, contentType = "application/json", prefetch = true)
+    private fun topicEntry(blobRef: String) = TopicEntry(blobRef = blobRef)
 }

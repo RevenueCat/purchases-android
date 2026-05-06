@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.networking
+package com.revenuecat.purchases.common.remoteconfig
 
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -28,10 +28,10 @@ internal class TopicFetcher(
         topic: Topic,
         variant: String,
         topicEntry: TopicEntry,
-        assetSource: AssetSource,
+        source: Source,
         completion: (PurchasesError?) -> Unit,
     ) {
-        val targetFile = topicFile(topic, topicEntry.assetBlobRef)
+        val targetFile = topicFile(topic, topicEntry.blobRef)
         if (targetFile.exists()) {
             verboseLog { "Topic $topic ($variant) already cached at ${targetFile.absolutePath}" }
             completion(null)
@@ -40,8 +40,8 @@ internal class TopicFetcher(
         dispatcher.enqueue(
             Runnable {
                 try {
-                    val url = assetSource.urlFormat.replace(BLOB_REF_PLACEHOLDER, topicEntry.assetBlobRef)
-                    downloadVerifyAndStore(url, topicEntry.assetBlobRef, targetFile)
+                    val url = source.urlFormat.replace(BLOB_REF_PLACEHOLDER, topicEntry.blobRef)
+                    downloadVerifyAndStore(url, topicEntry.blobRef, targetFile)
                     debugLog { "Topic $topic ($variant) downloaded to ${targetFile.absolutePath}" }
                     completion(null)
                 } catch (e: Checksum.ChecksumValidationException) {

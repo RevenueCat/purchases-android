@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.networking
+package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
@@ -28,12 +28,12 @@ internal class RemoteConfigManager(
         response: RemoteConfigResponse,
         completion: ((PurchasesError?) -> Unit)?,
     ) {
-        val assetSource = response.assetSources.firstOrNull()
+        val source = response.sources.firstOrNull()
         val tasks = response.manifest.topics.mapNotNull { (topic, variants) ->
             val entry = variants[DEFAULT_VARIANT] ?: return@mapNotNull null
             TopicTask(topic, DEFAULT_VARIANT, entry)
         }
-        if (assetSource == null || tasks.isEmpty()) {
+        if (source == null || tasks.isEmpty()) {
             completion?.invoke(null)
             return
         }
@@ -43,7 +43,7 @@ internal class RemoteConfigManager(
                 topic = task.topic,
                 variant = task.variant,
                 topicEntry = task.entry,
-                assetSource = assetSource,
+                source = source,
             ) { error -> tracker.recordCompletion(error) }
         }
     }

@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.common.networking
+package com.revenuecat.purchases.common.remoteconfig
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -71,7 +71,7 @@ class TopicFetcherTest {
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "DEFAULT",
             topicEntry = topicEntry(blobRef),
-            assetSource = assetSource("https://assets.example/{blob_ref}"),
+            source = source("https://assets.example/{blob_ref}"),
         ) { error ->
             completionInvoked = true
             receivedError = error
@@ -94,7 +94,7 @@ class TopicFetcherTest {
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "DEFAULT",
             topicEntry = topicEntry(blobRef),
-            assetSource = assetSource("https://assets.example/{blob_ref}"),
+            source = source("https://assets.example/{blob_ref}"),
         ) { error ->
             completionInvoked = true
             receivedError = error
@@ -119,7 +119,7 @@ class TopicFetcherTest {
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "DEFAULT",
             topicEntry = topicEntry(blobRef),
-            assetSource = assetSource("https://cdn.example/topics/{blob_ref}"),
+            source = source("https://cdn.example/topics/{blob_ref}"),
         ) { error -> if (error != null) fail<Unit>("Expected success, got error: $error") }
 
         verify(exactly = 1) { urlConnectionFactory.createConnection(expectedUrl, any()) }
@@ -140,7 +140,7 @@ class TopicFetcherTest {
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "DEFAULT",
             topicEntry = topicEntry(blobRef),
-            assetSource = assetSource("https://assets.example/{blob_ref}"),
+            source = source("https://assets.example/{blob_ref}"),
         ) { error -> receivedError = error }
 
         assertThat(receivedError).isNotNull
@@ -167,7 +167,7 @@ class TopicFetcherTest {
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "DEFAULT",
             topicEntry = topicEntry(blobRef),
-            assetSource = assetSource("https://assets.example/{blob_ref}"),
+            source = source("https://assets.example/{blob_ref}"),
         ) { error -> receivedError = error }
 
         assertThat(receivedError).isNotNull
@@ -188,7 +188,7 @@ class TopicFetcherTest {
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "DEFAULT",
             topicEntry = topicEntry(wrongBlobRef),
-            assetSource = assetSource("https://assets.example/{blob_ref}"),
+            source = source("https://assets.example/{blob_ref}"),
         ) { error -> receivedError = error }
 
         assertThat(receivedError).isNotNull
@@ -210,13 +210,13 @@ class TopicFetcherTest {
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "DEFAULT",
             topicEntry = topicEntry(blobRefA),
-            assetSource = assetSource("https://assets.example/{blob_ref}"),
+            source = source("https://assets.example/{blob_ref}"),
         ) { error -> if (error != null) fail<Unit>("Expected success, got error: $error") }
         fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             variant = "EXPERIMENT_A",
             topicEntry = topicEntry(blobRefB),
-            assetSource = assetSource("https://assets.example/{blob_ref}"),
+            source = source("https://assets.example/{blob_ref}"),
         ) { error -> if (error != null) fail<Unit>("Expected success, got error: $error") }
 
         val targetA = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobRefA)
@@ -242,17 +242,14 @@ class TopicFetcherTest {
     private fun leftoverTempFiles(dir: File?): List<File> =
         dir?.listFiles()?.filter { it.name.startsWith("rc_topic_") }.orEmpty()
 
-    private fun topicEntry(blobRef: String) =
-        TopicEntry(assetBlobRef = blobRef, contentType = "application/json", prefetch = true)
+    private fun topicEntry(blobRef: String) = TopicEntry(blobRef = blobRef)
 
-    private fun assetSource(urlFormat: String) =
-        AssetSource(
+    private fun source(urlFormat: String) =
+        Source(
             id = "primary",
             urlFormat = urlFormat,
             priority = 0,
             weight = 100,
-            blacklistTimeSeconds = 600L,
-            testUrl = null,
         )
 
     private fun sha256Hex(bytes: ByteArray): String {
