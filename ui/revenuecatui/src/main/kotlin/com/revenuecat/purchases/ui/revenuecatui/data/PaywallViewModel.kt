@@ -781,14 +781,14 @@ internal class PaywallViewModelImpl(
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
-        // Apply the package step's default package as context for steps that have no own
-        // package components. setContextPackage is idempotent so it is safe to call on
-        // every visit — it will only take effect the first time.
-        if (newState is PaywallState.Loaded.Components && !newState.hasAnyPackages) {
+        // Apply the workflow's default package to all steps. setDefaultPackage is idempotent
+        // so it is safe to call on every visit — it will only take effect the first time.
+        // On steps with their own packages, ownSelection takes precedence over defaultPackageInfo.
+        if (newState is PaywallState.Loaded.Components) {
             val defaultPackage = workflow.singleStepFallbackId
                 ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
             if (defaultPackage != null) {
-                newState.setContextPackage(defaultPackage)
+                newState.setDefaultPackage(defaultPackage)
             }
         }
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {

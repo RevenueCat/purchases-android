@@ -439,8 +439,8 @@ class PaywallViewModelWorkflowTest {
 
         val step1State = vm.workflowState.value?.stepStates?.get("step-1")
         assertThat(step1State).isNotNull()
-        // Step-1 has no PackageComponents → hasAnyPackages is false → context from fallback step's
-        // default selection. The fallback step (step-2) defaults to MONTHLY.
+        // Step-1 has no PackageComponents → ownSelection is null → defaultPackageInfo from
+        // singleStepFallbackId (step-2) is used. Step-2 defaults to MONTHLY.
         assertThat(step1State!!.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.MONTHLY.identifier)
     }

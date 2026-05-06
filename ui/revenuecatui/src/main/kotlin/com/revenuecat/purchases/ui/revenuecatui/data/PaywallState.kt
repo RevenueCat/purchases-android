@@ -248,16 +248,13 @@ internal sealed interface PaywallState {
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
-            private var contextPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
+            private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
 
-            internal fun setContextPackage(info: SelectedPackageInfo) {
-                // Idempotency lock: context is set once and never overwritten, so back
+            internal fun setDefaultPackage(info: SelectedPackageInfo) {
+                // Idempotency lock: default is set once and never overwritten, so back
                 // navigation always shows the same content as the initial render.
-                if (contextPackageInfo == null) contextPackageInfo = info
+                if (defaultPackageInfo == null) defaultPackageInfo = info
             }
-
-            internal val hasAnyPackages: Boolean
-                get() = packages.hasAnyPackages
 
             val selectedPackageInfo by derivedStateOf {
                 val ownSelection = selectedPackageUniqueId?.let { uniqueId ->
@@ -270,7 +267,7 @@ internal sealed interface PaywallState {
                         )
                     }
                 }
-                ownSelection ?: contextPackageInfo
+                ownSelection ?: defaultPackageInfo
             }
 
             private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {
