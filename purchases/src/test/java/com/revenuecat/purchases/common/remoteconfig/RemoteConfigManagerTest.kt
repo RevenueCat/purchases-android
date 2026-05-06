@@ -39,6 +39,7 @@ class RemoteConfigManagerTest {
     fun setUp() {
         backend = mockk()
         topicFetcher = mockk()
+        coEvery { topicFetcher.cleanupUnreferencedTopics(any()) } returns Unit
         diskCache = mockk(relaxed = true)
         fakeNow = Date(0)
         dateProvider = mockk()
@@ -105,6 +106,7 @@ class RemoteConfigManagerTest {
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
         verify(exactly = 0) { diskCache.write(any()) }
+        coVerify(exactly = 1) { topicFetcher.cleanupUnreferencedTopics(any()) }
 
         // Cache wasn't populated, so a follow-up call still hits the backend.
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
@@ -135,6 +137,7 @@ class RemoteConfigManagerTest {
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
         verify(exactly = 0) { diskCache.write(any()) }
+        coVerify(exactly = 1) { topicFetcher.cleanupUnreferencedTopics(emptyMap()) }
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -166,6 +169,12 @@ class RemoteConfigManagerTest {
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
         verify(exactly = 0) { diskCache.write(any()) }
+        // Cleanup still runs and includes the experiment-only topic's blob ref in the reference set.
+        coVerify(exactly = 1) {
+            topicFetcher.cleanupUnreferencedTopics(
+                mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to setOf("blob")),
+            )
+        }
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -316,6 +325,69 @@ class RemoteConfigManagerTest {
                 source = src,
             )
         }
+    }
+
+    @Test
+    fun `triggers cleanup with all entryId blob refs after successful download`() = runTest {
+        val manager = newManager(testScheduler)
+        val defaultEntry = topicEntry("blob-default")
+        val experimentEntry = topicEntry("blob-experiment")
+        val response = response(
+            blobSources = listOf(source("primary")),
+            topics = mapOf(
+                Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf(
+                    "default" to defaultEntry,
+                    "EXPERIMENT_A" to experimentEntry,
+                ),
+            ),
+        )
+        mockBackendSuccess(response)
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns null
+        val capturedReferenced = slot<Map<Topic, Set<String>>>()
+        coEvery { topicFetcher.cleanupUnreferencedTopics(capture(capturedReferenced)) } returns Unit
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        assertThat(capturedReferenced.captured).isEqualTo(
+            mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to setOf("blob-default", "blob-experiment")),
+        )
+    }
+
+    @Test
+    fun `does not trigger cleanup when a fetcher download fails`() = runTest {
+        val manager = newManager(testScheduler)
+        val response = response(
+            blobSources = listOf(source("primary")),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        val fetcherError = PurchasesError(PurchasesErrorCode.NetworkError, "fetcher failed")
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns fetcherError
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
+    }
+
+    @Test
+    fun `does not trigger cleanup when backend errors`() = runTest {
+        val manager = newManager(testScheduler)
+        val backendError = PurchasesError(PurchasesErrorCode.NetworkError, "backend down")
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            backend.getRemoteConfig(any(), any(), capture(onErrorSlot))
+        } answers { onErrorSlot.captured.invoke(backendError) }
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
     }
 
     @Test
