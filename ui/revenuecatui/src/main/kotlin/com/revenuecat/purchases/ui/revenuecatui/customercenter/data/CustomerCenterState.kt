@@ -28,6 +28,7 @@ internal sealed class CustomerCenterState(
     data class Success(
         @get:JvmSynthetic val customerCenterConfigData: CustomerCenterConfigData,
         @get:JvmSynthetic val purchases: List<PurchaseInformation> = emptyList(),
+        @get:JvmSynthetic val allPurchases: List<PurchaseInformation> = emptyList(),
         @get:JvmSynthetic val mainScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val detailScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,
@@ -43,6 +44,17 @@ internal sealed class CustomerCenterState(
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination
+
+        val shouldShowPurchaseHistory: Boolean
+            get() {
+                if (customerCenterConfigData.support.displayPurchaseHistoryLink != true) return false
+                val activeSubscriptions = allPurchases.filter { it.isSubscription && !it.isExpired }
+                val inactiveSubscriptions = allPurchases.filter { it.isSubscription && it.isExpired }
+                val nonSubscriptions = allPurchases.filter { !it.isSubscription }
+                return (activeSubscriptions.isNotEmpty() && inactiveSubscriptions.isNotEmpty()) ||
+                    (activeSubscriptions.isEmpty() && inactiveSubscriptions.size > 1) ||
+                    nonSubscriptions.size > 2
+            }
     }
 }
 
