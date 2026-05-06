@@ -250,8 +250,10 @@ internal sealed interface PaywallState {
 
             private var contextPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
 
-            internal fun setContextPackage(info: SelectedPackageInfo?) {
-                contextPackageInfo = info
+            internal fun setContextPackage(info: SelectedPackageInfo) {
+                // Idempotency lock: context is set once and never overwritten, so back
+                // navigation always shows the same content as the initial render.
+                if (contextPackageInfo == null) contextPackageInfo = info
             }
 
             internal val hasAnyPackages: Boolean

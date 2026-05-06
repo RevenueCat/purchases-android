@@ -625,5 +625,20 @@ class PaywallViewModelWorkflowTest {
             .isEqualTo(PackageType.ANNUAL.identifier)
     }
 
+    @Test
+    fun `singleStepFallbackId pointing to missing step produces no context and does not crash`() {
+        val (result, offerings) = makeContextPackageWorkflow()
+        val brokenResult = result.copy(
+            workflow = result.workflow.copy(singleStepFallbackId = "non-existent-step"),
+        )
+        val vm = createVm()
+
+        vm.updateStateFromWorkflow(brokenResult, offerings, null)
+
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1State).isNotNull()
+        assertThat(step1State!!.selectedPackageInfo).isNull()
+    }
+
     // endregion
 }

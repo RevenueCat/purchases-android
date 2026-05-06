@@ -757,6 +757,9 @@ internal class PaywallViewModelImpl(
         // for early packageless steps to use as context.
         val stepWithPackagesId = workflow.singleStepFallbackId
         val stepWithPackages = stepWithPackagesId?.let { workflow.steps[it] }
+        if (stepWithPackagesId != null && stepWithPackages == null) {
+            Logger.w("Workflow singleStepFallbackId '$stepWithPackagesId' not found in steps")
+        }
         if (stepWithPackages != null && stepWithPackages.id != initialStep.id) {
             buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
         }
@@ -779,12 +782,9 @@ internal class PaywallViewModelImpl(
             workflowStepStateCache[step.id] = newState
         }
         // Apply the package step's default package as context for steps that have no own
-        // package components. Context is set once on first build and never overwritten, so
-        // back navigation always shows the same content as the initial render.
-        if (newState is PaywallState.Loaded.Components &&
-            !newState.hasAnyPackages &&
-            newState.selectedPackageInfo == null
-        ) {
+        // package components. setContextPackage is idempotent so it is safe to call on
+        // every visit — it will only take effect the first time.
+        if (newState is PaywallState.Loaded.Components && !newState.hasAnyPackages) {
             val defaultPackage = workflow.singleStepFallbackId
                 ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
             if (defaultPackage != null) {
