@@ -876,6 +876,9 @@ internal class PaywallViewModelImpl(
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
                     workflowStepStateCache[stepId] = computed
                     computed.update(localeList = _lastLocaleList.value.toFrameworkLocaleList())
+                    workflow.singleStepFallbackId
+                        ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
+                        ?.let { computed.setDefaultPackage(it) }
                 }
             }
             _workflowState.value = _workflowState.value?.copy(stepStates = workflowStepStateCache.toMap())
