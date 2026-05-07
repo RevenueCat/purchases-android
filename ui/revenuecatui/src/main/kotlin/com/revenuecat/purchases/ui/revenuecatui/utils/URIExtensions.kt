@@ -4,8 +4,6 @@ package com.revenuecat.purchases.ui.revenuecatui.utils
 
 import android.net.Uri
 import java.net.URI
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 @JvmSynthetic
 internal fun URI.appendQueryParameter(name: String, value: String): URI {
