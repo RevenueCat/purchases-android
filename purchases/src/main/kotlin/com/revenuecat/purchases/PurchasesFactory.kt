@@ -201,6 +201,10 @@ internal class PurchasesFactory(
                 httpClient,
                 backendHelper,
             )
+            val coilImageDownloader = CoilImageDownloader(application)
+            val paywallComponentsImagePreDownloader = PaywallComponentsImagePreDownloader(
+                coilImageDownloader = coilImageDownloader,
+            )
 
             val workflowManager = WorkflowManager(
                 backend = backend,
@@ -359,7 +363,10 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
-                OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                OfferingImagePreDownloader(
+                    coilImageDownloader = coilImageDownloader,
+                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
+                ),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
