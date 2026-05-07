@@ -342,7 +342,7 @@ internal class PurchasesOrchestrator(
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
             if (firstTimeInForeground) {
-                refreshRemoteConfigIfEnabled(identityManager.currentAppUserID)
+                refreshRemoteConfigIfEnabled()
             }
         }
     }
@@ -770,7 +770,7 @@ internal class PurchasesOrchestrator(
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
                         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-                        refreshRemoteConfigIfEnabled(newAppUserID)
+                        refreshRemoteConfigIfEnabled()
                         backupManager.dataChanged()
                     },
                     onError = { error ->
@@ -804,7 +804,7 @@ internal class PurchasesOrchestrator(
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
                 updateAllCaches(identityManager.currentAppUserID, callback)
-                refreshRemoteConfigIfEnabled(identityManager.currentAppUserID)
+                refreshRemoteConfigIfEnabled()
                 backupManager.dataChanged()
             }
         }
@@ -1265,7 +1265,7 @@ internal class PurchasesOrchestrator(
         identityManager.switchUser(newAppUserID)
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-        refreshRemoteConfigIfEnabled(newAppUserID)
+        refreshRemoteConfigIfEnabled()
     }
     //endregion
 
@@ -1287,10 +1287,9 @@ internal class PurchasesOrchestrator(
         dispatcher.enqueue({ command() }, Delay.NONE)
     }
 
-    private fun refreshRemoteConfigIfEnabled(appUserID: String) {
+    private fun refreshRemoteConfigIfEnabled() {
         if (!BuildConfig.ENABLE_REMOTE_CONFIG) return
         remoteConfigManager.updateRemoteConfigIfNeeded(
-            appUserID = appUserID,
             appInBackground = state.appInBackground,
         )
     }
