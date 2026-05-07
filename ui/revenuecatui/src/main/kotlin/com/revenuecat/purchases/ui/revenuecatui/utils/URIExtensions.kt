@@ -18,5 +18,5 @@ internal fun URI.appendQueryParameter(name: String, value: String): URI {
     return URI("$uriWithoutFragment$separator$encodedParameter$fragment")
 }
 
-internal fun String.encodeQueryParameterComponent(): String =
+private fun String.encodeQueryParameterComponent(): String =
     URLEncoder.encode(this, StandardCharsets.UTF_8.name()).replace("+", "%20")

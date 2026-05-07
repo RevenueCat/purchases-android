@@ -2006,7 +2006,7 @@ class PaywallViewModelTest {
         val model = create(offering = offeringWithWPL)
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
@@ -2040,12 +2040,12 @@ class PaywallViewModelTest {
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
