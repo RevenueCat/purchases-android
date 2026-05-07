@@ -27,7 +27,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
@@ -68,6 +70,23 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
+
+@Composable
+private fun PaywallFontScaling(
+    automaticallyScaleFontSize: Boolean,
+    content: @Composable () -> Unit,
+) {
+    if (automaticallyScaleFontSize) {
+        content()
+    } else {
+        val density = LocalDensity.current
+        CompositionLocalProvider(
+            LocalDensity provides Density(density.density, fontScale = 1f),
+        ) {
+            content()
+        }
+    }
+}
 
 @Suppress("LongMethod", "ViewModelForwarding")
 @Composable
@@ -147,20 +166,24 @@ internal fun InternalPaywall(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
-            val workflowState = viewModel.workflowState.value
-            if (workflowState != null) {
-                LoadedWorkflowPaywall(
-                    workflowState = workflowState,
-                    onTransitionComplete = viewModel::onTransitionComplete,
-                    clickHandler = rememberPaywallActionHandler(viewModel),
-                    componentInteractionTracker = componentInteractionTracker,
-                )
-            } else {
-                LoadedPaywallComponents(
-                    state = state,
-                    clickHandler = rememberPaywallActionHandler(viewModel),
-                    componentInteractionTracker = componentInteractionTracker,
-                )
+            PaywallFontScaling(
+                automaticallyScaleFontSize = state.offering.paywallComponents?.data?.automaticallyScaleFontSize ?: true,
+            ) {
+                val workflowState = viewModel.workflowState.value
+                if (workflowState != null) {
+                    LoadedWorkflowPaywall(
+                        workflowState = workflowState,
+                        onTransitionComplete = viewModel::onTransitionComplete,
+                        clickHandler = rememberPaywallActionHandler(viewModel),
+                        componentInteractionTracker = componentInteractionTracker,
+                    )
+                } else {
+                    LoadedPaywallComponents(
+                        state = state,
+                        clickHandler = rememberPaywallActionHandler(viewModel),
+                        componentInteractionTracker = componentInteractionTracker,
+                    )
+                }
             }
         } else {
             Logger.e(
