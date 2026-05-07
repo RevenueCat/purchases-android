@@ -508,6 +508,7 @@ internal open class BasePurchasesTest {
             backupManager = mockBackupManager,
             purchaseParamsValidator = mockPurchaseParamsValidator,
             workflowManager = mockk(relaxed = true),
+            remoteConfigManager = mockk(relaxed = true),
         )
 
         purchases = Purchases(

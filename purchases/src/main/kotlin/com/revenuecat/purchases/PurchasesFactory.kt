@@ -36,6 +36,9 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.TopicFetcher
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
@@ -54,6 +57,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
+import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -423,6 +427,15 @@ internal class PurchasesFactory(
                 baseURL = AppConfig.adEventsURL,
             )
 
+            val remoteConfigManager = RemoteConfigManager(
+                backend = backend,
+                topicFetcher = TopicFetcher(
+                    applicationContext = application,
+                    urlConnectionFactory = DefaultUrlConnectionFactory(),
+                ),
+                diskCache = RemoteConfigDiskCache(application, Backend.json),
+            )
+
             val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
@@ -454,6 +467,7 @@ internal class PurchasesFactory(
                 purchaseParamsValidator = purchaseParamsValidator,
                 workflowManager = workflowManager,
                 fileRepository = fileRepository,
+                remoteConfigManager = remoteConfigManager,
             )
 
             return Purchases(purchasesOrchestrator)

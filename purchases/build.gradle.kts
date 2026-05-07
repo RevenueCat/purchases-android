@@ -71,6 +71,12 @@ android {
         )
 
         buildConfigField(
+            type = "boolean",
+            name = "ENABLE_REMOTE_CONFIG",
+            value = (localProperties["ENABLE_REMOTE_CONFIG"] as? String ?: "false"),
+        )
+
+        buildConfigField(
             type = "String",
             name = "SAMSUNG_IAP_SDK_VERSION",
             value = "\"${libs.versions.samsungIap.get()}\"",
