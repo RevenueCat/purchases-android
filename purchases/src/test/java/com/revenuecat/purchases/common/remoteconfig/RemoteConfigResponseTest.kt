@@ -14,7 +14,15 @@ class RemoteConfigResponseTest {
     fun `deserializes full payload`() {
         val payload = """
             {
-              "sources": [
+              "api_sources": [
+                {
+                  "id": "primary",
+                  "url": "https://api.revenuecat.com/",
+                  "priority": 0,
+                  "weight": 100
+                }
+              ],
+              "blob_sources": [
                 {
                   "id": "cloudfront-primary",
                   "url_format": "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",
@@ -36,8 +44,16 @@ class RemoteConfigResponseTest {
 
         val response = json.decodeFromString<RemoteConfigResponse>(payload)
 
-        assertThat(response.sources).containsExactly(
-            Source(
+        assertThat(response.apiSources).containsExactly(
+            ApiSource(
+                id = "primary",
+                url = "https://api.revenuecat.com/",
+                priority = 0,
+                weight = 100,
+            ),
+        )
+        assertThat(response.blobSources).containsExactly(
+            BlobSource(
                 id = "cloudfront-primary",
                 urlFormat = "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",
                 priority = 0,
@@ -56,7 +72,8 @@ class RemoteConfigResponseTest {
     fun `missing sources and manifest fall back to defaults`() {
         val response = json.decodeFromString<RemoteConfigResponse>("""{}""")
 
-        assertThat(response.sources).isEmpty()
+        assertThat(response.apiSources).isEmpty()
+        assertThat(response.blobSources).isEmpty()
         assertThat(response.manifest.topics).isEmpty()
     }
 
@@ -65,7 +82,16 @@ class RemoteConfigResponseTest {
         val payload = """
             {
               "future_top_level": true,
-              "sources": [
+              "api_sources": [
+                {
+                  "id": "primary",
+                  "url": "https://api.revenuecat.com/",
+                  "priority": 0,
+                  "weight": 100,
+                  "future_field": "ignored"
+                }
+              ],
+              "blob_sources": [
                 {
                   "id": "primary",
                   "url_format": "https://assets.example/{blob_ref}",
@@ -90,15 +116,25 @@ class RemoteConfigResponseTest {
 
         val response = json.decodeFromString<RemoteConfigResponse>(payload)
 
-        assertThat(response.sources).hasSize(1)
-        assertThat(response.sources[0].id).isEqualTo("primary")
+        assertThat(response.apiSources).hasSize(1)
+        assertThat(response.apiSources[0].id).isEqualTo("primary")
+        assertThat(response.blobSources).hasSize(1)
+        assertThat(response.blobSources[0].id).isEqualTo("primary")
         val pem = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
         assertThat(pem?.get("DEFAULT")?.blobRef).isEqualTo("abc")
     }
 
     @Test
-    fun `wrong type for sources is rejected`() {
-        val payload = """{"sources": "not-an-array"}"""
+    fun `wrong type for blob_sources is rejected`() {
+        val payload = """{"blob_sources": "not-an-array"}"""
+
+        assertThatThrownBy { json.decodeFromString<RemoteConfigResponse>(payload) }
+            .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
+    fun `wrong type for api_sources is rejected`() {
+        val payload = """{"api_sources": "not-an-array"}"""
 
         assertThatThrownBy { json.decodeFromString<RemoteConfigResponse>(payload) }
             .isInstanceOf(SerializationException::class.java)
@@ -215,8 +251,16 @@ class RemoteConfigResponseTest {
     @Test
     fun `round trip preserves known topics`() {
         val original = RemoteConfigResponse(
-            sources = listOf(
-                Source(
+            apiSources = listOf(
+                ApiSource(
+                    id = "primary",
+                    url = "https://api.revenuecat.com/",
+                    priority = 0,
+                    weight = 100,
+                ),
+            ),
+            blobSources = listOf(
+                BlobSource(
                     id = "cdn",
                     urlFormat = "https://assets.example/{blob_ref}",
                     priority = 0,

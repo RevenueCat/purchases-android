@@ -1,5 +1,13 @@
 {
-  "sources": [
+  "api_sources": [
+    {
+      "id": "primary",
+      "url": "https://api.revenuecat.com/",
+      "priority": 0,
+      "weight": 100
+    }
+  ],
+  "blob_sources": [
     {
       "id": "cloudfront-primary",
       "url_format": "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",

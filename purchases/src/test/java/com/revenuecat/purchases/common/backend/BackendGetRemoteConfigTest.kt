@@ -35,7 +35,6 @@ class BackendGetRemoteConfigTest {
 
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
     private val mockResponseFilename = "get_remote_config_success.json"
-    private val testUserID = "test-user-id"
 
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient
@@ -49,6 +48,7 @@ class BackendGetRemoteConfigTest {
             every { baseURL } returns mockBaseURL
             every { customEntitlementComputation } returns false
             every { fallbackBaseURLs } returns emptyList()
+            every { isDebugBuild } returns false
         }
         httpClient = mockk()
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
@@ -79,19 +79,24 @@ class BackendGetRemoteConfigTest {
         mockHttpResult(payload = loadJSON(mockResponseFilename))
         var response: RemoteConfigResponse? = null
         backend.getRemoteConfig(
-            appUserID = testUserID,
             appInBackground = false,
             onSuccess = { response = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
         val parsed = response ?: fail("Expected response to be non-null").let { return }
-        assertThat(parsed.sources).hasSize(1)
-        assertThat(parsed.sources[0].id).isEqualTo("cloudfront-primary")
-        assertThat(parsed.sources[0].urlFormat)
+        assertThat(parsed.apiSources).hasSize(1)
+        assertThat(parsed.apiSources[0].id).isEqualTo("primary")
+        assertThat(parsed.apiSources[0].url).isEqualTo("https://api.revenuecat.com/")
+        assertThat(parsed.apiSources[0].priority).isEqualTo(0)
+        assertThat(parsed.apiSources[0].weight).isEqualTo(100)
+
+        assertThat(parsed.blobSources).hasSize(1)
+        assertThat(parsed.blobSources[0].id).isEqualTo("cloudfront-primary")
+        assertThat(parsed.blobSources[0].urlFormat)
             .isEqualTo("https://assets.revenuecat.com/rc_app_1234/{blob_ref}")
-        assertThat(parsed.sources[0].priority).isEqualTo(0)
-        assertThat(parsed.sources[0].weight).isEqualTo(100)
+        assertThat(parsed.blobSources[0].priority).isEqualTo(0)
+        assertThat(parsed.blobSources[0].weight).isEqualTo(100)
 
         val pemTopic = parsed.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
         assertThat(pemTopic).isNotNull
@@ -104,7 +109,8 @@ class BackendGetRemoteConfigTest {
     fun `getRemoteConfig drops unknown topic names from manifest`() {
         val payloadWithUnknownTopic = """
             {
-              "sources": [],
+              "api_sources": [],
+              "blob_sources": [],
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
@@ -125,7 +131,6 @@ class BackendGetRemoteConfigTest {
 
         var response: RemoteConfigResponse? = null
         backend.getRemoteConfig(
-            appUserID = testUserID,
             appInBackground = false,
             onSuccess = { response = it },
             onError = { error -> fail("Expected success. Got error: $error") },
@@ -141,7 +146,16 @@ class BackendGetRemoteConfigTest {
         val payloadWithExtraFields = """
             {
               "extra_top_level": "ignored",
-              "sources": [
+              "api_sources": [
+                {
+                  "id": "primary",
+                  "url": "https://api.revenuecat.com/",
+                  "priority": 0,
+                  "weight": 100,
+                  "future_field": true
+                }
+              ],
+              "blob_sources": [
                 {
                   "id": "primary",
                   "url_format": "https://assets.example/{blob_ref}",
@@ -159,14 +173,14 @@ class BackendGetRemoteConfigTest {
 
         var response: RemoteConfigResponse? = null
         backend.getRemoteConfig(
-            appUserID = testUserID,
             appInBackground = false,
             onSuccess = { response = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
         assertThat(response).isNotNull
-        assertThat(response?.sources).hasSize(1)
+        assertThat(response?.apiSources).hasSize(1)
+        assertThat(response?.blobSources).hasSize(1)
     }
 
     @Test
@@ -177,7 +191,6 @@ class BackendGetRemoteConfigTest {
         )
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
-            appUserID = testUserID,
             appInBackground = false,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
@@ -187,10 +200,9 @@ class BackendGetRemoteConfigTest {
 
     @Test
     fun `getRemoteConfig surfaces serialization errors as PurchasesError`() {
-        mockHttpResult(payload = """{"sources": "not-an-array"}""")
+        mockHttpResult(payload = """{"blob_sources": "not-an-array"}""")
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
-            appUserID = testUserID,
             appInBackground = false,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
@@ -199,17 +211,15 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig dedups concurrent calls with same user`() {
+    fun `getRemoteConfig dedups concurrent calls`() {
         mockHttpResult(payload = loadJSON(mockResponseFilename), delayMs = 200)
         val lock = CountDownLatch(2)
         asyncBackend.getRemoteConfig(
-            appUserID = testUserID,
             appInBackground = false,
             onSuccess = { lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
         asyncBackend.getRemoteConfig(
-            appUserID = testUserID,
             appInBackground = false,
             onSuccess = { lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
@@ -219,7 +229,7 @@ class BackendGetRemoteConfigTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRemoteConfig(testUserID),
+                Endpoint.GetRemoteConfig,
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),

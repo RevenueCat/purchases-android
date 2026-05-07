@@ -1115,12 +1115,11 @@ internal class Backend(
     }
 
     fun getRemoteConfig(
-        appUserID: String,
         appInBackground: Boolean,
         onSuccess: (RemoteConfigResponse) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val endpoint = Endpoint.GetRemoteConfig(userId = appUserID)
+        val endpoint = Endpoint.GetRemoteConfig
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
 

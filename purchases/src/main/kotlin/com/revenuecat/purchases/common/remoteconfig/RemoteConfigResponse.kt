@@ -11,12 +11,21 @@ import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 internal data class RemoteConfigResponse(
-    val sources: List<Source> = emptyList(),
+    @SerialName("api_sources") val apiSources: List<ApiSource> = emptyList(),
+    @SerialName("blob_sources") val blobSources: List<BlobSource> = emptyList(),
     val manifest: Manifest = Manifest(),
 )
 
 @Serializable
-internal data class Source(
+internal data class ApiSource(
+    val id: String,
+    val url: String,
+    val priority: Int,
+    val weight: Int,
+)
+
+@Serializable
+internal data class BlobSource(
     val id: String,
     @SerialName("url_format") val urlFormat: String,
     val priority: Int,
