@@ -1,79 +1,74 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val topicFetcher: TopicFetcher,
+    dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+
     fun updateRemoteConfigIfNeeded(
-        appUserID: String,
         appInBackground: Boolean,
         completion: ((PurchasesError?) -> Unit)? = null,
     ) {
-        backend.getRemoteConfig(
-            appUserID = appUserID,
-            appInBackground = appInBackground,
-            onSuccess = { response -> fetchTopicsForResponse(response, completion) },
-            onError = { error ->
-                errorLog { "Failed to fetch remote config: $error" }
-                completion?.invoke(error)
-            },
-        )
+        scope.launch {
+            completion?.invoke(refresh(appInBackground))
+        }
     }
 
-    private fun fetchTopicsForResponse(
-        response: RemoteConfigResponse,
-        completion: ((PurchasesError?) -> Unit)?,
-    ) {
-        val source = response.sources.firstOrNull()
+    private suspend fun refresh(appInBackground: Boolean): PurchasesError? {
+        val response = try {
+            getRemoteConfig(appInBackground)
+        } catch (e: PurchasesException) {
+            errorLog { "Failed to fetch remote config: ${e.error}" }
+            return e.error
+        }
+        val source = response.blobSources.firstOrNull()
         val tasks = response.manifest.topics.mapNotNull { (topic, variants) ->
             val entry = variants[DEFAULT_VARIANT] ?: return@mapNotNull null
             TopicTask(topic, DEFAULT_VARIANT, entry)
         }
-        if (source == null || tasks.isEmpty()) {
-            completion?.invoke(null)
-            return
-        }
-        val tracker = CompletionTracker(tasks.size, completion)
-        tasks.forEach { task ->
-            topicFetcher.fetchTopicIfNeeded(
-                topic = task.topic,
-                variant = task.variant,
-                topicEntry = task.entry,
-                source = source,
-            ) { error -> tracker.recordCompletion(error) }
+        if (source == null || tasks.isEmpty()) return null
+        return coroutineScope {
+            tasks.map { task ->
+                async {
+                    topicFetcher.fetchTopicIfNeeded(
+                        topic = task.topic,
+                        variant = task.variant,
+                        topicEntry = task.entry,
+                        source = source,
+                    )
+                }
+            }.awaitAll().firstNotNullOfOrNull { it }
         }
     }
+
+    private suspend fun getRemoteConfig(appInBackground: Boolean): RemoteConfigResponse =
+        suspendCancellableCoroutine { cont ->
+            backend.getRemoteConfig(
+                appInBackground = appInBackground,
+                onSuccess = { cont.safeResume(it) },
+                onError = { cont.safeResumeWithException(PurchasesException(it)) },
+            )
+        }
 
     private data class TopicTask(val topic: Topic, val variant: String, val entry: TopicEntry)
-
-    private class CompletionTracker(
-        totalTasks: Int,
-        private val completion: ((PurchasesError?) -> Unit)?,
-    ) {
-        private val lock = Any()
-        private var remaining = totalTasks
-        private var firstError: PurchasesError? = null
-
-        fun recordCompletion(error: PurchasesError?) {
-            val shouldInvoke: Boolean
-            val errorToReport: PurchasesError?
-            synchronized(lock) {
-                if (error != null && firstError == null) {
-                    firstError = error
-                }
-                remaining -= 1
-                shouldInvoke = remaining == 0
-                errorToReport = firstError
-            }
-            if (shouldInvoke) {
-                completion?.invoke(errorToReport)
-            }
-        }
-    }
 
     private companion object {
         const val DEFAULT_VARIANT = "DEFAULT"
