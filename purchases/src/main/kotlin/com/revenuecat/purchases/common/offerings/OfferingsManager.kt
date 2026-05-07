@@ -25,6 +25,8 @@ import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
+internal typealias WorkflowPreWarmer = (appUserID: String, offeringIdentifier: String, appInBackground: Boolean) -> Unit
+
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OfferingsManager(
@@ -38,6 +40,7 @@ internal class OfferingsManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val workflowPreWarmer: WorkflowPreWarmer? = null,
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
@@ -193,6 +196,8 @@ internal class OfferingsManager(
             appInBackground,
             { body, originalDataSource ->
                 createAndCacheOfferings(
+                    appUserID = appUserID,
+                    appInBackground = appInBackground,
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
@@ -219,6 +224,8 @@ internal class OfferingsManager(
                                 }
                             } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
+                                appUserID = appUserID,
+                                appInBackground = appInBackground,
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
@@ -236,6 +243,8 @@ internal class OfferingsManager(
     }
 
     private fun createAndCacheOfferings(
+        appUserID: String,
+        appInBackground: Boolean,
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
@@ -252,6 +261,7 @@ internal class OfferingsManager(
             onSuccess = { offeringsResultData ->
                 offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
+                    workflowPreWarmer?.invoke(appUserID, it.identifier, appInBackground)
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)

@@ -59,6 +59,7 @@ import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
+import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -203,17 +204,9 @@ internal class PurchasesFactory(
                 backendHelper,
             )
             val coilImageDownloader = CoilImageDownloader(application)
+            val fileRepository = DefaultFileRepository(application)
             val paywallComponentsImagePreDownloader = PaywallComponentsImagePreDownloader(
                 coilImageDownloader = coilImageDownloader,
-            )
-
-            val workflowManager = WorkflowManager(
-                backend = backend,
-                workflowDetailResolver = WorkflowDetailResolver(
-                    workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                        fileRepository = DefaultFileRepository(contextForStorage, "rc_compiled_workflows"),
-                    ),
-                ),
             )
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
@@ -360,6 +353,19 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
             )
 
+            val workflowManager = WorkflowManager(
+                backend = backend,
+                workflowDetailResolver = WorkflowDetailResolver(
+                    workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
+                        fileRepository = DefaultFileRepository(contextForStorage, "rc_compiled_workflows"),
+                    ),
+                ),
+                workflowAssetPreDownloader = WorkflowAssetPreDownloader(
+                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
+                    offeringFontPreDownloader = offeringFontPreDownloader,
+                ),
+            )
+
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
@@ -371,6 +377,15 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
+                workflowPreWarmer = { appUserID, offeringIdentifier, appInBackground ->
+                    workflowManager.getWorkflow(
+                        appUserID = appUserID,
+                        workflowId = offeringIdentifier,
+                        appInBackground = appInBackground,
+                        onSuccess = {},
+                        onError = {},
+                    )
+                },
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
@@ -438,6 +453,7 @@ internal class PurchasesFactory(
                 virtualCurrencyManager = virtualCurrencyManager,
                 purchaseParamsValidator = purchaseParamsValidator,
                 workflowManager = workflowManager,
+                fileRepository = fileRepository,
             )
 
             return Purchases(purchasesOrchestrator)

@@ -45,6 +45,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
+    private lateinit var mockWorkflowPreWarmer: (String, String, Boolean) -> Unit
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -60,6 +61,9 @@ class OfferingsManagerTest {
         mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
+        mockWorkflowPreWarmer = mockk<(String, String, Boolean) -> Unit>().apply {
+            every { this@apply(any(), any(), any()) } just Runs
+        }
 
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
@@ -71,6 +75,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowPreWarmer = mockWorkflowPreWarmer,
         )
     }
 
@@ -515,6 +520,42 @@ class OfferingsManagerTest {
 
         verify(exactly = 1) {
             offeringImagePreDownloader.preDownloadOfferingImages(testOfferings.current!!)
+        }
+    }
+
+    @Test
+    fun `getOfferings calls workflowPreWarmer with current offering identifier after offerings are fetched`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {},
+        )
+
+        verify(exactly = 1) {
+            mockWorkflowPreWarmer(appUserId, STUB_OFFERING_IDENTIFIER, false)
+        }
+    }
+
+    @Test
+    fun `getOfferings does not call workflowPreWarmer if current offering is null`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory(testOfferings.copy(current = null))
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {},
+        )
+
+        verify(exactly = 0) {
+            mockWorkflowPreWarmer(any(), any(), any())
         }
     }
 

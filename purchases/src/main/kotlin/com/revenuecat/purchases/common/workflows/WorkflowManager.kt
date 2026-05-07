@@ -5,8 +5,10 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,6 +19,7 @@ import java.io.IOException
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
+    private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -38,7 +41,13 @@ internal class WorkflowManager(
             onSuccess = { response ->
                 scope.launch {
                     try {
-                        onSuccess(workflowDetailResolver.resolve(response))
+                        val result = workflowDetailResolver.resolve(response)
+                        try {
+                            workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow)
+                        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                            errorLog(e) { "Failed to pre-download workflow assets — delivering result anyway" }
+                        }
+                        onSuccess(result)
                     } catch (e: IllegalStateException) {
                         onError(e.toPurchasesError())
                     } catch (e: IOException) {
