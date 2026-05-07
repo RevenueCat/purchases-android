@@ -6,7 +6,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
@@ -28,7 +27,7 @@ import java.util.Date
 class PurchasedProductsFetcherTest {
     private lateinit var fetcher: PurchasedProductsFetcher
 
-    private lateinit var deviceCache: DeviceCache
+    private lateinit var productEntitlementMappingSource: ProductEntitlementMappingSource
     private lateinit var billing: BillingAbstract
     private lateinit var dateProvider: DateProvider
 
@@ -43,20 +42,18 @@ class PurchasedProductsFetcherTest {
 
     @Before
     fun setUp() {
-        deviceCache = mockk()
+        productEntitlementMappingSource = mockk()
         billing = mockk()
         dateProvider = object : DateProvider {
             override val now: Date
                 get() = testDate
         }
-        fetcher = PurchasedProductsFetcher(deviceCache, billing, dateProvider)
+        fetcher = PurchasedProductsFetcher(productEntitlementMappingSource, billing, dateProvider)
     }
 
     @Test
     fun `checks onError callback is called`() {
-        every {
-            deviceCache.getProductEntitlementMapping()
-        } returns null
+        mockEntitlementMappingSource(null)
         var error: PurchasesError? = null
 
         fetcher.queryActiveProducts(
@@ -70,9 +67,7 @@ class PurchasedProductsFetcherTest {
 
     @Test
     fun `fails fetching products if product entitlement mappings not available`() {
-        every {
-            deviceCache.getProductEntitlementMapping()
-        } returns null
+        mockEntitlementMappingSource(null)
         var error: PurchasesError? = null
 
         fetcher.queryActiveProducts(
@@ -456,10 +451,15 @@ class PurchasedProductsFetcherTest {
         val mappings = productIdentifierToEntitlements.mapValues { (identifier, entitlements) ->
             ProductEntitlementMapping.Mapping(identifier, null, entitlements)
         }
-        val productEntitlementMapping = ProductEntitlementMapping(mappings)
+        mockEntitlementMappingSource(ProductEntitlementMapping(mappings))
+    }
+
+    private fun mockEntitlementMappingSource(mapping: ProductEntitlementMapping?) {
         every {
-            deviceCache.getProductEntitlementMapping()
-        } returns productEntitlementMapping
+            productEntitlementMappingSource.getProductEntitlementMapping(captureLambda())
+        } answers {
+            lambda<(ProductEntitlementMapping?) -> Unit>().captured.invoke(mapping)
+        }
     }
     // endregion
 }

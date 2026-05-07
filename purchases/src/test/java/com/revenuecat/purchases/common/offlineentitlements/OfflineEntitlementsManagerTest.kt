@@ -82,6 +82,7 @@ class OfflineEntitlementsManagerTest {
             deviceCache,
             appConfig,
             diagnosticsTracker,
+            useRemoteConfigForProductEntitlementMapping = false,
         )
     }
 
@@ -489,6 +490,27 @@ class OfflineEntitlementsManagerTest {
         every { appConfig.customEntitlementComputation } returns true
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale skips backend fetch when useRemoteConfigForProductEntitlementMapping is true`() {
+        offlineEntitlementsManager = OfflineEntitlementsManager(
+            backend,
+            offlineEntitlementsCalculator,
+            deviceCache,
+            appConfig,
+            diagnosticsTracker,
+            useRemoteConfigForProductEntitlementMapping = true,
+        )
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        var completionCallCount = 0
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNull()
+            completionCallCount++
+        }
+        assertThat(completionCallCount).isEqualTo(1)
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+        verify(exactly = 0) { deviceCache.isProductEntitlementMappingCacheStale() }
     }
 
     // endregion
