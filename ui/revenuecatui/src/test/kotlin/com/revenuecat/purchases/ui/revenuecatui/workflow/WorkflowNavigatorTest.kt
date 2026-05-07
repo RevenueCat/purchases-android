@@ -58,6 +58,41 @@ class WorkflowNavigatorTest {
         screenId = "screen-3",
     )
 
+    // Four-step fixture for deep-backstack test.
+    private val step4 = WorkflowStep(
+        id = "step-4",
+        type = "screen",
+        screenId = "screen-4",
+    )
+    private val step3WithTrigger = WorkflowStep(
+        id = "step-3",
+        type = "screen",
+        screenId = "screen-3",
+        triggers = listOf(
+            WorkflowTrigger(
+                name = "End",
+                type = WorkflowTriggerType.ON_PRESS,
+                actionId = "action-end",
+                componentId = "btn-end",
+            ),
+        ),
+        triggerActions = mapOf("action-end" to WorkflowTriggerAction.Step(stepId = "step-4")),
+    )
+    private val fourStepWorkflow = PublishedWorkflow(
+        id = "wfl-four",
+        displayName = "Four Step Workflow",
+        initialStepId = "step-1",
+        steps = mapOf(
+            "step-1" to step1,
+            "step-2" to step2,
+            "step-3" to step3WithTrigger,
+            "step-4" to step4,
+        ),
+        screens = emptyMap(),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+    )
+
     private val workflow = PublishedWorkflow(
         id = "wfl-test",
         displayName = "Test Workflow",
@@ -338,5 +373,71 @@ class WorkflowNavigatorTest {
         val result = navigator.triggerAction("btn-x", WorkflowTriggerType.ON_PRESS)
         assertThat(result).isNull()
         assertThat(navigator.currentStep).isEqualTo(stepWithMissingTarget)
+    }
+
+    @Test
+    fun `full back navigation restores correct order after four forward navigations`() {
+        val navigator = WorkflowNavigator(fourStepWorkflow)
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)   // → step-2
+        navigator.triggerAction("btn-finish", WorkflowTriggerType.ON_PRESS) // → step-3
+        navigator.triggerAction("btn-end", WorkflowTriggerType.ON_PRESS)    // → step-4
+        assertThat(navigator.currentStep).isEqualTo(step4)
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1", "step-2", "step-3")
+
+        assertThat(navigator.navigateBack()).isEqualTo(step3WithTrigger)
+        assertThat(navigator.navigateBack()).isEqualTo(step2)
+        assertThat(navigator.navigateBack()).isEqualTo(step1)
+        assertThat(navigator.canNavigateBack).isFalse()
+    }
+
+    @Test
+    fun `non-linear navigation loop is followed without error`() {
+        val step1Loop = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = "screen-1",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+        )
+        val step2Loop = WorkflowStep(
+            id = "step-2",
+            type = "screen",
+            screenId = "screen-2",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Back to start",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-loop",
+                    componentId = "btn-loop",
+                ),
+            ),
+            triggerActions = mapOf("action-loop" to WorkflowTriggerAction.Step(stepId = "step-1")),
+        )
+        val loopWorkflow = PublishedWorkflow(
+            id = "wfl-loop",
+            displayName = "Loop",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to step1Loop, "step-2" to step2Loop),
+            screens = emptyMap(),
+            uiConfig = UiConfig(),
+            metadata = emptyMap(),
+        )
+        val navigator = WorkflowNavigator(loopWorkflow)
+
+        navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)  // step-1 → step-2
+        assertThat(navigator.currentStep?.id).isEqualTo("step-2")
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1")
+
+        navigator.triggerAction("btn-loop", WorkflowTriggerType.ON_PRESS)  // step-2 → step-1
+        assertThat(navigator.currentStep?.id).isEqualTo("step-1")
+        assertThat(navigator.backStackSnapshot).containsExactly("step-1", "step-2")
+        assertThat(navigator.canNavigateBack).isTrue()
     }
 }

@@ -248,8 +248,16 @@ internal sealed interface PaywallState {
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
+            private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
+
+            internal fun setDefaultPackage(info: SelectedPackageInfo) {
+                // Idempotency lock: default is set once and never overwritten, so back
+                // navigation always shows the same content as the initial render.
+                if (defaultPackageInfo == null) defaultPackageInfo = info
+            }
+
             val selectedPackageInfo by derivedStateOf {
-                selectedPackageUniqueId?.let { uniqueId ->
+                val ownSelection = selectedPackageUniqueId?.let { uniqueId ->
                     findPackageInfoByUniqueId(uniqueId)?.let { info ->
                         SelectedPackageInfo(
                             rcPackage = info.pkg,
@@ -259,6 +267,7 @@ internal sealed interface PaywallState {
                         )
                     }
                 }
+                ownSelection ?: defaultPackageInfo
             }
 
             private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {

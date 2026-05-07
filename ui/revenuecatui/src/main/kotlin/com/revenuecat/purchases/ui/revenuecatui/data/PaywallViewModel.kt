@@ -753,6 +753,17 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
 
+        // Pre-compute the package step so its default package is available in cache
+        // for early packageless steps to use as context.
+        val stepWithPackagesId = workflow.singleStepFallbackId
+        val stepWithPackages = stepWithPackagesId?.let { workflow.steps[it] }
+        if (stepWithPackagesId != null && stepWithPackages == null) {
+            Logger.w("Workflow singleStepFallbackId '$stepWithPackagesId' not found in steps")
+        }
+        if (stepWithPackages != null && stepWithPackages.id != initialStep.id) {
+            buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
+        }
+
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
         preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
@@ -769,6 +780,16 @@ internal class PaywallViewModelImpl(
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
+        }
+        // Apply the workflow's default package to all steps. setDefaultPackage is idempotent
+        // so it is safe to call on every visit — it will only take effect the first time.
+        // On steps with their own packages, ownSelection takes precedence over defaultPackageInfo.
+        if (newState is PaywallState.Loaded.Components) {
+            val defaultPackage = workflow.singleStepFallbackId
+                ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
+            if (defaultPackage != null) {
+                newState.setDefaultPackage(defaultPackage)
+            }
         }
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
@@ -855,6 +876,9 @@ internal class PaywallViewModelImpl(
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
                     workflowStepStateCache[stepId] = computed
                     computed.update(localeList = _lastLocaleList.value.toFrameworkLocaleList())
+                    workflow.singleStepFallbackId
+                        ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
+                        ?.let { computed.setDefaultPackage(it) }
                 }
             }
             _workflowState.value = _workflowState.value?.copy(stepStates = workflowStepStateCache.toMap())
