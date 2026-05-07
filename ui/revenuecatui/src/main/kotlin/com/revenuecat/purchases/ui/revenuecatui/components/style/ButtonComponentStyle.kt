@@ -21,7 +21,7 @@ internal data class ButtonComponentStyle(
     @get:JvmSynthetic
     val componentName: String? = null,
     @get:JvmSynthetic
-    val componentId: String? = null,
+    override val componentId: String? = null,
 ) : ComponentStyle {
 
     internal sealed interface Action {

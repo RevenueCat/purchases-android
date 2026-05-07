@@ -73,6 +73,8 @@ constructor(
     public val overrides: List<ComponentOverride<PartialTextComponent>> = emptyList(),
     @get:JvmSynthetic
     public val name: String? = null,
+    @get:JvmSynthetic
+    public val id: String? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI

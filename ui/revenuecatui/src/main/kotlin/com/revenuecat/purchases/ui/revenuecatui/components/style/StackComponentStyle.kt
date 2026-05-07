@@ -106,4 +106,6 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyHorizontalWindowInsets: Boolean = false,
+    @get:JvmSynthetic
+    override val componentId: String? = null,
 ) : ComponentStyle, PackageContext

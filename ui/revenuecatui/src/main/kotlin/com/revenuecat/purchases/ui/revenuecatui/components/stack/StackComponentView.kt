@@ -42,6 +42,7 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
@@ -757,6 +758,7 @@ private fun MainStackComponent(
             interactionSource = resolvedInteractionSource,
             indication = LocalIndication.current,
             enabled = enabled,
+            role = Role.Button,
             onClick = onStackClick,
         )
     } else {
@@ -806,6 +808,7 @@ private fun MainStackComponent(
                     interactionSource = resolvedInteractionSource,
                     indication = null,
                     enabled = enabled,
+                    role = Role.Button,
                     onClick = onStackClick,
                 ),
             ) {

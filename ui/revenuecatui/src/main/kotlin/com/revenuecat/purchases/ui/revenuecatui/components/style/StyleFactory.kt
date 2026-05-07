@@ -909,6 +909,7 @@ internal class StyleFactory(
             countFrom = countFrom,
             overrides = presentedOverrides,
             applyTopWindowInsets = applyTopWindowInsets,
+            componentId = component.id,
         )
     }
 
@@ -972,6 +973,7 @@ internal class StyleFactory(
             variableLocalizations = variableLocalizations,
             overrides = presentedOverrides,
             componentName = component.name,
+            componentId = component.id,
         )
     }
 
@@ -1010,6 +1012,7 @@ internal class StyleFactory(
             offerEligibility = offerEligibility,
             overrides = presentedOverrides,
             ignoreTopWindowInsets = ignoreTopWindowInsets,
+            componentId = component.id,
         )
     }
 
@@ -1098,6 +1101,7 @@ internal class StyleFactory(
                 tabIndex = tabControlIndex,
                 offerEligibility = offerEligibility,
                 overrides = presentedOverrides,
+                componentId = component.id,
             )
         }
 

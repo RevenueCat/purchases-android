@@ -48,6 +48,8 @@ public class IconComponent(
     public val iconBackground: IconBackground? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialIconComponent>> = emptyList(),
+    @get:JvmSynthetic
+    public val id: String? = null,
 ) : PaywallComponent {
 
     @Poko

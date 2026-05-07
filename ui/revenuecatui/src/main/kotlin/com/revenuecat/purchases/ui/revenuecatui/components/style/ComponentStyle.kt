@@ -12,4 +12,5 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 internal sealed interface ComponentStyle {
     val visible: Boolean
     val size: Size
+    val componentId: String? get() = null
 }

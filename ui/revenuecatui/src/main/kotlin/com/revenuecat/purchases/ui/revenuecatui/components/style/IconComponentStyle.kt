@@ -76,6 +76,8 @@ internal class IconComponentStyle(
     override val offerEligibility: OfferEligibility? = null,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedIconPartial>>,
+    @get:JvmSynthetic
+    override val componentId: String? = null,
 ) : ComponentStyle, PackageContext {
     @Immutable
     internal class Background(

@@ -87,4 +87,6 @@ internal class TextComponentStyle(
     val overrides: List<PresentedOverride<LocalizedTextPartial>>,
     @get:JvmSynthetic
     val componentName: String? = null,
+    @get:JvmSynthetic
+    override val componentId: String? = null,
 ) : ComponentStyle, PackageContext

@@ -73,4 +73,6 @@ internal data class ImageComponentStyle(
      */
     @get:JvmSynthetic
     val ignoreTopWindowInsets: Boolean = false,
+    @get:JvmSynthetic
+    override val componentId: String? = null,
 ) : ComponentStyle, PackageContext

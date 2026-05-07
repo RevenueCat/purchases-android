@@ -62,6 +62,8 @@ public class StackComponent(
     public val overrides: List<ComponentOverride<PartialStackComponent>> = emptyList(),
     @get:JvmSynthetic
     public val name: String? = null,
+    @get:JvmSynthetic
+    public val id: String? = null,
 ) : PaywallComponent {
 
     @Serializable(with = StackOverflowDeserializer::class)
