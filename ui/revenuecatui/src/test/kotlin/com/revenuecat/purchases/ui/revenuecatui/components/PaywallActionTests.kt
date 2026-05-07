@@ -162,6 +162,7 @@ class PaywallActionTests {
             is PaywallAction.External.WorkflowTrigger -> error(
                 "Workflow is a runtime workflow navigation action, not a ButtonComponent.Action."
             )
+            is PaywallAction.External.CloseWorkflow -> ButtonComponent.Action.CloseWorkflow
         }
 
     private fun PaywallAction.External.NavigateTo.Destination.toButtonDestination(): ButtonComponent.Destination =

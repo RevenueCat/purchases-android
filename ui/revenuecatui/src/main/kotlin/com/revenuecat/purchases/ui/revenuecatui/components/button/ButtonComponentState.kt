@@ -56,6 +56,7 @@ internal class ButtonComponentState(
     private fun ButtonComponentStyle.Action.toPaywallAction(localeId: LocaleId, componentId: String?): PaywallAction? =
         when (this) {
             is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.External.NavigateBack
+            is ButtonComponentStyle.Action.CloseWorkflow -> PaywallAction.External.CloseWorkflow
             is ButtonComponentStyle.Action.NavigateTo -> toPaywallAction(localeId)
 
             is ButtonComponentStyle.Action.PurchasePackage ->
