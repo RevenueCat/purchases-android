@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
@@ -136,6 +137,8 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_sticky_footer_override_2_light_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_override_2_dark_low_res.webp",
             "https://pawwalls.com/test_icon_2.webp",
+            "https://pawwalls.com/test_header_low_res.webp",
+            "https://pawwalls.com/test_icon_5.webp",
             "https://pawwalls.com/test_icon_3.webp",
             "https://pawwalls.com/test_icon_4.webp",
         )
@@ -284,6 +287,26 @@ class OfferingImagePreDownloaderTest {
                                             dark = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_sticky_footer_override_2_dark_low_res.webp"),
                                         ),
                                     ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                header = HeaderComponent(
+                    stack = StackComponent(
+                        components = listOf(
+                            IconComponent(
+                                baseUrl = "https://pawwalls.com",
+                                iconName = "test_icon",
+                                formats = IconComponent.Formats(
+                                    webp = "test_icon_5.webp",
+                                ),
+                            ),
+                        ),
+                        background = Background.Image(
+                            value = ThemeImageUrls(
+                                light = createMockImageUrls(
+                                    webpLowRes = "https://pawwalls.com/test_header_low_res.webp",
                                 ),
                             ),
                         ),

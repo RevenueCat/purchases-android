@@ -57,6 +57,7 @@ import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
@@ -200,6 +201,10 @@ internal class PurchasesFactory(
                 eventsDispatcher,
                 httpClient,
                 backendHelper,
+            )
+            val coilImageDownloader = CoilImageDownloader(application)
+            val paywallComponentsImagePreDownloader = PaywallComponentsImagePreDownloader(
+                coilImageDownloader = coilImageDownloader,
             )
 
             val workflowManager = WorkflowManager(
@@ -359,7 +364,10 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
-                OfferingImagePreDownloader(coilImageDownloader = CoilImageDownloader(application)),
+                OfferingImagePreDownloader(
+                    coilImageDownloader = coilImageDownloader,
+                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
+                ),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
