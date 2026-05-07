@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -195,6 +196,64 @@ class PaywallActionTests {
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocale,
     )
+
+    @Test
+    fun `CloseWorkflow inside a sheet propagates to outer handler and dismisses paywall`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val localizationKeyOpenSheet = LocalizationKey("open_sheet")
+        val localizationKeyCloseWorkflow = LocalizationKey("close_workflow_btn")
+        val localizationDataOpenSheet = LocalizationData.Text("Open Sheet")
+        val localizationDataCloseWorkflow = LocalizationData.Text("Close Workflow")
+
+        val localizations = nonEmptyMapOf(
+            defaultLocale to nonEmptyMapOf(
+                localizationKeyOpenSheet to localizationDataOpenSheet,
+                localizationKeyCloseWorkflow to localizationDataCloseWorkflow,
+            ),
+        )
+        val sheetStack = StackComponent(
+            components = listOf(
+                ButtonComponent(
+                    action = ButtonComponent.Action.CloseWorkflow,
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKeyCloseWorkflow, color = textColor)),
+                    ),
+                ),
+            ),
+        )
+        val components = listOf(
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(
+                    ButtonComponent.Destination.Sheet(
+                        id = "test-sheet",
+                        name = null,
+                        stack = sheetStack,
+                        backgroundBlur = false,
+                        size = null,
+                    ),
+                ),
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = localizationKeyOpenSheet, color = textColor)),
+                ),
+            ),
+        )
+
+        val offering = FakeOffering(components, localizations)
+        val options = PaywallOptions.Builder(dismissRequest = { }).setOffering(offering).build()
+        val viewModel = MockViewModel(offering = offering, allowsPurchases = true)
+
+        // Act — open the sheet, then click CloseWorkflow inside it
+        setContent { InternalPaywall(options, viewModel) }
+        onAllNodesWithText(localizationDataOpenSheet.value).get(0).assertIsDisplayed().performClick()
+        waitForIdle()
+        onNodeWithText(localizationDataCloseWorkflow.value).assertIsDisplayed().performClick()
+        waitForIdle()
+
+        // CloseWorkflow must propagate to the outer handler (not just hide the sheet)
+        assertEquals(1, viewModel.closePaywallCallCount)
+    }
 
     @Suppress("TestFunctionName")
     private fun FakeOffering(data: PaywallComponentsData): Offering =
