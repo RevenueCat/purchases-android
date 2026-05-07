@@ -30,14 +30,14 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
  * Each subclass carries only the properties that are meaningful for its animation type, so callers
  * pattern-match rather than interrogating nullable fields that don't apply.
  *
- * @property visibleStepIds step IDs currently held in the Compose slot table.
  * @property animatingFromStepId step ID transitioning out; null when idle.
+ * @property animatingToStepId step ID transitioning in (the current step).
  * @property animatable drives progress 0f→1f. Created fresh via [key] for each new
  *   [WorkflowPaywallUiState.pendingTransition] so it always starts at 0f.
  */
 internal sealed class WorkflowTransitionState {
-    abstract val visibleStepIds: Set<String>
     abstract val animatingFromStepId: String?
+    abstract val animatingToStepId: String
     abstract val animatable: Animatable<Float, AnimationVector1D>
 
     /**
@@ -47,8 +47,8 @@ internal sealed class WorkflowTransitionState {
      * @property animatingDirection direction of the active transition; null when idle.
      */
     class SlideInOut(
-        override val visibleStepIds: Set<String>,
         override val animatingFromStepId: String?,
+        override val animatingToStepId: String,
         val animatingDirection: NavigationDirection?,
         override val animatable: Animatable<Float, AnimationVector1D>,
     ) : WorkflowTransitionState()
@@ -103,16 +103,10 @@ internal fun rememberWorkflowTransitionState(
         }
     }
 
-    val visibleStepIds = if (pendingTransition != null) {
-        setOf(pendingTransition.fromStepId, currentStepId)
-    } else {
-        setOf(currentStepId)
-    }
-
     return when (transition) {
         is WorkflowTransitionAnimation.SlideInOut -> WorkflowTransitionState.SlideInOut(
-            visibleStepIds = visibleStepIds,
             animatingFromStepId = pendingTransition?.fromStepId,
+            animatingToStepId = currentStepId,
             animatingDirection = pendingTransition?.direction,
             animatable = animatable,
         )
@@ -123,9 +117,8 @@ internal fun rememberWorkflowTransitionState(
  * Applies the visual transform for the active [WorkflowTransitionState] to a step's content.
  *
  * For [WorkflowTransitionState.SlideInOut], translates horizontally:
- * - **Current step**: slides from `±width` to `0` as progress goes 0→1.
+ * - **Incoming step**: slides from `±width` to `0` as progress goes 0→1.
  * - **Outgoing step**: slides from `0` to `∓width` as progress goes 0→1.
- * - **Other (parked) steps**: positioned far off-screen so the GraphicsLayer skips drawing.
  *
  * State reads happen inside the layer block so animation frames invalidate the layer without
  * triggering recomposition.
@@ -133,23 +126,21 @@ internal fun rememberWorkflowTransitionState(
 internal fun Modifier.workflowTransition(
     state: WorkflowTransitionState,
     stepId: String,
-    currentStepId: String,
 ): Modifier = graphicsLayer {
-    applyWorkflowTransition(state, stepId, currentStepId, progress = state.animatable.value)
+    applyWorkflowTransition(state, stepId, progress = state.animatable.value)
 }
 
 private fun GraphicsLayerScope.applyWorkflowTransition(
     state: WorkflowTransitionState,
     stepId: String,
-    currentStepId: String,
     progress: Float,
 ): Unit = when (state) {
     is WorkflowTransitionState.SlideInOut -> {
         val directionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
         translationX = when (stepId) {
-            currentStepId -> (1f - progress) * directionFactor * size.width
+            state.animatingToStepId -> (1f - progress) * directionFactor * size.width
             state.animatingFromStepId -> -progress * directionFactor * size.width
-            else -> 2f * size.width
+            else -> 0f
         }
     }
 }

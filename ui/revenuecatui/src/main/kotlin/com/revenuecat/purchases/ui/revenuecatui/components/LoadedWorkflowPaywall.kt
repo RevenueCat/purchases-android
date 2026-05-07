@@ -136,19 +136,20 @@ private fun WorkflowStepsContent(
     // a top clip causes the hero image (which renders behind the status bar) to get cropped
     // during the slide transition.
     Box(modifier = Modifier.fillMaxSize()) {
-        for (stepId in transitionState.visibleStepIds) {
-            val stepState = stepStates[stepId] ?: continue
-            key(stepId) {
-                WorkflowStepContent(
-                    stepId = stepId,
-                    stepState = stepState,
-                    currentStepId = currentStepId,
-                    transitionState = transitionState,
-                    clickHandler = clickHandler,
-                    componentInteractionTracker = componentInteractionTracker,
-                )
+        listOfNotNull(transitionState.animatingFromStepId, transitionState.animatingToStepId)
+            .forEach { stepId ->
+                val stepState = stepStates[stepId] ?: return@forEach
+                key(stepId) {
+                    WorkflowStepContent(
+                        stepId = stepId,
+                        stepState = stepState,
+                        currentStepId = currentStepId,
+                        transitionState = transitionState,
+                        clickHandler = clickHandler,
+                        componentInteractionTracker = componentInteractionTracker,
+                    )
+                }
             }
-        }
     }
 }
 
@@ -182,7 +183,7 @@ private fun WorkflowStepContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .workflowTransition(transitionState, stepId, currentStepId)
+            .workflowTransition(transitionState, stepId)
             .background(background),
     ) {
         WithOptionalBackgroundOverlay(
