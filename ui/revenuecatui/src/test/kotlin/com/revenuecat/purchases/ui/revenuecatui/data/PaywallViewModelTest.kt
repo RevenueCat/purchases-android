@@ -2065,6 +2065,30 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `getWebCheckoutUrl encodes package parameter when package identifier has whitespace`(): Unit = runBlocking {
+        val packageWithWhitespace = Package(
+            identifier = "Annual Trial",
+            packageType = TestData.Packages.annual.packageType,
+            product = TestData.Packages.annual.product,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "offering"),
+        )
+        val action = PaywallAction.External.LaunchWebCheckout(
+            customUrl = "https://revenuecat.com",
+            autoDismiss = true,
+            openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                rcPackage = packageWithWhitespace,
+                packageParam = "rc_package",
+            ),
+        )
+        val model = create(offering = offeringWithWPL)
+
+        assertThat(
+            model.getWebCheckoutUrl(action),
+        ).isEqualTo("https://revenuecat.com?rc_package=Annual%20Trial")
+    }
+
+    @Test
     fun `purchaseButtonInteractionComponentUrl matches resolved launch url for in app browser`(): Unit = runBlocking {
         val model = create(offering = offeringWithWPL)
 
