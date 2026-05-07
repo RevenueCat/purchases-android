@@ -8,7 +8,6 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
@@ -1117,7 +1116,6 @@ class PaywallViewModelTest {
         } returns customerInfo
 
         model.restorePurchases()
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         assertThat(dismissInvoked).isTrue()
     }
@@ -1158,7 +1156,6 @@ class PaywallViewModelTest {
         } returns customerInfo
 
         model.restorePurchases()
-        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
 
         assertThat(dismissInvoked).isFalse()
     }
