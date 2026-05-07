@@ -808,6 +808,20 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `preloadExitOffering called before workflow data arrives still preloads once data is set`() = runTest {
+        // Mirrors PaywallActivity's LaunchedEffect ordering: preloadExitOffering() fires before
+        // the async workflow fetch has populated currentWorkflowResult.
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.preloadExitOffering()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
     fun `preloadExitOffering uses singleStepFallbackId to locate exit offer`() = runTest {
         coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
 

@@ -74,6 +74,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -293,6 +294,10 @@ internal class PaywallViewModelImpl(
     override fun preloadExitOffering() {
         viewModelScope.launch {
             try {
+                // The paywall state (and currentWorkflowResult) is populated asynchronously
+                // after offerings/workflow fetches complete. Wait until loading is done before
+                // reading the exit offer config, otherwise we race the fetch and miss it.
+                _state.first { it !is PaywallState.Loading }
                 val exitOfferingId = getExitOfferingId()
                 _preloadedExitOffering.value = if (exitOfferingId != null) {
                     val offerings = purchases.awaitOfferings()
@@ -314,6 +319,7 @@ internal class PaywallViewModelImpl(
     }
 
     // Must be called before any suspension point — reads mutable state on the main thread.
+    @Suppress("ReturnCount")
     private fun getExitOfferingId(): String? {
         val workflowResult = currentWorkflowResult
         if (workflowResult != null) {
@@ -335,6 +341,7 @@ internal class PaywallViewModelImpl(
     // Resolves the step that holds the workflow's exit offer config. The backend may declare it
     // explicitly via `single_step_fallback_id`; if absent, we fall back to traversing the step
     // graph to find the terminal step.
+    @Suppress("ReturnCount")
     private fun findCanonicalExitOfferStep(workflow: PublishedWorkflow): WorkflowStep? {
         workflow.singleStepFallbackId?.let { fallbackId ->
             val step = workflow.steps[fallbackId]
