@@ -12,6 +12,7 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -1123,15 +1124,21 @@ internal class Backend(
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
 
+        val overrideURL = BuildConfig.REMOTE_CONFIG_BASE_URL
+            .takeIf { it.isNotEmpty() && appConfig.isDebugBuild }
+            ?.let { runCatching { URL(it) }.getOrNull() }
+        val baseURL = overrideURL ?: appConfig.baseURL
+        val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    appConfig.baseURL,
+                    baseURL,
                     endpoint,
                     body = null,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
-                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                    fallbackBaseURLs = fallbackBaseURLs,
                 )
             }
 
