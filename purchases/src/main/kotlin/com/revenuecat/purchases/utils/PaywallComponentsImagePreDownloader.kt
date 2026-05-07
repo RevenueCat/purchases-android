@@ -59,20 +59,9 @@ internal class PaywallComponentsImagePreDownloader(
     }
 
     private fun StackComponent.findImageUrisToDownload(): Set<Uri> {
-        return filter { component -> component.canContainImageUrisToDownload() }
-            .flatMapTo(mutableSetOf()) { component ->
-                component.findImageUrisToDownload()
-            }
-    }
-
-    private fun PaywallComponent.canContainImageUrisToDownload(): Boolean {
-        return this is StackComponent ||
-            this is IconComponent ||
-            this is CarouselComponent ||
-            this is TabsComponent ||
-            this is ImageComponent ||
-            this is VideoComponent ||
-            this is CountdownComponent
+        return components.flatMapTo(mutableSetOf()) { component ->
+            component.findImageUrisToDownload()
+        }
     }
 
     private fun PaywallComponent.findImageUrisToDownload(): Set<Uri> {
