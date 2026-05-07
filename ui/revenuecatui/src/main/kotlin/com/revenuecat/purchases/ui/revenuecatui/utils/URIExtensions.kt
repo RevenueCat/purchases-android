@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.utils
 
+import android.net.Uri
 import java.net.URI
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -18,5 +19,4 @@ internal fun URI.appendQueryParameter(name: String, value: String): URI {
     return URI("$uriWithoutFragment$separator$encodedParameter$fragment")
 }
 
-private fun String.encodeQueryParameterComponent(): String =
-    URLEncoder.encode(this, StandardCharsets.UTF_8.name()).replace("+", "%20")
+private fun String.encodeQueryParameterComponent(): String = Uri.encode(this)
