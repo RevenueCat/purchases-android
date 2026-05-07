@@ -3,6 +3,8 @@ package com.revenuecat.purchases.paywalls.components.common
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -74,6 +76,33 @@ internal class LocalizationDataTests(@Suppress("UNUSED_PARAMETER") name: String,
                                 width = 35687.toUInt(),
                                 height = 3568.toUInt(),
                             ),
+                        )
+                    ),
+                ),
+            ),
+            arrayOf(
+                "ThemeVideoUrls",
+                Args(
+                    serialized = """
+                         {
+                           "light": {
+                             "width": 2345,
+                             "height": 1234,
+                             "url": "https://assets.pawwalls.com/video.mp4",
+                             "url_low_res": "https://assets.pawwalls.com/video_low_res.mp4"
+                           },
+                           "dark": null
+                         }
+                        """.trimIndent(),
+                    deserialized = LocalizationData.Video(
+                        ThemeVideoUrls(
+                            light = VideoUrls(
+                                width = 2345.toUInt(),
+                                height = 1234.toUInt(),
+                                url = URL("https://assets.pawwalls.com/video.mp4"),
+                                urlLowRes = URL("https://assets.pawwalls.com/video_low_res.mp4"),
+                            ),
+                            dark = null,
                         )
                     ),
                 ),

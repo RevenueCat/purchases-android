@@ -11,10 +11,14 @@ import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
@@ -27,69 +31,91 @@ internal class PaywallComponentsImagePreDownloader(
     private val coilImageDownloader: CoilImageDownloader,
 ) {
 
-    fun preDownloadImages(paywallComponentsConfig: PaywallComponentsConfig) {
+    fun preDownloadImages(
+        paywallComponentsConfig: PaywallComponentsConfig,
+        localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>> = emptyMap(),
+    ) {
         if (!shouldPredownloadImages) {
             verboseLog { "PaywallComponentsImagePreDownloader won't pre-download images" }
             return
         }
 
-        val imageUrls = findImageUrisToDownload(paywallComponentsConfig)
+        val imageUrls = findImageUrisToDownload(paywallComponentsConfig, localizations)
         imageUrls.forEach {
             debugLog { "Pre-downloading Paywall V2 image: $it" }
             coilImageDownloader.downloadImage(it)
         }
     }
 
-    private fun findImageUrisToDownload(paywallComponentsConfig: PaywallComponentsConfig): Set<Uri> {
+    private fun findImageUrisToDownload(
+        paywallComponentsConfig: PaywallComponentsConfig,
+        localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
+    ): Set<Uri> {
         return paywallComponentsConfig.stack.findImageUrisToDownload() +
             (paywallComponentsConfig.header?.stack?.findImageUrisToDownload().orEmpty()) +
             (paywallComponentsConfig.stickyFooter?.stack?.findImageUrisToDownload().orEmpty()) +
-            paywallComponentsConfig.background.findImageUrisToDownload()
+            paywallComponentsConfig.background.findImageUrisToDownload() +
+            localizations.findImageUrisToDownload()
     }
 
     private fun StackComponent.findImageUrisToDownload(): Set<Uri> {
-        return filter {
-            it is StackComponent ||
-                it is IconComponent ||
-                it is CarouselComponent ||
-                it is TabsComponent ||
-                it is ImageComponent ||
-                it is CountdownComponent
-        }.flatMapTo(mutableSetOf()) { component ->
-            when (component) {
-                is StackComponent -> {
-                    component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
-                        it.properties.background.findImageUrisToDownload()
-                    }
-                }
-                is IconComponent -> {
-                    setOf(Uri.parse(component.baseUrl).buildUpon().path(component.formats.webp).build())
-                }
-                is CarouselComponent -> {
-                    component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
-                        it.properties.background.findImageUrisToDownload()
-                    }
-                }
-                is TabsComponent -> {
-                    component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
-                        it.properties.background.findImageUrisToDownload()
-                    }
-                }
-                is ImageComponent -> {
-                    component.source.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
-                        it.properties.source?.findImageUrisToDownload().orEmpty()
-                    }
-                }
-                is VideoComponent -> {
-                    component.fallbackSource?.findImageUrisToDownload().orEmpty()
-                }
-                is CountdownComponent -> {
-                    component.countdownStack.findImageUrisToDownload() +
-                        (component.endStack?.findImageUrisToDownload().orEmpty()) +
-                        (component.fallback?.findImageUrisToDownload().orEmpty())
-                }
-                else -> emptySet()
+        return filter { component -> component.canContainImageUrisToDownload() }
+            .flatMapTo(mutableSetOf()) { component ->
+                component.findImageUrisToDownload()
             }
+    }
+
+    private fun PaywallComponent.canContainImageUrisToDownload(): Boolean {
+        return this is StackComponent ||
+            this is IconComponent ||
+            this is CarouselComponent ||
+            this is TabsComponent ||
+            this is ImageComponent ||
+            this is VideoComponent ||
+            this is CountdownComponent
+    }
+
+    private fun PaywallComponent.findImageUrisToDownload(): Set<Uri> {
+        return when (this) {
+            is StackComponent -> {
+                background.findImageUrisToDownload() + overrides.flatMapTo(mutableSetOf()) {
+                    it.properties.background.findImageUrisToDownload()
+                }
+            }
+            is IconComponent -> {
+                setOf(Uri.parse(baseUrl).buildUpon().path(formats.webp).build())
+            }
+            is CarouselComponent -> {
+                background.findImageUrisToDownload() +
+                    pages.flatMapTo(mutableSetOf()) {
+                        it.findImageUrisToDownload()
+                    } +
+                    overrides.flatMapTo(mutableSetOf()) {
+                        it.properties.background.findImageUrisToDownload()
+                    }
+            }
+            is TabsComponent -> {
+                background.findImageUrisToDownload() + overrides.flatMapTo(mutableSetOf()) {
+                    it.properties.background.findImageUrisToDownload()
+                }
+            }
+            is ImageComponent -> {
+                source.findImageUrisToDownload() + overrides.flatMapTo(mutableSetOf()) {
+                    it.properties.source?.findImageUrisToDownload().orEmpty()
+                }
+            }
+            is VideoComponent -> {
+                fallbackSource?.findImageUrisToDownload().orEmpty() +
+                    overrides.orEmpty().flatMapTo(mutableSetOf()) {
+                        it.properties.fallbackSource?.findImageUrisToDownload().orEmpty()
+                    }
+            }
+            is CountdownComponent -> {
+                countdownStack.findImageUrisToDownload() +
+                    (endStack?.findImageUrisToDownload().orEmpty()) +
+                    (fallback?.findImageUrisToDownload().orEmpty())
+            }
+            else -> emptySet()
         }
     }
 
@@ -116,4 +142,15 @@ internal class PaywallComponentsImagePreDownloader(
             dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
         )
     }
+
+    private fun Map<LocaleId, Map<LocalizationKey, LocalizationData>>.findImageUrisToDownload(): Set<Uri> =
+        values
+            .flatMap { localization ->
+                localization.values.mapNotNull { value ->
+                    (value as? LocalizationData.Image)?.value
+                }
+            }
+            .flatMapTo(mutableSetOf()) { imageUrls ->
+                imageUrls.findImageUrisToDownload()
+            }
 }
