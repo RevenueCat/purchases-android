@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
 import android.content.Context
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode
 
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsCompu
 private class PurchasesAPI {
 
     @Suppress("ForbiddenComment")
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun checkConfiguration(context: Context) {
         val configured: Boolean = Purchases.isConfigured
 
@@ -19,6 +21,7 @@ private class PurchasesAPI {
                     apiKey = "",
                     appUserID = "",
                 )
+                .applyObfuscatedAccountIdToSubscriptionChanges(true)
                 .showInAppMessagesAutomatically(false)
                 .pendingTransactionsForPrepaidPlansEnabled(false)
                 .build(),

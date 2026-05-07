@@ -228,6 +228,8 @@ HSPLcom/revenuecat/purchases/PresentedOfferingContext;-><clinit>()V
 HSPLcom/revenuecat/purchases/PresentedOfferingContext;-><init>(Ljava/lang/String;)V
 HSPLcom/revenuecat/purchases/PresentedOfferingContext;-><init>(Ljava/lang/String;Ljava/lang/String;Lcom/revenuecat/purchases/PresentedOfferingContext$TargetingContext;)V
 HSPLcom/revenuecat/purchases/PresentedOfferingContext;->getOfferingIdentifier()Ljava/lang/String;
+HSPLcom/revenuecat/purchases/PresentedOfferingContext;->getPlacementIdentifier()Ljava/lang/String;
+HSPLcom/revenuecat/purchases/PresentedOfferingContext;->getTargetingContext()Lcom/revenuecat/purchases/PresentedOfferingContext$TargetingContext;
 HSPLcom/revenuecat/purchases/PresentedOfferingContext;->toString()Ljava/lang/String;
 Lcom/revenuecat/purchases/PresentedOfferingContext$Creator;
 HSPLcom/revenuecat/purchases/PresentedOfferingContext$Creator;-><init>()V
@@ -1043,8 +1045,8 @@ HSPLcom/revenuecat/purchases/common/events/BackendEvent$CustomerCenter$Companion
 HSPLcom/revenuecat/purchases/common/events/BackendEvent$CustomerCenter$Companion;->serializer()Lkotlinx/serialization/KSerializer;
 Lcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;
 HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;-><clinit>()V
-HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;-><init>(IILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJLjava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
-HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;-><init>(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJLjava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;-><init>(IILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJLjava/lang/String;ZLjava/lang/String;Lcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/internal/SerializationConstructorMarker;)V
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;-><init>(Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;IJLjava/lang/String;ZLjava/lang/String;Lcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;->hashCode()I
 HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;->write$Self$purchases_defaultsBc8Release(Lcom/revenuecat/purchases/common/events/BackendEvent$Paywalls;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 Lcom/revenuecat/purchases/common/events/BackendEvent$Paywalls$$serializer;
@@ -1060,6 +1062,16 @@ Lcom/revenuecat/purchases/common/events/BackendEvent$Paywalls$Companion;
 HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls$Companion;-><init>()V
 HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/common/events/BackendEvent$Paywalls$Companion;->serializer()Lkotlinx/serialization/KSerializer;
+Lcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData;
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData;-><clinit>()V
+Lcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$$serializer;
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$$serializer;-><clinit>()V
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$$serializer;-><init>()V
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$$serializer;->getDescriptor()Lkotlinx/serialization/descriptors/SerialDescriptor;
+Lcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$Companion;
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$Companion;-><init>()V
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+HSPLcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData$Companion;->fromContext(Lcom/revenuecat/purchases/PresentedOfferingContext;)Lcom/revenuecat/purchases/common/events/BackendEvent$PresentedOfferingContextData;
 Lcom/revenuecat/purchases/common/events/BackendStoredEvent;
 HSPLcom/revenuecat/purchases/common/events/BackendStoredEvent;-><clinit>()V
 HSPLcom/revenuecat/purchases/common/events/BackendStoredEvent;-><init>()V
@@ -1146,7 +1158,7 @@ HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$getJson$cp()Lk
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$getLegacyFlushTriggered$p(Lcom/revenuecat/purchases/common/events/EventsManager;)Z
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$getLegacyPaywallsStoredEvents(Lcom/revenuecat/purchases/common/events/EventsManager;)Ljava/util/List;
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$onFlushComplete(Lcom/revenuecat/purchases/common/events/EventsManager;)V
-HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$performPriorityFlush(Lcom/revenuecat/purchases/common/events/EventsManager;)V
+PLcom/revenuecat/purchases/common/events/EventsManager;->access$performPriorityFlush(Lcom/revenuecat/purchases/common/events/EventsManager;)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$setLegacyFlushTriggered$p(Lcom/revenuecat/purchases/common/events/EventsManager;Z)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->checkFileSizeAndClearIfNeeded()V
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->enqueue$default(Lcom/revenuecat/purchases/common/events/EventsManager;Lcom/revenuecat/purchases/common/Delay;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
@@ -1210,9 +1222,9 @@ HSPLcom/revenuecat/purchases/common/events/EventsManager$flushLegacyEvents$1;-><
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushLegacyEvents$1;->invoke()Ljava/lang/Object;
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushLegacyEvents$1;->invoke()V
 Lcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$5;
-HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$5;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;IJLjava/util/List;Lcom/revenuecat/purchases/common/Delay;)V
+PLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$5;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;IJLjava/util/List;Lcom/revenuecat/purchases/common/Delay;)V
 Lcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;
-HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;ILjava/util/List;)V
+PLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;ILjava/util/List;)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;->invoke(Lcom/revenuecat/purchases/PurchasesError;Z)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;->invoke(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 Lcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6$3;
@@ -1233,7 +1245,7 @@ HSPLcom/revenuecat/purchases/common/events/EventsManager$track$1;->invoke()Ljava
 HSPLcom/revenuecat/purchases/common/events/EventsManager$track$1;->invoke()V
 Lcom/revenuecat/purchases/common/events/EventsRequest;
 HSPLcom/revenuecat/purchases/common/events/EventsRequest;-><clinit>()V
-HSPLcom/revenuecat/purchases/common/events/EventsRequest;-><init>(Ljava/util/List;)V
+PLcom/revenuecat/purchases/common/events/EventsRequest;-><init>(Ljava/util/List;)V
 HSPLcom/revenuecat/purchases/common/events/EventsRequest;->getCacheKey()Ljava/util/List;
 HSPLcom/revenuecat/purchases/common/events/EventsRequest;->write$Self$purchases_defaultsBc8Release(Lcom/revenuecat/purchases/common/events/EventsRequest;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 Lcom/revenuecat/purchases/common/events/EventsRequest$$serializer;
@@ -1538,7 +1550,6 @@ HSPLcom/revenuecat/purchases/google/BillingWrapper;-><clinit>()V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;-><init>(Lcom/revenuecat/purchases/google/BillingWrapper$ClientFactory;Landroid/os/Handler;Landroid/os/Handler;Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;Lcom/revenuecat/purchases/common/DateProvider;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;-><init>(Lcom/revenuecat/purchases/google/BillingWrapper$ClientFactory;Landroid/os/Handler;Landroid/os/Handler;Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;Lcom/revenuecat/purchases/common/DateProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->access$executeRequestOnUIThread(Lcom/revenuecat/purchases/google/BillingWrapper;Ljava/lang/Long;Lkotlin/jvm/functions/Function1;)V
-HSPLcom/revenuecat/purchases/google/BillingWrapper;->executePendingRequests()V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->executeRequestOnUIThread$default(Lcom/revenuecat/purchases/google/BillingWrapper;Ljava/lang/Long;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->executeRequestOnUIThread(Ljava/lang/Long;Lkotlin/jvm/functions/Function1;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->getAppInBackground()Z
@@ -2072,7 +2083,7 @@ HSPLcom/revenuecat/purchases/utils/EventsFileHelper$Companion;-><init>(Lkotlin/j
 Lcom/revenuecat/purchases/utils/EventsFileHelper$clear$1;
 HSPLcom/revenuecat/purchases/utils/EventsFileHelper$clear$1;-><init>(Lcom/revenuecat/purchases/utils/EventsFileHelper;)V
 Lcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;
-HSPLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;-><init>(Lkotlin/jvm/functions/Function1;Lcom/revenuecat/purchases/utils/EventsFileHelper;)V
+PLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;-><init>(Lkotlin/jvm/functions/Function1;Lcom/revenuecat/purchases/utils/EventsFileHelper;)V
 HSPLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
 HSPLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;->invoke(Lkotlin/sequences/Sequence;)V
 Lcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1$1;

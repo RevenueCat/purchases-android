@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
@@ -35,6 +36,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
+import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.ErrorDialog
@@ -56,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
@@ -144,11 +147,21 @@ internal fun InternalPaywall(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
-            LoadedPaywallComponents(
-                state = state,
-                clickHandler = rememberPaywallActionHandler(viewModel),
-                componentInteractionTracker = componentInteractionTracker,
-            )
+            val workflowState = viewModel.workflowState.value
+            if (workflowState != null) {
+                LoadedWorkflowPaywall(
+                    workflowState = workflowState,
+                    onTransitionComplete = viewModel::onTransitionComplete,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                    componentInteractionTracker = componentInteractionTracker,
+                )
+            } else {
+                LoadedPaywallComponents(
+                    state = state,
+                    clickHandler = rememberPaywallActionHandler(viewModel),
+                    componentInteractionTracker = componentInteractionTracker,
+                )
+            }
         } else {
             Logger.e(
                 "State is not loaded while transitioning animation. This may happen if state changes " +
@@ -259,11 +272,15 @@ private fun LoadedPaywall(
         modifier = Modifier.screenModeBackground(state.isInFullScreenMode, backgroundColor),
     ) {
         val configuration = state.configurationWithOverriddenLocale()
+        val layoutDirection = remember(state.templateConfiguration.locale) {
+            state.templateConfiguration.locale.toLayoutDirection()
+        }
 
         CompositionLocalProvider(
             LocalActivity provides activity,
             LocalContext provides state.contextWithConfiguration(configuration),
             LocalConfiguration provides configuration,
+            LocalLayoutDirection provides layoutDirection,
         ) {
             TemplatePaywall(state = state, viewModel = viewModel)
         }

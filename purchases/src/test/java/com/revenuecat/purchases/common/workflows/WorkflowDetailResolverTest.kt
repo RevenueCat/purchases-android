@@ -162,4 +162,17 @@ class WorkflowDetailResolverTest {
         resolver.resolve(response)
         assertThat(capturedChecksum).isNull()
     }
+
+    @Test
+    fun `single_step_fallback_id is parsed when present`() {
+        val json = minimalWorkflowJson.trimEnd('}') + """, "single_step_fallback_id": "step_1" }"""
+        val workflow = WorkflowJsonParser.parsePublishedWorkflow(json)
+        assertThat(workflow.singleStepFallbackId).isEqualTo("step_1")
+    }
+
+    @Test
+    fun `single_step_fallback_id defaults to null when absent`() {
+        val workflow = WorkflowJsonParser.parsePublishedWorkflow(minimalWorkflowJson)
+        assertThat(workflow.singleStepFallbackId).isNull()
+    }
 }

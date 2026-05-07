@@ -102,6 +102,7 @@ public data class PublishedWorkflow(
     @Serializable(with = JsonObjectToMapSerializer::class)
     val metadata: Map<String, @Contextual Any> = emptyMap(),
     val hash: String? = null,
+    @SerialName("single_step_fallback_id") val singleStepFallbackId: String? = null,
 )
 
 @InternalRevenueCatAPI

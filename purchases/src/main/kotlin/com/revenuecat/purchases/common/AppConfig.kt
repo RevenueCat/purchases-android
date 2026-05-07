@@ -62,6 +62,8 @@ internal class AppConfig(
         get() = dangerousSettings.customEntitlementComputation
     val uiPreviewMode: Boolean
         get() = dangerousSettings.uiPreviewMode
+    val applyObfuscatedAccountIdToSubscriptionChanges: Boolean
+        get() = dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges
 
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName
