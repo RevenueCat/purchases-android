@@ -42,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 /**
@@ -156,7 +157,6 @@ internal class PaywallActivity : ComponentActivity() {
             override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
                 userListener?.onPurchaseCompleted(customerInfo, storeTransaction)
                 setResult(RESULT_OK, createResultIntent(PaywallResult.Purchased(customerInfo)))
-                finish()
             }
 
             override fun onPurchaseError(error: PurchasesError) {
@@ -180,10 +180,6 @@ internal class PaywallActivity : ComponentActivity() {
             override fun onRestoreCompleted(customerInfo: CustomerInfo) {
                 userListener?.onRestoreCompleted(customerInfo)
                 setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
-                val requiredEntitlementIdentifier = args?.requiredEntitlementIdentifier ?: return
-                if (customerInfo.entitlements.active.containsKey(requiredEntitlementIdentifier)) {
-                    finish()
-                }
             }
 
             override fun onRestoreError(error: PurchasesError) {
@@ -198,6 +194,8 @@ internal class PaywallActivity : ComponentActivity() {
         }
 
         val offeringSelection = args?.offeringIdAndPresentedOfferingContext
+        val shouldDisplayBlock = args?.requiredEntitlementIdentifier
+            ?.let(::shouldDisplayBlockForEntitlementIdentifier)
 
         setContent {
             MaterialTheme {
@@ -209,9 +207,8 @@ internal class PaywallActivity : ComponentActivity() {
                     Box(
                         Modifier.fillMaxSize(),
                     ) {
-                        // Empty dismissRequest is overridden below by setDismissRequestWithExitOffering
                         val paywallOptions = PaywallOptions.Builder(
-                            dismissRequest = {},
+                            dismissRequest = { onDismissRequest(exitOffering = null, result = null) },
                         )
                             .setOfferingSelection(offeringSelection)
                             .setFontProvider(getFontProvider())
@@ -223,7 +220,10 @@ internal class PaywallActivity : ComponentActivity() {
                             .setDismissRequestWithExitOffering(::onDismissRequest)
                             .setCustomVariables(args?.customVariables ?: emptyMap())
                             .build()
-                        val viewModel = getPaywallViewModel(paywallOptions)
+                        val viewModel = getPaywallViewModel(
+                            options = paywallOptions,
+                            shouldDisplayBlock = shouldDisplayBlock,
+                        )
 
                         LaunchedEffect(Unit) {
                             viewModel.preloadExitOffering()

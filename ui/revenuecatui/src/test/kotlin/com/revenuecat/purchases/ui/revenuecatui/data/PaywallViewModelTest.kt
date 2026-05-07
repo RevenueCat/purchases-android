@@ -2808,9 +2808,10 @@ class PaywallViewModelTest {
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequest: () -> Unit = { dismissInvoked = true },
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
-        val builder = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+        val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
             .setListener(listener)
             .setOffering(offering)
             .setPurchaseLogic(customPurchaseLogic)
