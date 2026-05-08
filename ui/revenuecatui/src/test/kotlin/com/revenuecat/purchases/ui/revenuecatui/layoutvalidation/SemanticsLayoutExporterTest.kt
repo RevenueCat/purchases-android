@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.layoutvalidation
 
+import android.graphics.Bitmap
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -8,18 +10,21 @@ import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
+import com.revenuecat.purchases.ui.revenuecatui.helpers.captureToImageCompat
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowPixelCopy
 import java.io.File
 import java.util.Locale
 
 /**
  * Renders each registered [PaywallLayoutValidationFixture] inside a viewport-controlled Compose
- * test, exports the merged + flattened semantics tree, and writes both raw and normalized JSON
- * files to `build/layout-validation/`.
+ * test, exports the merged + flattened semantics tree, and writes JSON files and PNG snapshots
+ * to `build/layout-validation/`.
  *
  * To add a new paywall to the suite:
  * 1. Create a `<Name>TestData` object that implements [PaywallLayoutValidationFixture] and
@@ -32,14 +37,16 @@ import java.util.Locale
  *   --tests "com.revenuecat.purchases.ui.revenuecatui.layoutvalidation.SemanticsLayoutExporterTest"
  * ```
  *
- * Outputs (one pair per fixture):
+ * Outputs (one set per fixture):
  * ```
  * ui/revenuecatui/build/layout-validation/<offeringId>-paywall-semantics.json
  * ui/revenuecatui/build/layout-validation/<offeringId>-paywall-semantics-normalized.json
+ * ui/revenuecatui/build/layout-validation/<offeringId>-paywall-snapshot.png
  * ```
  */
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(qualifiers = "w${VIEWPORT_WIDTH_DP}dp-h${VIEWPORT_HEIGHT_DP}dp", shadows = [ShadowPixelCopy::class])
 @RunWith(AndroidJUnit4::class)
-@Config(qualifiers = "w${VIEWPORT_WIDTH_DP}dp-h${VIEWPORT_HEIGHT_DP}dp")
 internal class SemanticsLayoutExporterTest {
 
     @get:Rule
@@ -51,14 +58,15 @@ internal class SemanticsLayoutExporterTest {
     }
 
     /**
-     * Renders the [fixture]'s paywall, fetches the unmerged semantics tree, exports both the
-     * raw and normalized JSON, and asserts that the output files exist with the expected shape.
+     * Renders the [fixture]'s paywall, fetches the unmerged semantics tree, exports the raw and
+     * normalized JSONs, captures a PNG snapshot, and asserts that all output files exist with
+     * the expected shape.
      */
     private fun exportPaywall(fixture: PaywallLayoutValidationFixture) {
         val metadata = SemanticsLayoutExporter.metadata(
             viewportWidth = VIEWPORT_WIDTH_DP,
             viewportHeight = VIEWPORT_HEIGHT_DP,
-            // Frames are emitted in dp (logical pixels), matching iOS points. Use scale = 1.
+            // Frames are emitted in dp (logical pixels). Use scale = 1.
             scale = 1.0,
             offeringId = fixture.offeringId,
             timestamp = EXPORT_TIMESTAMP,
@@ -88,14 +96,39 @@ internal class SemanticsLayoutExporterTest {
 
         val rawFile = outputFile("${fixture.offeringId}-paywall-semantics.json")
         val normalizedFile = outputFile("${fixture.offeringId}-paywall-semantics-normalized.json")
+        val snapshotFile = outputFile("${fixture.offeringId}-paywall-snapshot.png")
+
         requireNotNull(rawFile.parentFile).mkdirs()
         rawFile.writeText(rawJson)
         normalizedFile.writeText(normalizedJson)
+
+        // Capture PNG snapshot via the project's Robolectric-friendly captureToImageCompat()
+        // helper. The stock captureToImage() path forces a redraw that hangs under Robolectric
+        // (https://github.com/robolectric/robolectric/issues/8071) and ends in
+        // ComposeTimeoutException; captureToImageCompat() skips the forced redraw. We still
+        // pause the main clock to freeze any in-flight animations, and swallow any Throwable so
+        // a missing PNG doesn't fail the JSON export.
+        @Suppress("TooGenericExceptionCaught")
+        try {
+            composeTestRule.mainClock.autoAdvance = false
+            val imageBitmap = composeTestRule.onRoot().captureToImageCompat()
+            val androidBitmap = imageBitmap.asAndroidBitmap()
+            snapshotFile.outputStream().use { fos ->
+                androidBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos)
+            }
+        } catch (t: Throwable) {
+            System.err.println("WARNING: Failed to capture PNG snapshot: ${t.javaClass.simpleName}: ${t.message}")
+        } finally {
+            composeTestRule.mainClock.autoAdvance = true
+        }
 
         assertThat(rawJson).contains("\"offeringId\": \"${fixture.offeringId}\"")
         assertThat(normalizedJson).contains("\"components\"")
         assertThat(rawFile).exists()
         assertThat(normalizedFile).exists()
+        if (snapshotFile.exists()) {
+            assertThat(snapshotFile.length()).isGreaterThan(0L)
+        }
     }
 
     private fun outputFile(name: String): File =

@@ -188,7 +188,7 @@ internal object SemanticsLayoutExporter {
 
             key to FlattenedLayoutNode(
                 componentId = exportedId,
-                frame = node.frame.normalized().swappedDimensions(),
+                frame = node.frame.normalized(),
                 label = effectiveLabel,
                 nativeType = node.nativeType,
                 state = node.state,
@@ -379,12 +379,15 @@ internal object SemanticsLayoutExporter {
 
     private val LayoutNode.isRenderable: Boolean
         get() {
-            // A node is renderable only when it carries visible content (label or non-generic
-            // native type) AND the layout actually allocated space for it. Without the measured
-            // area check we'd keep entries whose Compose
-            // bounds are 0×0 because they were laid out off-screen / clipped.
+            // A node is renderable when it has a measured frame AND either:
+            // - it carries visible content (label or a non-generic native type), OR
+            // - it has its own componentId (a structural bucket worth surfacing on its own,
+            //   e.g. the sticky-footer rows that get renamed to paywall_N).
+            // The hasMeasuredArea check still prunes the empty stack/separator placeholders
+            // that have no real layout.
             val hasContent = label != null || nativeType != "Other"
-            return hasContent && hasMeasuredArea
+            val hasOwnIdentity = componentId != null
+            return (hasContent || hasOwnIdentity) && hasMeasuredArea
         }
 
     private fun Frame.normalized(): Frame {
@@ -393,16 +396,6 @@ internal object SemanticsLayoutExporter {
             width = width.normalizeCoordinate(),
             x = x.normalizeCoordinate(),
             y = y.normalizeCoordinate(),
-        )
-    }
-
-    /** Swaps the [Frame.height] and [Frame.width] values; preserves origin. */
-    private fun Frame.swappedDimensions(): Frame {
-        return Frame(
-            height = width,
-            width = height,
-            x = x,
-            y = y,
         )
     }
 
