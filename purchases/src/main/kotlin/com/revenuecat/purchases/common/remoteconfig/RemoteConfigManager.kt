@@ -71,6 +71,6 @@ internal class RemoteConfigManager(
     private data class TopicTask(val topic: Topic, val variant: String, val entry: TopicEntry)
 
     private companion object {
-        const val DEFAULT_VARIANT = "DEFAULT"
+        const val DEFAULT_VARIANT = "default"
     }
 }
