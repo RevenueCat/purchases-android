@@ -848,18 +848,12 @@ class PaywallViewModelWorkflowTest {
 
     @Test
     fun `updateStateFromWorkflow with same workflow data reloads preloaded exit offering`() = runTest {
-        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
-
         val vm = createVm()
         vm.preloadExitOffering()
         vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
-        advanceUntilIdle()
         assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
 
         vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
-        assertThat(vm.preloadedExitOffering.value).isNull()
-        advanceUntilIdle()
-
         assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
     }
 

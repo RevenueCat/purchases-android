@@ -218,7 +218,6 @@ internal class PaywallViewModelImpl(
 
     private var exitOfferData: ExitOfferData = ExitOfferData.Loading
     private var preloadExitOfferingRequested = false
-    private var preloadExitOfferingJob: Job? = null
     private var updateStateJob: Job? = null
 
     private data class PaywallPresentationFingerprint(
@@ -312,40 +311,32 @@ internal class PaywallViewModelImpl(
 
     override fun preloadExitOffering() {
         preloadExitOfferingRequested = true
-        preloadExitOfferingJob?.cancel()
-        val data = exitOfferData as? ExitOfferData.Available ?: return
-        preloadExitOfferingJob = viewModelScope.launch { loadExitOffering(data) }
+        refreshPreloadedExitOffering()
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
         exitOfferData = data
-        _preloadedExitOffering.value = null
-        preloadExitOfferingJob?.cancel()
-        if (preloadExitOfferingRequested && data is ExitOfferData.Available) {
-            preloadExitOfferingJob = viewModelScope.launch { loadExitOffering(data) }
-        }
+        refreshPreloadedExitOffering()
     }
 
-    private suspend fun loadExitOffering(availableExitOfferData: ExitOfferData.Available) {
-        try {
-            val exitOfferingId = availableExitOfferData.offeringId
-            val offerings = availableExitOfferData.offerings
-                ?: if (BuildConfig.USE_WORKFLOWS_ENDPOINT) currentWorkflowOfferings else purchases.awaitOfferings()
-            if (offerings == null) {
-                Logger.e("No offerings available to load exit offering '$exitOfferingId'")
-                return
-            }
-            _preloadedExitOffering.value = offerings[exitOfferingId].also { exitOffering ->
-                if (exitOffering == null) {
-                    Logger.e(
-                        "Exit offering with ID '$exitOfferingId' not found in available offerings. " +
-                            "Exit offer will not be displayed.",
-                    )
-                }
-            }
-        } catch (e: PurchasesException) {
-            Logger.e("Failed to preload exit offering", e)
+    @Suppress("ReturnCount")
+    private fun refreshPreloadedExitOffering() {
+        _preloadedExitOffering.value = null
+        if (!preloadExitOfferingRequested) return
+        val data = exitOfferData as? ExitOfferData.Available ?: return
+        val offerings = data.offerings
+        if (offerings == null) {
+            Logger.e("No offerings available to load exit offering '${data.offeringId}'")
+            return
         }
+        val exitOffering = offerings[data.offeringId]
+        if (exitOffering == null) {
+            Logger.e(
+                "Exit offering with ID '${data.offeringId}' not found in available offerings. " +
+                    "Exit offer will not be displayed.",
+            )
+        }
+        _preloadedExitOffering.value = exitOffering
     }
 
     private val shouldTriggerExitOfferForCurrentStep: Boolean
@@ -767,10 +758,15 @@ internal class PaywallViewModelImpl(
 
     private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): ResolvedOfferingSelection =
         when (offeringSelection) {
-            is OfferingSelection.OfferingType -> ResolvedOfferingSelection(
-                selectedOffering = offeringSelection.offeringType,
-                offeringsForExitOfferLookup = null,
-            )
+            is OfferingSelection.OfferingType -> {
+                val hasExitOffer = offeringSelection.offeringType.paywallComponents
+                    ?.data?.exitOffers?.dismiss?.offeringId != null
+                val offerings = if (hasExitOffer) purchases.awaitOfferings() else null
+                ResolvedOfferingSelection(
+                    selectedOffering = offeringSelection.offeringType,
+                    offeringsForExitOfferLookup = offerings,
+                )
+            }
             is OfferingSelection.IdAndPresentedOfferingContext -> {
                 val offerings = purchases.awaitOfferings()
                 val presentedOfferingContext = offeringSelection.presentedOfferingContext
