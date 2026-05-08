@@ -798,6 +798,7 @@ class PaywallViewModelWorkflowTest {
         vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         // Confirm the offering was preloaded before testing the close behaviour.
         assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
@@ -805,6 +806,28 @@ class PaywallViewModelWorkflowTest {
         vm.closePaywall()
 
         assertThat(receivedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `closePaywall before exit offer workflow step does not call dismissRequestWithExitOffering with offering`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        var receivedExitOffering: Offering? = exitOffering
+        val vm = createVm(
+            dismissRequestWithExitOffering = { offering, _ ->
+                receivedExitOffering = offering
+            },
+        )
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        // The exit offer is preloaded, but the current workflow step is still step-1.
+        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+
+        vm.closePaywall()
+
+        assertThat(receivedExitOffering).isNull()
     }
 
     @Test
