@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.safeResumeWithException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -16,10 +17,13 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val topicFetcher: TopicFetcher,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val downloadDispatcher: CoroutineDispatcher =
+        Dispatchers.IO.limitedParallelism(MAX_PARALLEL_TOPIC_DOWNLOADS),
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
@@ -28,7 +32,8 @@ internal class RemoteConfigManager(
         completion: ((PurchasesError?) -> Unit)? = null,
     ) {
         scope.launch {
-            completion?.invoke(refresh(appInBackground))
+            val error = refresh(appInBackground)
+            completion?.invoke(error)
         }
     }
 
@@ -39,6 +44,7 @@ internal class RemoteConfigManager(
             errorLog { "Failed to fetch remote config: ${e.error}" }
             return e.error
         }
+        // WIP: We should have some logic to pick the correct source for this. Right now, hardcoded to the first source.
         val source = response.blobSources.firstOrNull()
         val tasks = response.manifest.topics.mapNotNull { (topic, variants) ->
             val entry = variants[DEFAULT_VARIANT] ?: return@mapNotNull null
@@ -49,7 +55,7 @@ internal class RemoteConfigManager(
         } else {
             coroutineScope {
                 tasks.map { task ->
-                    async {
+                    async(downloadDispatcher) {
                         topicFetcher.fetchTopicIfNeeded(
                             topic = task.topic,
                             variant = task.variant,
@@ -75,5 +81,6 @@ internal class RemoteConfigManager(
 
     private companion object {
         const val DEFAULT_VARIANT = "default"
+        const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
     }
 }

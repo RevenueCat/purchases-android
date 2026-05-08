@@ -9,15 +9,12 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.Checksum
-import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
+import com.revenuecat.purchases.utils.downloadToFileAndVerifyChecksum
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 import java.io.IOException
-import java.io.InputStream
-import java.net.HttpURLConnection
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class TopicFetcher(
@@ -66,50 +63,18 @@ internal class TopicFetcher(
         val parent = target.parentFile ?: throw IOException("Topic target file has no parent: $target")
         val tempFile = File.createTempFile("rc_topic_", ".tmp", parent)
         try {
-            downloadToFile(url, tempFile)
-            val actual = Checksum.generate(tempFile.readBytes(), Checksum.Algorithm.SHA256).value
-            if (!actual.equals(expectedSha256, ignoreCase = true)) {
-                errorLog {
-                    "Downloaded topic at $url failed SHA-256 verification. " +
-                        "expected=$expectedSha256, actual=$actual"
-                }
-                throw Checksum.ChecksumValidationException()
-            }
+            urlConnectionFactory.downloadToFileAndVerifyChecksum(
+                url = url,
+                outputFile = tempFile,
+                expectedChecksum = Checksum(Checksum.Algorithm.SHA256, expectedSha256),
+                description = "topic",
+            )
             if (!tempFile.renameTo(target)) {
                 tempFile.copyTo(target, overwrite = true)
             }
         } finally {
             if (tempFile.exists()) {
                 tempFile.delete()
-            }
-        }
-    }
-
-    @Throws(IOException::class)
-    private fun downloadToFile(url: String, outputFile: File) {
-        verboseLog { "Downloading topic from $url" }
-        var connection: UrlConnection? = null
-        try {
-            connection = urlConnectionFactory.createConnection(url)
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                throw IOException("HTTP ${connection.responseCode} when downloading topic from $url")
-            }
-            connection.inputStream.use { input ->
-                writeStream(input, outputFile)
-            }
-        } finally {
-            connection?.disconnect()
-        }
-    }
-
-    @Throws(IOException::class)
-    private fun writeStream(input: InputStream, file: File) {
-        FileOutputStream(file).use { out ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val bytesRead = input.read(buffer)
-                if (bytesRead < 0) break
-                out.write(buffer, 0, bytesRead)
             }
         }
     }

@@ -35,7 +35,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `single topic with single source delegates to fetcher and completes with null`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val src = source("primary")
         val entry = topicEntry("blob-default")
         val response = response(
@@ -74,7 +79,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `empty sources skips fetcher and completes with null`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val response = response(
             blobSources = emptyList(),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
@@ -96,7 +106,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `empty topics map skips fetcher and completes with null`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val response = response(
             blobSources = listOf(source("primary")),
             topics = emptyMap(),
@@ -118,7 +133,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `topic without default variant is skipped`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val response = response(
             blobSources = listOf(source("primary")),
             topics = mapOf(
@@ -142,7 +162,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `selects the first source when multiple are available`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val first = source("first")
         val second = source("second")
         val response = response(
@@ -168,7 +193,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `forwards fetcher error to completion`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val response = response(
             blobSources = listOf(source("primary")),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
@@ -193,7 +223,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `backend error short-circuits and never invokes fetcher`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val backendError = PurchasesError(PurchasesErrorCode.NetworkError, "backend down")
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
         every {
@@ -215,7 +250,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `forwards background flag to backend`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val response = response(
             blobSources = listOf(source("primary")),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
@@ -239,7 +279,12 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `null completion does not crash on success`() = runTest {
-        val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
         val response = response(
             blobSources = listOf(source("primary")),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
@@ -252,6 +297,41 @@ class RemoteConfigManagerTest {
         manager.updateRemoteConfigIfNeeded(appInBackground = false)
         testScheduler.advanceUntilIdle()
         // Reaching here means no exception was thrown.
+    }
+
+    @Test
+    fun `refresh runs even when completion is null`() = runTest {
+        val manager = RemoteConfigManager(
+            backend = backend,
+            topicFetcher = topicFetcher,
+            dispatcher = UnconfinedTestDispatcher(testScheduler),
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
+        val src = source("primary")
+        val entry = topicEntry("blob-default")
+        val response = response(
+            blobSources = listOf(src),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to entry)),
+        )
+        mockBackendSuccess(response)
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns null
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false, completion = null)
+        testScheduler.advanceUntilIdle()
+
+        verify(exactly = 1) {
+            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
+        }
+        coVerify(exactly = 1) {
+            topicFetcher.fetchTopicIfNeeded(
+                topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+                variant = "default",
+                topicEntry = entry,
+                source = src,
+            )
+        }
     }
 
     private fun mockBackendSuccess(response: RemoteConfigResponse) {
