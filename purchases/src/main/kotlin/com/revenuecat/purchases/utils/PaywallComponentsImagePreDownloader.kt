@@ -162,13 +162,16 @@ internal class PaywallComponentsImagePreDownloader(
     }
 
     private fun Map<LocaleId, Map<LocalizationKey, LocalizationData>>.findImageUrisToDownload(): Set<Uri> =
-        values
-            .flatMap { localization ->
-                localization.values.mapNotNull { value ->
-                    (value as? LocalizationData.Image)?.value
+        values.flatMapTo(mutableSetOf()) { localization ->
+            localization.values.flatMap { value ->
+                when (value) {
+                    is LocalizationData.Image -> value.value.findImageUrisToDownload()
+                    // We intentionally don't pre-download videos here; this preloader is for
+                    // images only. Text values have no URIs to download.
+                    is LocalizationData.Text,
+                    is LocalizationData.Video,
+                    -> emptySet()
                 }
             }
-            .flatMapTo(mutableSetOf()) { imageUrls ->
-                imageUrls.findImageUrisToDownload()
-            }
+        }
 }
