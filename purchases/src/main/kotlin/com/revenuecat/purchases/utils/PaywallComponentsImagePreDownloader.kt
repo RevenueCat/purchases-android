@@ -70,6 +70,9 @@ internal class PaywallComponentsImagePreDownloader(
     }
 
     private fun StackComponent.findImageUrisToDownload(): Set<Uri> {
+        // PaywallComponent.filter is a BFS over the whole component tree. Passing { true }
+        // visits every descendant; findImageUrisToDownload is then responsible for extracting
+        // direct URIs per type (with the when expression as the single source of truth).
         return filter { true }
             .flatMapTo(mutableSetOf()) { component ->
                 component.findImageUrisToDownload()
