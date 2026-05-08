@@ -73,7 +73,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -213,11 +212,12 @@ internal class PaywallViewModelImpl(
         data class Available(
             val offeringId: String,
             val offerings: Offerings?,
-            val workflowStepId: String? = null,
+            val triggeringWorkflowStepId: String? = null,
         ) : ExitOfferData
     }
 
-    private val exitOfferData = MutableStateFlow<ExitOfferData>(ExitOfferData.Loading)
+    private var exitOfferData: ExitOfferData = ExitOfferData.Loading
+    private var preloadExitOfferingRequested = false
     private var preloadExitOfferingJob: Job? = null
     private var updateStateJob: Job? = null
 
@@ -228,6 +228,11 @@ internal class PaywallViewModelImpl(
         val displayMode: String,
         val localeIdentifier: String,
         val darkMode: Boolean,
+    )
+
+    private data class ResolvedOfferingSelection(
+        val selectedOffering: Offering?,
+        val offeringsForExitOfferLookup: Offerings?,
     )
 
     init {
@@ -306,28 +311,30 @@ internal class PaywallViewModelImpl(
     }
 
     override fun preloadExitOffering() {
+        preloadExitOfferingRequested = true
         preloadExitOfferingJob?.cancel()
-        preloadExitOfferingJob = viewModelScope.launch {
-            exitOfferData.collectLatest { data ->
-                when (data) {
-                    is ExitOfferData.Available -> loadExitOffering(data)
-                    ExitOfferData.Loading,
-                    ExitOfferData.Unavailable,
-                    -> _preloadedExitOffering.value = null
-                }
-            }
-        }
+        val data = exitOfferData as? ExitOfferData.Available ?: return
+        preloadExitOfferingJob = viewModelScope.launch { loadExitOffering(data) }
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
+        exitOfferData = data
         _preloadedExitOffering.value = null
-        exitOfferData.value = data
+        preloadExitOfferingJob?.cancel()
+        if (preloadExitOfferingRequested && data is ExitOfferData.Available) {
+            preloadExitOfferingJob = viewModelScope.launch { loadExitOffering(data) }
+        }
     }
 
     private suspend fun loadExitOffering(availableExitOfferData: ExitOfferData.Available) {
         try {
             val exitOfferingId = availableExitOfferData.offeringId
-            val offerings = availableExitOfferData.offerings ?: purchases.awaitOfferings()
+            val offerings = availableExitOfferData.offerings
+                ?: if (BuildConfig.USE_WORKFLOWS_ENDPOINT) currentWorkflowOfferings else purchases.awaitOfferings()
+            if (offerings == null) {
+                Logger.e("No offerings available to load exit offering '$exitOfferingId'")
+                return
+            }
             _preloadedExitOffering.value = offerings[exitOfferingId].also { exitOffering ->
                 if (exitOffering == null) {
                     Logger.e(
@@ -342,10 +349,10 @@ internal class PaywallViewModelImpl(
     }
 
     private val shouldTriggerExitOfferForCurrentStep: Boolean
-        get() = when (val loadedExitOfferData = exitOfferData.value) {
+        get() = when (val loadedExitOfferData = exitOfferData) {
             is ExitOfferData.Available -> {
-                val workflowStepId = loadedExitOfferData.workflowStepId
-                workflowStepId == null || _workflowState.value?.currentStepId == workflowStepId
+                val triggeringWorkflowStepId = loadedExitOfferData.triggeringWorkflowStepId
+                triggeringWorkflowStepId == null || _workflowState.value?.currentStepId == triggeringWorkflowStepId
             }
             ExitOfferData.Loading,
             ExitOfferData.Unavailable,
@@ -697,8 +704,7 @@ internal class PaywallViewModelImpl(
     }
     private fun updateState() {
         updateStateJob?.cancel()
-        exitOfferData.value = ExitOfferData.Loading
-        _preloadedExitOffering.value = null
+        updateExitOfferData(ExitOfferData.Loading)
         updateStateJob = viewModelScope.launch {
             try {
                 updateStateFromOffering(options.offeringSelection)
@@ -716,11 +722,17 @@ internal class PaywallViewModelImpl(
             return
         }
 
-        val (currentOffering, offeringsForExitOffer) = resolveOfferingSelection(offeringSelection)
+        val resolvedOfferingSelection = resolveOfferingSelection(offeringSelection)
+        val currentOffering = resolvedOfferingSelection.selectedOffering
         val exitOfferingId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
 
         updateExitOfferData(
-            exitOfferingId?.let { ExitOfferData.Available(offeringId = it, offerings = offeringsForExitOffer) }
+            exitOfferingId?.let {
+                ExitOfferData.Available(
+                    offeringId = it,
+                    offerings = resolvedOfferingSelection.offeringsForExitOfferLookup,
+                )
+            }
                 ?: ExitOfferData.Unavailable,
         )
         updatePaywallState(currentOffering)
@@ -753,9 +765,12 @@ internal class PaywallViewModelImpl(
         return updatedFromWorkflow
     }
 
-    private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): Pair<Offering?, Offerings?> =
+    private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): ResolvedOfferingSelection =
         when (offeringSelection) {
-            is OfferingSelection.OfferingType -> offeringSelection.offeringType to null
+            is OfferingSelection.OfferingType -> ResolvedOfferingSelection(
+                selectedOffering = offeringSelection.offeringType,
+                offeringsForExitOfferLookup = null,
+            )
             is OfferingSelection.IdAndPresentedOfferingContext -> {
                 val offerings = purchases.awaitOfferings()
                 val presentedOfferingContext = offeringSelection.presentedOfferingContext
@@ -763,12 +778,18 @@ internal class PaywallViewModelImpl(
                 val offeringWithContext = presentedOfferingContext?.let {
                     offering?.copy(presentedOfferingContext)
                 } ?: offering
-                offeringWithContext to offerings
+                ResolvedOfferingSelection(
+                    selectedOffering = offeringWithContext,
+                    offeringsForExitOfferLookup = offerings,
+                )
             }
 
             is OfferingSelection.None -> {
                 val offerings = purchases.awaitOfferings()
-                offerings.current to offerings
+                ResolvedOfferingSelection(
+                    selectedOffering = offerings.current,
+                    offeringsForExitOfferLookup = offerings,
+                )
             }
         }
 
@@ -794,6 +815,7 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         updateStateJob?.cancel()
+        updateExitOfferData(ExitOfferData.Loading)
         applyWorkflowState(fetchResult, offerings, presentedOfferingContext)
     }
 
@@ -823,7 +845,7 @@ internal class PaywallViewModelImpl(
                 ExitOfferData.Available(
                     offeringId = it.offeringId,
                     offerings = offerings,
-                    workflowStepId = it.stepId,
+                    triggeringWorkflowStepId = it.stepId,
                 )
             } ?: ExitOfferData.Unavailable,
         )
