@@ -62,7 +62,7 @@
 
 ## ──────────────────────────────────────────────
 ## Remote Config Base URL Override
-## When set, redirects only GET /v1/subscribers/<id>/config to this host.
+## When set, redirects only GET /v2/config to this host.
 ## All other endpoints continue to use the production base URL.
 ## Useful for pointing the remote-config endpoint at a local backend.
 ## Only takes effect in debug builds.
