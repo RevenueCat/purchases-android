@@ -208,9 +208,10 @@ internal class PaywallViewModelImpl(
 
     private sealed interface ExitOfferData {
         object Loading : ExitOfferData
+        object Unavailable : ExitOfferData
 
-        data class Loaded(
-            val offeringId: String?,
+        data class Available(
+            val offeringId: String,
             val offerings: Offerings?,
             val workflowStepId: String? = null,
         ) : ExitOfferData
@@ -309,33 +310,31 @@ internal class PaywallViewModelImpl(
         preloadExitOfferingJob = viewModelScope.launch {
             exitOfferData.collectLatest { data ->
                 when (data) {
-                    is ExitOfferData.Loaded -> loadExitOffering(data)
-                    ExitOfferData.Loading -> _preloadedExitOffering.value = null
+                    is ExitOfferData.Available -> loadExitOffering(data)
+                    ExitOfferData.Loading,
+                    ExitOfferData.Unavailable,
+                    -> _preloadedExitOffering.value = null
                 }
             }
         }
     }
 
-    private fun updateExitOfferData(data: ExitOfferData.Loaded) {
+    private fun updateExitOfferData(data: ExitOfferData) {
         _preloadedExitOffering.value = null
         exitOfferData.value = data
     }
 
-    private suspend fun loadExitOffering(loadedExitOfferData: ExitOfferData.Loaded) {
+    private suspend fun loadExitOffering(availableExitOfferData: ExitOfferData.Available) {
         try {
-            val exitOfferingId = loadedExitOfferData.offeringId
-            _preloadedExitOffering.value = if (exitOfferingId != null) {
-                val offerings = loadedExitOfferData.offerings ?: purchases.awaitOfferings()
-                offerings[exitOfferingId].also { exitOffering ->
-                    if (exitOffering == null) {
-                        Logger.e(
-                            "Exit offering with ID '$exitOfferingId' not found in available offerings. " +
-                                "Exit offer will not be displayed.",
-                        )
-                    }
+            val exitOfferingId = availableExitOfferData.offeringId
+            val offerings = availableExitOfferData.offerings ?: purchases.awaitOfferings()
+            _preloadedExitOffering.value = offerings[exitOfferingId].also { exitOffering ->
+                if (exitOffering == null) {
+                    Logger.e(
+                        "Exit offering with ID '$exitOfferingId' not found in available offerings. " +
+                            "Exit offer will not be displayed.",
+                    )
                 }
-            } else {
-                null
             }
         } catch (e: PurchasesException) {
             Logger.e("Failed to preload exit offering", e)
@@ -344,11 +343,13 @@ internal class PaywallViewModelImpl(
 
     private val shouldTriggerExitOfferForCurrentStep: Boolean
         get() = when (val loadedExitOfferData = exitOfferData.value) {
-            is ExitOfferData.Loaded -> {
+            is ExitOfferData.Available -> {
                 val workflowStepId = loadedExitOfferData.workflowStepId
                 workflowStepId == null || _workflowState.value?.currentStepId == workflowStepId
             }
-            ExitOfferData.Loading -> false
+            ExitOfferData.Loading,
+            ExitOfferData.Unavailable,
+            -> false
         }
 
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
@@ -702,7 +703,7 @@ internal class PaywallViewModelImpl(
             try {
                 updateStateFromOffering(options.offeringSelection)
             } catch (e: PurchasesException) {
-                updateExitOfferData(ExitOfferData.Loaded(offeringId = null, offerings = null))
+                updateExitOfferData(ExitOfferData.Unavailable)
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
                 )
@@ -716,12 +717,11 @@ internal class PaywallViewModelImpl(
         }
 
         val (currentOffering, offeringsForExitOffer) = resolveOfferingSelection(offeringSelection)
+        val exitOfferingId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
 
         updateExitOfferData(
-            ExitOfferData.Loaded(
-                offeringId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId,
-                offerings = offeringsForExitOffer,
-            ),
+            exitOfferingId?.let { ExitOfferData.Available(offeringId = it, offerings = offeringsForExitOffer) }
+                ?: ExitOfferData.Unavailable,
         )
         updatePaywallState(currentOffering)
     }
@@ -806,7 +806,7 @@ internal class PaywallViewModelImpl(
         val workflow = fetchResult.workflow
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
-            updateExitOfferData(ExitOfferData.Loaded(offeringId = null, offerings = offerings))
+            updateExitOfferData(ExitOfferData.Unavailable)
             _state.value = PaywallState.Error(
                 "Initial step '${workflow.initialStepId}' not found in workflow '${workflow.id}'",
             )
@@ -819,11 +819,13 @@ internal class PaywallViewModelImpl(
         workflowNavigator = WorkflowNavigator(workflow)
         val dismissExitOffer = workflow.dismissExitOffer
         updateExitOfferData(
-            ExitOfferData.Loaded(
-                offeringId = dismissExitOffer?.offeringId,
-                offerings = offerings,
-                workflowStepId = dismissExitOffer?.stepId,
-            ),
+            dismissExitOffer?.let {
+                ExitOfferData.Available(
+                    offeringId = it.offeringId,
+                    offerings = offerings,
+                    workflowStepId = it.stepId,
+                )
+            } ?: ExitOfferData.Unavailable,
         )
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
