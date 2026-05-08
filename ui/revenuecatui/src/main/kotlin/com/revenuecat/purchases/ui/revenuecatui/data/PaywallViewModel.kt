@@ -290,7 +290,7 @@ internal class PaywallViewModelImpl(
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
-        val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep()) {
+        val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             _preloadedExitOffering.value
         } else {
             null
@@ -352,15 +352,14 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private fun shouldTriggerExitOfferForCurrentStep(): Boolean {
-        return when (val loadedExitOfferData = exitOfferData) {
+    private val shouldTriggerExitOfferForCurrentStep: Boolean
+        get() = when (val loadedExitOfferData = exitOfferData) {
             is ExitOfferData.Loaded -> {
                 val workflowStepId = loadedExitOfferData.workflowStepId
                 workflowStepId == null || _workflowState.value?.currentStepId == workflowStepId
             }
             ExitOfferData.Loading -> false
         }
-    }
 
     @Suppress("ReturnCount")
     private fun getExitOfferingId(workflow: PublishedWorkflow, step: WorkflowStep?): String? {
