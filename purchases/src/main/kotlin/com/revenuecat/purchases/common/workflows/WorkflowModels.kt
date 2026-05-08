@@ -105,7 +105,48 @@ public data class PublishedWorkflow(
     val metadata: Map<String, @Contextual Any> = emptyMap(),
     val hash: String? = null,
     @SerialName("single_step_fallback_id") val singleStepFallbackId: String? = null,
+) {
+    @InternalRevenueCatAPI
+    public val dismissExitOffer: WorkflowExitOffer?
+        get() {
+            val step = findCanonicalExitOfferStep() ?: return null
+            val screenId = step.screenId ?: return null
+            val offeringId = screens[screenId]?.exitOffers?.dismiss?.offeringId ?: return null
+            return WorkflowExitOffer(offeringId = offeringId, stepId = step.id)
+        }
+}
+
+@InternalRevenueCatAPI
+public data class WorkflowExitOffer(
+    val offeringId: String,
+    val stepId: String,
 )
+
+// Resolves the step that holds the workflow's exit offer config. The backend may declare it
+// explicitly via `single_step_fallback_id`; if absent, we fall back to traversing the step
+// graph to find the terminal step.
+@Suppress("ReturnCount")
+private fun PublishedWorkflow.findCanonicalExitOfferStep(): WorkflowStep? {
+    singleStepFallbackId?.let { fallbackId ->
+        val step = steps[fallbackId]
+        if (step != null) return step
+    }
+    var currentStepId = initialStepId
+    val visited = mutableSetOf<String>()
+    while (currentStepId !in visited) {
+        visited.add(currentStepId)
+        val step = steps[currentStepId] ?: return null
+        // For branching workflows, this picks the first Step action found in insertion order.
+        // Exit offers are expected to be configured on the terminal step of linear (or near-linear) flows.
+        val nextStepId = step.triggerActions.values
+            .filterIsInstance<WorkflowTriggerAction.Step>()
+            .firstOrNull()
+            ?.stepId
+            ?: return step
+        currentStepId = nextStepId
+    }
+    return null
+}
 
 @InternalRevenueCatAPI
 public data class WorkflowDataResult(

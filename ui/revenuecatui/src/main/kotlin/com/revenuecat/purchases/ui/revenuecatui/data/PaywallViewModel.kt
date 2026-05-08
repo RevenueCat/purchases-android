@@ -25,7 +25,6 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowStep
-import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
@@ -351,41 +350,6 @@ internal class PaywallViewModelImpl(
             }
             ExitOfferData.Loading -> false
         }
-
-    @Suppress("ReturnCount")
-    private fun getExitOfferingId(workflow: PublishedWorkflow, step: WorkflowStep?): String? {
-        val screenId = step?.screenId ?: return null
-        val screen = workflow.screens[screenId] ?: return null
-        return screen.exitOffers?.dismiss?.offeringId
-    }
-
-    // Resolves the step that holds the workflow's exit offer config. The backend may declare it
-    // explicitly via `single_step_fallback_id`; if absent, we fall back to traversing the step
-    // graph to find the terminal step.
-    @Suppress("ReturnCount")
-    private fun findCanonicalExitOfferStep(workflow: PublishedWorkflow): WorkflowStep? {
-        workflow.singleStepFallbackId?.let { fallbackId ->
-            val step = workflow.steps[fallbackId]
-            if (step != null) return step
-            Logger.w("Workflow '${workflow.id}' has single_step_fallback_id '$fallbackId' but no matching step")
-        }
-        var currentStepId = workflow.initialStepId
-        val visited = mutableSetOf<String>()
-        while (currentStepId !in visited) {
-            visited.add(currentStepId)
-            val step = workflow.steps[currentStepId] ?: return null
-            // For branching workflows, this picks the first Step action found in insertion order.
-            // Exit offers are expected to be configured on the terminal step of linear (or near-linear) flows.
-            val nextStepId = step.triggerActions.values
-                .filterIsInstance<WorkflowTriggerAction.Step>()
-                .firstOrNull()
-                ?.stepId
-                ?: return step
-            currentStepId = nextStepId
-        }
-        Logger.w("Workflow '${workflow.id}' has a cycle in its step graph — cannot determine last step for exit offer")
-        return null
-    }
 
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
         val state = state.value as? PaywallState.Loaded.Components
@@ -853,12 +817,12 @@ internal class PaywallViewModelImpl(
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
         workflowNavigator = WorkflowNavigator(workflow)
-        val exitOfferStep = findCanonicalExitOfferStep(workflow)
+        val dismissExitOffer = workflow.dismissExitOffer
         updateExitOfferData(
             ExitOfferData.Loaded(
-                offeringId = getExitOfferingId(workflow, exitOfferStep),
+                offeringId = dismissExitOffer?.offeringId,
                 offerings = offerings,
-                workflowStepId = exitOfferStep?.id,
+                workflowStepId = dismissExitOffer?.stepId,
             ),
         )
         preWarmJob?.cancel()
