@@ -57,14 +57,17 @@ class PaywallActionTests {
         val localizationKeyRestore = LocalizationKey("restore")
         val localizationKeyBack = LocalizationKey("back")
         val localizationKeyPurchase = LocalizationKey("purchase")
+        val localizationKeyCloseWorkflow = LocalizationKey("close_workflow")
         val localizationDataRestore = LocalizationData.Text("restore")
         val localizationDataBack = LocalizationData.Text("back")
         val localizationDataPurchase = LocalizationData.Text("purchase")
+        val localizationDataCloseWorkflow = LocalizationData.Text("close workflow")
         val localizations = nonEmptyMapOf(
             defaultLocale to nonEmptyMapOf(
                 localizationKeyRestore to localizationDataRestore,
                 localizationKeyBack to localizationDataBack,
                 localizationKeyPurchase to localizationDataPurchase,
+                localizationKeyCloseWorkflow to localizationDataCloseWorkflow,
             )
         )
         // Bit of a convoluted way to create components, to ensure we use an an exhaustive when, forcing ourselves to
@@ -73,11 +76,13 @@ class PaywallActionTests {
             PaywallAction.External.RestorePurchases to localizationKeyRestore,
             PaywallAction.External.NavigateBack to localizationKeyBack,
             PaywallAction.External.PurchasePackage(rcPackage = null) to localizationKeyPurchase,
+            PaywallAction.External.CloseWorkflow to localizationKeyCloseWorkflow,
         ).map { (action: PaywallAction, key) ->
             when (action) {
                 is PaywallAction.External.RestorePurchases,
                 is PaywallAction.External.NavigateBack,
                 is PaywallAction.External.NavigateTo,
+                is PaywallAction.External.CloseWorkflow,
                     -> ButtonComponent(
                     action = action.toButtonAction(),
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
@@ -102,10 +107,12 @@ class PaywallActionTests {
         clickButtonsWithText(localizationDataRestore, expectedCount = 2)
         clickButtonsWithText(localizationDataBack, expectedCount = 2)
         clickButtonsWithText(localizationDataPurchase, expectedCount = 2)
+        clickButtonsWithText(localizationDataCloseWorkflow, expectedCount = 2)
 
         // Assert
         assertEquals(2, viewModel.handleRestorePurchasesCallCount)
-        assertEquals(2, viewModel.closePaywallCallCount)
+        // 2 from NavigateBack + 2 from CloseWorkflow — both route to closePaywall()
+        assertEquals(4, viewModel.closePaywallCallCount)
         assertEquals(2, viewModel.handlePackagePurchaseCount)
     }
 
