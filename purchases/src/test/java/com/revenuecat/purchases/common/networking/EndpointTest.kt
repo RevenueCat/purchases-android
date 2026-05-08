@@ -23,7 +23,8 @@ class EndpointTest {
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
         Endpoint.GetWorkflow("test-user-id", "wf_test"),
-        Endpoint.AliasUsers("test-user-id")
+        Endpoint.AliasUsers("test-user-id"),
+        Endpoint.GetRemoteConfig,
     )
 
     @Test
@@ -132,6 +133,13 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetRemoteConfig has correct path`() {
+        val endpoint = Endpoint.GetRemoteConfig
+        val expectedPath = "/v2/config"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
     fun `AliasUsers has correct name`() {
         val endpoint = Endpoint.AliasUsers(userId = "test user-id")
         assertThat(endpoint.name).isEqualTo("alias_users")
@@ -165,6 +173,7 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
+            Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -212,6 +221,7 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
+            Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
