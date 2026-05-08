@@ -88,7 +88,6 @@ internal interface PaywallViewModel {
     val actionInProgress: State<Boolean>
     val actionError: State<PurchasesError?>
     val purchaseCompleted: State<Boolean>
-    val preloadedExitOffering: State<Offering?>
 
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
@@ -172,16 +171,16 @@ internal class PaywallViewModelImpl(
         get() = _actionError
     override val purchaseCompleted: State<Boolean>
         get() = _purchaseCompleted
-    override val preloadedExitOffering: State<Offering?>
-        get() = _preloadedExitOffering
     override val workflowState: State<WorkflowPaywallUiState?>
         get() = _workflowState
+
+    internal var preloadedExitOffering: Offering? = null
+        private set
 
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
-    private val _preloadedExitOffering: MutableState<Offering?> = mutableStateOf(null)
     private val _workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
@@ -293,7 +292,7 @@ internal class PaywallViewModelImpl(
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
-            _preloadedExitOffering.value
+            preloadedExitOffering
         } else {
             null
         }
@@ -321,7 +320,7 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     private fun refreshPreloadedExitOffering() {
-        _preloadedExitOffering.value = null
+        preloadedExitOffering = null
         if (!preloadExitOfferingRequested) return
         val data = exitOfferData as? ExitOfferData.Available ?: return
         val offerings = data.offerings
@@ -336,7 +335,7 @@ internal class PaywallViewModelImpl(
                     "Exit offer will not be displayed.",
             )
         }
-        _preloadedExitOffering.value = exitOffering
+        preloadedExitOffering = exitOffering
     }
 
     private val shouldTriggerExitOfferForCurrentStep: Boolean

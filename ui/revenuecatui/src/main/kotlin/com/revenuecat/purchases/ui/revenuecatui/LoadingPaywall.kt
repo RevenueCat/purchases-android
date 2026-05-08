@@ -191,7 +191,6 @@ private class LoadingViewModel(
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
-    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
     override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     override fun trackPaywallImpressionIfNeeded() = Unit

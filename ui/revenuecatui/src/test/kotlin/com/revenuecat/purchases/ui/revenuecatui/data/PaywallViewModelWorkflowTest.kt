@@ -761,7 +761,7 @@ class PaywallViewModelWorkflowTest {
         vm.preloadExitOffering()
         advanceUntilIdle()
 
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
 
     @Test
@@ -771,7 +771,7 @@ class PaywallViewModelWorkflowTest {
         vm.preloadExitOffering()
         advanceUntilIdle()
 
-        assertThat(vm.preloadedExitOffering.value).isNull()
+        assertThat(vm.preloadedExitOffering).isNull()
     }
 
     @Test
@@ -784,7 +784,7 @@ class PaywallViewModelWorkflowTest {
         vm.preloadExitOffering()
         advanceUntilIdle()
 
-        assertThat(vm.preloadedExitOffering.value).isNull()
+        assertThat(vm.preloadedExitOffering).isNull()
     }
 
     @Test
@@ -803,7 +803,7 @@ class PaywallViewModelWorkflowTest {
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         // Confirm the offering was preloaded before testing the close behaviour.
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
 
         vm.closePaywall()
 
@@ -825,7 +825,7 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
 
         // The exit offer is preloaded, but the current workflow step is still step-1.
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
 
         vm.closePaywall()
 
@@ -843,7 +843,7 @@ class PaywallViewModelWorkflowTest {
         vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         advanceUntilIdle()
 
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
 
     @Test
@@ -851,10 +851,10 @@ class PaywallViewModelWorkflowTest {
         val vm = createVm()
         vm.preloadExitOffering()
         vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
 
         vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
 
     @Test
@@ -866,7 +866,7 @@ class PaywallViewModelWorkflowTest {
         vm.preloadExitOffering()
         advanceUntilIdle()
 
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
 
     @Test
@@ -878,7 +878,7 @@ class PaywallViewModelWorkflowTest {
         vm.preloadExitOffering()
         advanceUntilIdle()
 
-        assertThat(vm.preloadedExitOffering.value?.identifier).isEqualTo(exitOfferingId)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
 
     // endregion exit offers

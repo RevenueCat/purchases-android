@@ -531,7 +531,6 @@ internal class MockViewModel(
     override val actionError: State<PurchasesError?>
         get() = _actionError
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
-    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
     override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
