@@ -42,10 +42,9 @@ internal class WorkflowManager(
                 scope.launch {
                     try {
                         val result = workflowDetailResolver.resolve(response)
-                        try {
-                            workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow)
-                        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                            errorLog(e) { "Failed to pre-download workflow assets — delivering result anyway" }
+                        scope.launch {
+                            runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
+                                .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
                         }
                         onSuccess(result)
                     } catch (e: IllegalStateException) {
