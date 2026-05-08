@@ -7,13 +7,24 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
+import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
+import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
+import com.revenuecat.purchases.paywalls.components.TabControlComponent
+import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
+import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -65,6 +76,7 @@ internal class PaywallComponentsImagePreDownloader(
             }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun PaywallComponent.findImageUrisToDownload(): Set<Uri> {
         return when (this) {
             is StackComponent -> {
@@ -105,7 +117,20 @@ internal class PaywallComponentsImagePreDownloader(
                     (endStack?.findImageUrisToDownload().orEmpty()) +
                     (fallback?.findImageUrisToDownload().orEmpty())
             }
-            else -> emptySet()
+            // These components don't carry image URIs themselves; their children
+            // (if any) are visited by the BFS traversal in PaywallComponent.filter.
+            is ButtonComponent,
+            is FallbackHeaderComponent,
+            is HeaderComponent,
+            is PackageComponent,
+            is PurchaseButtonComponent,
+            is StickyFooterComponent,
+            is TabControlButtonComponent,
+            is TabControlComponent,
+            is TabControlToggleComponent,
+            is TextComponent,
+            is TimelineComponent,
+            -> emptySet()
         }
     }
 
