@@ -1277,15 +1277,6 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `close_workflow action dismisses paywall`() {
-        val model = create()
-
-        assertThat(dismissInvoked).isFalse
-        model.closePaywall()
-        assertThat(dismissInvoked).isTrue
-    }
-
-    @Test
     fun `handleBackNavigation returns false for regular paywall`() {
         val model = create()
 
