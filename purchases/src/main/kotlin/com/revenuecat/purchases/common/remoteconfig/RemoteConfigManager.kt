@@ -44,18 +44,21 @@ internal class RemoteConfigManager(
             val entry = variants[DEFAULT_VARIANT] ?: return@mapNotNull null
             TopicTask(topic, DEFAULT_VARIANT, entry)
         }
-        if (source == null || tasks.isEmpty()) return null
-        return coroutineScope {
-            tasks.map { task ->
-                async {
-                    topicFetcher.fetchTopicIfNeeded(
-                        topic = task.topic,
-                        variant = task.variant,
-                        topicEntry = task.entry,
-                        source = source,
-                    )
-                }
-            }.awaitAll().firstNotNullOfOrNull { it }
+        return if (source == null || tasks.isEmpty()) {
+            null
+        } else {
+            coroutineScope {
+                tasks.map { task ->
+                    async {
+                        topicFetcher.fetchTopicIfNeeded(
+                            topic = task.topic,
+                            variant = task.variant,
+                            topicEntry = task.entry,
+                            source = source,
+                        )
+                    }
+                }.awaitAll().firstNotNullOfOrNull { it }
+            }
         }
     }
 

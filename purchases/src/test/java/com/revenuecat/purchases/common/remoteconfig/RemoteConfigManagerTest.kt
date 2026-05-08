@@ -40,7 +40,7 @@ class RemoteConfigManagerTest {
         val entry = topicEntry("blob-default")
         val response = response(
             blobSources = listOf(src),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to entry)),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to entry)),
         )
         mockBackendSuccess(response)
         val capturedTopic = slot<Topic>()
@@ -67,7 +67,7 @@ class RemoteConfigManagerTest {
         assertThat(completionInvoked).isTrue
         assertThat(completionError).isNull()
         assertThat(capturedTopic.captured).isEqualTo(Topic.PRODUCT_ENTITLEMENT_MAPPING)
-        assertThat(capturedVariant.captured).isEqualTo("DEFAULT")
+        assertThat(capturedVariant.captured).isEqualTo("default")
         assertThat(capturedEntry.captured).isEqualTo(entry)
         assertThat(capturedSource.captured).isEqualTo(src)
     }
@@ -77,7 +77,7 @@ class RemoteConfigManagerTest {
         val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
         val response = response(
             blobSources = emptyList(),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
 
@@ -117,7 +117,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `topic without DEFAULT variant is skipped`() = runTest {
+    fun `topic without default variant is skipped`() = runTest {
         val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
         val response = response(
             blobSources = listOf(source("primary")),
@@ -147,7 +147,7 @@ class RemoteConfigManagerTest {
         val second = source("second")
         val response = response(
             blobSources = listOf(first, second),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
         val capturedSource = slot<BlobSource>()
@@ -171,7 +171,7 @@ class RemoteConfigManagerTest {
         val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
         val response = response(
             blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
         val fetcherError = PurchasesError(PurchasesErrorCode.NetworkError, "fetcher failed")
@@ -218,7 +218,7 @@ class RemoteConfigManagerTest {
         val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
         val response = response(
             blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
         coEvery {
@@ -242,7 +242,7 @@ class RemoteConfigManagerTest {
         val manager = RemoteConfigManager(backend, topicFetcher, UnconfinedTestDispatcher(testScheduler))
         val response = response(
             blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("DEFAULT" to topicEntry("blob"))),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
         coEvery {
