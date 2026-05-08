@@ -28,7 +28,7 @@ class PublishedWorkflowTest {
     )
 
     @Test
-    fun `dismissExitOffer uses terminal step when singleStepFallbackId is absent`() {
+    fun `dismissExitOffer is null when singleStepFallbackId is absent`() {
         val workflow = workflow(
             steps = mapOf(
                 "step-1" to step("step-1", "screen-1", nextStepId = "step-2"),
@@ -40,9 +40,7 @@ class PublishedWorkflowTest {
             ),
         )
 
-        assertThat(workflow.dismissExitOffer).isEqualTo(
-            WorkflowExitOffer(offeringId = "exit-offering", stepId = "step-2"),
-        )
+        assertThat(workflow.dismissExitOffer).isNull()
     }
 
     @Test

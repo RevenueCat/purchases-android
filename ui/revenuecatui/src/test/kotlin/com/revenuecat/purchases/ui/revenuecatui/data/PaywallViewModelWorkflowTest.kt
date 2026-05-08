@@ -274,6 +274,7 @@ class PaywallViewModelWorkflowTest {
         ),
         uiConfig = UiConfig(),
         metadata = emptyMap(),
+        singleStepFallbackId = "step-2",
     )
     private val fetchResultWithExitOffer = WorkflowDataResult(
         workflow = workflowWithExitOffer,
@@ -296,6 +297,7 @@ class PaywallViewModelWorkflowTest {
         screens = mapOf(screenId1 to makeScreenWithExitOffer(screenId1)),
         uiConfig = UiConfig(),
         metadata = emptyMap(),
+        singleStepFallbackId = "step-only",
     )
     private val singleStepFetchResultWithExitOffer = WorkflowDataResult(
         workflow = singleStepWorkflowWithExitOffer,
@@ -751,7 +753,7 @@ class PaywallViewModelWorkflowTest {
     // region exit offers
 
     @Test
-    fun `preloadExitOffering reads exit offer from last workflow step`() = runTest {
+    fun `preloadExitOffering reads exit offer from singleStepFallbackId step`() = runTest {
         coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
 
         val vm = createVm()
@@ -763,7 +765,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `preloadExitOffering with no exit offer on last step does not set preloaded offering`() = runTest {
+    fun `preloadExitOffering without singleStepFallbackId does not set preloaded offering`() = runTest {
         val vm = createVm()
         vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
         vm.preloadExitOffering()
