@@ -14,7 +14,6 @@ import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
-import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -104,11 +103,6 @@ internal class PaywallComponentsImagePreDownloader(
                 countdownStack.findImageUrisToDownload() +
                     (endStack?.findImageUrisToDownload().orEmpty()) +
                     (fallback?.findImageUrisToDownload().orEmpty())
-            }
-            is TimelineComponent -> {
-                items.flatMapTo(mutableSetOf()) { item ->
-                    item.icon.findImageUrisToDownload()
-                }
             }
             else -> emptySet()
         }
