@@ -22,10 +22,7 @@ internal class WorkflowAssetPreDownloader(
         debugLog { "Pre-downloading workflow assets for workflow '${workflow.id}'" }
 
         workflow.screens.values.forEach { screen ->
-            paywallComponentsImagePreDownloader.preDownloadImages(
-                paywallComponentsConfig = screen.componentsConfig.base,
-                localizations = screen.componentsLocalizations,
-            )
+            paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base)
         }
         offeringFontPreDownloader.preDownloadFontsIfNeeded(workflow.uiConfig.app.fonts.values)
     }

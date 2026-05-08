@@ -72,7 +72,7 @@ class WorkflowAssetPreDownloaderTest {
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
-            imagePreDownloader.preDownloadImages(screenConfig, localizations)
+            imagePreDownloader.preDownloadImages(screenConfig)
             fontPreDownloader.preDownloadFontsIfNeeded(capture(fontsSlot))
         }
         assertThat(fontsSlot.captured).containsExactly(font)
@@ -90,7 +90,7 @@ class WorkflowAssetPreDownloaderTest {
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
-            imagePreDownloader.preDownloadImages(screenConfig, emptyMap())
+            imagePreDownloader.preDownloadImages(screenConfig)
             fontPreDownloader.preDownloadFontsIfNeeded(capture(fontsSlot))
         }
         assertThat(fontsSlot.captured).isEmpty()
