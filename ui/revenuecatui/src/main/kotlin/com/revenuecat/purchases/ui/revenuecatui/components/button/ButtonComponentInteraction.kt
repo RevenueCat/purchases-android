@@ -16,6 +16,8 @@ internal fun ButtonComponentStyle.Action.componentInteraction(localeUrl: String?
             ButtonComponentInteraction(value = "restore_purchases")
         is ButtonComponentStyle.Action.NavigateBack ->
             ButtonComponentInteraction(value = "navigate_back")
+        is ButtonComponentStyle.Action.CloseWorkflow ->
+            ButtonComponentInteraction(value = "close_workflow")
         is ButtonComponentStyle.Action.NavigateTo -> destination.componentInteraction(localeUrl)
         is ButtonComponentStyle.Action.PurchasePackage,
         is ButtonComponentStyle.Action.WebCheckout,
@@ -51,5 +53,6 @@ internal fun ButtonComponentStyle.Action.isPurchaseRelated(): Boolean =
         is ButtonComponentStyle.Action.NavigateBack,
         is ButtonComponentStyle.Action.NavigateTo,
         is ButtonComponentStyle.Action.WorkflowTrigger,
+        is ButtonComponentStyle.Action.CloseWorkflow,
         -> false
     }

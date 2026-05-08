@@ -729,6 +729,7 @@ internal class StyleFactory(
             is ButtonComponent.Action.NavigateTo -> convertDestination(action.destination)
                 .map { destination -> destination?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
             is ButtonComponent.Action.WorkflowTrigger -> Result.Success(ButtonComponentStyle.Action.WorkflowTrigger)
+            is ButtonComponent.Action.CloseWorkflow -> Result.Success(ButtonComponentStyle.Action.CloseWorkflow)
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Action.Unknown -> Result.Success(null)
         }

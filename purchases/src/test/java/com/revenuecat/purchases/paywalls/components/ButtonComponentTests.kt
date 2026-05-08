@@ -874,6 +874,17 @@ internal class ButtonComponentTests {
                     ),
                 ),
                 arrayOf(
+                    "close_workflow",
+                    Args(
+                        serialized = """
+                        {
+                          "type": "close_workflow"
+                        }
+                        """.trimIndent(),
+                        deserialized = ButtonComponent.Action.CloseWorkflow,
+                    ),
+                ),
+                arrayOf(
                     "unknown",
                     Args(
                         serialized = """
