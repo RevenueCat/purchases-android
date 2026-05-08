@@ -219,9 +219,7 @@ internal class PaywallViewModelImpl(
     private var exitOfferData: ExitOfferData = ExitOfferData.Loading
     private var preloadExitOfferingRequested = false
     private var preloadExitOfferingJob: Job? = null
-
-    // Prevents older async state loads from overwriting newer workflow/offering data.
-    private var paywallDataRevision = 0
+    private var updateStateJob: Job? = null
 
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
@@ -312,10 +310,7 @@ internal class PaywallViewModelImpl(
         preloadExitOfferingIfReady(exitOfferData)
     }
 
-    private fun updateExitOfferData(data: ExitOfferData.Loaded, revision: Int) {
-        if (revision != paywallDataRevision) {
-            return
-        }
+    private fun updateExitOfferData(data: ExitOfferData.Loaded) {
         exitOfferData = data
         _preloadedExitOffering.value = null
         preloadExitOfferingIfReady(data)
@@ -740,18 +735,15 @@ internal class PaywallViewModelImpl(
         }
     }
     private fun updateState() {
-        val revision = ++paywallDataRevision
+        updateStateJob?.cancel()
         exitOfferData = ExitOfferData.Loading
         _preloadedExitOffering.value = null
         preloadExitOfferingJob?.cancel()
-        viewModelScope.launch {
+        updateStateJob = viewModelScope.launch {
             try {
-                updateStateFromOffering(options.offeringSelection, revision)
+                updateStateFromOffering(options.offeringSelection)
             } catch (e: PurchasesException) {
-                updateExitOfferData(ExitOfferData.Loaded(offeringId = null, offerings = null), revision)
-                if (revision != paywallDataRevision) {
-                    return@launch
-                }
+                updateExitOfferData(ExitOfferData.Loaded(offeringId = null, offerings = null))
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
                 )
@@ -759,30 +751,23 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection, revision: Int) {
-        if (updateStateFromWorkflowEndpointIfNeeded(offeringSelection, revision)) {
+    private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
+        if (updateStateFromWorkflowEndpointIfNeeded(offeringSelection)) {
             return
         }
 
         val (currentOffering, offeringsForExitOffer) = resolveOfferingSelection(offeringSelection)
-        if (revision != paywallDataRevision) {
-            return
-        }
 
         updateExitOfferData(
             ExitOfferData.Loaded(
                 offeringId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId,
                 offerings = offeringsForExitOffer,
             ),
-            revision,
         )
         updatePaywallState(currentOffering)
     }
 
-    private suspend fun updateStateFromWorkflowEndpointIfNeeded(
-        offeringSelection: OfferingSelection,
-        revision: Int,
-    ): Boolean {
+    private suspend fun updateStateFromWorkflowEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
         var updatedFromWorkflow = false
         if (BuildConfig.USE_WORKFLOWS_ENDPOINT) {
             val workflowParams = when (offeringSelection) {
@@ -797,11 +782,10 @@ internal class PaywallViewModelImpl(
                 coroutineScope {
                     val fetchResultDeferred = async { purchases.awaitGetWorkflow(offeringId) }
                     val offeringsDeferred = async { purchases.awaitOfferings() }
-                    updateStateFromWorkflow(
+                    applyWorkflowState(
                         fetchResultDeferred.await(),
                         offeringsDeferred.await(),
                         presentedOfferingContext,
-                        revision,
                     )
                 }
                 updatedFromWorkflow = true
@@ -850,28 +834,20 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        updateStateFromWorkflow(
-            fetchResult = fetchResult,
-            offerings = offerings,
-            presentedOfferingContext = presentedOfferingContext,
-            revision = ++paywallDataRevision,
-        )
+        updateStateJob?.cancel()
+        applyWorkflowState(fetchResult, offerings, presentedOfferingContext)
     }
 
     @Suppress("ReturnCount")
-    private fun updateStateFromWorkflow(
+    private fun applyWorkflowState(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
-        revision: Int,
     ) {
-        if (revision != paywallDataRevision) {
-            return
-        }
         val workflow = fetchResult.workflow
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
-            updateExitOfferData(ExitOfferData.Loaded(offeringId = null, offerings = offerings), revision)
+            updateExitOfferData(ExitOfferData.Loaded(offeringId = null, offerings = offerings))
             _state.value = PaywallState.Error(
                 "Initial step '${workflow.initialStepId}' not found in workflow '${workflow.id}'",
             )
@@ -889,7 +865,6 @@ internal class PaywallViewModelImpl(
                 offerings = offerings,
                 workflowStepId = exitOfferStep?.id,
             ),
-            revision,
         )
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
