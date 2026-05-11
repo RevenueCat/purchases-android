@@ -321,9 +321,10 @@ internal class PaywallViewModelImpl(
         exitOfferData = exitOfferData.withPreloadRequested().resolveIfNeeded()
     }
 
-    private fun cancelAndResetState() {
+    private fun cancelStateUpdate() {
         updateStateJob?.cancel()
-        updateExitOfferData(ExitOfferData.Loading())
+        // Exit offer data is intentionally preserved here: locale/color/options refreshes should
+        // not discard resolution that already ran. The async update sets new data via updateExitOfferData.
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
@@ -333,14 +334,7 @@ internal class PaywallViewModelImpl(
 
     private fun ExitOfferData.resolveIfNeeded(): ExitOfferData {
         if (this !is ExitOfferData.Configured || !preloadRequested || preloadedOffering != null) return this
-        val exitOffering = offerings[offeringId]
-        if (exitOffering == null) {
-            Logger.e(
-                "Exit offering with ID '$offeringId' not found in available offerings. " +
-                    "Exit offer will not be displayed.",
-            )
-        }
-        return copy(preloadedOffering = exitOffering)
+        return copy(preloadedOffering = offerings[offeringId])
     }
 
     private val shouldTriggerExitOfferForCurrentStep: Boolean
@@ -698,7 +692,7 @@ internal class PaywallViewModelImpl(
         }
     }
     private fun updateState() {
-        cancelAndResetState()
+        cancelStateUpdate()
         updateStateJob = viewModelScope.launch {
             try {
                 updateStateFromOffering(options.offeringSelection)
@@ -815,7 +809,7 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        cancelAndResetState()
+        cancelStateUpdate()
         applyWorkflowState(fetchResult, offerings, presentedOfferingContext)
     }
 

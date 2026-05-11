@@ -808,6 +808,34 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `preloadExitOffering not-found result is not re-attempted when same offerings are re-set`() = runTest {
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.preloadExitOffering()
+        assertThat(vm.preloadedExitOffering).isNull()
+
+        // Simulate locale/colour/options refresh pushing the same workflow data again.
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+
+        // Still null — carry-forward prevented a redundant lookup and a duplicate error log.
+        assertThat(vm.preloadedExitOffering).isNull()
+    }
+
+    @Test
+    fun `preloadExitOffering re-resolves when offerings are refreshed and now contain the exit offering`() = runTest {
+        val vm = createVm()
+        // First update: exit offering absent.
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.preloadExitOffering()
+        assertThat(vm.preloadedExitOffering).isNull()
+
+        // Second update: fresh offerings that now include the exit offering.
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
     fun `closePaywall with preloaded exit offer calls dismissRequestWithExitOffering`() = runTest {
         coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
 
