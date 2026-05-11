@@ -15,7 +15,6 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
-import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -59,72 +58,66 @@ internal class PaywallComponentsImagePreDownloader(
             paywallComponentsConfig.background.findImageUrisToDownload()
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun StackComponent.findImageUrisToDownload(): Set<Uri> {
         // PaywallComponent.filter is a BFS over the whole component tree. Passing { true }
         // visits every descendant; findImageUrisToDownload is then responsible for extracting
         // direct URIs per type (with the when expression as the single source of truth).
         return filter { true }
             .flatMapTo(mutableSetOf()) { component ->
-                component.findImageUrisToDownload()
-            }
-    }
-
-    @Suppress("CyclomaticComplexMethod")
-    private fun PaywallComponent.findImageUrisToDownload(): Set<Uri> {
-        return when (this) {
-            is StackComponent -> {
-                background.findImageUrisToDownload() + overrides.flatMapTo(mutableSetOf()) {
-                    it.properties.background.findImageUrisToDownload()
-                }
-            }
-            is IconComponent -> {
-                setOf(Uri.parse(baseUrl).buildUpon().path(formats.webp).build())
-            }
-            is CarouselComponent -> {
-                background.findImageUrisToDownload() +
-                    pages.flatMapTo(mutableSetOf()) {
-                        it.findImageUrisToDownload()
-                    } +
-                    overrides.flatMapTo(mutableSetOf()) {
-                        it.properties.background.findImageUrisToDownload()
+                when (component) {
+                    is StackComponent -> {
+                        component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
+                            it.properties.background.findImageUrisToDownload()
+                        }
                     }
-            }
-            is TabsComponent -> {
-                background.findImageUrisToDownload() + overrides.flatMapTo(mutableSetOf()) {
-                    it.properties.background.findImageUrisToDownload()
-                }
-            }
-            is ImageComponent -> {
-                source.findImageUrisToDownload() + overrides.flatMapTo(mutableSetOf()) {
-                    it.properties.source?.findImageUrisToDownload().orEmpty()
-                }
-            }
-            is VideoComponent -> {
-                fallbackSource?.findImageUrisToDownload().orEmpty() +
-                    overrides.orEmpty().flatMapTo(mutableSetOf()) {
-                        it.properties.fallbackSource?.findImageUrisToDownload().orEmpty()
+                    is IconComponent -> {
+                        setOf(Uri.parse(component.baseUrl).buildUpon().path(component.formats.webp).build())
                     }
+                    is CarouselComponent -> {
+                        component.background.findImageUrisToDownload() +
+                            component.pages.flatMapTo(mutableSetOf()) {
+                                it.findImageUrisToDownload()
+                            } +
+                            component.overrides.flatMapTo(mutableSetOf()) {
+                                it.properties.background.findImageUrisToDownload()
+                            }
+                    }
+                    is TabsComponent -> {
+                        component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
+                            it.properties.background.findImageUrisToDownload()
+                        }
+                    }
+                    is ImageComponent -> {
+                        component.source.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
+                            it.properties.source?.findImageUrisToDownload().orEmpty()
+                        }
+                    }
+                    is VideoComponent -> {
+                        component.fallbackSource?.findImageUrisToDownload().orEmpty() +
+                            component.overrides.orEmpty().flatMapTo(mutableSetOf()) {
+                                it.properties.fallbackSource?.findImageUrisToDownload().orEmpty()
+                            }
+                    }
+                    is CountdownComponent -> {
+                        component.countdownStack.findImageUrisToDownload() +
+                            (component.endStack?.findImageUrisToDownload().orEmpty()) +
+                            (component.fallback?.findImageUrisToDownload().orEmpty())
+                    }
+                    is ButtonComponent,
+                    is FallbackHeaderComponent,
+                    is HeaderComponent,
+                    is PackageComponent,
+                    is PurchaseButtonComponent,
+                    is StickyFooterComponent,
+                    is TabControlButtonComponent,
+                    is TabControlComponent,
+                    is TabControlToggleComponent,
+                    is TextComponent,
+                    is TimelineComponent,
+                    -> emptySet()
+                }
             }
-            is CountdownComponent -> {
-                countdownStack.findImageUrisToDownload() +
-                    (endStack?.findImageUrisToDownload().orEmpty()) +
-                    (fallback?.findImageUrisToDownload().orEmpty())
-            }
-            // These components don't carry image URIs themselves; their children
-            // (if any) are visited by the BFS traversal in PaywallComponent.filter.
-            is ButtonComponent,
-            is FallbackHeaderComponent,
-            is HeaderComponent,
-            is PackageComponent,
-            is PurchaseButtonComponent,
-            is StickyFooterComponent,
-            is TabControlButtonComponent,
-            is TabControlComponent,
-            is TabControlToggleComponent,
-            is TextComponent,
-            is TimelineComponent,
-            -> emptySet()
-        }
     }
 
     private fun Background?.findImageUrisToDownload(): Set<Uri> {
