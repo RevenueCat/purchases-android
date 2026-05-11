@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.WorkflowPreWarmer
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -38,6 +39,7 @@ internal class OfferingsManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val workflowPreWarmer: WorkflowPreWarmer? = null,
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
@@ -193,6 +195,8 @@ internal class OfferingsManager(
             appInBackground,
             { body, originalDataSource ->
                 createAndCacheOfferings(
+                    appUserID = appUserID,
+                    appInBackground = appInBackground,
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
@@ -219,6 +223,8 @@ internal class OfferingsManager(
                                 }
                             } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
+                                appUserID = appUserID,
+                                appInBackground = appInBackground,
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
@@ -236,6 +242,8 @@ internal class OfferingsManager(
     }
 
     private fun createAndCacheOfferings(
+        appUserID: String,
+        appInBackground: Boolean,
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
@@ -252,6 +260,7 @@ internal class OfferingsManager(
             onSuccess = { offeringsResultData ->
                 offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
+                    workflowPreWarmer?.invoke(appUserID, it.identifier, appInBackground)
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
