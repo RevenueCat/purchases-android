@@ -210,7 +210,7 @@ internal class PaywallViewModelImpl(
 
         data class Available(
             val offeringId: String,
-            val offerings: Offerings?,
+            val offerings: Offerings,
             val triggeringWorkflowStepId: String? = null,
         ) : ExitOfferData
     }
@@ -323,12 +323,7 @@ internal class PaywallViewModelImpl(
         preloadedExitOffering = null
         if (!preloadExitOfferingRequested) return
         val data = exitOfferData as? ExitOfferData.Available ?: return
-        val offerings = data.offerings
-        if (offerings == null) {
-            Logger.e("No offerings available to load exit offering '${data.offeringId}'")
-            return
-        }
-        val exitOffering = offerings[data.offeringId]
+        val exitOffering = data.offerings[data.offeringId]
         if (exitOffering == null) {
             Logger.e(
                 "Exit offering with ID '${data.offeringId}' not found in available offerings. " +
@@ -716,14 +711,16 @@ internal class PaywallViewModelImpl(
         val currentOffering = resolvedOfferingSelection.selectedOffering
         val exitOfferingId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
 
+        val offerings = resolvedOfferingSelection.offeringsForExitOfferLookup
         updateExitOfferData(
-            exitOfferingId?.let {
+            if (exitOfferingId != null && offerings != null) {
                 ExitOfferData.Available(
-                    offeringId = it,
-                    offerings = resolvedOfferingSelection.offeringsForExitOfferLookup,
+                    offeringId = exitOfferingId,
+                    offerings = offerings,
                 )
-            }
-                ?: ExitOfferData.Unavailable,
+            } else {
+                ExitOfferData.Unavailable
+            },
         )
         updatePaywallState(currentOffering)
     }
