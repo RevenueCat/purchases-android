@@ -75,10 +75,8 @@ internal class PaywallComponentsImagePreDownloader(
                         setOf(Uri.parse(component.baseUrl).buildUpon().path(component.formats.webp).build())
                     }
                     is CarouselComponent -> {
+                        // pages are visited by BFS; only extract this component's own background
                         component.background.findImageUrisToDownload() +
-                            component.pages.flatMapTo(mutableSetOf()) {
-                                it.findImageUrisToDownload()
-                            } +
                             component.overrides.flatMapTo(mutableSetOf()) {
                                 it.properties.background.findImageUrisToDownload()
                             }
@@ -99,12 +97,8 @@ internal class PaywallComponentsImagePreDownloader(
                                 it.properties.fallbackSource?.findImageUrisToDownload().orEmpty()
                             }
                     }
-                    is CountdownComponent -> {
-                        component.countdownStack.findImageUrisToDownload() +
-                            (component.endStack?.findImageUrisToDownload().orEmpty()) +
-                            (component.fallback?.findImageUrisToDownload().orEmpty())
-                    }
                     is ButtonComponent,
+                    is CountdownComponent, // sub-stacks visited by BFS
                     is FallbackHeaderComponent,
                     is HeaderComponent,
                     is PackageComponent,
