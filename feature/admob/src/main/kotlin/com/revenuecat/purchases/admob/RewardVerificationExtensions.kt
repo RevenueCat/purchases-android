@@ -43,6 +43,9 @@ public fun RewardedAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: ((RewardVerificationResult) -> Unit)? = null,
 ) {
+    require(rewardVerificationStarted != null || rewardVerificationResult != null) {
+        "Provide rewardVerificationStarted and/or rewardVerificationResult when showing with reward verification."
+    }
     throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }
 
@@ -59,5 +62,8 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: ((RewardVerificationResult) -> Unit)? = null,
 ) {
+    require(rewardVerificationStarted != null || rewardVerificationResult != null) {
+        "Provide rewardVerificationStarted and/or rewardVerificationResult when showing with reward verification."
+    }
     throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }
