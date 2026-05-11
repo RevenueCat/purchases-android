@@ -47,7 +47,6 @@ internal class OfferingImagePreDownloader(
         offering.paywallComponents?.let { paywallComponents ->
             paywallComponentsImagePreDownloader.preDownloadImages(
                 paywallComponentsConfig = paywallComponents.data.componentsConfig.base,
-                localizations = paywallComponents.data.componentsLocalizations,
             )
         }
     }

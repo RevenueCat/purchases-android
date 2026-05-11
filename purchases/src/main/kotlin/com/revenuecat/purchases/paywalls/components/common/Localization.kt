@@ -17,9 +17,6 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
  * @property value The language tag of this locale, with an underscore separating the language from the region.
@@ -35,8 +32,7 @@ public value class LocaleId(@get:JvmSynthetic public val value: String)
 public value class LocalizationKey(@get:JvmSynthetic public val value: String)
 
 /**
- * A make-shift union type. LocalizationData is either a plain String, a ThemeImageUrls object, or a ThemeVideoUrls
- * object.
+ * A make-shift union type. LocalizationData is either a plain String or a ThemeImageUrls object.
  */
 @InternalRevenueCatAPI
 @Serializable(with = LocalizationDataSerializer::class)
@@ -69,22 +65,13 @@ private object LocalizationDataSerializer : KSerializer<LocalizationData> {
     }
 
     @Suppress("SwallowedException")
-    override fun deserialize(decoder: Decoder): LocalizationData {
+    override fun deserialize(decoder: Decoder): LocalizationData =
         // We have no `type` descriptor field, so we resort to trial and error.
-        // Decode the JSON element once so retries don't consume the same decoder multiple times.
-        val jsonDecoder = decoder as? JsonDecoder
-            ?: throw SerializationException("LocalizationData can only be deserialized from JSON")
-        val element = jsonDecoder.decodeJsonElement()
-        if (element is JsonPrimitive && element.isString) {
-            return LocalizationData.Text(element.content)
-        }
-
-        return try {
-            LocalizationData.Image(jsonDecoder.json.decodeFromJsonElement(element))
+        try {
+            decoder.decodeSerializableValue(LocalizationData.Text.serializer())
         } catch (e: SerializationException) {
-            LocalizationData.Video(jsonDecoder.json.decodeFromJsonElement(element))
+            decoder.decodeSerializableValue(LocalizationData.Image.serializer())
         }
-    }
 }
 
 /**

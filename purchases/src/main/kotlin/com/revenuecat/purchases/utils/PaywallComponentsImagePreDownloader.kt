@@ -39,9 +39,7 @@ internal class PaywallComponentsImagePreDownloader(
     private val coilImageDownloader: CoilImageDownloader,
 ) {
 
-    fun preDownloadImages(
-        paywallComponentsConfig: PaywallComponentsConfig,
-    ) {
+    fun preDownloadImages(paywallComponentsConfig: PaywallComponentsConfig) {
         if (!shouldPredownloadImages) {
             verboseLog { "PaywallComponentsImagePreDownloader won't pre-download images" }
             return
@@ -54,9 +52,7 @@ internal class PaywallComponentsImagePreDownloader(
         }
     }
 
-    private fun findImageUrisToDownload(
-        paywallComponentsConfig: PaywallComponentsConfig,
-    ): Set<Uri> {
+    private fun findImageUrisToDownload(paywallComponentsConfig: PaywallComponentsConfig): Set<Uri> {
         return paywallComponentsConfig.stack.findImageUrisToDownload() +
             (paywallComponentsConfig.header?.stack?.findImageUrisToDownload().orEmpty()) +
             (paywallComponentsConfig.stickyFooter?.stack?.findImageUrisToDownload().orEmpty()) +
