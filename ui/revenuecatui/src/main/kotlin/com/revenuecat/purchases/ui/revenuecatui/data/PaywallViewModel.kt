@@ -174,8 +174,8 @@ internal class PaywallViewModelImpl(
     override val workflowState: State<WorkflowPaywallUiState?>
         get() = _workflowState
 
-    internal var preloadedExitOffering: Offering? = null
-        private set
+    internal val preloadedExitOffering: Offering?
+        get() = (exitOfferData as? ExitOfferData.Configured)?.preloadedOffering
 
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
@@ -205,18 +205,27 @@ internal class PaywallViewModelImpl(
     private var transitionIdCounter: Int = 0
 
     private sealed interface ExitOfferData {
-        object Loading : ExitOfferData
-        object Unavailable : ExitOfferData
+        val preloadRequested: Boolean
 
-        data class Available(
+        data class Loading(override val preloadRequested: Boolean = false) : ExitOfferData
+        data class Unavailable(override val preloadRequested: Boolean = false) : ExitOfferData
+
+        data class Configured(
             val offeringId: String,
             val offerings: Offerings,
             val triggeringWorkflowStepId: String? = null,
+            override val preloadRequested: Boolean = false,
+            val preloadedOffering: Offering? = null,
         ) : ExitOfferData
+
+        fun withPreloadRequested(): ExitOfferData = when (this) {
+            is Loading -> copy(preloadRequested = true)
+            is Unavailable -> copy(preloadRequested = true)
+            is Configured -> copy(preloadRequested = true)
+        }
     }
 
-    private var exitOfferData: ExitOfferData = ExitOfferData.Loading
-    private var preloadExitOfferingRequested = false
+    private var exitOfferData: ExitOfferData = ExitOfferData.Loading()
     private var updateStateJob: Job? = null
 
     private data class PaywallPresentationFingerprint(
@@ -309,43 +318,39 @@ internal class PaywallViewModelImpl(
     }
 
     override fun preloadExitOffering() {
-        preloadExitOfferingRequested = true
-        refreshPreloadedExitOffering()
+        exitOfferData = exitOfferData.withPreloadRequested().resolveIfNeeded()
     }
 
     private fun cancelAndResetState() {
         updateStateJob?.cancel()
-        updateExitOfferData(ExitOfferData.Loading)
+        updateExitOfferData(ExitOfferData.Loading())
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
-        exitOfferData = data
-        refreshPreloadedExitOffering()
+        val propagated = if (exitOfferData.preloadRequested) data.withPreloadRequested() else data
+        exitOfferData = propagated.resolveIfNeeded()
     }
 
-    @Suppress("ReturnCount")
-    private fun refreshPreloadedExitOffering() {
-        preloadedExitOffering = null
-        if (!preloadExitOfferingRequested) return
-        val data = exitOfferData as? ExitOfferData.Available ?: return
-        val exitOffering = data.offerings[data.offeringId]
+    private fun ExitOfferData.resolveIfNeeded(): ExitOfferData {
+        if (this !is ExitOfferData.Configured || !preloadRequested || preloadedOffering != null) return this
+        val exitOffering = offerings[offeringId]
         if (exitOffering == null) {
             Logger.e(
-                "Exit offering with ID '${data.offeringId}' not found in available offerings. " +
+                "Exit offering with ID '$offeringId' not found in available offerings. " +
                     "Exit offer will not be displayed.",
             )
         }
-        preloadedExitOffering = exitOffering
+        return copy(preloadedOffering = exitOffering)
     }
 
     private val shouldTriggerExitOfferForCurrentStep: Boolean
         get() = when (val loadedExitOfferData = exitOfferData) {
-            is ExitOfferData.Available -> {
+            is ExitOfferData.Configured -> {
                 val triggeringWorkflowStepId = loadedExitOfferData.triggeringWorkflowStepId
                 triggeringWorkflowStepId == null || _workflowState.value?.currentStepId == triggeringWorkflowStepId
             }
-            ExitOfferData.Loading,
-            ExitOfferData.Unavailable,
+            is ExitOfferData.Loading,
+            is ExitOfferData.Unavailable,
             -> false
         }
 
@@ -698,7 +703,7 @@ internal class PaywallViewModelImpl(
             try {
                 updateStateFromOffering(options.offeringSelection)
             } catch (e: PurchasesException) {
-                updateExitOfferData(ExitOfferData.Unavailable)
+                updateExitOfferData(ExitOfferData.Unavailable())
                 _state.value = PaywallState.Error(
                     "Error ${e.code.code}: ${e.code.description}",
                 )
@@ -718,12 +723,12 @@ internal class PaywallViewModelImpl(
         val offerings = resolvedOfferingSelection.offeringsForExitOfferLookup
         updateExitOfferData(
             if (exitOfferingId != null && offerings != null) {
-                ExitOfferData.Available(
+                ExitOfferData.Configured(
                     offeringId = exitOfferingId,
                     offerings = offerings,
                 )
             } else {
-                ExitOfferData.Unavailable
+                ExitOfferData.Unavailable()
             },
         )
         updatePaywallState(currentOffering)
@@ -823,7 +828,7 @@ internal class PaywallViewModelImpl(
         val workflow = fetchResult.workflow
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
-            updateExitOfferData(ExitOfferData.Unavailable)
+            updateExitOfferData(ExitOfferData.Unavailable())
             _state.value = PaywallState.Error(
                 "Initial step '${workflow.initialStepId}' not found in workflow '${workflow.id}'",
             )
@@ -837,12 +842,12 @@ internal class PaywallViewModelImpl(
         val dismissExitOffer = workflow.dismissExitOffer
         updateExitOfferData(
             dismissExitOffer?.let {
-                ExitOfferData.Available(
+                ExitOfferData.Configured(
                     offeringId = it.offeringId,
                     offerings = offerings,
                     triggeringWorkflowStepId = it.stepId,
                 )
-            } ?: ExitOfferData.Unavailable,
+            } ?: ExitOfferData.Unavailable(),
         )
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
