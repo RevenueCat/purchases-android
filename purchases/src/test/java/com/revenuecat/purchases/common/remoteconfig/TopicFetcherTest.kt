@@ -66,7 +66,7 @@ class TopicFetcherTest {
 
         val error = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "DEFAULT",
+            entryId = "DEFAULT",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -83,7 +83,7 @@ class TopicFetcherTest {
 
         val error = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "DEFAULT",
+            entryId = "DEFAULT",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -104,7 +104,7 @@ class TopicFetcherTest {
 
         val error = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "DEFAULT",
+            entryId = "DEFAULT",
             topicEntry = topicEntry(blobRef),
             source = source("https://cdn.example/topics/{blob_ref}"),
         )
@@ -125,7 +125,7 @@ class TopicFetcherTest {
 
         val error = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "DEFAULT",
+            entryId = "DEFAULT",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -151,7 +151,7 @@ class TopicFetcherTest {
 
         val error: PurchasesError? = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "DEFAULT",
+            entryId = "DEFAULT",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -171,7 +171,7 @@ class TopicFetcherTest {
 
         val error = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "DEFAULT",
+            entryId = "DEFAULT",
             topicEntry = topicEntry(wrongBlobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -184,9 +184,9 @@ class TopicFetcherTest {
     }
 
     @Test
-    fun `multiple variants for the same topic write to distinct file paths`() = runTest {
-        val payloadA = """{"variant":"A"}""".toByteArray()
-        val payloadB = """{"variant":"B"}""".toByteArray()
+    fun `multiple entryIds for the same topic write to distinct file paths`() = runTest {
+        val payloadA = """{"entryId":"A"}""".toByteArray()
+        val payloadB = """{"entryId":"B"}""".toByteArray()
         val blobRefA = sha256Hex(payloadA)
         val blobRefB = sha256Hex(payloadB)
         mockSuccessfulDownload("https://assets.example/$blobRefA", payloadA)
@@ -194,14 +194,14 @@ class TopicFetcherTest {
 
         val errorA = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "DEFAULT",
+            entryId = "DEFAULT",
             topicEntry = topicEntry(blobRefA),
             source = source("https://assets.example/{blob_ref}"),
         )
         if (errorA != null) fail<Unit>("Expected success, got error: $errorA")
         val errorB = fetcher.fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            variant = "EXPERIMENT_A",
+            entryId = "EXPERIMENT_A",
             topicEntry = topicEntry(blobRefB),
             source = source("https://assets.example/{blob_ref}"),
         )

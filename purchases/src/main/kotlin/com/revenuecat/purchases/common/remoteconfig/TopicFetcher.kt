@@ -23,26 +23,26 @@ internal class TopicFetcher(
 ) {
     suspend fun fetchTopicIfNeeded(
         topic: Topic,
-        variant: String,
+        entryId: String,
         topicEntry: TopicEntry,
         source: BlobSource,
     ): PurchasesError? {
         val targetFile = topicFile(topic, topicEntry.blobRef)
         if (targetFile.exists()) {
-            verboseLog { "Topic $topic ($variant) already cached at ${targetFile.absolutePath}" }
+            verboseLog { "Topic $topic ($entryId) already cached at ${targetFile.absolutePath}" }
             return null
         }
         return withContext(Dispatchers.IO) {
             try {
                 val url = source.urlFormat.replace(BLOB_REF_PLACEHOLDER, topicEntry.blobRef)
                 downloadVerifyAndStore(url, topicEntry.blobRef, targetFile)
-                debugLog { "Topic $topic ($variant) downloaded to ${targetFile.absolutePath}" }
+                debugLog { "Topic $topic ($entryId) downloaded to ${targetFile.absolutePath}" }
                 null
             } catch (e: Checksum.ChecksumValidationException) {
-                errorLog(e) { "Downloaded topic $topic ($variant) failed SHA-256 verification." }
+                errorLog(e) { "Downloaded topic $topic ($entryId) failed SHA-256 verification." }
                 PurchasesError(
                     PurchasesErrorCode.NetworkError,
-                    "Downloaded topic $topic ($variant) failed SHA-256 verification.",
+                    "Downloaded topic $topic ($entryId) failed SHA-256 verification.",
                 )
             } catch (e: IOException) {
                 e.toPurchasesError().also { errorLog(it) }

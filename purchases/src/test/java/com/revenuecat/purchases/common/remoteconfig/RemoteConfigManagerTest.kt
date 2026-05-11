@@ -49,13 +49,13 @@ class RemoteConfigManagerTest {
         )
         mockBackendSuccess(response)
         val capturedTopic = slot<Topic>()
-        val capturedVariant = slot<String>()
+        val capturedEntryId = slot<String>()
         val capturedEntry = slot<TopicEntry>()
         val capturedSource = slot<BlobSource>()
         coEvery {
             topicFetcher.fetchTopicIfNeeded(
                 topic = capture(capturedTopic),
-                variant = capture(capturedVariant),
+                entryId = capture(capturedEntryId),
                 topicEntry = capture(capturedEntry),
                 source = capture(capturedSource),
             )
@@ -72,7 +72,7 @@ class RemoteConfigManagerTest {
         assertThat(completionInvoked).isTrue
         assertThat(completionError).isNull()
         assertThat(capturedTopic.captured).isEqualTo(Topic.PRODUCT_ENTITLEMENT_MAPPING)
-        assertThat(capturedVariant.captured).isEqualTo("default")
+        assertThat(capturedEntryId.captured).isEqualTo("default")
         assertThat(capturedEntry.captured).isEqualTo(entry)
         assertThat(capturedSource.captured).isEqualTo(src)
     }
@@ -132,7 +132,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `topic without default variant is skipped`() = runTest {
+    fun `topic without default entryId is skipped`() = runTest {
         val manager = RemoteConfigManager(
             backend = backend,
             topicFetcher = topicFetcher,
@@ -179,7 +179,7 @@ class RemoteConfigManagerTest {
         coEvery {
             topicFetcher.fetchTopicIfNeeded(
                 topic = any(),
-                variant = any(),
+                entryId = any(),
                 topicEntry = any(),
                 source = capture(capturedSource),
             )
@@ -327,7 +327,7 @@ class RemoteConfigManagerTest {
         coVerify(exactly = 1) {
             topicFetcher.fetchTopicIfNeeded(
                 topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-                variant = "default",
+                entryId = "default",
                 topicEntry = entry,
                 source = src,
             )

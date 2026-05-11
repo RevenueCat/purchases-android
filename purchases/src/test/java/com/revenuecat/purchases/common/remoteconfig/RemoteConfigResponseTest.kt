@@ -206,7 +206,7 @@ class RemoteConfigResponseTest {
     }
 
     @Test
-    fun `TopicsMapSerializer preserves multiple variant keys for a known topic`() {
+    fun `TopicsMapSerializer preserves multiple entryId keys for a known topic`() {
         val payload = """
             {
               "manifest": {
@@ -226,10 +226,10 @@ class RemoteConfigResponseTest {
 
         val response = json.decodeFromString<RemoteConfigResponse>(payload)
 
-        val variants = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
-        assertThat(variants?.keys).containsExactlyInAnyOrder("DEFAULT", "EXPERIMENT_A")
-        assertThat(variants?.get("DEFAULT")?.blobRef).isEqualTo("default-blob")
-        assertThat(variants?.get("EXPERIMENT_A")?.blobRef).isEqualTo("experiment-blob")
+        val entries = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
+        assertThat(entries?.keys).containsExactlyInAnyOrder("DEFAULT", "EXPERIMENT_A")
+        assertThat(entries?.get("DEFAULT")?.blobRef).isEqualTo("default-blob")
+        assertThat(entries?.get("EXPERIMENT_A")?.blobRef).isEqualTo("experiment-blob")
     }
 
     @Test

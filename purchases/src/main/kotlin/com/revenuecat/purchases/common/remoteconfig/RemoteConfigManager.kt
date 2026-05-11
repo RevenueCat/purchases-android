@@ -46,9 +46,9 @@ internal class RemoteConfigManager(
         }
         // WIP: We should have some logic to pick the correct source for this. Right now, hardcoded to the first source.
         val source = response.blobSources.firstOrNull()
-        val tasks = response.manifest.topics.mapNotNull { (topic, variants) ->
-            val entry = variants[DEFAULT_VARIANT] ?: return@mapNotNull null
-            TopicTask(topic, DEFAULT_VARIANT, entry)
+        val tasks = response.manifest.topics.mapNotNull { (topic, entries) ->
+            val entry = entries[DEFAULT_ENTRY_ID] ?: return@mapNotNull null
+            TopicTask(topic, DEFAULT_ENTRY_ID, entry)
         }
         return if (source == null || tasks.isEmpty()) {
             null
@@ -58,7 +58,7 @@ internal class RemoteConfigManager(
                     async(downloadDispatcher) {
                         topicFetcher.fetchTopicIfNeeded(
                             topic = task.topic,
-                            variant = task.variant,
+                            entryId = task.entryId,
                             topicEntry = task.entry,
                             source = source,
                         )
@@ -77,10 +77,10 @@ internal class RemoteConfigManager(
             )
         }
 
-    private data class TopicTask(val topic: Topic, val variant: String, val entry: TopicEntry)
+    private data class TopicTask(val topic: Topic, val entryId: String, val entry: TopicEntry)
 
     private companion object {
-        const val DEFAULT_VARIANT = "default"
+        const val DEFAULT_ENTRY_ID = "default"
         const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
     }
 }
