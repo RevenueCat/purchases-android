@@ -4,7 +4,6 @@ Wraps AdMob ad lifecycle callbacks to automatically track ad events in RevenueCa
 
 **Kotlin only.** The load-and-track helper APIs are not currently available from Java. You can still use the core [AdTracker](https://revenuecat.github.io/purchases-android/docs/core/com.revenuecat.purchases.ads.events/-ad-tracker/index.html) APIs (e.g. `trackAdDisplayed`, `trackAdRevenue`) directly from Java — these helpers are syntactic sugar on top.
 
-
 ## Placement
 
 Every tracking method accepts an optional `placement` string that tags all events for that ad with a logical location in your app. Use it to distinguish performance across different screens or slots in your RevenueCat dashboard — e.g. `"home_banner"`, `"level_complete_interstitial"`, `"feed_native"`, `"bonus_coins_rewarded"`. The value is free-form; pick a convention that makes sense for your app and use it consistently.
@@ -164,6 +163,45 @@ rewardedAd?.show(this) { rewardItem ->
 }
 ```
 
+**With RevenueCat reward verification:**
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
+    context = this,
+    adUnitId = "AD_UNIT_ID",
+    adRequest = AdRequest.Builder().build(),
+    placement = "bonus_coins",
+    loadCallback = object : RewardedAdLoadCallback() {
+        override fun onAdLoaded(ad: RewardedAd) {
+            rewardedAd = ad
+
+            // Configures SSV options for this loaded ad.
+            ad.enableRewardVerification()
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedAd = null
+        }
+    },
+)
+
+// Later, to show with verification callbacks:
+rewardedAd?.show(
+    activity = this,
+    rewardVerificationStarted = {
+        // Called when reward callback is received and verification polling begins.
+    },
+    rewardVerificationResult = { result ->
+        rewardedAd = null
+        if (result.verifiedReward != null) {
+            // Verified reward.
+        } else if (result.isFailed) {
+            // Verification failed.
+        }
+    },
+)
+```
+
 ### Rewarded interstitial ads
 
 **AdMob only** ([docs](https://developers.google.com/admob/android/rewarded-interstitial)):
@@ -219,6 +257,43 @@ rewardedInterstitialAd?.show(this) { rewardItem ->
     val rewardAmount = rewardItem.amount
     val rewardType = rewardItem.type
 }
+```
+
+**With RevenueCat reward verification:**
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
+    context = this,
+    adUnitId = "AD_UNIT_ID",
+    adRequest = AdRequest.Builder().build(),
+    placement = "between_levels",
+    loadCallback = object : RewardedInterstitialAdLoadCallback() {
+        override fun onAdLoaded(ad: RewardedInterstitialAd) {
+            rewardedInterstitialAd = ad
+            ad.enableRewardVerification()
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedInterstitialAd = null
+        }
+    },
+)
+
+// Later, to show with verification callbacks:
+rewardedInterstitialAd?.show(
+    activity = this,
+    rewardVerificationStarted = {
+        // Verification has started.
+    },
+    rewardVerificationResult = { result ->
+        rewardedInterstitialAd = null
+        if (result.verifiedReward != null) {
+            // Verified reward.
+        } else if (result.isFailed) {
+            // Verification failed.
+        }
+    },
+)
 ```
 
 ### App open ads
@@ -320,14 +395,16 @@ adLoader.loadAd(AdRequest.Builder().build())
 
 ## Supported ad formats
 
-| Format | Method |
-|--------|--------|
-| Banner | `AdView.loadAndTrackAd()` / `adTracker.loadAndTrackBannerAd()` |
-| Interstitial | `adTracker.loadAndTrackInterstitialAd()` |
-| Rewarded | `adTracker.loadAndTrackRewardedAd()` |
-| Rewarded Interstitial | `adTracker.loadAndTrackRewardedInterstitialAd()` |
-| App Open | `adTracker.loadAndTrackAppOpenAd()` |
-| Native | `AdLoader.Builder.forNativeAdWithTracking()` |
+
+| Format                | Method                                                         |
+| --------------------- | -------------------------------------------------------------- |
+| Banner                | `AdView.loadAndTrackAd()` / `adTracker.loadAndTrackBannerAd()` |
+| Interstitial          | `adTracker.loadAndTrackInterstitialAd()`                       |
+| Rewarded              | `adTracker.loadAndTrackRewardedAd()`                           |
+| Rewarded Interstitial | `adTracker.loadAndTrackRewardedInterstitialAd()`               |
+| App Open              | `adTracker.loadAndTrackAppOpenAd()`                            |
+| Native                | `AdLoader.Builder.forNativeAdWithTracking()`                   |
+
 
 ## Events tracked
 
@@ -353,3 +430,4 @@ fun loadBanner(adView: AdView) {
     )
 }
 ```
+
