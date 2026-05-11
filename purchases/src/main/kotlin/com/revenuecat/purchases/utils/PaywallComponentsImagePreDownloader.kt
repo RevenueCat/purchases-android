@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
@@ -26,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
@@ -67,9 +69,8 @@ internal class PaywallComponentsImagePreDownloader(
             .flatMapTo(mutableSetOf()) { component ->
                 when (component) {
                     is StackComponent -> {
-                        component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
-                            it.properties.background.findImageUrisToDownload()
-                        }
+                        component.background.findImageUrisToDownload() +
+                            component.overrides.imageUrisToDownload { it.background.findImageUrisToDownload() }
                     }
                     is IconComponent -> {
                         setOf(Uri.parse(component.baseUrl).buildUpon().path(component.formats.webp).build())
@@ -77,24 +78,20 @@ internal class PaywallComponentsImagePreDownloader(
                     is CarouselComponent -> {
                         // pages are visited by BFS; only extract this component's own background
                         component.background.findImageUrisToDownload() +
-                            component.overrides.flatMapTo(mutableSetOf()) {
-                                it.properties.background.findImageUrisToDownload()
-                            }
+                            component.overrides.imageUrisToDownload { it.background.findImageUrisToDownload() }
                     }
                     is TabsComponent -> {
-                        component.background.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
-                            it.properties.background.findImageUrisToDownload()
-                        }
+                        component.background.findImageUrisToDownload() +
+                            component.overrides.imageUrisToDownload { it.background.findImageUrisToDownload() }
                     }
                     is ImageComponent -> {
-                        component.source.findImageUrisToDownload() + component.overrides.flatMapTo(mutableSetOf()) {
-                            it.properties.source?.findImageUrisToDownload().orEmpty()
-                        }
+                        component.source.findImageUrisToDownload() +
+                            component.overrides.imageUrisToDownload { it.source?.findImageUrisToDownload().orEmpty() }
                     }
                     is VideoComponent -> {
                         component.fallbackSource?.findImageUrisToDownload().orEmpty() +
-                            component.overrides.orEmpty().flatMapTo(mutableSetOf()) {
-                                it.properties.fallbackSource?.findImageUrisToDownload().orEmpty()
+                            component.overrides.imageUrisToDownload {
+                                it.fallbackSource?.findImageUrisToDownload().orEmpty()
                             }
                     }
                     is ButtonComponent,
@@ -113,6 +110,10 @@ internal class PaywallComponentsImagePreDownloader(
                 }
             }
     }
+
+    private fun <T : PartialComponent> List<ComponentOverride<T>>?.imageUrisToDownload(
+        extract: (T) -> Set<Uri>,
+    ): Set<Uri> = this?.flatMapTo(mutableSetOf()) { extract(it.properties) } ?: emptySet()
 
     private fun Background?.findImageUrisToDownload(): Set<Uri> {
         return when (this) {
