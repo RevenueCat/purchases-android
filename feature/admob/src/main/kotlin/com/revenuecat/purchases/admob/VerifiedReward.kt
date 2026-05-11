@@ -11,7 +11,7 @@ public sealed interface VerifiedReward {
     /**
      * A virtual-currency reward with a code and amount.
      */
-    public class VirtualCurrency(
+    public data class VirtualCurrency(
         public val code: String,
         public val amount: Int,
     ) : VerifiedReward
