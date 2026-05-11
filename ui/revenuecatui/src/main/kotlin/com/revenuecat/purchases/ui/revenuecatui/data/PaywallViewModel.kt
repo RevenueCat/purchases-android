@@ -822,7 +822,6 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("ReturnCount")
     internal fun updateStateFromWorkflow(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
@@ -862,23 +861,12 @@ internal class PaywallViewModelImpl(
                 )
             } ?: ExitOfferData.Unavailable(),
         )
-        preWarmJob?.cancel()
-        workflowStepStateCache.clear()
-        _workflowState.value = null
 
-        // Pre-compute the package step so its default package is available in cache
-        // for early packageless steps to use as context.
         val stepWithPackagesId = workflow.singleStepFallbackId
-        val stepWithPackages = stepWithPackagesId?.let { workflow.steps[it] }
-        if (stepWithPackagesId != null && stepWithPackages == null) {
+        if (stepWithPackagesId != null && workflow.steps[stepWithPackagesId] == null) {
             Logger.w("Workflow singleStepFallbackId '$stepWithPackagesId' not found in steps")
         }
-        if (stepWithPackages != null && stepWithPackages.id != initialStep.id) {
-            buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
-        }
-
-        buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
-        preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
+        buildWorkflowStates(workflow, offerings, presentedOfferingContext, currentStep = initialStep)
     }
 
     /**
@@ -890,22 +878,39 @@ internal class PaywallViewModelImpl(
     private fun rebuildWorkflowStepStates() {
         val result = currentWorkflowResult ?: return
         val offerings = currentWorkflowOfferings ?: return
-        val presentedOfferingContext = currentWorkflowPresentedOfferingContext
-        val navigator = workflowNavigator ?: return
-        val currentStep = navigator.currentStep ?: return
+        val currentStep = workflowNavigator?.currentStep ?: return
+        buildWorkflowStates(
+            workflow = result.workflow,
+            offerings = offerings,
+            presentedOfferingContext = currentWorkflowPresentedOfferingContext,
+            anchorStep = currentStep,
+        )
+    }
 
+    /**
+     * Clears any cached workflow step states and builds the state for [currentStep] (plus the
+     * package-bearing step, if different) so the UI can render the paywall. Also kicks off
+     * pre-warming of the remaining steps' caches.
+     */
+    private fun buildWorkflowStates(
+        workflow: PublishedWorkflow,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+        currentStep: WorkflowStep,
+    ) {
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
 
-        val stepWithPackagesId = result.workflow.singleStepFallbackId
-        val stepWithPackages = stepWithPackagesId?.let { result.workflow.steps[it] }
+        // Pre-compute the package step so its default package is available in cache
+        // for early packageless steps to use as context.
+        val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
         if (stepWithPackages != null && stepWithPackages.id != currentStep.id) {
-            buildStateFromStep(stepWithPackages, result.workflow, offerings, presentedOfferingContext)
+            buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
         }
 
-        buildStateFromStep(currentStep, result.workflow, offerings, presentedOfferingContext)
-        preWarmWorkflowStepCache(result.workflow, offerings, presentedOfferingContext)
+        buildStateFromStep(currentStep, workflow, offerings, presentedOfferingContext)
+        preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
 
     private fun buildStateFromStep(
