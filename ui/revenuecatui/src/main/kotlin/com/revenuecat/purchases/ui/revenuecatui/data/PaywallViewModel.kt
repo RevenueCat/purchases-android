@@ -898,6 +898,12 @@ internal class PaywallViewModelImpl(
         workflowStepStateCache.clear()
         _workflowState.value = null
 
+        val stepWithPackagesId = result.workflow.singleStepFallbackId
+        val stepWithPackages = stepWithPackagesId?.let { result.workflow.steps[it] }
+        if (stepWithPackages != null && stepWithPackages.id != currentStep.id) {
+            buildStateFromStep(stepWithPackages, result.workflow, offerings, presentedOfferingContext)
+        }
+
         buildStateFromStep(currentStep, result.workflow, offerings, presentedOfferingContext)
         preWarmWorkflowStepCache(result.workflow, offerings, presentedOfferingContext)
     }
