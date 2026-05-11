@@ -22,7 +22,6 @@ import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -152,7 +151,6 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_icon_5.webp",
             "https://pawwalls.com/test_icon_3.webp",
             "https://pawwalls.com/test_icon_4.webp",
-            "https://pawwalls.com/test_localized_image_low_res.webp",
         )
 
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall(
@@ -370,17 +368,6 @@ class OfferingImagePreDownloaderTest {
                     ),
                 ),
             ),
-            localizations = mapOf(
-                LocaleId("en_US") to mapOf(
-                    LocalizationKey("localized_image") to LocalizationData.Image(
-                        ThemeImageUrls(
-                            light = createMockImageUrls(
-                                webpLowRes = "https://pawwalls.com/test_localized_image_low_res.webp",
-                            ),
-                        ),
-                    ),
-                ),
-            ),
         ))
 
         verifyAll {
@@ -433,7 +420,6 @@ class OfferingImagePreDownloaderTest {
             background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
             stickyFooter = null,
         ),
-        localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>> = emptyMap(),
     ): Offering {
         return mockk<Offering>().apply {
             every { paywall } returns null
@@ -446,7 +432,7 @@ class OfferingImagePreDownloaderTest {
                     componentsConfig = ComponentsConfig(
                         base = paywallComponentsConfig,
                     ),
-                    componentsLocalizations = localizations,
+                    componentsLocalizations = mapOf(),
                     defaultLocaleIdentifier = LocaleId("en_US"),
                 )
             )
