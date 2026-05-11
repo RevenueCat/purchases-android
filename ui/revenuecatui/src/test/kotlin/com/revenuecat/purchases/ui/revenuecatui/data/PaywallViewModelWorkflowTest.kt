@@ -23,6 +23,8 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.ExitOffer
+import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -30,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -40,6 +43,13 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -48,11 +58,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelWorkflowTest {
 
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
+
+    private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var purchases: PurchasesType
 
@@ -224,8 +237,96 @@ class PaywallViewModelWorkflowTest {
     )
     private val testOfferings = Offerings(testOffering, mapOf(offeringId to testOffering))
 
+    private val exitOfferingId = "exit-offering-id"
+    private val exitOffering = Offering(
+        identifier = exitOfferingId,
+        serverDescription = "",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = null,
+        webCheckoutURL = null,
+    )
+    private val testOfferingsWithExitOffer = Offerings(
+        testOffering,
+        mapOf(offeringId to testOffering, exitOfferingId to exitOffering),
+    )
+
+    private fun makeScreenWithExitOffer(screenId: String) = WorkflowScreen(
+        name = screenId,
+        templateName = "template_v2",
+        revision = 1,
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = componentsConfig,
+        componentsLocalizations = localizations,
+        defaultLocaleIdentifier = defaultLocaleId,
+        offeringIdentifier = offeringId,
+        exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = exitOfferingId)),
+    )
+
+    private val workflowWithExitOffer = PublishedWorkflow(
+        id = "wfl-test-exit",
+        displayName = "Test Exit",
+        initialStepId = "step-1",
+        steps = mapOf("step-1" to step1, "step-2" to step2),
+        screens = mapOf(
+            screenId1 to makeScreen(screenId1),
+            screenId2 to makeScreenWithExitOffer(screenId2),
+        ),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+        singleStepFallbackId = "step-2",
+    )
+    private val fetchResultWithExitOffer = WorkflowDataResult(
+        workflow = workflowWithExitOffer,
+        enrolledVariants = null,
+    )
+
+    private val singleStep = WorkflowStep(
+        id = "step-only",
+        type = "screen",
+        screenId = screenId1,
+        triggers = emptyList(),
+        triggerActions = emptyMap(),
+    )
+
+    private val singleStepWorkflowWithExitOffer = PublishedWorkflow(
+        id = "wfl-single",
+        displayName = "Single Step",
+        initialStepId = "step-only",
+        steps = mapOf("step-only" to singleStep),
+        screens = mapOf(screenId1 to makeScreenWithExitOffer(screenId1)),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+        singleStepFallbackId = "step-only",
+    )
+    private val singleStepFetchResultWithExitOffer = WorkflowDataResult(
+        workflow = singleStepWorkflowWithExitOffer,
+        enrolledVariants = null,
+    )
+
+    // Exit offer is on step-1's screen, not step-2's (the terminal step). Without
+    // single_step_fallback_id, the traversal would land on step-2 and miss the exit offer.
+    private val workflowWithFallbackPointingToFirstStep = PublishedWorkflow(
+        id = "wfl-fallback",
+        displayName = "Fallback Test",
+        initialStepId = "step-1",
+        steps = mapOf("step-1" to step1, "step-2" to step2),
+        screens = mapOf(
+            screenId1 to makeScreenWithExitOffer(screenId1),
+            screenId2 to makeScreen(screenId2),
+        ),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+        singleStepFallbackId = "step-1",
+    )
+    private val fetchResultWithFallback = WorkflowDataResult(
+        workflow = workflowWithFallbackPointingToFirstStep,
+        enrolledVariants = null,
+    )
+
     @Before
     fun setUp() {
+        Dispatchers.setMain(testDispatcher)
         purchases = mockk {
             every { storefrontCountryCode } returns "US"
             every { preferredUILocaleOverride } returns null
@@ -241,17 +342,24 @@ class PaywallViewModelWorkflowTest {
 
     @After
     fun tearDown() {
+        Dispatchers.resetMain()
         clearAllMocks()
     }
 
-    private fun createVm(): PaywallViewModelImpl = PaywallViewModelImpl(
-        resourceProvider = MockResourceProvider(),
-        purchases = purchases,
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        colorScheme = TestData.Constants.currentColorScheme,
-        isDarkMode = false,
-        shouldDisplayBlock = null,
-    )
+    private fun createVm(
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+    ): PaywallViewModelImpl {
+        val builder = PaywallOptions.Builder(dismissRequest = {})
+        dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
+        return PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = builder.build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+    }
 
     // region forward navigation
 
@@ -661,4 +769,165 @@ class PaywallViewModelWorkflowTest {
     }
 
     // endregion
+
+    // region exit offers
+
+    @Test
+    fun `preloadExitOffering reads exit offer from singleStepFallbackId step`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `preloadExitOffering without singleStepFallbackId does not set preloaded offering`() = runTest {
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering).isNull()
+    }
+
+    @Test
+    fun `preloadExitOffering with unknown exit offering id leaves preloaded offering null`() = runTest {
+        // testOfferings does NOT include exitOfferingId
+        coEvery { purchases.awaitOfferings() } returns testOfferings
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering).isNull()
+    }
+
+    @Test
+    fun `preloadExitOffering not-found result is not re-attempted when same offerings are re-set`() = runTest {
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.preloadExitOffering()
+        assertThat(vm.preloadedExitOffering).isNull()
+
+        // Simulate locale/colour/options refresh pushing the same workflow data again.
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+
+        // Still null — carry-forward prevented a redundant lookup and a duplicate error log.
+        assertThat(vm.preloadedExitOffering).isNull()
+    }
+
+    @Test
+    fun `preloadExitOffering re-resolves when offerings are refreshed and now contain the exit offering`() = runTest {
+        val vm = createVm()
+        // First update: exit offering absent.
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.preloadExitOffering()
+        assertThat(vm.preloadedExitOffering).isNull()
+
+        // Second update: fresh offerings that now include the exit offering.
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `closePaywall with preloaded exit offer calls dismissRequestWithExitOffering`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        var receivedExitOffering: Offering? = null
+        val vm = createVm(
+            dismissRequestWithExitOffering = { offering, _ ->
+                receivedExitOffering = offering
+            },
+        )
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        // Confirm the offering was preloaded before testing the close behaviour.
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+
+        vm.closePaywall()
+
+        assertThat(receivedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `closePaywall before exit offer workflow step does not call dismissRequestWithExitOffering with offering`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        var receivedExitOffering: Offering? = exitOffering
+        val vm = createVm(
+            dismissRequestWithExitOffering = { offering, _ ->
+                receivedExitOffering = offering
+            },
+        )
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        // The exit offer is preloaded, but the current workflow step is still step-1.
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+
+        vm.closePaywall()
+
+        assertThat(receivedExitOffering).isNull()
+    }
+
+    @Test
+    fun `preloadExitOffering called before workflow data arrives still preloads once data is set`() = runTest {
+        // Mirrors PaywallActivity's LaunchedEffect ordering: preloadExitOffering() fires before
+        // the async workflow fetch has populated currentWorkflowResult.
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.preloadExitOffering()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `updateStateFromWorkflow with same workflow data reloads preloaded exit offering`() = runTest {
+        val vm = createVm()
+        vm.preloadExitOffering()
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+
+        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `preloadExitOffering uses singleStepFallbackId to locate exit offer`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithFallback, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    @Test
+    fun `preloadExitOffering reads exit offer from single-step workflow`() = runTest {
+        coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(singleStepFetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.preloadExitOffering()
+        advanceUntilIdle()
+
+        assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
+    }
+
+    // endregion exit offers
 }

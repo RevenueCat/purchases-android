@@ -5,6 +5,7 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -85,6 +86,7 @@ public data class WorkflowScreen(
     @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId,
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
     @SerialName("offering_identifier") val offeringIdentifier: String? = null,
+    @SerialName("exit_offers") val exitOffers: ExitOffers? = null,
 )
 
 /**
@@ -103,6 +105,22 @@ public data class PublishedWorkflow(
     val metadata: Map<String, @Contextual Any> = emptyMap(),
     val hash: String? = null,
     @SerialName("single_step_fallback_id") val singleStepFallbackId: String? = null,
+) {
+    @InternalRevenueCatAPI
+    public val dismissExitOffer: WorkflowExitOffer?
+        get() {
+            val stepId = singleStepFallbackId ?: return null
+            val step = steps[stepId] ?: return null
+            val screenId = step.screenId ?: return null
+            val offeringId = screens[screenId]?.exitOffers?.dismiss?.offeringId ?: return null
+            return WorkflowExitOffer(offeringId = offeringId, stepId = step.id)
+        }
+}
+
+@InternalRevenueCatAPI
+public data class WorkflowExitOffer(
+    val offeringId: String,
+    val stepId: String,
 )
 
 @InternalRevenueCatAPI
