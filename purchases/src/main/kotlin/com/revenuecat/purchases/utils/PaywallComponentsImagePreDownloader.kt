@@ -27,9 +27,6 @@ import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.LocalizationData
-import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
@@ -44,14 +41,13 @@ internal class PaywallComponentsImagePreDownloader(
 
     fun preDownloadImages(
         paywallComponentsConfig: PaywallComponentsConfig,
-        localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>> = emptyMap(),
     ) {
         if (!shouldPredownloadImages) {
             verboseLog { "PaywallComponentsImagePreDownloader won't pre-download images" }
             return
         }
 
-        val imageUrls = findImageUrisToDownload(paywallComponentsConfig, localizations)
+        val imageUrls = findImageUrisToDownload(paywallComponentsConfig)
         imageUrls.forEach {
             debugLog { "Pre-downloading Paywall V2 image: $it" }
             coilImageDownloader.downloadImage(it)
@@ -60,13 +56,11 @@ internal class PaywallComponentsImagePreDownloader(
 
     private fun findImageUrisToDownload(
         paywallComponentsConfig: PaywallComponentsConfig,
-        localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     ): Set<Uri> {
         return paywallComponentsConfig.stack.findImageUrisToDownload() +
             (paywallComponentsConfig.header?.stack?.findImageUrisToDownload().orEmpty()) +
             (paywallComponentsConfig.stickyFooter?.stack?.findImageUrisToDownload().orEmpty()) +
-            paywallComponentsConfig.background.findImageUrisToDownload() +
-            localizations.findImageUrisToDownload()
+            paywallComponentsConfig.background.findImageUrisToDownload()
     }
 
     private fun StackComponent.findImageUrisToDownload(): Set<Uri> {
@@ -160,18 +154,4 @@ internal class PaywallComponentsImagePreDownloader(
             dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
         )
     }
-
-    private fun Map<LocaleId, Map<LocalizationKey, LocalizationData>>.findImageUrisToDownload(): Set<Uri> =
-        values.flatMapTo(mutableSetOf()) { localization ->
-            localization.values.flatMap { value ->
-                when (value) {
-                    is LocalizationData.Image -> value.value.findImageUrisToDownload()
-                    // We intentionally don't pre-download videos here; this preloader is for
-                    // images only. Text values have no URIs to download.
-                    is LocalizationData.Text,
-                    is LocalizationData.Video,
-                    -> emptySet()
-                }
-            }
-        }
 }
