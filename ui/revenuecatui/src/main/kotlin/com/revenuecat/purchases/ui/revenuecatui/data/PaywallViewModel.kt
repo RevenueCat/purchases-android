@@ -883,7 +883,7 @@ internal class PaywallViewModelImpl(
             workflow = result.workflow,
             offerings = offerings,
             presentedOfferingContext = currentWorkflowPresentedOfferingContext,
-            anchorStep = currentStep,
+            currentStep = currentStep,
         )
     }
 
