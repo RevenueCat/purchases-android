@@ -16,6 +16,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.IOException
 
+internal typealias WorkflowPreWarmer = (appUserID: String, offeringIdentifier: String, appInBackground: Boolean) -> Unit
+
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,

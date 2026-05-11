@@ -542,6 +542,24 @@ class OfferingsManagerTest {
     }
 
     @Test
+    fun `getOfferings calls workflowPreWarmer with appInBackground true when app is in background`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = true,
+            onError = { fail("should be a success") },
+            onSuccess = {},
+        )
+
+        verify(exactly = 1) {
+            mockWorkflowPreWarmer(appUserId, STUB_OFFERING_IDENTIFIER, true)
+        }
+    }
+
+    @Test
     fun `getOfferings does not call workflowPreWarmer if current offering is null`() {
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory(testOfferings.copy(current = null))
