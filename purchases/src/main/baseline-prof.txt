@@ -29,7 +29,7 @@ HSPLcom/revenuecat/purchases/AttributionFetcherFactory$WhenMappings;-><clinit>()
 Lcom/revenuecat/purchases/BillingFactory;
 HSPLcom/revenuecat/purchases/BillingFactory;-><clinit>()V
 HSPLcom/revenuecat/purchases/BillingFactory;-><init>()V
-HSPLcom/revenuecat/purchases/BillingFactory;->createBilling(Lcom/revenuecat/purchases/Store;Landroid/app/Application;Lcom/revenuecat/purchases/common/BackendHelper;Lcom/revenuecat/purchases/common/caching/DeviceCache;ZLcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;ZLcom/revenuecat/purchases/galaxy/GalaxyBillingMode;Lcom/revenuecat/purchases/common/Backend;)Lcom/revenuecat/purchases/common/BillingAbstract;
+HSPLcom/revenuecat/purchases/BillingFactory;->createBilling(Lcom/revenuecat/purchases/Store;Landroid/app/Application;Lcom/revenuecat/purchases/common/BackendHelper;Lcom/revenuecat/purchases/common/caching/DeviceCache;ZLcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;ZZLcom/revenuecat/purchases/galaxy/GalaxyBillingMode;Lcom/revenuecat/purchases/common/Backend;)Lcom/revenuecat/purchases/common/BillingAbstract;
 Lcom/revenuecat/purchases/BillingFactory$WhenMappings;
 HSPLcom/revenuecat/purchases/BillingFactory$WhenMappings;-><clinit>()V
 Lcom/revenuecat/purchases/CacheFetchPolicy;
@@ -98,7 +98,8 @@ Lcom/revenuecat/purchases/DangerousSettings;
 HSPLcom/revenuecat/purchases/DangerousSettings;-><clinit>()V
 HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(Z)V
 HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(ZZZ)V
+HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(ZZZZ)V
+HSPLcom/revenuecat/purchases/DangerousSettings;->getApplyObfuscatedAccountIdToSubscriptionChanges$purchases_defaultsBc8Release()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getAutoSyncPurchases()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getCustomEntitlementComputation$purchases_defaultsBc8Release()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getUiPreviewMode$purchases_defaultsBc8Release()Z
@@ -356,6 +357,8 @@ Lcom/revenuecat/purchases/PurchasesFactory$createEventsManager$1;
 HSPLcom/revenuecat/purchases/PurchasesFactory$createEventsManager$1;-><init>(Lcom/revenuecat/purchases/common/Backend;Ljava/net/URL;)V
 HSPLcom/revenuecat/purchases/PurchasesFactory$createEventsManager$1;->invoke(Lcom/revenuecat/purchases/common/events/EventsRequest;Lcom/revenuecat/purchases/common/Delay;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;)V
 HSPLcom/revenuecat/purchases/PurchasesFactory$createEventsManager$1;->invoke(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+Lcom/revenuecat/purchases/PurchasesFactory$createPurchases$1$offeringsManager$1;
+HSPLcom/revenuecat/purchases/PurchasesFactory$createPurchases$1$offeringsManager$1;-><init>(Lcom/revenuecat/purchases/common/workflows/WorkflowManager;)V
 Lcom/revenuecat/purchases/PurchasesFactory$createPurchases$lambda$8$$inlined$log$1;
 HSPLcom/revenuecat/purchases/PurchasesFactory$createPurchases$lambda$8$$inlined$log$1;-><init>(Lcom/revenuecat/purchases/common/LogIntent;)V
 HSPLcom/revenuecat/purchases/PurchasesFactory$createPurchases$lambda$8$$inlined$log$1;->invoke()Ljava/lang/Object;
@@ -517,6 +520,7 @@ HSPLcom/revenuecat/purchases/common/AppConfig;-><init>(Landroid/content/Context;
 HSPLcom/revenuecat/purchases/common/AppConfig;->access$getAdEventsURL$cp()Ljava/net/URL;
 PLcom/revenuecat/purchases/common/AppConfig;->access$getDiagnosticsURL$cp()Ljava/net/URL;
 HSPLcom/revenuecat/purchases/common/AppConfig;->access$getPaywallEventsURL$cp()Ljava/net/URL;
+HSPLcom/revenuecat/purchases/common/AppConfig;->getApplyObfuscatedAccountIdToSubscriptionChanges()Z
 HSPLcom/revenuecat/purchases/common/AppConfig;->getBaseURL()Ljava/net/URL;
 HSPLcom/revenuecat/purchases/common/AppConfig;->getCustomEntitlementComputation()Z
 HSPLcom/revenuecat/purchases/common/AppConfig;->getDangerousSettings()Lcom/revenuecat/purchases/DangerousSettings;
@@ -709,7 +713,7 @@ HSPLcom/revenuecat/purchases/common/HTTPClient;-><clinit>()V
 HSPLcom/revenuecat/purchases/common/HTTPClient;-><init>(Lcom/revenuecat/purchases/common/AppConfig;Lcom/revenuecat/purchases/common/networking/ETagManager;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/common/verification/SigningManager;Lcom/revenuecat/purchases/interfaces/StorefrontProvider;Lcom/revenuecat/purchases/common/DateProvider;Lcom/revenuecat/purchases/common/networking/MapConverter;Lcom/revenuecat/purchases/common/LocaleProvider;Lcom/revenuecat/purchases/ForceServerErrorStrategy;Lcom/revenuecat/purchases/common/RequestResponseListener;Lcom/revenuecat/purchases/common/networking/HTTPTimeoutManager;)V
 HSPLcom/revenuecat/purchases/common/HTTPClient;-><init>(Lcom/revenuecat/purchases/common/AppConfig;Lcom/revenuecat/purchases/common/networking/ETagManager;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/common/verification/SigningManager;Lcom/revenuecat/purchases/interfaces/StorefrontProvider;Lcom/revenuecat/purchases/common/DateProvider;Lcom/revenuecat/purchases/common/networking/MapConverter;Lcom/revenuecat/purchases/common/LocaleProvider;Lcom/revenuecat/purchases/ForceServerErrorStrategy;Lcom/revenuecat/purchases/common/RequestResponseListener;Lcom/revenuecat/purchases/common/networking/HTTPTimeoutManager;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/common/HTTPClient;->buffer(Ljava/io/InputStream;)Ljava/io/BufferedReader;
-PLcom/revenuecat/purchases/common/HTTPClient;->buffer(Ljava/io/OutputStream;)Ljava/io/BufferedWriter;
+HSPLcom/revenuecat/purchases/common/HTTPClient;->buffer(Ljava/io/OutputStream;)Ljava/io/BufferedWriter;
 HSPLcom/revenuecat/purchases/common/HTTPClient;->getConnection(Lcom/revenuecat/purchases/common/networking/HTTPRequest;J)Ljava/net/HttpURLConnection;
 HSPLcom/revenuecat/purchases/common/HTTPClient;->getETagHeader(Ljava/net/URLConnection;)Ljava/lang/String;
 HSPLcom/revenuecat/purchases/common/HTTPClient;->getHeaders(Ljava/util/Map;Ljava/net/URL;ZLjava/lang/String;ZLjava/lang/String;)Ljava/util/Map;
@@ -724,7 +728,7 @@ HSPLcom/revenuecat/purchases/common/HTTPClient;->performRequest$default(Lcom/rev
 HSPLcom/revenuecat/purchases/common/HTTPClient;->performRequest(Ljava/net/URL;Lcom/revenuecat/purchases/common/networking/Endpoint;Ljava/util/Map;Ljava/util/List;Ljava/util/Map;ZLjava/util/List;I)Lcom/revenuecat/purchases/common/networking/HTTPResult;
 HSPLcom/revenuecat/purchases/common/HTTPClient;->readFully(Ljava/io/InputStream;)Ljava/lang/String;
 HSPLcom/revenuecat/purchases/common/HTTPClient;->trackHttpRequestPerformedIfNeeded(Ljava/net/URL;Lcom/revenuecat/purchases/common/networking/Endpoint;Ljava/util/Date;ZLcom/revenuecat/purchases/common/networking/HTTPResult;ZLjava/io/IOException;)V
-PLcom/revenuecat/purchases/common/HTTPClient;->writeFully(Ljava/io/BufferedWriter;Ljava/lang/String;)V
+HSPLcom/revenuecat/purchases/common/HTTPClient;->writeFully(Ljava/io/BufferedWriter;Ljava/lang/String;)V
 Lcom/revenuecat/purchases/common/HTTPClient$Companion;
 HSPLcom/revenuecat/purchases/common/HTTPClient$Companion;-><init>()V
 HSPLcom/revenuecat/purchases/common/HTTPClient$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -1158,7 +1162,7 @@ HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$getJson$cp()Lk
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$getLegacyFlushTriggered$p(Lcom/revenuecat/purchases/common/events/EventsManager;)Z
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$getLegacyPaywallsStoredEvents(Lcom/revenuecat/purchases/common/events/EventsManager;)Ljava/util/List;
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$onFlushComplete(Lcom/revenuecat/purchases/common/events/EventsManager;)V
-PLcom/revenuecat/purchases/common/events/EventsManager;->access$performPriorityFlush(Lcom/revenuecat/purchases/common/events/EventsManager;)V
+HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$performPriorityFlush(Lcom/revenuecat/purchases/common/events/EventsManager;)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->access$setLegacyFlushTriggered$p(Lcom/revenuecat/purchases/common/events/EventsManager;Z)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->checkFileSizeAndClearIfNeeded()V
 HSPLcom/revenuecat/purchases/common/events/EventsManager;->enqueue$default(Lcom/revenuecat/purchases/common/events/EventsManager;Lcom/revenuecat/purchases/common/Delay;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
@@ -1222,9 +1226,9 @@ HSPLcom/revenuecat/purchases/common/events/EventsManager$flushLegacyEvents$1;-><
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushLegacyEvents$1;->invoke()Ljava/lang/Object;
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushLegacyEvents$1;->invoke()V
 Lcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$5;
-PLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$5;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;IJLjava/util/List;Lcom/revenuecat/purchases/common/Delay;)V
+HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$5;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;IJLjava/util/List;Lcom/revenuecat/purchases/common/Delay;)V
 Lcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;
-PLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;ILjava/util/List;)V
+HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;-><init>(Lcom/revenuecat/purchases/common/events/EventsManager;ILjava/util/List;)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;->invoke(Lcom/revenuecat/purchases/PurchasesError;Z)V
 HSPLcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6;->invoke(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 Lcom/revenuecat/purchases/common/events/EventsManager$flushNextBatch$6$3;
@@ -1245,7 +1249,7 @@ HSPLcom/revenuecat/purchases/common/events/EventsManager$track$1;->invoke()Ljava
 HSPLcom/revenuecat/purchases/common/events/EventsManager$track$1;->invoke()V
 Lcom/revenuecat/purchases/common/events/EventsRequest;
 HSPLcom/revenuecat/purchases/common/events/EventsRequest;-><clinit>()V
-PLcom/revenuecat/purchases/common/events/EventsRequest;-><init>(Ljava/util/List;)V
+HSPLcom/revenuecat/purchases/common/events/EventsRequest;-><init>(Ljava/util/List;)V
 HSPLcom/revenuecat/purchases/common/events/EventsRequest;->getCacheKey()Ljava/util/List;
 HSPLcom/revenuecat/purchases/common/events/EventsRequest;->write$Self$purchases_defaultsBc8Release(Lcom/revenuecat/purchases/common/events/EventsRequest;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 Lcom/revenuecat/purchases/common/events/EventsRequest$$serializer;
@@ -1380,8 +1384,8 @@ Lcom/revenuecat/purchases/common/offerings/OfferingsFactory;
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsFactory;-><init>(Lcom/revenuecat/purchases/common/BillingAbstract;Lcom/revenuecat/purchases/common/OfferingParser;Lcom/revenuecat/purchases/common/Dispatcher;Lcom/revenuecat/purchases/common/AppConfig;)V
 Lcom/revenuecat/purchases/common/offerings/OfferingsManager;
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;->$r8$lambda$o36PHiwh2Wv03gwVsK4BZoowNdU(Lkotlin/jvm/functions/Function0;)V
-HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsCache;Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/offerings/OfferingsFactory;Lcom/revenuecat/purchases/utils/OfferingImagePreDownloader;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/paywalls/OfferingFontPreDownloader;ZLcom/revenuecat/purchases/common/DateProvider;Landroid/os/Handler;)V
-HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsCache;Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/offerings/OfferingsFactory;Lcom/revenuecat/purchases/utils/OfferingImagePreDownloader;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/paywalls/OfferingFontPreDownloader;ZLcom/revenuecat/purchases/common/DateProvider;Landroid/os/Handler;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsCache;Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/offerings/OfferingsFactory;Lcom/revenuecat/purchases/utils/OfferingImagePreDownloader;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/paywalls/OfferingFontPreDownloader;ZLcom/revenuecat/purchases/common/DateProvider;Landroid/os/Handler;Lkotlin/jvm/functions/Function3;)V
+HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsCache;Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/offerings/OfferingsFactory;Lcom/revenuecat/purchases/utils/OfferingImagePreDownloader;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/paywalls/OfferingFontPreDownloader;ZLcom/revenuecat/purchases/common/DateProvider;Landroid/os/Handler;Lkotlin/jvm/functions/Function3;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;->access$handleErrorFetchingOfferings(Lcom/revenuecat/purchases/common/offerings/OfferingsManager;Lcom/revenuecat/purchases/PurchasesError;Lkotlin/jvm/functions/Function1;)V
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;->dispatch$lambda$6(Lkotlin/jvm/functions/Function0;)V
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager;->dispatch(Lkotlin/jvm/functions/Function0;)V
@@ -1397,9 +1401,9 @@ HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOffe
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$$inlined$log$1;->invoke()Ljava/lang/Object;
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$$inlined$log$1;->invoke()Ljava/lang/String;
 Lcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$3;
-HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$3;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsManager;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$3;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsManager;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
 Lcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$4;
-HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$4;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsManager;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$4;-><init>(Lcom/revenuecat/purchases/common/offerings/OfferingsManager;Lkotlin/jvm/functions/Function1;Ljava/lang/String;ZLkotlin/jvm/functions/Function1;)V
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$4;->invoke(Lcom/revenuecat/purchases/PurchasesError;Lcom/revenuecat/purchases/common/GetOfferingsErrorHandlingBehavior;)V
 HSPLcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$4;->invoke(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
 Lcom/revenuecat/purchases/common/offerings/OfferingsManager$fetchAndCacheOfferings$4$WhenMappings;
@@ -1481,8 +1485,8 @@ Lcom/revenuecat/purchases/common/workflows/WorkflowCdnFetcher;
 Lcom/revenuecat/purchases/common/workflows/WorkflowDetailResolver;
 HSPLcom/revenuecat/purchases/common/workflows/WorkflowDetailResolver;-><init>(Lcom/revenuecat/purchases/common/workflows/WorkflowCdnFetcher;)V
 Lcom/revenuecat/purchases/common/workflows/WorkflowManager;
-HSPLcom/revenuecat/purchases/common/workflows/WorkflowManager;-><init>(Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/workflows/WorkflowDetailResolver;Lkotlinx/coroutines/CoroutineScope;)V
-HSPLcom/revenuecat/purchases/common/workflows/WorkflowManager;-><init>(Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/workflows/WorkflowDetailResolver;Lkotlinx/coroutines/CoroutineScope;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+HSPLcom/revenuecat/purchases/common/workflows/WorkflowManager;-><init>(Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/workflows/WorkflowDetailResolver;Lcom/revenuecat/purchases/utils/WorkflowAssetPreDownloader;Lkotlinx/coroutines/CoroutineScope;)V
+HSPLcom/revenuecat/purchases/common/workflows/WorkflowManager;-><init>(Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/workflows/WorkflowDetailResolver;Lcom/revenuecat/purchases/utils/WorkflowAssetPreDownloader;Lkotlinx/coroutines/CoroutineScope;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 Lcom/revenuecat/purchases/customercenter/CustomerCenterConfigData$HelpPath$PathType;
 HSPLcom/revenuecat/purchases/customercenter/CustomerCenterConfigData$HelpPath$PathType;->$values()[Lcom/revenuecat/purchases/customercenter/CustomerCenterConfigData$HelpPath$PathType;
 HSPLcom/revenuecat/purchases/customercenter/CustomerCenterConfigData$HelpPath$PathType;-><clinit>()V
@@ -1547,8 +1551,8 @@ HSPLcom/revenuecat/purchases/google/BillingWrapper;->$r8$lambda$SpPvtJ9KEUH-jXaV
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->$r8$lambda$cFUQd9R2CZBgxbUPyprDz-wZmzY(Lkotlin/jvm/functions/Function1;Lcom/revenuecat/purchases/PurchasesError;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->$r8$lambda$qEt1douaZbOdmCiBwy3P3WMFOVM(Lcom/revenuecat/purchases/google/BillingWrapper;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;-><clinit>()V
-HSPLcom/revenuecat/purchases/google/BillingWrapper;-><init>(Lcom/revenuecat/purchases/google/BillingWrapper$ClientFactory;Landroid/os/Handler;Landroid/os/Handler;Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;Lcom/revenuecat/purchases/common/DateProvider;)V
-HSPLcom/revenuecat/purchases/google/BillingWrapper;-><init>(Lcom/revenuecat/purchases/google/BillingWrapper$ClientFactory;Landroid/os/Handler;Landroid/os/Handler;Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;Lcom/revenuecat/purchases/common/DateProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+HSPLcom/revenuecat/purchases/google/BillingWrapper;-><init>(Lcom/revenuecat/purchases/google/BillingWrapper$ClientFactory;Landroid/os/Handler;Landroid/os/Handler;Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;ZLcom/revenuecat/purchases/common/DateProvider;)V
+HSPLcom/revenuecat/purchases/google/BillingWrapper;-><init>(Lcom/revenuecat/purchases/google/BillingWrapper$ClientFactory;Landroid/os/Handler;Landroid/os/Handler;Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/diagnostics/DiagnosticsTracker;Lcom/revenuecat/purchases/PurchasesStateProvider;ZLcom/revenuecat/purchases/common/DateProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->access$executeRequestOnUIThread(Lcom/revenuecat/purchases/google/BillingWrapper;Ljava/lang/Long;Lkotlin/jvm/functions/Function1;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->executeRequestOnUIThread$default(Lcom/revenuecat/purchases/google/BillingWrapper;Ljava/lang/Long;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 HSPLcom/revenuecat/purchases/google/BillingWrapper;->executeRequestOnUIThread(Ljava/lang/Long;Lkotlin/jvm/functions/Function1;)V
@@ -2083,7 +2087,7 @@ HSPLcom/revenuecat/purchases/utils/EventsFileHelper$Companion;-><init>(Lkotlin/j
 Lcom/revenuecat/purchases/utils/EventsFileHelper$clear$1;
 HSPLcom/revenuecat/purchases/utils/EventsFileHelper$clear$1;-><init>(Lcom/revenuecat/purchases/utils/EventsFileHelper;)V
 Lcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;
-PLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;-><init>(Lkotlin/jvm/functions/Function1;Lcom/revenuecat/purchases/utils/EventsFileHelper;)V
+HSPLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;-><init>(Lkotlin/jvm/functions/Function1;Lcom/revenuecat/purchases/utils/EventsFileHelper;)V
 HSPLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;->invoke(Ljava/lang/Object;)Ljava/lang/Object;
 HSPLcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1;->invoke(Lkotlin/sequences/Sequence;)V
 Lcom/revenuecat/purchases/utils/EventsFileHelper$readFile$1$1;
@@ -2118,8 +2122,11 @@ HSPLcom/revenuecat/purchases/utils/LocaleExtensionsKt;->toLocale(Ljava/lang/Stri
 Lcom/revenuecat/purchases/utils/MapExtensionsKt;
 HSPLcom/revenuecat/purchases/utils/MapExtensionsKt;->filterNotNullValues(Ljava/util/Map;)Ljava/util/Map;
 Lcom/revenuecat/purchases/utils/OfferingImagePreDownloader;
-HSPLcom/revenuecat/purchases/utils/OfferingImagePreDownloader;-><init>(ZLcom/revenuecat/purchases/utils/CoilImageDownloader;)V
-HSPLcom/revenuecat/purchases/utils/OfferingImagePreDownloader;-><init>(ZLcom/revenuecat/purchases/utils/CoilImageDownloader;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+HSPLcom/revenuecat/purchases/utils/OfferingImagePreDownloader;-><init>(ZLcom/revenuecat/purchases/utils/CoilImageDownloader;Lcom/revenuecat/purchases/utils/PaywallComponentsImagePreDownloader;)V
+HSPLcom/revenuecat/purchases/utils/OfferingImagePreDownloader;-><init>(ZLcom/revenuecat/purchases/utils/CoilImageDownloader;Lcom/revenuecat/purchases/utils/PaywallComponentsImagePreDownloader;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+Lcom/revenuecat/purchases/utils/PaywallComponentsImagePreDownloader;
+HSPLcom/revenuecat/purchases/utils/PaywallComponentsImagePreDownloader;-><init>(ZLcom/revenuecat/purchases/utils/CoilImageDownloader;)V
+HSPLcom/revenuecat/purchases/utils/PaywallComponentsImagePreDownloader;-><init>(ZLcom/revenuecat/purchases/utils/CoilImageDownloader;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 Lcom/revenuecat/purchases/utils/PriceExtensionsKt;
 HSPLcom/revenuecat/purchases/utils/PriceExtensionsKt;->pricePerMonth(Lcom/revenuecat/purchases/models/Price;Lcom/revenuecat/purchases/models/Period;Ljava/util/Locale;)Lcom/revenuecat/purchases/models/Price;
 HSPLcom/revenuecat/purchases/utils/PriceExtensionsKt;->pricePerPeriod(Lcom/revenuecat/purchases/models/Price;DLjava/util/Locale;)Lcom/revenuecat/purchases/models/Price;
@@ -2146,5 +2153,7 @@ HSPLcom/revenuecat/purchases/utils/Result$Error;->getValue()Ljava/lang/Object;
 Lcom/revenuecat/purchases/utils/Result$Success;
 Lcom/revenuecat/purchases/utils/SerializationException;
 Lcom/revenuecat/purchases/utils/UrlConnectionFactory;
+Lcom/revenuecat/purchases/utils/WorkflowAssetPreDownloader;
+HSPLcom/revenuecat/purchases/utils/WorkflowAssetPreDownloader;-><init>(Lcom/revenuecat/purchases/utils/PaywallComponentsImagePreDownloader;Lcom/revenuecat/purchases/paywalls/OfferingFontPreDownloader;)V
 Lcom/revenuecat/purchases/virtualcurrencies/VirtualCurrencyManager;
 HSPLcom/revenuecat/purchases/virtualcurrencies/VirtualCurrencyManager;-><init>(Lcom/revenuecat/purchases/identity/IdentityManager;Lcom/revenuecat/purchases/common/caching/DeviceCache;Lcom/revenuecat/purchases/common/Backend;Lcom/revenuecat/purchases/common/AppConfig;)V
