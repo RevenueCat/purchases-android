@@ -9,7 +9,6 @@ import com.revenuecat.purchases.common.safeResumeWithException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -17,13 +16,10 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val topicFetcher: TopicFetcher,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val downloadDispatcher: CoroutineDispatcher =
-        Dispatchers.IO.limitedParallelism(MAX_PARALLEL_TOPIC_DOWNLOADS),
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
@@ -55,7 +51,7 @@ internal class RemoteConfigManager(
         } else {
             coroutineScope {
                 tasks.map { task ->
-                    async(downloadDispatcher) {
+                    async {
                         topicFetcher.fetchTopicIfNeeded(
                             topic = task.topic,
                             entryId = task.entryId,
@@ -81,6 +77,5 @@ internal class RemoteConfigManager(
 
     private companion object {
         const val DEFAULT_ENTRY_ID = "default"
-        const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
     }
 }

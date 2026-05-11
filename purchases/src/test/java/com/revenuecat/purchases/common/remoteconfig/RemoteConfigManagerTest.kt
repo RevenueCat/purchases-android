@@ -39,7 +39,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val src = source("primary")
         val entry = topicEntry("blob-default")
@@ -83,7 +82,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val response = response(
             blobSources = emptyList(),
@@ -110,7 +108,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val response = response(
             blobSources = listOf(source("primary")),
@@ -137,7 +134,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val response = response(
             blobSources = listOf(source("primary")),
@@ -166,7 +162,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val first = source("first")
         val second = source("second")
@@ -197,7 +192,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val response = response(
             blobSources = listOf(source("primary")),
@@ -227,7 +221,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val backendError = PurchasesError(PurchasesErrorCode.NetworkError, "backend down")
         val onErrorSlot = slot<(PurchasesError) -> Unit>()
@@ -254,7 +247,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val response = response(
             blobSources = listOf(source("primary")),
@@ -283,7 +275,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val response = response(
             blobSources = listOf(source("primary")),
@@ -305,7 +296,6 @@ class RemoteConfigManagerTest {
             backend = backend,
             topicFetcher = topicFetcher,
             dispatcher = UnconfinedTestDispatcher(testScheduler),
-            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
         )
         val src = source("primary")
         val entry = topicEntry("blob-default")

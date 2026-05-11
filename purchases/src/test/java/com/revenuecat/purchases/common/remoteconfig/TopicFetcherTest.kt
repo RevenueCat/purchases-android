@@ -10,6 +10,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
@@ -34,7 +36,6 @@ class TopicFetcherTest {
     private lateinit var rootDir: File
     private lateinit var applicationContext: Context
     private lateinit var urlConnectionFactory: UrlConnectionFactory
-    private lateinit var fetcher: TopicFetcher
 
     @Before
     fun setUp() {
@@ -48,8 +49,13 @@ class TopicFetcherTest {
         every { applicationContext.noBackupFilesDir } returns rootDir
 
         urlConnectionFactory = mockk()
-        fetcher = TopicFetcher(applicationContext, urlConnectionFactory)
     }
+
+    private fun TestScope.fetcher() = TopicFetcher(
+        applicationContext = applicationContext,
+        urlConnectionFactory = urlConnectionFactory,
+        downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+    )
 
     @After
     fun tearDown() {
@@ -64,9 +70,9 @@ class TopicFetcherTest {
         target.parentFile?.mkdirs()
         target.writeBytes(payload)
 
-        val error = fetcher.fetchTopicIfNeeded(
+        val error = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            entryId = "DEFAULT",
+            entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -81,9 +87,9 @@ class TopicFetcherTest {
         val blobRef = sha256Hex(payload)
         mockSuccessfulDownload("https://assets.example/$blobRef", payload)
 
-        val error = fetcher.fetchTopicIfNeeded(
+        val error = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            entryId = "DEFAULT",
+            entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -102,9 +108,9 @@ class TopicFetcherTest {
         val expectedUrl = "https://cdn.example/topics/$blobRef"
         mockSuccessfulDownload(expectedUrl, payload)
 
-        val error = fetcher.fetchTopicIfNeeded(
+        val error = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            entryId = "DEFAULT",
+            entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://cdn.example/topics/{blob_ref}"),
         )
@@ -123,9 +129,9 @@ class TopicFetcherTest {
         }
         every { urlConnectionFactory.createConnection(url, any()) } returns connection
 
-        val error = fetcher.fetchTopicIfNeeded(
+        val error = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            entryId = "DEFAULT",
+            entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -149,9 +155,9 @@ class TopicFetcherTest {
         }
         every { urlConnectionFactory.createConnection(url, any()) } returns connection
 
-        val error: PurchasesError? = fetcher.fetchTopicIfNeeded(
+        val error: PurchasesError? = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            entryId = "DEFAULT",
+            entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -169,9 +175,9 @@ class TopicFetcherTest {
         val url = "https://assets.example/$wrongBlobRef"
         mockSuccessfulDownload(url, payload)
 
-        val error = fetcher.fetchTopicIfNeeded(
+        val error = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            entryId = "DEFAULT",
+            entryId = "default",
             topicEntry = topicEntry(wrongBlobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
@@ -192,14 +198,14 @@ class TopicFetcherTest {
         mockSuccessfulDownload("https://assets.example/$blobRefA", payloadA)
         mockSuccessfulDownload("https://assets.example/$blobRefB", payloadB)
 
-        val errorA = fetcher.fetchTopicIfNeeded(
+        val errorA = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-            entryId = "DEFAULT",
+            entryId = "default",
             topicEntry = topicEntry(blobRefA),
             source = source("https://assets.example/{blob_ref}"),
         )
         if (errorA != null) fail<Unit>("Expected success, got error: $errorA")
-        val errorB = fetcher.fetchTopicIfNeeded(
+        val errorB = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "EXPERIMENT_A",
             topicEntry = topicEntry(blobRefB),
@@ -214,6 +220,59 @@ class TopicFetcherTest {
         assertThat(targetA).isNotEqualTo(targetB)
         assertThat(targetA.readBytes()).isEqualTo(payloadA)
         assertThat(targetB.readBytes()).isEqualTo(payloadB)
+    }
+
+    @Test
+    fun `rejects malformed blobRef before any IO`() = runTest {
+        val error = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry("not-hex"),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+        val topicDir = File(File(rootDir, "RevenueCat/topics"), Topic.PRODUCT_ENTITLEMENT_MAPPING.key)
+        assertThat(topicDir.exists() && topicDir.listFiles()?.isNotEmpty() == true).isFalse
+    }
+
+    @Test
+    fun `rejects blobRef containing path separators`() = runTest {
+        val malicious = "../../escape"
+        val error = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(malicious),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+        val outsideTarget = File(rootDir.parentFile, "escape")
+        assertThat(outsideTarget).doesNotExist()
+    }
+
+    @Test
+    fun `accepts mixed-case 64-char hex blobRef`() = runTest {
+        val mixedCaseHex = "ABCDEFabcdef" + "0".repeat(52)
+        val url = "https://assets.example/$mixedCaseHex"
+        mockSuccessfulDownload(url, "ignored".toByteArray())
+
+        val error = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(mixedCaseHex),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        // Validation passes; download is attempted (checksum fails because mixedCaseHex is not the real SHA-256
+        // of "ignored", which is expected — the point is that the request was made).
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        verify(exactly = 1) { urlConnectionFactory.createConnection(url, any()) }
     }
 
     private fun mockSuccessfulDownload(url: String, payload: ByteArray) {

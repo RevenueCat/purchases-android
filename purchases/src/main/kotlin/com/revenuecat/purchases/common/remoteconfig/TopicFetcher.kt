@@ -11,17 +11,35 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.downloadToFileAndVerifyChecksum
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 internal class TopicFetcher(
     private val applicationContext: Context,
     private val urlConnectionFactory: UrlConnectionFactory,
+    private val downloadDispatcher: CoroutineDispatcher =
+        Dispatchers.IO.limitedParallelism(MAX_PARALLEL_TOPIC_DOWNLOADS),
 ) {
     suspend fun fetchTopicIfNeeded(
+        topic: Topic,
+        entryId: String,
+        topicEntry: TopicEntry,
+        source: BlobSource,
+    ): PurchasesError? {
+        if (!topicEntry.blobRef.matches(BLOB_REF_PATTERN)) {
+            val message = "Topic $topic ($entryId) has a malformed blob_ref; refusing to fetch."
+            errorLog { message }
+            return PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError, message)
+        }
+        return withContext(downloadDispatcher) { fetchOnDispatcher(topic, entryId, topicEntry, source) }
+    }
+
+    private fun fetchOnDispatcher(
         topic: Topic,
         entryId: String,
         topicEntry: TopicEntry,
@@ -32,21 +50,19 @@ internal class TopicFetcher(
             verboseLog { "Topic $topic ($entryId) already cached at ${targetFile.absolutePath}" }
             return null
         }
-        return withContext(Dispatchers.IO) {
-            try {
-                val url = source.urlFormat.replace(BLOB_REF_PLACEHOLDER, topicEntry.blobRef)
-                downloadVerifyAndStore(url, topicEntry.blobRef, targetFile)
-                debugLog { "Topic $topic ($entryId) downloaded to ${targetFile.absolutePath}" }
-                null
-            } catch (e: Checksum.ChecksumValidationException) {
-                errorLog(e) { "Downloaded topic $topic ($entryId) failed SHA-256 verification." }
-                PurchasesError(
-                    PurchasesErrorCode.NetworkError,
-                    "Downloaded topic $topic ($entryId) failed SHA-256 verification.",
-                )
-            } catch (e: IOException) {
-                e.toPurchasesError().also { errorLog(it) }
-            }
+        return try {
+            val url = source.urlFormat.replace(BLOB_REF_PLACEHOLDER, topicEntry.blobRef)
+            downloadVerifyAndStore(url, topicEntry.blobRef, targetFile)
+            debugLog { "Topic $topic ($entryId) downloaded to ${targetFile.absolutePath}" }
+            null
+        } catch (e: Checksum.ChecksumValidationException) {
+            errorLog(e) { "Downloaded topic $topic ($entryId) failed SHA-256 verification." }
+            PurchasesError(
+                PurchasesErrorCode.NetworkError,
+                "Downloaded topic $topic ($entryId) failed SHA-256 verification.",
+            )
+        } catch (e: IOException) {
+            e.toPurchasesError().also { errorLog(it) }
         }
     }
 
@@ -70,7 +86,13 @@ internal class TopicFetcher(
                 description = "topic",
             )
             if (!tempFile.renameTo(target)) {
-                tempFile.copyTo(target, overwrite = true)
+                try {
+                    tempFile.copyTo(target, overwrite = true)
+                } catch (e: IOException) {
+                    errorLog(e) { "Failed to copy verified topic from temp to target: ${e.message}" }
+                    target.delete()
+                    throw e
+                }
             }
         } finally {
             if (tempFile.exists()) {
@@ -82,5 +104,7 @@ internal class TopicFetcher(
     private companion object {
         const val TOPICS_ROOT = "RevenueCat/topics"
         const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
+        const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
+        val BLOB_REF_PATTERN = Regex("^[a-zA-Z0-9]+$")
     }
 }

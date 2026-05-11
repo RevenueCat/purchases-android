@@ -33,7 +33,7 @@ class RemoteConfigResponseTest {
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
-                    "DEFAULT": {
+                    "default": {
                       "blob_ref": "abc123"
                     }
                   }
@@ -63,7 +63,7 @@ class RemoteConfigResponseTest {
         assertThat(response.manifest.topics).containsExactly(
             entry(
                 Topic.PRODUCT_ENTITLEMENT_MAPPING,
-                mapOf("DEFAULT" to TopicEntry(blobRef = "abc123")),
+                mapOf("default" to TopicEntry(blobRef = "abc123")),
             ),
         )
     }
@@ -104,7 +104,7 @@ class RemoteConfigResponseTest {
                 "future_manifest_field": [],
                 "topics": {
                   "product_entitlement_mapping": {
-                    "DEFAULT": {
+                    "default": {
                       "blob_ref": "abc",
                       "future_per_entry": 7
                     }
@@ -121,7 +121,7 @@ class RemoteConfigResponseTest {
         assertThat(response.blobSources).hasSize(1)
         assertThat(response.blobSources[0].id).isEqualTo("primary")
         val pem = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
-        assertThat(pem?.get("DEFAULT")?.blobRef).isEqualTo("abc")
+        assertThat(pem?.get("default")?.blobRef).isEqualTo("abc")
     }
 
     @Test
@@ -147,17 +147,17 @@ class RemoteConfigResponseTest {
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
-                    "DEFAULT": {
+                    "default": {
                       "blob_ref": "abc"
                     }
                   },
                   "future_topic": {
-                    "DEFAULT": {
+                    "default": {
                       "blob_ref": "def"
                     }
                   },
                   "another_unknown": {
-                    "DEFAULT": {
+                    "default": {
                       "blob_ref": "ghi"
                     }
                   }
@@ -178,7 +178,7 @@ class RemoteConfigResponseTest {
               "manifest": {
                 "topics": {
                   "future_topic": {
-                    "DEFAULT": {
+                    "default": {
                       "blob_ref": "abc"
                     }
                   }
@@ -212,7 +212,7 @@ class RemoteConfigResponseTest {
               "manifest": {
                 "topics": {
                   "product_entitlement_mapping": {
-                    "DEFAULT": {
+                    "default": {
                       "blob_ref": "default-blob"
                     },
                     "EXPERIMENT_A": {
@@ -227,8 +227,8 @@ class RemoteConfigResponseTest {
         val response = json.decodeFromString<RemoteConfigResponse>(payload)
 
         val entries = response.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
-        assertThat(entries?.keys).containsExactlyInAnyOrder("DEFAULT", "EXPERIMENT_A")
-        assertThat(entries?.get("DEFAULT")?.blobRef).isEqualTo("default-blob")
+        assertThat(entries?.keys).containsExactlyInAnyOrder("default", "EXPERIMENT_A")
+        assertThat(entries?.get("default")?.blobRef).isEqualTo("default-blob")
         assertThat(entries?.get("EXPERIMENT_A")?.blobRef).isEqualTo("experiment-blob")
     }
 
@@ -237,7 +237,7 @@ class RemoteConfigResponseTest {
         val manifest = Manifest(
             topics = mapOf(
                 Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf(
-                    "DEFAULT" to TopicEntry(blobRef = "abc"),
+                    "default" to TopicEntry(blobRef = "abc"),
                 ),
             ),
         )
@@ -270,7 +270,7 @@ class RemoteConfigResponseTest {
             manifest = Manifest(
                 topics = mapOf(
                     Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf(
-                        "DEFAULT" to TopicEntry(blobRef = "abc"),
+                        "default" to TopicEntry(blobRef = "abc"),
                     ),
                 ),
             ),
