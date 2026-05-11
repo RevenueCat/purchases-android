@@ -313,6 +313,11 @@ internal class PaywallViewModelImpl(
         refreshPreloadedExitOffering()
     }
 
+    private fun cancelAndResetState() {
+        updateStateJob?.cancel()
+        updateExitOfferData(ExitOfferData.Loading)
+    }
+
     private fun updateExitOfferData(data: ExitOfferData) {
         exitOfferData = data
         refreshPreloadedExitOffering()
@@ -688,8 +693,7 @@ internal class PaywallViewModelImpl(
         }
     }
     private fun updateState() {
-        updateStateJob?.cancel()
-        updateExitOfferData(ExitOfferData.Loading)
+        cancelAndResetState()
         updateStateJob = viewModelScope.launch {
             try {
                 updateStateFromOffering(options.offeringSelection)
@@ -806,8 +810,7 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
-        updateStateJob?.cancel()
-        updateExitOfferData(ExitOfferData.Loading)
+        cancelAndResetState()
         applyWorkflowState(fetchResult, offerings, presentedOfferingContext)
     }
 
