@@ -334,7 +334,11 @@ internal class PaywallViewModelImpl(
 
     private fun ExitOfferData.resolveIfNeeded(): ExitOfferData {
         if (this !is ExitOfferData.Configured || !preloadRequested || preloadedOffering != null) return this
-        return copy(preloadedOffering = offerings[offeringId])
+        val resolved = offerings[offeringId]
+        if (resolved == null) {
+            Logger.w("Paywalls: Exit offering '$offeringId' not found in available offerings.")
+        }
+        return copy(preloadedOffering = resolved)
     }
 
     private val shouldTriggerExitOfferForCurrentStep: Boolean
@@ -760,7 +764,16 @@ internal class PaywallViewModelImpl(
             is OfferingSelection.OfferingType -> {
                 val hasExitOffer = offeringSelection.offeringType.paywallComponents
                     ?.data?.exitOffers?.dismiss?.offeringId != null
-                val offerings = if (hasExitOffer) purchases.awaitOfferings() else null
+                val offerings = if (hasExitOffer) {
+                    try {
+                        purchases.awaitOfferings()
+                    } catch (e: PurchasesException) {
+                        Logger.w("Paywalls: Failed to fetch offerings for exit offer preloading: ${e.message}")
+                        null
+                    }
+                } else {
+                    null
+                }
                 ResolvedOfferingSelection(
                     selectedOffering = offeringSelection.offeringType,
                     offeringsForExitOfferLookup = offerings,

@@ -28,6 +28,8 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.ExitOffer
+import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
@@ -717,6 +719,37 @@ class PaywallViewModelTest {
         }
 
         assertThat(state.errorMessage).isNotEmpty
+    }
+
+    @Test
+    fun `OfferingType with exit offer - awaitOfferings failure does not fail paywall`() {
+        val offeringWithExitOffer = Offering(
+            identifier = "offering-with-exit-offer",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                PaywallComponentsData(
+                    templateName = emptyPaywallComponentsData.templateName,
+                    assetBaseURL = emptyPaywallComponentsData.assetBaseURL,
+                    componentsConfig = emptyPaywallComponentsData.componentsConfig,
+                    componentsLocalizations = emptyPaywallComponentsData.componentsLocalizations,
+                    defaultLocaleIdentifier = emptyPaywallComponentsData.defaultLocaleIdentifier,
+                    exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = "exit-offering-id")),
+                ),
+            ),
+        )
+
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+        )
+
+        val model = create(offering = offeringWithExitOffer)
+
+        val state = model.state.value
+        assertThat(state).isInstanceOf(PaywallState.Loaded::class.java)
+        assertThat(model.preloadedExitOffering).isNull()
     }
 
     @Test
