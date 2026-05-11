@@ -28,6 +28,7 @@ internal data class ButtonComponentStyle(
         object RestorePurchases : Action
         object NavigateBack : Action
         object WorkflowTrigger : Action
+        object CloseWorkflow : Action
 
         @get:JvmSynthetic
         val description: String

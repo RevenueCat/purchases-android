@@ -5,8 +5,10 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -14,9 +16,12 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.IOException
 
+internal typealias WorkflowPreWarmer = (appUserID: String, offeringIdentifier: String, appInBackground: Boolean) -> Unit
+
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
+    private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -38,7 +43,12 @@ internal class WorkflowManager(
             onSuccess = { response ->
                 scope.launch {
                     try {
-                        onSuccess(workflowDetailResolver.resolve(response))
+                        val result = workflowDetailResolver.resolve(response)
+                        scope.launch {
+                            runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
+                                .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
+                        }
+                        onSuccess(result)
                     } catch (e: IllegalStateException) {
                         onError(e.toPurchasesError())
                     } catch (e: IOException) {

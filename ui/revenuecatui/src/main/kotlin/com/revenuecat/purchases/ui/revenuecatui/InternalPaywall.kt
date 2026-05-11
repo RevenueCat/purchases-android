@@ -408,6 +408,8 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     }
                 }
 
+                is PaywallAction.External.CloseWorkflow -> viewModel.closePaywall()
+
                 is PaywallAction.External.WorkflowTrigger ->
                     viewModel.handleWorkflowAction(action.componentId, action.triggerType)
 

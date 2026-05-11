@@ -66,6 +66,12 @@ android {
 
         buildConfigField(
             type = "String",
+            name = "REMOTE_CONFIG_BASE_URL",
+            value = "\"${(localProperties["REMOTE_CONFIG_BASE_URL"] as? String) ?: ""}\"",
+        )
+
+        buildConfigField(
+            type = "String",
             name = "SAMSUNG_IAP_SDK_VERSION",
             value = "\"${libs.versions.samsungIap.get()}\"",
         )

@@ -2006,7 +2006,7 @@ class PaywallViewModelTest {
         val model = create(offering = offeringWithWPL)
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
@@ -2040,12 +2040,12 @@ class PaywallViewModelTest {
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
@@ -2062,6 +2062,30 @@ class PaywallViewModelTest {
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
         ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    @Test
+    fun `getWebCheckoutUrl encodes package parameter when package identifier has whitespace`(): Unit = runBlocking {
+        val packageWithWhitespace = Package(
+            identifier = "Annual Trial",
+            packageType = TestData.Packages.annual.packageType,
+            product = TestData.Packages.annual.product,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "offering"),
+        )
+        val action = PaywallAction.External.LaunchWebCheckout(
+            customUrl = "https://revenuecat.com",
+            autoDismiss = true,
+            openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                rcPackage = packageWithWhitespace,
+                packageParam = "rc_package",
+            ),
+        )
+        val model = create(offering = offeringWithWPL)
+
+        assertThat(
+            model.getWebCheckoutUrl(action),
+        ).isEqualTo("https://revenuecat.com?rc_package=Annual%20Trial")
     }
 
     @Test
@@ -2808,9 +2832,10 @@ class PaywallViewModelTest {
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequest: () -> Unit = { dismissInvoked = true },
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
-        val builder = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+        val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
             .setListener(listener)
             .setOffering(offering)
             .setPurchaseLogic(customPurchaseLogic)
