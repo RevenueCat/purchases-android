@@ -1,8 +1,11 @@
 package com.revenuecat.purchases.admob
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+
 /**
  * Result delivered to the app after reward verification polling for a rewarded or rewarded interstitial ad.
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 public class RewardVerificationResult private constructor(
     private val storage: Storage,
 ) {

@@ -41,7 +41,7 @@ public fun RewardedAd.show(
     activity: Activity,
     placement: String? = null,
     rewardVerificationStarted: (() -> Unit)? = null,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
+    rewardVerificationResult: ((RewardVerificationResult) -> Unit)? = null,
 ) {
     throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }
@@ -57,7 +57,7 @@ public fun RewardedInterstitialAd.show(
     activity: Activity,
     placement: String? = null,
     rewardVerificationStarted: (() -> Unit)? = null,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
+    rewardVerificationResult: ((RewardVerificationResult) -> Unit)? = null,
 ) {
     throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }

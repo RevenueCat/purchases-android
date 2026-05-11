@@ -1,8 +1,11 @@
 package com.revenuecat.purchases.admob
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+
 /**
  * Reward payload delivered when server-side reward verification succeeds.
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 public sealed interface VerifiedReward {
 
     /**
