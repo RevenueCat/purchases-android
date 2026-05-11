@@ -85,7 +85,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `empty sources skips fetcher and completes with null`() = runTest {
+    fun `empty sources skips fetcher, completes with null, and does not cache`() = runTest {
         val manager = newManager(testScheduler)
         val response = response(
             blobSources = emptyList(),
@@ -104,10 +104,18 @@ class RemoteConfigManagerTest {
         assertThat(completionInvoked).isTrue
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        // Cache wasn't populated, so a follow-up call still hits the backend.
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        verify(exactly = 2) {
+            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
+        }
     }
 
     @Test
-    fun `empty topics map skips fetcher and completes with null`() = runTest {
+    fun `empty topics map skips fetcher, completes with null, and does not cache`() = runTest {
         val manager = newManager(testScheduler)
         val response = response(
             blobSources = listOf(source("primary")),
@@ -126,10 +134,17 @@ class RemoteConfigManagerTest {
         assertThat(completionInvoked).isTrue
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        verify(exactly = 2) {
+            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
+        }
     }
 
     @Test
-    fun `topic without default entryId is skipped`() = runTest {
+    fun `topic without default entryId is skipped and not cached`() = runTest {
         val manager = newManager(testScheduler)
         val response = response(
             blobSources = listOf(source("primary")),
@@ -150,6 +165,13 @@ class RemoteConfigManagerTest {
         assertThat(completionInvoked).isTrue
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        verify(exactly = 2) {
+            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
+        }
     }
 
     @Test
@@ -315,7 +337,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `vacuously successful refresh (no sources) populates cache and writes to disk`() = runTest {
+    fun `vacuously successful refresh (no sources) does not populate cache or write to disk`() = runTest {
         val manager = newManager(testScheduler)
         val response = response(
             blobSources = emptyList(),
@@ -326,7 +348,14 @@ class RemoteConfigManagerTest {
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
 
-        verify(exactly = 1) { diskCache.write(response) }
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        // Cache wasn't populated, so a follow-up call still hits the backend.
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        verify(exactly = 2) {
+            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
+        }
     }
 
     @Test
@@ -412,11 +441,19 @@ class RemoteConfigManagerTest {
     @Test
     fun `call after foreground TTL expiry refetches and updates cache`() = runTest {
         val manager = newManager(testScheduler)
-        val response = response(
+        val first = response(
             blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob-1"))),
         )
-        mockBackendSuccess(response)
+        val second = response(
+            blobSources = listOf(source("primary")),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob-2"))),
+        )
+        val onSuccessSlot = slot<(RemoteConfigResponse) -> Unit>()
+        val responses = ArrayDeque(listOf(first, second))
+        every {
+            backend.getRemoteConfig(any(), capture(onSuccessSlot), any())
+        } answers { onSuccessSlot.captured.invoke(responses.removeFirst()) }
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
         } returns null
@@ -433,7 +470,8 @@ class RemoteConfigManagerTest {
         verify(exactly = 2) {
             backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
         }
-        verify(exactly = 2) { diskCache.write(response) }
+        verify(exactly = 1) { diskCache.write(first) }
+        verify(exactly = 1) { diskCache.write(second) }
     }
 
     @Test
@@ -491,6 +529,52 @@ class RemoteConfigManagerTest {
 
         verify(exactly = 2) {
             backend.getRemoteConfig(appInBackground = true, onSuccess = any(), onError = any())
+        }
+    }
+
+    @Test
+    fun `identical responses across TTL gap only write disk once`() = runTest {
+        val manager = newManager(testScheduler)
+        val response = response(
+            blobSources = listOf(source("primary")),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns null
+
+        fakeNow = Date(0)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        fakeNow = Date(6.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        verify(exactly = 2) {
+            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
+        }
+        verify(exactly = 1) { diskCache.write(response) }
+    }
+
+    @Test
+    fun `consecutive stale calls each issue a backend request`() = runTest {
+        val manager = newManager(testScheduler)
+        val onErrorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            backend.getRemoteConfig(any(), any(), capture(onErrorSlot))
+        } answers {
+            onErrorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.NetworkError, "boom"))
+        }
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        verify(exactly = 2) {
+            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
         }
     }
 

@@ -256,6 +256,50 @@ class TopicFetcherTest {
     }
 
     @Test
+    fun `rejects blobRef shorter than 64 hex chars`() = runTest {
+        val error = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry("abc123"),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+    }
+
+    @Test
+    fun `rejects blobRef longer than 64 hex chars`() = runTest {
+        val tooLong = "a".repeat(65)
+        val error = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(tooLong),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+    }
+
+    @Test
+    fun `rejects 64-char blobRef containing non-hex letters`() = runTest {
+        val nonHex = "g".repeat(64)
+        val error = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(nonHex),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+    }
+
+    @Test
     fun `accepts mixed-case 64-char hex blobRef`() = runTest {
         val mixedCaseHex = "ABCDEFabcdef" + "0".repeat(52)
         val url = "https://assets.example/$mixedCaseHex"

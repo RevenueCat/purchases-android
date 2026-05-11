@@ -77,9 +77,14 @@ internal class RemoteConfigManager(
                 }.awaitAll().firstNotNullOfOrNull { it }
             }
         }
-        if (firstError == null) {
+        // Only cache when at least one topic was actually fetched — empty sources, empty topics,
+        // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
+        if (firstError == null && source != null && tasks.isNotEmpty()) {
+            val previousResponse = cache?.response
             cache = CacheEntry(response, dateProvider.now)
-            diskCache.write(response)
+            if (previousResponse != response) {
+                diskCache.write(response)
+            }
         }
         return firstError
     }

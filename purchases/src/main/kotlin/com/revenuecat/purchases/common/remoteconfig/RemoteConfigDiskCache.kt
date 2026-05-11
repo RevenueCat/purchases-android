@@ -19,6 +19,7 @@ internal class RemoteConfigDiskCache(
     private val applicationContext: Context,
     private val json: Json,
 ) {
+    /** Performs blocking disk I/O — call from a background dispatcher (e.g. [kotlinx.coroutines.Dispatchers.IO]). */
     fun write(response: RemoteConfigResponse) {
         val parent = File(applicationContext.noBackupFilesDir, REMOTE_CONFIG_ROOT)
         try {
