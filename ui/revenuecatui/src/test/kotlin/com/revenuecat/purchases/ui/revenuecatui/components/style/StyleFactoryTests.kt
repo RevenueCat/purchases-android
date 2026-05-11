@@ -1547,4 +1547,21 @@ class StyleFactoryTests {
         assertThat(style.action).isEqualTo(ButtonComponentStyle.Action.WorkflowTrigger)
         assertThat(style.componentId).isEqualTo("btn-workflow")
     }
+
+    @Test
+    fun `convertAction maps CloseWorkflow to ButtonComponentStyle Action CloseWorkflow`() {
+        // Arrange
+        val component = ButtonComponent(
+            action = ButtonComponent.Action.CloseWorkflow,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(component)
+
+        // Assert
+        assertThat(result.isSuccess).isTrue()
+        val style = result.getOrNull()!!.componentStyle as ButtonComponentStyle
+        assertThat(style.action).isEqualTo(ButtonComponentStyle.Action.CloseWorkflow)
+    }
 }

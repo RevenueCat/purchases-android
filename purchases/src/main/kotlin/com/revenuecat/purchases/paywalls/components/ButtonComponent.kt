@@ -49,6 +49,9 @@ public class ButtonComponent(
         public object WorkflowTrigger : Action
 
         @Serializable
+        public object CloseWorkflow : Action
+
+        @Serializable
         @Immutable
         public data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
     }
@@ -149,12 +152,14 @@ private class ActionSurrogate(
             is Action.NavigateTo -> ActionTypeSurrogate.navigate_to
             is Action.RestorePurchases -> ActionTypeSurrogate.restore_purchases
             is Action.WorkflowTrigger -> ActionTypeSurrogate.workflow
+            is Action.CloseWorkflow -> ActionTypeSurrogate.close_workflow
         },
         destination = when (action) {
             is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
             is Action.WorkflowTrigger,
+            is Action.CloseWorkflow,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -171,6 +176,7 @@ private class ActionSurrogate(
             is Action.NavigateBack,
             is Action.RestorePurchases,
             is Action.WorkflowTrigger,
+            is Action.CloseWorkflow,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -199,6 +205,7 @@ private class ActionSurrogate(
             is Action.NavigateBack,
             is Action.RestorePurchases,
             is Action.WorkflowTrigger,
+            is Action.CloseWorkflow,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -219,6 +226,7 @@ private class ActionSurrogate(
             ActionTypeSurrogate.restore_purchases -> Action.RestorePurchases
             ActionTypeSurrogate.navigate_back -> Action.NavigateBack
             ActionTypeSurrogate.workflow -> Action.WorkflowTrigger
+            ActionTypeSurrogate.close_workflow -> Action.CloseWorkflow
             ActionTypeSurrogate.navigate_to -> Action.NavigateTo(
                 destination = when (destination) {
                     DestinationSurrogate.customer_center -> Destination.CustomerCenter
@@ -266,6 +274,7 @@ private enum class ActionTypeSurrogate {
     navigate_back,
     navigate_to,
     workflow,
+    close_workflow,
     unknown,
 }
 

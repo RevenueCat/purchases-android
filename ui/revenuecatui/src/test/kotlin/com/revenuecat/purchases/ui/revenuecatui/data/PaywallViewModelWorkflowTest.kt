@@ -748,6 +748,26 @@ class PaywallViewModelWorkflowTest {
         assertThat(step1State!!.selectedPackageInfo).isNull()
     }
 
+    @Test
+    fun `singleStepFallbackId equal to initialStepId does not crash and own selection is used`() {
+        // Edge case: the fallback step IS the initial step — no earlier packageless steps exist,
+        // so the pre-computation guard skips re-building the step. The step's own selection
+        // (ownSelection) must still win over the self-referential defaultPackageInfo.
+        val (twoPackageResult, twoPackageOfferings) = makeTwoPackageWorkflow()
+        val singleFallbackResult = twoPackageResult.copy(
+            workflow = twoPackageResult.workflow.copy(singleStepFallbackId = "step-1"),
+        )
+        val vm = createVm()
+
+        vm.updateStateFromWorkflow(singleFallbackResult, twoPackageOfferings, null)
+
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1State).isNotNull()
+        // monthlyPackageComponentDefault has isSelectedByDefault = true → MONTHLY wins.
+        assertThat(step1State!!.selectedPackageInfo?.rcPackage?.identifier)
+            .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
     // endregion
 
     // region exit offers
