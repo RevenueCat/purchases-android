@@ -45,9 +45,7 @@ internal class OfferingImagePreDownloader(
 
     private fun downloadV2Images(offering: Offering) {
         offering.paywallComponents?.let { paywallComponents ->
-            paywallComponentsImagePreDownloader.preDownloadImages(
-                paywallComponentsConfig = paywallComponents.data.componentsConfig.base,
-            )
+            paywallComponentsImagePreDownloader.preDownloadImages(paywallComponents.data.componentsConfig.base)
         }
     }
 }
