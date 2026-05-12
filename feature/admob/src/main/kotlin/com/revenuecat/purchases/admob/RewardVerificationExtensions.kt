@@ -31,9 +31,10 @@ public fun RewardedInterstitialAd.enableRewardVerification() {
 }
 
 /**
- * Shows a rewarded ad with optional reward-verification callbacks.
+ * Shows a rewarded ad with reward-verification callbacks.
  *
- * When [rewardVerificationResult] is provided, [enableRewardVerification] must be called first.
+ * [rewardVerificationStarted] is optional and [rewardVerificationResult] is required.
+ * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -49,9 +50,10 @@ public fun RewardedAd.show(
 }
 
 /**
- * Shows a rewarded interstitial ad with optional reward-verification callbacks.
+ * Shows a rewarded interstitial ad with reward-verification callbacks.
  *
- * When [rewardVerificationResult] is provided, [enableRewardVerification] must be called first.
+ * [rewardVerificationStarted] is optional and [rewardVerificationResult] is required.
+ * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
