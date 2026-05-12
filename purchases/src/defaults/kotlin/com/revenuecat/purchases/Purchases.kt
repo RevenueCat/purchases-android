@@ -713,7 +713,7 @@ public class Purchases internal constructor(
     }
 
     @InternalRevenueCatAPI
-    public fun getAdMobRewardVerificationStatus(
+    internal fun getAdMobRewardVerificationStatus(
         clientTransactionId: String,
         callback: GetAdMobRewardVerificationStatusCallback,
     ) {
