@@ -68,7 +68,7 @@ class RemoteConfigManagerTest {
                 topicEntry = capture(capturedEntry),
                 source = capture(capturedSource),
             )
-        } returns null
+        } returns TopicFetchResult.Success
 
         var completionInvoked = false
         var completionError: PurchasesError? = null
@@ -199,7 +199,7 @@ class RemoteConfigManagerTest {
                 topicEntry = any(),
                 source = capture(capturedSource),
             )
-        } returns null
+        } returns TopicFetchResult.Success
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -225,7 +225,7 @@ class RemoteConfigManagerTest {
                 topicEntry = any(),
                 source = capture(capturedSource),
             )
-        } returns null
+        } returns TopicFetchResult.Success
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -244,7 +244,7 @@ class RemoteConfigManagerTest {
         val fetcherError = PurchasesError(PurchasesErrorCode.NetworkError, "fetcher failed")
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns fetcherError
+        } returns TopicFetchResult.InvalidatingFailure(fetcherError)
 
         var completionInvoked = false
         var completionError: PurchasesError? = null
@@ -290,7 +290,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         manager.updateRemoteConfigIfNeeded(appInBackground = true) {}
         testScheduler.advanceUntilIdle()
@@ -314,7 +314,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false)
         testScheduler.advanceUntilIdle()
@@ -333,7 +333,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false, completion = null)
         testScheduler.advanceUntilIdle()
@@ -368,7 +368,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
         val capturedReferenced = slot<Map<Topic, Set<String>>>()
         coEvery { topicFetcher.cleanupUnreferencedTopics(capture(capturedReferenced)) } returns Unit
 
@@ -391,7 +391,7 @@ class RemoteConfigManagerTest {
         val fetcherError = PurchasesError(PurchasesErrorCode.NetworkError, "fetcher failed")
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns fetcherError
+        } returns TopicFetchResult.InvalidatingFailure(fetcherError)
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -439,7 +439,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -457,7 +457,9 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns PurchasesError(PurchasesErrorCode.NetworkError, "boom")
+        } returns TopicFetchResult.InvalidatingFailure(
+            PurchasesError(PurchasesErrorCode.NetworkError, "boom"),
+        )
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -503,7 +505,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         fakeNow = Date(0)
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
@@ -545,7 +547,7 @@ class RemoteConfigManagerTest {
         } answers { onSuccessSlot.captured.invoke(responses.removeFirst()) }
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         fakeNow = Date(0)
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
@@ -573,7 +575,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         fakeNow = Date(0)
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
@@ -605,7 +607,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         fakeNow = Date(0)
         manager.updateRemoteConfigIfNeeded(appInBackground = true) {}
@@ -631,7 +633,7 @@ class RemoteConfigManagerTest {
         mockBackendSuccess(response)
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        } returns TopicFetchResult.Success
 
         fakeNow = Date(0)
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
@@ -665,6 +667,353 @@ class RemoteConfigManagerTest {
         verify(exactly = 2) {
             backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
         }
+    }
+
+    @Test
+    fun `falls back to a same-priority alternate when first source returns InvalidatingFailure`() = runTest {
+        val manager = newManager(testScheduler)
+        val first = source("first", priority = 5, weight = 50)
+        val second = source("second", priority = 5, weight = 50)
+        val response = response(
+            blobSources = listOf(first, second),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            val src = arg<BlobSource>(3)
+            attempts += src
+            if (attempts.size == 1) {
+                TopicFetchResult.InvalidatingFailure(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "first-failed"),
+                )
+            } else {
+                TopicFetchResult.Success
+            }
+        }
+
+        var completionError: PurchasesError? = PurchasesError(PurchasesErrorCode.UnknownError)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
+            completionError = error
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertThat(completionError).isNull()
+        assertThat(attempts).hasSize(2)
+        assertThat(attempts[0]).isNotEqualTo(attempts[1])
+    }
+
+    @Test
+    fun `falls back to a lower priority source only after top tier is exhausted`() = runTest {
+        val manager = newManager(testScheduler)
+        val high = source("high", priority = 5, weight = 100)
+        val low = source("low", priority = 1, weight = 100)
+        val response = response(
+            blobSources = listOf(high, low),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            val src = arg<BlobSource>(3)
+            attempts += src
+            if (src.id == "high") {
+                TopicFetchResult.InvalidatingFailure(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "high-failed"),
+                )
+            } else {
+                TopicFetchResult.Success
+            }
+        }
+
+        var completionError: PurchasesError? = PurchasesError(PurchasesErrorCode.UnknownError)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
+            completionError = error
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertThat(completionError).isNull()
+        assertThat(attempts).containsExactly(high, low)
+    }
+
+    @Test
+    fun `returns last error after every source is exhausted`() = runTest {
+        val manager = newManager(testScheduler)
+        val first = source("first", priority = 5, weight = 50)
+        val second = source("second", priority = 5, weight = 50)
+        val response = response(
+            blobSources = listOf(first, second),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        val attempts = mutableListOf<BlobSource>()
+        val lastError = PurchasesError(PurchasesErrorCode.NetworkError, "first-fail")
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            val src = arg<BlobSource>(3)
+            attempts += src
+            TopicFetchResult.InvalidatingFailure(lastError)
+        }
+
+        var completionError: PurchasesError? = null
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
+            completionError = error
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertThat(attempts).hasSize(2)
+        assertThat(completionError).isSameAs(lastError)
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `cached source is preferred on the next refresh after a successful download`() = runTest {
+        val manager = newManager(testScheduler, random = Random(42L))
+        val first = source("first", priority = 5, weight = 50)
+        val second = source("second", priority = 5, weight = 50)
+        val response = response(
+            blobSources = listOf(first, second),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            attempts += arg<BlobSource>(3)
+            TopicFetchResult.Success
+        }
+
+        fakeNow = Date(0)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        val firstAttempt = attempts.single()
+
+        // Past TTL: second refresh.
+        fakeNow = Date(6.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        assertThat(attempts).hasSize(2)
+        assertThat(attempts[1]).isEqualTo(firstAttempt)
+    }
+
+    @Test
+    fun `cached source missing from new response is ignored`() = runTest {
+        val manager = newManager(testScheduler)
+        val original = source("first", priority = 5, weight = 100)
+        val replacement = source("replacement", priority = 5, weight = 100)
+        val firstResponse = response(
+            blobSources = listOf(original),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        val secondResponse = response(
+            blobSources = listOf(replacement),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob-2"))),
+        )
+        val onSuccess = slot<(RemoteConfigResponse) -> Unit>()
+        val responses = ArrayDeque(listOf(firstResponse, secondResponse))
+        every {
+            backend.getRemoteConfig(any(), capture(onSuccess), any())
+        } answers { onSuccess.captured.invoke(responses.removeFirst()) }
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            attempts += arg<BlobSource>(3)
+            TopicFetchResult.Success
+        }
+
+        fakeNow = Date(0)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        fakeNow = Date(6.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        assertThat(attempts).containsExactly(original, replacement)
+    }
+
+    @Test
+    fun `TransientFailure on cached source preserves the cached source id`() = runTest {
+        val manager = newManager(testScheduler)
+        val src = source("primary", priority = 5, weight = 100)
+        val response = response(
+            blobSources = listOf(src),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        // First refresh: success, populates cachedSourceId.
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns TopicFetchResult.Success
+        fakeNow = Date(0)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        // Second refresh: cached source fails transiently and no other source exists.
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns TopicFetchResult.TransientFailure(
+            PurchasesError(PurchasesErrorCode.NetworkError, "no network"),
+        )
+        fakeNow = Date(6.minutes.inWholeMilliseconds)
+        var secondError: PurchasesError? = null
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error -> secondError = error }
+        testScheduler.advanceUntilIdle()
+        assertThat(secondError).isNotNull
+
+        // Third refresh: cached source should still be tried first, success again.
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            attempts += arg<BlobSource>(3)
+            TopicFetchResult.Success
+        }
+        fakeNow = Date(12.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        assertThat(attempts).containsExactly(src)
+    }
+
+    @Test
+    fun `InvalidatingFailure on cached source clears cachedSourceId when refresh fails`() = runTest {
+        val manager = newManager(testScheduler)
+        val src = source("primary", priority = 5, weight = 100)
+        val response = response(
+            blobSources = listOf(src),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns TopicFetchResult.Success
+        fakeNow = Date(0)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } returns TopicFetchResult.InvalidatingFailure(
+            PurchasesError(PurchasesErrorCode.NetworkError, "http 500"),
+        )
+        fakeNow = Date(6.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        // Add an alternate source for the third refresh — selectWeighted should pick it freely
+        // because cachedSourceId was cleared.
+        val alternate = source("alternate", priority = 5, weight = 100)
+        val responseWithAlternate = response(
+            blobSources = listOf(src, alternate),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        val onSuccess = slot<(RemoteConfigResponse) -> Unit>()
+        every {
+            backend.getRemoteConfig(any(), capture(onSuccess), any())
+        } answers { onSuccess.captured.invoke(responseWithAlternate) }
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            attempts += arg<BlobSource>(3)
+            TopicFetchResult.Success
+        }
+        fakeNow = Date(12.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        // A fixed seed makes selection deterministic; the assertion below confirms either source could be
+        // picked (since cachedSourceId was cleared the picker doesn't lock in src).
+        assertThat(attempts.single()).isIn(src, alternate)
+    }
+
+    @Test
+    fun `fallback success updates cachedSourceId to the winning source`() = runTest {
+        val manager = newManager(testScheduler)
+        val first = source("first", priority = 5, weight = 50)
+        val second = source("second", priority = 5, weight = 50)
+        val response = response(
+            blobSources = listOf(first, second),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        // First refresh: "first" wins on the initial weighted pick (with seed 0L it picks first).
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            val src = arg<BlobSource>(3)
+            if (src.id == "first") {
+                TopicFetchResult.InvalidatingFailure(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "first failed"),
+                )
+            } else {
+                TopicFetchResult.Success
+            }
+        }
+        fakeNow = Date(0)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        // Second refresh: cached source should now be "second"; it should be tried first.
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            attempts += arg<BlobSource>(3)
+            TopicFetchResult.Success
+        }
+        fakeNow = Date(6.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        assertThat(attempts).containsExactly(second)
+    }
+
+    @Test
+    fun `topics that succeed on one source are not re-requested on the next source`() = runTest {
+        val manager = newManager(testScheduler)
+        val first = source("first", priority = 5, weight = 50)
+        val second = source("second", priority = 5, weight = 50)
+        val entryA = topicEntry("blob-a".padEnd(64, '0'))
+        val response = response(
+            blobSources = listOf(first, second),
+            topics = mapOf(
+                Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to entryA),
+            ),
+        )
+        mockBackendSuccess(response)
+        val attempts = mutableListOf<Pair<BlobSource, TopicEntry>>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            val src = arg<BlobSource>(3)
+            val entry = arg<TopicEntry>(2)
+            attempts += src to entry
+            if (src.id == "first") {
+                TopicFetchResult.InvalidatingFailure(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "first failed"),
+                )
+            } else {
+                TopicFetchResult.Success
+            }
+        }
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        // The entry was attempted once on each source — once with first (failed), once with second (success).
+        val firstAttempts = attempts.filter { it.first.id == "first" }
+        val secondAttempts = attempts.filter { it.first.id == "second" }
+        assertThat(firstAttempts).hasSize(1)
+        assertThat(secondAttempts).hasSize(1)
     }
 
     private fun newManager(

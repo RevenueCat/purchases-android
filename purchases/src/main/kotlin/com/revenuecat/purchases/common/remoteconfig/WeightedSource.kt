@@ -29,3 +29,9 @@ internal fun <T : WeightedSource> List<T>.selectWeighted(random: Random = Random
         }
     }
 }
+
+internal fun <T : WeightedSource> List<T>.selectWeightedExcluding(
+    excludedIds: Set<String>,
+    idOf: (T) -> String,
+    random: Random = Random.Default,
+): T? = filter { idOf(it) !in excludedIds }.selectWeighted(random)
