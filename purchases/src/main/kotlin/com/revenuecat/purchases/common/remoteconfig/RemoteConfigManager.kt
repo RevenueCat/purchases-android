@@ -57,6 +57,7 @@ internal class RemoteConfigManager(
         }
         // WIP: We should have some logic to pick the correct source for this. Right now, hardcoded to the first source.
         val source = response.blobSources.firstOrNull()
+        val referenced = buildReferenceSet(response.manifest)
         val tasks = response.manifest.topics.mapNotNull { (topic, entries) ->
             val entry = entries[DEFAULT_ENTRY_ID] ?: return@mapNotNull null
             TopicTask(topic, DEFAULT_ENTRY_ID, entry)
@@ -77,13 +78,16 @@ internal class RemoteConfigManager(
                 }.awaitAll().firstNotNullOfOrNull { it }
             }
         }
-        // Only cache when at least one topic was actually fetched — empty sources, empty topics,
-        // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
-        if (firstError == null && source != null && tasks.isNotEmpty()) {
-            val previousResponse = cache?.response
-            cache = CacheEntry(response, dateProvider.now)
-            if (previousResponse != response) {
-                diskCache.write(response)
+        if (firstError == null) {
+            // Only cache when at least one topic was actually fetched — empty sources, empty topics,
+            // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
+            if (source != null && tasks.isNotEmpty()) {
+                val previousResponse = cache?.response
+                topicFetcher.cleanupUnreferencedTopics(referenced)
+                cache = CacheEntry(response, dateProvider.now)
+                if (previousResponse != response) {
+                    diskCache.write(response)
+                }
             }
         }
         return firstError
@@ -96,6 +100,11 @@ internal class RemoteConfigManager(
                 onSuccess = { cont.safeResume(it) },
                 onError = { cont.safeResumeWithException(PurchasesException(it)) },
             )
+        }
+
+    private fun buildReferenceSet(manifest: Manifest): Map<Topic, Set<String>> =
+        manifest.topics.mapValues { (_, entries) ->
+            entries.values.map { it.blobRef }.toSet()
         }
 
     private data class TopicTask(val topic: Topic, val entryId: String, val entry: TopicEntry)
