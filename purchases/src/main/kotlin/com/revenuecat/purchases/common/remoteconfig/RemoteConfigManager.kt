@@ -79,11 +79,11 @@ internal class RemoteConfigManager(
             }
         }
         if (firstError == null) {
-            topicFetcher.cleanupUnreferencedTopics(referenced)
             // Only cache when at least one topic was actually fetched — empty sources, empty topics,
             // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
             if (source != null && tasks.isNotEmpty()) {
                 val previousResponse = cache?.response
+                topicFetcher.cleanupUnreferencedTopics(referenced)
                 cache = CacheEntry(response, dateProvider.now)
                 if (previousResponse != response) {
                     diskCache.write(response)

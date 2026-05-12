@@ -106,7 +106,7 @@ class RemoteConfigManagerTest {
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
         verify(exactly = 0) { diskCache.write(any()) }
-        coVerify(exactly = 1) { topicFetcher.cleanupUnreferencedTopics(any()) }
+        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
 
         // Cache wasn't populated, so a follow-up call still hits the backend.
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
@@ -137,7 +137,7 @@ class RemoteConfigManagerTest {
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
         verify(exactly = 0) { diskCache.write(any()) }
-        coVerify(exactly = 1) { topicFetcher.cleanupUnreferencedTopics(emptyMap()) }
+        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -169,12 +169,7 @@ class RemoteConfigManagerTest {
         assertThat(completionError).isNull()
         coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
         verify(exactly = 0) { diskCache.write(any()) }
-        // Cleanup still runs and includes the experiment-only topic's blob ref in the reference set.
-        coVerify(exactly = 1) {
-            topicFetcher.cleanupUnreferencedTopics(
-                mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to setOf("blob")),
-            )
-        }
+        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
 
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
@@ -391,6 +386,21 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `does not trigger cleanup when manifest has no topics`() = runTest {
+        val manager = newManager(testScheduler)
+        val response = response(
+            blobSources = listOf(source("primary")),
+            topics = emptyMap(),
+        )
+        mockBackendSuccess(response)
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
+    }
+
+    @Test
     fun `successful refresh writes response to disk cache`() = runTest {
         val manager = newManager(testScheduler)
         val response = response(
@@ -406,28 +416,6 @@ class RemoteConfigManagerTest {
         testScheduler.advanceUntilIdle()
 
         verify(exactly = 1) { diskCache.write(response) }
-    }
-
-    @Test
-    fun `vacuously successful refresh (no sources) does not populate cache or write to disk`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = emptyList(),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 0) { diskCache.write(any()) }
-
-        // Cache wasn't populated, so a follow-up call still hits the backend.
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
     }
 
     @Test
