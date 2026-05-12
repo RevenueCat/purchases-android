@@ -7,7 +7,7 @@ import dev.drewhamilton.poko.Poko
  * Reward payload delivered when server-side reward verification succeeds.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-public sealed interface VerifiedReward {
+public interface VerifiedReward {
 
     /**
      * A virtual-currency reward with a code and amount.
