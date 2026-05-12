@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.admob
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import dev.drewhamilton.poko.Poko
 
 /**
  * Reward payload delivered when server-side reward verification succeeds.
@@ -11,7 +12,8 @@ public sealed interface VerifiedReward {
     /**
      * A virtual-currency reward with a code and amount.
      */
-    public data class VirtualCurrency(
+    @Poko
+    public class VirtualCurrency(
         public val code: String,
         public val amount: Int,
     ) : VerifiedReward

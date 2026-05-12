@@ -62,9 +62,6 @@ package com.revenuecat.purchases.admob {
 
   public static final class VerifiedReward.VirtualCurrency implements com.revenuecat.purchases.admob.VerifiedReward {
     ctor public VerifiedReward.VirtualCurrency(String code, int amount);
-    method public String component1();
-    method public int component2();
-    method public com.revenuecat.purchases.admob.VerifiedReward.VirtualCurrency copy(String code, int amount);
     method public int getAmount();
     method public String getCode();
     property public final int amount;
