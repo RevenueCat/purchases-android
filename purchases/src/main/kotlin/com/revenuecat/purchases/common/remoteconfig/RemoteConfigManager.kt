@@ -1,8 +1,12 @@
 package com.revenuecat.purchases.common.remoteconfig
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
@@ -15,18 +19,29 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.Date
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val topicFetcher: TopicFetcher,
+    private val diskCache: RemoteConfigDiskCache,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+
+    @Volatile
+    private var cache: CacheEntry? = null
 
     fun updateRemoteConfigIfNeeded(
         appInBackground: Boolean,
         completion: ((PurchasesError?) -> Unit)? = null,
     ) {
+        if (!cache?.cachedAt.isCacheStale(appInBackground, dateProvider)) {
+            completion?.invoke(null)
+            return
+        }
         scope.launch {
             val error = refresh(appInBackground)
             completion?.invoke(error)
@@ -46,7 +61,7 @@ internal class RemoteConfigManager(
             val entry = entries[DEFAULT_ENTRY_ID] ?: return@mapNotNull null
             TopicTask(topic, DEFAULT_ENTRY_ID, entry)
         }
-        return if (source == null || tasks.isEmpty()) {
+        val firstError: PurchasesError? = if (source == null || tasks.isEmpty()) {
             null
         } else {
             coroutineScope {
@@ -62,6 +77,16 @@ internal class RemoteConfigManager(
                 }.awaitAll().firstNotNullOfOrNull { it }
             }
         }
+        // Only cache when at least one topic was actually fetched — empty sources, empty topics,
+        // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
+        if (firstError == null && source != null && tasks.isNotEmpty()) {
+            val previousResponse = cache?.response
+            cache = CacheEntry(response, dateProvider.now)
+            if (previousResponse != response) {
+                diskCache.write(response)
+            }
+        }
+        return firstError
     }
 
     private suspend fun getRemoteConfig(appInBackground: Boolean): RemoteConfigResponse =
@@ -74,6 +99,8 @@ internal class RemoteConfigManager(
         }
 
     private data class TopicTask(val topic: Topic, val entryId: String, val entry: TopicEntry)
+
+    private data class CacheEntry(val response: RemoteConfigResponse, val cachedAt: Date)
 
     private companion object {
         const val DEFAULT_ENTRY_ID = "default"

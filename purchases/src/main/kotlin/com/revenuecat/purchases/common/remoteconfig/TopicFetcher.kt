@@ -105,6 +105,6 @@ internal class TopicFetcher(
         const val TOPICS_ROOT = "RevenueCat/topics"
         const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
         const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
-        val BLOB_REF_PATTERN = Regex("^[a-zA-Z0-9]+$")
+        val BLOB_REF_PATTERN = Regex("^[a-fA-F0-9]{64}$")
     }
 }
