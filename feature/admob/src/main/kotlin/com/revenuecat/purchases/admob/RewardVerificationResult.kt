@@ -27,13 +27,13 @@ public class RewardVerificationResult private constructor(
     public val failed: Boolean
         get() = this.storage is Storage.Failed
 
-    public companion object {
+    internal companion object {
 
         /**
          * Server verification succeeded for this ad transaction.
          */
         @JvmStatic
-        public fun verified(reward: VerifiedReward): RewardVerificationResult {
+        internal fun verified(reward: VerifiedReward): RewardVerificationResult {
             return RewardVerificationResult(Storage.Verified(reward))
         }
 
@@ -41,6 +41,6 @@ public class RewardVerificationResult private constructor(
          * Verification did not complete successfully (rejected, timeout, network, etc.).
          */
         @JvmField
-        public val failed: RewardVerificationResult = RewardVerificationResult(Storage.Failed)
+        internal val failed: RewardVerificationResult = RewardVerificationResult(Storage.Failed)
     }
 }
