@@ -917,7 +917,6 @@ internal class PurchasesOrchestrator(
         backend.getRewardVerificationStatus(
             appUserID = identityManager.currentAppUserID,
             clientTransactionId = clientTransactionId,
-            appInBackground = state.appInBackground,
             onSuccess = { callback.onReceived(it) },
             onError = { callback.onError(it) },
         )

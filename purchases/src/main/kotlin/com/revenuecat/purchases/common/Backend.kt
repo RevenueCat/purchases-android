@@ -1127,7 +1127,6 @@ internal class Backend(
     fun getRewardVerificationStatus(
         appUserID: String,
         clientTransactionId: String,
-        appInBackground: Boolean,
         onSuccess: (RewardVerificationStatus) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -1136,7 +1135,7 @@ internal class Backend(
             clientTransactionId = clientTransactionId,
         )
         val path = endpoint.getPath()
-        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground = false)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
@@ -1180,13 +1179,12 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             rewardVerificationStatusCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
                 cacheKey,
                 onSuccess to onError,
-                delay,
+                Delay.NONE,
             )
         }
     }

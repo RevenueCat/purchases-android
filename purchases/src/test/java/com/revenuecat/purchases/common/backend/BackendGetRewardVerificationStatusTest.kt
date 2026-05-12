@@ -85,7 +85,6 @@ class BackendGetRewardVerificationStatusTest {
         backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            appInBackground = false,
             onSuccess = { receivedStatus = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -110,7 +109,6 @@ class BackendGetRewardVerificationStatusTest {
         backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            appInBackground = false,
             onSuccess = { receivedStatus = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
@@ -125,7 +123,6 @@ class BackendGetRewardVerificationStatusTest {
         backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            appInBackground = false,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
@@ -144,7 +141,6 @@ class BackendGetRewardVerificationStatusTest {
         backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            appInBackground = false,
             onSuccess = { fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
@@ -159,14 +155,12 @@ class BackendGetRewardVerificationStatusTest {
         asyncBackend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            appInBackground = false,
             onSuccess = { lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
         asyncBackend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            appInBackground = false,
             onSuccess = { lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )

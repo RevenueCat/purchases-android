@@ -1716,7 +1716,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationStatus(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
-                appInBackground = false,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -1748,7 +1747,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationStatus(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
-                appInBackground = false,
                 onSuccess = any(),
                 onError = captureLambda(),
             )
@@ -1780,7 +1778,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationStatus(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
-                appInBackground = false,
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -1801,7 +1798,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBackend.getRewardVerificationStatus(
                 appUserID = appUserId,
                 clientTransactionId = "ct_1",
-                appInBackground = false,
                 onSuccess = any(),
                 onError = captureLambda(),
             )
