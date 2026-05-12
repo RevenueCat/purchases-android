@@ -59,6 +59,7 @@ import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetAdMobRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
@@ -905,6 +906,20 @@ internal class PurchasesOrchestrator(
             description,
             onSuccessHandler = onSuccess,
             onErrorHandler = onError,
+        )
+    }
+
+    @InternalRevenueCatAPI
+    fun getAdMobRewardVerificationStatus(
+        clientTransactionId: String,
+        callback: GetAdMobRewardVerificationStatusCallback,
+    ) {
+        backend.getAdMobRewardVerificationStatus(
+            appUserID = identityManager.currentAppUserID,
+            clientTransactionId = clientTransactionId,
+            appInBackground = state.appInBackground,
+            onSuccess = { callback.onReceived(it) },
+            onError = { callback.onError(it) },
         )
     }
 

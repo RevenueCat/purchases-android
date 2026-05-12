@@ -18,6 +18,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetAdMobRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -50,6 +51,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Assert.fail
@@ -1706,6 +1708,113 @@ internal class PurchasesTest : BasePurchasesTest() {
         })
 
         assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @Test
+    fun `getAdMobRewardVerificationStatus returns status from backend on success`() {
+        every {
+            mockBackend.getAdMobRewardVerificationStatus(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                appInBackground = false,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(AdMobRewardVerificationStatus) -> Unit>().captured.invoke(AdMobRewardVerificationStatus.VERIFIED)
+        }
+
+        var receivedStatus: AdMobRewardVerificationStatus? = null
+        purchases.getAdMobRewardVerificationStatus(
+            clientTransactionId = "ct_1",
+            callback = object : GetAdMobRewardVerificationStatusCallback {
+                override fun onReceived(status: AdMobRewardVerificationStatus) {
+                    receivedStatus = status
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("should be success")
+                }
+            },
+        )
+
+        assertThat(receivedStatus).isEqualTo(AdMobRewardVerificationStatus.VERIFIED)
+    }
+
+    @Test
+    fun `getAdMobRewardVerificationStatus returns error from backend on error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getAdMobRewardVerificationStatus(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(expectedError)
+        }
+
+        var receivedError: PurchasesError? = null
+        purchases.getAdMobRewardVerificationStatus(
+            clientTransactionId = "ct_1",
+            callback = object : GetAdMobRewardVerificationStatusCallback {
+                override fun onReceived(status: AdMobRewardVerificationStatus) {
+                    fail("should be error")
+                }
+
+                override fun onError(error: PurchasesError) {
+                    receivedError = error
+                }
+            },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetAdMobRewardVerificationStatus returns backend status`() = runTest {
+        every {
+            mockBackend.getAdMobRewardVerificationStatus(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                appInBackground = false,
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(AdMobRewardVerificationStatus) -> Unit>().captured.invoke(AdMobRewardVerificationStatus.PENDING)
+        }
+
+        val status = purchases.awaitGetAdMobRewardVerificationStatus(clientTransactionId = "ct_1")
+
+        assertThat(status).isEqualTo(AdMobRewardVerificationStatus.PENDING)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetAdMobRewardVerificationStatus throws backend error`() = runTest {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getAdMobRewardVerificationStatus(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(expectedError)
+        }
+
+        val thrown = runCatching {
+            purchases.awaitGetAdMobRewardVerificationStatus(clientTransactionId = "ct_1")
+        }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
     }
 
     // region parseAsWebPurchaseRedemption

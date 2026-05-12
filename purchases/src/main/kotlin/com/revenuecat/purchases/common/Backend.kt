@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.AdMobRewardVerificationStatus
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.AdMobRewardVerificationStatusResponse
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
@@ -99,6 +101,10 @@ internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result
 internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
+
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias AdMobRewardVerificationStatusCallback =
+    Pair<(AdMobRewardVerificationStatus) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias RemoteConfigCallback = Pair<(RemoteConfigResponse) -> Unit, (PurchasesError) -> Unit>
 
@@ -185,6 +191,10 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var adMobRewardVerificationStatusCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<AdMobRewardVerificationStatusCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var workflowDetailCallbacks =
@@ -1110,6 +1120,73 @@ internal class Backend(
                 path,
                 onSuccess to onError,
                 Delay.NONE,
+            )
+        }
+    }
+
+    fun getAdMobRewardVerificationStatus(
+        appUserID: String,
+        clientTransactionId: String,
+        appInBackground: Boolean,
+        onSuccess: (AdMobRewardVerificationStatus) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetAdMobRewardVerificationStatus(
+            userId = appUserID,
+            clientTransactionId = clientTransactionId,
+        )
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    adMobRewardVerificationStatusCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    adMobRewardVerificationStatusCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val response = json.decodeFromString<AdMobRewardVerificationStatusResponse>(
+                                result.payload,
+                            )
+                            onSuccessHandler(response.toAdMobRewardVerificationStatus())
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            adMobRewardVerificationStatusCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
             )
         }
     }

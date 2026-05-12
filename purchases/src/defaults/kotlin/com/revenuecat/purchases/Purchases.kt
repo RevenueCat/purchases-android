@@ -20,6 +20,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetAdMobRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
@@ -709,6 +710,17 @@ public class Purchases internal constructor(
         onError: (PurchasesError) -> Unit,
     ) {
         purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
+    }
+
+    @InternalRevenueCatAPI
+    public fun getAdMobRewardVerificationStatus(
+        clientTransactionId: String,
+        callback: GetAdMobRewardVerificationStatusCallback,
+    ) {
+        purchasesOrchestrator.getAdMobRewardVerificationStatus(
+            clientTransactionId = clientTransactionId,
+            callback = callback,
+        )
     }
 
     // region Subscriber Attributes
