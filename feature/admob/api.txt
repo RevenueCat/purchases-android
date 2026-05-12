@@ -36,8 +36,8 @@ package com.revenuecat.purchases.admob {
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class RewardVerificationResult {
-    method public com.revenuecat.purchases.admob.VerifiedReward? getVerifiedReward();
     method public boolean getFailed();
+    method public com.revenuecat.purchases.admob.VerifiedReward? getVerifiedReward();
     property public final boolean failed;
     property public final com.revenuecat.purchases.admob.VerifiedReward? verifiedReward;
   }
@@ -53,7 +53,7 @@ package com.revenuecat.purchases.admob {
     field public static final com.revenuecat.purchases.admob.VerifiedReward.UnsupportedReward INSTANCE;
   }
 
-  public static final class VerifiedReward.VirtualCurrency implements com.revenuecat.purchases.admob.VerifiedReward {
+  @dev.drewhamilton.poko.Poko public static final class VerifiedReward.VirtualCurrency implements com.revenuecat.purchases.admob.VerifiedReward {
     ctor public VerifiedReward.VirtualCurrency(String code, int amount);
     method public int getAmount();
     method public String getCode();
