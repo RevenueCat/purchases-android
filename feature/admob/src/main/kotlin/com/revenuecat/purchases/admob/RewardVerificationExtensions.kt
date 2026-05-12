@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.admob
 
 import android.app.Activity
@@ -14,6 +12,7 @@ import kotlin.jvm.JvmSynthetic
  * Call after the ad has loaded and before showing it when using reward-verification APIs.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 public fun RewardedAd.enableRewardVerification() {
     throw NotImplementedError("AdMob reward verification is not implemented yet.")
@@ -25,6 +24,7 @@ public fun RewardedAd.enableRewardVerification() {
  * Call after the ad has loaded and before showing it when using reward-verification APIs.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 public fun RewardedInterstitialAd.enableRewardVerification() {
     throw NotImplementedError("AdMob reward verification is not implemented yet.")
@@ -37,6 +37,7 @@ public fun RewardedInterstitialAd.enableRewardVerification() {
  * Callback invocations are delivered on the main thread.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
@@ -54,6 +55,7 @@ public fun RewardedAd.show(
  * Callback invocations are delivered on the main thread.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @JvmSynthetic
 public fun RewardedInterstitialAd.show(
     activity: Activity,
