@@ -6,8 +6,8 @@
 package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.AdMobRewardVerificationStatus
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -16,8 +16,8 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
-import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.AdMobRewardVerificationStatusResponse
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
