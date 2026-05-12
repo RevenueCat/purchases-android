@@ -195,7 +195,7 @@ rewardedAd?.show(
         rewardedAd = null
         if (result.verifiedReward != null) {
             // Verified reward.
-        } else if (result.isFailed) {
+        } else if (result.failed) {
             // Verification failed.
         }
     },
@@ -289,7 +289,7 @@ rewardedInterstitialAd?.show(
         rewardedInterstitialAd = null
         if (result.verifiedReward != null) {
             // Verified reward.
-        } else if (result.isFailed) {
+        } else if (result.failed) {
             // Verification failed.
         }
     },

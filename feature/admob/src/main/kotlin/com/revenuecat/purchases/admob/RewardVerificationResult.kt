@@ -24,7 +24,7 @@ public class RewardVerificationResult private constructor(
     /**
      * True when verification did not complete successfully.
      */
-    public val isFailed: Boolean
+    public val failed: Boolean
         get() = this.storage is Storage.Failed
 
     public companion object {

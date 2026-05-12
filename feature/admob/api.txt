@@ -37,9 +37,9 @@ package com.revenuecat.purchases.admob {
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class RewardVerificationResult {
     method public com.revenuecat.purchases.admob.VerifiedReward? getVerifiedReward();
-    method public boolean isFailed();
+    method public boolean getFailed();
     method public static com.revenuecat.purchases.admob.RewardVerificationResult verified(com.revenuecat.purchases.admob.VerifiedReward reward);
-    property public final boolean isFailed;
+    property public final boolean failed;
     property public final com.revenuecat.purchases.admob.VerifiedReward? verifiedReward;
     field public static final com.revenuecat.purchases.admob.RewardVerificationResult.Companion Companion;
     field public static final com.revenuecat.purchases.admob.RewardVerificationResult failed;
