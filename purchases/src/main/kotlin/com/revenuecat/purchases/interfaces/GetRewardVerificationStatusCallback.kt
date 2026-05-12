@@ -1,18 +1,18 @@
 package com.revenuecat.purchases.interfaces
 
-import com.revenuecat.purchases.AdMobRewardVerificationStatus
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.RewardVerificationStatus
 
 /**
- * Interface to be implemented when making calls that return an [AdMobRewardVerificationStatus].
+ * Interface to be implemented when making calls that return a [RewardVerificationStatus].
  */
 @InternalRevenueCatAPI
-internal interface GetAdMobRewardVerificationStatusCallback {
+internal interface GetRewardVerificationStatusCallback {
     /**
      * Called when the verification status has been fetched successfully.
      */
-    fun onReceived(status: AdMobRewardVerificationStatus)
+    fun onReceived(status: RewardVerificationStatus)
 
     /**
      * Called after the request fails.

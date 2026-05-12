@@ -58,9 +58,9 @@ import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetAdMobRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -910,11 +910,11 @@ internal class PurchasesOrchestrator(
     }
 
     @InternalRevenueCatAPI
-    fun getAdMobRewardVerificationStatus(
+    fun getRewardVerificationStatus(
         clientTransactionId: String,
-        callback: GetAdMobRewardVerificationStatusCallback,
+        callback: GetRewardVerificationStatusCallback,
     ) {
-        backend.getAdMobRewardVerificationStatus(
+        backend.getRewardVerificationStatus(
             appUserID = identityManager.currentAppUserID,
             clientTransactionId = clientTransactionId,
             appInBackground = state.appInBackground,

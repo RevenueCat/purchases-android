@@ -104,12 +104,12 @@ internal sealed class Endpoint(
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
-    data class GetAdMobRewardVerificationStatus(
+    data class GetRewardVerificationStatus(
         val userId: String,
         val clientTransactionId: String,
     ) : Endpoint(
         pathTemplate = "/v1/subscribers/%s/ads/reward_verifications/%s",
-        name = "get_admob_reward_verification_status",
+        name = "get_reward_verification_status",
     ) {
         override fun getPath(useFallback: Boolean) =
             pathTemplate.format(Uri.encode(userId), Uri.encode(clientTransactionId))
@@ -133,7 +133,7 @@ internal sealed class Endpoint(
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
-            is GetAdMobRewardVerificationStatus,
+            is GetRewardVerificationStatus,
             ->
                 true
             is GetAmazonReceipt,
@@ -157,7 +157,7 @@ internal sealed class Endpoint(
             PostReceipt,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
-            is GetAdMobRewardVerificationStatus,
+            is GetRewardVerificationStatus,
             ->
                 true
             is GetAmazonReceipt,

@@ -5,8 +5,8 @@ import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
-import com.revenuecat.purchases.interfaces.GetAdMobRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationStatusCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
@@ -210,21 +210,21 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 }
 
 /**
- * Fetches AdMob reward verification status for a single client transaction id.
+ * Fetches reward verification status for a single client transaction id.
  *
  * @throws [PurchasesException] with a [PurchasesError] if an error occurs while fetching the status.
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-public suspend fun Purchases.awaitGetAdMobRewardVerificationStatus(
+public suspend fun Purchases.awaitGetRewardVerificationStatus(
     clientTransactionId: String,
-): AdMobRewardVerificationStatus {
+): RewardVerificationStatus {
     return suspendCancellableCoroutine { continuation ->
-        getAdMobRewardVerificationStatus(
+        getRewardVerificationStatus(
             clientTransactionId = clientTransactionId,
-            callback = object : GetAdMobRewardVerificationStatusCallback {
-                override fun onReceived(status: AdMobRewardVerificationStatus) {
+            callback = object : GetRewardVerificationStatusCallback {
+                override fun onReceived(status: RewardVerificationStatus) {
                     continuation.safeResume(status)
                 }
 

@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.common.backend
 
-import com.revenuecat.purchases.AdMobRewardVerificationStatus
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.RewardVerificationStatus
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -34,7 +34,7 @@ import kotlin.time.Duration.Companion.seconds
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [34])
 @OptIn(InternalRevenueCatAPI::class)
-class BackendGetAdMobRewardVerificationStatusTest {
+class BackendGetRewardVerificationStatusTest {
 
     private val appUserId = "user_1"
     private val clientTransactionId = "client_transaction_id_1"
@@ -78,11 +78,11 @@ class BackendGetAdMobRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getAdMobRewardVerificationStatus parses successful response`() {
+    fun `getRewardVerificationStatus parses successful response`() {
         mockHttpResult(payload = """{"status":"verified"}""")
 
-        var receivedStatus: AdMobRewardVerificationStatus? = null
-        backend.getAdMobRewardVerificationStatus(
+        var receivedStatus: RewardVerificationStatus? = null
+        backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             appInBackground = false,
@@ -90,11 +90,11 @@ class BackendGetAdMobRewardVerificationStatusTest {
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
-        assertThat(receivedStatus).isEqualTo(AdMobRewardVerificationStatus.VERIFIED)
+        assertThat(receivedStatus).isEqualTo(RewardVerificationStatus.VERIFIED)
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetAdMobRewardVerificationStatus(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerificationStatus(appUserId, clientTransactionId),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -103,11 +103,11 @@ class BackendGetAdMobRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getAdMobRewardVerificationStatus maps unknown statuses`() {
+    fun `getRewardVerificationStatus maps unknown statuses`() {
         mockHttpResult(payload = """{"status":"new_status"}""")
 
-        var receivedStatus: AdMobRewardVerificationStatus? = null
-        backend.getAdMobRewardVerificationStatus(
+        var receivedStatus: RewardVerificationStatus? = null
+        backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             appInBackground = false,
@@ -115,14 +115,14 @@ class BackendGetAdMobRewardVerificationStatusTest {
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
-        assertThat(receivedStatus).isEqualTo(AdMobRewardVerificationStatus.UNKNOWN)
+        assertThat(receivedStatus).isEqualTo(RewardVerificationStatus.UNKNOWN)
     }
 
     @Test
-    fun `getAdMobRewardVerificationStatus returns error on malformed payload`() {
+    fun `getRewardVerificationStatus returns error on malformed payload`() {
         mockHttpResult(payload = """{"status":1}""")
         var obtainedError: PurchasesError? = null
-        backend.getAdMobRewardVerificationStatus(
+        backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             appInBackground = false,
@@ -135,13 +135,13 @@ class BackendGetAdMobRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getAdMobRewardVerificationStatus propagates HTTP errors`() {
+    fun `getRewardVerificationStatus propagates HTTP errors`() {
         mockHttpResult(
             responseCode = RCHTTPStatusCodes.ERROR,
             payload = """{"code": 7000, "message": "internal error"}""",
         )
         var obtainedError: PurchasesError? = null
-        backend.getAdMobRewardVerificationStatus(
+        backend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             appInBackground = false,
@@ -153,17 +153,17 @@ class BackendGetAdMobRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getAdMobRewardVerificationStatus dedups concurrent calls`() {
+    fun `getRewardVerificationStatus dedups concurrent calls`() {
         mockHttpResult(payload = """{"status":"pending"}""", delayMs = 200)
         val lock = CountDownLatch(2)
-        asyncBackend.getAdMobRewardVerificationStatus(
+        asyncBackend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             appInBackground = false,
             onSuccess = { lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
-        asyncBackend.getAdMobRewardVerificationStatus(
+        asyncBackend.getRewardVerificationStatus(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             appInBackground = false,
@@ -175,7 +175,7 @@ class BackendGetAdMobRewardVerificationStatusTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetAdMobRewardVerificationStatus(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerificationStatus(appUserId, clientTransactionId),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),

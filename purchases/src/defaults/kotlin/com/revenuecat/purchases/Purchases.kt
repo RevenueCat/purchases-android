@@ -19,9 +19,9 @@ import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.GetAdMobRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationStatusCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -713,11 +713,11 @@ public class Purchases internal constructor(
     }
 
     @InternalRevenueCatAPI
-    internal fun getAdMobRewardVerificationStatus(
+    internal fun getRewardVerificationStatus(
         clientTransactionId: String,
-        callback: GetAdMobRewardVerificationStatusCallback,
+        callback: GetRewardVerificationStatusCallback,
     ) {
-        purchasesOrchestrator.getAdMobRewardVerificationStatus(
+        purchasesOrchestrator.getRewardVerificationStatus(
             clientTransactionId = clientTransactionId,
             callback = callback,
         )

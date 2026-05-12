@@ -1,10 +1,10 @@
 package com.revenuecat.purchases
 
 /**
- * Status returned by RevenueCat for an AdMob reward verification request.
+ * Status returned by RevenueCat for a reward verification request.
  */
 @InternalRevenueCatAPI
-public enum class AdMobRewardVerificationStatus {
+public enum class RewardVerificationStatus {
     /**
      * Verification has started but has not yet reached a terminal state.
      */
