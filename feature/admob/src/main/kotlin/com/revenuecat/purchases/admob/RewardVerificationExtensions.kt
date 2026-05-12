@@ -39,6 +39,7 @@ public fun RewardedInterstitialAd.enableRewardVerification() {
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Suppress("UnusedParameter")
 @JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
@@ -58,6 +59,7 @@ public fun RewardedAd.show(
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@Suppress("UnusedParameter")
 @JvmSynthetic
 public fun RewardedInterstitialAd.show(
     activity: Activity,
