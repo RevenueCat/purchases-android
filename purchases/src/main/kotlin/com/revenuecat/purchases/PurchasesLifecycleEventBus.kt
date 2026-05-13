@@ -15,8 +15,8 @@ public object PurchasesLifecycleEventBus {
     @JvmSynthetic
     public fun register(listener: PurchasesLifecycleListener) {
         listeners.add(listener)
-        if (Purchases.isConfigured) {
-            listener.onPurchasesConfigured(Purchases.sharedInstance)
+        Purchases.backingFieldSharedInstance?.let { configuredPurchases ->
+            listener.onPurchasesConfigured(configuredPurchases)
         }
     }
 
