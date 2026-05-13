@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-
 package com.revenuecat.purchases.admob
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -15,6 +13,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 class RewardVerificationOneShotTest {
 
     @Test
