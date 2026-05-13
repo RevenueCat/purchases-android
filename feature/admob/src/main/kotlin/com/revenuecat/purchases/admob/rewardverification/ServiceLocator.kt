@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.admob.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesLifecycleEventBus
@@ -12,7 +11,7 @@ internal interface RewardVerificationLifecycleHook {
     fun onPurchasesClosed(purchases: Purchases)
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal object RewardVerificationServiceLocator : PurchasesLifecycleListener {
 
     private var isRegistered = false

@@ -15,7 +15,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
 
-internal class PurchasesLifecycleWiringTest {
+internal class PurchasesLifecycleWiringCustomEntitlementTest {
 
     @After
     fun tearDownMocks() {
@@ -25,23 +25,7 @@ internal class PurchasesLifecycleWiringTest {
     }
 
     @Test
-    fun `close notifies purchases lifecycle bus`() {
-        val orchestrator = mockk<PurchasesOrchestrator>(relaxed = true)
-        val purchases = Purchases(orchestrator)
-        Purchases.backingFieldSharedInstance = purchases
-        mockkObject(PurchasesLifecycleEventBus)
-        every { PurchasesLifecycleEventBus.onClosed(any()) } just Runs
-
-        purchases.close()
-
-        verify(exactly = 1) {
-            PurchasesLifecycleEventBus.onClosed(purchases)
-            orchestrator.close()
-        }
-    }
-
-    @Test
-    fun `configure notifies purchases lifecycle bus in defaults path`() {
+    fun `configure in custom entitlement mode notifies purchases lifecycle bus`() {
         val context = mockk<Context>()
         val applicationContext = mockk<Context>()
         val configuredPurchases = mockk<Purchases>(relaxed = true)
@@ -52,17 +36,18 @@ internal class PurchasesLifecycleWiringTest {
         every { context.isDeviceProtectedStorage } returns false
         every { applicationContext.applicationContext } returns applicationContext
         every { applicationContext.applicationInfo } returns applicationInfo
-        val configuration = PurchasesConfiguration.Builder(context, "api_key").build()
+        val configuration = PurchasesConfigurationForCustomEntitlementsComputationMode.Builder(
+            context = context,
+            apiKey = "api_key",
+            appUserID = "app_user_id",
+        ).build()
 
         mockkObject(PurchasesLifecycleEventBus)
         mockkConstructor(PurchasesFactory::class)
         every { PurchasesLifecycleEventBus.onConfigured(any()) } just Runs
         every { anyConstructed<PurchasesFactory>().createPurchases(any(), any(), any()) } returns configuredPurchases
 
-        val configureMethod = Purchases.Companion::class.java.methods.firstOrNull {
-            it.name == "configure" && it.parameterTypes.contentEquals(arrayOf(PurchasesConfiguration::class.java))
-        } ?: return
-        configureMethod.invoke(Purchases.Companion, configuration)
+        Purchases.configureInCustomEntitlementsComputationMode(configuration)
 
         verify(exactly = 1) {
             PurchasesLifecycleEventBus.onConfigured(configuredPurchases)
