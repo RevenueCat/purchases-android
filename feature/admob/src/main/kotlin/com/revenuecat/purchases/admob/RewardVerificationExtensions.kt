@@ -81,6 +81,7 @@ public fun RewardedAd.show(
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
     val state = RewardVerificationStateStore.get(this)
+    warnAndAssertIfMissingVerificationState(state)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
@@ -114,6 +115,7 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
     val state = RewardVerificationStateStore.get(this)
+    warnAndAssertIfMissingVerificationState(state)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
@@ -127,6 +129,18 @@ public fun RewardedInterstitialAd.show(
                 rewardVerificationResult = rewardVerificationResult,
             )
         }
+    }
+}
+
+private fun warnAndAssertIfMissingVerificationState(state: RewardVerificationState?) {
+    if (state != null) return
+
+    Log.w(
+        TAG,
+        "Reward verification callback requires enableRewardVerification() before show().",
+    )
+    assert(state != null) {
+        "Call enableRewardVerification() before using reward verification show overloads."
     }
 }
 
