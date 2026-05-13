@@ -4,7 +4,6 @@ import android.app.Activity
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.rewardverification.internal.RewardVerificationFacade
 import kotlin.jvm.JvmSynthetic
 
 /**
@@ -15,7 +14,7 @@ import kotlin.jvm.JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.enableRewardVerification() {
-    RewardVerificationFacade.enable(this)
+    throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }
 
 /**
@@ -26,7 +25,7 @@ public fun RewardedAd.enableRewardVerification() {
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.enableRewardVerification() {
-    RewardVerificationFacade.enable(this)
+    throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }
 
 /**
@@ -45,13 +44,7 @@ public fun RewardedAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    RewardVerificationFacade.show(
-        ad = this,
-        activity = activity,
-        placement = placement,
-        rewardVerificationStarted = rewardVerificationStarted,
-        rewardVerificationResult = rewardVerificationResult,
-    )
+    throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }
 
 /**
@@ -70,11 +63,5 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    RewardVerificationFacade.show(
-        ad = this,
-        activity = activity,
-        placement = placement,
-        rewardVerificationStarted = rewardVerificationStarted,
-        rewardVerificationResult = rewardVerificationResult,
-    )
+    throw NotImplementedError("AdMob reward verification is not implemented yet.")
 }
