@@ -1188,7 +1188,7 @@ public class Purchases internal constructor(
     public companion object {
         @OptIn(InternalRevenueCatAPI::class)
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal var lifecycleListener: PurchasesLifecycleListener = PurchasesLifecycleEventBusListener
+        internal var lifecycleListener: PurchasesLifecycleListener = PurchasesLifecycleListeners.default()
 
         @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
@@ -1370,17 +1370,6 @@ public class Purchases internal constructor(
             PurchasesOrchestrator.canMakePayments(context, features, callback)
         }
     }
-
-@OptIn(InternalRevenueCatAPI::class)
-private object PurchasesLifecycleEventBusListener : PurchasesLifecycleListener {
-    override fun onPurchasesConfigured(purchases: Purchases) {
-        PurchasesLifecycleEventBus.onConfigured(purchases)
-    }
-
-    override fun onPurchasesClosed(purchases: Purchases) {
-        PurchasesLifecycleEventBus.onClosed(purchases)
-    }
-}
 
     // endregion
 }
