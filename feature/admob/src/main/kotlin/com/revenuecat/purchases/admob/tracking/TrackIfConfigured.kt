@@ -1,6 +1,4 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.admob.tracking
 
 import android.util.Log
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -15,6 +13,7 @@ private const val TAG = "PurchasesAdMob"
  * This prevents crashes in ad callbacks when the developer has not yet called
  * [Purchases.configure].
  */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal inline fun trackIfConfigured(block: Purchases.() -> Unit) {
     if (!Purchases.isConfigured) {
         Log.w(

@@ -4,6 +4,7 @@ package com.revenuecat.purchases.admob
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.tracking.trackIfConfigured
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.After

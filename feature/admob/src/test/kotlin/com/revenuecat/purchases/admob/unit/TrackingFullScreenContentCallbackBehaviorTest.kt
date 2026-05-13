@@ -9,6 +9,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.setTrackingFullScreenContentCallback
+import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFormat

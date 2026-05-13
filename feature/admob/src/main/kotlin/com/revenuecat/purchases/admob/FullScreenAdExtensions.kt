@@ -11,6 +11,7 @@ import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import kotlin.jvm.JvmSynthetic
 
 private const val TAG = "PurchasesAdMob"
