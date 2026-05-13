@@ -47,6 +47,9 @@ internal class OfferingsManager(
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsCache.cachedOfferings?.current?.identifier
 
+    val cachedOfferings: Offerings?
+        get() = offeringsCache.cachedOfferings
+
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
