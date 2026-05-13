@@ -21,6 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
+import kotlin.random.Random
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
@@ -179,12 +180,14 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `selects the first source when multiple are available`() = runTest {
+    fun `selects one of the top priority sources and ignores lower priority ones`() = runTest {
         val manager = newManager(testScheduler)
-        val first = source("first")
-        val second = source("second")
+        val highA = source("highA", priority = 1)
+        val highB = source("highB", priority = 1)
+        val lowA = source("lowA", priority = 0)
+        val lowB = source("lowB", priority = 0)
         val response = response(
-            blobSources = listOf(first, second),
+            blobSources = listOf(lowA, highA, lowB, highB),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
@@ -201,7 +204,33 @@ class RemoteConfigManagerTest {
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
 
-        assertThat(capturedSource.captured).isEqualTo(first)
+        assertThat(capturedSource.captured).isIn(highA, highB)
+    }
+
+    @Test
+    fun `selects the highest priority source even with lower weight`() = runTest {
+        val manager = newManager(testScheduler)
+        val low = source("low", priority = 0, weight = 999)
+        val high = source("high", priority = 5, weight = 1)
+        val response = response(
+            blobSources = listOf(low, high),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        mockBackendSuccess(response)
+        val capturedSource = slot<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(
+                topic = any(),
+                entryId = any(),
+                topicEntry = any(),
+                source = capture(capturedSource),
+            )
+        } returns null
+
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        assertThat(capturedSource.captured).isEqualTo(high)
     }
 
     @Test
@@ -638,11 +667,15 @@ class RemoteConfigManagerTest {
         }
     }
 
-    private fun newManager(scheduler: TestCoroutineScheduler) = RemoteConfigManager(
+    private fun newManager(
+        scheduler: TestCoroutineScheduler,
+        random: Random = Random(0L),
+    ) = RemoteConfigManager(
         backend = backend,
         topicFetcher = topicFetcher,
         diskCache = diskCache,
         dateProvider = dateProvider,
+        random = random,
         dispatcher = UnconfinedTestDispatcher(scheduler),
     )
 
@@ -661,11 +694,15 @@ class RemoteConfigManagerTest {
         manifest = Manifest(topics = topics),
     )
 
-    private fun source(id: String) = BlobSource(
+    private fun source(
+        id: String,
+        priority: Int = 0,
+        weight: Int = 100,
+    ) = BlobSource(
         id = id,
         urlFormat = "https://assets.example/{blob_ref}",
-        priority = 0,
-        weight = 100,
+        priority = priority,
+        weight = weight,
     )
 
     private fun topicEntry(blobRef: String) = TopicEntry(blobRef = blobRef)
