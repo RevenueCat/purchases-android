@@ -52,9 +52,9 @@ public fun RewardedAd.show(
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
-        Dispatcher.deliverOnMainIfPresent(rewardVerificationStarted)
+        Dispatcher.dispatchStarted(rewardVerificationStarted)
         if (state == null) {
-            Dispatcher.deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
+            Dispatcher.dispatchResult(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
             Dispatcher.dispatch(
                 clientTransactionId = state.clientTransactionId,
@@ -86,9 +86,9 @@ public fun RewardedInterstitialAd.show(
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
-        Dispatcher.deliverOnMainIfPresent(rewardVerificationStarted)
+        Dispatcher.dispatchStarted(rewardVerificationStarted)
         if (state == null) {
-            Dispatcher.deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
+            Dispatcher.dispatchResult(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
             Dispatcher.dispatch(
                 clientTransactionId = state.clientTransactionId,

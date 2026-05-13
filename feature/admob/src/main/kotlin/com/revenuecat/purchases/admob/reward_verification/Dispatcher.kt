@@ -15,6 +15,19 @@ private val scope = CoroutineScope(Dispatchers.IO)
 
 internal object Dispatcher {
 
+    fun dispatchStarted(block: (() -> Unit)?) {
+        deliverOnMainIfPresent(block)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun dispatchResult(
+        completionDelivered: AtomicBoolean,
+        rewardVerificationResult: (RewardVerificationResult) -> Unit,
+        result: RewardVerificationResult,
+    ) {
+        deliverResultOnce(completionDelivered, rewardVerificationResult, result)
+    }
+
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     fun dispatch(
         clientTransactionId: String,
@@ -28,7 +41,7 @@ internal object Dispatcher {
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    fun deliverResultOnce(
+    private fun deliverResultOnce(
         completionDelivered: AtomicBoolean,
         rewardVerificationResult: (RewardVerificationResult) -> Unit,
         result: RewardVerificationResult,
@@ -42,7 +55,7 @@ internal object Dispatcher {
         }
     }
 
-    fun deliverOnMainIfPresent(block: (() -> Unit)?) {
+    private fun deliverOnMainIfPresent(block: (() -> Unit)?) {
         if (block == null) return
         if (Looper.myLooper() == Looper.getMainLooper()) {
             block()
