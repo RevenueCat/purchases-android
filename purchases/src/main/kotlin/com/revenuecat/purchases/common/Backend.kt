@@ -12,7 +12,7 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.RewardVerificationStatus
+import com.revenuecat.purchases.RewardVerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -103,8 +103,8 @@ internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit,
 internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
-internal typealias RewardVerificationStatusCallback =
-    Pair<(RewardVerificationStatus) -> Unit, (PurchasesError) -> Unit>
+internal typealias RewardVerificationResultCallback =
+    Pair<(RewardVerificationResult) -> Unit, (PurchasesError) -> Unit>
 
 internal typealias RemoteConfigCallback = Pair<(RemoteConfigResponse) -> Unit, (PurchasesError) -> Unit>
 
@@ -193,8 +193,8 @@ internal class Backend(
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var rewardVerificationStatusCallbacks =
-        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RewardVerificationStatusCallback>>()
+    @Volatile var rewardVerificationResultCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RewardVerificationResultCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var workflowDetailCallbacks =
@@ -1124,10 +1124,10 @@ internal class Backend(
         }
     }
 
-    fun getRewardVerificationStatus(
+    fun getRewardVerificationResult(
         appUserID: String,
         clientTransactionId: String,
-        onSuccess: (RewardVerificationStatus) -> Unit,
+        onSuccess: (RewardVerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRewardVerificationStatus(
@@ -1150,7 +1150,7 @@ internal class Backend(
 
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
-                    rewardVerificationStatusCallbacks.remove(cacheKey)
+                    rewardVerificationResultCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
                     onErrorHandler(error)
                 }
@@ -1158,14 +1158,14 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
-                    rewardVerificationStatusCallbacks.remove(cacheKey)
+                    rewardVerificationResultCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
                             val response = json.decodeFromString<RewardVerificationStatusResponse>(
                                 result.payload,
                             )
-                            onSuccessHandler(response.toRewardVerificationStatus())
+                            onSuccessHandler(response.toRewardVerificationResult())
                         } catch (e: SerializationException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         } catch (e: IllegalArgumentException) {
@@ -1179,7 +1179,7 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            rewardVerificationStatusCallbacks.addBackgroundAwareCallback(
+            rewardVerificationResultCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
                 cacheKey,

@@ -3,7 +3,8 @@ package com.revenuecat.purchases.common.backend
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.RewardVerificationStatus
+import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -34,7 +35,7 @@ import kotlin.time.Duration.Companion.seconds
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [34])
 @OptIn(InternalRevenueCatAPI::class)
-class BackendGetRewardVerificationStatusTest {
+class BackendGetRewardVerificationResultTest {
 
     private val appUserId = "user_1"
     private val clientTransactionId = "client_transaction_id_1"
@@ -78,18 +79,22 @@ class BackendGetRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getRewardVerificationStatus parses successful response`() {
-        mockHttpResult(payload = """{"status":"verified"}""")
+    fun `getRewardVerificationResult parses successful response`() {
+        mockHttpResult(
+            payload = """{"status":"verified","reward":{"type":"virtual_currency","code":"coins","amount":10}}""",
+        )
 
-        var receivedStatus: RewardVerificationStatus? = null
-        backend.getRewardVerificationStatus(
+        var receivedResult: RewardVerificationResult? = null
+        backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            onSuccess = { receivedStatus = it },
+            onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
-        assertThat(receivedStatus).isEqualTo(RewardVerificationStatus.VERIFIED)
+        assertThat(receivedResult).isEqualTo(
+            RewardVerificationResult.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+        )
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
@@ -102,25 +107,78 @@ class BackendGetRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getRewardVerificationStatus maps unknown statuses`() {
+    fun `getRewardVerificationResult maps unknown statuses`() {
         mockHttpResult(payload = """{"status":"new_status"}""")
 
-        var receivedStatus: RewardVerificationStatus? = null
-        backend.getRewardVerificationStatus(
+        var receivedResult: RewardVerificationResult? = null
+        backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
-            onSuccess = { receivedStatus = it },
+            onSuccess = { receivedResult = it },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
-        assertThat(receivedStatus).isEqualTo(RewardVerificationStatus.UNKNOWN)
+        assertThat(receivedResult).isEqualTo(RewardVerificationResult.UNKNOWN)
     }
 
     @Test
-    fun `getRewardVerificationStatus returns error on malformed payload`() {
+    fun `getRewardVerificationResult maps unsupported reward payload`() {
+        mockHttpResult(payload = """{"status":"verified","reward":{"type":"new_type"}}""")
+
+        var receivedResult: RewardVerificationResult? = null
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            onSuccess = { receivedResult = it },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(receivedResult).isEqualTo(
+            RewardVerificationResult.Verified(VerifiedReward.UnsupportedReward),
+        )
+    }
+
+    @Test
+    fun `getRewardVerificationResult maps malformed virtual currency reward payload`() {
+        mockHttpResult(payload = """{"status":"verified","reward":{"type":"virtual_currency","code":"","amount":0}}""")
+
+        var receivedResult: RewardVerificationResult? = null
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            onSuccess = { receivedResult = it },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(receivedResult).isEqualTo(
+            RewardVerificationResult.Verified(VerifiedReward.UnsupportedReward),
+        )
+    }
+
+    @Test
+    fun `getRewardVerificationResult maps null reward payload as no reward`() {
+        mockHttpResult(
+            payload = """{"status":"verified","reward":null}""",
+        )
+
+        var receivedResult: RewardVerificationResult? = null
+        backend.getRewardVerificationResult(
+            appUserID = appUserId,
+            clientTransactionId = clientTransactionId,
+            onSuccess = { receivedResult = it },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(receivedResult).isEqualTo(
+            RewardVerificationResult.Verified(VerifiedReward.NoReward),
+        )
+    }
+
+    @Test
+    fun `getRewardVerificationResult returns error on malformed payload`() {
         mockHttpResult(payload = """{"status":1}""")
         var obtainedError: PurchasesError? = null
-        backend.getRewardVerificationStatus(
+        backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { fail("Expected error. Got success") },
@@ -132,13 +190,13 @@ class BackendGetRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getRewardVerificationStatus propagates HTTP errors`() {
+    fun `getRewardVerificationResult propagates HTTP errors`() {
         mockHttpResult(
             responseCode = RCHTTPStatusCodes.ERROR,
             payload = """{"code": 7000, "message": "internal error"}""",
         )
         var obtainedError: PurchasesError? = null
-        backend.getRewardVerificationStatus(
+        backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { fail("Expected error. Got success") },
@@ -149,16 +207,16 @@ class BackendGetRewardVerificationStatusTest {
     }
 
     @Test
-    fun `getRewardVerificationStatus dedups concurrent calls`() {
+    fun `getRewardVerificationResult dedups concurrent calls`() {
         mockHttpResult(payload = """{"status":"pending"}""", delayMs = 200)
         val lock = CountDownLatch(2)
-        asyncBackend.getRewardVerificationStatus(
+        asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
-        asyncBackend.getRewardVerificationStatus(
+        asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { lock.countDown() },
