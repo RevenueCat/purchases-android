@@ -16,8 +16,8 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
  * before delegating every callback to the user-provided [delegate].
  *
  * Tracked events:
- * - [onAdShowedFullScreenContent] -> `trackAdDisplayed`
- * - [onAdClicked] -> `trackAdOpened`
+ * - [onAdShowedFullScreenContent] → `trackAdDisplayed`
+ * - [onAdClicked] → `trackAdOpened`
  *
  * Revenue is tracked separately via [OnPaidEventListener] which must be wired
  * on the ad object by the caller (see [setUpPaidEventTracking]).

@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
  * An [OnPaidEventListener] wrapper that injects RevenueCat ad-revenue tracking
  * before delegating to the user-provided [delegate].
  *
- * This named wrapper allows `loadAndTrackBannerAdInternal` to detect and unwrap
+ * This named wrapper allows [loadAndTrackBannerAdInternal] to detect and unwrap
  * an existing tracking listener when `loadAndTrackBannerAd` is called multiple
  * times on the same [com.google.android.gms.ads.AdView], preventing
  * double-tracking.

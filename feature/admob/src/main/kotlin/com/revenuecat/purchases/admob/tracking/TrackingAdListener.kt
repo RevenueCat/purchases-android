@@ -16,10 +16,10 @@ import com.revenuecat.purchases.ads.events.types.AdOpenedData
  * delegating every callback to the user-provided [delegate].
  *
  * Tracked events:
- * - [onAdLoaded] -> `trackAdLoaded`
- * - [onAdImpression] -> `trackAdDisplayed`
- * - [onAdClicked] -> `trackAdOpened`
- * - [onAdFailedToLoad] -> `trackAdFailedToLoad`
+ * - [onAdLoaded] → `trackAdLoaded`
+ * - [onAdImpression] → `trackAdDisplayed`
+ * - [onAdClicked] → `trackAdOpened`
+ * - [onAdFailedToLoad] → `trackAdFailedToLoad`
  *
  * Revenue is tracked separately via [com.google.android.gms.ads.OnPaidEventListener],
  * which must be wired on the ad view by the caller.
