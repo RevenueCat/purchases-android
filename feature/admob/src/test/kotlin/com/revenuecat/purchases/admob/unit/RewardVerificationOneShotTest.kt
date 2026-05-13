@@ -5,12 +5,14 @@ package com.revenuecat.purchases.admob
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.RewardVerificationStatus
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 class RewardVerificationOneShotTest {
@@ -67,5 +69,17 @@ class RewardVerificationOneShotTest {
 
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
+    }
+
+    @Test
+    fun `performOneShotVerification rethrows coroutine cancellation`() = runBlocking {
+        try {
+            performOneShotVerification(clientTransactionId = "ct_1") {
+                throw CancellationException("cancelled")
+            }
+            fail("Expected CancellationException")
+        } catch (_: CancellationException) {
+            // expected
+        }
     }
 }

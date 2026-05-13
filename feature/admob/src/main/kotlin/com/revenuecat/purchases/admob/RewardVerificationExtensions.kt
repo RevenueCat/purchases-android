@@ -12,6 +12,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.RewardVerificationStatus
 import com.revenuecat.purchases.awaitGetRewardVerificationStatus
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -167,6 +168,8 @@ internal suspend fun performOneShotVerification(
 ): RewardVerificationResult {
     return try {
         mapStatusToResult(fetchStatus(clientTransactionId))
+    } catch (e: CancellationException) {
+        throw e
     } catch (_: Exception) {
         RewardVerificationResult.failed
     }
