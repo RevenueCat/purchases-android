@@ -4,8 +4,8 @@ import android.app.Activity
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.reward_verification.Dispatcher
-import com.revenuecat.purchases.admob.reward_verification.Setup
+import com.revenuecat.purchases.admob.rewardverification.Dispatcher
+import com.revenuecat.purchases.admob.rewardverification.Setup
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.jvm.JvmSynthetic
 
@@ -98,4 +98,3 @@ public fun RewardedInterstitialAd.show(
         }
     }
 }
-

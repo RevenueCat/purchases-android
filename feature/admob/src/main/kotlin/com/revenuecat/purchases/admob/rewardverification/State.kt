@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.admob.reward_verification
+package com.revenuecat.purchases.admob.rewardverification
 
 internal data class State(
     val clientTransactionId: String,

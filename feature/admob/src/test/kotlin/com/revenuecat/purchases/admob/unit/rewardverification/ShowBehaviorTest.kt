@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
-package com.revenuecat.purchases.admob.reward_verification
+package com.revenuecat.purchases.admob.rewardverification
 
 import android.app.Activity
 import android.os.Looper

@@ -1,14 +1,14 @@
-package com.revenuecat.purchases.admob.reward_verification
+package com.revenuecat.purchases.admob.rewardverification
 
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.admob.RewardVerificationResult
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.concurrent.atomic.AtomicBoolean
 
 private val mainHandler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getMainLooper()) }
 private val scope = CoroutineScope(Dispatchers.IO)
