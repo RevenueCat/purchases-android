@@ -32,16 +32,14 @@ internal data class RewardVerificationResponse(
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun JsonElement?.toVerifiedReward(): VerifiedReward {
-        val rewardObject = when {
+        return when {
             this == null || this is JsonNull -> null
             this is JsonObject -> this
             else -> {
                 warnLog { "Unexpected reward verification reward payload shape: $this" }
-                JsonObject(emptyMap())
+                return VerifiedReward.UnsupportedReward
             }
-        }
-
-        return rewardObject?.let {
+        }?.let {
             val rewardType = it["type"]?.jsonPrimitive?.contentOrNull.orEmpty()
             when (rewardType) {
                 "virtual_currency" -> it.toVirtualCurrencyRewardOrUnsupported()
