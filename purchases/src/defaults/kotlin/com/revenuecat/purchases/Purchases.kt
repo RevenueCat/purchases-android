@@ -712,7 +712,6 @@ public class Purchases internal constructor(
         purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
     }
 
-    @InternalRevenueCatAPI
     internal fun getRewardVerificationStatus(
         clientTransactionId: String,
         callback: GetRewardVerificationStatusCallback,

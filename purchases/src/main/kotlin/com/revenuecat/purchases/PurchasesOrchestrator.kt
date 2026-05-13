@@ -909,7 +909,6 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    @InternalRevenueCatAPI
     fun getRewardVerificationStatus(
         clientTransactionId: String,
         callback: GetRewardVerificationStatusCallback,
