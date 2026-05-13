@@ -64,7 +64,7 @@ internal class PurchasesLifecycleWiringTest {
 
         val configureMethod = Purchases.Companion::class.java.methods.firstOrNull {
             it.name == "configure" && it.parameterTypes.contentEquals(arrayOf(PurchasesConfiguration::class.java))
-        } ?: return
+        } ?: error("Could not find Purchases.configure(PurchasesConfiguration) via reflection")
         configureMethod.invoke(Purchases.Companion, configuration)
 
         verify(exactly = 1) {
