@@ -68,3 +68,11 @@
 ## Only takes effect in debug builds.
 ## ──────────────────────────────────────────────
 #REMOTE_CONFIG_BASE_URL=http://localhost:8080/
+
+## ──────────────────────────────────────────────
+## Remote Config Refresh (developer flag)
+## When true, the SDK kicks off a remote-config refresh the first time the
+## app is foregrounded after Purchases.configure(...) and on every logIn /
+## logOut / switchUser that changes the app user id. Off by default.
+## ──────────────────────────────────────────────
+#ENABLE_REMOTE_CONFIG=true

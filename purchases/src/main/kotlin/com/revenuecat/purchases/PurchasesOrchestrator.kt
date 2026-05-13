@@ -19,6 +19,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -47,6 +48,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
@@ -155,6 +157,7 @@ internal class PurchasesOrchestrator(
     private val purchaseParamsValidator: PurchaseParamsValidator,
 
     private val workflowManager: WorkflowManager,
+    private val remoteConfigManager: RemoteConfigManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
@@ -337,6 +340,9 @@ internal class PurchasesOrchestrator(
             flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
+            }
+            if (firstTimeInForeground) {
+                refreshRemoteConfigIfEnabled()
             }
         }
     }
@@ -764,6 +770,7 @@ internal class PurchasesOrchestrator(
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
                         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                        refreshRemoteConfigIfEnabled()
                         backupManager.dataChanged()
                     },
                     onError = { error ->
@@ -797,6 +804,7 @@ internal class PurchasesOrchestrator(
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
                 updateAllCaches(identityManager.currentAppUserID, callback)
+                refreshRemoteConfigIfEnabled()
                 backupManager.dataChanged()
             }
         }
@@ -1257,6 +1265,7 @@ internal class PurchasesOrchestrator(
         identityManager.switchUser(newAppUserID)
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+        refreshRemoteConfigIfEnabled()
     }
     //endregion
 
@@ -1276,6 +1285,13 @@ internal class PurchasesOrchestrator(
     // region Private Methods
     private fun enqueue(command: () -> Unit) {
         dispatcher.enqueue({ command() }, Delay.NONE)
+    }
+
+    private fun refreshRemoteConfigIfEnabled() {
+        if (!BuildConfig.ENABLE_REMOTE_CONFIG) return
+        remoteConfigManager.updateRemoteConfigIfNeeded(
+            appInBackground = state.appInBackground,
+        )
     }
 
     private fun shouldRefreshCustomerInfo(firstTimeInForeground: Boolean): Boolean {
