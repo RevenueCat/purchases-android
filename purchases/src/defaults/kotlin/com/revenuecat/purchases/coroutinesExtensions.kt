@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationStatusCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
@@ -205,6 +206,33 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
                 continuation.safeResumeWithException(PurchasesException(error))
             }
         })
+    }
+}
+
+/**
+ * Fetches reward verification status for a single client transaction id.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if an error occurs while fetching the status.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+@InternalRevenueCatAPI
+public suspend fun Purchases.awaitGetRewardVerificationStatus(
+    clientTransactionId: String,
+): RewardVerificationStatus {
+    return suspendCancellableCoroutine { continuation ->
+        getRewardVerificationStatus(
+            clientTransactionId = clientTransactionId,
+            callback = object : GetRewardVerificationStatusCallback {
+                override fun onReceived(status: RewardVerificationStatus) {
+                    continuation.safeResume(status)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    continuation.safeResumeWithException(PurchasesException(error))
+                }
+            },
+        )
     }
 }
 
