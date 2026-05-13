@@ -8,7 +8,6 @@ import com.revenuecat.purchases.admob.RewardVerificationResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicBoolean
 
 private val mainHandler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getMainLooper()) }
 private val scope = CoroutineScope(Dispatchers.IO)
@@ -21,36 +20,38 @@ internal object Dispatcher {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun dispatchResult(
-        completionDelivered: AtomicBoolean,
+        consumeCompletionDeliveredToken: () -> Boolean,
         rewardVerificationResult: (RewardVerificationResult) -> Unit,
         result: RewardVerificationResult,
     ) {
-        deliverResultOnce(completionDelivered, rewardVerificationResult, result)
+        deliverResultOnce(consumeCompletionDeliveredToken, rewardVerificationResult, result)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     fun dispatch(
         clientTransactionId: String,
-        completionDelivered: AtomicBoolean,
+        consumeCompletionDeliveredToken: () -> Boolean,
         rewardVerificationResult: (RewardVerificationResult) -> Unit,
     ) {
         scope.launch {
             val result = Poller.poll(clientTransactionId)
-            deliverResultOnce(completionDelivered, rewardVerificationResult, result)
+            deliverResultOnce(consumeCompletionDeliveredToken, rewardVerificationResult, result)
         }
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    private fun deliverResultOnce(
-        completionDelivered: AtomicBoolean,
+    internal fun deliverResultOnce(
+        consumeCompletionDeliveredToken: () -> Boolean,
         rewardVerificationResult: (RewardVerificationResult) -> Unit,
         result: RewardVerificationResult,
+        deliver: ((() -> Unit) -> Unit)? = null,
     ) {
-        if (!completionDelivered.compareAndSet(false, true)) {
+        if (!consumeCompletionDeliveredToken()) {
             return
         }
 
-        deliverOnMainIfPresent {
+        val resolvedDeliver = deliver ?: { block -> deliverOnMainIfPresent(block) }
+        resolvedDeliver {
             rewardVerificationResult(result)
         }
     }

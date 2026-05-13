@@ -37,7 +37,7 @@ internal object Setup {
             TAG,
             "Reward verification callback requires enableRewardVerification() before show().",
         )
-        assert(state != null) {
+        assert(false) {
             "Call enableRewardVerification() before using reward verification show overloads."
         }
     }

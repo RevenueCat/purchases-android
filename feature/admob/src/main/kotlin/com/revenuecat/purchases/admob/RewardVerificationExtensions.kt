@@ -49,16 +49,25 @@ public fun RewardedAd.show(
 ) {
     val state = Setup.verificationState(this)
     Setup.warnAndAssertIfMissingState(state)
-    val completionDelivered = AtomicBoolean(false)
+    val fallbackCompletionDelivered = AtomicBoolean(false)
+    val consumeCompletionDeliveredToken = state?.let {
+        { it.consumeCompletionDeliveredToken() }
+    } ?: {
+        fallbackCompletionDelivered.compareAndSet(false, true)
+    }
 
     this.show(activity, placement) {
         Dispatcher.dispatchStarted(rewardVerificationStarted)
         if (state == null) {
-            Dispatcher.dispatchResult(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
+            Dispatcher.dispatchResult(
+                consumeCompletionDeliveredToken = consumeCompletionDeliveredToken,
+                rewardVerificationResult = rewardVerificationResult,
+                result = RewardVerificationResult.failed,
+            )
         } else {
             Dispatcher.dispatch(
                 clientTransactionId = state.clientTransactionId,
-                completionDelivered = completionDelivered,
+                consumeCompletionDeliveredToken = consumeCompletionDeliveredToken,
                 rewardVerificationResult = rewardVerificationResult,
             )
         }
@@ -83,16 +92,25 @@ public fun RewardedInterstitialAd.show(
 ) {
     val state = Setup.verificationState(this)
     Setup.warnAndAssertIfMissingState(state)
-    val completionDelivered = AtomicBoolean(false)
+    val fallbackCompletionDelivered = AtomicBoolean(false)
+    val consumeCompletionDeliveredToken = state?.let {
+        { it.consumeCompletionDeliveredToken() }
+    } ?: {
+        fallbackCompletionDelivered.compareAndSet(false, true)
+    }
 
     this.show(activity, placement) {
         Dispatcher.dispatchStarted(rewardVerificationStarted)
         if (state == null) {
-            Dispatcher.dispatchResult(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
+            Dispatcher.dispatchResult(
+                consumeCompletionDeliveredToken = consumeCompletionDeliveredToken,
+                rewardVerificationResult = rewardVerificationResult,
+                result = RewardVerificationResult.failed,
+            )
         } else {
             Dispatcher.dispatch(
                 clientTransactionId = state.clientTransactionId,
-                completionDelivered = completionDelivered,
+                consumeCompletionDeliveredToken = consumeCompletionDeliveredToken,
                 rewardVerificationResult = rewardVerificationResult,
             )
         }
