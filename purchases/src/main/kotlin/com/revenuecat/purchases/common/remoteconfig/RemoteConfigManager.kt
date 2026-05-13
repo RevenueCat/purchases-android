@@ -62,6 +62,10 @@ internal class RemoteConfigManager(
             errorLog { "Failed to fetch remote config: ${e.error}" }
             return e.error
         }
+        val previouslyCachedResponse = cache?.response
+        if (previouslyCachedResponse != null && previouslyCachedResponse != response) {
+            cachedSourceId = null
+        }
         val referenced = buildReferenceSet(response.manifest)
         val tasks = response.manifest.topics.mapNotNull { (topic, entries) ->
             val entry = entries[DEFAULT_ENTRY_ID] ?: return@mapNotNull null
@@ -109,7 +113,7 @@ internal class RemoteConfigManager(
             triedIds += source.id
 
             val attempt = attemptDownloads(source, remaining)
-            lastError = lastError ?: attempt.firstError
+            lastError = attempt.firstError ?: lastError
             if (attempt.invalidating && source.id == previouslyCachedSourceId) {
                 cachedSourceFailedInvalidating = true
             }

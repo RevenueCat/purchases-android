@@ -741,7 +741,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `returns last error after every source is exhausted`() = runTest {
+    fun `returns the most recent error after every source is exhausted`() = runTest {
         val manager = newManager(testScheduler)
         val first = source("first", priority = 5, weight = 50)
         val second = source("second", priority = 5, weight = 50)
@@ -751,13 +751,16 @@ class RemoteConfigManagerTest {
         )
         mockBackendSuccess(response)
         val attempts = mutableListOf<BlobSource>()
-        val lastError = PurchasesError(PurchasesErrorCode.NetworkError, "first-fail")
+        val errorsBySource = mapOf(
+            "first" to PurchasesError(PurchasesErrorCode.NetworkError, "first-fail"),
+            "second" to PurchasesError(PurchasesErrorCode.NetworkError, "second-fail"),
+        )
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
         } answers {
             val src = arg<BlobSource>(3)
             attempts += src
-            TopicFetchResult.InvalidatingFailure(lastError)
+            TopicFetchResult.InvalidatingFailure(errorsBySource.getValue(src.id))
         }
 
         var completionError: PurchasesError? = null
@@ -767,7 +770,7 @@ class RemoteConfigManagerTest {
         testScheduler.advanceUntilIdle()
 
         assertThat(attempts).hasSize(2)
-        assertThat(completionError).isSameAs(lastError)
+        assertThat(completionError).isSameAs(errorsBySource.getValue(attempts.last().id))
         verify(exactly = 0) { diskCache.write(any()) }
     }
 
@@ -884,41 +887,53 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `InvalidatingFailure on cached source clears cachedSourceId when refresh fails`() = runTest {
-        val manager = newManager(testScheduler)
-        val src = source("primary", priority = 5, weight = 100)
+    fun `InvalidatingFailure on cached source clears cachedSourceId so next refresh re-rolls`() = runTest {
+        // QueuedRandom sequence:
+        //   [0]  refresh 1 picks src    (nextInt(100)=0 -> src wins via cumulative<50 check)
+        //   [1]  refresh 2 picks alternate from the remaining tier after src fails (only candidate)
+        //   [99] refresh 3 picks alternate via re-rolled selectWeighted (nextInt(100)=99 -> alternate)
+        //
+        // If cachedSourceId were not cleared after refresh 2's InvalidatingFailure, refresh 3 would
+        // pin to "src" and consume no random — the final assertion would see src instead of alternate.
+        val random = QueuedRandom(listOf(0, 0, 99))
+        val manager = newManager(testScheduler, random = random)
+        val src = source("src", priority = 5, weight = 50)
+        val alternate = source("alternate", priority = 5, weight = 50)
         val response = response(
-            blobSources = listOf(src),
+            blobSources = listOf(src, alternate),
             topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
         )
         mockBackendSuccess(response)
+
+        // Refresh 1: src wins the weighted pick and succeeds.
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns TopicFetchResult.Success
+        } answers {
+            if (arg<BlobSource>(3).id == "src") {
+                TopicFetchResult.Success
+            } else {
+                TopicFetchResult.InvalidatingFailure(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "unexpected alt call"),
+                )
+            }
+        }
         fakeNow = Date(0)
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
 
+        // Refresh 2: cached source src is tried first (pinned), then alternate — both fail with
+        // InvalidatingFailure so the overall refresh fails and clearCachedSource fires.
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
         } returns TopicFetchResult.InvalidatingFailure(
-            PurchasesError(PurchasesErrorCode.NetworkError, "http 500"),
+            PurchasesError(PurchasesErrorCode.NetworkError, "both-failed"),
         )
         fakeNow = Date(6.minutes.inWholeMilliseconds)
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
 
-        // Add an alternate source for the third refresh — selectWeighted should pick it freely
-        // because cachedSourceId was cleared.
-        val alternate = source("alternate", priority = 5, weight = 100)
-        val responseWithAlternate = response(
-            blobSources = listOf(src, alternate),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        val onSuccess = slot<(RemoteConfigResponse) -> Unit>()
-        every {
-            backend.getRemoteConfig(any(), capture(onSuccess), any())
-        } answers { onSuccess.captured.invoke(responseWithAlternate) }
+        // Refresh 3: both succeed. With cachedSourceId cleared the picker rolls selectWeighted and
+        // the queued 99 lands in alternate's bucket. A surviving pin would pick src.
         val attempts = mutableListOf<BlobSource>()
         coEvery {
             topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
@@ -930,9 +945,45 @@ class RemoteConfigManagerTest {
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
 
-        // A fixed seed makes selection deterministic; the assertion below confirms either source could be
-        // picked (since cachedSourceId was cleared the picker doesn't lock in src).
-        assertThat(attempts.single()).isIn(src, alternate)
+        assertThat(attempts).containsExactly(alternate)
+    }
+
+    @Test
+    fun `new response from backend clears cachedSourceId so picker restarts from top priority`() = runTest {
+        val manager = newManager(testScheduler)
+        val src = source("src", priority = 1, weight = 100)
+        val top = source("top", priority = 5, weight = 100)
+        val firstResponse = response(
+            blobSources = listOf(src),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+        )
+        val secondResponse = response(
+            blobSources = listOf(src, top),
+            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob-2"))),
+        )
+        val onSuccess = slot<(RemoteConfigResponse) -> Unit>()
+        val responses = ArrayDeque(listOf(firstResponse, secondResponse))
+        every {
+            backend.getRemoteConfig(any(), capture(onSuccess), any())
+        } answers { onSuccess.captured.invoke(responses.removeFirst()) }
+        val attempts = mutableListOf<BlobSource>()
+        coEvery {
+            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
+        } answers {
+            attempts += arg<BlobSource>(3)
+            TopicFetchResult.Success
+        }
+
+        fakeNow = Date(0)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+        fakeNow = Date(6.minutes.inWholeMilliseconds)
+        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
+        testScheduler.advanceUntilIdle()
+
+        // Refresh 1 pins src (only candidate). The second response is different, so the pin is
+        // cleared and selectWeighted runs against the new top-priority tier — picking top, not src.
+        assertThat(attempts).containsExactly(src, top)
     }
 
     @Test
@@ -977,8 +1028,12 @@ class RemoteConfigManagerTest {
         assertThat(attempts).containsExactly(second)
     }
 
+    // Only one Topic enum value (PRODUCT_ENTITLEMENT_MAPPING) currently exists, so a refresh always
+    // produces at most one TopicTask. The broader "topics that succeed on one source aren't
+    // re-requested on the next source" property isn't testable through updateRemoteConfigIfNeeded
+    // until another Topic value is added; this test covers the single-topic shape only.
     @Test
-    fun `topics that succeed on one source are not re-requested on the next source`() = runTest {
+    fun `failing topic is retried at most once per source during fallback`() = runTest {
         val manager = newManager(testScheduler)
         val first = source("first", priority = 5, weight = 50)
         val second = source("second", priority = 5, weight = 50)
@@ -1009,11 +1064,7 @@ class RemoteConfigManagerTest {
         manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
         testScheduler.advanceUntilIdle()
 
-        // The entry was attempted once on each source — once with first (failed), once with second (success).
-        val firstAttempts = attempts.filter { it.first.id == "first" }
-        val secondAttempts = attempts.filter { it.first.id == "second" }
-        assertThat(firstAttempts).hasSize(1)
-        assertThat(secondAttempts).hasSize(1)
+        assertThat(attempts).containsExactly(first to entryA, second to entryA)
     }
 
     private fun newManager(
@@ -1055,4 +1106,10 @@ class RemoteConfigManagerTest {
     )
 
     private fun topicEntry(blobRef: String) = TopicEntry(blobRef = blobRef)
+
+    private class QueuedRandom(values: List<Int>) : Random() {
+        private val queue = ArrayDeque(values)
+        override fun nextBits(bitCount: Int): Int = error("nextBits should not be used")
+        override fun nextInt(until: Int): Int = queue.removeFirst()
+    }
 }

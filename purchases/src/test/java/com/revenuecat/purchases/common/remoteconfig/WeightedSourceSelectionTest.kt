@@ -80,16 +80,6 @@ class WeightedSourceSelectionTest {
     }
 
     @Test
-    fun `negative total weight falls back to uniform random`() {
-        val a = TestSource(priority = 0, weight = -10)
-        val b = TestSource(priority = 0, weight = 5)
-        val sources = listOf(a, b)
-
-        assertThat(sources.selectWeighted(FakeRandom(0))).isSameAs(a)
-        assertThat(sources.selectWeighted(FakeRandom(1))).isSameAs(b)
-    }
-
-    @Test
     fun `any negative weight falls back to uniform random even when total is positive`() {
         val a = TestSource(priority = 0, weight = -10)
         val b = TestSource(priority = 0, weight = 30)
