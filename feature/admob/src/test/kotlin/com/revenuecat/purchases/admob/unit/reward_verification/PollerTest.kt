@@ -17,10 +17,10 @@ import org.junit.Test
 class PollerTest {
 
     @Test
-    fun `performOneShotVerification calls core status fetch with client transaction id`() = runBlocking {
+    fun `poll calls core status fetch with client transaction id`() = runBlocking {
         var receivedClientTransactionId: String? = null
 
-        val result = performOneShotVerification(clientTransactionId = "ct_1") { clientTransactionId ->
+        val result = Poller.poll(clientTransactionId = "ct_1") { clientTransactionId ->
             receivedClientTransactionId = clientTransactionId
             RewardVerificationStatus.VERIFIED
         }
@@ -31,8 +31,8 @@ class PollerTest {
     }
 
     @Test
-    fun `performOneShotVerification maps failed status to failed result`() = runBlocking {
-        val result = performOneShotVerification(clientTransactionId = "ct_1") {
+    fun `poll maps failed status to failed result`() = runBlocking {
+        val result = Poller.poll(clientTransactionId = "ct_1") {
             RewardVerificationStatus.FAILED
         }
 
@@ -41,8 +41,8 @@ class PollerTest {
     }
 
     @Test
-    fun `performOneShotVerification maps pending status to failed result`() = runBlocking {
-        val result = performOneShotVerification(clientTransactionId = "ct_1") {
+    fun `poll maps pending status to failed result`() = runBlocking {
+        val result = Poller.poll(clientTransactionId = "ct_1") {
             RewardVerificationStatus.PENDING
         }
 
@@ -51,8 +51,8 @@ class PollerTest {
     }
 
     @Test
-    fun `performOneShotVerification maps unknown status to failed result`() = runBlocking {
-        val result = performOneShotVerification(clientTransactionId = "ct_1") {
+    fun `poll maps unknown status to failed result`() = runBlocking {
+        val result = Poller.poll(clientTransactionId = "ct_1") {
             RewardVerificationStatus.UNKNOWN
         }
 
@@ -61,8 +61,8 @@ class PollerTest {
     }
 
     @Test
-    fun `performOneShotVerification maps backend errors to failed result`() = runBlocking {
-        val result = performOneShotVerification(clientTransactionId = "ct_1") {
+    fun `poll maps backend errors to failed result`() = runBlocking {
+        val result = Poller.poll(clientTransactionId = "ct_1") {
             error("backend exploded")
         }
 
@@ -71,9 +71,9 @@ class PollerTest {
     }
 
     @Test
-    fun `performOneShotVerification rethrows coroutine cancellation`() = runBlocking {
+    fun `poll rethrows coroutine cancellation`() = runBlocking {
         try {
-            performOneShotVerification(clientTransactionId = "ct_1") {
+            Poller.poll(clientTransactionId = "ct_1") {
                 throw CancellationException("cancelled")
             }
             fail("Expected CancellationException")

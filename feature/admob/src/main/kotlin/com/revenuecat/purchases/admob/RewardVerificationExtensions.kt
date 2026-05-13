@@ -4,12 +4,8 @@ import android.app.Activity
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.reward_verification.dispatchVerificationResult
-import com.revenuecat.purchases.admob.reward_verification.deliverOnMainIfPresent
-import com.revenuecat.purchases.admob.reward_verification.deliverResultOnce
-import com.revenuecat.purchases.admob.reward_verification.enableRewardVerificationInternal
-import com.revenuecat.purchases.admob.reward_verification.verificationStateForAd
-import com.revenuecat.purchases.admob.reward_verification.warnAndAssertIfMissingState
+import com.revenuecat.purchases.admob.reward_verification.Dispatcher
+import com.revenuecat.purchases.admob.reward_verification.Setup
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.jvm.JvmSynthetic
 
@@ -21,7 +17,7 @@ import kotlin.jvm.JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.enableRewardVerification() {
-    enableRewardVerificationInternal(this)
+    Setup.install(this)
 }
 
 /**
@@ -32,7 +28,7 @@ public fun RewardedAd.enableRewardVerification() {
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.enableRewardVerification() {
-    enableRewardVerificationInternal(this)
+    Setup.install(this)
 }
 
 /**
@@ -51,16 +47,16 @@ public fun RewardedAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    val state = verificationStateForAd(this)
-    warnAndAssertIfMissingState(state)
+    val state = Setup.verificationState(this)
+    Setup.warnAndAssertIfMissingState(state)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
-        deliverOnMainIfPresent(rewardVerificationStarted)
+        Dispatcher.deliverOnMainIfPresent(rewardVerificationStarted)
         if (state == null) {
-            deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
+            Dispatcher.deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
-            dispatchVerificationResult(
+            Dispatcher.dispatch(
                 clientTransactionId = state.clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,
@@ -85,16 +81,16 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    val state = verificationStateForAd(this)
-    warnAndAssertIfMissingState(state)
+    val state = Setup.verificationState(this)
+    Setup.warnAndAssertIfMissingState(state)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
-        deliverOnMainIfPresent(rewardVerificationStarted)
+        Dispatcher.deliverOnMainIfPresent(rewardVerificationStarted)
         if (state == null) {
-            deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
+            Dispatcher.deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
-            dispatchVerificationResult(
+            Dispatcher.dispatch(
                 clientTransactionId = state.clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,

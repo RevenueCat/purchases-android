@@ -13,38 +13,41 @@ import kotlinx.coroutines.launch
 private val mainHandler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getMainLooper()) }
 private val scope = CoroutineScope(Dispatchers.IO)
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-internal fun dispatchVerificationResult(
-    clientTransactionId: String,
-    completionDelivered: AtomicBoolean,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
-) {
-    scope.launch {
-        val result = pollVerificationResult(clientTransactionId)
-        deliverResultOnce(completionDelivered, rewardVerificationResult, result)
-    }
-}
+internal object Dispatcher {
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-internal fun deliverResultOnce(
-    completionDelivered: AtomicBoolean,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
-    result: RewardVerificationResult,
-) {
-    if (!completionDelivered.compareAndSet(false, true)) {
-        return
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    fun dispatch(
+        clientTransactionId: String,
+        completionDelivered: AtomicBoolean,
+        rewardVerificationResult: (RewardVerificationResult) -> Unit,
+    ) {
+        scope.launch {
+            val result = Poller.poll(clientTransactionId)
+            deliverResultOnce(completionDelivered, rewardVerificationResult, result)
+        }
     }
 
-    deliverOnMainIfPresent {
-        rewardVerificationResult(result)
-    }
-}
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun deliverResultOnce(
+        completionDelivered: AtomicBoolean,
+        rewardVerificationResult: (RewardVerificationResult) -> Unit,
+        result: RewardVerificationResult,
+    ) {
+        if (!completionDelivered.compareAndSet(false, true)) {
+            return
+        }
 
-internal fun deliverOnMainIfPresent(block: (() -> Unit)?) {
-    if (block == null) return
-    if (Looper.myLooper() == Looper.getMainLooper()) {
-        block()
-    } else {
-        mainHandler.post { block() }
+        deliverOnMainIfPresent {
+            rewardVerificationResult(result)
+        }
+    }
+
+    fun deliverOnMainIfPresent(block: (() -> Unit)?) {
+        if (block == null) return
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            block()
+        } else {
+            mainHandler.post { block() }
+        }
     }
 }
