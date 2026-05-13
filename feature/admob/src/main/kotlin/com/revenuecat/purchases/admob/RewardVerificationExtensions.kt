@@ -11,12 +11,12 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.RewardVerificationStatus
 import com.revenuecat.purchases.awaitGetRewardVerificationStatus
-import java.util.UUID
-import java.util.WeakHashMap
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.UUID
+import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.jvm.JvmSynthetic
 
 private const val TAG = "PurchasesAdMob"
