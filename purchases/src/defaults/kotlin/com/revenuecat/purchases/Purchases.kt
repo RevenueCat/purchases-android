@@ -563,7 +563,7 @@ public class Purchases internal constructor(
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun notifyLifecycleClosed() {
-        PurchasesLifecycleEventBus.onClosed(this)
+        lifecycleListener.onPurchasesClosed(this)
     }
 
     /**
@@ -1186,6 +1186,9 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        @OptIn(InternalRevenueCatAPI::class)
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal var lifecycleListener: PurchasesLifecycleListener = PurchasesLifecycleEventBusListener
 
         @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
@@ -1335,7 +1338,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
-                PurchasesLifecycleEventBus.onConfigured(it)
+                lifecycleListener.onPurchasesConfigured(it)
             }
         }
 
@@ -1367,6 +1370,17 @@ public class Purchases internal constructor(
             PurchasesOrchestrator.canMakePayments(context, features, callback)
         }
     }
+
+@OptIn(InternalRevenueCatAPI::class)
+private object PurchasesLifecycleEventBusListener : PurchasesLifecycleListener {
+    override fun onPurchasesConfigured(purchases: Purchases) {
+        PurchasesLifecycleEventBus.onConfigured(purchases)
+    }
+
+    override fun onPurchasesClosed(purchases: Purchases) {
+        PurchasesLifecycleEventBus.onClosed(purchases)
+    }
+}
 
     // endregion
 }

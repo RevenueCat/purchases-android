@@ -2,25 +2,28 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import android.content.pm.ApplicationInfo
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
-import io.mockk.mockkObject
 import io.mockk.unmockkConstructor
-import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Before
 import org.junit.Test
 
 internal class PurchasesLifecycleWiringCustomEntitlementTest {
+    private lateinit var originalLifecycleListener: PurchasesLifecycleListener
+
+    @Before
+    fun setUp() {
+        originalLifecycleListener = Purchases.lifecycleListener
+    }
 
     @After
     fun tearDownMocks() {
-        unmockkObject(PurchasesLifecycleEventBus)
         unmockkConstructor(PurchasesFactory::class)
+        Purchases.lifecycleListener = originalLifecycleListener
         Purchases.backingFieldSharedInstance = null
     }
 
@@ -41,16 +44,16 @@ internal class PurchasesLifecycleWiringCustomEntitlementTest {
             apiKey = "api_key",
             appUserID = "app_user_id",
         ).build()
+        val lifecycleListener = mockk<PurchasesLifecycleListener>(relaxed = true)
 
-        mockkObject(PurchasesLifecycleEventBus)
         mockkConstructor(PurchasesFactory::class)
-        every { PurchasesLifecycleEventBus.onConfigured(any()) } just Runs
+        Purchases.lifecycleListener = lifecycleListener
         every { anyConstructed<PurchasesFactory>().createPurchases(any(), any(), any()) } returns configuredPurchases
 
         Purchases.configureInCustomEntitlementsComputationMode(configuration)
 
         verify(exactly = 1) {
-            PurchasesLifecycleEventBus.onConfigured(configuredPurchases)
+            lifecycleListener.onPurchasesConfigured(configuredPurchases)
         }
         assertThat(Purchases.sharedInstance).isSameAs(configuredPurchases)
     }

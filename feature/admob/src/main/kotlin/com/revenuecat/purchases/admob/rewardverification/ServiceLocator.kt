@@ -4,7 +4,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesLifecycleEventBus
 import com.revenuecat.purchases.PurchasesLifecycleListener
-import java.util.Collections
 
 internal interface RewardVerificationLifecycleHook {
     fun onPurchasesConfigured(purchases: Purchases)
@@ -12,10 +11,19 @@ internal interface RewardVerificationLifecycleHook {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal object RewardVerificationServiceLocator : PurchasesLifecycleListener {
+internal fun interface RewardVerificationListenerRegistrar {
+    fun register(listener: PurchasesLifecycleListener)
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+internal class RewardVerificationServiceLocator(
+    private val listenerRegistrar: RewardVerificationListenerRegistrar = RewardVerificationListenerRegistrar {
+        PurchasesLifecycleEventBus.register(listener = it)
+    },
+) : PurchasesLifecycleListener {
 
     private var isRegistered = false
-    private val hooks = Collections.synchronizedSet(mutableSetOf<RewardVerificationLifecycleHook>())
+    private val hooks = mutableSetOf<RewardVerificationLifecycleHook>()
 
     @Synchronized
     fun registerHook(hook: RewardVerificationLifecycleHook) {
@@ -46,13 +54,11 @@ internal object RewardVerificationServiceLocator : PurchasesLifecycleListener {
     private fun ensureRegistered() {
         if (isRegistered) return
 
-        PurchasesLifecycleEventBus.register(listener = this)
+        listenerRegistrar.register(listener = this)
         isRegistered = true
     }
 
     private fun snapshotHooks(): List<RewardVerificationLifecycleHook> {
-        synchronized(hooks) {
-            return hooks.toList()
-        }
+        return hooks.toList()
     }
 }
