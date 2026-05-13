@@ -10,6 +10,16 @@ import com.revenuecat.purchases.awaitGetRewardVerificationStatus
 import kotlinx.coroutines.CancellationException
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+internal suspend fun pollVerificationResult(
+    clientTransactionId: String,
+    fetchStatus: suspend (String) -> RewardVerificationStatus = {
+        Purchases.sharedInstance.awaitGetRewardVerificationStatus(clientTransactionId = it)
+    },
+): RewardVerificationResult {
+    return performOneShotVerification(clientTransactionId, fetchStatus)
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal suspend fun performOneShotVerification(
     clientTransactionId: String,
     fetchStatus: suspend (String) -> RewardVerificationStatus = {

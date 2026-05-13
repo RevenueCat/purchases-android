@@ -4,7 +4,7 @@ import android.app.Activity
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.reward_verification.dispatchOneShotVerificationResult
+import com.revenuecat.purchases.admob.reward_verification.dispatchVerificationResult
 import com.revenuecat.purchases.admob.reward_verification.deliverOnMainIfPresent
 import com.revenuecat.purchases.admob.reward_verification.deliverResultOnce
 import com.revenuecat.purchases.admob.reward_verification.enableRewardVerificationInternal
@@ -60,7 +60,7 @@ public fun RewardedAd.show(
         if (state == null) {
             deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
-            dispatchOneShotVerificationResult(
+            dispatchVerificationResult(
                 clientTransactionId = state.clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,
@@ -94,7 +94,7 @@ public fun RewardedInterstitialAd.show(
         if (state == null) {
             deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
-            dispatchOneShotVerificationResult(
+            dispatchVerificationResult(
                 clientTransactionId = state.clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,

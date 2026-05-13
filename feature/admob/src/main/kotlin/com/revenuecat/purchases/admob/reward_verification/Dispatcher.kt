@@ -14,13 +14,13 @@ private val mainHandler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getM
 private val scope = CoroutineScope(Dispatchers.IO)
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-internal fun dispatchOneShotVerificationResult(
+internal fun dispatchVerificationResult(
     clientTransactionId: String,
     completionDelivered: AtomicBoolean,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
     scope.launch {
-        val result = performOneShotVerification(clientTransactionId)
+        val result = pollVerificationResult(clientTransactionId)
         deliverResultOnce(completionDelivered, rewardVerificationResult, result)
     }
 }
