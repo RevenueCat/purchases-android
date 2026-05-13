@@ -556,8 +556,14 @@ public class Purchases internal constructor(
      * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
         backingFieldSharedInstance = null
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun notifyLifecycleClosed() {
+        PurchasesLifecycleEventBus.onClosed(this)
     }
 
     /**
@@ -1329,6 +1335,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                PurchasesLifecycleEventBus.onConfigured(it)
             }
         }
 

@@ -124,7 +124,13 @@ public class Purchases internal constructor(
      * Call close when you are done with this instance of Purchases
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun notifyLifecycleClosed() {
+        PurchasesLifecycleEventBus.onClosed(this)
     }
 
     /**
@@ -348,6 +354,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                PurchasesLifecycleEventBus.onConfigured(it)
             }
         }
 
