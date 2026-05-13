@@ -1,6 +1,6 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.admob.reward_verification
 
 import android.app.Activity
 import android.os.Looper
@@ -8,6 +8,8 @@ import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.rewarded.RewardItem
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.admob.RewardVerificationResult
+import com.revenuecat.purchases.admob.show as showWithRewardVerification
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -21,7 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
-class RewardVerificationShowBehaviorTest {
+class ShowBehaviorTest {
 
     @Test
     fun `show delivers failed result as fail-safe when reward verification is not enabled`() {
@@ -33,7 +35,7 @@ class RewardVerificationShowBehaviorTest {
         var callbackCount = 0
         var latestResult: RewardVerificationResult? = null
 
-        ad.show(activity = activity, placement = "placement") { result ->
+        ad.showWithRewardVerification(activity = activity, placement = "placement") { result ->
             callbackCount++
             latestResult = result
         }
@@ -54,7 +56,7 @@ class RewardVerificationShowBehaviorTest {
         var callbackCount = 0
         var callbackThread: Thread? = null
 
-        ad.show(activity = activity, placement = "placement") { result ->
+        ad.showWithRewardVerification(activity = activity, placement = "placement") { result ->
             callbackCount++
             callbackThread = Thread.currentThread()
             assertTrue(result.failed)

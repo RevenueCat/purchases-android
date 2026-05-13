@@ -1,9 +1,8 @@
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.admob.reward_verification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.RewardVerificationStatus
-import com.revenuecat.purchases.admob.reward_verification.performOneShotVerification
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -15,7 +14,7 @@ import org.junit.Assert.fail
 import org.junit.Test
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-class RewardVerificationOneShotTest {
+class PollerTest {
 
     @Test
     fun `performOneShotVerification calls core status fetch with client transaction id`() = runBlocking {
