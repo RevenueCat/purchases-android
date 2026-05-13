@@ -7,6 +7,8 @@ import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.tracking.TrackingOnPaidEventListener
+import com.revenuecat.purchases.admob.tracking.setUpPaidEventTracking
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
