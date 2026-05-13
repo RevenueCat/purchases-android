@@ -466,6 +466,78 @@ class TopicFetcherTest {
         assertThat(stale2).doesNotExist()
     }
 
+    @Test
+    fun `topicUpdatedListener fires when a new blob is successfully downloaded`() = runTest {
+        val updatedTopics = mutableListOf<Topic>()
+        val fetcher = TopicFetcher(
+            applicationContext = applicationContext,
+            urlConnectionFactory = urlConnectionFactory,
+            topicUpdatedListener = { topic -> updatedTopics += topic },
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
+        val payload = """{"hello":"world"}""".toByteArray()
+        val blobRef = sha256Hex(payload)
+        mockSuccessfulDownload("https://assets.example/$blobRef", payload)
+
+        val result = fetcher.fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(blobRef),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+        if (result !is TopicFetchResult.Success) fail<Unit>("Expected success, got: $result")
+
+        assertThat(updatedTopics).containsExactly(Topic.PRODUCT_ENTITLEMENT_MAPPING)
+    }
+
+    @Test
+    fun `topicUpdatedListener does not fire when target file already exists`() = runTest {
+        val updatedTopics = mutableListOf<Topic>()
+        val fetcher = TopicFetcher(
+            applicationContext = applicationContext,
+            urlConnectionFactory = urlConnectionFactory,
+            topicUpdatedListener = { topic -> updatedTopics += topic },
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
+        val payload = """{"cached":true}""".toByteArray()
+        val blobRef = sha256Hex(payload)
+        val target = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobRef)
+        target.parentFile?.mkdirs()
+        target.writeBytes(payload)
+
+        val result = fetcher.fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(blobRef),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+        if (result !is TopicFetchResult.Success) fail<Unit>("Expected success, got: $result")
+
+        assertThat(updatedTopics).isEmpty()
+    }
+
+    @Test
+    fun `topicUpdatedListener does not fire when download errors out`() = runTest {
+        val updatedTopics = mutableListOf<Topic>()
+        val fetcher = TopicFetcher(
+            applicationContext = applicationContext,
+            urlConnectionFactory = urlConnectionFactory,
+            topicUpdatedListener = { topic -> updatedTopics += topic },
+            downloadDispatcher = UnconfinedTestDispatcher(testScheduler),
+        )
+        val blobRef = "a".repeat(64)
+        every { urlConnectionFactory.createConnection(any(), any()) } throws IOException("network down")
+
+        fetcher.fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(blobRef),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(updatedTopics).isEmpty()
+    }
+
     private fun mockSuccessfulDownload(url: String, payload: ByteArray) {
         val connection = mockk<UrlConnection>(relaxed = true).also {
             every { it.responseCode } returns HttpURLConnection.HTTP_OK

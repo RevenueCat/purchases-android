@@ -29,6 +29,7 @@ internal sealed class TopicFetchResult {
 internal class TopicFetcher(
     private val applicationContext: Context,
     private val urlConnectionFactory: UrlConnectionFactory,
+    private val topicUpdatedListener: ((Topic) -> Unit)? = null,
     private val downloadDispatcher: CoroutineDispatcher =
         Dispatchers.IO.limitedParallelism(MAX_PARALLEL_TOPIC_DOWNLOADS),
 ) {
@@ -63,6 +64,7 @@ internal class TopicFetcher(
             val url = source.urlFormat.replace(BLOB_REF_PLACEHOLDER, topicEntry.blobRef)
             downloadVerifyAndStore(url, topicEntry.blobRef, targetFile)
             debugLog { "Topic $topic ($entryId) downloaded to ${targetFile.absolutePath}" }
+            topicUpdatedListener?.invoke(topic)
             TopicFetchResult.Success
         } catch (e: Checksum.ChecksumValidationException) {
             errorLog(e) { "Downloaded topic $topic ($entryId) failed SHA-256 verification." }
@@ -146,11 +148,11 @@ internal class TopicFetcher(
         }
     }
 
-    private companion object {
-        const val TOPICS_ROOT = "RevenueCat/topics"
-        const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
-        const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
-        const val TEMP_PREFIX = "rc_topic_"
-        val BLOB_REF_PATTERN = Regex("^[a-fA-F0-9]{64}$")
+    internal companion object {
+        internal const val TOPICS_ROOT = "RevenueCat/topics"
+        internal const val TEMP_PREFIX = "rc_topic_"
+        private const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
+        private const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
+        private val BLOB_REF_PATTERN = Regex("^[a-fA-F0-9]{64}$")
     }
 }

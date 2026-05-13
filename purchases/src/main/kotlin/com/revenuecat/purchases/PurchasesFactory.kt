@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -33,11 +34,16 @@ import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
+import com.revenuecat.purchases.common.offlineentitlements.DeviceCacheProductEntitlementMappingSource
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappingSource
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappingTopicReader
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
+import com.revenuecat.purchases.common.offlineentitlements.RemoteConfigProductEntitlementMappingSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.Topic
 import com.revenuecat.purchases.common.remoteconfig.TopicFetcher
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -243,8 +249,31 @@ internal class PurchasesFactory(
                 automaticDeviceIdentifierCollectionEnabled,
             )
 
+            val useRemoteConfigForProductEntitlementMapping = BuildConfig.ENABLE_REMOTE_CONFIG
+
+            val productEntitlementMappingTopicReader = ProductEntitlementMappingTopicReader(
+                applicationContext = application,
+            )
+
+            val topicFetcher = TopicFetcher(
+                applicationContext = application,
+                urlConnectionFactory = DefaultUrlConnectionFactory(),
+                topicUpdatedListener = { topic ->
+                    if (topic == Topic.PRODUCT_ENTITLEMENT_MAPPING) {
+                        productEntitlementMappingTopicReader.invalidate()
+                    }
+                },
+            )
+
+            val productEntitlementMappingSource: ProductEntitlementMappingSource =
+                if (useRemoteConfigForProductEntitlementMapping) {
+                    RemoteConfigProductEntitlementMappingSource(productEntitlementMappingTopicReader, cache)
+                } else {
+                    DeviceCacheProductEntitlementMappingSource(cache)
+                }
+
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
-                PurchasedProductsFetcher(cache, billing),
+                PurchasedProductsFetcher(productEntitlementMappingSource, billing),
                 appConfig,
                 diagnosticsTracker,
             )
@@ -255,6 +284,7 @@ internal class PurchasesFactory(
                 cache,
                 appConfig,
                 diagnosticsTracker,
+                useRemoteConfigForProductEntitlementMapping,
             )
 
             val offeringsCache = OfferingsCache(
@@ -429,10 +459,7 @@ internal class PurchasesFactory(
 
             val remoteConfigManager = RemoteConfigManager(
                 backend = backend,
-                topicFetcher = TopicFetcher(
-                    applicationContext = application,
-                    urlConnectionFactory = DefaultUrlConnectionFactory(),
-                ),
+                topicFetcher = topicFetcher,
                 diskCache = RemoteConfigDiskCache(application, Backend.json),
             )
 

@@ -21,6 +21,7 @@ internal class OfflineEntitlementsManager(
     private val deviceCache: DeviceCache,
     private val appConfig: AppConfig,
     private val diagnosticsTracker: DiagnosticsTracker?,
+    private val useRemoteConfigForProductEntitlementMapping: Boolean,
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
@@ -99,6 +100,10 @@ internal class OfflineEntitlementsManager(
     }
 
     fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
+        if (useRemoteConfigForProductEntitlementMapping) {
+            completion?.invoke(null)
+            return
+        }
         if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
             debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
             backend.getProductEntitlementMapping(

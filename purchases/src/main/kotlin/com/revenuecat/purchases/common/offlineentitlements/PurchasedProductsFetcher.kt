@@ -7,7 +7,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import java.util.Date
@@ -15,7 +14,7 @@ import java.util.concurrent.TimeUnit
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class PurchasedProductsFetcher(
-    private val deviceCache: DeviceCache,
+    private val productEntitlementMappingSource: ProductEntitlementMappingSource,
     private val billing: BillingAbstract,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
@@ -25,27 +24,29 @@ internal class PurchasedProductsFetcher(
         onSuccess: (List<PurchasedProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val productEntitlementMapping = deviceCache.getProductEntitlementMapping() ?: run {
-            onError(
-                PurchasesError(
-                    PurchasesErrorCode.CustomerInfoError,
-                    OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED,
-                ),
-            )
-            return
-        }
+        productEntitlementMappingSource.getProductEntitlementMapping { productEntitlementMapping ->
+            if (productEntitlementMapping == null) {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.CustomerInfoError,
+                        OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED,
+                    ),
+                )
+                return@getProductEntitlementMapping
+            }
 
-        billing.queryPurchases(
-            appUserID,
-            onSuccess = { activePurchasesByHashedToken ->
-                val activePurchases = activePurchasesByHashedToken.values
-                val purchasedProducts = activePurchases.flatMap {
-                    createPurchasedProducts(it, productEntitlementMapping)
-                }
-                onSuccess(purchasedProducts)
-            },
-            onError,
-        )
+            billing.queryPurchases(
+                appUserID,
+                onSuccess = { activePurchasesByHashedToken ->
+                    val activePurchases = activePurchasesByHashedToken.values
+                    val purchasedProducts = activePurchases.flatMap {
+                        createPurchasedProducts(it, productEntitlementMapping)
+                    }
+                    onSuccess(purchasedProducts)
+                },
+                onError,
+            )
+        }
     }
 
     private fun createPurchasedProducts(
