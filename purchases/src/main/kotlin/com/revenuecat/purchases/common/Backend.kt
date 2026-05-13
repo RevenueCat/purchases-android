@@ -20,7 +20,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.networking.RewardVerificationStatusResponse
+import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
@@ -1130,7 +1130,7 @@ internal class Backend(
         onSuccess: (RewardVerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val endpoint = Endpoint.GetRewardVerificationStatus(
+        val endpoint = Endpoint.GetRewardVerification(
             userId = appUserID,
             clientTransactionId = clientTransactionId,
         )
@@ -1162,7 +1162,7 @@ internal class Backend(
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
-                            val response = json.decodeFromString<RewardVerificationStatusResponse>(
+                            val response = json.decodeFromString<RewardVerificationResponse>(
                                 result.payload,
                             )
                             onSuccessHandler(response.toRewardVerificationResult())

@@ -98,7 +98,7 @@ class BackendGetRewardVerificationResultTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRewardVerificationStatus(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -227,7 +227,7 @@ class BackendGetRewardVerificationResultTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRewardVerificationStatus(appUserId, clientTransactionId),
+                Endpoint.GetRewardVerification(appUserId, clientTransactionId),
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = any(),

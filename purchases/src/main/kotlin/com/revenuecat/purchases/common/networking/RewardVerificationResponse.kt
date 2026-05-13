@@ -13,7 +13,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 @Serializable
-internal data class RewardVerificationStatusResponse(
+internal data class RewardVerificationResponse(
     val status: String,
     val reward: JsonElement? = null,
 ) {

@@ -13,11 +13,11 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [34])
 @OptIn(InternalRevenueCatAPI::class)
-class RewardVerificationResultResponseTest {
+class RewardVerificationResponseTest {
 
     @Test
     fun `maps pending status`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """{"status":"pending"}""",
         )
 
@@ -26,7 +26,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps verified status`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """{"status":"verified"}""",
         )
 
@@ -36,7 +36,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps failed status`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """{"status":"failed"}""",
         )
 
@@ -45,7 +45,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps unknown status`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """{"status":"something_new"}""",
         )
 
@@ -54,7 +54,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps verified virtual currency reward`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """
             {
               "status":"verified",
@@ -76,7 +76,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps verified unknown reward type as unsupported reward`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """
             {
               "status":"verified",
@@ -96,7 +96,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps malformed virtual currency reward as unsupported reward`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """
             {
               "status":"verified",
@@ -116,7 +116,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps verified null reward as no reward`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """{"status":"verified","reward":null}""",
         )
 
@@ -127,7 +127,7 @@ class RewardVerificationResultResponseTest {
 
     @Test
     fun `maps verified non object reward as unsupported reward`() {
-        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationStatusResponse>(
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """{"status":"verified","reward":"bad"}""",
         )
 
