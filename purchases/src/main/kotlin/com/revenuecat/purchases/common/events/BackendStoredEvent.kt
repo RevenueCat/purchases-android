@@ -1,8 +1,11 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
@@ -54,6 +57,13 @@ internal sealed class BackendStoredEvent : Event {
     @Serializable
     @SerialName("custom_paywall_event")
     data class CustomPaywall(val event: BackendEvent.CustomPaywall) : BackendStoredEvent()
+
+    /**
+     * Represents a stored event related to Workflows.
+     */
+    @Serializable
+    @SerialName("workflows")
+    data class Workflows(val event: BackendEvent.Workflows) : BackendStoredEvent()
 }
 
 /**
@@ -68,6 +78,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
         is BackendStoredEvent.CustomerCenter -> { this.event }
         is BackendStoredEvent.Ad -> { this.event }
         is BackendStoredEvent.CustomPaywall -> { this.event }
+        is BackendStoredEvent.Workflows -> { this.event }
     }
 }
 
@@ -342,6 +353,45 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
             timestamp = creationData.date.time,
             paywallID = data.paywallId,
             offeringID = data.offeringId,
+        ),
+    )
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun WorkflowEvent.toBackendStoredEvent(
+    appUserID: String,
+): BackendStoredEvent {
+    val eventName = when (this) {
+        is WorkflowEvent.StepStarted -> "workflows_step_started"
+        is WorkflowEvent.StepCompleted -> "workflows_step_completed"
+    }
+    val properties = when (this) {
+        is WorkflowEvent.StepStarted -> BackendEvent.Workflows.Properties(
+            workflowId = workflowId,
+            stepId = stepId,
+            traceId = traceId,
+            fromStepId = fromStepId,
+            entryReason = entryReason,
+            isFirstStep = isFirstStep,
+            isLastStep = isLastStep,
+        )
+        is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
+            workflowId = workflowId,
+            stepId = stepId,
+            traceId = traceId,
+            toStepId = toStepId,
+            isFirstStep = isFirstStep,
+            isLastStep = isLastStep,
+        )
+    }
+    return BackendStoredEvent.Workflows(
+        BackendEvent.Workflows(
+            id = creationData.id.toString(),
+            eventName = eventName,
+            timestampMs = creationData.date.time,
+            appUserID = appUserID,
+            properties = properties,
         ),
     )
 }

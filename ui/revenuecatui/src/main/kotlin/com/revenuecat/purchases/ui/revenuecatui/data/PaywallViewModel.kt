@@ -25,7 +25,9 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -203,6 +205,7 @@ internal class PaywallViewModelImpl(
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
+    private var workflowTraceId: UUID? = null
 
     private sealed interface ExitOfferData {
         val preloadRequested: Boolean
@@ -299,6 +302,9 @@ internal class PaywallViewModelImpl(
 
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
+        currentWorkflowStepId()?.let { stepId ->
+            trackWorkflowStepCompleted(stepId = stepId, toStepId = null)
+        }
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
@@ -309,6 +315,7 @@ internal class PaywallViewModelImpl(
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
         paywallPresentationData = null
+        workflowTraceId = null
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
             dismissWithExitOffering(exitOffering, result)
@@ -872,6 +879,14 @@ internal class PaywallViewModelImpl(
         }
 
         buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
+        if (_workflowState.value != null) {
+            workflowTraceId = UUID.randomUUID()
+            trackWorkflowStepStarted(
+                stepId = workflow.initialStepId,
+                fromStepId = null,
+                entryReason = "start",
+            )
+        }
         preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
 
@@ -911,6 +926,12 @@ internal class PaywallViewModelImpl(
         // sees the workflow branch and the correct step, not the single-page branch.
         // On error, clear workflowState so the UI falls through to the normal error path rather
         // than entering workflow mode with a currentStepId absent from stepStates.
+        if (newState !is PaywallState.Loaded.Components) {
+            currentWorkflowStepId()?.let { stepId ->
+                trackWorkflowStepCompleted(stepId = stepId, toStepId = null)
+            }
+            workflowTraceId = null
+        }
         _workflowState.value = if (newState is PaywallState.Loaded.Components) {
             WorkflowPaywallUiState(
                 currentStepId = step.id,
@@ -1017,6 +1038,14 @@ internal class PaywallViewModelImpl(
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.FORWARD,
         )
+        fromStepId?.let { from ->
+            trackWorkflowStepCompleted(stepId = from, toStepId = newStep.id)
+        }
+        trackWorkflowStepStarted(
+            stepId = newStep.id,
+            fromStepId = fromStepId,
+            entryReason = "forward",
+        )
     }
 
     @Suppress("ReturnCount")
@@ -1044,8 +1073,63 @@ internal class PaywallViewModelImpl(
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.BACKWARD,
         )
+        fromStepId?.let { from ->
+            trackWorkflowStepCompleted(stepId = from, toStepId = newStep.id)
+        }
+        trackWorkflowStepStarted(
+            stepId = newStep.id,
+            fromStepId = fromStepId,
+            entryReason = "back",
+        )
         return true
     }
+
+    private fun trackWorkflowStepStarted(
+        stepId: String,
+        fromStepId: String?,
+        entryReason: String,
+    ) {
+        val workflowResult = currentWorkflowResult ?: return
+        val traceId = workflowTraceId ?: return
+        val workflow = workflowResult.workflow
+        purchases.track(
+            WorkflowEvent.StepStarted(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = stepId,
+                traceId = traceId.toString(),
+                fromStepId = fromStepId,
+                entryReason = entryReason,
+                isFirstStep = stepId == workflow.initialStepId,
+                isLastStep = isTerminalStep(workflow, stepId),
+            ),
+        )
+    }
+
+    private fun trackWorkflowStepCompleted(stepId: String, toStepId: String?) {
+        val workflowResult = currentWorkflowResult ?: return
+        val traceId = workflowTraceId ?: return
+        val workflow = workflowResult.workflow
+        purchases.track(
+            WorkflowEvent.StepCompleted(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = stepId,
+                traceId = traceId.toString(),
+                toStepId = toStepId,
+                isFirstStep = stepId == workflow.initialStepId,
+                isLastStep = isTerminalStep(workflow, stepId),
+            ),
+        )
+    }
+
+    private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
+        val step = workflow.steps[stepId] ?: return false
+        return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
+    }
+
+    private fun currentWorkflowStepId(): String? =
+        _workflowState.value?.currentStepId
 
     @Suppress("ReturnCount")
     private fun validateStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): String? {

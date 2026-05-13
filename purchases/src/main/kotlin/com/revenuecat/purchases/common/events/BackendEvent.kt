@@ -207,6 +207,57 @@ internal sealed class BackendEvent : Event {
         val offeringID: String? = null,
     ) : BackendEvent()
 
+    /**
+     * Wire shape for workflow lifecycle events. Matches khepri's WorkflowsEvent schema.
+     */
+    @Serializable
+    @SerialName("workflows")
+    data class Workflows(
+        val id: String,
+        val version: Int = WORKFLOW_EVENT_SCHEMA_VERSION,
+        val type: String = WORKFLOW_EVENT_TYPE,
+        @SerialName("event_name")
+        val eventName: String,
+        @SerialName("timestamp_ms")
+        val timestampMs: Long,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        val context: Context = Context(),
+        val properties: Properties,
+    ) : BackendEvent() {
+
+        @Serializable
+        data class Context(
+            val locale: String? = null,
+        )
+
+        @Serializable
+        data class Properties(
+            @SerialName("workflow_id")
+            val workflowId: String,
+            @SerialName("step_id")
+            val stepId: String,
+            @SerialName("trace_id")
+            val traceId: String,
+            @SerialName("from_step_id")
+            val fromStepId: String? = null,
+            @SerialName("to_step_id")
+            val toStepId: String? = null,
+            @SerialName("entry_reason")
+            val entryReason: String? = null,
+            @SerialName("is_first_step")
+            val isFirstStep: Boolean? = null,
+            @SerialName("is_last_step")
+            val isLastStep: Boolean? = null,
+            @SerialName("experiment_id")
+            val experimentId: String? = null,
+            @SerialName("experiment_variant")
+            val experimentVariant: String? = null,
+            @SerialName("is_last_variant_step")
+            val isLastVariantStep: Boolean? = null,
+        )
+    }
+
     @Serializable
     @SerialName("ad")
     data class Ad(
@@ -265,5 +316,15 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the custom paywall event schema.
          */
         const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the workflow event schema.
+         */
+        const val WORKFLOW_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the type identifier for workflow events.
+         */
+        const val WORKFLOW_EVENT_TYPE = "workflows"
     }
 }
