@@ -1,9 +1,6 @@
 package com.revenuecat.purchases.admob
 
 import android.app.Activity
-import android.os.Handler
-import android.os.Looper
-import android.util.Log
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -11,36 +8,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.RewardVerificationStatus
 import com.revenuecat.purchases.awaitGetRewardVerificationStatus
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.util.UUID
-import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.jvm.JvmSynthetic
-
-private const val TAG = "PurchasesAdMob"
-private val mainHandler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getMainLooper()) }
-private val rewardVerificationScope = CoroutineScope(Dispatchers.IO)
-
-private data class RewardVerificationState(
-    val clientTransactionId: String,
-)
-
-private object RewardVerificationStateStore {
-    private val stateByAd: MutableMap<Any, RewardVerificationState> = WeakHashMap()
-
-    @Synchronized
-    fun set(ad: Any, state: RewardVerificationState) {
-        stateByAd[ad] = state
-    }
-
-    @Synchronized
-    fun get(ad: Any): RewardVerificationState? {
-        return stateByAd[ad]
-    }
-}
 
 /**
  * Enables RevenueCat reward verification for this ad.
@@ -80,17 +50,17 @@ public fun RewardedAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    val state = RewardVerificationStateStore.get(this)
-    warnAndAssertIfMissingVerificationState(state)
+    val clientTransactionId = rewardVerificationClientTransactionId(this)
+    warnAndAssertIfMissingVerificationState(clientTransactionId)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
-        deliverOnMain(rewardVerificationStarted)
-        if (state == null) {
+        deliverOnMainIfPresent(rewardVerificationStarted)
+        if (clientTransactionId == null) {
             deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
             fetchOneShotVerificationResult(
-                clientTransactionId = state.clientTransactionId,
+                clientTransactionId = clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,
             )
@@ -114,62 +84,21 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    val state = RewardVerificationStateStore.get(this)
-    warnAndAssertIfMissingVerificationState(state)
+    val clientTransactionId = rewardVerificationClientTransactionId(this)
+    warnAndAssertIfMissingVerificationState(clientTransactionId)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
-        deliverOnMain(rewardVerificationStarted)
-        if (state == null) {
+        deliverOnMainIfPresent(rewardVerificationStarted)
+        if (clientTransactionId == null) {
             deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
             fetchOneShotVerificationResult(
-                clientTransactionId = state.clientTransactionId,
+                clientTransactionId = clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,
             )
         }
-    }
-}
-
-private fun warnAndAssertIfMissingVerificationState(state: RewardVerificationState?) {
-    if (state != null) return
-
-    Log.w(
-        TAG,
-        "Reward verification callback requires enableRewardVerification() before show().",
-    )
-    assert(state != null) {
-        "Call enableRewardVerification() before using reward verification show overloads."
-    }
-}
-
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-private fun enableRewardVerificationInternal(
-    ad: Any,
-) {
-    if (!Purchases.isConfigured) {
-        Log.w(
-            TAG,
-            "Purchases is not configured. Call Purchases.configure() before enabling reward verification.",
-        )
-        return
-    }
-
-    val clientTransactionId = UUID.randomUUID().toString()
-    RewardVerificationStateStore.set(ad, RewardVerificationState(clientTransactionId))
-}
-
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-private fun fetchOneShotVerificationResult(
-    clientTransactionId: String,
-    completionDelivered: AtomicBoolean,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
-) {
-    rewardVerificationScope.launch {
-        val result = performOneShotVerification(clientTransactionId)
-
-        deliverResultOnce(completionDelivered, rewardVerificationResult, result)
     }
 }
 
@@ -201,26 +130,3 @@ internal fun mapStatusToResult(status: RewardVerificationStatus): RewardVerifica
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-private fun deliverResultOnce(
-    completionDelivered: AtomicBoolean,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
-    result: RewardVerificationResult,
-) {
-    if (!completionDelivered.compareAndSet(false, true)) {
-        return
-    }
-
-    deliverOnMain {
-        rewardVerificationResult(result)
-    }
-}
-
-private fun deliverOnMain(block: (() -> Unit)?) {
-    if (block == null) return
-    if (Looper.myLooper() == Looper.getMainLooper()) {
-        block()
-    } else {
-        mainHandler.post { block() }
-    }
-}
