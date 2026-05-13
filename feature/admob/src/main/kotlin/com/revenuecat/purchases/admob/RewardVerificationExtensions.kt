@@ -4,11 +4,12 @@ import android.app.Activity
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.RewardVerificationStatus
-import com.revenuecat.purchases.awaitGetRewardVerificationStatus
-import kotlinx.coroutines.CancellationException
+import com.revenuecat.purchases.admob.reward_verification.dispatchOneShotVerificationResult
+import com.revenuecat.purchases.admob.reward_verification.deliverOnMainIfPresent
+import com.revenuecat.purchases.admob.reward_verification.deliverResultOnce
+import com.revenuecat.purchases.admob.reward_verification.enableRewardVerificationInternal
+import com.revenuecat.purchases.admob.reward_verification.verificationStateForAd
+import com.revenuecat.purchases.admob.reward_verification.warnAndAssertIfMissingState
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.jvm.JvmSynthetic
 
@@ -50,17 +51,17 @@ public fun RewardedAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    val clientTransactionId = rewardVerificationClientTransactionId(this)
-    warnAndAssertIfMissingVerificationState(clientTransactionId)
+    val state = verificationStateForAd(this)
+    warnAndAssertIfMissingState(state)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
         deliverOnMainIfPresent(rewardVerificationStarted)
-        if (clientTransactionId == null) {
+        if (state == null) {
             deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
-            fetchOneShotVerificationResult(
-                clientTransactionId = clientTransactionId,
+            dispatchOneShotVerificationResult(
+                clientTransactionId = state.clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,
             )
@@ -84,49 +85,21 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    val clientTransactionId = rewardVerificationClientTransactionId(this)
-    warnAndAssertIfMissingVerificationState(clientTransactionId)
+    val state = verificationStateForAd(this)
+    warnAndAssertIfMissingState(state)
     val completionDelivered = AtomicBoolean(false)
 
     this.show(activity, placement) {
         deliverOnMainIfPresent(rewardVerificationStarted)
-        if (clientTransactionId == null) {
+        if (state == null) {
             deliverResultOnce(completionDelivered, rewardVerificationResult, RewardVerificationResult.failed)
         } else {
-            fetchOneShotVerificationResult(
-                clientTransactionId = clientTransactionId,
+            dispatchOneShotVerificationResult(
+                clientTransactionId = state.clientTransactionId,
                 completionDelivered = completionDelivered,
                 rewardVerificationResult = rewardVerificationResult,
             )
         }
-    }
-}
-
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-internal suspend fun performOneShotVerification(
-    clientTransactionId: String,
-    fetchStatus: suspend (String) -> RewardVerificationStatus = {
-        Purchases.sharedInstance.awaitGetRewardVerificationStatus(clientTransactionId = it)
-    },
-): RewardVerificationResult {
-    return try {
-        mapStatusToResult(fetchStatus(clientTransactionId))
-    } catch (e: CancellationException) {
-        throw e
-    } catch (_: Exception) {
-        RewardVerificationResult.failed
-    }
-}
-
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-internal fun mapStatusToResult(status: RewardVerificationStatus): RewardVerificationResult {
-    return when (status) {
-        RewardVerificationStatus.VERIFIED -> RewardVerificationResult.verified(VerifiedReward.NoReward)
-        // Polling/retry orchestration lands in a follow-up PR; one-shot non-terminal/unknown statuses fail for now.
-        RewardVerificationStatus.PENDING,
-        RewardVerificationStatus.UNKNOWN,
-        RewardVerificationStatus.FAILED,
-        -> RewardVerificationResult.failed
     }
 }
 

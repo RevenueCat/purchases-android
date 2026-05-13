@@ -1,24 +1,25 @@
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.admob.reward_verification
 
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.admob.RewardVerificationResult
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-private val rewardVerificationMainHandler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getMainLooper()) }
-private val rewardVerificationScope = CoroutineScope(Dispatchers.IO)
+private val mainHandler by lazy(LazyThreadSafetyMode.NONE) { Handler(Looper.getMainLooper()) }
+private val scope = CoroutineScope(Dispatchers.IO)
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-internal fun fetchOneShotVerificationResult(
+internal fun dispatchOneShotVerificationResult(
     clientTransactionId: String,
     completionDelivered: AtomicBoolean,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    rewardVerificationScope.launch {
+    scope.launch {
         val result = performOneShotVerification(clientTransactionId)
         deliverResultOnce(completionDelivered, rewardVerificationResult, result)
     }
@@ -44,6 +45,6 @@ internal fun deliverOnMainIfPresent(block: (() -> Unit)?) {
     if (Looper.myLooper() == Looper.getMainLooper()) {
         block()
     } else {
-        rewardVerificationMainHandler.post { block() }
+        mainHandler.post { block() }
     }
 }
