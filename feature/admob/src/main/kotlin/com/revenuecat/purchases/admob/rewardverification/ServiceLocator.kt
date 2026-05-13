@@ -27,8 +27,8 @@ internal class RewardVerificationServiceLocator(
 
     @Synchronized
     fun registerHook(hook: RewardVerificationLifecycleHook) {
-        ensureRegistered()
         hooks.add(hook)
+        ensureRegistered()
     }
 
     @Synchronized
