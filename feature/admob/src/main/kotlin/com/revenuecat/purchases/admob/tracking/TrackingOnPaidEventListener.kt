@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.admob.tracking
 
 import com.google.android.gms.ads.AdValue
@@ -19,6 +17,7 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
  * times on the same [com.google.android.gms.ads.AdView], preventing
  * double-tracking.
  */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingOnPaidEventListener(
     internal val delegate: OnPaidEventListener?,
     private val adFormat: AdFormat,
