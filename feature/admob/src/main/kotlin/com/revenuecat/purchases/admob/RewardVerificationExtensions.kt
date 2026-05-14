@@ -32,7 +32,7 @@ public fun RewardedInterstitialAd.enableRewardVerification() {
 /**
  * Shows a rewarded ad with reward-verification callbacks.
  *
- * [rewardVerificationStarted] is optional and [rewardVerificationResult] is required.
+ * [rewardVerificationStarted] is optional and [rewardVerificationCompleted] is required.
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
@@ -42,7 +42,7 @@ public fun RewardedAd.show(
     activity: Activity,
     placement: String? = null,
     rewardVerificationStarted: (() -> Unit)? = null,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
+    rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
 ) {
     val ad = this
 
@@ -50,7 +50,7 @@ public fun RewardedAd.show(
         RewardVerificationManager.handleRewardEarned(
             onAd = ad,
             rewardVerificationStarted = rewardVerificationStarted,
-            rewardVerificationResult = rewardVerificationResult,
+            rewardVerificationCompleted = rewardVerificationCompleted,
         )
     }
 }
@@ -58,7 +58,7 @@ public fun RewardedAd.show(
 /**
  * Shows a rewarded interstitial ad with reward-verification callbacks.
  *
- * [rewardVerificationStarted] is optional and [rewardVerificationResult] is required.
+ * [rewardVerificationStarted] is optional and [rewardVerificationCompleted] is required.
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
@@ -68,7 +68,7 @@ public fun RewardedInterstitialAd.show(
     activity: Activity,
     placement: String? = null,
     rewardVerificationStarted: (() -> Unit)? = null,
-    rewardVerificationResult: (RewardVerificationResult) -> Unit,
+    rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
 ) {
     val ad = this
 
@@ -76,7 +76,7 @@ public fun RewardedInterstitialAd.show(
         RewardVerificationManager.handleRewardEarned(
             onAd = ad,
             rewardVerificationStarted = rewardVerificationStarted,
-            rewardVerificationResult = rewardVerificationResult,
+            rewardVerificationCompleted = rewardVerificationCompleted,
         )
     }
 }
