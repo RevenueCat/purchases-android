@@ -1147,5 +1147,42 @@ class PaywallViewModelWorkflowTest {
         assertThat(completed[0].toStepId).isNull()
     }
 
+    @Test
+    fun `StepStarted event carries non-empty screenType when step has screenType set`() {
+        val stepWithScreenType = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = screenId1,
+            screenType = listOf("initial", "paywall"),
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+        )
+        val workflowWithScreenType = workflow.copy(
+            steps = mapOf("step-1" to stepWithScreenType, "step-2" to step2),
+        )
+        val fetchResultWithScreenType = WorkflowDataResult(
+            workflow = workflowWithScreenType,
+            enrolledVariants = null,
+        )
+
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResultWithScreenType, testOfferings, null)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
+        assertThat(started).hasSize(1)
+        assertThat(started.first().stepId).isEqualTo("step-1")
+        assertThat(started.first().screenType).isEqualTo(listOf("initial", "paywall"))
+    }
+
     // endregion
 }

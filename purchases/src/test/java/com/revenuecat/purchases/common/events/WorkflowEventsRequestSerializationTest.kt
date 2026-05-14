@@ -79,4 +79,33 @@ class WorkflowEventsRequestSerializationTest {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
         assertThat(requestString).doesNotContain("trace_id")
     }
+
+    @Test
+    fun `screen_type included in JSON when non-empty`() {
+        val requestWithScreenType = EventsRequest(
+            listOf(
+                BackendEvent.Workflows(
+                    id = "evt_id",
+                    eventName = "workflows_step_started",
+                    timestampMs = 123456789L,
+                    appUserID = "appUserID",
+                    context = BackendEvent.Workflows.Context(locale = "en_US"),
+                    properties = BackendEvent.Workflows.Properties(
+                        workflowId = "wfl_abc",
+                        stepId = "step-1",
+                        workflowType = "paywall",
+                        stepType = "screen",
+                        entryReason = "start",
+                        isFirstStep = true,
+                        isLastStep = false,
+                        screenType = listOf("initial", "paywall"),
+                    ),
+                ),
+            ),
+        )
+
+        val requestString = JsonProvider.defaultJson.encodeToString(requestWithScreenType)
+
+        assertThat(requestString).contains("\"screen_type\":[\"initial\",\"paywall\"]")
+    }
 }
