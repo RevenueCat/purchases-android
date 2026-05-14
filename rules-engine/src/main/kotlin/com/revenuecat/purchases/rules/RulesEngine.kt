@@ -12,5 +12,3 @@ package com.revenuecat.purchases.rules
  */
 @InternalRulesEngineAPI
 public object RulesEngine
-
-public fun leakedPublicApi(): Int = 0
