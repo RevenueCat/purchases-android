@@ -530,6 +530,9 @@ class OfferingsManagerTest {
 
     @Test
     fun `getOfferings fetches workflows for all offering identifiers before calling onSuccess`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
         val fetchedIdentifiers = mutableListOf<String>()
         every {
             mockWorkflowManager.fetchWorkflowsForAllOfferings(any(), any(), any(), any())
@@ -548,23 +551,10 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `getOfferings calls onSuccess even when workflow fetches complete with errors`() {
-        every {
-            mockWorkflowManager.fetchWorkflowsForAllOfferings(any(), any(), any(), any())
-        } answers {
-            lastArg<() -> Unit>().invoke()
-        }
-        var receivedOfferings: Offerings? = null
-        offeringsManager.getOfferings(
-            appUserID = appUserId,
-            appInBackground = false,
-            onSuccess = { receivedOfferings = it },
-        )
-        assertNotNull(receivedOfferings)
-    }
-
-    @Test
     fun `getOfferings does not call onSuccess until workflow fetches complete`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
         var capturedOnComplete: (() -> Unit)? = null
         every {
             mockWorkflowManager.fetchWorkflowsForAllOfferings(any(), any(), any(), any())
@@ -578,8 +568,31 @@ class OfferingsManagerTest {
             onSuccess = { receivedOfferings = it },
         )
         assertNull(receivedOfferings) // not yet — workflow fetch hasn't completed
-        capturedOnComplete?.invoke()
+        capturedOnComplete!!.invoke()
         assertNotNull(receivedOfferings) // now it fires
+    }
+
+    @Test
+    fun `getOfferings calls onSuccess when workflowManager is null`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+        val managerWithoutWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = null,
+        )
+        var receivedOfferings: Offerings? = null
+        managerWithoutWorkflow.getOfferings(
+            appUserID = appUserId,
+            appInBackground = false,
+            onSuccess = { receivedOfferings = it },
+        )
+        assertNotNull(receivedOfferings)
     }
 
     // endregion pre download offering images

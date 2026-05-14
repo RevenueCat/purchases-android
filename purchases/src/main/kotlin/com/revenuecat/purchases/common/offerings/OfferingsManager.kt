@@ -39,6 +39,7 @@ internal class OfferingsManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    // Null when multipage paywall support is not configured.
     private val workflowManager: WorkflowManager? = null,
 ) {
 
@@ -154,6 +155,8 @@ internal class OfferingsManager(
             null,
             null,
         )
+        // Cached offerings were already populated by a prior blocking getOfferings() call, so workflow
+        // data is already present in the workflow cache. No need to block on workflow fetches here.
         dispatch { onSuccess?.invoke(cachedOfferings) }
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
