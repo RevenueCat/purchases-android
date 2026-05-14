@@ -14,9 +14,11 @@ import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
@@ -39,6 +41,13 @@ class WorkflowManagerTest {
             workflowAssetPreDownloader = mockAssetPreDownloader,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
         )
+        every {
+            mockBackend.getWorkflow(any(), any(), any(), any(), any())
+        } answers {
+            arg<(PurchasesError) -> Unit>(4).invoke(
+                PurchasesError(PurchasesErrorCode.UnknownError, "default stub"),
+            )
+        }
     }
 
     @After
@@ -180,6 +189,75 @@ class WorkflowManagerTest {
             onError = { fail("pre-download failure must not prevent delivering the result") },
         )
         assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `fetchWorkflowsForAllOfferings fetches workflow for each offering identifier`() = runTest {
+        var completeCalled = false
+        workflowManager.fetchWorkflowsForAllOfferings(
+            appUserID = "user1",
+            offeringIdentifiers = listOf("offering_a", "offering_b"),
+            appInBackground = false,
+        ) {
+            completeCalled = true
+        }
+        testScheduler.advanceUntilIdle()
+        assertTrue(completeCalled)
+        verify { mockBackend.getWorkflow(any(), "offering_a", any(), any(), any()) }
+        verify { mockBackend.getWorkflow(any(), "offering_b", any(), any(), any()) }
+    }
+
+    @Test
+    fun `fetchWorkflowsForAllOfferings calls onComplete even when one fetch fails`() = runTest {
+        val goodResponse = WorkflowDetailResponse(
+            action = WorkflowResponseAction.INLINE,
+            data = mockk(),
+        )
+        val goodResult = WorkflowDataResult(workflow = goodResponse.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(goodResponse) } returns goodResult
+
+        val goodSuccessSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(any(), "offering_good", any(), onSuccess = capture(goodSuccessSlot), onError = any())
+        } answers {
+            goodSuccessSlot.captured(goodResponse)
+        }
+
+        every {
+            mockBackend.getWorkflow(any(), "offering_bad", any(), any(), any())
+        } answers {
+            arg<(PurchasesError) -> Unit>(4).invoke(
+                PurchasesError(PurchasesErrorCode.NetworkError, "fail"),
+            )
+        }
+
+        var completeCalled = false
+        workflowManager.fetchWorkflowsForAllOfferings(
+            appUserID = "user1",
+            offeringIdentifiers = listOf("offering_good", "offering_bad"),
+            appInBackground = false,
+        ) {
+            completeCalled = true
+        }
+        testScheduler.advanceUntilIdle()
+        assertTrue(completeCalled)
+        verify { mockBackend.getWorkflow(any(), "offering_good", any(), any(), any()) }
+        verify { mockBackend.getWorkflow(any(), "offering_bad", any(), any(), any()) }
+    }
+
+    @Test
+    fun `fetchWorkflowsForAllOfferings calls onComplete immediately when list is empty`() = runTest {
+        var completeCalled = false
+        workflowManager.fetchWorkflowsForAllOfferings(
+            appUserID = "user1",
+            offeringIdentifiers = emptyList(),
+            appInBackground = false,
+        ) {
+            completeCalled = true
+        }
+        testScheduler.advanceUntilIdle()
+        assertTrue(completeCalled)
+        verify(exactly = 0) { mockBackend.getWorkflow(any(), any(), any(), any(), any()) }
     }
 
     @Test
