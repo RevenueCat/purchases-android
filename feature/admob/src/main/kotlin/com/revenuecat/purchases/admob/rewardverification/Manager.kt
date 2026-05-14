@@ -53,26 +53,26 @@ internal object RewardVerificationManager {
     fun handleRewardEarned(
         onAd: Any,
         rewardVerificationStarted: (() -> Unit)?,
-        rewardVerificationResult: (RewardVerificationResult) -> Unit,
+        rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
         runtime.handleRewardEarned(
             onAd = onAd,
             rewardVerificationStarted = rewardVerificationStarted,
-            rewardVerificationResult = rewardVerificationResult,
+            rewardVerificationCompleted = rewardVerificationCompleted,
         )
     }
 
-    private fun deliverStarted(block: (() -> Unit)?) {
+    private fun notifyStarted(block: (() -> Unit)?) {
         runOnMainIfPresent(mainHandler, block)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    private fun deliverResult(
+    private fun notifyCompleted(
         result: RewardVerificationResult,
-        rewardVerificationResult: (RewardVerificationResult) -> Unit,
+        rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
         runOnMainIfPresent(mainHandler) {
-            rewardVerificationResult(result)
+            rewardVerificationCompleted(result)
         }
     }
 
@@ -104,27 +104,27 @@ internal object RewardVerificationManager {
         fun handleRewardEarned(
             onAd: Any,
             rewardVerificationStarted: (() -> Unit)?,
-            rewardVerificationResult: (RewardVerificationResult) -> Unit,
+            rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
         ) {
             val clientTransactionId = removeClientTransactionId(onAd)
             warnAndAssertIfMissingClientTransactionId(clientTransactionId)
 
-            deliverStarted(rewardVerificationStarted)
+            notifyStarted(rewardVerificationStarted)
 
             if (clientTransactionId == null) {
-                deliverResult(RewardVerificationResult.failed, rewardVerificationResult)
+                notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
                 return
             }
 
             val activeScope = synchronized(this) { verificationScope }
             if (activeScope == null) {
-                deliverResult(RewardVerificationResult.failed, rewardVerificationResult)
+                notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
                 return
             }
 
             activeScope.launch {
                 val result = Poller.poll(clientTransactionId)
-                deliverResult(result, rewardVerificationResult)
+                notifyCompleted(result, rewardVerificationCompleted)
             }
         }
 
