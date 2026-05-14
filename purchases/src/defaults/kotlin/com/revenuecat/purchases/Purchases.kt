@@ -644,6 +644,23 @@ public class Purchases internal constructor(
     }
 
     /**
+     * Opens the subscription management page for the current user.
+     *
+     * Uses [CustomerInfo.managementURL] if available, otherwise falls back to the store's default
+     * subscription management URL.
+     *
+     * @param context Android context used to start the browser intent.
+     * @param callback Optional [ManageSubscriptionsCallback] called on success or error.
+     */
+    @JvmOverloads
+    public fun showManageSubscriptions(
+        context: Context,
+        callback: ManageSubscriptionsCallback? = null,
+    ) {
+        purchasesOrchestrator.showManageSubscriptions(context, callback)
+    }
+
+    /**
      * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
