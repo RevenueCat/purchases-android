@@ -567,6 +567,7 @@ internal class PurchasesOrchestrator(
         onError: (PurchasesError) -> Unit,
     ) {
         getOfferings(object : ReceiveOfferingsCallback {
+            @Suppress("DEPRECATION")
             override fun onReceived(offerings: Offerings) = onSuccess(offerings.current)
             override fun onError(error: PurchasesError) = onError(error)
         })

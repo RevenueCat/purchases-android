@@ -22,6 +22,7 @@ public fun CustomerCenterConfigData.Screen.resolveOffering(
     purchases.getOfferingsWith(
         onError = onError,
         onSuccess = { offerings ->
+            @Suppress("DEPRECATION")
             val resolvedOffering = when (screenOffering.type) {
                 CustomerCenterConfigData.ScreenOffering.ScreenOfferingType.CURRENT -> {
                     offerings.current

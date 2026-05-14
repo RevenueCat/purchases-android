@@ -45,6 +45,7 @@ internal class OfferingsManager(
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
 
+    @Suppress("DEPRECATION")
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsCache.cachedOfferings?.current?.identifier
 
@@ -261,6 +262,7 @@ internal class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             },
             onSuccess = { offeringsResultData ->
+                @Suppress("DEPRECATION")
                 offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
                 }
