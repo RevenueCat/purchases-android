@@ -33,14 +33,12 @@ internal class RewardVerificationServiceLocator(
         hooks.remove(hook)
     }
 
-    @Synchronized
     override fun onPurchasesConfigured(@Suppress("UnusedParameter") purchases: Purchases) {
         snapshotHooks().forEach { hook ->
             hook.onPurchasesConfigured(purchases)
         }
     }
 
-    @Synchronized
     override fun onPurchasesClosed(@Suppress("UnusedParameter") purchases: Purchases) {
         snapshotHooks().forEach { hook ->
             hook.onPurchasesClosed(purchases)
@@ -55,7 +53,6 @@ internal class RewardVerificationServiceLocator(
         isRegistered = true
     }
 
-    private fun snapshotHooks(): List<RewardVerificationLifecycleHook> {
-        return hooks.toList()
-    }
+    @Synchronized
+    private fun snapshotHooks(): List<RewardVerificationLifecycleHook> = hooks.toList()
 }

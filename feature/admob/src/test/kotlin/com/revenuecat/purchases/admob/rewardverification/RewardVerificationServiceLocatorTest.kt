@@ -8,6 +8,10 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -54,6 +58,45 @@ internal class RewardVerificationServiceLocatorTest {
         verify(exactly = 1) {
             hook.onPurchasesConfigured(purchases)
             hook.onPurchasesClosed(purchases)
+        }
+    }
+
+    @Test
+    fun `hook callbacks can mutate locator without deadlock and use a hook snapshot`() {
+        val listenerRegistrar = mockk<RewardVerificationListenerRegistrar>()
+        every { listenerRegistrar.register(any()) } just Runs
+        val locator = RewardVerificationServiceLocator(listenerRegistrar)
+        val purchases = mockk<Purchases>(relaxed = true)
+        val lateHook = mockk<RewardVerificationLifecycleHook>(relaxed = true)
+        val callbackCompleted = CountDownLatch(1)
+        val executor = Executors.newSingleThreadExecutor()
+
+        val reentrantHook = object : RewardVerificationLifecycleHook {
+            override fun onPurchasesConfigured(purchases: Purchases) {
+                val currentHook = this
+                executor.submit<Unit> {
+                    locator.unregisterHook(currentHook)
+                    locator.registerHook(lateHook)
+                }.get(1, TimeUnit.SECONDS)
+                callbackCompleted.countDown()
+            }
+
+            override fun onPurchasesClosed(purchases: Purchases) = Unit
+        }
+
+        try {
+            locator.registerHook(reentrantHook)
+
+            locator.onPurchasesConfigured(purchases)
+
+            assertTrue(callbackCompleted.await(1, TimeUnit.SECONDS))
+            verify(exactly = 0) { lateHook.onPurchasesConfigured(any()) }
+
+            locator.onPurchasesConfigured(purchases)
+
+            verify(exactly = 1) { lateHook.onPurchasesConfigured(purchases) }
+        } finally {
+            executor.shutdownNow()
         }
     }
 }
