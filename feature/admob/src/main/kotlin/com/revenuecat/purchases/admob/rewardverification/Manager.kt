@@ -38,11 +38,11 @@ internal object RewardVerificationManager {
             return
         }
 
-        val didStoreState = runtime.setState(
+        val didStoreClientTransactionId = runtime.setClientTransactionId(
             ad = onAd,
-            state = State(clientTransactionId = UUID.randomUUID().toString()),
+            clientTransactionId = UUID.randomUUID().toString(),
         )
-        if (!didStoreState) {
+        if (!didStoreClientTransactionId) {
             Log.w(
                 TAG,
                 "Reward verification setup is not ready. Try enabling reward verification after Purchases is configured.",
@@ -82,8 +82,8 @@ internal object RewardVerificationManager {
         }
     }
 
-    private fun warnAndAssertIfMissingState(state: State?) {
-        if (state != null) return
+    private fun warnAndAssertIfMissingClientTransactionId(clientTransactionId: String?) {
+        if (clientTransactionId != null) return
 
         Log.w(
             TAG,
@@ -100,9 +100,9 @@ internal object RewardVerificationManager {
         private var verificationScope: CoroutineScope? = null
 
         @Synchronized
-        fun setState(ad: Any, state: State): Boolean {
+        fun setClientTransactionId(ad: Any, clientTransactionId: String): Boolean {
             val store = stateStore ?: return false
-            store.set(ad, state)
+            store.set(ad, clientTransactionId)
             return true
         }
 
@@ -112,8 +112,8 @@ internal object RewardVerificationManager {
             rewardVerificationStarted: (() -> Unit)?,
             rewardVerificationResult: (RewardVerificationResult) -> Unit,
         ) {
-            val state = removeState(onAd)
-            warnAndAssertIfMissingState(state)
+            val clientTransactionId = removeClientTransactionId(onAd)
+            warnAndAssertIfMissingClientTransactionId(clientTransactionId)
 
             deliverStarted(rewardVerificationStarted)
 
@@ -123,12 +123,12 @@ internal object RewardVerificationManager {
                 return
             }
 
-            if (state == null) {
+            if (clientTransactionId == null) {
                 deliverFailed(rewardVerificationResult)
             } else {
                 verifyReward(
                     scope = activeScope,
-                    clientTransactionId = state.clientTransactionId,
+                    clientTransactionId = clientTransactionId,
                     rewardVerificationResult = rewardVerificationResult,
                 )
             }
@@ -147,7 +147,7 @@ internal object RewardVerificationManager {
         }
 
         @Synchronized
-        private fun removeState(ad: Any): State? {
+        private fun removeClientTransactionId(ad: Any): String? {
             return stateStore?.remove(ad)
         }
 
@@ -171,21 +171,21 @@ internal object RewardVerificationManager {
     }
 
     private class StateStore {
-        private val stateByAd: MutableMap<Any, State> = WeakHashMap()
+        private val clientTransactionIdByAd: MutableMap<Any, String> = WeakHashMap()
 
         @Synchronized
-        fun set(ad: Any, state: State) {
-            stateByAd[ad] = state
+        fun set(ad: Any, clientTransactionId: String) {
+            clientTransactionIdByAd[ad] = clientTransactionId
         }
 
         @Synchronized
-        fun remove(ad: Any): State? {
-            return stateByAd.remove(ad)
+        fun remove(ad: Any): String? {
+            return clientTransactionIdByAd.remove(ad)
         }
 
         @Synchronized
         fun clear() {
-            stateByAd.clear()
+            clientTransactionIdByAd.clear()
         }
     }
 }
