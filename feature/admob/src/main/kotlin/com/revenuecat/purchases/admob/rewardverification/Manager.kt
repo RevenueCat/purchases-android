@@ -8,6 +8,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -117,15 +118,21 @@ internal object RewardVerificationManager {
                 return
             }
 
-            val activeScope = synchronized(this) { verificationScope }
-            if (activeScope == null) {
+            val verificationTask = synchronized(this) {
+                verificationScope?.launch {
+                    val result = Poller.poll(clientTransactionId)
+                    notifyCompleted(result, rewardVerificationCompleted)
+                }
+            }
+            if (verificationTask == null) {
                 notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
                 return
             }
 
-            activeScope.launch {
-                val result = Poller.poll(clientTransactionId)
-                notifyCompleted(result, rewardVerificationCompleted)
+            verificationTask.invokeOnCompletion { cause ->
+                if (cause is CancellationException) {
+                    notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
+                }
             }
         }
 
