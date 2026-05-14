@@ -284,3 +284,43 @@ public suspend fun Purchases.awaitCreateSupportTicket(email: String, description
         )
     }
 }
+
+/**
+ * Fetches offerings and returns the current [Offering], or null if none is configured.
+ *
+ * Coroutine-friendly version of [Purchases.getCurrentOfferingWith].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error fetching offerings.
+ * @return The current [Offering], or null if none is configured.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitCurrentOffering(): Offering? {
+    return suspendCancellableCoroutine { continuation ->
+        getCurrentOfferingWith(
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Fetches offerings and returns the [Offering] with the given [id], or null if not found.
+ *
+ * Coroutine-friendly version of [Purchases.getOfferingWith].
+ *
+ * @param id The identifier of the offering to fetch.
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error fetching offerings.
+ * @return The [Offering] with the given [id], or null if not found.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitOffering(id: String): Offering? {
+    return suspendCancellableCoroutine { continuation ->
+        getOfferingWith(
+            id = id,
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
+        )
+    }
+}
