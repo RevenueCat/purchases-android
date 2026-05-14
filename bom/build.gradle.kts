@@ -30,9 +30,6 @@ dependencies {
         }
         api(project(":feature:admob"))
         api(project(":codegen"))
-        // `:rules-engine` is intentionally excluded: the module is a skeleton
-        // with no functionality and no consumer, and it is not published yet
-        // (see `ConfigureConditionalPublishing`). Re-add this entry alongside
-        // the PR that flips publishing on.
+        api(project(":rules-engine"))
     }
 }
