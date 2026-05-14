@@ -1,6 +1,3 @@
-import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-import com.vanniktech.maven.publish.MavenPublishBaseExtension
-
 plugins {
     alias(libs.plugins.revenuecat.public.library)
 }
@@ -21,22 +18,11 @@ android {
     }
 }
 
-// `configureConditionalPublishing` in the `revenuecat-public-library` convention
-// plugin skips applying `com.vanniktech.maven.publish` when
-// `ANDROID_VARIANT_TO_PUBLISH` contains `customEntitlementComputation` (this
-// module has no such variant). Gate the configuration on the plugin actually
-// being applied so the build still works for that publish path.
-plugins.withId("com.vanniktech.maven.publish") {
-    extensions.configure<MavenPublishBaseExtension> {
-        configure(
-            AndroidSingleVariantLibrary(
-                variant = "defaultsRelease",
-                sourcesJar = true,
-                publishJavadocJar = true,
-            ),
-        )
-    }
-}
+// Maven publishing is intentionally not configured for this module yet — see
+// the `:rules-engine` short-circuit in `ConfigureConditionalPublishing` in the
+// `revenuecat-public-library` convention plugin. The publish wiring (and the
+// `purchases-rules-engine` Maven Central artifact) will be enabled once a
+// consumer of the rules engine ships, to avoid publishing an empty artifact.
 
 // All public symbols in `:rules-engine` are gated by `@InternalRulesEngineAPI`,
 // so the module has nothing to document for SDK consumers. Suppress it from the
