@@ -917,7 +917,7 @@ internal class PaywallViewModelImpl(
         buildStateFromStep(currentStep, workflow, offerings, presentedOfferingContext)
         if (_workflowState.value != null) {
             trackWorkflowStepStarted(
-                step = initialStep,
+                step = currentStep,
                 fromStepId = null,
                 entryReason = "start",
             )
