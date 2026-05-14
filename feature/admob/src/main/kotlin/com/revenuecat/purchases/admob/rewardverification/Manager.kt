@@ -105,7 +105,7 @@ internal object RewardVerificationManager {
             return true
         }
 
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
         fun handleRewardEarned(
             onAd: Any,
             rewardVerificationStarted: (() -> Unit)?,
@@ -127,20 +127,7 @@ internal object RewardVerificationManager {
                 return
             }
 
-            verifyReward(
-                scope = activeScope,
-                clientTransactionId = clientTransactionId,
-                rewardVerificationResult = rewardVerificationResult,
-            )
-        }
-
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-        private fun verifyReward(
-            scope: CoroutineScope,
-            clientTransactionId: String,
-            rewardVerificationResult: (RewardVerificationResult) -> Unit,
-        ) {
-            scope.launch {
+            activeScope.launch {
                 val result = Poller.poll(clientTransactionId)
                 deliverResult(result, rewardVerificationResult)
             }
