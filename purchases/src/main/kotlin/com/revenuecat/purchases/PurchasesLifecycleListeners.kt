@@ -2,6 +2,19 @@ package com.revenuecat.purchases
 
 private val defaultLifecycleEventBus = PurchasesLifecycleEventBus()
 
+@OptIn(InternalRevenueCatAPI::class)
+public object PurchasesLifecycle {
+    @JvmSynthetic
+    public fun register(listener: PurchasesLifecycleListener) {
+        defaultLifecycleEventBus.register(listener)
+    }
+
+    @JvmSynthetic
+    public fun unregister(listener: PurchasesLifecycleListener) {
+        defaultLifecycleEventBus.unregister(listener)
+    }
+}
+
 internal object PurchasesLifecycleListeners {
     @OptIn(InternalRevenueCatAPI::class)
     fun default(): PurchasesLifecycleListener = PurchasesLifecycleEventBusForwarder(defaultLifecycleEventBus)

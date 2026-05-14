@@ -2,11 +2,14 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesLifecycle
 import io.mockk.Runs
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
@@ -16,6 +19,24 @@ import org.junit.Test
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationServiceLocatorTest {
+
+    @Test
+    fun `default registrar uses purchases lifecycle registration`() {
+        mockkObject(PurchasesLifecycle)
+        every { PurchasesLifecycle.register(any()) } just Runs
+        val locator = RewardVerificationServiceLocator()
+        val hook = mockk<RewardVerificationLifecycleHook>(relaxed = true)
+
+        try {
+            locator.registerHook(hook)
+
+            verify(exactly = 1) {
+                PurchasesLifecycle.register(locator)
+            }
+        } finally {
+            unmockkObject(PurchasesLifecycle)
+        }
+    }
 
     @Test
     fun `registerHook registers locator listener only once`() {
