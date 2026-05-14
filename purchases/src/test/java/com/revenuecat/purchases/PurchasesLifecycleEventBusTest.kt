@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.junit.Test
 
 internal class PurchasesLifecycleEventBusTest {
@@ -56,6 +57,42 @@ internal class PurchasesLifecycleEventBusTest {
         eventBus.unregister(listener)
         eventBus.onConfigured(purchases)
         eventBus.onClosed(purchases)
+
+        verify(exactly = 0) {
+            listener.onPurchasesConfigured(purchases)
+            listener.onPurchasesClosed(purchases)
+        }
+    }
+
+    @Test
+    fun `onConfigured then register then onClosed notifies listener in order`() {
+        val eventBus = PurchasesLifecycleEventBus()
+        val purchases = mockk<Purchases>(relaxed = true)
+        val listener = mockk<PurchasesLifecycleListener>(relaxed = true)
+
+        eventBus.onConfigured(purchases)
+        eventBus.register(listener)
+        eventBus.onClosed(purchases)
+
+        verifyOrder {
+            listener.onPurchasesConfigured(purchases)
+            listener.onPurchasesClosed(purchases)
+        }
+        verify(exactly = 1) {
+            listener.onPurchasesConfigured(purchases)
+            listener.onPurchasesClosed(purchases)
+        }
+    }
+
+    @Test
+    fun `onConfigured then onClosed then register does not deliver stale configured`() {
+        val eventBus = PurchasesLifecycleEventBus()
+        val purchases = mockk<Purchases>(relaxed = true)
+        val listener = mockk<PurchasesLifecycleListener>(relaxed = true)
+
+        eventBus.onConfigured(purchases)
+        eventBus.onClosed(purchases)
+        eventBus.register(listener)
 
         verify(exactly = 0) {
             listener.onPurchasesConfigured(purchases)

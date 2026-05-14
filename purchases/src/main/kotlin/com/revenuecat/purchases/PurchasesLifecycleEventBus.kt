@@ -11,53 +11,36 @@ internal class PurchasesLifecycleEventBus {
     private val listeners = mutableSetOf<PurchasesLifecycleListener>()
     private var configuredPurchases: Purchases? = null
 
+    @Synchronized
     fun register(listener: PurchasesLifecycleListener) {
-        val configuredSnapshot = registerAndGetConfiguredSnapshot(listener)
-        configuredSnapshot?.let { configured ->
+        listeners.add(listener)
+        configuredPurchases?.let { configured ->
             listener.onPurchasesConfigured(configured)
         }
     }
 
+    @Synchronized
     fun unregister(listener: PurchasesLifecycleListener) {
-        unregisterSynchronized(listener)
+        listeners.remove(listener)
     }
 
+    @Synchronized
     internal fun onConfigured(purchases: Purchases) {
-        val listenersToNotify = updateConfiguredAndGetListeners(purchases)
+        configuredPurchases = purchases
+        val listenersToNotify = listeners.toList()
         listenersToNotify.forEach { listener ->
             listener.onPurchasesConfigured(purchases)
         }
     }
 
+    @Synchronized
     internal fun onClosed(purchases: Purchases) {
-        val listenersToNotify = clearConfiguredAndGetListeners(purchases)
-        listenersToNotify.forEach { listener ->
-            listener.onPurchasesClosed(purchases)
-        }
-    }
-
-    @Synchronized
-    private fun registerAndGetConfiguredSnapshot(listener: PurchasesLifecycleListener): Purchases? {
-        listeners.add(listener)
-        return configuredPurchases
-    }
-
-    @Synchronized
-    private fun unregisterSynchronized(listener: PurchasesLifecycleListener) {
-        listeners.remove(listener)
-    }
-
-    @Synchronized
-    private fun updateConfiguredAndGetListeners(purchases: Purchases): List<PurchasesLifecycleListener> {
-        configuredPurchases = purchases
-        return listeners.toList()
-    }
-
-    @Synchronized
-    private fun clearConfiguredAndGetListeners(purchases: Purchases): List<PurchasesLifecycleListener> {
         if (configuredPurchases === purchases) {
             configuredPurchases = null
         }
-        return listeners.toList()
+        val listenersToNotify = listeners.toList()
+        listenersToNotify.forEach { listener ->
+            listener.onPurchasesClosed(purchases)
+        }
     }
 }
