@@ -28,6 +28,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
+import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.mockProductDetails
@@ -2686,7 +2687,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `getCurrentOffering returns current offering from offerings`() {
-        val offerings = mockOfferingsManagerGetRealOfferings()
+        val offerings = mockOfferingsManagerGetOfferings(offerings = stubOfferings(STUB_PRODUCT_IDENTIFIER).second)
         var result: Offering? = null
         Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
             onSuccess = { result = it },
@@ -2696,8 +2697,20 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `getCurrentOffering returns null when no current offering is configured`() {
+        val offeringsWithNullCurrent = Offerings(null, emptyMap())
+        mockOfferingsManagerGetOfferings(offerings = offeringsWithNullCurrent)
+        var result: Offering? = Offering("sentinel", "sentinel", emptyMap(), emptyList())
+        Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `getOffering returns offering matching the given id`() {
-        val offerings = mockOfferingsManagerGetRealOfferings()
+        val offerings = mockOfferingsManagerGetOfferings(offerings = stubOfferings(STUB_PRODUCT_IDENTIFIER).second)
         val id = offerings.all.keys.first()
         var result: Offering? = null
         Purchases.sharedInstance.purchasesOrchestrator.getOffering(
@@ -2711,7 +2724,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `getOffering returns null for an id not in offerings`() {
-        mockOfferingsManagerGetRealOfferings()
+        mockOfferingsManagerGetOfferings(offerings = stubOfferings(STUB_PRODUCT_IDENTIFIER).second)
         var result: Offering? = Offering("sentinel", "sentinel", emptyMap(), emptyList())
         Purchases.sharedInstance.purchasesOrchestrator.getOffering(
             id = "nonexistent_offering_id",
@@ -2724,7 +2737,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `getCurrentOffering propagates error`() {
         val error = PurchasesError(PurchasesErrorCode.UnknownError)
-        mockOfferingsManagerGetRealOfferings(error)
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
         var receivedError: PurchasesError? = null
         Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
             onSuccess = { fail("Expected error") },
@@ -2736,7 +2749,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `getOffering propagates error`() {
         val error = PurchasesError(PurchasesErrorCode.UnknownError)
-        mockOfferingsManagerGetRealOfferings(error)
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
         var receivedError: PurchasesError? = null
         Purchases.sharedInstance.purchasesOrchestrator.getOffering(
             id = "any_id",

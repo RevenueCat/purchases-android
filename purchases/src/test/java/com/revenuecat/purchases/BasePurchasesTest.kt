@@ -386,27 +386,11 @@ internal open class BasePurchasesTest {
         } just Runs
     }
 
-    protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings {
-        val offerings: Offerings = mockk()
-        every {
-            mockOfferingsManager.getOfferings(
-                appUserId,
-                appInBackground = false,
-                onError = errorGettingOfferings?.let { captureLambda() } ?: any(),
-                onSuccess = errorGettingOfferings?.let { any() } ?: captureLambda()
-            )
-        } answers {
-            errorGettingOfferings?.let {
-                lambda<(PurchasesError) -> Unit>().captured.invoke(it)
-            } ?: lambda<(Offerings) -> Unit>().captured.invoke(offerings)
-        }
-        return offerings
-    }
-
-    protected fun mockOfferingsManagerGetRealOfferings(
+    protected fun mockOfferingsManagerGetOfferings(
         errorGettingOfferings: PurchasesError? = null,
+        offerings: Offerings? = null,
     ): Offerings {
-        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
+        val resolvedOfferings: Offerings = offerings ?: mockk()
         every {
             mockOfferingsManager.getOfferings(
                 appUserId,
@@ -417,9 +401,9 @@ internal open class BasePurchasesTest {
         } answers {
             errorGettingOfferings?.let {
                 lambda<(PurchasesError) -> Unit>().captured.invoke(it)
-            } ?: lambda<(Offerings) -> Unit>().captured.invoke(offerings)
+            } ?: lambda<(Offerings) -> Unit>().captured.invoke(resolvedOfferings)
         }
-        return offerings
+        return resolvedOfferings
     }
     // endregion
 
