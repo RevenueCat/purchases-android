@@ -22,6 +22,7 @@ internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
+    private val workflowsCache: WorkflowsCache,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -36,6 +37,11 @@ internal class WorkflowManager(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        val cached = workflowsCache.cachedWorkflow(workflowId)
+        if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
+            onSuccess(cached)
+            return
+        }
         backend.getWorkflow(
             appUserID = appUserID,
             workflowId = workflowId,
@@ -44,6 +50,7 @@ internal class WorkflowManager(
                 scope.launch {
                     try {
                         val result = workflowDetailResolver.resolve(response)
+                        workflowsCache.cacheWorkflow(workflowId, result)
                         scope.launch {
                             runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
                                 .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
