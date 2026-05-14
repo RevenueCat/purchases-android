@@ -274,6 +274,36 @@ public fun Purchases.getAmazonLWAConsentStatusWith(
 }
 
 /**
+ * Fetches offerings and returns the current [Offering], or null if none is configured.
+ *
+ * @param onSuccess Called with the current [Offering], or null.
+ * @param onError Called if fetching offerings fails.
+ */
+@JvmSynthetic
+public fun Purchases.getCurrentOfferingWith(
+    onSuccess: (Offering?) -> Unit,
+    onError: (PurchasesError) -> Unit,
+) {
+    purchasesOrchestrator.getCurrentOffering(onSuccess, onError)
+}
+
+/**
+ * Fetches offerings and returns the [Offering] with the given [id], or null if not found.
+ *
+ * @param id The identifier of the offering to fetch.
+ * @param onSuccess Called with the matching [Offering], or null.
+ * @param onError Called if fetching offerings fails.
+ */
+@JvmSynthetic
+public fun Purchases.getOfferingWith(
+    id: String,
+    onSuccess: (Offering?) -> Unit,
+    onError: (PurchasesError) -> Unit,
+) {
+    purchasesOrchestrator.getOffering(id, onSuccess, onError)
+}
+
+/**
  * Fetches the virtual currencies for the current subscriber.
  *
  * @param [onSuccess] Will be called after the call has completed successfully

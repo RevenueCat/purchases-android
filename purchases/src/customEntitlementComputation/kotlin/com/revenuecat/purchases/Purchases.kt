@@ -75,12 +75,12 @@ public class Purchases internal constructor(
     }
 
     /**
-     * Fetches the current [Offering] for this user, waiting until its paywall data
-     * is loaded and ready to display. Call this before presenting a paywall to avoid a loading spinner.
+     * Fetches offerings and returns the current [Offering], or null if none is configured.
      *
-     * @param onSuccess Called with the current [Offering], or null if none is configured.
+     * @param onSuccess Called with the current [Offering], or null.
      * @param onError Called if fetching offerings fails.
      */
+    @JvmSynthetic
     public fun getCurrentOfferingWith(
         onSuccess: (Offering?) -> Unit,
         onError: (PurchasesError) -> Unit,
@@ -89,13 +89,13 @@ public class Purchases internal constructor(
     }
 
     /**
-     * Fetches an [Offering] by identifier, waiting until its paywall data
-     * is loaded and ready to display. Call this before presenting a paywall to avoid a loading spinner.
+     * Fetches offerings and returns the [Offering] with the given [id], or null if not found.
      *
      * @param id The identifier of the offering to fetch.
-     * @param onSuccess Called with the [Offering], or null if not found.
+     * @param onSuccess Called with the matching [Offering], or null.
      * @param onError Called if fetching offerings fails.
      */
+    @JvmSynthetic
     public fun getOfferingWith(
         id: String,
         onSuccess: (Offering?) -> Unit,

@@ -398,36 +398,6 @@ public class Purchases internal constructor(
         purchasesOrchestrator.getOfferings(listener)
     }
 
-    /**
-     * Fetches the current [Offering] for this user, waiting until its paywall data
-     * is loaded and ready to display. Call this before presenting a paywall to avoid a loading spinner.
-     *
-     * @param onSuccess Called with the current [Offering], or null if none is configured.
-     * @param onError Called if fetching offerings fails.
-     */
-    public fun getCurrentOfferingWith(
-        onSuccess: (Offering?) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        purchasesOrchestrator.getCurrentOffering(onSuccess, onError)
-    }
-
-    /**
-     * Fetches an [Offering] by identifier, waiting until its paywall data
-     * is loaded and ready to display. Call this before presenting a paywall to avoid a loading spinner.
-     *
-     * @param id The identifier of the offering to fetch.
-     * @param onSuccess Called with the [Offering], or null if not found.
-     * @param onError Called if fetching offerings fails.
-     */
-    public fun getOfferingWith(
-        id: String,
-        onSuccess: (Offering?) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        purchasesOrchestrator.getOffering(id, onSuccess, onError)
-    }
-
     @InternalRevenueCatAPI
     @JvmSynthetic
     @Throws(PurchasesException::class)
