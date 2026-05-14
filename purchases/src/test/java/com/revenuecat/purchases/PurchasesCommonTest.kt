@@ -2684,6 +2684,68 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(receivedError).isEqualTo(error)
     }
 
+    @Test
+    fun `getCurrentOffering returns current offering from offerings`() {
+        val offerings = mockOfferingsManagerGetRealOfferings()
+        var result: Offering? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isEqualTo(offerings.current)
+    }
+
+    @Test
+    fun `getOffering returns offering matching the given id`() {
+        val offerings = mockOfferingsManagerGetRealOfferings()
+        val id = offerings.all.keys.first()
+        var result: Offering? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getOffering(
+            id = id,
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNotNull
+        assertThat(result?.identifier).isEqualTo(id)
+    }
+
+    @Test
+    fun `getOffering returns null for an id not in offerings`() {
+        mockOfferingsManagerGetRealOfferings()
+        var result: Offering? = Offering("sentinel", "sentinel", emptyMap(), emptyList())
+        Purchases.sharedInstance.purchasesOrchestrator.getOffering(
+            id = "nonexistent_offering_id",
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `getCurrentOffering propagates error`() {
+        val error = PurchasesError(PurchasesErrorCode.UnknownError)
+        mockOfferingsManagerGetRealOfferings(error)
+        var receivedError: PurchasesError? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
+            onSuccess = { fail("Expected error") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isEqualTo(error)
+    }
+
+    @Test
+    fun `getOffering propagates error`() {
+        val error = PurchasesError(PurchasesErrorCode.UnknownError)
+        mockOfferingsManagerGetRealOfferings(error)
+        var receivedError: PurchasesError? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getOffering(
+            id = "any_id",
+            onSuccess = { fail("Expected error") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isEqualTo(error)
+    }
+
     // endregion
 
     // region overridePreferredUILocale

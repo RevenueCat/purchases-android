@@ -562,6 +562,27 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun getCurrentOffering(
+        onSuccess: (Offering?) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        getOfferings(object : ReceiveOfferingsCallback {
+            override fun onReceived(offerings: Offerings) = onSuccess(offerings.current)
+            override fun onError(error: PurchasesError) = onError(error)
+        })
+    }
+
+    fun getOffering(
+        id: String,
+        onSuccess: (Offering?) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        getOfferings(object : ReceiveOfferingsCallback {
+            override fun onReceived(offerings: Offerings) = onSuccess(offerings[id])
+            override fun onError(error: PurchasesError) = onError(error)
+        })
+    }
+
     fun getWorkflow(
         workflowId: String,
         onSuccess: (WorkflowDataResult) -> Unit,

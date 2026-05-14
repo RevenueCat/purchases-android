@@ -47,6 +47,7 @@ import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
@@ -387,6 +388,25 @@ internal open class BasePurchasesTest {
 
     protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings {
         val offerings: Offerings = mockk()
+        every {
+            mockOfferingsManager.getOfferings(
+                appUserId,
+                appInBackground = false,
+                onError = errorGettingOfferings?.let { captureLambda() } ?: any(),
+                onSuccess = errorGettingOfferings?.let { any() } ?: captureLambda()
+            )
+        } answers {
+            errorGettingOfferings?.let {
+                lambda<(PurchasesError) -> Unit>().captured.invoke(it)
+            } ?: lambda<(Offerings) -> Unit>().captured.invoke(offerings)
+        }
+        return offerings
+    }
+
+    protected fun mockOfferingsManagerGetRealOfferings(
+        errorGettingOfferings: PurchasesError? = null,
+    ): Offerings {
+        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
         every {
             mockOfferingsManager.getOfferings(
                 appUserId,
