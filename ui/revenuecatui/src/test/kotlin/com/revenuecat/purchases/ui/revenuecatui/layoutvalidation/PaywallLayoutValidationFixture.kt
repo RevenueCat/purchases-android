@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.layoutvalidation
 
 import com.revenuecat.purchases.Offering
+import org.json.JSONObject
 
 /**
  * Describes everything `SemanticsLayoutExporterTest` needs to render and export a paywall.
@@ -18,19 +19,10 @@ internal interface PaywallLayoutValidationFixture {
     val offering: Offering
 
     /**
-     * `id -> name` lookup for every component declared in the fixture's components config.
-     *
-     * container's `name` (e.g. "Feature list", "Package list", "Button stack") as the node `label`.
-     * Compose never sees those names — they live only in the
-     * JSON config — so the exporter uses this map as a label fallback.
+     * The raw paywall components config (what the dashboard returns under
+     * `paywall_components.components_config`). The dashboard-aligned exporter walks this to
+     * produce one entry per declared component, regardless of what Compose's unmerged tree
+     * exposes.
      */
-    val componentNames: Map<String, String>
-
-    /**
-     * Component ids that should be replaced with the synthetic `paywall` prefix in the
-     * normalized export, using `paywall_0`, `paywall_1`, … for top-level structural
-     * buckets (the scroll container, sticky-footer wrappers, package-list
-     * row, button-stack row, footer-buttons row).
-     */
-    val paywallSyntheticIds: Set<String>
+    val componentsConfigJson: JSONObject
 }

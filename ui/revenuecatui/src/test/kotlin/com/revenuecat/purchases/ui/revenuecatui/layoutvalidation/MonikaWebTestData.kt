@@ -36,47 +36,8 @@ internal object MonikaWebTestData : PaywallLayoutValidationFixture {
         )
     }
 
-    override val componentNames: Map<String, String> by lazy {
-        val map = mutableMapOf<String, String>()
-        fun walk(value: Any?) {
-            when (value) {
-                is JSONObject -> {
-                    val id = value.optString("id").takeIf { it.isNotBlank() }
-                    val name = value.optString("name").takeIf { it.isNotBlank() }
-                    if (id != null && name != null) map[id] = name
-                    value.keys().forEach { key -> walk(value.opt(key)) }
-                }
-                is JSONArray -> {
-                    for (i in 0 until value.length()) walk(value.opt(i))
-                }
-            }
-        }
-        walk(JSONObject(componentsFile.readText()))
-        map
-    }
-
-    override val paywallSyntheticIds: Set<String> by lazy {
-        val componentsConfig = JSONObject(componentsFile.readText())
-        val base = componentsConfig.optJSONObject("base") ?: return@lazy emptySet()
-        val ids = mutableSetOf<String>()
-
-        // The main scroll container itself (e.g. `J3Fvdvye3s` "Content").
-        base.optJSONObject("stack")?.optString("id")?.takeIf { it.isNotBlank() }?.let(ids::add)
-
-        // The sticky footer wrapper, its inner stack, and each of its top-level rows
-        // (package list, button stack, footer buttons).
-        val stickyFooter = base.optJSONObject("sticky_footer")
-        stickyFooter?.optString("id")?.takeIf { it.isNotBlank() }?.let(ids::add)
-        val stickyStack = stickyFooter?.optJSONObject("stack")
-        stickyStack?.optString("id")?.takeIf { it.isNotBlank() }?.let(ids::add)
-        val stickyChildren = stickyStack?.optJSONArray("components")
-        if (stickyChildren != null) {
-            for (i in 0 until stickyChildren.length()) {
-                stickyChildren.optJSONObject(i)?.optString("id")?.takeIf { it.isNotBlank() }?.let(ids::add)
-            }
-        }
-
-        ids
+    override val componentsConfigJson: JSONObject by lazy {
+        JSONObject(componentsFile.readText())
     }
 
     private val packages: List<Package>

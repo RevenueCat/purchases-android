@@ -21,30 +21,12 @@ internal data class PaywallTreeExport(
 )
 
 @Serializable
-internal data class FlattenedPaywallTreeExport(
-    val components: Map<String, FlattenedLayoutNode>,
-    val metadata: FlattenedPaywallTreeMetadata,
-)
-
-@Serializable
 internal data class PaywallTreeMetadata(
     val extractorVersion: String,
     val locale: String,
     val offeringId: String?,
     val platform: String,
     val platformVersion: String,
-    val timestamp: String,
-    val viewport: Viewport,
-)
-
-@Serializable
-internal data class FlattenedPaywallTreeMetadata(
-    val extractorVersion: String,
-    val locale: String,
-    val offeringId: String?,
-    val platform: String,
-    val platformVersion: String,
-    val rootFrame: Frame,
     val timestamp: String,
     val viewport: Viewport,
 )
@@ -60,16 +42,6 @@ internal data class Viewport(
 internal data class LayoutNode(
     val children: List<LayoutNode>,
     val componentId: String? = null,
-    val frame: Frame,
-    val label: String? = null,
-    val nativeType: String,
-    val state: LayoutNodeState,
-    val type: String,
-)
-
-@Serializable
-internal data class FlattenedLayoutNode(
-    val componentId: String,
     val frame: Frame,
     val label: String? = null,
     val nativeType: String,
@@ -133,76 +105,6 @@ internal object SemanticsLayoutExporter {
     }
 
     fun encodeToJson(export: PaywallTreeExport): String {
-        return json.encodeToString(export)
-    }
-
-    fun flattenAndNormalize(
-        export: PaywallTreeExport,
-        componentNames: Map<String, String> = emptyMap(),
-        paywallSyntheticIds: Set<String> = emptySet(),
-    ): FlattenedPaywallTreeExport {
-        // Re-write componentIds for top-level structural buckets to the synthetic `paywall`
-        // prefix (matches iOS's `paywall_0..N`). The original id is kept for label lookup,
-        // but the dedup key uses the synthetic value.
-        data class Mapped(val original: String, val exported: String, val node: LayoutNode)
-
-        val mapped = export.root.flattenForComparison().map { fn ->
-            val exported = if (fn.componentId in paywallSyntheticIds) {
-                SYNTHETIC_PAYWALL_ID
-            } else {
-                fn.componentId
-            }
-            Mapped(original = fn.componentId, exported = exported, node = fn.node)
-        }.sortedWith(
-            compareBy(
-                { it.node.frame.y },
-                { it.node.frame.x },
-                { it.exported },
-                { it.node.type },
-                { it.node.label.orEmpty() },
-            ),
-        )
-
-        val componentIdCounts = mutableMapOf<String, Int>()
-        val duplicateComponentIds = mapped
-            .groupingBy { it.exported }
-            .eachCount()
-            .filterValues { it > 1 }
-            .keys
-
-        val components = mapped.associate { entry ->
-            val exportedId = entry.exported
-            val node = entry.node
-            val index = componentIdCounts.getOrDefault(exportedId, 0)
-            componentIdCounts[exportedId] = index + 1
-            val key = if (exportedId in duplicateComponentIds) {
-                "${exportedId}_$index"
-            } else {
-                exportedId
-            }
-
-            // Fall back to the component's `name` from the components config when the rendered tree
-            // didn't surface a label (mirrors the iOS extractor, which labels containers like
-            // "Feature list", "Package list", "Button stack").
-            val effectiveLabel = node.label ?: componentNames[entry.original]
-
-            key to FlattenedLayoutNode(
-                componentId = exportedId,
-                frame = node.frame.normalized(),
-                label = effectiveLabel,
-                nativeType = node.nativeType,
-                state = node.state,
-                type = node.type,
-            )
-        }.toSortedMap()
-
-        return FlattenedPaywallTreeExport(
-            components = components,
-            metadata = export.metadata.toFlattenedMetadata(rootFrame = export.root.frame.normalized()),
-        )
-    }
-
-    fun encodeToJson(export: FlattenedPaywallTreeExport): String {
         return json.encodeToString(export)
     }
 
@@ -295,132 +197,4 @@ internal object SemanticsLayoutExporter {
             else -> "Other"
         }
     }
-
-    private data class FlattenedNode(
-        val componentId: String,
-        val node: LayoutNode,
-    )
-
-    private fun LayoutNode.flattenForComparison(inheritedComponentId: String? = null): List<FlattenedNode> {
-        val isInsideBundle = inheritedComponentId != null
-        // Only the OUTERMOST eligible stack becomes an anchor; nested stacks inside an active
-        // bundle keep inheriting the bundle's id rather than re-anchoring.
-        val isAnchor = !isInsideBundle && isBundleAnchor
-        val effectiveComponentId = inheritedComponentId ?: componentId
-        val childInheritedId = when {
-            isAnchor -> componentId
-            else -> inheritedComponentId
-        }
-        // While inside a bundle, descend until we hit a renderable visual unit (image / text
-        // leaf) — that unit emits the entry; we don't keep walking past it.
-        val isVisualUnit = isInsideBundle && isLeafRenderable
-        val children = if (isVisualUnit) {
-            emptyList()
-        } else {
-            children.flatMap { it.flattenForComparison(childInheritedId) }
-        }
-        val isLeafComponent = componentId != null &&
-            children.none { it.componentId == effectiveComponentId } &&
-            !hasDescendantComponent
-        val shouldIncludeCurrent = effectiveComponentId != null &&
-            !isAnchor && // anchors emit their descendants but not themselves
-            if (isInsideBundle) {
-                // Only emit visual units inside a bundle so we don't double-count wrappers.
-                isVisualUnit
-            } else {
-                isRenderable || (isLeafComponent && hasMeasuredArea)
-            }
-
-        return if (shouldIncludeCurrent) {
-            listOf(FlattenedNode(componentId = requireNotNull(effectiveComponentId), node = this)) + children
-        } else {
-            children
-        }
-    }
-
-    /**
-     * `true` when this node should bundle its renderable descendants under its own componentId.
-     */
-    private val LayoutNode.isBundleAnchor: Boolean
-        get() = componentId != null &&
-            // The anchor must be a generic structural stack — not a button (which keeps its
-            // own entry on iOS), not a scroll view, not a renderable leaf.
-            nativeType != "Button" &&
-            nativeType != "ScrollView" &&
-            !isLeafRenderable &&
-            children.isNotEmpty() &&
-            // Every renderable descendant must be a simple text/image leaf for the bundle to
-            // make sense; presence of a button or scroll surface means we have a real
-            // structural boundary that should keep its own id.
-            allRenderableDescendantsAreSimpleLeaves
-
-    private val LayoutNode.isLeafRenderable: Boolean
-        get() = label != null || nativeType == "Image"
-
-    private val LayoutNode.allRenderableDescendantsAreSimpleLeaves: Boolean
-        get() = children.all { child ->
-            when {
-                // A simple text or image leaf is fine.
-                child.isLeafRenderable && child.children.isEmpty() -> true
-                // A pass-through stack (no renderable content of its own) is fine if its
-                // descendants are also simple leaves — this handles wrappers
-                // that hold a single icon+text pair inside the Feature list.
-                !child.isLeafRenderable && child.nativeType != "Button" &&
-                    child.nativeType != "ScrollView" && child.allRenderableDescendantsAreSimpleLeaves -> true
-                else -> false
-            }
-        }
-
-    private val LayoutNode.hasMeasuredArea: Boolean
-        get() = frame.width > 0.0 && frame.height > 0.0
-
-    private val LayoutNode.hasDescendantComponent: Boolean
-        get() = children.any { it.componentId != null || it.hasDescendantComponent }
-
-    private val LayoutNode.isRenderable: Boolean
-        get() {
-            // A node is renderable when it has a measured frame AND either:
-            // - it carries visible content (label or a non-generic native type), OR
-            // - it has its own componentId (a structural bucket worth surfacing on its own,
-            //   e.g. the sticky-footer rows that get renamed to paywall_N).
-            // The hasMeasuredArea check still prunes the empty stack/separator placeholders
-            // that have no real layout.
-            val hasContent = label != null || nativeType != "Other"
-            val hasOwnIdentity = componentId != null
-            return (hasContent || hasOwnIdentity) && hasMeasuredArea
-        }
-
-    private fun Frame.normalized(): Frame {
-        return Frame(
-            height = height.normalizeCoordinate(),
-            width = width.normalizeCoordinate(),
-            x = x.normalizeCoordinate(),
-            y = y.normalizeCoordinate(),
-        )
-    }
-
-    private fun Double.normalizeCoordinate(): Double {
-        return (this * COORDINATE_PRECISION).roundToInt() / COORDINATE_PRECISION
-    }
-
-    private fun PaywallTreeMetadata.toFlattenedMetadata(rootFrame: Frame): FlattenedPaywallTreeMetadata {
-        return FlattenedPaywallTreeMetadata(
-            extractorVersion = "2.0.0",
-            locale = locale,
-            offeringId = offeringId,
-            platform = platform,
-            platformVersion = platformVersion,
-            rootFrame = rootFrame,
-            timestamp = timestamp,
-            viewport = viewport,
-        )
-    }
-
-    private const val COORDINATE_PRECISION = 1000.0
-
-    /**
-     * Synthetic componentId used for top-level structural buckets (the scroll view, package list
-     * containers, button rows, footer button row).
-     */
-    private const val SYNTHETIC_PAYWALL_ID = "paywall"
 }

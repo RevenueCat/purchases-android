@@ -1,0 +1,29 @@
+{
+  "default_locale": "en_US",
+  "localized_strings": {
+    "en_US": {}
+  },
+  "localized_strings_by_tier": {},
+  "components_localizations": {
+    "en_US": {
+      "2cAQEnTchn": "Or, save 30%",
+      "33mMqH4FsP": "Custom checkout URL",
+      "3DvgAOyvtF": "{{ product.relative_discount}} OFF",
+      "E0ScZno6rb": "New recipe recommendations",
+      "HQQBMe_wM5": "Full access for just {{ product.price_per_period_abbreviated }}",
+      "P-Qh59OsHV": "Healthy recipes, specially curated",
+      "QL6R1cGNi9": "Monthly",
+      "Z36WajRCws": "Try free for {{ product.offer_period_with_unit }}, then {{ product.price_per_period_abbreviated }}",
+      "dB1rV7rAlT": "Start {{ product.offer_period_with_unit }} free trial",
+      "dovRrR7EZE": "Try free for {{ product.offer_period_with_unit }}, then {{ product.price_per_period_abbreviated }}",
+      "eTAtlhaMLX": "https://example.com",
+      "eegaru-NGu": "Unlock access to all recipes",
+      "in4axCIefQ": "Priority support",
+      "lKfMEbRfCR": "Web product selection",
+      "muORKAGRBP": "Annual",
+      "pGbnpxOteB": "A welcoming cooking community",
+      "q4rsB3BTdE": "Restore Purchases",
+      "q9dLIWoebh": "Full access for just {{ product.price_per_period_abbreviated }}"
+    }
+  }
+}

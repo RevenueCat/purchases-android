@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.layoutvalidation
 
 import android.graphics.Bitmap
+import android.os.Build
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -23,8 +24,8 @@ import java.util.Locale
 
 /**
  * Renders each registered [PaywallLayoutValidationFixture] inside a viewport-controlled Compose
- * test, exports the merged + flattened semantics tree, and writes JSON files and PNG snapshots
- * to `build/layout-validation/`.
+ * test and exports it to the cross-platform `SCHEMA.md` v3 shape: one entry per dashboard
+ * `componentId`, with `rendered: true/false` and the measured frame.
  *
  * To add a new paywall to the suite:
  * 1. Create a `<Name>TestData` object that implements [PaywallLayoutValidationFixture] and
@@ -37,12 +38,17 @@ import java.util.Locale
  *   --tests "com.revenuecat.purchases.ui.revenuecatui.layoutvalidation.SemanticsLayoutExporterTest"
  * ```
  *
- * Outputs (one set per fixture):
+ * Outputs per fixture (`<offeringId>` from the fixture):
  * ```
- * ui/revenuecatui/build/layout-validation/<offeringId>-paywall-semantics.json
- * ui/revenuecatui/build/layout-validation/<offeringId>-paywall-semantics-normalized.json
- * ui/revenuecatui/build/layout-validation/<offeringId>-paywall-snapshot.png
+ * ui/revenuecatui/build/layout-validation/<offeringId>-android.json   # SCHEMA.md v3
+ * ui/revenuecatui/build/layout-validation/<offeringId>-semantics-raw.json   # debug
+ * ui/revenuecatui/build/layout-validation/<offeringId>-snapshot.png
  * ```
+ *
+ * The `*-android.json` output is the file the cross-platform comparator
+ * (`compare.py` in `paywall-rendering-validation`) consumes. The `*-semantics-raw.json`
+ * is a debug aid showing the raw Compose semantics tree before flattening; it isn't part
+ * of the cross-platform schema and is fine to ignore.
  */
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w${VIEWPORT_WIDTH_DP}dp-h${VIEWPORT_HEIGHT_DP}dp", shadows = [ShadowPixelCopy::class])
@@ -85,22 +91,35 @@ internal class SemanticsLayoutExporterTest {
 
         val root = composeTestRule.onRoot(useUnmergedTree = true).fetchSemanticsNode()
         val layoutTree = SemanticsLayoutExporter.export(root, metadata)
-        val normalizedLayoutTree = SemanticsLayoutExporter.flattenAndNormalize(
-            export = layoutTree,
-            componentNames = fixture.componentNames,
-            paywallSyntheticIds = fixture.paywallSyntheticIds,
+
+        // Cross-platform dashboard-aligned export (SCHEMA.md v3): one entry per
+        // componentId declared in the paywall components config. Identical shape on iOS,
+        // web, and Android — consumed by `compare.py` in paywall-rendering-validation.
+        val dashboardMetadata = DashboardAlignedExporter.metadata(
+            offeringId = fixture.offeringId,
+            viewport = layoutTree.metadata.viewport,
+            rootFrame = layoutTree.root.frame,
+            platform = "android",
+            platformVersion = Build.VERSION.RELEASE,
+            locale = EXPORT_LOCALE.toString(),
+            timestamp = EXPORT_TIMESTAMP,
+        )
+        val dashboardExport = DashboardAlignedExporter.export(
+            root = root,
+            componentsConfig = fixture.componentsConfigJson,
+            metadata = dashboardMetadata,
         )
 
         val rawJson = SemanticsLayoutExporter.encodeToJson(layoutTree)
-        val normalizedJson = SemanticsLayoutExporter.encodeToJson(normalizedLayoutTree)
+        val dashboardJson = DashboardAlignedExporter.encodeToJson(dashboardExport)
 
-        val rawFile = outputFile("${fixture.offeringId}-paywall-semantics.json")
-        val normalizedFile = outputFile("${fixture.offeringId}-paywall-semantics-normalized.json")
-        val snapshotFile = outputFile("${fixture.offeringId}-paywall-snapshot.png")
+        val rawFile = outputFile("${fixture.offeringId}-semantics-raw.json")
+        val dashboardFile = outputFile("${fixture.offeringId}-android.json")
+        val snapshotFile = outputFile("${fixture.offeringId}-snapshot.png")
 
         requireNotNull(rawFile.parentFile).mkdirs()
         rawFile.writeText(rawJson)
-        normalizedFile.writeText(normalizedJson)
+        dashboardFile.writeText(dashboardJson)
 
         // Capture PNG snapshot via the project's Robolectric-friendly captureToImageCompat()
         // helper. The stock captureToImage() path forces a redraw that hangs under Robolectric
@@ -123,9 +142,10 @@ internal class SemanticsLayoutExporterTest {
         }
 
         assertThat(rawJson).contains("\"offeringId\": \"${fixture.offeringId}\"")
-        assertThat(normalizedJson).contains("\"components\"")
+        assertThat(dashboardJson).contains("\"components\"")
+        assertThat(dashboardJson).contains("\"extractorVersion\": \"3.0.0\"")
         assertThat(rawFile).exists()
-        assertThat(normalizedFile).exists()
+        assertThat(dashboardFile).exists()
         if (snapshotFile.exists()) {
             assertThat(snapshotFile.length()).isGreaterThan(0L)
         }
