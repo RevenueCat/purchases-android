@@ -377,15 +377,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
-                workflowPreWarmer = { appUserID, offeringIdentifier, appInBackground ->
-                    workflowManager.getWorkflow(
-                        appUserID = appUserID,
-                        workflowId = offeringIdentifier,
-                        appInBackground = appInBackground,
-                        onSuccess = {},
-                        onError = {},
-                    )
-                },
+                workflowManager = workflowManager,
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }

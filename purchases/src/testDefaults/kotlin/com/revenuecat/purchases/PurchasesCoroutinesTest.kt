@@ -3,6 +3,8 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
+import com.revenuecat.purchases.utils.stubOfferings
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -572,6 +574,85 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isNotNull
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    // endregion
+
+    // region awaitCurrentOffering
+
+    @Test
+    fun `awaitCurrentOffering returns current offering`() = runTest {
+        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
+        mockOfferingsManagerGetOfferings(offerings = offerings)
+        val result = Purchases.sharedInstance.awaitCurrentOffering()
+        assertThat(result).isEqualTo(offerings.current)
+    }
+
+    @Test
+    fun `awaitCurrentOffering returns null when no current offering`() = runTest {
+        val emptyOfferings = Offerings(null, emptyMap())
+        mockOfferingsManagerGetOfferings(offerings = emptyOfferings)
+        val result = Purchases.sharedInstance.awaitCurrentOffering()
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `awaitCurrentOffering throws PurchasesException on error`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "fail")
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
+
+        var result: Offering? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = Purchases.sharedInstance.awaitCurrentOffering()
+        }.onFailure {
+            exception = it
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    // endregion
+
+    // region awaitOffering
+
+    @Test
+    fun `awaitOffering returns matching offering`() = runTest {
+        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
+        mockOfferingsManagerGetOfferings(offerings = offerings)
+        val id = offerings.all.keys.first()
+        val result = Purchases.sharedInstance.awaitOffering(id)
+        assertThat(result).isEqualTo(offerings[id])
+    }
+
+    @Test
+    fun `awaitOffering returns null for nonexistent id`() = runTest {
+        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
+        mockOfferingsManagerGetOfferings(offerings = offerings)
+        val result = Purchases.sharedInstance.awaitOffering("nonexistent_id")
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `awaitOffering throws PurchasesException on error`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "fail")
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
+
+        var result: Offering? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = Purchases.sharedInstance.awaitOffering("any_id")
+        }.onFailure {
+            exception = it
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
 
     // endregion

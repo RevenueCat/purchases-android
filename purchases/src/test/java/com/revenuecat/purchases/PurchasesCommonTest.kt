@@ -28,6 +28,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
+import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.mockProductDetails
@@ -2680,6 +2681,156 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         Purchases.sharedInstance.getOfferingsWith(
             onError = { receivedError = it },
             onSuccess = { fail("Expected error") }
+        )
+        assertThat(receivedError).isEqualTo(error)
+    }
+
+    @Test
+    fun `getCurrentOffering returns current offering from offerings`() {
+        val offerings = mockOfferingsManagerGetOfferings(offerings = stubOfferings(STUB_PRODUCT_IDENTIFIER).second)
+        var result: Offering? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isEqualTo(offerings.current)
+    }
+
+    @Test
+    fun `getCurrentOffering returns null when no current offering is configured`() {
+        val offeringsWithNullCurrent = Offerings(null, emptyMap())
+        mockOfferingsManagerGetOfferings(offerings = offeringsWithNullCurrent)
+        var result: Offering? = Offering("sentinel", "sentinel", emptyMap(), emptyList())
+        Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `getOffering returns offering matching the given id`() {
+        val offerings = mockOfferingsManagerGetOfferings(offerings = stubOfferings(STUB_PRODUCT_IDENTIFIER).second)
+        val id = offerings.all.keys.first()
+        var result: Offering? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getOffering(
+            id = id,
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNotNull
+        assertThat(result?.identifier).isEqualTo(id)
+    }
+
+    @Test
+    fun `getOffering returns null for an id not in offerings`() {
+        mockOfferingsManagerGetOfferings(offerings = stubOfferings(STUB_PRODUCT_IDENTIFIER).second)
+        var result: Offering? = Offering("sentinel", "sentinel", emptyMap(), emptyList())
+        Purchases.sharedInstance.purchasesOrchestrator.getOffering(
+            id = "nonexistent_offering_id",
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `getCurrentOffering propagates error`() {
+        val error = PurchasesError(PurchasesErrorCode.UnknownError)
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
+        var receivedError: PurchasesError? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getCurrentOffering(
+            onSuccess = { fail("Expected error") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isEqualTo(error)
+    }
+
+    @Test
+    fun `getOffering propagates error`() {
+        val error = PurchasesError(PurchasesErrorCode.UnknownError)
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
+        var receivedError: PurchasesError? = null
+        Purchases.sharedInstance.purchasesOrchestrator.getOffering(
+            id = "any_id",
+            onSuccess = { fail("Expected error") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isEqualTo(error)
+    }
+
+    @Test
+    fun `getCurrentOfferingWith calls onSuccess with current offering`() {
+        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
+        mockOfferingsManagerGetOfferings(offerings = offerings)
+        var result: Offering? = null
+        Purchases.sharedInstance.getCurrentOfferingWith(
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isEqualTo(offerings.current)
+    }
+
+    @Test
+    fun `getCurrentOfferingWith calls onSuccess with null when no current offering`() {
+        val emptyOfferings = Offerings(null, emptyMap())
+        mockOfferingsManagerGetOfferings(offerings = emptyOfferings)
+        var result: Offering? = Offering("sentinel", "sentinel", emptyMap(), emptyList())
+        Purchases.sharedInstance.getCurrentOfferingWith(
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `getCurrentOfferingWith calls onError when offerings fetch fails`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "fail")
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
+        var receivedError: PurchasesError? = null
+        Purchases.sharedInstance.getCurrentOfferingWith(
+            onSuccess = { fail("unexpected success") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isEqualTo(error)
+    }
+
+    @Test
+    fun `getOfferingWith calls onSuccess with matching offering`() {
+        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
+        mockOfferingsManagerGetOfferings(offerings = offerings)
+        val id = offerings.all.keys.first()
+        var result: Offering? = null
+        Purchases.sharedInstance.getOfferingWith(
+            id = id,
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isEqualTo(offerings[id])
+    }
+
+    @Test
+    fun `getOfferingWith calls onSuccess with null when offering not found`() {
+        val (_, offerings) = stubOfferings(STUB_PRODUCT_IDENTIFIER)
+        mockOfferingsManagerGetOfferings(offerings = offerings)
+        var result: Offering? = Offering("sentinel", "sentinel", emptyMap(), emptyList())
+        Purchases.sharedInstance.getOfferingWith(
+            id = "nonexistent",
+            onSuccess = { result = it },
+            onError = { fail("unexpected error: $it") },
+        )
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `getOfferingWith calls onError when offerings fetch fails`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "fail")
+        mockOfferingsManagerGetOfferings(errorGettingOfferings = error)
+        var receivedError: PurchasesError? = null
+        Purchases.sharedInstance.getOfferingWith(
+            id = "any_id",
+            onSuccess = { fail("unexpected success") },
+            onError = { receivedError = it },
         )
         assertThat(receivedError).isEqualTo(error)
     }

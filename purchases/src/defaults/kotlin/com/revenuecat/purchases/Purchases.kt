@@ -390,6 +390,10 @@ public class Purchases internal constructor(
      * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
      * your prices are loaded for your purchase flow. Time is money.
      *
+     * If you only need the current offering, prefer [getCurrentOfferingWith] or
+     * [awaitCurrentOffering] — they return an [Offering] directly and avoid accessing the
+     * deprecated [Offerings.current].
+     *
      * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
      */
     public fun getOfferings(

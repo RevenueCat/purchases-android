@@ -226,11 +226,11 @@ package com.revenuecat.purchases {
     ctor public Offerings(com.revenuecat.purchases.Offering? current, java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> all);
     method public operator com.revenuecat.purchases.Offering? get(String identifier);
     method public java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> getAll();
-    method public com.revenuecat.purchases.Offering? getCurrent();
+    method @Deprecated public com.revenuecat.purchases.Offering? getCurrent();
     method public com.revenuecat.purchases.Offering? getCurrentOfferingForPlacement(String placementId);
     method public com.revenuecat.purchases.Offering? getOffering(String identifier);
     property public final java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> all;
-    property public final com.revenuecat.purchases.Offering? current;
+    property @Deprecated public final com.revenuecat.purchases.Offering? current;
   }
 
   @kotlinx.serialization.Serializable public enum OwnershipType {
@@ -347,9 +347,11 @@ package com.revenuecat.purchases {
     method public static com.revenuecat.purchases.Purchases configureInCustomEntitlementsComputationMode(android.content.Context context, String apiKey, String appUserID);
     method public static com.revenuecat.purchases.Purchases configureInCustomEntitlementsComputationMode(com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsComputationMode configuration);
     method @kotlin.jvm.Synchronized public String getAppUserID();
+    method @kotlin.jvm.JvmSynthetic public void getCurrentOfferingWith(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.Offering?,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
     method public static String getFrameworkVersion();
     method @kotlin.jvm.Synchronized public static com.revenuecat.purchases.LogHandler getLogHandler();
     method public static com.revenuecat.purchases.LogLevel getLogLevel();
+    method @kotlin.jvm.JvmSynthetic public void getOfferingWith(String id, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.Offering?,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
     method public void getOfferings(com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback listener);
     method public static com.revenuecat.purchases.common.PlatformInfo getPlatformInfo();
     method public void getProducts(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);

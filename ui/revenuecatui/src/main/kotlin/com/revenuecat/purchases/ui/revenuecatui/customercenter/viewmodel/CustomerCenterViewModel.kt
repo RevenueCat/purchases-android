@@ -1409,6 +1409,7 @@ internal class CustomerCenterViewModelImpl(
                 handlePaywallError("Failed to get current offering: ${error.message}", error.code)
             },
             onSuccess = { offerings ->
+                @Suppress("DEPRECATION")
                 val currentOffering = offerings.current
                 if (currentOffering != null) {
                     Logger.d("Falling back to current offering: ${currentOffering.identifier}")

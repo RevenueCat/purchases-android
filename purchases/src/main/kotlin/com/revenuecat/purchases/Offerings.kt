@@ -13,6 +13,10 @@ import dev.drewhamilton.poko.Poko
 public class Offerings
 @OptIn(InternalRevenueCatAPI::class)
 internal constructor(
+    @Deprecated(
+        message = "Use Purchases.awaitCurrentOffering() or Purchases.getCurrentOfferingWith() instead.",
+        level = DeprecationLevel.WARNING,
+    )
     public val current: Offering?,
     public val all: Map<String, Offering>,
     internal val placements: Placements? = null,
@@ -76,6 +80,7 @@ internal constructor(
         val offeringIdsByPlacement: Map<String, String?>,
     )
 
+    @Suppress("DEPRECATION")
     @OptIn(InternalRevenueCatAPI::class)
     internal fun copy(
         current: Offering? = this.current,
@@ -98,6 +103,7 @@ internal constructor(
     /**
      * @hide
      */
+    @Suppress("DEPRECATION")
     public override fun toString(): String =
         "<Offerings\n " +
             "current: $current\n" +
@@ -118,6 +124,7 @@ private data class OfferingsComparableData(
     val placements: Offerings.Placements?,
     val targeting: Offerings.Targeting?,
 ) {
+    @Suppress("DEPRECATION")
     constructor(
         offerings: Offerings,
     ) : this(
