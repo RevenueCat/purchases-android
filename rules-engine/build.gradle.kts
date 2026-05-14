@@ -1,3 +1,6 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
+
 plugins {
     alias(libs.plugins.revenuecat.public.library)
 }
@@ -18,13 +21,29 @@ android {
     }
 }
 
-// Maven Central publishing wiring (the `mavenPublishing { … }` block, the
-// `scripts/api-dump.sh` entry that keeps `api.txt` enforced in CI, the
-// `:bom` constraint, the revert of the `ConfigureConditionalPublishing`
-// short-circuit, and the `dokkaHtmlPartial` suppression) lives in a
-// separate draft PR that flips the switch once the rules engine has
-// functionality and a real consumer. Until then, this module just
-// compiles, runs tests, and gets detekt'd on every PR.
+// `:rules-engine` has no Billing Client dependency, so the default
+// `ANDROID_VARIANT_TO_PUBLISH=defaultsBc8Release` would point at a variant
+// that doesn't exist here. Publish `defaultsRelease` directly instead.
+//
+// `ConfigureConditionalPublishing` skips applying `com.vanniktech.maven.publish`
+// for variants containing `customEntitlementComputation` on every non-`:purchases`
+// module. Gate the `configure` call on the plugin actually being applied so the
+// "Deploying Custom Entitlements Computation version" lane keeps working.
+plugins.withId("com.vanniktech.maven.publish") {
+    extensions.configure<MavenPublishBaseExtension> {
+        configure(AndroidSingleVariantLibrary("defaultsRelease", sourcesJar = true, publishJavadocJar = true))
+    }
+}
+
+// All public symbols in `:rules-engine` are gated by `@InternalRulesEngineAPI`,
+// so the module has nothing to document for SDK consumers. Suppress it from the
+// multi-module dokka site (`dokkaHtmlMultiModule`) instead of generating an
+// empty page under `docs/{version}/rules-engine/`.
+tasks.dokkaHtmlPartial.configure {
+    dokkaSourceSets.configureEach {
+        suppress.set(true)
+    }
+}
 
 dependencies {
     testImplementation(libs.bundles.test)
