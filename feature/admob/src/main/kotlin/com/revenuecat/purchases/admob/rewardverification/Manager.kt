@@ -95,14 +95,14 @@ internal object RewardVerificationManager {
     }
 
     private class Runtime : RewardVerificationLifecycleHook {
-        private var stateStore: StateStore? = null
+        private var clientTransactionIdByAd: MutableMap<Any, String>? = null
         private var verificationJob: Job? = null
         private var verificationScope: CoroutineScope? = null
 
         @Synchronized
         fun setClientTransactionId(ad: Any, clientTransactionId: String): Boolean {
-            val store = stateStore ?: return false
-            store.set(ad, clientTransactionId)
+            val store = clientTransactionIdByAd ?: return false
+            store[ad] = clientTransactionId
             return true
         }
 
@@ -148,7 +148,7 @@ internal object RewardVerificationManager {
 
         @Synchronized
         private fun removeClientTransactionId(ad: Any): String? {
-            return stateStore?.remove(ad)
+            return clientTransactionIdByAd?.remove(ad)
         }
 
         @Synchronized
@@ -156,36 +156,17 @@ internal object RewardVerificationManager {
             verificationJob?.cancel()
             verificationJob = SupervisorJob()
             verificationScope = CoroutineScope(verificationJob!! + Dispatchers.IO)
-            stateStore = StateStore()
+            clientTransactionIdByAd = WeakHashMap()
         }
 
         @Synchronized
         override fun onPurchasesClosed(purchases: Purchases) {
-            stateStore?.clear()
-            stateStore = null
+            clientTransactionIdByAd?.clear()
+            clientTransactionIdByAd = null
             verificationJob?.cancel()
             verificationJob = null
             verificationScope?.cancel()
             verificationScope = null
-        }
-    }
-
-    private class StateStore {
-        private val clientTransactionIdByAd: MutableMap<Any, String> = WeakHashMap()
-
-        @Synchronized
-        fun set(ad: Any, clientTransactionId: String) {
-            clientTransactionIdByAd[ad] = clientTransactionId
-        }
-
-        @Synchronized
-        fun remove(ad: Any): String? {
-            return clientTransactionIdByAd.remove(ad)
-        }
-
-        @Synchronized
-        fun clear() {
-            clientTransactionIdByAd.clear()
         }
     }
 }
