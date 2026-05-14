@@ -67,11 +67,6 @@ internal object RewardVerificationManager {
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    private fun deliverFailed(rewardVerificationResult: (RewardVerificationResult) -> Unit) {
-        deliverResult(RewardVerificationResult.failed, rewardVerificationResult)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun deliverResult(
         result: RewardVerificationResult,
         rewardVerificationResult: (RewardVerificationResult) -> Unit,
@@ -117,13 +112,13 @@ internal object RewardVerificationManager {
             deliverStarted(rewardVerificationStarted)
 
             if (clientTransactionId == null) {
-                deliverFailed(rewardVerificationResult)
+                deliverResult(RewardVerificationResult.failed, rewardVerificationResult)
                 return
             }
 
             val activeScope = synchronized(this) { verificationScope }
             if (activeScope == null) {
-                deliverFailed(rewardVerificationResult)
+                deliverResult(RewardVerificationResult.failed, rewardVerificationResult)
                 return
             }
 
