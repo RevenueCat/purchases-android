@@ -32,10 +32,12 @@ package com.revenuecat.purchases {
   }
 
   public final class CoroutinesExtensionsKt {
+    method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitCurrentOffering(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offering?>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitCustomerInfo(com.revenuecat.purchases.Purchases, optional com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitGetVirtualCurrencies(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogIn(com.revenuecat.purchases.Purchases, String appUserID, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.data.LogInResult>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogOut(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
+    method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitOffering(com.revenuecat.purchases.Purchases, String id, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offering?>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSetAppstackAttributionParams(com.revenuecat.purchases.Purchases, java.util.Map<java.lang.String,java.lang.String> data, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitStorefrontLocale(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.util.Locale>) throws com.revenuecat.purchases.PurchasesException;
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSyncAttributesAndOfferingsIfNeeded(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
@@ -178,9 +180,11 @@ package com.revenuecat.purchases {
 
   public final class ListenerConversionsKt {
     method public static void getAmazonLWAConsentStatusWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.AmazonLWAConsentStatus,kotlin.Unit> onSuccess);
+    method @kotlin.jvm.JvmSynthetic public static void getCurrentOfferingWith(com.revenuecat.purchases.Purchases, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.Offering?,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
     method public static void getCustomerInfoWith(com.revenuecat.purchases.Purchases, com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
     method public static void getCustomerInfoWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,kotlin.Unit> onSuccess);
     method @Deprecated public static void getNonSubscriptionSkusWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> skus, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onReceiveSkus);
+    method @kotlin.jvm.JvmSynthetic public static void getOfferingWith(com.revenuecat.purchases.Purchases, String id, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.Offering?,kotlin.Unit> onSuccess, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public static void getStorefrontLocaleWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.Locale,kotlin.Unit> onSuccess);
     method @Deprecated public static void getSubscriptionSkusWith(com.revenuecat.purchases.Purchases, java.util.List<java.lang.String> skus, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super java.util.List<? extends com.revenuecat.purchases.models.StoreProduct>,kotlin.Unit> onReceiveSkus);
     method public static void getVirtualCurrenciesWith(com.revenuecat.purchases.Purchases, optional kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesError,kotlin.Unit> onError, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies,kotlin.Unit> onSuccess);
@@ -258,11 +262,11 @@ package com.revenuecat.purchases {
     ctor public Offerings(com.revenuecat.purchases.Offering? current, java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> all);
     method public operator com.revenuecat.purchases.Offering? get(String identifier);
     method public java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> getAll();
-    method public com.revenuecat.purchases.Offering? getCurrent();
+    method @Deprecated public com.revenuecat.purchases.Offering? getCurrent();
     method public com.revenuecat.purchases.Offering? getCurrentOfferingForPlacement(String placementId);
     method public com.revenuecat.purchases.Offering? getOffering(String identifier);
     property public final java.util.Map<java.lang.String,com.revenuecat.purchases.Offering> all;
-    property public final com.revenuecat.purchases.Offering? current;
+    property @Deprecated public final com.revenuecat.purchases.Offering? current;
   }
 
   @kotlinx.serialization.Serializable public enum OwnershipType {
