@@ -3,6 +3,7 @@ package com.revenuecat.purchases.rules
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
+@OptIn(InternalRulesEngineAPI::class)
 class RulesEngineTest {
 
     @Test
