@@ -279,6 +279,7 @@ public fun Purchases.getAmazonLWAConsentStatusWith(
  * @param onSuccess Called with the current [Offering], or null.
  * @param onError Called if fetching offerings fails.
  */
+@Suppress("unused")
 @JvmSynthetic
 public fun Purchases.getCurrentOfferingWith(
     onSuccess: (Offering?) -> Unit,
@@ -294,6 +295,7 @@ public fun Purchases.getCurrentOfferingWith(
  * @param onSuccess Called with the matching [Offering], or null.
  * @param onError Called if fetching offerings fails.
  */
+@Suppress("unused")
 @JvmSynthetic
 public fun Purchases.getOfferingWith(
     id: String,
