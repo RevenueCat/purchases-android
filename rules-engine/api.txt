@@ -1,0 +1,9 @@
+// Signature format: 4.0
+package com.revenuecat.purchases.rules {
+
+  public final class RulesEngine {
+    field public static final com.revenuecat.purchases.rules.RulesEngine INSTANCE;
+  }
+
+}
+

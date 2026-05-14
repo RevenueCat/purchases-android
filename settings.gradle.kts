@@ -127,6 +127,7 @@ if (samsungIAPAARPresent) {
 include(":feature:admob")
 include(":integration-tests")
 include(":purchases")
+include(":rules-engine")
 include(":examples:purchase-tester")
 include(":api-tester")
 include(":ui:debugview")
