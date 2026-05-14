@@ -33,13 +33,13 @@ internal class RewardVerificationServiceLocator(
         hooks.remove(hook)
     }
 
-    override fun onPurchasesConfigured(@Suppress("UnusedParameter") purchases: Purchases) {
+    override fun onPurchasesConfigured(purchases: Purchases) {
         snapshotHooks().forEach { hook ->
             hook.onPurchasesConfigured(purchases)
         }
     }
 
-    override fun onPurchasesClosed(@Suppress("UnusedParameter") purchases: Purchases) {
+    override fun onPurchasesClosed(purchases: Purchases) {
         snapshotHooks().forEach { hook ->
             hook.onPurchasesClosed(purchases)
         }

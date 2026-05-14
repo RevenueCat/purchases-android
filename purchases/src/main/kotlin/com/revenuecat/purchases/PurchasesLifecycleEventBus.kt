@@ -28,6 +28,8 @@ internal class PurchasesLifecycleEventBus {
     internal fun onConfigured(purchases: Purchases) {
         configuredPurchases = purchases
         val listenersToNotify = listeners.toList()
+        // Keep callback dispatch in this critical section so register/configured/closed
+        // notifications are observed in a single total order.
         listenersToNotify.forEach { listener ->
             listener.onPurchasesConfigured(purchases)
         }
@@ -39,6 +41,7 @@ internal class PurchasesLifecycleEventBus {
             configuredPurchases = null
         }
         val listenersToNotify = listeners.toList()
+        // See onConfigured: ordering correctness is prioritized over minimizing lock hold time.
         listenersToNotify.forEach { listener ->
             listener.onPurchasesClosed(purchases)
         }
