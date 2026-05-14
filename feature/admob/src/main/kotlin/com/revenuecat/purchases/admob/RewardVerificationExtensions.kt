@@ -4,6 +4,7 @@ import android.app.Activity
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.admob.rewardverification.RewardVerificationManager
 import kotlin.jvm.JvmSynthetic
 
 /**
@@ -14,7 +15,7 @@ import kotlin.jvm.JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.enableRewardVerification() {
-    throw NotImplementedError("AdMob reward verification is not implemented yet.")
+    RewardVerificationManager.install(this)
 }
 
 /**
@@ -25,7 +26,7 @@ public fun RewardedAd.enableRewardVerification() {
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.enableRewardVerification() {
-    throw NotImplementedError("AdMob reward verification is not implemented yet.")
+    RewardVerificationManager.install(this)
 }
 
 /**
@@ -36,7 +37,6 @@ public fun RewardedInterstitialAd.enableRewardVerification() {
  * Callback invocations are delivered on the main thread.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-@Suppress("UnusedParameter")
 @JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
@@ -44,7 +44,15 @@ public fun RewardedAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    throw NotImplementedError("AdMob reward verification is not implemented yet.")
+    val ad = this
+
+    ad.show(activity, placement) {
+        RewardVerificationManager.handleRewardEarned(
+            onAd = ad,
+            rewardVerificationStarted = rewardVerificationStarted,
+            rewardVerificationResult = rewardVerificationResult,
+        )
+    }
 }
 
 /**
@@ -55,7 +63,6 @@ public fun RewardedAd.show(
  * Callback invocations are delivered on the main thread.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
-@Suppress("UnusedParameter")
 @JvmSynthetic
 public fun RewardedInterstitialAd.show(
     activity: Activity,
@@ -63,5 +70,13 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationResult: (RewardVerificationResult) -> Unit,
 ) {
-    throw NotImplementedError("AdMob reward verification is not implemented yet.")
+    val ad = this
+
+    ad.show(activity, placement) {
+        RewardVerificationManager.handleRewardEarned(
+            onAd = ad,
+            rewardVerificationStarted = rewardVerificationStarted,
+            rewardVerificationResult = rewardVerificationResult,
+        )
+    }
 }
