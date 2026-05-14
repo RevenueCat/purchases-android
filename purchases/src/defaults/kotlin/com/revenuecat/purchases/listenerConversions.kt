@@ -276,14 +276,14 @@ public fun Purchases.getAmazonLWAConsentStatusWith(
 /**
  * Fetches offerings and returns the current [Offering], or null if none is configured.
  *
- * @param onSuccess Called with the current [Offering], or null.
  * @param onError Called if fetching offerings fails.
+ * @param onSuccess Called with the current [Offering], or null.
  */
 @Suppress("unused")
 @JvmSynthetic
 public fun Purchases.getCurrentOfferingWith(
+    onError: (PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (Offering?) -> Unit,
-    onError: (PurchasesError) -> Unit,
 ) {
     purchasesOrchestrator.getCurrentOffering(onSuccess, onError)
 }
@@ -292,15 +292,15 @@ public fun Purchases.getCurrentOfferingWith(
  * Fetches offerings and returns the [Offering] with the given [id], or null if not found.
  *
  * @param id The identifier of the offering to fetch.
- * @param onSuccess Called with the matching [Offering], or null.
  * @param onError Called if fetching offerings fails.
+ * @param onSuccess Called with the matching [Offering], or null.
  */
 @Suppress("unused")
 @JvmSynthetic
 public fun Purchases.getOfferingWith(
     id: String,
+    onError: (PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (Offering?) -> Unit,
-    onError: (PurchasesError) -> Unit,
 ) {
     purchasesOrchestrator.getOffering(id, onSuccess, onError)
 }

@@ -15,10 +15,6 @@ public class Offerings
 internal constructor(
     @Deprecated(
         message = "Use Purchases.awaitCurrentOffering() or Purchases.getCurrentOfferingWith() instead.",
-        replaceWith = ReplaceWith(
-            expression = "awaitCurrentOffering()",
-            imports = ["com.revenuecat.purchases.awaitCurrentOffering"],
-        ),
         level = DeprecationLevel.WARNING,
     )
     public val current: Offering?,
