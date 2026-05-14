@@ -80,16 +80,6 @@ class WeightedSourceSelectionTest {
     }
 
     @Test
-    fun `negative total weight falls back to uniform random`() {
-        val a = TestSource(priority = 0, weight = -10)
-        val b = TestSource(priority = 0, weight = 5)
-        val sources = listOf(a, b)
-
-        assertThat(sources.selectWeighted(FakeRandom(0))).isSameAs(a)
-        assertThat(sources.selectWeighted(FakeRandom(1))).isSameAs(b)
-    }
-
-    @Test
     fun `any negative weight falls back to uniform random even when total is positive`() {
         val a = TestSource(priority = 0, weight = -10)
         val b = TestSource(priority = 0, weight = 30)
@@ -99,7 +89,56 @@ class WeightedSourceSelectionTest {
         assertThat(sources.selectWeighted(FakeRandom(1))).isSameAs(b)
     }
 
+    @Test
+    fun `selectWeightedExcluding skips excluded id within the top priority tier`() {
+        val a = TestSource(id = "a", priority = 5, weight = 30)
+        val b = TestSource(id = "b", priority = 5, weight = 70)
+        val sources = listOf(a, b)
+
+        val picked = sources.selectWeightedExcluding(
+            excludedIds = setOf("a"),
+            idOf = TestSource::id,
+            random = FakeRandom(0),
+        )
+
+        assertThat(picked).isSameAs(b)
+    }
+
+    @Test
+    fun `selectWeightedExcluding drops to the next priority tier when top tier is fully excluded`() {
+        val high = TestSource(id = "high", priority = 5, weight = 50)
+        val midA = TestSource(id = "midA", priority = 3, weight = 10)
+        val midB = TestSource(id = "midB", priority = 3, weight = 90)
+        val low = TestSource(id = "low", priority = 1, weight = 99)
+        val sources = listOf(high, midA, midB, low)
+
+        val picked = sources.selectWeightedExcluding(
+            excludedIds = setOf("high"),
+            idOf = TestSource::id,
+            random = FakeRandom(9),
+        )
+
+        assertThat(picked).isSameAs(midA)
+    }
+
+    @Test
+    fun `selectWeightedExcluding returns null when every id is excluded`() {
+        val sources = listOf(
+            TestSource(id = "a", priority = 5, weight = 10),
+            TestSource(id = "b", priority = 5, weight = 10),
+        )
+
+        val picked = sources.selectWeightedExcluding(
+            excludedIds = setOf("a", "b"),
+            idOf = TestSource::id,
+            random = FakeRandom(0),
+        )
+
+        assertThat(picked).isNull()
+    }
+
     private data class TestSource(
+        val id: String = "",
         override val priority: Int,
         override val weight: Int,
     ) : WeightedSource

@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.Checksum
@@ -17,6 +18,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
+
+internal sealed class TopicFetchResult {
+    object Success : TopicFetchResult()
+    data class TransientFailure(val error: PurchasesError) : TopicFetchResult()
+    data class InvalidatingFailure(val error: PurchasesError) : TopicFetchResult()
+}
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 internal class TopicFetcher(
@@ -30,11 +37,13 @@ internal class TopicFetcher(
         entryId: String,
         topicEntry: TopicEntry,
         source: BlobSource,
-    ): PurchasesError? {
+    ): TopicFetchResult {
         if (!topicEntry.blobRef.matches(BLOB_REF_PATTERN)) {
             val message = "Topic $topic ($entryId) has a malformed blob_ref; refusing to fetch."
             errorLog { message }
-            return PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError, message)
+            return TopicFetchResult.InvalidatingFailure(
+                PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError, message),
+            )
         }
         return withContext(downloadDispatcher) { fetchOnDispatcher(topic, entryId, topicEntry, source) }
     }
@@ -44,25 +53,33 @@ internal class TopicFetcher(
         entryId: String,
         topicEntry: TopicEntry,
         source: BlobSource,
-    ): PurchasesError? {
+    ): TopicFetchResult {
         val targetFile = topicFile(topic, topicEntry.blobRef)
         if (targetFile.exists()) {
             verboseLog { "Topic $topic ($entryId) already cached at ${targetFile.absolutePath}" }
-            return null
+            return TopicFetchResult.Success
         }
         return try {
             val url = source.urlFormat.replace(BLOB_REF_PLACEHOLDER, topicEntry.blobRef)
             downloadVerifyAndStore(url, topicEntry.blobRef, targetFile)
             debugLog { "Topic $topic ($entryId) downloaded to ${targetFile.absolutePath}" }
-            null
+            TopicFetchResult.Success
         } catch (e: Checksum.ChecksumValidationException) {
             errorLog(e) { "Downloaded topic $topic ($entryId) failed SHA-256 verification." }
-            PurchasesError(
-                PurchasesErrorCode.NetworkError,
-                "Downloaded topic $topic ($entryId) failed SHA-256 verification.",
+            TopicFetchResult.InvalidatingFailure(
+                PurchasesError(
+                    PurchasesErrorCode.NetworkError,
+                    "Downloaded topic $topic ($entryId) failed SHA-256 verification.",
+                ),
             )
         } catch (e: IOException) {
-            e.toPurchasesError().also { errorLog(it) }
+            val error = e.toPurchasesError().also { errorLog(it) }
+            when (ConnectionErrorReason.fromIOException(e)) {
+                ConnectionErrorReason.TIMEOUT,
+                ConnectionErrorReason.NO_NETWORK,
+                -> TopicFetchResult.TransientFailure(error)
+                ConnectionErrorReason.OTHER -> TopicFetchResult.InvalidatingFailure(error)
+            }
         }
     }
 
