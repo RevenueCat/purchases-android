@@ -25,6 +25,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
@@ -411,6 +412,11 @@ class EventsManagerTest {
         assertThat(file.readText()).isEqualTo(expectedContents)
     }
 
+    private fun checkFileContentsAndReturn(): String {
+        val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
+        return file.readText()
+    }
+
     private fun checkFileExists(shouldExist: Boolean) {
         val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         assertThat(file.exists()).isEqualTo(shouldExist)
@@ -455,6 +461,26 @@ class EventsManagerTest {
     private fun appendToFile(contents: String) {
         val file = File(testFolder, EventsManager.EVENTS_FILE_PATH_NEW)
         file.appendText(contents)
+    }
+
+    @Test
+    fun `tracking a WorkflowEvent stores BackendStoredEvent_Workflows`() {
+        val event = WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = "wfl_abc",
+            stepId = "step-1",
+            workflowType = "paywall",
+            stepType = "screen",
+            entryReason = "start",
+            isFirstStep = true,
+        )
+
+        eventsManager.track(event)
+
+        val storedContent = checkFileContentsAndReturn()
+        assertThat(storedContent).contains("\"type\":\"workflows\"")
+        assertThat(storedContent).contains("\"workflow_id\":\"wfl_abc\"")
+        assertThat(storedContent).contains("workflows_step_started")
     }
 
     // Ad Events Tests
