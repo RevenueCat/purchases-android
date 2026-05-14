@@ -15,6 +15,7 @@ internal suspend fun CustomerCenterConfigData.Screen.resolveOfferingSuspend(
 
     return when (screenOffering.type) {
         CustomerCenterConfigData.ScreenOffering.ScreenOfferingType.CURRENT -> {
+            @Suppress("DEPRECATION")
             offerings.current
         }
         CustomerCenterConfigData.ScreenOffering.ScreenOfferingType.SPECIFIC -> {
