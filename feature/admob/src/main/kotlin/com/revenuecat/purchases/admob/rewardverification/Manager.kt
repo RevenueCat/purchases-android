@@ -117,21 +117,22 @@ internal object RewardVerificationManager {
 
             deliverStarted(rewardVerificationStarted)
 
+            if (clientTransactionId == null) {
+                deliverFailed(rewardVerificationResult)
+                return
+            }
+
             val activeScope = synchronized(this) { verificationScope }
             if (activeScope == null) {
                 deliverFailed(rewardVerificationResult)
                 return
             }
 
-            if (clientTransactionId == null) {
-                deliverFailed(rewardVerificationResult)
-            } else {
-                verifyReward(
-                    scope = activeScope,
-                    clientTransactionId = clientTransactionId,
-                    rewardVerificationResult = rewardVerificationResult,
-                )
-            }
+            verifyReward(
+                scope = activeScope,
+                clientTransactionId = clientTransactionId,
+                rewardVerificationResult = rewardVerificationResult,
+            )
         }
 
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
