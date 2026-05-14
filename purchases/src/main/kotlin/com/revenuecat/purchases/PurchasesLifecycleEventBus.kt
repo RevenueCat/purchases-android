@@ -1,7 +1,5 @@
 package com.revenuecat.purchases
 
-import java.util.Collections
-
 @InternalRevenueCatAPI
 public interface PurchasesLifecycleListener {
     public fun onPurchasesConfigured(purchases: Purchases)
@@ -10,36 +8,58 @@ public interface PurchasesLifecycleListener {
 
 @InternalRevenueCatAPI
 public object PurchasesLifecycleEventBus {
-    private val listeners = Collections.synchronizedSet(mutableSetOf<PurchasesLifecycleListener>())
+    private val listeners = mutableSetOf<PurchasesLifecycleListener>()
+    private var configuredPurchases: Purchases? = null
 
     @JvmSynthetic
     public fun register(listener: PurchasesLifecycleListener) {
-        listeners.add(listener)
-        Purchases.backingFieldSharedInstance?.let { configuredPurchases ->
-            listener.onPurchasesConfigured(configuredPurchases)
+        val configuredSnapshot = registerAndGetConfiguredSnapshot(listener)
+        configuredSnapshot?.let { configured ->
+            listener.onPurchasesConfigured(configured)
         }
     }
 
     @JvmSynthetic
     public fun unregister(listener: PurchasesLifecycleListener) {
-        listeners.remove(listener)
+        unregisterSynchronized(listener)
     }
 
     internal fun onConfigured(purchases: Purchases) {
-        snapshotListeners().forEach { listener ->
+        val listenersToNotify = updateConfiguredAndGetListeners(purchases)
+        listenersToNotify.forEach { listener ->
             listener.onPurchasesConfigured(purchases)
         }
     }
 
     internal fun onClosed(purchases: Purchases) {
-        snapshotListeners().forEach { listener ->
+        val listenersToNotify = clearConfiguredAndGetListeners(purchases)
+        listenersToNotify.forEach { listener ->
             listener.onPurchasesClosed(purchases)
         }
     }
 
-    private fun snapshotListeners(): List<PurchasesLifecycleListener> {
-        synchronized(listeners) {
-            return listeners.toList()
+    @Synchronized
+    private fun registerAndGetConfiguredSnapshot(listener: PurchasesLifecycleListener): Purchases? {
+        listeners.add(listener)
+        return configuredPurchases
+    }
+
+    @Synchronized
+    private fun unregisterSynchronized(listener: PurchasesLifecycleListener) {
+        listeners.remove(listener)
+    }
+
+    @Synchronized
+    private fun updateConfiguredAndGetListeners(purchases: Purchases): List<PurchasesLifecycleListener> {
+        configuredPurchases = purchases
+        return listeners.toList()
+    }
+
+    @Synchronized
+    private fun clearConfiguredAndGetListeners(purchases: Purchases): List<PurchasesLifecycleListener> {
+        if (configuredPurchases === purchases) {
+            configuredPurchases = null
         }
+        return listeners.toList()
     }
 }
