@@ -19,7 +19,9 @@ public sealed class WorkflowEvent : FeatureEvent {
     public abstract val creationData: CreationData
     public abstract val workflowId: String
     public abstract val stepId: String
-    public abstract val traceId: String
+    public abstract val workflowType: String?
+    public abstract val stepType: String?
+    public abstract val screenType: List<String>
 
     override val isPriorityEvent: Boolean get() = false
 
@@ -35,7 +37,9 @@ public sealed class WorkflowEvent : FeatureEvent {
         override val creationData: CreationData,
         override val workflowId: String,
         override val stepId: String,
-        override val traceId: String,
+        override val workflowType: String? = null,
+        override val stepType: String? = null,
+        override val screenType: List<String> = emptyList(),
         public val fromStepId: String? = null,
         public val entryReason: String? = null,
         public val isFirstStep: Boolean? = null,
@@ -48,7 +52,9 @@ public sealed class WorkflowEvent : FeatureEvent {
         override val creationData: CreationData,
         override val workflowId: String,
         override val stepId: String,
-        override val traceId: String,
+        override val workflowType: String? = null,
+        override val stepType: String? = null,
+        override val screenType: List<String> = emptyList(),
         public val toStepId: String? = null,
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,

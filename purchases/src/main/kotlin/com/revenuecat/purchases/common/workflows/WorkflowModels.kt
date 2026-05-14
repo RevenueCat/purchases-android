@@ -65,6 +65,7 @@ public data class WorkflowStep(
     val id: String,
     val type: String,
     @SerialName("screen_id") val screenId: String? = null,
+    @SerialName("screen_type") val screenType: List<String> = emptyList(),
     @SerialName("param_values") val paramValues: Map<String, JsonElement> = emptyMap(),
     val triggers: List<WorkflowTrigger> = emptyList(),
     val outputs: Map<String, JsonElement> = emptyMap(),

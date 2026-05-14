@@ -370,7 +370,9 @@ internal fun WorkflowEvent.toBackendStoredEvent(
         is WorkflowEvent.StepStarted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
             stepId = stepId,
-            traceId = traceId,
+            workflowType = workflowType,
+            stepType = stepType,
+            screenType = screenType,
             fromStepId = fromStepId,
             entryReason = entryReason,
             isFirstStep = isFirstStep,
@@ -379,7 +381,9 @@ internal fun WorkflowEvent.toBackendStoredEvent(
         is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
             stepId = stepId,
-            traceId = traceId,
+            workflowType = workflowType,
+            stepType = stepType,
+            screenType = screenType,
             toStepId = toStepId,
             isFirstStep = isFirstStep,
             isLastStep = isLastStep,

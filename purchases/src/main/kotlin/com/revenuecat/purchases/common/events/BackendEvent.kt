@@ -237,8 +237,12 @@ internal sealed class BackendEvent : Event {
             val workflowId: String,
             @SerialName("step_id")
             val stepId: String,
-            @SerialName("trace_id")
-            val traceId: String,
+            @SerialName("workflow_type")
+            val workflowType: String? = null,
+            @SerialName("step_type")
+            val stepType: String? = null,
+            @SerialName("screen_type")
+            val screenType: List<String> = emptyList(),
             @SerialName("from_step_id")
             val fromStepId: String? = null,
             @SerialName("to_step_id")

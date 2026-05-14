@@ -20,14 +20,16 @@ import java.util.UUID
 class WorkflowEventTest {
 
     @Test
-    fun `StepStarted carries workflow, step, trace, and optional metadata`() {
+    fun `StepStarted carries workflow, step, and optional metadata`() {
         val id = UUID.randomUUID()
         val date = Date()
         val event = WorkflowEvent.StepStarted(
             creationData = WorkflowEvent.CreationData(id = id, date = date),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            traceId = "trace-1",
+            workflowType = "paywall",
+            stepType = "screen",
+            screenType = emptyList(),
             fromStepId = null,
             entryReason = "start",
             isFirstStep = true,
@@ -36,7 +38,9 @@ class WorkflowEventTest {
 
         assertThat(event.workflowId).isEqualTo("wfl_abc")
         assertThat(event.stepId).isEqualTo("step-1")
-        assertThat(event.traceId).isEqualTo("trace-1")
+        assertThat(event.workflowType).isEqualTo("paywall")
+        assertThat(event.stepType).isEqualTo("screen")
+        assertThat(event.screenType).isEmpty()
         assertThat(event.entryReason).isEqualTo("start")
         assertThat(event.isFirstStep).isTrue
         assertThat(event.isPriorityEvent).isFalse
@@ -48,7 +52,8 @@ class WorkflowEventTest {
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            traceId = "trace-1",
+            workflowType = "paywall",
+            stepType = "screen",
             toStepId = "step-2",
             isFirstStep = true,
             isLastStep = false,
@@ -67,7 +72,9 @@ class WorkflowEventTest {
             creationData = WorkflowEvent.CreationData(id, date),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            traceId = "trace-1",
+            workflowType = "paywall",
+            stepType = "screen",
+            screenType = emptyList(),
             fromStepId = null,
             entryReason = "start",
             isFirstStep = true,
@@ -83,7 +90,9 @@ class WorkflowEventTest {
         assertThat(backend.appUserID).isEqualTo("user_42")
         assertThat(backend.properties.workflowId).isEqualTo("wfl_abc")
         assertThat(backend.properties.stepId).isEqualTo("step-1")
-        assertThat(backend.properties.traceId).isEqualTo("trace-1")
+        assertThat(backend.properties.workflowType).isEqualTo("paywall")
+        assertThat(backend.properties.stepType).isEqualTo("screen")
+        assertThat(backend.properties.screenType).isEmpty()
         assertThat(backend.properties.entryReason).isEqualTo("start")
         assertThat(backend.properties.isFirstStep).isTrue
     }
@@ -94,7 +103,8 @@ class WorkflowEventTest {
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            traceId = "trace-1",
+            workflowType = "paywall",
+            stepType = "screen",
             toStepId = "step-2",
             isFirstStep = true,
             isLastStep = false,
@@ -104,6 +114,8 @@ class WorkflowEventTest {
         assertThat(stored.event.eventName).isEqualTo("workflows_step_completed")
         assertThat(stored.event.properties.toStepId).isEqualTo("step-2")
         assertThat(stored.event.properties.fromStepId).isNull()
+        assertThat(stored.event.properties.workflowType).isEqualTo("paywall")
+        assertThat(stored.event.properties.stepType).isEqualTo("screen")
     }
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -126,7 +138,8 @@ class WorkflowEventTest {
                 properties = BackendEvent.Workflows.Properties(
                     workflowId = "wfl",
                     stepId = "s1",
-                    traceId = "t",
+                    workflowType = "paywall",
+                    stepType = "screen",
                 ),
             ),
         )

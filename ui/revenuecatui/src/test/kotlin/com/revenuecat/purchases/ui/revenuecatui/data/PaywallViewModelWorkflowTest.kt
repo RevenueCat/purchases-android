@@ -1044,7 +1044,9 @@ class PaywallViewModelWorkflowTest {
         assertThat(started.first().entryReason).isEqualTo("start")
         assertThat(started.first().fromStepId).isNull()
         assertThat(started.first().isFirstStep).isTrue
-        assertThat(started.first().traceId).isNotEmpty()
+        assertThat(started.first().workflowType).isEqualTo("paywall")
+        assertThat(started.first().stepType).isEqualTo("screen")
+        assertThat(started.first().screenType).isEmpty()
     }
 
     @Test

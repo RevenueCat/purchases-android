@@ -23,7 +23,8 @@ class WorkflowEventsRequestSerializationTest {
                 properties = BackendEvent.Workflows.Properties(
                     workflowId = "wfl_abc",
                     stepId = "step-1",
-                    traceId = "trace-1",
+                    workflowType = "paywall",
+                    stepType = "screen",
                     entryReason = "start",
                     isFirstStep = true,
                     isLastStep = false,
@@ -48,7 +49,8 @@ class WorkflowEventsRequestSerializationTest {
                         "\"properties\":{" +
                             "\"workflow_id\":\"wfl_abc\"," +
                             "\"step_id\":\"step-1\"," +
-                            "\"trace_id\":\"trace-1\"," +
+                            "\"workflow_type\":\"paywall\"," +
+                            "\"step_type\":\"screen\"," +
                             "\"entry_reason\":\"start\"," +
                             "\"is_first_step\":true," +
                             "\"is_last_step\":false" +
@@ -64,5 +66,17 @@ class WorkflowEventsRequestSerializationTest {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
         val decoded = JsonProvider.defaultJson.decodeFromString<EventsRequest>(requestString)
         assertThat(decoded).isEqualTo(request)
+    }
+
+    @Test
+    fun `screen_type omitted from JSON when empty`() {
+        val requestString = JsonProvider.defaultJson.encodeToString(request)
+        assertThat(requestString).doesNotContain("screen_type")
+    }
+
+    @Test
+    fun `trace_id absent from JSON output`() {
+        val requestString = JsonProvider.defaultJson.encodeToString(request)
+        assertThat(requestString).doesNotContain("trace_id")
     }
 }
