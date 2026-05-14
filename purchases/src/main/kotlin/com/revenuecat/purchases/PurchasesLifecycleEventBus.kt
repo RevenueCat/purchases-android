@@ -6,21 +6,19 @@ public interface PurchasesLifecycleListener {
     public fun onPurchasesClosed(purchases: Purchases)
 }
 
-@InternalRevenueCatAPI
-public object PurchasesLifecycleEventBus {
+@OptIn(InternalRevenueCatAPI::class)
+internal class PurchasesLifecycleEventBus {
     private val listeners = mutableSetOf<PurchasesLifecycleListener>()
     private var configuredPurchases: Purchases? = null
 
-    @JvmSynthetic
-    public fun register(listener: PurchasesLifecycleListener) {
+    fun register(listener: PurchasesLifecycleListener) {
         val configuredSnapshot = registerAndGetConfiguredSnapshot(listener)
         configuredSnapshot?.let { configured ->
             listener.onPurchasesConfigured(configured)
         }
     }
 
-    @JvmSynthetic
-    public fun unregister(listener: PurchasesLifecycleListener) {
+    fun unregister(listener: PurchasesLifecycleListener) {
         unregisterSynchronized(listener)
     }
 

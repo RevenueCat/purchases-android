@@ -1,17 +1,21 @@
 package com.revenuecat.purchases
 
+private val defaultLifecycleEventBus = PurchasesLifecycleEventBus()
+
 internal object PurchasesLifecycleListeners {
     @OptIn(InternalRevenueCatAPI::class)
-    fun default(): PurchasesLifecycleListener = PurchasesLifecycleEventBusForwarder
+    fun default(): PurchasesLifecycleListener = PurchasesLifecycleEventBusForwarder(defaultLifecycleEventBus)
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-private object PurchasesLifecycleEventBusForwarder : PurchasesLifecycleListener {
+private class PurchasesLifecycleEventBusForwarder(
+    private val eventBus: PurchasesLifecycleEventBus,
+) : PurchasesLifecycleListener {
     override fun onPurchasesConfigured(purchases: Purchases) {
-        PurchasesLifecycleEventBus.onConfigured(purchases)
+        eventBus.onConfigured(purchases)
     }
 
     override fun onPurchasesClosed(purchases: Purchases) {
-        PurchasesLifecycleEventBus.onClosed(purchases)
+        eventBus.onClosed(purchases)
     }
 }
