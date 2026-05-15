@@ -141,9 +141,6 @@ internal class RewardVerificationRuntime(
             TAG,
             "Reward verification callback requires enableRewardVerification() before show().",
         )
-        assert(false) {
-            "Call enableRewardVerification() before using reward verification show overloads."
-        }
     }
 
     @Synchronized

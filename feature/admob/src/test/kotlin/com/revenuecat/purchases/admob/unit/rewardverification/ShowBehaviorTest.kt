@@ -5,11 +5,14 @@ package com.revenuecat.purchases.admob.rewardverification
 import android.app.Activity
 import android.os.Looper
 import com.google.android.gms.ads.OnUserEarnedRewardListener
-import com.google.android.gms.ads.rewarded.RewardItem
+import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardItem
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.show as showWithRewardVerification
+import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -72,5 +75,43 @@ class ShowBehaviorTest {
 
         assertEquals(1, callbackCount)
         assertSame(Looper.getMainLooper().thread, callbackThread)
+    }
+
+    @Test
+    fun `show without placement preserves existing tracked placement`() {
+        val ad = mockk<RewardedAd>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+        val rewardListenerSlot = slot<OnUserEarnedRewardListener>()
+        val trackingCallback = trackingCallback(placement = "load-placement")
+        every { ad.fullScreenContentCallback } returns trackingCallback
+        every { ad.show(activity, capture(rewardListenerSlot)) } answers {}
+
+        ad.showWithRewardVerification(activity = activity) { }
+
+        assertEquals("load-placement", trackingCallback.placement)
+    }
+
+    @Test
+    fun `show with placement overrides existing tracked placement`() {
+        val ad = mockk<RewardedAd>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+        val rewardListenerSlot = slot<OnUserEarnedRewardListener>()
+        val trackingCallback = trackingCallback(placement = "load-placement")
+        every { ad.fullScreenContentCallback } returns trackingCallback
+        every { ad.show(activity, capture(rewardListenerSlot)) } answers {}
+
+        ad.showWithRewardVerification(activity = activity, placement = "show-placement") { }
+
+        assertEquals("show-placement", trackingCallback.placement)
+    }
+
+    private fun trackingCallback(placement: String?): TrackingFullScreenContentCallback {
+        return TrackingFullScreenContentCallback(
+            delegate = null,
+            adFormat = AdFormat.REWARDED,
+            placement = placement,
+            adUnitId = "ad-unit-id",
+            responseInfoProvider = { mockk<ResponseInfo>(relaxed = true) },
+        )
     }
 }
