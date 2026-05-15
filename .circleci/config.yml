@@ -360,6 +360,9 @@ jobs:
       - run:
           name: Validate binary compatibility
           command: ./scripts/api-check.sh
+      - run:
+          name: Assert :rules-engine has no non-internal public API
+          command: ./scripts/check-rules-engine-internal-only.sh
       - android/save_gradle_cache
 
   docs-deploy:
