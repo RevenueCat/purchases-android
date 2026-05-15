@@ -20,6 +20,7 @@ public class PurchaseButtonComponent(
     @get:JvmSynthetic public val action: Action? = null,
     @get:JvmSynthetic public val method: Method? = null,
     @get:JvmSynthetic public val name: String? = null,
+    @get:JvmSynthetic public val id: String? = null,
 ) : PaywallComponent {
     @Serializable(with = ActionDeserializer::class)
     public enum class Action {

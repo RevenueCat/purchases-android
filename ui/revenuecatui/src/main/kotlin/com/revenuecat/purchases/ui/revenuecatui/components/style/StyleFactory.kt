@@ -696,6 +696,7 @@ internal class StyleFactory(
                             rcPackage = rcPackage,
                             isSelectedByDefault = component.isSelectedByDefault,
                             componentName = component.name,
+                            componentId = component.id,
                             isSelectable = purchaseButtons == 0,
                             resolvedOffer = resolvedOffer,
                             visible = component.visible ?: DEFAULT_VISIBILITY,
@@ -716,6 +717,7 @@ internal class StyleFactory(
             stackComponentStyle = stack,
             action = action,
             componentName = component.name,
+            componentId = component.id,
         )
     }
 

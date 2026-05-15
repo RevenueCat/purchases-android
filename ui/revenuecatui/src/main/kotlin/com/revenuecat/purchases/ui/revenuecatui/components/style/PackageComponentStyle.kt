@@ -19,6 +19,8 @@ internal data class PackageComponentStyle(
     @get:JvmSynthetic
     val componentName: String? = null,
     @get:JvmSynthetic
+    override val componentId: String? = null,
+    @get:JvmSynthetic
     val stackComponentStyle: StackComponentStyle,
     @get:JvmSynthetic
     val isSelectable: Boolean,
