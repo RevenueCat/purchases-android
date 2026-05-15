@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.CapturingLogger
+import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 
 class AccessorOperatorsTest {
@@ -163,6 +165,89 @@ class AccessorOperatorsTest {
         assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"))))
     }
 
+    // ---- missing_some ----
+
+    @Test
+    fun `missing_some returns empty when threshold met`() {
+        // need=1, options=[a, b, c]; b is present → 1 ≥ 1 → satisfied → [].
+        val vars = obj("b" to Value.IntValue(2))
+        val result = runMissingSome(
+            Value.ArrayValue(
+                listOf(
+                    Value.IntValue(1),
+                    Value.ArrayValue(listOf(s("a"), s("b"), s("c"))),
+                ),
+            ),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(emptyList()))
+    }
+
+    @Test
+    fun `missing_some returns missing list when below threshold`() {
+        // need=2, options=[a, b, c]; only c is present → 1 < 2 → list missing.
+        val vars = obj("c" to Value.IntValue(3))
+        val result = runMissingSome(
+            Value.ArrayValue(
+                listOf(
+                    Value.IntValue(2),
+                    Value.ArrayValue(listOf(s("a"), s("b"), s("c"))),
+                ),
+            ),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"), s("b"))))
+    }
+
+    @Test
+    fun `missing_some zero required is always satisfied`() {
+        // need=0 means "any number of these is fine" → always [].
+        val result = runMissingSome(
+            Value.ArrayValue(
+                listOf(
+                    Value.IntValue(0),
+                    Value.ArrayValue(listOf(s("a"), s("b"))),
+                ),
+            ),
+            obj(),
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(emptyList()))
+    }
+
+    @Test
+    fun `missing_some supports dot-paths`() {
+        // Mirrors `missing` semantics — path strings flow through the same
+        // dot-walker.
+        val vars = obj("user" to obj("name" to s("ada")))
+        val result = runMissingSome(
+            Value.ArrayValue(
+                listOf(
+                    Value.IntValue(2),
+                    Value.ArrayValue(listOf(s("user.name"), s("user.email"), s("user.age"))),
+                ),
+            ),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("user.email"), s("user.age"))))
+    }
+
+    @Test
+    fun `missing_some arity mismatch is type error`() {
+        assertThatThrownBy {
+            runMissingSome(Value.ArrayValue(listOf(Value.IntValue(1))), obj())
+        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+    }
+
+    @Test
+    fun `missing_some non-array options is type error`() {
+        assertThatThrownBy {
+            runMissingSome(
+                Value.ArrayValue(listOf(Value.IntValue(1), s("a"))),
+                obj(),
+            )
+        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+    }
+
     // ---- helpers ----
 
     private fun runVar(pathArg: Value, vars: Value): Pair<Value, List<String>> {
@@ -170,6 +255,9 @@ class AccessorOperatorsTest {
         val result = AccessorOperators.opVar(pathArg, vars, logger)
         return result to logger.warnings
     }
+
+    private fun runMissingSome(args: Value, vars: Value): Value =
+        AccessorOperators.opMissingSome(args, vars, CapturingLogger())
 
     private fun obj(vararg entries: Pair<String, Value>): Value =
         Value.ObjectValue(entries.toMap())

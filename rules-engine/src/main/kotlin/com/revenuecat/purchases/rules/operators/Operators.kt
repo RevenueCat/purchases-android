@@ -28,6 +28,7 @@ internal object Operators {
     ): Value = when (op) {
         "var" -> AccessorOperators.opVar(args, vars, logger)
         "missing" -> AccessorOperators.opMissing(args, vars, logger)
+        "missing_some" -> AccessorOperators.opMissingSome(args, vars, logger)
 
         "==" -> EqualityOperators.opLooseEq(args, vars, logger)
         "!=" -> EqualityOperators.opLooseNe(args, vars, logger)
@@ -39,6 +40,11 @@ internal object Operators {
         "and" -> LogicOperators.opAnd(args, vars, logger)
         "or" -> LogicOperators.opOr(args, vars, logger)
         "if" -> LogicOperators.opIf(args, vars, logger)
+
+        "in" -> StringArrayOperators.opIn(args, vars, logger)
+        "cat" -> StringArrayOperators.opCat(args, vars, logger)
+        "substr" -> StringArrayOperators.opSubstr(args, vars, logger)
+        "merge" -> StringArrayOperators.opMerge(args, vars, logger)
 
         else -> throw RuleError.UnsupportedOperator(op)
     }

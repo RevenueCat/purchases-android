@@ -62,6 +62,45 @@ internal object AccessorOperators {
     }
 
     /**
+     * `{"missing_some": [min_required, [path, ...]]}` returns the
+     * missing-keys array (same shape as `missing`) IF fewer than
+     * `min_required` of the requested paths are present. Otherwise
+     * returns `[]` (the rule's required-data condition is satisfied).
+     * Used to express "any 2 of these 5 fields must be present" style
+     * requirements.
+     */
+    fun opMissingSome(args: Value, vars: Value, logger: RulesEngineLogger): Value {
+        val evaluated = Operators.evalArgs(args, vars, logger)
+        if (evaluated.size != 2) {
+            throw RuleError.TypeMismatch(
+                "operator 'missing_some' expects 2 arguments, got ${evaluated.size}",
+            )
+        }
+        val needCountValue = evaluated[0]
+        val options = evaluated[1] as? Value.ArrayValue
+            ?: throw RuleError.TypeMismatch(
+                "operator 'missing_some': second argument must be an array of paths, " +
+                    "got ${evaluated[1]}",
+            )
+
+        val total = options.items.size.toLong()
+
+        // Non-numeric `need_count` falls back to 0, mirroring the lenient
+        // coercion of our other operators. With need=0 the condition is
+        // trivially satisfied, so `missing_some` returns `[]`.
+        val need = (needCountValue.toNumberOrNull() ?: 0.0).toLong()
+
+        val missing = opMissing(options, vars, logger)
+        val missingCount = (missing as? Value.ArrayValue)?.items?.size?.toLong() ?: 0L
+
+        return if (total - missingCount >= need) {
+            Value.ArrayValue(emptyList())
+        } else {
+            missing
+        }
+    }
+
+    /**
      * Normalize `var`'s arg into a `(path, default)` pair. Accepts a
      * string/number literal, `Null` (= empty path), or `[path, default?]`.
      */

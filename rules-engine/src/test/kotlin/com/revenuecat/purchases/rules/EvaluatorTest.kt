@@ -193,6 +193,43 @@ class EvaluatorTest {
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
+    // ---- string + array operators (integration through dispatch) ----
+
+    @Test
+    fun `in operator against array with var needle`() {
+        // {"in": [{"var": "country"}, ["US", "CA", "MX"]]}
+        val predicate = """
+            {"in": [
+                {"var": "country"},
+                ["US", "CA", "MX"]
+            ]}
+        """.trimIndent()
+        assertThat(run(predicate, mapOf("country" to s("CA")))).isTrue
+        assertThat(run(predicate, mapOf("country" to s("FR")))).isFalse
+    }
+
+    @Test
+    fun `missing_some inside if gates required data`() {
+        // Pattern: "the rule needs at least 2 of these 3 fields populated".
+        // We use it as a guard: if the data is insufficient, fall back to a
+        // literal `false`; otherwise the inner check runs.
+        val predicate = """
+            {
+                "if": [
+                    {"!!": {"missing_some": [2, ["a", "b", "c"]]}},
+                    false,
+                    {"==": [{"var": "a"}, 1]}
+                ]
+            }
+        """.trimIndent()
+        // Two of three fields → data sufficient → inner check runs (a == 1 → true).
+        assertThat(
+            run(predicate, mapOf("a" to Value.IntValue(1), "b" to Value.IntValue(2))),
+        ).isTrue
+        // Only one field → data insufficient → falls back to false.
+        assertThat(run(predicate, mapOf("a" to Value.IntValue(1)))).isFalse
+    }
+
     // ---- multi-key object treated as data, not operator ----
 
     @Test
