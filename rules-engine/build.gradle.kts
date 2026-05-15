@@ -21,16 +21,6 @@ android {
     }
 }
 
-// Two follow-up PRs build on this skeleton:
-// - publishing/distribution: wires up `mavenPublishing { … }`, the `:bom`
-//   constraint, the revert of the `ConfigureConditionalPublishing` short-circuit,
-//   and the `dokkaHtmlPartial` suppression.
-// - #3480 (no-public-apis enforcement): adds the explicit metalava-based check
-//   that fails if any public declaration in this module isn't gated by
-//   `@InternalRulesEngineAPI`.
-//
-// Until both ship, this module just compiles, runs tests, and gets detekt'd.
-
 dependencies {
     testImplementation(libs.bundles.test)
 }
