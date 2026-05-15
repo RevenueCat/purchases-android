@@ -8,7 +8,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -116,7 +115,7 @@ internal class RewardVerificationRuntime(
         }
 
         verificationTask.invokeOnCompletion { cause ->
-            if (cause is CancellationException) {
+            if (cause != null) {
                 notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
             }
         }
