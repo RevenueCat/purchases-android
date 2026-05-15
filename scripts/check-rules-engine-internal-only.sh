@@ -2,17 +2,18 @@
 #
 # Asserts :rules-engine has no public API outside @InternalRulesEngineAPI.
 #
-# Regenerates rules-engine/api.txt with Metalava (which already hides anything
+# Regenerates the metalava signature dump (which already hides anything
 # annotated @InternalRulesEngineAPI) and then verifies the only declaration
-# left in api.txt is the @InternalRulesEngineAPI annotation itself. Anything
+# left in the dump is the @InternalRulesEngineAPI annotation itself. Anything
 # else is a leaked, non-internal public API and fails CI.
 #
 # This check is intrinsic — it does not rely on diffing against a committed
-# baseline, so it cannot be silenced by regenerating api.txt.
+# baseline, so it cannot be silenced by regenerating the dump.
 
 set -euo pipefail
 
-API_FILE="rules-engine/api.txt"
+# Must match `metalava { filename.set(...) }` in `rules-engine/build.gradle.kts`.
+API_FILE="rules-engine/build/api-dump.txt"
 
 ./gradlew :rules-engine:metalavaGenerateSignatureDefaultsRelease --no-daemon
 
