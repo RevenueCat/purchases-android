@@ -360,6 +360,9 @@ jobs:
       - run:
           name: Validate binary compatibility
           command: ./scripts/api-check.sh
+      - run:
+          name: Assert :rules-engine has no non-internal public API
+          command: ./scripts/check-rules-engine-internal-only.sh
       - android/save_gradle_cache
 
   docs-deploy:
@@ -382,7 +385,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.6.0 s3://purchases-docs/android/10.6.0 --delete
+          command: aws s3 sync ~/project/docs/10.7.0-SNAPSHOT s3://purchases-docs/android/10.7.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
