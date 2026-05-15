@@ -11,7 +11,6 @@ import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -22,7 +21,11 @@ private const val TAG = "PurchasesAdMob"
 
 internal object RewardVerificationManager {
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val runtime = Runtime()
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    private val runtime = RewardVerificationRuntime(
+        mainHandler = mainHandler,
+    )
     private val serviceLocator = RewardVerificationServiceLocator()
 
     init {
@@ -64,11 +67,65 @@ internal object RewardVerificationManager {
         )
     }
 
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+internal class RewardVerificationRuntime(
+    private val mainHandler: Handler = Handler(Looper.getMainLooper()),
+    private val createVerificationScope: () -> CoroutineScope = {
+        CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    },
+    private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
+        Poller.poll(clientTransactionId)
+    },
+) : RewardVerificationLifecycleHook {
+    private var clientTransactionIdByAd: MutableMap<Any, String>? = null
+    private var verificationScope: CoroutineScope? = null
+
+    @Synchronized
+    fun setClientTransactionId(ad: Any, clientTransactionId: String): Boolean {
+        val store = clientTransactionIdByAd ?: return false
+        store[ad] = clientTransactionId
+        return true
+    }
+
+    fun handleRewardEarned(
+        onAd: Any,
+        rewardVerificationStarted: (() -> Unit)?,
+        rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
+    ) {
+        val clientTransactionId = removeClientTransactionId(onAd)
+        warnAndAssertIfMissingClientTransactionId(clientTransactionId)
+
+        notifyStarted(rewardVerificationStarted)
+
+        if (clientTransactionId == null) {
+            notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
+            return
+        }
+
+        val verificationTask = synchronized(this) {
+            verificationScope?.launch {
+                val result = poll(clientTransactionId)
+                notifyCompleted(result, rewardVerificationCompleted)
+            }
+        }
+        if (verificationTask == null) {
+            notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
+            return
+        }
+
+        verificationTask.invokeOnCompletion { cause ->
+            if (cause is CancellationException) {
+                notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
+            }
+        }
+    }
+
     private fun notifyStarted(block: (() -> Unit)?) {
         runOnMainIfPresent(mainHandler, block)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun notifyCompleted(
         result: RewardVerificationResult,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
@@ -90,73 +147,23 @@ internal object RewardVerificationManager {
         }
     }
 
-    private class Runtime : RewardVerificationLifecycleHook {
-        private var clientTransactionIdByAd: MutableMap<Any, String>? = null
-        private var verificationJob: Job? = null
-        private var verificationScope: CoroutineScope? = null
+    @Synchronized
+    private fun removeClientTransactionId(ad: Any): String? {
+        return clientTransactionIdByAd?.remove(ad)
+    }
 
-        @Synchronized
-        fun setClientTransactionId(ad: Any, clientTransactionId: String): Boolean {
-            val store = clientTransactionIdByAd ?: return false
-            store[ad] = clientTransactionId
-            return true
-        }
+    @Synchronized
+    override fun onPurchasesConfigured(purchases: Purchases) {
+        verificationScope?.cancel()
+        verificationScope = createVerificationScope()
+        clientTransactionIdByAd = WeakHashMap()
+    }
 
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-        fun handleRewardEarned(
-            onAd: Any,
-            rewardVerificationStarted: (() -> Unit)?,
-            rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
-        ) {
-            val clientTransactionId = removeClientTransactionId(onAd)
-            warnAndAssertIfMissingClientTransactionId(clientTransactionId)
-
-            notifyStarted(rewardVerificationStarted)
-
-            if (clientTransactionId == null) {
-                notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
-                return
-            }
-
-            val verificationTask = synchronized(this) {
-                verificationScope?.launch {
-                    val result = Poller.poll(clientTransactionId)
-                    notifyCompleted(result, rewardVerificationCompleted)
-                }
-            }
-            if (verificationTask == null) {
-                notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
-                return
-            }
-
-            verificationTask.invokeOnCompletion { cause ->
-                if (cause is CancellationException) {
-                    notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
-                }
-            }
-        }
-
-        @Synchronized
-        private fun removeClientTransactionId(ad: Any): String? {
-            return clientTransactionIdByAd?.remove(ad)
-        }
-
-        @Synchronized
-        override fun onPurchasesConfigured(purchases: Purchases) {
-            verificationJob?.cancel()
-            verificationJob = SupervisorJob()
-            verificationScope = CoroutineScope(verificationJob!! + Dispatchers.IO)
-            clientTransactionIdByAd = WeakHashMap()
-        }
-
-        @Synchronized
-        override fun onPurchasesClosed(purchases: Purchases) {
-            clientTransactionIdByAd?.clear()
-            clientTransactionIdByAd = null
-            verificationJob?.cancel()
-            verificationJob = null
-            verificationScope?.cancel()
-            verificationScope = null
-        }
+    @Synchronized
+    override fun onPurchasesClosed(purchases: Purchases) {
+        clientTransactionIdByAd?.clear()
+        clientTransactionIdByAd = null
+        verificationScope?.cancel()
+        verificationScope = null
     }
 }
