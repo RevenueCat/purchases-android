@@ -544,6 +544,12 @@ package com.revenuecat.purchases {
     property public final String? underlyingErrorMessage;
   }
 
+  public final class PurchasesLifecycle {
+    method @kotlin.jvm.JvmSynthetic public void register(com.revenuecat.purchases.PurchasesLifecycleListener listener);
+    method @kotlin.jvm.JvmSynthetic public void unregister(com.revenuecat.purchases.PurchasesLifecycleListener listener);
+    field public static final com.revenuecat.purchases.PurchasesLifecycle INSTANCE;
+  }
+
   public final class PurchasesTransactionException extends com.revenuecat.purchases.PurchasesException {
     ctor public PurchasesTransactionException(com.revenuecat.purchases.PurchasesError purchasesError, boolean userCancelled);
     method public boolean getUserCancelled();
