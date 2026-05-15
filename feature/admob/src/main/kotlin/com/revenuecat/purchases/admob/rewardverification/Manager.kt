@@ -48,7 +48,8 @@ internal object RewardVerificationManager {
         if (!didStoreClientTransactionId) {
             Log.w(
                 TAG,
-                "Reward verification setup is not ready. Try enabling reward verification after Purchases is configured.",
+                "Reward verification setup is not ready. " +
+                    "Try enabling reward verification after Purchases is configured.",
             )
         }
     }
@@ -65,7 +66,6 @@ internal object RewardVerificationManager {
             rewardVerificationCompleted = rewardVerificationCompleted,
         )
     }
-
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
