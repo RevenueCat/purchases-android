@@ -3,10 +3,14 @@ package com.revenuecat.purchases.rules
 import com.revenuecat.purchases.rules.helpers.ValueJsonHelper
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Rule
 import org.junit.Test
 
 @Suppress("LargeClass")
 class EvaluatorTest {
+
+    @get:Rule
+    internal val loggerRule = CapturingLoggerRule()
 
     // ---- literal predicates ----
 
@@ -154,15 +158,13 @@ class EvaluatorTest {
         // {"==": [{"var": "missing"}, null]} should be true when the var is
         // missing, since missing → null and null == null.
         val predicate = """{"==": [{"var": "missing"}, null]}"""
-        val logger = CapturingLogger()
         val result = Evaluator.evaluate(
             ValueJsonHelper.fromJsonString(predicate),
             emptyMap(),
-            logger,
         )
         assertThat(result).isTrue
-        assertThat(logger.warnings).hasSize(1)
-        assertThat(logger.warnings[0]).contains("missing")
+        assertThat(loggerRule.warnings).hasSize(1)
+        assertThat(loggerRule.warnings[0]).contains("missing")
     }
 
     // ---- error paths ----
@@ -171,7 +173,7 @@ class EvaluatorTest {
     fun `unsupported operator surfaces error`() {
         val predicate = ValueJsonHelper.fromJsonString("""{"someUnknownOp": [1, 2]}""")
         assertThatThrownBy {
-            Evaluator.evaluate(predicate, emptyMap(), CapturingLogger())
+            Evaluator.evaluate(predicate, emptyMap())
         }.isInstanceOf(RuleError.UnsupportedOperator::class.java)
     }
 
@@ -189,7 +191,7 @@ class EvaluatorTest {
     fun `arity error on binary operator surfaces type mismatch`() {
         val predicate = ValueJsonHelper.fromJsonString("""{"==": [1]}""")
         assertThatThrownBy {
-            Evaluator.evaluate(predicate, emptyMap(), CapturingLogger())
+            Evaluator.evaluate(predicate, emptyMap())
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
@@ -222,7 +224,7 @@ class EvaluatorTest {
 
     private fun run(predicateJson: String, vars: Map<String, Value> = emptyMap()): Boolean {
         val predicate = ValueJsonHelper.fromJsonString(predicateJson)
-        return Evaluator.evaluate(predicate, vars, CapturingLogger())
+        return Evaluator.evaluate(predicate, vars)
     }
 
     private fun obj(vararg entries: Pair<String, Value>): Value =

@@ -2,7 +2,6 @@ package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
 import com.revenuecat.purchases.rules.RuleError
-import com.revenuecat.purchases.rules.RulesEngineLogger
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -24,21 +23,20 @@ internal object Operators {
         op: String,
         args: Value,
         vars: Value,
-        logger: RulesEngineLogger,
     ): Value = when (op) {
-        "var" -> AccessorOperators.opVar(args, vars, logger)
-        "missing" -> AccessorOperators.opMissing(args, vars, logger)
+        "var" -> AccessorOperators.opVar(args, vars)
+        "missing" -> AccessorOperators.opMissing(args, vars)
 
-        "==" -> EqualityOperators.opLooseEq(args, vars, logger)
-        "!=" -> EqualityOperators.opLooseNe(args, vars, logger)
-        "===" -> EqualityOperators.opStrictEq(args, vars, logger)
-        "!==" -> EqualityOperators.opStrictNe(args, vars, logger)
+        "==" -> EqualityOperators.opLooseEq(args, vars)
+        "!=" -> EqualityOperators.opLooseNe(args, vars)
+        "===" -> EqualityOperators.opStrictEq(args, vars)
+        "!==" -> EqualityOperators.opStrictNe(args, vars)
 
-        "!" -> LogicOperators.opNot(args, vars, logger)
-        "!!" -> LogicOperators.opNotNot(args, vars, logger)
-        "and" -> LogicOperators.opAnd(args, vars, logger)
-        "or" -> LogicOperators.opOr(args, vars, logger)
-        "if" -> LogicOperators.opIf(args, vars, logger)
+        "!" -> LogicOperators.opNot(args, vars)
+        "!!" -> LogicOperators.opNotNot(args, vars)
+        "and" -> LogicOperators.opAnd(args, vars)
+        "or" -> LogicOperators.opOr(args, vars)
+        "if" -> LogicOperators.opIf(args, vars)
 
         else -> throw RuleError.UnsupportedOperator(op)
     }
@@ -57,8 +55,7 @@ internal object Operators {
     fun evalArgs(
         args: Value,
         vars: Value,
-        logger: RulesEngineLogger,
-    ): List<Value> = argsAsList(args).map { Evaluator.evaluateValue(it, vars, logger) }
+    ): List<Value> = argsAsList(args).map { Evaluator.evaluateValue(it, vars) }
 
     /**
      * Evaluate exactly two arguments. Used by binary operators (`==`, `!=`,
@@ -68,10 +65,9 @@ internal object Operators {
     fun evalTwo(
         args: Value,
         vars: Value,
-        logger: RulesEngineLogger,
         opName: String,
     ): Pair<Value, Value> {
-        val evaluated = evalArgs(args, vars, logger)
+        val evaluated = evalArgs(args, vars)
         if (evaluated.size != 2) {
             throw RuleError.TypeMismatch(
                 "operator '$opName' expects 2 arguments, got ${evaluated.size}",

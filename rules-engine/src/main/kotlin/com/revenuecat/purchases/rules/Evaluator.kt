@@ -9,6 +9,9 @@ import com.revenuecat.purchases.rules.operators.Operators
  * arrays evaluate element-wise, single-key objects dispatch to an operator,
  * multi-key objects are treated as literal data. Operators handle their
  * own short-circuit / arity logic.
+ *
+ * Diagnostic warnings flow through [RulesEngineLog] so the engine
+ * internals don't have to thread a logger argument through every call.
  */
 internal object Evaluator {
 
@@ -23,17 +26,15 @@ internal object Evaluator {
      * @param variables The resolved variable map — typically a nested
      *  object mirroring the namespace hierarchy (`subscriber.*`,
      *  `session.*`, etc.).
-     * @param logger Sink for diagnostic warnings (e.g. missing variables).
      * @return `true` when the predicate evaluates to a truthy value per
      *  JSON Logic rules.
      */
     fun evaluate(
         predicate: Value,
         variables: Map<String, Value>,
-        logger: RulesEngineLogger,
     ): Boolean {
         val scope = Value.ObjectValue(variables)
-        return evaluateValue(predicate, scope, logger).isTruthy
+        return evaluateValue(predicate, scope).isTruthy
     }
 
     /**
@@ -43,7 +44,6 @@ internal object Evaluator {
     fun evaluateValue(
         predicate: Value,
         vars: Value,
-        logger: RulesEngineLogger,
     ): Value = when (predicate) {
         Value.Null,
         is Value.BoolValue,
@@ -53,14 +53,14 @@ internal object Evaluator {
         -> predicate
 
         is Value.ArrayValue -> Value.ArrayValue(
-            predicate.items.map { evaluateValue(it, vars, logger) },
+            predicate.items.map { evaluateValue(it, vars) },
         )
 
         is Value.ObjectValue -> {
             val entries = predicate.entries
             if (entries.size == 1) {
                 val (operatorName, args) = entries.entries.first()
-                Operators.dispatch(operatorName, args, vars, logger)
+                Operators.dispatch(operatorName, args, vars)
             } else {
                 predicate
             }

@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.RuleError
-import com.revenuecat.purchases.rules.RulesEngineLogger
+import com.revenuecat.purchases.rules.RulesEngineLog
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -25,8 +25,8 @@ internal object AccessorOperators {
      * try the literal dotted string as a single key in the top-level map).
      */
     @Suppress("ReturnCount")
-    fun opVar(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val (path, default) = parseVarArgs(args, logger)
+    fun opVar(args: Value, vars: Value): Value {
+        val (path, default) = parseVarArgs(args)
 
         if (path.isEmpty()) {
             return vars
@@ -35,7 +35,7 @@ internal object AccessorOperators {
         val found = lookupPath(vars, path)
         if (found != null) return found
         if (default != null) return default
-        logger.warn("missing variable: $path")
+        RulesEngineLog.warn("missing variable: $path")
         return Value.Null
     }
 
@@ -44,7 +44,7 @@ internal object AccessorOperators {
      * that are NOT present in the data. Returns `[]` when nothing is
      * missing.
      */
-    fun opMissing(args: Value, vars: Value, @Suppress("UNUSED_PARAMETER") logger: RulesEngineLogger): Value {
+    fun opMissing(args: Value, vars: Value): Value {
         val keys: List<Value> = when (args) {
             is Value.ArrayValue -> args.items
             // Singleton shorthand: `{"missing": "a"}` ≡ `{"missing": ["a"]}`.
@@ -65,22 +65,22 @@ internal object AccessorOperators {
      * Normalize `var`'s arg into a `(path, default)` pair. Accepts a
      * string/number literal, `Null` (= empty path), or `[path, default?]`.
      */
-    private fun parseVarArgs(args: Value, logger: RulesEngineLogger): Pair<String, Value?> = when (args) {
+    private fun parseVarArgs(args: Value): Pair<String, Value?> = when (args) {
         Value.Null -> "" to null
         is Value.StringValue -> args.value to null
         is Value.IntValue -> args.value.toString() to null
         is Value.FloatValue -> formatNumber(args.value) to null
-        is Value.ArrayValue -> parseVarArrayArgs(args.items, logger)
+        is Value.ArrayValue -> parseVarArrayArgs(args.items)
         else -> throw RuleError.TypeMismatch(
             "var arg must be a string, number, or array, got $args",
         )
     }
 
-    private fun parseVarArrayArgs(items: List<Value>, logger: RulesEngineLogger): Pair<String, Value?> {
+    private fun parseVarArrayArgs(items: List<Value>): Pair<String, Value?> {
         val path = pathSegment(items.firstOrNull())
         val default = if (items.size >= 2) items[1] else null
         if (items.size > 2) {
-            logger.warn(
+            RulesEngineLog.warn(
                 "var: ignoring ${items.size - 2} extra arg(s); expected [path] or [path, default]",
             )
         }

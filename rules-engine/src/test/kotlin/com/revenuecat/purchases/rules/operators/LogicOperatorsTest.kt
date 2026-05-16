@@ -1,29 +1,33 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.PrintlnLogger
+import com.revenuecat.purchases.rules.CapturingLoggerRule
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Rule
 import org.junit.Test
 
 class LogicOperatorsTest {
+
+    @get:Rule
+    internal val loggerRule = CapturingLoggerRule()
 
     // ---- ! ----
 
     @Test
     fun `not negates truthy to false`() {
-        assertThat(LogicOperators.opNot(Value.BoolValue(true), Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opNot(Value.BoolValue(true), Value.Null))
             .isEqualTo(Value.BoolValue(false))
-        assertThat(LogicOperators.opNot(Value.IntValue(5), Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opNot(Value.IntValue(5), Value.Null))
             .isEqualTo(Value.BoolValue(false))
     }
 
     @Test
     fun `not negates falsy to true`() {
-        assertThat(LogicOperators.opNot(Value.BoolValue(false), Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opNot(Value.BoolValue(false), Value.Null))
             .isEqualTo(Value.BoolValue(true))
-        assertThat(LogicOperators.opNot(Value.IntValue(0), Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opNot(Value.IntValue(0), Value.Null))
             .isEqualTo(Value.BoolValue(true))
-        assertThat(LogicOperators.opNot(Value.Null, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opNot(Value.Null, Value.Null))
             .isEqualTo(Value.BoolValue(true))
     }
 
@@ -33,7 +37,6 @@ class LogicOperatorsTest {
             LogicOperators.opNot(
                 Value.ArrayValue(listOf(Value.BoolValue(true))),
                 Value.Null,
-                PrintlnLogger,
             ),
         ).isEqualTo(Value.BoolValue(false))
     }
@@ -42,9 +45,9 @@ class LogicOperatorsTest {
 
     @Test
     fun `notNot casts to bool`() {
-        assertThat(LogicOperators.opNotNot(Value.IntValue(5), Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opNotNot(Value.IntValue(5), Value.Null))
             .isEqualTo(Value.BoolValue(true))
-        assertThat(LogicOperators.opNotNot(Value.StringValue(""), Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opNotNot(Value.StringValue(""), Value.Null))
             .isEqualTo(Value.BoolValue(false))
     }
 
@@ -53,14 +56,14 @@ class LogicOperatorsTest {
     @Test
     fun `and returns first falsy value`() {
         val args = Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(0), Value.IntValue(2)))
-        assertThat(LogicOperators.opAnd(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opAnd(args, Value.Null))
             .isEqualTo(Value.IntValue(0)) // first falsy
     }
 
     @Test
     fun `and returns last value when all truthy`() {
         val args = Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2), Value.IntValue(3)))
-        assertThat(LogicOperators.opAnd(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opAnd(args, Value.Null))
             .isEqualTo(Value.IntValue(3))
     }
 
@@ -78,14 +81,14 @@ class LogicOperatorsTest {
                 ),
             ),
         )
-        assertThat(LogicOperators.opAnd(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opAnd(args, Value.Null))
             .isEqualTo(Value.BoolValue(false))
     }
 
     @Test
     fun `and empty is true`() {
         assertThat(
-            LogicOperators.opAnd(Value.ArrayValue(emptyList()), Value.Null, PrintlnLogger),
+            LogicOperators.opAnd(Value.ArrayValue(emptyList()), Value.Null),
         ).isEqualTo(Value.BoolValue(true))
     }
 
@@ -94,21 +97,21 @@ class LogicOperatorsTest {
     @Test
     fun `or returns first truthy value`() {
         val args = Value.ArrayValue(listOf(Value.IntValue(0), Value.IntValue(7), Value.IntValue(2)))
-        assertThat(LogicOperators.opOr(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opOr(args, Value.Null))
             .isEqualTo(Value.IntValue(7))
     }
 
     @Test
     fun `or returns last value when all falsy`() {
         val args = Value.ArrayValue(listOf(Value.IntValue(0), Value.BoolValue(false), Value.Null))
-        assertThat(LogicOperators.opOr(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opOr(args, Value.Null))
             .isEqualTo(Value.Null)
     }
 
     @Test
     fun `or empty is false`() {
         assertThat(
-            LogicOperators.opOr(Value.ArrayValue(emptyList()), Value.Null, PrintlnLogger),
+            LogicOperators.opOr(Value.ArrayValue(emptyList()), Value.Null),
         ).isEqualTo(Value.BoolValue(false))
     }
 
@@ -119,13 +122,13 @@ class LogicOperatorsTest {
         val yesNoTrue = Value.ArrayValue(
             listOf(Value.BoolValue(true), Value.StringValue("yes"), Value.StringValue("no")),
         )
-        assertThat(LogicOperators.opIf(yesNoTrue, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opIf(yesNoTrue, Value.Null))
             .isEqualTo(Value.StringValue("yes"))
 
         val yesNoFalse = Value.ArrayValue(
             listOf(Value.BoolValue(false), Value.StringValue("yes"), Value.StringValue("no")),
         )
-        assertThat(LogicOperators.opIf(yesNoFalse, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opIf(yesNoFalse, Value.Null))
             .isEqualTo(Value.StringValue("no"))
     }
 
@@ -141,7 +144,7 @@ class LogicOperatorsTest {
                 Value.StringValue("c"),
             ),
         )
-        assertThat(LogicOperators.opIf(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opIf(args, Value.Null))
             .isEqualTo(Value.StringValue("b"))
     }
 
@@ -156,14 +159,14 @@ class LogicOperatorsTest {
                 Value.StringValue("b"),
             ),
         )
-        assertThat(LogicOperators.opIf(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opIf(args, Value.Null))
             .isEqualTo(Value.Null)
     }
 
     @Test
     fun `if empty returns null`() {
         assertThat(
-            LogicOperators.opIf(Value.ArrayValue(emptyList()), Value.Null, PrintlnLogger),
+            LogicOperators.opIf(Value.ArrayValue(emptyList()), Value.Null),
         ).isEqualTo(Value.Null)
     }
 
@@ -173,7 +176,7 @@ class LogicOperatorsTest {
         // returns the evaluated arg unchanged. Pinning so a future refactor
         // doesn't silently flip this to "always Null" or "always Bool-coerced".
         val args = Value.ArrayValue(listOf(Value.StringValue("only")))
-        assertThat(LogicOperators.opIf(args, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opIf(args, Value.Null))
             .isEqualTo(Value.StringValue("only"))
     }
 
@@ -184,13 +187,13 @@ class LogicOperatorsTest {
         val truthy = Value.ArrayValue(
             listOf(Value.BoolValue(true), Value.StringValue("yes")),
         )
-        assertThat(LogicOperators.opIf(truthy, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opIf(truthy, Value.Null))
             .isEqualTo(Value.StringValue("yes"))
 
         val falsy = Value.ArrayValue(
             listOf(Value.BoolValue(false), Value.StringValue("yes")),
         )
-        assertThat(LogicOperators.opIf(falsy, Value.Null, PrintlnLogger))
+        assertThat(LogicOperators.opIf(falsy, Value.Null))
             .isEqualTo(Value.Null)
     }
 }

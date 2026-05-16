@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.RulesEngineLogger
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -17,14 +16,14 @@ internal object LogicOperators {
      * `{"!": x}` — boolean negation. Coerces to bool first per JSON Logic
      * truthiness rules.
      */
-    fun opNot(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val value = firstArgEvaluated(args, vars, logger)
+    fun opNot(args: Value, vars: Value): Value {
+        val value = firstArgEvaluated(args, vars)
         return Value.BoolValue(!value.isTruthy)
     }
 
     /** `{"!!": x}` — boolean cast. Spec: equivalent to `!!x` in JS. */
-    fun opNotNot(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val value = firstArgEvaluated(args, vars, logger)
+    fun opNotNot(args: Value, vars: Value): Value {
+        val value = firstArgEvaluated(args, vars)
         return Value.BoolValue(value.isTruthy)
     }
 
@@ -34,14 +33,14 @@ internal object LogicOperators {
      * semantics: `and` returns the actual value, not a coerced boolean).
      */
     @Suppress("ReturnCount")
-    fun opAnd(args: Value, vars: Value, logger: RulesEngineLogger): Value {
+    fun opAnd(args: Value, vars: Value): Value {
         val items = Operators.argsAsList(args)
         if (items.isEmpty()) {
             return Value.BoolValue(true) // vacuous truth
         }
         var last: Value = Value.BoolValue(true)
         for (item in items) {
-            last = Evaluator.evaluateValue(item, vars, logger)
+            last = Evaluator.evaluateValue(item, vars)
             if (!last.isTruthy) return last
         }
         return last
@@ -52,14 +51,14 @@ internal object LogicOperators {
      * value or, if all are falsy, the last value.
      */
     @Suppress("ReturnCount")
-    fun opOr(args: Value, vars: Value, logger: RulesEngineLogger): Value {
+    fun opOr(args: Value, vars: Value): Value {
         val items = Operators.argsAsList(args)
         if (items.isEmpty()) {
             return Value.BoolValue(false)
         }
         var last: Value = Value.BoolValue(false)
         for (item in items) {
-            last = Evaluator.evaluateValue(item, vars, logger)
+            last = Evaluator.evaluateValue(item, vars)
             if (last.isTruthy) return last
         }
         return last
@@ -71,27 +70,27 @@ internal object LogicOperators {
      * clause and with no truthy condition, returns `Null`.
      */
     @Suppress("ReturnCount")
-    fun opIf(args: Value, vars: Value, logger: RulesEngineLogger): Value {
+    fun opIf(args: Value, vars: Value): Value {
         val items = Operators.argsAsList(args)
         if (items.isEmpty()) return Value.Null
         var index = 0
         while (index + 1 < items.size) {
-            val condition = Evaluator.evaluateValue(items[index], vars, logger)
+            val condition = Evaluator.evaluateValue(items[index], vars)
             if (condition.isTruthy) {
-                return Evaluator.evaluateValue(items[index + 1], vars, logger)
+                return Evaluator.evaluateValue(items[index + 1], vars)
             }
             index += 2
         }
         return if (index < items.size) {
-            Evaluator.evaluateValue(items[index], vars, logger)
+            Evaluator.evaluateValue(items[index], vars)
         } else {
             Value.Null
         }
     }
 
-    private fun firstArgEvaluated(args: Value, vars: Value, logger: RulesEngineLogger): Value {
+    private fun firstArgEvaluated(args: Value, vars: Value): Value {
         val items = Operators.argsAsList(args)
         val first = items.firstOrNull() ?: Value.Null
-        return Evaluator.evaluateValue(first, vars, logger)
+        return Evaluator.evaluateValue(first, vars)
     }
 }

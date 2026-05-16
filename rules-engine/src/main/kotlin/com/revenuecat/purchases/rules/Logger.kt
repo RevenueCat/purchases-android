@@ -27,19 +27,18 @@ internal object PrintlnLogger : RulesEngineLogger {
 }
 
 /**
- * Test-only logger that captures messages for assertion. Lives in the
- * production module (rather than under `src/test/`) so non-test callers
- * could reference it from internal helpers without an extra link step.
+ * Static accessor used by the engine internals (`Evaluator`, operators) so
+ * the logger does not have to be threaded through every function call.
+ *
+ * Production callers that want to capture warnings replace [sink] before
+ * invoking the engine (and restore it afterwards). Tests do the same via
+ * `CapturingLoggerRule`. The default sink is [PrintlnLogger].
  */
-internal class CapturingLogger : RulesEngineLogger {
+internal object RulesEngineLog {
+    @Volatile
+    var sink: RulesEngineLogger = PrintlnLogger
 
-    private val captured = mutableListOf<String>()
-
-    val warnings: List<String>
-        @Synchronized get() = captured.toList()
-
-    @Synchronized
-    override fun warn(message: String) {
-        captured += message
+    fun warn(message: String) {
+        sink.warn(message)
     }
 }
