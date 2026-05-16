@@ -160,6 +160,7 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
+    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -281,7 +282,12 @@ internal class PaywallViewModelImpl(
         }
         if (_colorScheme.value != colorScheme) {
             _colorScheme.value = colorScheme
-            updateState()
+            if (workflowNavigator != null) {
+                // Rebuild step states in-place to avoid resetting the user's navigation position.
+                rebuildWorkflowStepStates()
+            } else {
+                updateState()
+            }
         }
     }
 
@@ -734,7 +740,7 @@ internal class PaywallViewModelImpl(
 
     private suspend fun updateStateFromWorkflowEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
         var updatedFromWorkflow = false
-        if (BuildConfig.USE_WORKFLOWS_ENDPOINT) {
+        if (useWorkflowsEndpoint) {
             val workflowParams = when (offeringSelection) {
                 is OfferingSelection.IdAndPresentedOfferingContext ->
                     offeringSelection.offeringId to offeringSelection.presentedOfferingContext
@@ -816,7 +822,6 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("ReturnCount")
     internal fun updateStateFromWorkflow(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
@@ -856,22 +861,55 @@ internal class PaywallViewModelImpl(
                 )
             } ?: ExitOfferData.Unavailable(),
         )
+
+        val stepWithPackagesId = workflow.singleStepFallbackId
+        if (stepWithPackagesId != null && workflow.steps[stepWithPackagesId] == null) {
+            Logger.w("Workflow singleStepFallbackId '$stepWithPackagesId' not found in steps")
+        }
+        buildWorkflowStates(workflow, offerings, presentedOfferingContext, currentStep = initialStep)
+    }
+
+    /**
+     * Rebuilds workflow step states with the current color scheme without resetting the
+     * navigator position. Used when colors change while a workflow paywall is active,
+     * so the user is not silently sent back to the first step.
+     */
+    @Suppress("ReturnCount")
+    private fun rebuildWorkflowStepStates() {
+        val result = currentWorkflowResult ?: return
+        val offerings = currentWorkflowOfferings ?: return
+        val currentStep = workflowNavigator?.currentStep ?: return
+        buildWorkflowStates(
+            workflow = result.workflow,
+            offerings = offerings,
+            presentedOfferingContext = currentWorkflowPresentedOfferingContext,
+            currentStep = currentStep,
+        )
+    }
+
+    /**
+     * Clears any cached workflow step states and builds the state for [currentStep] (plus the
+     * package-bearing step, if different) so the UI can render the paywall. Also kicks off
+     * pre-warming of the remaining steps' caches.
+     */
+    private fun buildWorkflowStates(
+        workflow: PublishedWorkflow,
+        offerings: Offerings,
+        presentedOfferingContext: PresentedOfferingContext?,
+        currentStep: WorkflowStep,
+    ) {
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
 
         // Pre-compute the package step so its default package is available in cache
         // for early packageless steps to use as context.
-        val stepWithPackagesId = workflow.singleStepFallbackId
-        val stepWithPackages = stepWithPackagesId?.let { workflow.steps[it] }
-        if (stepWithPackagesId != null && stepWithPackages == null) {
-            Logger.w("Workflow singleStepFallbackId '$stepWithPackagesId' not found in steps")
-        }
-        if (stepWithPackages != null && stepWithPackages.id != initialStep.id) {
+        val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
+        if (stepWithPackages != null && stepWithPackages.id != currentStep.id) {
             buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
         }
 
-        buildStateFromStep(initialStep, workflow, offerings, presentedOfferingContext)
+        buildStateFromStep(currentStep, workflow, offerings, presentedOfferingContext)
         preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
 
