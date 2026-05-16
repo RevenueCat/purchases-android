@@ -25,10 +25,20 @@ internal class RewardVerificationServiceLocator(
     private var isRegistered = false
     private val hooks = mutableSetOf<RewardVerificationLifecycleHook>()
 
-    @Synchronized
     fun registerHook(hook: RewardVerificationLifecycleHook) {
-        hooks.add(hook)
-        ensureRegistered()
+        val shouldRegister = synchronized(this) {
+            hooks.add(hook)
+            if (isRegistered) {
+                false
+            } else {
+                isRegistered = true
+                true
+            }
+        }
+
+        if (shouldRegister) {
+            listenerRegistrar.register(listener = this)
+        }
     }
 
     @Synchronized
@@ -46,14 +56,6 @@ internal class RewardVerificationServiceLocator(
         snapshotHooks().forEach { hook ->
             hook.onPurchasesClosed(purchases)
         }
-    }
-
-    @Synchronized
-    private fun ensureRegistered() {
-        if (isRegistered) return
-
-        listenerRegistrar.register(listener = this)
-        isRegistered = true
     }
 
     @Synchronized
