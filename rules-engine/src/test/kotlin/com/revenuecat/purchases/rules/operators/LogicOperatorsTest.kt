@@ -166,4 +166,31 @@ class LogicOperatorsTest {
             LogicOperators.opIf(Value.ArrayValue(emptyList()), Value.Null, PrintlnLogger),
         ).isEqualTo(Value.Null)
     }
+
+    @Test
+    fun `if single-arg form returns the evaluated arg`() {
+        // `{"if": [expr]}` falls through to the trailing-else branch and
+        // returns the evaluated arg unchanged. Pinning so a future refactor
+        // doesn't silently flip this to "always Null" or "always Bool-coerced".
+        val args = Value.ArrayValue(listOf(Value.StringValue("only")))
+        assertThat(LogicOperators.opIf(args, Value.Null, PrintlnLogger))
+            .isEqualTo(Value.StringValue("only"))
+    }
+
+    @Test
+    fun `if two-arg form returns then when truthy and null otherwise`() {
+        // `{"if": [cond, then]}` — no else clause. Truthy → returns evaluated
+        // `then`; falsy → returns Null.
+        val truthy = Value.ArrayValue(
+            listOf(Value.BoolValue(true), Value.StringValue("yes")),
+        )
+        assertThat(LogicOperators.opIf(truthy, Value.Null, PrintlnLogger))
+            .isEqualTo(Value.StringValue("yes"))
+
+        val falsy = Value.ArrayValue(
+            listOf(Value.BoolValue(false), Value.StringValue("yes")),
+        )
+        assertThat(LogicOperators.opIf(falsy, Value.Null, PrintlnLogger))
+            .isEqualTo(Value.Null)
+    }
 }
