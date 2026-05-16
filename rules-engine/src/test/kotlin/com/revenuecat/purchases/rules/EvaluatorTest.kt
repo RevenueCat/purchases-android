@@ -195,6 +195,30 @@ class EvaluatorTest {
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
+    // ---- arithmetic dispatched through evaluator ----
+
+    @Test
+    fun `arithmetic predicate with var operand`() {
+        // session.app_launch_count * 2 == 6 → true when count is 3
+        val predicate = """
+            {"==": [
+                {"*": [{"var": "session.app_launch_count"}, 2]},
+                6
+            ]}
+        """.trimIndent()
+        val vars = mapOf<String, Value>(
+            "session" to obj("app_launch_count" to Value.IntValue(3)),
+        )
+        assertThat(run(predicate, vars)).isTrue
+    }
+
+    @Test
+    fun `divide by zero returns null which is falsy`() {
+        // {"/": [10, 0]} → null → predicate is falsy
+        val predicate = """{"/": [10, 0]}"""
+        assertThat(run(predicate)).isFalse
+    }
+
     // ---- multi-key object treated as data, not operator ----
 
     @Test
