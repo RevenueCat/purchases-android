@@ -2,6 +2,7 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesLifecycle
 import com.revenuecat.purchases.PurchasesLifecycleListener
 
 internal interface RewardVerificationLifecycleHook {
@@ -16,7 +17,9 @@ internal fun interface RewardVerificationListenerRegistrar {
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationServiceLocator(
-    private val listenerRegistrar: RewardVerificationListenerRegistrar,
+    private val listenerRegistrar: RewardVerificationListenerRegistrar = RewardVerificationListenerRegistrar {
+        PurchasesLifecycle.register(listener = it)
+    },
 ) : PurchasesLifecycleListener {
 
     private var isRegistered = false
