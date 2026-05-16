@@ -38,6 +38,11 @@ internal object Operators {
         "or" -> LogicOperators.opOr(args, vars)
         "if" -> LogicOperators.opIf(args, vars)
 
+        "<" -> ComparisonOperators.opLt(args, vars, logger)
+        "<=" -> ComparisonOperators.opLe(args, vars, logger)
+        ">" -> ComparisonOperators.opGt(args, vars, logger)
+        ">=" -> ComparisonOperators.opGe(args, vars, logger)
+
         else -> throw RuleError.UnsupportedOperator(op)
     }
 
