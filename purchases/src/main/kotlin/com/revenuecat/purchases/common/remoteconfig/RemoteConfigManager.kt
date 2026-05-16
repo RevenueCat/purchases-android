@@ -20,13 +20,16 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Date
+import kotlin.random.Random
 
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("LongParameterList")
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val topicFetcher: TopicFetcher,
     private val diskCache: RemoteConfigDiskCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val random: Random = Random.Default,
     dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
@@ -55,8 +58,8 @@ internal class RemoteConfigManager(
             errorLog { "Failed to fetch remote config: ${e.error}" }
             return e.error
         }
-        // WIP: We should have some logic to pick the correct source for this. Right now, hardcoded to the first source.
-        val source = response.blobSources.firstOrNull()
+        val source = response.blobSources.selectWeighted(random)
+        val referenced = buildReferenceSet(response.manifest)
         val tasks = response.manifest.topics.mapNotNull { (topic, entries) ->
             val entry = entries[DEFAULT_ENTRY_ID] ?: return@mapNotNull null
             TopicTask(topic, DEFAULT_ENTRY_ID, entry)
@@ -77,13 +80,16 @@ internal class RemoteConfigManager(
                 }.awaitAll().firstNotNullOfOrNull { it }
             }
         }
-        // Only cache when at least one topic was actually fetched — empty sources, empty topics,
-        // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
-        if (firstError == null && source != null && tasks.isNotEmpty()) {
-            val previousResponse = cache?.response
-            cache = CacheEntry(response, dateProvider.now)
-            if (previousResponse != response) {
-                diskCache.write(response)
+        if (firstError == null) {
+            // Only cache when at least one topic was actually fetched — empty sources, empty topics,
+            // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
+            if (source != null && tasks.isNotEmpty()) {
+                val previousResponse = cache?.response
+                topicFetcher.cleanupUnreferencedTopics(referenced)
+                cache = CacheEntry(response, dateProvider.now)
+                if (previousResponse != response) {
+                    diskCache.write(response)
+                }
             }
         }
         return firstError
@@ -96,6 +102,11 @@ internal class RemoteConfigManager(
                 onSuccess = { cont.safeResume(it) },
                 onError = { cont.safeResumeWithException(PurchasesException(it)) },
             )
+        }
+
+    private fun buildReferenceSet(manifest: Manifest): Map<Topic, Set<String>> =
+        manifest.topics.mapValues { (_, entries) ->
+            entries.values.map { it.blobRef }.toSet()
         }
 
     private data class TopicTask(val topic: Topic, val entryId: String, val entry: TopicEntry)
