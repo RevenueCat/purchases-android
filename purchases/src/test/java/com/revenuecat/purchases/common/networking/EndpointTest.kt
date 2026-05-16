@@ -22,7 +22,7 @@ class EndpointTest {
         Endpoint.PostEvents,
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
-        Endpoint.GetRewardVerificationStatus("test-user-id", "client-transaction-id"),
+        Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
         Endpoint.GetWorkflow("test-user-id", "wf_test"),
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig,
@@ -120,8 +120,8 @@ class EndpointTest {
     }
 
     @Test
-    fun `GetRewardVerificationStatus has correct path`() {
-        val endpoint = Endpoint.GetRewardVerificationStatus(
+    fun `GetRewardVerification has correct path`() {
+        val endpoint = Endpoint.GetRewardVerification(
             userId = "test user-id",
             clientTransactionId = "client transaction id",
         )
@@ -130,12 +130,12 @@ class EndpointTest {
     }
 
     @Test
-    fun `GetRewardVerificationStatus has correct name`() {
-        val endpoint = Endpoint.GetRewardVerificationStatus(
+    fun `GetRewardVerification has correct name`() {
+        val endpoint = Endpoint.GetRewardVerification(
             userId = "test user-id",
             clientTransactionId = "client transaction id",
         )
-        val expectedName = "get_reward_verification_status"
+        val expectedName = "get_reward_verification"
         assertThat(endpoint.name).isEqualTo(expectedName)
     }
 
@@ -177,7 +177,7 @@ class EndpointTest {
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
-            Endpoint.GetRewardVerificationStatus("test-user-id", "client-transaction-id"),
+            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -223,7 +223,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
-            Endpoint.GetRewardVerificationStatus("test-user-id", "client-transaction-id"),
+            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
