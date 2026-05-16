@@ -556,8 +556,14 @@ public class Purchases internal constructor(
      * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
         backingFieldSharedInstance = null
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun notifyLifecycleClosed() {
+        lifecycleListener.onPurchasesClosed(this)
     }
 
     /**
@@ -1180,6 +1186,9 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        @OptIn(InternalRevenueCatAPI::class)
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal var lifecycleListener: PurchasesLifecycleListener = PurchasesLifecycleListeners.default()
 
         @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
@@ -1329,6 +1338,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                lifecycleListener.onPurchasesConfigured(it)
             }
         }
 
