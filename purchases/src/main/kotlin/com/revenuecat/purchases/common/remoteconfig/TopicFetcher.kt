@@ -66,6 +66,34 @@ internal class TopicFetcher(
         }
     }
 
+    suspend fun cleanupUnreferencedTopics(referenced: Map<Topic, Set<String>>) {
+        withContext(Dispatchers.IO) {
+            runCatching { deleteUnreferencedTopicFiles(referenced) }
+                .onFailure { e ->
+                    errorLog(e) { "Failed to clean up unreferenced topic files." }
+                }
+        }
+    }
+
+    private fun deleteUnreferencedTopicFiles(referenced: Map<Topic, Set<String>>) {
+        val topicsRoot = File(applicationContext.noBackupFilesDir, TOPICS_ROOT)
+        if (!topicsRoot.exists()) return
+        Topic.values().forEach topics@{ topic ->
+            val topicDir = File(topicsRoot, topic.key)
+            if (!topicDir.isDirectory) return@topics
+            val keep = referenced[topic].orEmpty()
+            topicDir.listFiles()?.forEach files@{ file ->
+                if (file.name.startsWith(TEMP_PREFIX)) return@files
+                if (file.name in keep) return@files
+                if (file.delete()) {
+                    verboseLog { "Deleted unreferenced topic file at ${file.absolutePath}" }
+                } else {
+                    errorLog { "Failed to delete unreferenced topic file at ${file.absolutePath}" }
+                }
+            }
+        }
+    }
+
     private fun topicFile(topic: Topic, blobRef: String): File {
         val dir = File(File(applicationContext.noBackupFilesDir, TOPICS_ROOT), topic.key)
         if (!dir.exists()) {
@@ -77,7 +105,7 @@ internal class TopicFetcher(
     @Throws(IOException::class, Checksum.ChecksumValidationException::class)
     private fun downloadVerifyAndStore(url: String, expectedSha256: String, target: File) {
         val parent = target.parentFile ?: throw IOException("Topic target file has no parent: $target")
-        val tempFile = File.createTempFile("rc_topic_", ".tmp", parent)
+        val tempFile = File.createTempFile(TEMP_PREFIX, ".tmp", parent)
         try {
             urlConnectionFactory.downloadToFileAndVerifyChecksum(
                 url = url,
@@ -105,6 +133,7 @@ internal class TopicFetcher(
         const val TOPICS_ROOT = "RevenueCat/topics"
         const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
         const val MAX_PARALLEL_TOPIC_DOWNLOADS = 4
+        const val TEMP_PREFIX = "rc_topic_"
         val BLOB_REF_PATTERN = Regex("^[a-fA-F0-9]{64}$")
     }
 }

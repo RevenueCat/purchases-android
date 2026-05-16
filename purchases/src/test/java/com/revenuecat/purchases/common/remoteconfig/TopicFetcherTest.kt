@@ -319,6 +319,99 @@ class TopicFetcherTest {
         verify(exactly = 1) { urlConnectionFactory.createConnection(url, any()) }
     }
 
+    @Test
+    fun `cleanupUnreferencedTopics deletes files whose blobRef is not in the reference set`() = runTest {
+        val keptBlob = "a".repeat(64)
+        val staleBlob = "b".repeat(64)
+        val keptFile = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, keptBlob).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(1))
+        }
+        val staleFile = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, staleBlob).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(2))
+        }
+
+        fetcher().cleanupUnreferencedTopics(
+            mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to setOf(keptBlob)),
+        )
+
+        assertThat(keptFile).exists()
+        assertThat(staleFile).doesNotExist()
+    }
+
+    @Test
+    fun `cleanupUnreferencedTopics deletes every file for a topic absent from the reference set`() = runTest {
+        val blobA = "a".repeat(64)
+        val blobB = "b".repeat(64)
+        val fileA = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobA).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(1))
+        }
+        val fileB = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobB).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(2))
+        }
+
+        fetcher().cleanupUnreferencedTopics(emptyMap())
+
+        assertThat(fileA).doesNotExist()
+        assertThat(fileB).doesNotExist()
+    }
+
+    @Test
+    fun `cleanupUnreferencedTopics is a no-op when topics root does not exist`() = runTest {
+        // Sanity: nothing pre-created beyond the empty rootDir.
+        fetcher().cleanupUnreferencedTopics(
+            mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to setOf("a".repeat(64))),
+        )
+        // Reaching here without exception is the assertion.
+    }
+
+    @Test
+    fun `cleanupUnreferencedTopics keeps temp files (rc_topic_ prefix) untouched`() = runTest {
+        val staleBlob = "a".repeat(64)
+        val staleFile = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, staleBlob).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(1))
+        }
+        val tempFile = File(staleFile.parentFile, "rc_topic_inflight.tmp").also {
+            it.writeBytes(byteArrayOf(2))
+        }
+
+        fetcher().cleanupUnreferencedTopics(emptyMap())
+
+        assertThat(staleFile).doesNotExist()
+        assertThat(tempFile).exists()
+    }
+
+    @Test
+    fun `cleanupUnreferencedTopics keeps a referenced file when other files in the same dir are deleted`() = runTest {
+        val keptBlob = "c".repeat(64)
+        val staleBlob1 = "d".repeat(64)
+        val staleBlob2 = "e".repeat(64)
+        val kept = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, keptBlob).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(0))
+        }
+        val stale1 = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, staleBlob1).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(1))
+        }
+        val stale2 = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, staleBlob2).also {
+            it.parentFile?.mkdirs()
+            it.writeBytes(byteArrayOf(2))
+        }
+
+        fetcher().cleanupUnreferencedTopics(
+            mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to setOf(keptBlob)),
+        )
+
+        assertThat(kept).exists()
+        assertThat(stale1).doesNotExist()
+        assertThat(stale2).doesNotExist()
+    }
+
     private fun mockSuccessfulDownload(url: String, payload: ByteArray) {
         val connection = mockk<UrlConnection>(relaxed = true).also {
             every { it.responseCode } returns HttpURLConnection.HTTP_OK
