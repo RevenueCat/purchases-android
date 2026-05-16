@@ -20,17 +20,17 @@ internal data class RemoteConfigResponse(
 internal data class ApiSource(
     val id: String,
     val url: String,
-    val priority: Int,
-    val weight: Int,
-)
+    override val priority: Int,
+    override val weight: Int,
+) : WeightedSource
 
 @Serializable
 internal data class BlobSource(
     val id: String,
     @SerialName("url_format") val urlFormat: String,
-    val priority: Int,
-    val weight: Int,
-)
+    override val priority: Int,
+    override val weight: Int,
+) : WeightedSource
 
 @Serializable
 internal data class Manifest(
