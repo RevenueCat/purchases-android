@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "23378",
+    "Content-Length": "23415",
     "Content-Type": "application\/json",
     "access-control-allow-origin": "*",
     "access-control-expose-headers": "X-Request-Id",
@@ -26,6 +26,7 @@
         ],
         "paywall_components": {
           "asset_base_url": "https:\/\/assets.pawwalls.com",
+          "automatically_scale_font_size": true,
           "components_config": {
             "base": {
               "background": {
