@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy.conversions
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ReplacementMode
@@ -12,7 +11,6 @@ import com.samsung.android.sdk.iap.lib.vo.OwnedProductVo
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
 import org.json.JSONObject
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Throws(IllegalArgumentException::class)
 internal fun PurchaseVo.toStoreTransaction(
     productId: String,
@@ -45,7 +43,6 @@ internal fun PurchaseVo.toStoreTransaction(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Throws(IllegalArgumentException::class)
 internal fun OwnedProductVo.toStoreTransaction(
     purchaseState: PurchaseState,

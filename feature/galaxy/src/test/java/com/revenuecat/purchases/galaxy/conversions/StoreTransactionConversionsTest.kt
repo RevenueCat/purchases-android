@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.galaxy.conversions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
@@ -21,7 +20,6 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
 @RunWith(AndroidJUnit4::class)
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class StoreTransactionConversionsTest {
 
     private val purchaseDateString = "2024-01-15 13:45:20"
