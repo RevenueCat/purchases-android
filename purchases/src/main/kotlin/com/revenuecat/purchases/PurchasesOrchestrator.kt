@@ -60,7 +60,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
-import com.revenuecat.purchases.interfaces.GetRewardVerificationStatusCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -909,11 +909,12 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun getRewardVerificationStatus(
+    @OptIn(InternalRevenueCatAPI::class)
+    fun getRewardVerificationResult(
         clientTransactionId: String,
-        callback: GetRewardVerificationStatusCallback,
+        callback: GetRewardVerificationResultCallback,
     ) {
-        backend.getRewardVerificationStatus(
+        backend.getRewardVerificationResult(
             appUserID = identityManager.currentAppUserID,
             clientTransactionId = clientTransactionId,
             onSuccess = { callback.onReceived(it) },

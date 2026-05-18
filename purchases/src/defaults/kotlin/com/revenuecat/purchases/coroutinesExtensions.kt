@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
-import com.revenuecat.purchases.interfaces.GetRewardVerificationStatusCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
@@ -217,15 +217,15 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-public suspend fun Purchases.awaitGetRewardVerificationStatus(
+public suspend fun Purchases.awaitGetRewardVerificationResult(
     clientTransactionId: String,
-): RewardVerificationStatus {
+): RewardVerificationResult {
     return suspendCancellableCoroutine { continuation ->
-        getRewardVerificationStatus(
+        getRewardVerificationResult(
             clientTransactionId = clientTransactionId,
-            callback = object : GetRewardVerificationStatusCallback {
-                override fun onReceived(status: RewardVerificationStatus) {
-                    continuation.safeResume(status)
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationResult) {
+                    continuation.safeResume(result)
                 }
 
                 override fun onError(error: PurchasesError) {
