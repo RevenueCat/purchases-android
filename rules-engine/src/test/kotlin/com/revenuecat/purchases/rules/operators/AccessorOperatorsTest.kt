@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.CapturingLoggerRule
+import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
 
@@ -82,6 +84,118 @@ class AccessorOperatorsTest {
         val vars = Value.ArrayValue(listOf(s("zero"), s("one")))
         val out = AccessorOperators.opVar(Value.IntValue(0), vars)
         assertThat(out).isEqualTo(s("zero"))
+    }
+
+    @Test
+    fun `var with integer-valued float path looks up integer index`() {
+        // {"var": 1.0} on array data must render as "1" (not "1.0") so the
+        // path resolves to array index 1 — same lookup as `{"var": 1}`.
+        val vars = Value.ArrayValue(listOf(s("zero"), s("one"), s("two")))
+        val out = AccessorOperators.opVar(Value.FloatValue(1.0), vars)
+        assertThat(out).isEqualTo(s("one"))
+        assertThat(warnings).isEmpty()
+    }
+
+    @Test
+    fun `var with fractional float path does not match adjacent indices`() {
+        // {"var": 1.5} must not silently collapse to "1" or "2" — its
+        // rendered path is "1.5", which doesn't resolve, so the lookup
+        // misses and warns. Guards against an over-eager rounding fix to
+        // `formatNumber`.
+        val vars = Value.ArrayValue(listOf(s("zero"), s("one"), s("two")))
+        val out = AccessorOperators.opVar(Value.FloatValue(1.5), vars)
+        assertThat(out).isEqualTo(Value.Null)
+        assertThat(warnings).hasSize(1)
+        assertThat(warnings[0]).contains("1.5")
+    }
+
+    @Test
+    fun `var with oversized float path does not crash`() {
+        // `1e19` is a finite whole-number Double whose magnitude exceeds
+        // Long.MAX_VALUE (~9.22e18). `formatNumber` must reject it via
+        // the `value == value.toLong().toDouble()` guard so the path
+        // formatter falls back to `Double.toString()` and the lookup just
+        // misses.
+        val out = AccessorOperators.opVar(Value.FloatValue(1.0e19), Value.Null)
+        assertThat(out).isEqualTo(Value.Null)
+        assertThat(warnings).hasSize(1)
+    }
+
+    @Test
+    fun `var recursively evaluates singleton path expression`() {
+        // Per the JSON Logic spec, `{"var": <expr>}` recursively evaluates
+        // <expr> and uses the result as the path. Here the inner
+        // `{"var": "active_path_key"}` resolves to "subscriber.country",
+        // which the outer var then looks up.
+        val vars = obj(
+            "active_path_key" to s("subscriber.country"),
+            "subscriber" to obj("country" to s("US")),
+        )
+        val out = AccessorOperators.opVar(
+            Value.ObjectValue(mapOf("var" to s("active_path_key"))),
+            vars,
+        )
+        assertThat(out).isEqualTo(s("US"))
+        assertThat(warnings).isEmpty()
+    }
+
+    @Test
+    fun `var recursively evaluates array-form path expression`() {
+        // Array form: the path argument is itself an expression that
+        // resolves dynamically. Mirrors the json-logic-js per-element
+        // evaluation rule for array args.
+        val vars = obj(
+            "key_to_lookup" to s("nested.value"),
+            "nested" to obj("value" to s("found")),
+        )
+        val out = AccessorOperators.opVar(
+            Value.ArrayValue(
+                listOf(Value.ObjectValue(mapOf("var" to s("key_to_lookup")))),
+            ),
+            vars,
+        )
+        assertThat(out).isEqualTo(s("found"))
+        assertThat(warnings).isEmpty()
+    }
+
+    @Test
+    fun `var recursively evaluates array-form default expression`() {
+        // The default arg in the array form is also recursively evaluated,
+        // so callers can express dynamic fallbacks like
+        // `{"var": ["missing_key", {"var": "fallback_source"}]}`.
+        val vars = obj("fallback_source" to s("computed_default"))
+        val out = AccessorOperators.opVar(
+            Value.ArrayValue(
+                listOf(
+                    s("missing_key"),
+                    Value.ObjectValue(mapOf("var" to s("fallback_source"))),
+                ),
+            ),
+            vars,
+        )
+        assertThat(out).isEqualTo(s("computed_default"))
+        // No missing-variable warning: the default short-circuited the lookup.
+        assertThat(warnings).isEmpty()
+    }
+
+    @Test
+    fun `var singleton expression resolving to array throws`() {
+        // json-logic-js JS-stringifies a non-primitive evaluated result
+        // ("x,y") and looks it up; we choose to be strict instead and
+        // throw TypeMismatch so the malformed predicate surfaces loudly.
+        val args = Value.ObjectValue(
+            mapOf(
+                "if" to Value.ArrayValue(
+                    listOf(
+                        Value.BoolValue(true),
+                        Value.ArrayValue(listOf(s("x"), s("y"))),
+                        s("z"),
+                    ),
+                ),
+            ),
+        )
+        assertThatThrownBy { AccessorOperators.opVar(args, Value.Null) }
+            .isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
     @Test
@@ -203,6 +317,47 @@ class AccessorOperatorsTest {
             vars,
         )
         assertThat(result).isEqualTo(Value.ArrayValue(emptyList()))
+    }
+
+    @Test
+    fun `missing recursively evaluates dynamic keys`() {
+        // Per the JSON Logic spec, each key arg is recursively evaluated
+        // before lookup. The inner `{"var": "key_name"}` resolves to
+        // "absent", which `missing` then checks against `vars`.
+        val vars = obj(
+            "key_name" to s("absent"),
+            "present_only" to Value.IntValue(1),
+        )
+        val result = AccessorOperators.opMissing(
+            Value.ArrayValue(
+                listOf(Value.ObjectValue(mapOf("var" to s("key_name")))),
+            ),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("absent"))))
+    }
+
+    @Test
+    fun `missing unpacks first arg when it resolves to array`() {
+        // Spec: if the first (possibly only) evaluated arg is itself an
+        // array, treat its elements as the full key list. Here `if` returns
+        // `["a", "c"]`, which `missing` unpacks before checking each key.
+        val vars = obj("a" to Value.IntValue(1))
+        val result = AccessorOperators.opMissing(
+            Value.ObjectValue(
+                mapOf(
+                    "if" to Value.ArrayValue(
+                        listOf(
+                            Value.BoolValue(true),
+                            Value.ArrayValue(listOf(s("a"), s("c"))),
+                            Value.ArrayValue(emptyList()),
+                        ),
+                    ),
+                ),
+            ),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("c"))))
     }
 
     // ---- helpers ----

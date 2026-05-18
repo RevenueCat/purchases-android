@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
+import com.revenuecat.purchases.rules.Evaluator
 import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.RulesEngineLog
 import com.revenuecat.purchases.rules.Value
@@ -15,10 +16,11 @@ internal object AccessorOperators {
      * `default` when the path is missing. `{"var": ""}` returns the entire
      * data scope.
      *
-     * The path argument is treated as a literal — it is NOT recursively
-     * evaluated as a JSON Logic expression. So a construct like
-     * `{"var": {"cat": ["subscriber.", {"var": "field_name"}]}}` (which
-     * some other implementations support) is rejected here.
+     * Per the JSON Logic spec, the path argument is recursively evaluated
+     * before lookup, so callers can compute paths dynamically — e.g.
+     * `{"var": {"var": "active_path_key"}}` resolves `active_path_key`
+     * first and uses its string value as the actual path. In the array
+     * form, the default argument is evaluated the same way.
      *
      * Variable lookup uses **strict JSON Logic dot-path semantics on
      * nested objects**. There is no flat-key fallback (i.e. we do not also
@@ -26,7 +28,7 @@ internal object AccessorOperators {
      */
     @Suppress("ReturnCount")
     fun opVar(args: Value, vars: Value): Value {
-        val (path, default) = parseVarArgs(args)
+        val (path, default) = resolveVarArgs(args, vars)
 
         if (path.isEmpty()) {
             return vars
@@ -44,17 +46,28 @@ internal object AccessorOperators {
      * that are NOT present in the data. Returns `[]` when nothing is
      * missing.
      *
-     * Per the JSON Logic spec, a key is "missing" when its resolved value
-     * is `null` OR `""` — i.e. the spec deliberately conflates "absent",
-     * "explicit null", and "empty string" into a single "no usable value"
-     * bucket. Other falsy values (`0`, `false`, `[]`) are NOT missing.
+     * Per the JSON Logic spec:
+     * - A key is "missing" when its resolved value is `null` OR `""` —
+     *   i.e. the spec deliberately conflates "absent", "explicit null",
+     *   and "empty string" into a single "no usable value" bucket. Other
+     *   falsy values (`0`, `false`, `[]`) are NOT missing.
+     * - Each key argument is recursively evaluated before lookup, so
+     *   dynamic key lists like `{"missing": [{"var": "key_to_check"}]}`
+     *   work.
+     * - If the first (possibly only) evaluated argument is itself an
+     *   array (typically the output of another operator), its elements
+     *   are unpacked as the key list — this is how
+     *   `{"missing": {"merge": [["a"], ["b"]]}}` is meant to behave.
      */
     fun opMissing(args: Value, vars: Value): Value {
-        val keys: List<Value> = when (args) {
-            is Value.ArrayValue -> args.items
+        val evaluatedArgs: List<Value> = when (args) {
+            is Value.ArrayValue -> args.items.map { Evaluator.evaluateValue(it, vars) }
             // Singleton shorthand: `{"missing": "a"}` ≡ `{"missing": ["a"]}`.
-            else -> listOf(args)
+            else -> listOf(Evaluator.evaluateValue(args, vars))
         }
+
+        val first = evaluatedArgs.firstOrNull()
+        val keys: List<Value> = if (first is Value.ArrayValue) first.items else evaluatedArgs
 
         val missing = mutableListOf<Value>()
         for (key in keys) {
@@ -79,18 +92,25 @@ internal object AccessorOperators {
     }
 
     /**
-     * Normalize `var`'s arg into a `(path, default)` pair. Accepts a
-     * string/number literal, `Null` (= empty path), or `[path, default?]`.
+     * Recursively evaluate `var`'s arg(s) per the JSON Logic spec, then
+     * normalize the result into a `(path, default)` pair. The array form
+     * evaluates each element in place (so both path and default become
+     * dynamic); the singleton form evaluates the (conceptually wrapped)
+     * lone argument so that constructs like `{"var": {"var": "key"}}`
+     * resolve to a dynamic path string.
+     *
+     * One deliberate strict deviation from json-logic-js: when the
+     * singleton form evaluates to a non-primitive (e.g. an array), we
+     * throw [RuleError.TypeMismatch] instead of JS-stringifying it
+     * (`"x,y"`) and looking that up. The malformed case surfaces loudly.
      */
-    private fun parseVarArgs(args: Value): Pair<String, Value?> = when (args) {
-        Value.Null -> "" to null
-        is Value.StringValue -> args.value to null
-        is Value.IntValue -> args.value.toString() to null
-        is Value.FloatValue -> formatNumber(args.value) to null
-        is Value.ArrayValue -> parseVarArrayArgs(args.items)
-        else -> throw RuleError.TypeMismatch(
-            "var arg must be a string, number, or array, got $args",
-        )
+    private fun resolveVarArgs(args: Value, vars: Value): Pair<String, Value?> {
+        if (args is Value.ArrayValue) {
+            val evaluated = args.items.map { Evaluator.evaluateValue(it, vars) }
+            return parseVarArrayArgs(evaluated)
+        }
+        val evaluated = Evaluator.evaluateValue(args, vars)
+        return pathSegment(evaluated) to null
     }
 
     private fun parseVarArrayArgs(items: List<Value>): Pair<String, Value?> {
