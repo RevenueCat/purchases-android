@@ -160,6 +160,51 @@ class AccessorOperatorsTest {
         assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"))))
     }
 
+    @Test
+    fun `missing reports null-valued keys as missing per spec`() {
+        // json-logic-js spec: a key with an explicit null value is "missing".
+        // Our `lookupPath` distinguishes "absent" (Kotlin null) from "explicit
+        // null" (Value.Null) — the spec collapses both into "missing".
+        val vars = obj("a" to Value.Null, "b" to Value.IntValue(1))
+        val result = AccessorOperators.opMissing(
+            Value.ArrayValue(listOf(s("a"), s("b"))),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"))))
+    }
+
+    @Test
+    fun `missing reports empty-string-valued keys as missing per spec`() {
+        // Same spec rule as the null case — `""` is treated as "no usable
+        // value". Other falsy-but-defined values stay non-missing.
+        val vars = obj("a" to s(""), "b" to s("present"))
+        val result = AccessorOperators.opMissing(
+            Value.ArrayValue(listOf(s("a"), s("b"))),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"))))
+    }
+
+    @Test
+    fun `missing does not report falsy-but-defined values as missing`() {
+        // Pinning the negative side of the spec: only `null` and `""` qualify.
+        // `0`, `false`, `[]`, `{}` are present-and-defined, hence not missing.
+        val vars = obj(
+            "zero" to Value.IntValue(0),
+            "false_val" to Value.BoolValue(false),
+            "empty_array" to Value.ArrayValue(emptyList()),
+            "empty_object" to Value.ObjectValue(emptyMap()),
+            "zero_string" to s("0"),
+        )
+        val result = AccessorOperators.opMissing(
+            Value.ArrayValue(
+                listOf(s("zero"), s("false_val"), s("empty_array"), s("empty_object"), s("zero_string")),
+            ),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(emptyList()))
+    }
+
     // ---- helpers ----
 
     private fun obj(vararg entries: Pair<String, Value>): Value =

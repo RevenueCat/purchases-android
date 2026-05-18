@@ -86,10 +86,15 @@ class LogicOperatorsTest {
     }
 
     @Test
-    fun `and empty is true`() {
+    fun `and empty is null per spec`() {
+        // json-logic-js leaves its `current` accumulator `undefined` when the
+        // arg list is empty and returns it; mapped onto our `Value` algebra
+        // that's [Value.Null]. Falsy in any boolean context, so the
+        // observable difference is only when the result is consumed as a
+        // value (e.g. `{"if": [{"and": []}, ...]}`).
         assertThat(
             LogicOperators.opAnd(Value.ArrayValue(emptyList()), Value.Null),
-        ).isEqualTo(Value.BoolValue(true))
+        ).isEqualTo(Value.Null)
     }
 
     // ---- or ----
@@ -109,10 +114,12 @@ class LogicOperatorsTest {
     }
 
     @Test
-    fun `or empty is false`() {
+    fun `or empty is null per spec`() {
+        // Same reasoning as `and empty` — JS `current` left `undefined` maps
+        // to [Value.Null] in our algebra. Still falsy in boolean contexts.
         assertThat(
             LogicOperators.opOr(Value.ArrayValue(emptyList()), Value.Null),
-        ).isEqualTo(Value.BoolValue(false))
+        ).isEqualTo(Value.Null)
     }
 
     // ---- if ----

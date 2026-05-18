@@ -43,6 +43,11 @@ internal object AccessorOperators {
      * `{"missing": ["a", "b.c"]}` returns the array of keys (as strings)
      * that are NOT present in the data. Returns `[]` when nothing is
      * missing.
+     *
+     * Per the JSON Logic spec, a key is "missing" when its resolved value
+     * is `null` OR `""` — i.e. the spec deliberately conflates "absent",
+     * "explicit null", and "empty string" into a single "no usable value"
+     * bucket. Other falsy values (`0`, `false`, `[]`) are NOT missing.
      */
     fun opMissing(args: Value, vars: Value): Value {
         val keys: List<Value> = when (args) {
@@ -54,11 +59,23 @@ internal object AccessorOperators {
         val missing = mutableListOf<Value>()
         for (key in keys) {
             val path = keyAsPath(key) ?: continue
-            if (lookupPath(vars, path) == null) {
+            if (isMissing(lookupPath(vars, path))) {
                 missing += Value.StringValue(path)
             }
         }
         return Value.ArrayValue(missing)
+    }
+
+    /**
+     * Spec-equivalent of `value === null || value === ""` after resolving
+     * a path through `var`. `null` (Kotlin) means the key isn't in the
+     * data at all; [Value.Null] means it's there with an explicit null
+     * value; an empty [Value.StringValue] means it's there with `""`.
+     */
+    private fun isMissing(value: Value?): Boolean = when (value) {
+        null, Value.Null -> true
+        is Value.StringValue -> value.value.isEmpty()
+        else -> false
     }
 
     /**

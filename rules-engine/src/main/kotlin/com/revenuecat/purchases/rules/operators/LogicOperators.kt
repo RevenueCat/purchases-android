@@ -31,15 +31,14 @@ internal object LogicOperators {
      * `{"and": [a, b, c]}` — short-circuit AND. Returns the first falsy
      * value or, if all are truthy, the last value (matches JS / JSON Logic
      * semantics: `and` returns the actual value, not a coerced boolean).
+     *
+     * Empty args (`{"and": []}`) returns [Value.Null], matching the JS
+     * reference impl whose `current` variable is left `undefined` when
+     * the loop body never runs.
      */
-    @Suppress("ReturnCount")
     fun opAnd(args: Value, vars: Value): Value {
-        val items = Operators.argsAsList(args)
-        if (items.isEmpty()) {
-            return Value.BoolValue(true) // vacuous truth
-        }
-        var last: Value = Value.BoolValue(true)
-        for (item in items) {
+        var last: Value = Value.Null
+        for (item in Operators.argsAsList(args)) {
             last = Evaluator.evaluateValue(item, vars)
             if (!last.isTruthy) return last
         }
@@ -48,16 +47,12 @@ internal object LogicOperators {
 
     /**
      * `{"or": [a, b, c]}` — short-circuit OR. Returns the first truthy
-     * value or, if all are falsy, the last value.
+     * value or, if all are falsy, the last value. Empty args returns
+     * [Value.Null] for the same reason as [opAnd].
      */
-    @Suppress("ReturnCount")
     fun opOr(args: Value, vars: Value): Value {
-        val items = Operators.argsAsList(args)
-        if (items.isEmpty()) {
-            return Value.BoolValue(false)
-        }
-        var last: Value = Value.BoolValue(false)
-        for (item in items) {
+        var last: Value = Value.Null
+        for (item in Operators.argsAsList(args)) {
             last = Evaluator.evaluateValue(item, vars)
             if (last.isTruthy) return last
         }
