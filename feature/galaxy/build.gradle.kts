@@ -29,13 +29,11 @@ android {
     }
 }
 
-val samsungIapVersion = libs.versions.samsungIap.get()
-
 dependencies {
     implementation(project(":purchases"))
 
-    compileOnly("com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
+    implementation(libs.samsung.iap)
     testImplementation(libs.bundles.test)
     testImplementation(libs.kotlin.test)
-    testImplementation("com.samsung.iap:samsung-iap:$samsungIapVersion@aar")
+    testImplementation(libs.samsung.iap)
 }
