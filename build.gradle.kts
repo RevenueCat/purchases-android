@@ -1,5 +1,3 @@
-import org.gradle.api.GradleException
-
 plugins {
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.android.application) apply false
