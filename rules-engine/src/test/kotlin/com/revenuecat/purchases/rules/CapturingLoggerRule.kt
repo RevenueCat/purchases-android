@@ -1,3 +1,5 @@
+@file:OptIn(InternalRulesEngineAPI::class)
+
 package com.revenuecat.purchases.rules
 
 import org.junit.rules.TestRule
@@ -5,12 +7,12 @@ import org.junit.runner.Description
 import org.junit.runners.model.Statement
 
 /**
- * JUnit rule that swaps `RulesEngineLog.sink` for a fresh [CapturingLogger]
- * for the duration of the test, then restores the previous sink.
+ * JUnit rule that swaps [Rules.logger] for a fresh [CapturingLogger] for
+ * the duration of the test, then restores the previous logger.
  *
  * Tests that need to assert on warnings install this rule and read
- * [warnings]. Tests that don't assert on warnings still install it so the
- * default [PrintlnLogger] doesn't spam stderr during the run.
+ * [warnings]. Tests that don't assert on warnings still install it so
+ * the default `PrintlnLogger` doesn't spam stderr during the run.
  */
 internal class CapturingLoggerRule : TestRule {
 
@@ -20,12 +22,12 @@ internal class CapturingLoggerRule : TestRule {
     override fun apply(base: Statement, description: Description): Statement {
         return object : Statement() {
             override fun evaluate() {
-                val previous = RulesEngineLog.sink
-                RulesEngineLog.sink = capturing
+                val previous = Rules.logger
+                Rules.logger = capturing
                 try {
                     base.evaluate()
                 } finally {
-                    RulesEngineLog.sink = previous
+                    Rules.logger = previous
                 }
             }
         }

@@ -1,8 +1,11 @@
+@file:OptIn(InternalRulesEngineAPI::class)
+
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
+import com.revenuecat.purchases.rules.InternalRulesEngineAPI
 import com.revenuecat.purchases.rules.RuleError
-import com.revenuecat.purchases.rules.RulesEngineLog
+import com.revenuecat.purchases.rules.Rules
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -37,7 +40,7 @@ internal object AccessorOperators {
         val found = lookupPath(vars, path)
         if (found != null) return found
         if (default != null) return default
-        RulesEngineLog.warn("missing variable: $path")
+        Rules.logger.warn("missing variable: $path")
         return Value.Null
     }
 
@@ -117,7 +120,7 @@ internal object AccessorOperators {
         val path = pathSegment(items.firstOrNull())
         val default = if (items.size >= 2) items[1] else null
         if (items.size > 2) {
-            RulesEngineLog.warn(
+            Rules.logger.warn(
                 "var: ignoring ${items.size - 2} extra arg(s); expected [path] or [path, default]",
             )
         }

@@ -1,3 +1,5 @@
+@file:OptIn(InternalRulesEngineAPI::class)
+
 package com.revenuecat.purchases.rules
 
 import org.assertj.core.api.Assertions.assertThat
@@ -22,17 +24,17 @@ class LoggerTest {
     }
 
     @Test
-    fun `RulesEngineLog routes warn through the current sink and restores`() {
-        val previous = RulesEngineLog.sink
+    fun `Rules logger swap is visible to subsequent reads`() {
+        val previous = Rules.logger
         val capturing = CapturingLogger()
-        RulesEngineLog.sink = capturing
+        Rules.logger = capturing
         try {
-            RulesEngineLog.warn("hello")
-            RulesEngineLog.warn("world")
+            Rules.logger.warn("hello")
+            Rules.logger.warn("world")
             assertThat(capturing.warnings).containsExactly("hello", "world")
         } finally {
-            RulesEngineLog.sink = previous
+            Rules.logger = previous
         }
-        assertThat(RulesEngineLog.sink).isSameAs(previous)
+        assertThat(Rules.logger).isSameAs(previous)
     }
 }
