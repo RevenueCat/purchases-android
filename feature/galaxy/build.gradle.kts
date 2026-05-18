@@ -35,5 +35,4 @@ dependencies {
     implementation(libs.samsung.iap)
     testImplementation(libs.bundles.test)
     testImplementation(libs.kotlin.test)
-    testImplementation(libs.samsung.iap)
 }
