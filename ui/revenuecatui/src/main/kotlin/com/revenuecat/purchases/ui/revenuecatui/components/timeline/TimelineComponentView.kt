@@ -22,10 +22,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstrainedLayoutReference
@@ -72,6 +74,8 @@ internal fun TimelineComponentView(
     if (!timelineState.visible) {
         return
     }
+
+    val horizontalBias = if (LocalLayoutDirection.current == LayoutDirection.Ltr) 0f else 1f
 
     ConstraintLayout(
         modifier = modifier
@@ -144,7 +148,7 @@ internal fun TimelineComponentView(
                     end.linkTo(parent.end)
                     width = Dimension.preferredWrapContent
                     height = Dimension.preferredWrapContent
-                    horizontalBias = 0f
+                    this.horizontalBias = horizontalBias
                 },
             )
 
@@ -158,7 +162,7 @@ internal fun TimelineComponentView(
                         end.linkTo(parent.end)
                         width = Dimension.preferredWrapContent
                         height = Dimension.preferredWrapContent
-                        horizontalBias = 0f
+                        this.horizontalBias = horizontalBias
                     },
                 )
             }
