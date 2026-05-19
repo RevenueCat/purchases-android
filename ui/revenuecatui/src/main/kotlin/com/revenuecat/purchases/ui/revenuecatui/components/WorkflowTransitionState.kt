@@ -16,6 +16,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.LayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
@@ -126,17 +127,26 @@ internal fun rememberWorkflowTransitionState(
 internal fun Modifier.workflowTransition(
     state: WorkflowTransitionState,
     stepId: String,
+    layoutDirection: LayoutDirection,
 ): Modifier = graphicsLayer {
-    applyWorkflowTransition(state, stepId, progress = state.animatable.value)
+    applyWorkflowTransition(
+        state = state,
+        stepId = stepId,
+        layoutDirection = layoutDirection,
+        progress = state.animatable.value,
+    )
 }
 
 private fun GraphicsLayerScope.applyWorkflowTransition(
     state: WorkflowTransitionState,
     stepId: String,
+    layoutDirection: LayoutDirection,
     progress: Float,
 ): Unit = when (state) {
     is WorkflowTransitionState.SlideInOut -> {
-        val directionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
+        val navigationDirectionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
+        val layoutDirectionFactor = if (layoutDirection == LayoutDirection.Rtl) -1f else 1f
+        val directionFactor = navigationDirectionFactor * layoutDirectionFactor
         translationX = when (stepId) {
             state.animatingToStepId -> (1f - progress) * directionFactor * size.width
             state.animatingFromStepId -> -progress * directionFactor * size.width
