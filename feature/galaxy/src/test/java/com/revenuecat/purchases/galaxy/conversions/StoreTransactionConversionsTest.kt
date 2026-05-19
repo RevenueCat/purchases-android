@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.galaxy.conversions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.galaxy.utils.parseDateFromGalaxyDateString
@@ -19,6 +20,7 @@ import java.util.TimeZone
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class StoreTransactionConversionsTest {
 
