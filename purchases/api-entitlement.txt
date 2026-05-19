@@ -925,7 +925,7 @@ package com.revenuecat.purchases.customercenter {
 
 package com.revenuecat.purchases.galaxy {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public enum GalaxyBillingMode {
+  public enum GalaxyBillingMode {
     enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
     enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode PRODUCTION;
     enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;

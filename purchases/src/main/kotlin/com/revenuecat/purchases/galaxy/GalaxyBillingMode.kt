@@ -15,7 +15,6 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
  * Refer to https://developer.samsung.com/iap/programming-guide/iap-helper-programming.html
  * for more information.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 public enum class GalaxyBillingMode {
     /**
      * Process purchases with the production environment. Financial transactions occur for successful requests.
