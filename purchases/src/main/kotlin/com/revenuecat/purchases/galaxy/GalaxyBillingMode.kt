@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.galaxy
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-
 /**
  * Represents the operation mode used by the Galaxy Store.
  *
