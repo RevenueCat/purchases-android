@@ -1,6 +1,5 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 
 @Suppress("unused", "UNUSED_VARIABLE")
