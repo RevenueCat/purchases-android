@@ -1047,10 +1047,16 @@ package com.revenuecat.purchases.data {
 
 package com.revenuecat.purchases.galaxy {
 
-  public enum GalaxyBillingMode {
-    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
-    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode PRODUCTION;
-    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;
+  public final class GalaxyBillingMode {
+    method public String getName();
+    property public final String name;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode.Companion Companion;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode PRODUCTION;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;
+  }
+
+  public static final class GalaxyBillingMode.Companion {
   }
 
 }

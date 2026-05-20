@@ -249,12 +249,7 @@ class ConfigureFragment : Fragment() {
             val builder = constructor.newInstance(context, apiKey) as PurchasesConfiguration.Builder
             try {
                 val modeClass = Class.forName("com.revenuecat.purchases.galaxy.GalaxyBillingMode")
-
-                // We can't use the default Enum import (kotlin.Enum) since it doesn't have a valueOf() function.
-                // We need to
-                @Suppress("UNCHECKED_CAST")
-                val testMode =
-                    java.lang.Enum.valueOf(modeClass as Class<out Enum<*>>, "TEST")
+                val testMode = modeClass.getField("TEST").get(null)
                 val method = builderClass.getMethod("galaxyBillingMode", modeClass)
                 method.invoke(builder, testMode)
             } catch (e: ReflectiveOperationException) {
