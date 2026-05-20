@@ -8,6 +8,8 @@ import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.InputOptionComponent
+import com.revenuecat.purchases.paywalls.components.InputSingleChoiceComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
@@ -66,6 +68,9 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
                 current.endStack?.let { queue.add(it) }
                 current.fallback?.let { queue.add(it) }
             }
+
+            is InputSingleChoiceComponent -> queue.add(current.stack)
+            is InputOptionComponent -> queue.add(current.stack)
 
             is FallbackHeaderComponent,
             is VideoComponent,

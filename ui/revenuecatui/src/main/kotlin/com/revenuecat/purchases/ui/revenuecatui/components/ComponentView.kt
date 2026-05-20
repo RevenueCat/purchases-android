@@ -10,6 +10,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownCo
 import com.revenuecat.purchases.ui.revenuecatui.components.header.HeaderComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.iconcomponent.IconComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.inputsinglechoice.InputOptionComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.inputsinglechoice.InputSingleChoiceComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter.StickyFooterComponentView
@@ -20,6 +22,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownCompon
 import com.revenuecat.purchases.ui.revenuecatui.components.style.HeaderComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.InputOptionComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.InputSingleChoiceComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
@@ -145,6 +149,20 @@ internal fun ComponentView(
         modifier = modifier,
     )
     is CountdownComponentStyle -> CountdownComponentView(
+        style = style,
+        state = state,
+        onClick = onClick,
+        componentInteractionTracker = componentInteractionTracker,
+        modifier = modifier,
+    )
+    is InputSingleChoiceComponentStyle -> InputSingleChoiceComponentView(
+        style = style,
+        state = state,
+        clickHandler = onClick,
+        componentInteractionTracker = componentInteractionTracker,
+        modifier = modifier,
+    )
+    is InputOptionComponentStyle -> InputOptionComponentView(
         style = style,
         state = state,
         onClick = onClick,

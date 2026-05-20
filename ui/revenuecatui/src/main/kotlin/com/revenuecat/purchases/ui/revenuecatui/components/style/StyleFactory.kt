@@ -15,6 +15,8 @@ import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.InputOptionComponent
+import com.revenuecat.purchases.paywalls.components.InputSingleChoiceComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
@@ -69,6 +71,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.InputOptionNotInInputSingleChoice
 import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toPageControlStyles
@@ -136,6 +139,10 @@ internal class StyleFactory(
         var enclosingTabsOrderedTabIds: List<String> = emptyList(),
         var enclosingTabContextNamesById: Map<String, String> = emptyMap(),
         var enclosingTabsDefaultTabIndexForInteraction: Int = 0,
+        /**
+         * If non-null, the branch currently being built is inside an [InputSingleChoiceComponent] with this fieldId.
+         */
+        var inputFieldId: String? = null,
         /**
          * If this is non-null, it means the branch currently being built is inside a countdown component.
          */
@@ -385,6 +392,20 @@ internal class StyleFactory(
         }
 
         /**
+         * Records that this branch of the tree is inside an [InputSingleChoiceComponent] with the given [fieldId].
+         */
+        fun <T> withInputField(
+            fieldId: String,
+            block: StyleFactoryScope.() -> T,
+        ): T {
+            val previous = inputFieldId
+            inputFieldId = fieldId
+            val result = block()
+            inputFieldId = previous
+            return result
+        }
+
+        /**
          * Records that this branch of the tree is in a countdown with the provided [countdownDate] and [countFrom].
          */
         fun <T> withCountdown(
@@ -573,6 +594,8 @@ internal class StyleFactory(
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
+            is InputSingleChoiceComponent -> createInputSingleChoiceComponentStyle(component)
+            is InputOptionComponent -> createInputOptionComponentStyle(component)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
@@ -1334,6 +1357,32 @@ internal class StyleFactory(
                 }
             }
         }
+
+    private fun StyleFactoryScope.createInputSingleChoiceComponentStyle(
+        component: InputSingleChoiceComponent,
+    ): Result<InputSingleChoiceComponentStyle, NonEmptyList<PaywallValidationError>> =
+        withInputField(component.fieldId) {
+            createStackComponentStyle(component.stack).map { stack ->
+                InputSingleChoiceComponentStyle(
+                    fieldId = component.fieldId,
+                    stack = stack,
+                )
+            }
+        }
+
+    private fun StyleFactoryScope.createInputOptionComponentStyle(
+        component: InputOptionComponent,
+    ): Result<InputOptionComponentStyle, NonEmptyList<PaywallValidationError>> {
+        val fieldId = inputFieldId
+            ?: return Result.Error(nonEmptyListOf(InputOptionNotInInputSingleChoice))
+        return createStackComponentStyle(component.stack).map { stack ->
+            InputOptionComponentStyle(
+                fieldId = fieldId,
+                optionId = component.optionId,
+                stack = stack,
+            )
+        }
+    }
 
     private fun createBackgroundStyles(
         background: Background?,

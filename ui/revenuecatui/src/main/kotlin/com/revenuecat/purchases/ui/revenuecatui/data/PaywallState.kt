@@ -85,7 +85,7 @@ internal sealed interface PaywallState {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "TooManyFunctions")
         @Stable
         class Components(
             val stack: ComponentStyle,
@@ -242,6 +242,8 @@ internal sealed interface PaywallState {
             var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
                 private set
 
+            val selectedOptionIdsByFieldId = mutableStateMapOf<String, String?>()
+
             private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
                 ?: selectedPackageByTab[selectedTabIndex]
                 ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.uniqueId
@@ -331,6 +333,10 @@ internal sealed interface PaywallState {
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
+            }
+
+            fun update(fieldId: String, selectedOptionId: String?) {
+                selectedOptionIdsByFieldId[fieldId] = selectedOptionId
             }
 
             fun update(selectedPackageUniqueId: String) {
