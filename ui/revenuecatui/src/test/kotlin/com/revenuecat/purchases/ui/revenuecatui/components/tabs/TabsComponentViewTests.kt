@@ -24,6 +24,8 @@ import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
+import com.revenuecat.purchases.paywalls.components.InputOptionComponent
+import com.revenuecat.purchases.paywalls.components.InputSingleChoiceComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -1290,6 +1292,8 @@ class TabsComponentViewTests {
                     current.fallback?.let { queue.add(it) }
                 }
 
+                is InputSingleChoiceComponent -> queue.add(current.stack)
+                is InputOptionComponent -> queue.add(current.stack)
                 is FallbackHeaderComponent,
                 is TabControlToggleComponent,
                 is TabControlComponent,
