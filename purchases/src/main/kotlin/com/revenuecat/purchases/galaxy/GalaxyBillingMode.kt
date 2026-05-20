@@ -13,7 +13,7 @@ package com.revenuecat.purchases.galaxy
  * Refer to https://developer.samsung.com/iap/programming-guide/iap-helper-programming.html
  * for more information.
  */
-public class GalaxyBillingMode internal constructor(
+public abstract class GalaxyBillingMode internal constructor(
     public val name: String,
 ) {
 
@@ -25,7 +25,7 @@ public class GalaxyBillingMode internal constructor(
          * Use this mode when submitting your app for beta or production distribution.
          */
         @JvmField
-        public val PRODUCTION: GalaxyBillingMode = GalaxyBillingMode("PRODUCTION")
+        public val PRODUCTION: GalaxyBillingMode = object : GalaxyBillingMode("PRODUCTION") {}
 
         /**
          * Payment requests are processed normally, except no financial transactions occur, and successful purchase
@@ -38,12 +38,12 @@ public class GalaxyBillingMode internal constructor(
          * Do not submit your app for beta or production distribution with this mode enabled.
          */
         @JvmField
-        public val TEST: GalaxyBillingMode = GalaxyBillingMode("TEST")
+        public val TEST: GalaxyBillingMode = object : GalaxyBillingMode("TEST") {}
 
         /**
          * All IAP requests fail in this mode. Useful for testing error scenarios.
          */
         @JvmField
-        public val ALWAYS_FAIL: GalaxyBillingMode = GalaxyBillingMode("ALWAYS_FAIL")
+        public val ALWAYS_FAIL: GalaxyBillingMode = object : GalaxyBillingMode("ALWAYS_FAIL") {}
     }
 }
