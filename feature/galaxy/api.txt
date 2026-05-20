@@ -10,7 +10,7 @@ package com.revenuecat.purchases.galaxy {
     ctor public GalaxyConfiguration.Builder(android.content.Context, String, com.revenuecat.purchases.galaxy.GalaxyBillingMode);
   }
 
-  public abstract sealed class GalaxyPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
+  public abstract class GalaxyPurchasingData implements com.revenuecat.purchases.models.PurchasingData {
   }
 
   @dev.drewhamilton.poko.Poko public static final class GalaxyPurchasingData.Product extends com.revenuecat.purchases.galaxy.GalaxyPurchasingData {

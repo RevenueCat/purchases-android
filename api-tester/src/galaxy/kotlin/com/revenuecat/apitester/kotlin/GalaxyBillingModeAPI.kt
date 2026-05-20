@@ -11,8 +11,8 @@ private class GalaxyBillingModeAPI {
             GalaxyBillingMode.PRODUCTION,
             GalaxyBillingMode.TEST,
             GalaxyBillingMode.ALWAYS_FAIL,
-            -> {
-            }
+            -> {}
+            else -> {}
         }.exhaustive
     }
 }
