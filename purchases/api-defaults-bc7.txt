@@ -1047,8 +1047,8 @@ package com.revenuecat.purchases.data {
 
 package com.revenuecat.purchases.galaxy {
 
-  public final class GalaxyBillingMode {
-    method public String getName();
+  public abstract class GalaxyBillingMode {
+    method public final String getName();
     property public final String name;
     field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
     field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode.Companion Companion;
