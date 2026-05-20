@@ -213,8 +213,8 @@ internal fun HeaderOverlayLayout(
         val mainPlaceable = measurables[0].measure(constraints)
 
         layout(constraints.maxWidth, constraints.maxHeight) {
-            mainPlaceable.place(0, 0)
-            headerPlaceable?.place(0, 0)
+            mainPlaceable.placeRelative(0, 0)
+            headerPlaceable?.placeRelative(0, 0)
         }
     }
 }
@@ -229,7 +229,7 @@ internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): M
         val topPad = state.headerHeightPx
         val placeable = measurable.measure(constraints.offset(vertical = -topPad))
         layout(placeable.width, placeable.height + topPad) {
-            placeable.place(0, topPad)
+            placeable.placeRelative(0, topPad)
         }
     }
 
