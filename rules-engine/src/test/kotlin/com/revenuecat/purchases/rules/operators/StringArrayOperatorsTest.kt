@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.PrintlnLogger
 import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
@@ -17,7 +16,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opIn(
             arr(s("bar"), s("foobar")),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(Value.BoolValue(true))
     }
@@ -27,7 +25,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opIn(
             arr(s("baz"), s("foobar")),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(Value.BoolValue(false))
     }
@@ -37,7 +34,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opIn(
             arr(s("US"), arr(s("US"), s("CA"), s("MX"))),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(Value.BoolValue(true))
     }
@@ -49,7 +45,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opIn(
             arr(Value.IntValue(5), arr(s("5"), s("6"))),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(Value.BoolValue(true))
     }
@@ -60,7 +55,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opIn(
             arr(Value.IntValue(5), s("12345")),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(Value.BoolValue(false))
     }
@@ -79,7 +73,6 @@ class StringArrayOperatorsTest {
             val out = StringArrayOperators.opIn(
                 arr(s("x"), haystack),
                 Value.Null,
-                PrintlnLogger,
             )
             assertThat(out).isEqualTo(Value.BoolValue(false))
         }
@@ -88,7 +81,7 @@ class StringArrayOperatorsTest {
     @Test
     fun `in arity mismatch is type error`() {
         assertThatThrownBy {
-            StringArrayOperators.opIn(arr(s("only-one")), Value.Null, PrintlnLogger)
+            StringArrayOperators.opIn(arr(s("only-one")), Value.Null)
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
@@ -99,7 +92,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opCat(
             arr(s("I love "), s("pie")),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("I love pie"))
     }
@@ -114,21 +106,20 @@ class StringArrayOperatorsTest {
                 Value.BoolValue(true),
             ),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("count=7, active=true"))
     }
 
     @Test
     fun `cat zero args returns empty string`() {
-        val out = StringArrayOperators.opCat(arr(), Value.Null, PrintlnLogger)
+        val out = StringArrayOperators.opCat(arr(), Value.Null)
         assertThat(out).isEqualTo(s(""))
     }
 
     @Test
     fun `cat singleton shorthand is supported`() {
         // `{"cat": "hello"}` ≡ `{"cat": ["hello"]}` per `argsAsList`.
-        val out = StringArrayOperators.opCat(s("hello"), Value.Null, PrintlnLogger)
+        val out = StringArrayOperators.opCat(s("hello"), Value.Null)
         assertThat(out).isEqualTo(s("hello"))
     }
 
@@ -137,7 +128,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opCat(
             arr(s("x="), Value.Null),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("x=null"))
     }
@@ -149,7 +139,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opCat(
             arr(s("vals="), arr(Value.IntValue(1), Value.IntValue(2))),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("vals=1,2"))
     }
@@ -161,7 +150,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("hello"), Value.IntValue(1)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("ello"))
     }
@@ -171,7 +159,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("hello"), Value.IntValue(1), Value.IntValue(3)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("ell"))
     }
@@ -181,7 +168,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("hello"), Value.IntValue(-2)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("lo"))
     }
@@ -194,7 +180,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("hello"), Value.IntValue(1), Value.IntValue(-2)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("el"))
     }
@@ -204,7 +189,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("abc"), Value.IntValue(10)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s(""))
     }
@@ -216,7 +200,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("abc"), Value.IntValue(-10)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("abc"))
     }
@@ -226,7 +209,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("abc"), Value.IntValue(0), Value.IntValue(100)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("abc"))
     }
@@ -238,7 +220,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(s("café"), Value.IntValue(1)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("afé"))
     }
@@ -250,7 +231,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opSubstr(
             arr(Value.IntValue(12345), Value.IntValue(1), Value.IntValue(3)),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(s("234"))
     }
@@ -258,13 +238,12 @@ class StringArrayOperatorsTest {
     @Test
     fun `substr arity mismatch is type error`() {
         assertThatThrownBy {
-            StringArrayOperators.opSubstr(arr(s("hello")), Value.Null, PrintlnLogger)
+            StringArrayOperators.opSubstr(arr(s("hello")), Value.Null)
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
         assertThatThrownBy {
             StringArrayOperators.opSubstr(
                 arr(s("hello"), Value.IntValue(0), Value.IntValue(0), Value.IntValue(0)),
                 Value.Null,
-                PrintlnLogger,
             )
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
@@ -279,7 +258,6 @@ class StringArrayOperatorsTest {
                 arr(Value.IntValue(3), Value.IntValue(4)),
             ),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(
             arr(Value.IntValue(1), Value.IntValue(2), Value.IntValue(3), Value.IntValue(4)),
@@ -296,7 +274,6 @@ class StringArrayOperatorsTest {
                 arr(Value.IntValue(3), Value.IntValue(4)),
             ),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(
             arr(Value.IntValue(1), Value.IntValue(2), Value.IntValue(3), Value.IntValue(4)),
@@ -305,7 +282,7 @@ class StringArrayOperatorsTest {
 
     @Test
     fun `merge zero args returns empty array`() {
-        val out = StringArrayOperators.opMerge(arr(), Value.Null, PrintlnLogger)
+        val out = StringArrayOperators.opMerge(arr(), Value.Null)
         assertThat(out).isEqualTo(arr())
     }
 
@@ -315,7 +292,6 @@ class StringArrayOperatorsTest {
         val out = StringArrayOperators.opMerge(
             arr(arr(arr(Value.IntValue(1)), Value.IntValue(2))),
             Value.Null,
-            PrintlnLogger,
         )
         assertThat(out).isEqualTo(arr(arr(Value.IntValue(1)), Value.IntValue(2)))
     }

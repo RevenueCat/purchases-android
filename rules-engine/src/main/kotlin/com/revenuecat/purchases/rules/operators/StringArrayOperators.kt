@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.RuleError
-import com.revenuecat.purchases.rules.RulesEngineLogger
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.looseEq
 
@@ -34,8 +33,8 @@ internal object StringArrayOperators {
      * [looseEq]. Any other haystack type returns `false` (mirrors JS,
      * where a non-`indexOf`-able haystack short-circuits to false).
      */
-    fun opIn(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val (needle, haystack) = Operators.evalTwo(args, vars, logger, "in")
+    fun opIn(args: Value, vars: Value): Value {
+        val (needle, haystack) = Operators.evalTwo(args, vars, "in")
         val result = when {
             needle is Value.StringValue && haystack is Value.StringValue ->
                 haystack.value.contains(needle.value)
@@ -50,8 +49,8 @@ internal object StringArrayOperators {
      * `{"cat": [a, b, ...]}` — variadic string concatenation. Each
      * operand is stringified via [stringify]. 0 args returns `""`.
      */
-    fun opCat(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val evaluated = Operators.evalArgs(args, vars, logger)
+    fun opCat(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
         return Value.StringValue(evaluated.joinToString(separator = "") { stringify(it) })
     }
 
@@ -63,8 +62,8 @@ internal object StringArrayOperators {
      * at `start` (matches the JS reference). Code-point-based, not
      * char-based — see type docs.
      */
-    fun opSubstr(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val evaluated = Operators.evalArgs(args, vars, logger)
+    fun opSubstr(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
         val source: Value
         val start: Value
         val length: Value?
@@ -118,8 +117,8 @@ internal object StringArrayOperators {
      * operands are spliced in; non-array operands are appended as
      * single elements.
      */
-    fun opMerge(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val evaluated = Operators.evalArgs(args, vars, logger)
+    fun opMerge(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
         val merged = mutableListOf<Value>()
         for (item in evaluated) {
             if (item is Value.ArrayValue) {
