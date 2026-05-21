@@ -1,5 +1,3 @@
-@file:OptIn(InternalRulesEngineAPI::class)
-
 package com.revenuecat.purchases.rules
 
 /**
@@ -8,12 +6,7 @@ package com.revenuecat.purchases.rules
  * The engine never logs directly; it routes diagnostic warnings through
  * [Rules.logger] so the host SDK can install an adapter that forwards
  * into the same logging pipeline used by the rest of the SDK.
- *
- * Marked [InternalRulesEngineAPI] because the implementation is the host
- * SDK's responsibility (the engine module ships only a stop-gap default).
- * App-level callers should never reach for this directly.
  */
-@InternalRulesEngineAPI
 public interface RulesEngineLogger {
     public fun warn(message: String)
 }

@@ -1,9 +1,6 @@
-@file:OptIn(InternalRulesEngineAPI::class)
-
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.InternalRulesEngineAPI
 import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Rules
 import com.revenuecat.purchases.rules.Value
