@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.CapturingLoggerRule
+import com.revenuecat.purchases.rules.Evaluator
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -202,5 +203,42 @@ class LogicOperatorsTest {
         )
         assertThat(LogicOperators.opIf(falsy, Value.Null))
             .isEqualTo(Value.Null)
+    }
+
+    @Test
+    fun `empty and inside if takes else branch`() {
+        // Pins the observable difference between empty `and` returning
+        // [Value.Null] vs the previous [Value.BoolValue] vacuous-truth
+        // behavior: with [Value.Null] (falsy), the surrounding `if`
+        // selects `else`. Returning [Value.BoolValue] would have flipped
+        // this to the `then` branch, silently changing rule semantics.
+        val args = Value.ArrayValue(
+            listOf(
+                Value.ObjectValue(mapOf("and" to Value.ArrayValue(emptyList()))),
+                Value.StringValue("yes"),
+                Value.StringValue("no"),
+            ),
+        )
+        assertThat(Evaluator.evaluateValue(Value.ObjectValue(mapOf("if" to args)), Value.Null))
+            .isEqualTo(Value.StringValue("no"))
+    }
+
+    @Test
+    fun `empty or inside if takes else branch`() {
+        // Mirror of `empty and inside if`: empty `or` returns
+        // [Value.Null] (falsy), so the surrounding `if` takes `else`.
+        // Old behavior of returning [Value.BoolValue(false)] was also
+        // falsy and would have produced the same answer here, but
+        // pinning the cross-operator behavior keeps both empty-args
+        // paths covered against a future change.
+        val args = Value.ArrayValue(
+            listOf(
+                Value.ObjectValue(mapOf("or" to Value.ArrayValue(emptyList()))),
+                Value.StringValue("yes"),
+                Value.StringValue("no"),
+            ),
+        )
+        assertThat(Evaluator.evaluateValue(Value.ObjectValue(mapOf("if" to args)), Value.Null))
+            .isEqualTo(Value.StringValue("no"))
     }
 }

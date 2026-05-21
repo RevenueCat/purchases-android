@@ -62,12 +62,12 @@ internal object LogicOperators {
     /**
      * `{"if": [cond, then, else]}` — also supports chained
      * `[c1, t1, c2, t2, ..., else]` (think `else if`). Without an `else`
-     * clause and with no truthy condition, returns `Null`.
+     * clause and with no truthy condition, returns `Null`. Empty args
+     * also fall through to `Null` (the loop never enters and `index <
+     * items.size` is false).
      */
-    @Suppress("ReturnCount")
     fun opIf(args: Value, vars: Value): Value {
         val items = Operators.argsAsList(args)
-        if (items.isEmpty()) return Value.Null
         var index = 0
         while (index + 1 < items.size) {
             val condition = Evaluator.evaluateValue(items[index], vars)
