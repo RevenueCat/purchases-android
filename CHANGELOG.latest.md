@@ -1,15 +1,13 @@
 ## RevenueCat SDK
 ### 🐞 Bugfixes
-* fix: url encode query prameters (#3451) via Jacob Rakidzich (@JZDesign)
+* Fix RTL layout issues in paywall components (#3493) via Tarek M. Ben Lechhab (@bilqisium)
 
 ## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Fix: dismiss was called before onPurchaseComplete callback invocation (#3353) via Jacob Rakidzich (@JZDesign)
-* Propagate default package across workflow steps (#3431) via Cesar de la Vega (@vegaro)
 ### Paywallv2
-#### ✨ New Features
-* feat: Allow disabling of automatic font scaling (#3438) via Jacob Rakidzich (@JZDesign)
+#### 🐞 Bugfixes
+* Rebuild workflow step states on color scheme change (#3419) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Extract `PaywallComponentsImagePreDownloader` (#3448) via Cesar de la Vega (@vegaro)
-* Simplify `WorkflowTransitionState` with explicit from/to step fields (#3441) via Cesar de la Vega (@vegaro)
+* Update baseline profiles (#3490) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3491) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3479) via RevenueCat Git Bot (@RCGitBot)

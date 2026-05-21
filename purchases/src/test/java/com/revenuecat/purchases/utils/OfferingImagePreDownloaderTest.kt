@@ -11,11 +11,13 @@ import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -25,9 +27,14 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -128,7 +135,10 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_image_override_dark_low_res.webp",
             "https://pawwalls.com/test_carousel_light_low_res.webp",
             "https://pawwalls.com/test_carousel_dark_low_res.webp",
+            "https://pawwalls.com/test_carousel_page_low_res.webp",
             "https://pawwalls.com/test_tabs_light_low_res.webp",
+            "https://pawwalls.com/test_video_fallback_low_res.webp",
+            "https://pawwalls.com/test_video_override_fallback_low_res.webp",
             "https://pawwalls.com/test_background_light_low_res.webp",
             "https://pawwalls.com/test_background_dark_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_low_res.webp",
@@ -185,12 +195,57 @@ class OfferingImagePreDownloaderTest {
                             ),
                         ),
                         CarouselComponent(
-                            pages = emptyList(),
+                            pages = listOf(
+                                StackComponent(
+                                    components = listOf(
+                                        ImageComponent(
+                                            source = ThemeImageUrls(
+                                                light = createMockImageUrls(
+                                                    webpLowRes = "https://pawwalls.com/test_carousel_page_low_res.webp",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
                             pageAlignment = VerticalAlignment.TOP,
                             background = Background.Image(
                                 value = ThemeImageUrls(
                                     light = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_carousel_light_low_res.webp"),
                                     dark = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_carousel_dark_low_res.webp"),
+                                ),
+                            ),
+                        ),
+                        VideoComponent(
+                            source = createMockVideoUrls(),
+                            fallbackSource = ThemeImageUrls(
+                                light = createMockImageUrls(
+                                    webpLowRes = "https://pawwalls.com/test_video_fallback_low_res.webp",
+                                ),
+                            ),
+                            visible = null,
+                            showControls = false,
+                            autoplay = true,
+                            loop = true,
+                            muteAudio = true,
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            fitMode = FitMode.FILL,
+                            maskShape = null,
+                            colorOverlay = null,
+                            padding = null,
+                            margin = null,
+                            border = null,
+                            shadow = null,
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = emptyList(),
+                                    properties = PartialVideoComponent(
+                                        fallbackSource = ThemeImageUrls(
+                                            light = createMockImageUrls(
+                                                webpLowRes = "https://pawwalls.com/test_video_override_fallback_low_res.webp",
+                                            ),
+                                        ),
+                                    ),
                                 ),
                             ),
                         ),
@@ -395,6 +450,18 @@ class OfferingImagePreDownloaderTest {
             webpLowRes = URL(webpLowRes),
             width = 200u,
             height = 200u,
+        )
+    }
+
+    private fun createMockVideoUrls(): ThemeVideoUrls {
+        return ThemeVideoUrls(
+            light = VideoUrls(
+                width = 200u,
+                height = 200u,
+                url = URL("https://www.revenuecat.com/test_video.mp4"),
+                urlLowRes = URL("https://www.revenuecat.com/test_video_low_res.mp4"),
+            ),
+            dark = null,
         )
     }
 }
