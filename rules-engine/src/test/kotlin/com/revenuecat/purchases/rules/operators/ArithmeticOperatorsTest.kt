@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.PrintlnLogger
 import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
@@ -192,9 +191,9 @@ class ArithmeticOperatorsTest {
     // ---- helpers ----
 
     private fun run(
-        op: (Value, Value, com.revenuecat.purchases.rules.RulesEngineLogger) -> Value,
+        op: (Value, Value) -> Value,
         args: Value,
-    ): Value = op(args, Value.Null, PrintlnLogger)
+    ): Value = op(args, Value.Null)
 
     private fun arr(vararg items: Value): Value = Value.ArrayValue(items.toList())
 

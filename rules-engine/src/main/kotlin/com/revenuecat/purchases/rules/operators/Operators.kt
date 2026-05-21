@@ -38,11 +38,11 @@ internal object Operators {
         "or" -> LogicOperators.opOr(args, vars)
         "if" -> LogicOperators.opIf(args, vars)
 
-        "+" -> ArithmeticOperators.opAdd(args, vars, logger)
-        "-" -> ArithmeticOperators.opSub(args, vars, logger)
-        "*" -> ArithmeticOperators.opMul(args, vars, logger)
-        "/" -> ArithmeticOperators.opDiv(args, vars, logger)
-        "%" -> ArithmeticOperators.opMod(args, vars, logger)
+        "+" -> ArithmeticOperators.opAdd(args, vars)
+        "-" -> ArithmeticOperators.opSub(args, vars)
+        "*" -> ArithmeticOperators.opMul(args, vars)
+        "/" -> ArithmeticOperators.opDiv(args, vars)
+        "%" -> ArithmeticOperators.opMod(args, vars)
 
         else -> throw RuleError.UnsupportedOperator(op)
     }

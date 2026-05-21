@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.RuleError
-import com.revenuecat.purchases.rules.RulesEngineLogger
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -31,8 +30,8 @@ internal object ArithmeticOperators {
      * numeric cast (`{"+": ["3.14"]}` → `3.14`). 0 arguments is a
      * [RuleError.TypeMismatch].
      */
-    fun opAdd(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val evaluated = Operators.evalArgs(args, vars, logger)
+    fun opAdd(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
         if (evaluated.isEmpty()) {
             throw RuleError.TypeMismatch("operator '+' requires at least 1 argument")
         }
@@ -44,8 +43,8 @@ internal object ArithmeticOperators {
      * `{"*": [a, b, ...]}` — variadic product. 0 arguments is a
      * [RuleError.TypeMismatch].
      */
-    fun opMul(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val evaluated = Operators.evalArgs(args, vars, logger)
+    fun opMul(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
         if (evaluated.isEmpty()) {
             throw RuleError.TypeMismatch("operator '*' requires at least 1 argument")
         }
@@ -57,8 +56,8 @@ internal object ArithmeticOperators {
      * `{"-": [a]}` — unary negation. `{"-": [a, b]}` — subtraction.
      * Other arities are a [RuleError.TypeMismatch].
      */
-    fun opSub(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val evaluated = Operators.evalArgs(args, vars, logger)
+    fun opSub(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
         return when (evaluated.size) {
             1 -> Value.FloatValue(-evaluated[0].asDouble())
             2 -> Value.FloatValue(evaluated[0].asDouble() - evaluated[1].asDouble())
@@ -72,8 +71,8 @@ internal object ArithmeticOperators {
      * `{"/": [a, b]}` — division. Division by zero returns [Value.Null]
      * (see type docs).
      */
-    fun opDiv(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val (lhs, rhs) = Operators.evalTwo(args, vars, logger, "/")
+    fun opDiv(args: Value, vars: Value): Value {
+        val (lhs, rhs) = Operators.evalTwo(args, vars, "/")
         val divisor = rhs.asDouble()
         if (divisor == 0.0) return Value.Null
         return Value.FloatValue(lhs.asDouble() / divisor)
@@ -83,8 +82,8 @@ internal object ArithmeticOperators {
      * `{"%": [a, b]}` — modulo. Modulo by zero returns [Value.Null] (see
      * type docs).
      */
-    fun opMod(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val (lhs, rhs) = Operators.evalTwo(args, vars, logger, "%")
+    fun opMod(args: Value, vars: Value): Value {
+        val (lhs, rhs) = Operators.evalTwo(args, vars, "%")
         val divisor = rhs.asDouble()
         if (divisor == 0.0) return Value.Null
         return Value.FloatValue(lhs.asDouble() % divisor)
