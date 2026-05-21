@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.RulesEngineLogger
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -17,14 +16,14 @@ internal object LogicOperators {
      * `{"!": x}` — boolean negation. Coerces to bool first per JSON Logic
      * truthiness rules.
      */
-    fun opNot(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val value = firstArgEvaluated(args, vars, logger)
+    fun opNot(args: Value, vars: Value): Value {
+        val value = firstArgEvaluated(args, vars)
         return Value.BoolValue(!value.isTruthy)
     }
 
     /** `{"!!": x}` — boolean cast. Spec: equivalent to `!!x` in JS. */
-    fun opNotNot(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val value = firstArgEvaluated(args, vars, logger)
+    fun opNotNot(args: Value, vars: Value): Value {
+        val value = firstArgEvaluated(args, vars)
         return Value.BoolValue(value.isTruthy)
     }
 
@@ -32,16 +31,15 @@ internal object LogicOperators {
      * `{"and": [a, b, c]}` — short-circuit AND. Returns the first falsy
      * value or, if all are truthy, the last value (matches JS / JSON Logic
      * semantics: `and` returns the actual value, not a coerced boolean).
+     *
+     * Empty args (`{"and": []}`) returns [Value.Null], matching the JS
+     * reference impl whose `current` variable is left `undefined` when
+     * the loop body never runs.
      */
-    @Suppress("ReturnCount")
-    fun opAnd(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val items = Operators.argsAsList(args)
-        if (items.isEmpty()) {
-            return Value.BoolValue(true) // vacuous truth
-        }
-        var last: Value = Value.BoolValue(true)
-        for (item in items) {
-            last = Evaluator.evaluateValue(item, vars, logger)
+    fun opAnd(args: Value, vars: Value): Value {
+        var last: Value = Value.Null
+        for (item in Operators.argsAsList(args)) {
+            last = Evaluator.evaluateValue(item, vars)
             if (!last.isTruthy) return last
         }
         return last
@@ -49,17 +47,13 @@ internal object LogicOperators {
 
     /**
      * `{"or": [a, b, c]}` — short-circuit OR. Returns the first truthy
-     * value or, if all are falsy, the last value.
+     * value or, if all are falsy, the last value. Empty args returns
+     * [Value.Null] for the same reason as [opAnd].
      */
-    @Suppress("ReturnCount")
-    fun opOr(args: Value, vars: Value, logger: RulesEngineLogger): Value {
-        val items = Operators.argsAsList(args)
-        if (items.isEmpty()) {
-            return Value.BoolValue(false)
-        }
-        var last: Value = Value.BoolValue(false)
-        for (item in items) {
-            last = Evaluator.evaluateValue(item, vars, logger)
+    fun opOr(args: Value, vars: Value): Value {
+        var last: Value = Value.Null
+        for (item in Operators.argsAsList(args)) {
+            last = Evaluator.evaluateValue(item, vars)
             if (last.isTruthy) return last
         }
         return last
@@ -68,30 +62,30 @@ internal object LogicOperators {
     /**
      * `{"if": [cond, then, else]}` — also supports chained
      * `[c1, t1, c2, t2, ..., else]` (think `else if`). Without an `else`
-     * clause and with no truthy condition, returns `Null`.
+     * clause and with no truthy condition, returns `Null`. Empty args
+     * also fall through to `Null` (the loop never enters and `index <
+     * items.size` is false).
      */
-    @Suppress("ReturnCount")
-    fun opIf(args: Value, vars: Value, logger: RulesEngineLogger): Value {
+    fun opIf(args: Value, vars: Value): Value {
         val items = Operators.argsAsList(args)
-        if (items.isEmpty()) return Value.Null
         var index = 0
         while (index + 1 < items.size) {
-            val condition = Evaluator.evaluateValue(items[index], vars, logger)
+            val condition = Evaluator.evaluateValue(items[index], vars)
             if (condition.isTruthy) {
-                return Evaluator.evaluateValue(items[index + 1], vars, logger)
+                return Evaluator.evaluateValue(items[index + 1], vars)
             }
             index += 2
         }
         return if (index < items.size) {
-            Evaluator.evaluateValue(items[index], vars, logger)
+            Evaluator.evaluateValue(items[index], vars)
         } else {
             Value.Null
         }
     }
 
-    private fun firstArgEvaluated(args: Value, vars: Value, logger: RulesEngineLogger): Value {
+    private fun firstArgEvaluated(args: Value, vars: Value): Value {
         val items = Operators.argsAsList(args)
         val first = items.firstOrNull() ?: Value.Null
-        return Evaluator.evaluateValue(first, vars, logger)
+        return Evaluator.evaluateValue(first, vars)
     }
 }

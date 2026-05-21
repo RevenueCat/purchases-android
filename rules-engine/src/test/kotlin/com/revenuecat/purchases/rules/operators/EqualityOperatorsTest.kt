@@ -1,13 +1,17 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.PrintlnLogger
+import com.revenuecat.purchases.rules.CapturingLoggerRule
 import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
+import org.junit.Rule
 import org.junit.Test
 
 class EqualityOperatorsTest {
+
+    @get:Rule
+    internal val loggerRule = CapturingLoggerRule()
 
     @Test
     fun `looseEq basic`() {
@@ -57,14 +61,14 @@ class EqualityOperatorsTest {
     @Test
     fun `arity mismatch is type error`() {
         assertThatThrownBy {
-            EqualityOperators.opLooseEq(arr(Value.IntValue(1)), Value.Null, PrintlnLogger)
+            EqualityOperators.opLooseEq(arr(Value.IntValue(1)), Value.Null)
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
-    private fun evalEq(args: Value): Value = EqualityOperators.opLooseEq(args, Value.Null, PrintlnLogger)
-    private fun evalNe(args: Value): Value = EqualityOperators.opLooseNe(args, Value.Null, PrintlnLogger)
-    private fun evalStrictEq(args: Value): Value = EqualityOperators.opStrictEq(args, Value.Null, PrintlnLogger)
-    private fun evalStrictNe(args: Value): Value = EqualityOperators.opStrictNe(args, Value.Null, PrintlnLogger)
+    private fun evalEq(args: Value): Value = EqualityOperators.opLooseEq(args, Value.Null)
+    private fun evalNe(args: Value): Value = EqualityOperators.opLooseNe(args, Value.Null)
+    private fun evalStrictEq(args: Value): Value = EqualityOperators.opStrictEq(args, Value.Null)
+    private fun evalStrictNe(args: Value): Value = EqualityOperators.opStrictNe(args, Value.Null)
 
     private fun arr(vararg items: Value): Value = Value.ArrayValue(items.toList())
 }
