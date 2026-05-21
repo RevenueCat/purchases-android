@@ -1,3 +1,5 @@
+@file:OptIn(InternalRulesEngineAPI::class)
+
 package com.revenuecat.purchases.rules
 
 import org.assertj.core.api.Assertions.assertThat
@@ -19,5 +21,20 @@ class LoggerTest {
         // can't easily intercept stderr, but the goal here is to catch
         // crashes / mis-typed format strings rather than verify content.
         PrintlnLogger.warn("smoke")
+    }
+
+    @Test
+    fun `Rules logger swap is visible to subsequent reads`() {
+        val previous = Rules.logger
+        val capturing = CapturingLogger()
+        Rules.logger = capturing
+        try {
+            Rules.logger.warn("hello")
+            Rules.logger.warn("world")
+            assertThat(capturing.warnings).containsExactly("hello", "world")
+        } finally {
+            Rules.logger = previous
+        }
+        assertThat(Rules.logger).isSameAs(previous)
     }
 }

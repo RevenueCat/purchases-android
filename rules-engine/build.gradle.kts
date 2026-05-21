@@ -1,5 +1,3 @@
-import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
-
 plugins {
     alias(libs.plugins.revenuecat.public.library)
 }
@@ -20,15 +18,13 @@ android {
     }
 }
 
-mavenPublishing {
-    configure(
-        AndroidSingleVariantLibrary(
-            variant = "defaultsRelease",
-            sourcesJar = true,
-            publishJavadocJar = true,
-        ),
-    )
-}
+// Maven Central publishing wiring (the `mavenPublishing { … }` block, the
+// `scripts/api-dump.sh` entry that keeps `api.txt` enforced in CI, the
+// `:bom` constraint, the revert of the `ConfigureConditionalPublishing`
+// short-circuit, and the `dokkaHtmlPartial` suppression) lives in a
+// separate draft PR that flips the switch once the rules engine has
+// functionality and a real consumer. Until then, this module just
+// compiles, runs tests, and gets detekt'd on every PR.
 
 dependencies {
     // `org.json` ships with the Android runtime (and is the same artifact

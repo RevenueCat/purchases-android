@@ -71,6 +71,12 @@ internal object ValueJsonHelper {
             }
             Value.ObjectValue(entries)
         }
-        else -> Value.Null
+        // Better to fail loudly than to silently coerce unknown
+        // `JSONTokener` outputs (`Date`, custom `JSONString` impls, …)
+        // to [Value.Null] — that would produce phantom `null` operands
+        // mid-test and mask real parser misconfiguration.
+        else -> throw RuleError.Parse(
+            "unexpected JSONTokener output of type ${parsed::class.qualifiedName}",
+        )
     }
 }

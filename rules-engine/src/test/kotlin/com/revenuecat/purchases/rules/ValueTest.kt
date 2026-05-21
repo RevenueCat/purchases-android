@@ -138,5 +138,27 @@ class ValueTest {
         assertThat(strictEq(Value.Null, Value.BoolValue(false))).isFalse
     }
 
+    // ---- IEEE 754 edge cases ----
+
+    @Test
+    fun `NaN never equals NaN under loose or strict eq`() {
+        // Inherited from `Double.NaN == Double.NaN` being false per IEEE 754
+        // (and matches JS `==` / `===` semantics). Locked down so a future
+        // refactor doesn't accidentally special-case NaN-equals-NaN.
+        val nan = Value.FloatValue(Double.NaN)
+        assertThat(looseEq(nan, nan)).isFalse
+        assertThat(strictEq(nan, nan)).isFalse
+    }
+
+    @Test
+    fun `Infinity equals itself under loose and strict eq`() {
+        // `Double.POSITIVE_INFINITY == Double.POSITIVE_INFINITY` is true under
+        // IEEE 754; pinning so cross-platform drift (Android's
+        // `toDoubleOrNull` vs iOS's `Double(String)`) stays visible.
+        val inf = Value.FloatValue(Double.POSITIVE_INFINITY)
+        assertThat(looseEq(inf, inf)).isTrue
+        assertThat(strictEq(inf, inf)).isTrue
+    }
+
     private fun parse(input: String): Value = ValueJsonHelper.fromJsonString(input)
 }
