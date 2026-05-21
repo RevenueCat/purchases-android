@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.PrintlnLogger
 import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
@@ -60,10 +59,30 @@ class ComparisonOperatorsTest {
     }
 
     @Test
-    fun `lt string compared numerically not lexicographically`() {
-        // "10" < "9" lexicographically would be true, but we coerce to
-        // numbers: 10 < 9 → false. Documented deviation from JS reference.
+    fun `lt compares two strings lexicographically`() {
+        // Per the JSON Logic spec (ECMAScript Abstract Relational
+        // Comparison), two string operands compare lexicographically.
+        // "10" < "9" → true because '1' (0x31) < '9' (0x39).
         assertThat(run(ComparisonOperators::opLt, arr(s("10"), s("9"))))
+            .isEqualTo(Value.BoolValue(true))
+        // Plain alphabetic ordering also flows through.
+        assertThat(run(ComparisonOperators::opLt, arr(s("apple"), s("banana"))))
+            .isEqualTo(Value.BoolValue(true))
+        // Empty string is lex-less than any non-empty string.
+        assertThat(run(ComparisonOperators::opLt, arr(s(""), s("a"))))
+            .isEqualTo(Value.BoolValue(true))
+    }
+
+    @Test
+    fun `lt mixed string and number coerces numerically`() {
+        // Mixed types fall through to numeric coercion, NOT lex —
+        // `"10" < 9` becomes `10 < 9` → false, while a pure-string
+        // compare would have said true. Pins the spec's "only lex when
+        // BOTH operands are strings" branch.
+        assertThat(run(ComparisonOperators::opLt, arr(s("10"), Value.IntValue(9))))
+            .isEqualTo(Value.BoolValue(false))
+        // Non-numeric string coerces to NaN → comparison is false.
+        assertThat(run(ComparisonOperators::opLt, arr(s("abc"), Value.IntValue(9))))
             .isEqualTo(Value.BoolValue(false))
     }
 
@@ -133,6 +152,16 @@ class ComparisonOperatorsTest {
         ).isEqualTo(Value.BoolValue(false))
     }
 
+    @Test
+    fun `le compares two strings lexicographically inclusive`() {
+        // Lex compare under `<=` — equal strings qualify, ordered
+        // strings resolve by spec.
+        assertThat(run(ComparisonOperators::opLe, arr(s("abc"), s("abc"))))
+            .isEqualTo(Value.BoolValue(true))
+        assertThat(run(ComparisonOperators::opLe, arr(s("9"), s("10"))))
+            .isEqualTo(Value.BoolValue(false))
+    }
+
     // ---- > ----
 
     @Test
@@ -141,6 +170,14 @@ class ComparisonOperatorsTest {
             .isEqualTo(Value.BoolValue(true))
         assertThat(run(ComparisonOperators::opGt, arr(Value.IntValue(2), Value.IntValue(2))))
             .isEqualTo(Value.BoolValue(false))
+    }
+
+    @Test
+    fun `gt compares two strings lexicographically`() {
+        // "9" > "10" → true (lex, '9' > '1'). Mirrors the `<` case in
+        // reverse and confirms the lex/numeric dispatch covers `>` too.
+        assertThat(run(ComparisonOperators::opGt, arr(s("9"), s("10"))))
+            .isEqualTo(Value.BoolValue(true))
     }
 
     @Test
@@ -186,9 +223,9 @@ class ComparisonOperatorsTest {
     // ---- helpers ----
 
     private fun run(
-        op: (Value, Value, com.revenuecat.purchases.rules.RulesEngineLogger) -> Value,
+        op: (Value, Value) -> Value,
         args: Value,
-    ): Value = op(args, Value.Null, PrintlnLogger)
+    ): Value = op(args, Value.Null)
 
     private fun arr(vararg items: Value): Value = Value.ArrayValue(items.toList())
 
