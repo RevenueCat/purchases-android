@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.os.Handler
 import android.os.Looper
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -62,7 +63,12 @@ internal class DefaultWebViewPreDownloader(
         settings.allowFileAccess = false
         settings.domStorageEnabled = true
         settings.javaScriptEnabled = true
+        settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
         webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                return request.url.scheme != HTTPS_SCHEME
+            }
+
             override fun onPageFinished(view: WebView, url: String?) {
                 onFinished()
             }
