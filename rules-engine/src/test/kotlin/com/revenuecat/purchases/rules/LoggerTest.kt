@@ -1,5 +1,3 @@
-@file:OptIn(InternalRulesEngineAPI::class)
-
 package com.revenuecat.purchases.rules
 
 import org.assertj.core.api.Assertions.assertThat
