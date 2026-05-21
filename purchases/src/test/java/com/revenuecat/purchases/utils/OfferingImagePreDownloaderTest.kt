@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
@@ -399,6 +400,7 @@ class OfferingImagePreDownloaderTest {
     fun `paywalls V2 - if web views, it pre-downloads all of them`() {
         val rootUrl = URL("https://paywalls.com/root.html")
         val nestedUrl = URL("https://paywalls.com/nested.html")
+        val sheetUrl = URL("https://paywalls.com/sheet.html")
         val headerUrl = URL("https://paywalls.com/header.html")
         val stickyFooterUrl = URL("https://paywalls.com/sticky-footer.html")
 
@@ -412,6 +414,20 @@ class OfferingImagePreDownloaderTest {
                                 components = listOf(
                                     WebViewComponent(url = nestedUrl),
                                 ),
+                            ),
+                            ButtonComponent(
+                                action = ButtonComponent.Action.NavigateTo(
+                                    ButtonComponent.Destination.Sheet(
+                                        id = "sheet-id",
+                                        name = null,
+                                        stack = StackComponent(
+                                            components = listOf(WebViewComponent(url = sheetUrl)),
+                                        ),
+                                        backgroundBlur = false,
+                                        size = null,
+                                    ),
+                                ),
+                                stack = StackComponent(components = emptyList()),
                             ),
                         ),
                     ),
@@ -433,6 +449,7 @@ class OfferingImagePreDownloaderTest {
         verifyAll {
             webViewPreDownloader.preDownloadWebView(rootUrl)
             webViewPreDownloader.preDownloadWebView(nestedUrl)
+            webViewPreDownloader.preDownloadWebView(sheetUrl)
             webViewPreDownloader.preDownloadWebView(headerUrl)
             webViewPreDownloader.preDownloadWebView(stickyFooterUrl)
         }

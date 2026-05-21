@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Color
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -18,7 +19,7 @@ internal fun WebViewComponentView(
     style: WebViewComponentStyle,
     modifier: Modifier = Modifier,
 ) {
-    if (!style.visible) return
+    if (!style.visible || !style.url.isHttps) return
 
     AndroidView(
         factory = { context ->
@@ -32,6 +33,11 @@ internal fun WebViewComponentView(
                 webView.loadUrl(style.url.toString())
             }
         },
+        onRelease = { webView ->
+            webView.stopLoading()
+            webView.webViewClient = WebViewClient()
+            webView.destroy()
+        },
         modifier = modifier.size(style.size),
     )
 }
@@ -40,8 +46,20 @@ private fun WebView.configure() {
     setBackgroundColor(Color.TRANSPARENT)
     isVerticalScrollBarEnabled = false
     isHorizontalScrollBarEnabled = false
+    settings.allowContentAccess = false
+    settings.allowFileAccess = false
     settings.cacheMode = WebSettings.LOAD_DEFAULT
     settings.domStorageEnabled = true
     settings.javaScriptEnabled = true
-    webViewClient = WebViewClient()
+    settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+    webViewClient = object : WebViewClient() {
+        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+            return request.url.scheme != HTTPS_SCHEME
+        }
+    }
 }
+
+private val java.net.URL.isHttps: Boolean
+    get() = protocol == HTTPS_SCHEME
+
+private const val HTTPS_SCHEME = "https"

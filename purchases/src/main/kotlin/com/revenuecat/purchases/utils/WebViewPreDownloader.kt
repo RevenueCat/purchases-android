@@ -32,26 +32,39 @@ internal class DefaultWebViewPreDownloader(
 
         mainHandler.post {
             val webView = webViewFactory(applicationContext)
-            webView.configureForPreDownload()
+            var destroyed = false
+            fun destroyWebView() {
+                if (destroyed) return
+                destroyed = true
+                webView.stopLoading()
+                webView.webViewClient = WebViewClient()
+                webView.destroy()
+            }
+
+            webView.configureForPreDownload(onFinished = {
+                mainHandler.postDelayed(
+                    ::destroyWebView,
+                    POST_LOAD_DESTROY_DELAY_MILLIS,
+                )
+            })
             webView.loadUrl(url.toString())
             mainHandler.postDelayed(
-                { webView.destroy() },
+                ::destroyWebView,
                 MAX_PRE_DOWNLOAD_DURATION_MILLIS,
             )
         }
     }
 
-    private fun WebView.configureForPreDownload() {
+    private fun WebView.configureForPreDownload(onFinished: () -> Unit) {
         setBackgroundColor(Color.TRANSPARENT)
         settings.cacheMode = WebSettings.LOAD_DEFAULT
+        settings.allowContentAccess = false
+        settings.allowFileAccess = false
         settings.domStorageEnabled = true
         settings.javaScriptEnabled = true
         webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String?) {
-                view.postDelayed(
-                    { view.destroy() },
-                    POST_LOAD_DESTROY_DELAY_MILLIS,
-                )
+                onFinished()
             }
         }
     }

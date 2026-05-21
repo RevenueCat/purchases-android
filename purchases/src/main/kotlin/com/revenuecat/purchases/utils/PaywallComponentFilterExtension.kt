@@ -44,7 +44,12 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
         when (current) {
             is StackComponent -> queue.addAll(current.components)
             is PurchaseButtonComponent -> queue.add(current.stack)
-            is ButtonComponent -> queue.add(current.stack)
+            is ButtonComponent -> {
+                queue.add(current.stack)
+                val sheet = (current.action as? ButtonComponent.Action.NavigateTo)
+                    ?.destination as? ButtonComponent.Destination.Sheet
+                sheet?.stack?.let { queue.add(it) }
+            }
             is PackageComponent -> queue.add(current.stack)
             is HeaderComponent -> queue.add(current.stack)
             is StickyFooterComponent -> queue.add(current.stack)
