@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.utils.serializers.URLSerializer
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -17,6 +18,7 @@ import java.net.URL
 @Immutable
 public class WebViewComponent(
     @get:JvmSynthetic
+    @Serializable(with = URLSerializer::class)
     public val url: URL,
     @get:JvmSynthetic
     public val visible: Boolean? = null,
