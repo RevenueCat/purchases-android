@@ -158,8 +158,7 @@ internal fun ButtonComponentView(
                             )
                         } else {
                             val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
-                            val interaction = paywallAction.workflowInteraction()
-                                ?: style.action.componentInteraction(urlForEvent)
+                            val interaction = style.action.componentInteraction(urlForEvent)
                             interaction?.let {
                                 componentInteractionTracker.track(
                                     PaywallComponentInteractionData(
@@ -286,13 +285,6 @@ private fun PaywallAction.navigationUrlForComponentInteraction(): String? =
             else -> null
         }
         else -> null
-    }
-
-private fun PaywallAction.workflowInteraction(): ButtonComponentInteraction? =
-    if (this is PaywallAction.External.WorkflowTrigger) {
-        ButtonComponentInteraction(value = "workflow_trigger")
-    } else {
-        null
     }
 
 /**
