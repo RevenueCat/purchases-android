@@ -16,6 +16,10 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.core.OperationMode
+import com.revenuecat.purchases.core.add
+import com.revenuecat.purchases.core.fetchWithNative
+import com.revenuecat.purchases.core.performOperation
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -44,6 +48,8 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.net.URL
 import java.util.Locale
 import kotlin.coroutines.resume
@@ -1300,6 +1306,32 @@ public class Purchases internal constructor(
         public fun configure(
             configuration: PurchasesConfiguration,
         ): Purchases {
+            // Call Rust add() function to verify integration
+            val rustResult = add(2uL, 3uL)
+            infoLog { "Rust add(2, 3) = $rustResult" }
+            GlobalScope.launch {
+                val successResult = performOperation(OperationMode.SUCCESS)
+                errorLog { "Operation result in Rust: $successResult" }
+                try {
+                    val failureResult = performOperation(OperationMode.ERROR)
+                } catch (e: Exception) {
+                    errorLog(e) { "Error performing operation in Rust" }
+                }
+                try {
+                    val timeoutResult = performOperation(OperationMode.TIMEOUT)
+                } catch (e: Exception) {
+                    errorLog(e) { "Timeout performing operation in Rust" }
+                }
+
+                // PoC: 2-way communication — Rust calls back into Kotlin via HttpClient
+                try {
+                    val result = fetchWithNative(NativeHttpClient(), "https://httpbin.org/get")
+                    infoLog { "[Android] Rust round-trip result: $result" }
+                } catch (e: Exception) {
+                    errorLog(e) { "[Android] Rust round-trip error" }
+                }
+            }
+
             if (isConfigured) {
                 if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
                     infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG }
