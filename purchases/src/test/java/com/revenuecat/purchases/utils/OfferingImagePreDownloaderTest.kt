@@ -18,6 +18,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -51,6 +52,8 @@ class OfferingImagePreDownloaderTest {
 
     private lateinit var coilImageDownloader: CoilImageDownloader
 
+    private lateinit var webViewPreDownloader: WebViewPreDownloader
+
     private lateinit var preDownloader: OfferingImagePreDownloader
 
     private val zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH")
@@ -60,8 +63,15 @@ class OfferingImagePreDownloaderTest {
         coilImageDownloader = mockk<CoilImageDownloader>().apply {
             every { downloadImage(any()) } just Runs
         }
+        webViewPreDownloader = mockk<WebViewPreDownloader>().apply {
+            every { preDownloadWebView(any()) } just Runs
+        }
 
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = true, coilImageDownloader)
+        preDownloader = OfferingImagePreDownloader(
+            shouldPredownloadImages = true,
+            coilImageDownloader = coilImageDownloader,
+            webViewPreDownloader = webViewPreDownloader,
+        )
     }
 
     @Test
@@ -75,16 +85,22 @@ class OfferingImagePreDownloaderTest {
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
     @Test
     fun `if disabled, it does not download anything`() {
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = false, coilImageDownloader)
+        preDownloader = OfferingImagePreDownloader(
+            shouldPredownloadImages = false,
+            coilImageDownloader = coilImageDownloader,
+            webViewPreDownloader = webViewPreDownloader,
+        )
         preDownloader.preDownloadOfferingImages(createOfferings())
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
@@ -107,6 +123,7 @@ class OfferingImagePreDownloaderTest {
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
@@ -120,6 +137,7 @@ class OfferingImagePreDownloaderTest {
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
@@ -374,6 +392,49 @@ class OfferingImagePreDownloaderTest {
             expectedImageDownloads.forEach { url ->
                 coilImageDownloader.downloadImage(Uri.parse(url))
             }
+        }
+    }
+
+    @Test
+    fun `paywalls V2 - if web views, it pre-downloads all of them`() {
+        val rootUrl = URL("https://paywalls.com/root.html")
+        val nestedUrl = URL("https://paywalls.com/nested.html")
+        val headerUrl = URL("https://paywalls.com/header.html")
+        val stickyFooterUrl = URL("https://paywalls.com/sticky-footer.html")
+
+        preDownloader.preDownloadOfferingImages(
+            createOfferingWithV2Paywall(
+                paywallComponentsConfig = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            WebViewComponent(url = rootUrl),
+                            StackComponent(
+                                components = listOf(
+                                    WebViewComponent(url = nestedUrl),
+                                ),
+                            ),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+                    header = HeaderComponent(
+                        stack = StackComponent(
+                            components = listOf(WebViewComponent(url = headerUrl)),
+                        ),
+                    ),
+                    stickyFooter = StickyFooterComponent(
+                        stack = StackComponent(
+                            components = listOf(WebViewComponent(url = stickyFooterUrl)),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        verifyAll {
+            webViewPreDownloader.preDownloadWebView(rootUrl)
+            webViewPreDownloader.preDownloadWebView(nestedUrl)
+            webViewPreDownloader.preDownloadWebView(headerUrl)
+            webViewPreDownloader.preDownloadWebView(stickyFooterUrl)
         }
     }
 

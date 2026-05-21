@@ -26,10 +26,12 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import java.net.URL
 
 internal class PaywallComponentsImagePreDownloader(
     /**
@@ -38,6 +40,7 @@ internal class PaywallComponentsImagePreDownloader(
      */
     private val shouldPredownloadImages: Boolean = canUsePaywallUI,
     private val coilImageDownloader: CoilImageDownloader,
+    private val webViewPreDownloader: WebViewPreDownloader = NoOpWebViewPreDownloader,
 ) {
 
     fun preDownloadImages(paywallComponentsConfig: PaywallComponentsConfig) {
@@ -50,6 +53,12 @@ internal class PaywallComponentsImagePreDownloader(
         imageUrls.forEach {
             debugLog { "Pre-downloading Paywall V2 image: $it" }
             coilImageDownloader.downloadImage(it)
+        }
+
+        val webViewUrls = findWebViewUrlsToDownload(paywallComponentsConfig)
+        webViewUrls.forEach {
+            debugLog { "Pre-downloading Paywall V2 web view: $it" }
+            webViewPreDownloader.preDownloadWebView(it)
         }
     }
 
@@ -106,6 +115,42 @@ internal class PaywallComponentsImagePreDownloader(
                     is TabControlToggleComponent,
                     is TextComponent,
                     is TimelineComponent,
+                    is WebViewComponent,
+                    -> emptySet()
+                }
+            }
+    }
+
+    private fun findWebViewUrlsToDownload(paywallComponentsConfig: PaywallComponentsConfig): Set<URL> {
+        return paywallComponentsConfig.stack.findWebViewUrlsToDownload() +
+            (paywallComponentsConfig.header?.stack?.findWebViewUrlsToDownload().orEmpty()) +
+            (paywallComponentsConfig.stickyFooter?.stack?.findWebViewUrlsToDownload().orEmpty())
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun StackComponent.findWebViewUrlsToDownload(): Set<URL> {
+        return filter { true }
+            .flatMapTo(mutableSetOf()) { component ->
+                when (component) {
+                    is WebViewComponent -> setOf(component.url)
+                    is ButtonComponent,
+                    is CarouselComponent,
+                    is CountdownComponent,
+                    is FallbackHeaderComponent,
+                    is HeaderComponent,
+                    is IconComponent,
+                    is ImageComponent,
+                    is PackageComponent,
+                    is PurchaseButtonComponent,
+                    is StackComponent,
+                    is StickyFooterComponent,
+                    is TabControlButtonComponent,
+                    is TabControlComponent,
+                    is TabControlToggleComponent,
+                    is TabsComponent,
+                    is TextComponent,
+                    is TimelineComponent,
+                    is VideoComponent,
                     -> emptySet()
                 }
             }
