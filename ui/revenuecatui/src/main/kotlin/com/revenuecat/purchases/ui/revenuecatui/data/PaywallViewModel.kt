@@ -192,8 +192,14 @@ internal class PaywallViewModelImpl(
     private val mode: PaywallMode
         get() = options.mode
 
+    // PaywallOptions.purchaseLogic is excluded from PaywallOptions.hashCode(), so a recomposition
+    // that rebuilds options without threading purchaseLogic through reuses this same VM and silently
+    // swaps options.purchaseLogic to null. Retain the last non-null value so MY_APP integrations
+    // remain functional across recompositions.
+    private var latestNonNullPurchaseLogic: PaywallPurchaseLogic? = options.purchaseLogic
+
     private val purchaseLogic: PaywallPurchaseLogic?
-        get() = options.purchaseLogic
+        get() = latestNonNullPurchaseLogic
 
     private var paywallPresentationData: PaywallEvent.Data? = null
 
@@ -253,6 +259,7 @@ internal class PaywallViewModelImpl(
         // Some properties not considered for equality (hashCode) may have changed
         // (e.g. the listener may change in some re-renderers)
         this.options = options
+        options.purchaseLogic?.let { latestNonNullPurchaseLogic = it }
         if (needsUpdateState) {
             updateState()
         }

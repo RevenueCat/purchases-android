@@ -522,6 +522,41 @@ class PaywallViewModelTest {
         assertThat(model.actionInProgress.value).isFalse
     }
 
+    @Test
+    fun `purchase uses newest non-null purchaseLogic when updateOptions supplies a different one`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val originalPurchaseCalled = MutableStateFlow(false)
+        val originalPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            originalPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+        val replacementPurchaseCalled = MutableStateFlow(false)
+        val replacementPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            replacementPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(customPurchaseLogic = originalPurchaseLogic)
+
+        model.updateOptions(
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setPurchaseLogic(replacementPurchaseLogic)
+                .build(),
+        )
+
+        model.purchaseSelectedPackage(activity)
+        replacementPurchaseCalled.first { it }
+
+        assertThat(originalPurchaseCalled.value).isFalse
+        coVerify(exactly = 1) { purchases.awaitSyncPurchases() }
+    }
+
     // Deprecated PurchaseLogic backward compatibility tests
 
     @Suppress("DEPRECATION")
