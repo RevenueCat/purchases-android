@@ -248,6 +248,75 @@ class StringArrayOperatorsTest {
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
+    @Test
+    fun `substr with NaN start treats it as zero`() {
+        // `Double.toLong()` is total on Kotlin/JVM (NaN → 0), but the spec
+        // semantics still need pinning so a future refactor can't slip in
+        // an unguarded `Int` cast and crash on NaN out of, e.g., a
+        // `{"+": ["abc"]}` arithmetic chain.
+        val out = StringArrayOperators.opSubstr(
+            arr(s("abcd"), Value.FloatValue(Double.NaN)),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s("abcd"))
+    }
+
+    @Test
+    fun `substr with infinite start clamps to total`() {
+        // +Infinity → start past the end → empty substring.
+        val outPositive = StringArrayOperators.opSubstr(
+            arr(s("abcd"), Value.FloatValue(Double.POSITIVE_INFINITY)),
+            Value.Null,
+        )
+        assertThat(outPositive).isEqualTo(s(""))
+
+        // -Infinity → clamp to 0 → whole string.
+        val outNegative = StringArrayOperators.opSubstr(
+            arr(s("abcd"), Value.FloatValue(Double.NEGATIVE_INFINITY)),
+            Value.Null,
+        )
+        assertThat(outNegative).isEqualTo(s("abcd"))
+    }
+
+    @Test
+    fun `substr with oversized start clamps to total`() {
+        // Finite Double well beyond `Long.MAX_VALUE` would be lossy if the
+        // implementation cast through a narrower integer type; pin the
+        // safe-clamp behavior so the operator returns empty rather than
+        // wrapping into a negative offset.
+        val out = StringArrayOperators.opSubstr(
+            arr(s("abcd"), Value.FloatValue(1.0e20)),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s(""))
+    }
+
+    @Test
+    fun `substr with NaN length treats it as zero`() {
+        // NaN length → 0 → empty result, mirroring JS `ToInteger`.
+        val out = StringArrayOperators.opSubstr(
+            arr(s("abcd"), Value.IntValue(0), Value.FloatValue(Double.NaN)),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s(""))
+    }
+
+    @Test
+    fun `substr with infinite length returns remaining or empty`() {
+        // +Infinity → clamp to remaining; -Infinity → clamp to 0 → empty.
+        val outPositive = StringArrayOperators.opSubstr(
+            arr(s("abcd"), Value.IntValue(1), Value.FloatValue(Double.POSITIVE_INFINITY)),
+            Value.Null,
+        )
+        assertThat(outPositive).isEqualTo(s("bcd"))
+
+        val outNegative = StringArrayOperators.opSubstr(
+            arr(s("abcd"), Value.IntValue(1), Value.FloatValue(Double.NEGATIVE_INFINITY)),
+            Value.Null,
+        )
+        assertThat(outNegative).isEqualTo(s(""))
+    }
+
     // ---- merge ----
 
     @Test

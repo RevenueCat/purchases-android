@@ -357,6 +357,43 @@ class AccessorOperatorsTest {
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
+    @Test
+    fun `missing_some with NaN threshold treats it as zero`() {
+        // `Double.toLong()` is total on Kotlin/JVM (NaN → 0), but the
+        // spec semantics still need pinning so a future refactor can't
+        // slip in an unguarded narrower-int cast and trap on a malformed
+        // `need_count` (e.g. NaN out of `{"+": ["abc"]}`). NaN → 0 →
+        // trivially satisfied → [].
+        val result = runMissingSome(
+            Value.ArrayValue(
+                listOf(
+                    Value.FloatValue(Double.NaN),
+                    Value.ArrayValue(listOf(s("a"), s("b"))),
+                ),
+            ),
+            obj(),
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(emptyList()))
+    }
+
+    @Test
+    fun `missing_some with infinite threshold never satisfies`() {
+        // +Infinity clamps to `Long.MAX_VALUE`, so the requirement can
+        // never be met and the operator returns the full missing list.
+        // Guards against a future trapping `Int(Double.infinity)`-style
+        // coercion.
+        val result = runMissingSome(
+            Value.ArrayValue(
+                listOf(
+                    Value.FloatValue(Double.POSITIVE_INFINITY),
+                    Value.ArrayValue(listOf(s("a"), s("b"))),
+                ),
+            ),
+            obj("a" to Value.IntValue(1)),
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("b"))))
+    }
+
     // ---- missing — JSON Logic spec edge cases ----
 
     @Test
