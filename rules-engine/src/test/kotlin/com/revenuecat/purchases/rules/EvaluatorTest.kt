@@ -224,6 +224,35 @@ class EvaluatorTest {
         assertThat(run(predicateNe)).isFalse
     }
 
+    // ---- equality with JS-style array/object coercion ----
+
+    @Test
+    fun `loose equality coerces array to JS string end-to-end`() {
+        // Pins the spec-aligned coercion path (Array.prototype.toString)
+        // through the full evaluator, not just the looseEq helper:
+        // `{"==": [[1, 2], "1,2"]}` → true, mirroring json-logic-js.
+        assertThat(run("""{"==": [[1, 2], "1,2"]}""")).isTrue
+        // Numeric fallback after ToPrimitive: `[1] == 1`.
+        assertThat(run("""{"==": [[1], 1]}""")).isTrue
+        // Empty array stringifies to "" which numerically coerces to 0.
+        assertThat(run("""{"==": [[], 0]}""")).isTrue
+    }
+
+    @Test
+    fun `loose equality coerces object to JS string end-to-end`() {
+        // A multi-key object (so it isn't dispatched as an operator)
+        // coerces to "[object Object]" against a string operand. Pins
+        // the rare-but-real case where a payload field gets accidentally
+        // serialized through `String(value)` upstream.
+        val predicate = """
+            {"==": [
+                {"a": 1, "b": 2},
+                "[object Object]"
+            ]}
+        """.trimIndent()
+        assertThat(run(predicate)).isTrue
+    }
+
     @Test
     fun `single-key object operand is dispatched as operator`() {
         // Pins the contrast with the multi-key case above: single-key

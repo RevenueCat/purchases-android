@@ -113,6 +113,10 @@ class ValueTest {
 
     @Test
     fun `looseEq arrays structural`() {
+        // Deliberate divergence from JS: in JS, `[1] == [1]` is `false`
+        // (object reference identity). We compare structurally because
+        // rule authors comparing a `var` lookup against a literal list
+        // expect "exact same contents" to mean "equal".
         assertThat(
             looseEq(
                 Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))),
@@ -123,6 +127,165 @@ class ValueTest {
             looseEq(
                 Value.ArrayValue(listOf(Value.IntValue(1))),
                 Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))),
+            ),
+        ).isFalse
+    }
+
+    @Test
+    fun `looseEq objects structural`() {
+        // Same deliberate structural rule as for arrays: same keys + same
+        // values (loosely) → equal, regardless of insertion order.
+        assertThat(
+            looseEq(
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.StringValue("x"))),
+                Value.ObjectValue(mapOf("b" to Value.StringValue("x"), "a" to Value.FloatValue(1.0))),
+            ),
+        ).isTrue
+        assertThat(
+            looseEq(
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1))),
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.IntValue(2))),
+            ),
+        ).isFalse
+        assertThat(
+            looseEq(
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1))),
+                Value.ObjectValue(mapOf("a" to Value.IntValue(2))),
+            ),
+        ).isFalse
+    }
+
+    // ---- loose equality: JS array/object stringify coercion ----
+
+    @Test
+    fun `looseEq array coerces to JS string against string`() {
+        // JS abstract equality: `Array.prototype.toString()` is invoked,
+        // then the comparison falls through to string-vs-string.
+        // Reference: `[1] == "1"` → true, `[1, 2] == "1,2"` → true.
+        assertThat(looseEq(Value.ArrayValue(listOf(Value.IntValue(1))), Value.StringValue("1"))).isTrue
+        assertThat(looseEq(Value.StringValue("1"), Value.ArrayValue(listOf(Value.IntValue(1))))).isTrue
+        assertThat(
+            looseEq(
+                Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))),
+                Value.StringValue("1,2"),
+            ),
+        ).isTrue
+        assertThat(
+            looseEq(
+                Value.ArrayValue(listOf(Value.StringValue("a"), Value.StringValue("b"))),
+                Value.StringValue("a,b"),
+            ),
+        ).isTrue
+        assertThat(looseEq(Value.ArrayValue(emptyList()), Value.StringValue(""))).isTrue
+        // Non-matching content still compares unequal.
+        assertThat(looseEq(Value.ArrayValue(listOf(Value.IntValue(1))), Value.StringValue("2"))).isFalse
+    }
+
+    @Test
+    fun `looseEq array elements render JS null as empty string`() {
+        // `[null].toString()` is `""` (not `"null"`), and
+        // `[null, 1].toString()` is `",1"`. The element-stringify rule
+        // is JS-specific; pin it directly.
+        assertThat(looseEq(Value.ArrayValue(listOf(Value.Null)), Value.StringValue(""))).isTrue
+        assertThat(
+            looseEq(Value.ArrayValue(listOf(Value.Null, Value.IntValue(1))), Value.StringValue(",1")),
+        ).isTrue
+        assertThat(
+            looseEq(Value.ArrayValue(listOf(Value.Null, Value.Null)), Value.StringValue(",")),
+        ).isTrue
+    }
+
+    @Test
+    fun `looseEq array recurses into nested arrays`() {
+        // `[[1, 2], 3].toString()` flattens to `"1,2,3"` — children
+        // recurse through the same join.
+        assertThat(
+            looseEq(
+                Value.ArrayValue(
+                    listOf(
+                        Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))),
+                        Value.IntValue(3),
+                    ),
+                ),
+                Value.StringValue("1,2,3"),
+            ),
+        ).isTrue
+    }
+
+    @Test
+    fun `looseEq array coerces through numeric fallback`() {
+        // After ToPrimitive, the recursion may hit the
+        // string-vs-number numeric fallback. Reference:
+        // `[1] == 1` → true, `[] == 0` → true, `[0] == false` → true.
+        assertThat(looseEq(Value.ArrayValue(listOf(Value.IntValue(1))), Value.IntValue(1))).isTrue
+        assertThat(looseEq(Value.ArrayValue(emptyList()), Value.IntValue(0))).isTrue
+        assertThat(looseEq(Value.ArrayValue(listOf(Value.IntValue(0))), Value.BoolValue(false))).isTrue
+        assertThat(
+            looseEq(Value.ArrayValue(listOf(Value.FloatValue(1.5))), Value.FloatValue(1.5)),
+        ).isTrue
+        // No spurious matches when the stringified array isn't numeric.
+        assertThat(
+            looseEq(Value.ArrayValue(listOf(Value.StringValue("hello"))), Value.IntValue(0)),
+        ).isFalse
+    }
+
+    @Test
+    fun `looseEq array renders JS-specific floats correctly`() {
+        // `String(1.0)` is `"1"` (no decimal), `String(NaN)` is `"NaN"`,
+        // `String(Infinity)` is `"Infinity"`. These show up only via the
+        // array stringify path — `==` against a bare `Double.NaN` would
+        // still be `false` because NaN isn't equal to itself.
+        assertThat(
+            looseEq(Value.ArrayValue(listOf(Value.FloatValue(1.0))), Value.StringValue("1")),
+        ).isTrue
+        assertThat(
+            looseEq(Value.ArrayValue(listOf(Value.FloatValue(Double.NaN))), Value.StringValue("NaN")),
+        ).isTrue
+        assertThat(
+            looseEq(
+                Value.ArrayValue(listOf(Value.FloatValue(Double.POSITIVE_INFINITY))),
+                Value.StringValue("Infinity"),
+            ),
+        ).isTrue
+        assertThat(
+            looseEq(
+                Value.ArrayValue(listOf(Value.FloatValue(Double.NEGATIVE_INFINITY))),
+                Value.StringValue("-Infinity"),
+            ),
+        ).isTrue
+    }
+
+    @Test
+    fun `looseEq object coerces to object Object string`() {
+        // JS `Object.prototype.toString.call({a: 1})` is
+        // `"[object Object]"`, so any object compared against that
+        // exact string is loosely equal.
+        assertThat(
+            looseEq(
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.IntValue(2))),
+                Value.StringValue("[object Object]"),
+            ),
+        ).isTrue
+        assertThat(
+            looseEq(Value.StringValue("[object Object]"), Value.ObjectValue(emptyMap())),
+        ).isTrue
+        assertThat(
+            looseEq(
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.IntValue(2))),
+                Value.StringValue("{a:1,b:2}"),
+            ),
+        ).isFalse
+    }
+
+    @Test
+    fun `looseEq array vs object is always false`() {
+        // Two compound operands of different shape: JS uses reference
+        // identity (false). Both ToPrimitive results are strings that
+        // can't ever match (`"1,2"` vs `"[object Object]"`).
+        assertThat(
+            looseEq(
+                Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))),
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.IntValue(2))),
             ),
         ).isFalse
     }
