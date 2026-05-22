@@ -199,7 +199,11 @@ class EvaluatorTest {
 
     @Test
     fun `multi-key object is a literal data value`() {
-        // An object literal with two keys isn't an operator.
+        // Mirrors json-logic-js's `is_logic`, which only treats an object
+        // as an operator when `Object.keys(logic).length === 1`. A two-key
+        // object falls back to `apply`'s "not logic, return as-is" branch,
+        // i.e. literal data — so two structurally-equal multi-key objects
+        // compare equal under our structural `looseEq`.
         val predicateEq = """
             {"==": [
                 {"a": 1, "b": 2},
@@ -218,6 +222,27 @@ class EvaluatorTest {
             ]}
         """.trimIndent()
         assertThat(run(predicateNe)).isFalse
+    }
+
+    @Test
+    fun `single-key object operand is dispatched as operator`() {
+        // Pins the contrast with the multi-key case above: single-key
+        // objects flow through `Evaluator.evaluateValue` like any other
+        // expression and get dispatched as operators (the `is_logic` →
+        // `apply` path in json-logic-js). An unknown op name surfaces as
+        // `RuleError.UnsupportedOperator`, mirroring the JS reference's
+        // `Unrecognized operation a` throw — so even though the multi-key
+        // case `{a:1,b:2} == {a:1,b:2}` returns `true` in our engine and
+        // `false` in JS (deliberate structural-vs-reference divergence),
+        // the literal `{a:1} == {a:1}` does NOT diverge: both engines
+        // fail to evaluate it.
+        val predicate = ValueJsonHelper.fromJsonString("""{"==": [{"a": 1}, {"a": 1}]}""")
+        assertThatThrownBy {
+            Evaluator.evaluate(predicate, emptyMap())
+        }
+            .isInstanceOfSatisfying(RuleError.UnsupportedOperator::class.java) { error ->
+                assertThat(error.name).isEqualTo("a")
+            }
     }
 
     // ---- helpers ----
