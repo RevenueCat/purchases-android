@@ -7,31 +7,31 @@ public interface PurchasesService {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal class PurchasesLifecycleEventBus {
-    private val listeners = mutableSetOf<PurchasesService>()
+internal class PurchasesServiceRegistry {
+    private val services = mutableSetOf<PurchasesService>()
     private var configuredPurchases: Purchases? = null
 
     @Synchronized
-    fun register(listener: PurchasesService) {
-        listeners.add(listener)
+    fun register(service: PurchasesService) {
+        services.add(service)
         configuredPurchases?.let { configured ->
-            listener.initialize(configured)
+            service.initialize(configured)
         }
     }
 
     @Synchronized
-    fun unregister(listener: PurchasesService) {
-        listeners.remove(listener)
+    fun unregister(service: PurchasesService) {
+        services.remove(service)
     }
 
     @Synchronized
     internal fun onConfigured(purchases: Purchases) {
         configuredPurchases = purchases
-        val listenersToNotify = listeners.toList()
+        val servicesToNotify = services.toList()
         // Keep callback dispatch in this critical section so register/configured/closed
         // notifications are observed in a single total order.
-        listenersToNotify.forEach { listener ->
-            listener.initialize(purchases)
+        servicesToNotify.forEach { service ->
+            service.initialize(purchases)
         }
     }
 
@@ -40,10 +40,10 @@ internal class PurchasesLifecycleEventBus {
         if (configuredPurchases === purchases) {
             configuredPurchases = null
         }
-        val listenersToNotify = listeners.toList()
+        val servicesToNotify = services.toList()
         // See onConfigured: ordering correctness is prioritized over minimizing lock hold time.
-        listenersToNotify.forEach { listener ->
-            listener.close(purchases)
+        servicesToNotify.forEach { service ->
+            service.close(purchases)
         }
     }
 }

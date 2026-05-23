@@ -13,22 +13,22 @@ import org.junit.Before
 import org.junit.Test
 
 internal class PurchasesLifecycleWiringCustomEntitlementTest {
-    private lateinit var originalLifecycleListener: PurchasesService
+    private lateinit var originalServiceForwarder: PurchasesService
 
     @Before
     fun setUp() {
-        originalLifecycleListener = Purchases.lifecycleListener
+        originalServiceForwarder = Purchases.serviceForwarder
     }
 
     @After
     fun tearDownMocks() {
         unmockkConstructor(PurchasesFactory::class)
-        Purchases.lifecycleListener = originalLifecycleListener
+        Purchases.serviceForwarder = originalServiceForwarder
         Purchases.backingFieldSharedInstance = null
     }
 
     @Test
-    fun `configure in custom entitlement mode notifies purchases lifecycle bus`() {
+    fun `configure in custom entitlement mode notifies purchases service forwarder`() {
         val context = mockk<Context>()
         val applicationContext = mockk<Context>()
         val configuredPurchases = mockk<Purchases>(relaxed = true)
@@ -44,16 +44,16 @@ internal class PurchasesLifecycleWiringCustomEntitlementTest {
             apiKey = "api_key",
             appUserID = "app_user_id",
         ).build()
-        val lifecycleListener = mockk<PurchasesService>(relaxed = true)
+        val serviceForwarder = mockk<PurchasesService>(relaxed = true)
 
         mockkConstructor(PurchasesFactory::class)
-        Purchases.lifecycleListener = lifecycleListener
+        Purchases.serviceForwarder = serviceForwarder
         every { anyConstructed<PurchasesFactory>().createPurchases(any(), any(), any()) } returns configuredPurchases
 
         Purchases.configureInCustomEntitlementsComputationMode(configuration)
 
         verify(exactly = 1) {
-            lifecycleListener.initialize(configuredPurchases)
+            serviceForwarder.initialize(configuredPurchases)
         }
         assertThat(Purchases.sharedInstance).isSameAs(configuredPurchases)
     }

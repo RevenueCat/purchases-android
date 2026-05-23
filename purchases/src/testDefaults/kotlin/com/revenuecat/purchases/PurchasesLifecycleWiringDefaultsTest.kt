@@ -13,22 +13,22 @@ import org.junit.Before
 import org.junit.Test
 
 internal class PurchasesLifecycleWiringDefaultsTest {
-    private lateinit var originalLifecycleListener: PurchasesService
+    private lateinit var originalServiceForwarder: PurchasesService
 
     @Before
     fun setUp() {
-        originalLifecycleListener = Purchases.lifecycleListener
+        originalServiceForwarder = Purchases.serviceForwarder
     }
 
     @After
     fun tearDownMocks() {
         unmockkConstructor(PurchasesFactory::class)
-        Purchases.lifecycleListener = originalLifecycleListener
+        Purchases.serviceForwarder = originalServiceForwarder
         Purchases.backingFieldSharedInstance = null
     }
 
     @Test
-    fun `configure notifies purchases lifecycle bus in defaults path`() {
+    fun `configure notifies purchases service forwarder in defaults path`() {
         val context = mockk<Context>()
         val applicationContext = mockk<Context>()
         val configuredPurchases = mockk<Purchases>(relaxed = true)
@@ -40,16 +40,16 @@ internal class PurchasesLifecycleWiringDefaultsTest {
         every { applicationContext.applicationContext } returns applicationContext
         every { applicationContext.applicationInfo } returns applicationInfo
         val configuration = PurchasesConfiguration.Builder(context, "api_key").build()
-        val lifecycleListener = mockk<PurchasesService>(relaxed = true)
+        val serviceForwarder = mockk<PurchasesService>(relaxed = true)
 
         mockkConstructor(PurchasesFactory::class)
-        Purchases.lifecycleListener = lifecycleListener
+        Purchases.serviceForwarder = serviceForwarder
         every { anyConstructed<PurchasesFactory>().createPurchases(any(), any(), any()) } returns configuredPurchases
 
         Purchases.configure(configuration)
 
         verify(exactly = 1) {
-            lifecycleListener.initialize(configuredPurchases)
+            serviceForwarder.initialize(configuredPurchases)
         }
         assertThat(Purchases.sharedInstance).isSameAs(configuredPurchases)
     }
