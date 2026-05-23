@@ -10,13 +10,13 @@ internal interface RewardVerificationLifecycleHook {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal fun interface RewardVerificationListenerRegistrar {
-    fun register(listener: PurchasesService)
+internal fun interface RewardVerificationServiceRegistrar {
+    fun register(service: PurchasesService)
 }
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationServiceLocator(
-    private val listenerRegistrar: RewardVerificationListenerRegistrar,
+    private val serviceRegistrar: RewardVerificationServiceRegistrar,
 ) : PurchasesService {
 
     private var isRegistered = false
@@ -34,7 +34,7 @@ internal class RewardVerificationServiceLocator(
         }
 
         if (shouldRegister) {
-            listenerRegistrar.register(listener = this)
+            serviceRegistrar.register(service = this)
         }
     }
 

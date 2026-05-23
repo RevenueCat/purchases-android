@@ -20,8 +20,8 @@ internal class RewardVerificationServiceLocatorTest {
 
     @Test
     fun `registerHook registers locator listener only once`() {
-        val listenerRegistrar = mockk<RewardVerificationListenerRegistrar>(relaxed = true)
-        val locator = RewardVerificationServiceLocator(listenerRegistrar)
+        val serviceRegistrar = mockk<RewardVerificationServiceRegistrar>(relaxed = true)
+        val locator = RewardVerificationServiceLocator(serviceRegistrar)
         val hookOne = mockk<RewardVerificationLifecycleHook>(relaxed = true)
         val hookTwo = mockk<RewardVerificationLifecycleHook>(relaxed = true)
 
@@ -29,15 +29,15 @@ internal class RewardVerificationServiceLocatorTest {
         locator.registerHook(hookTwo)
 
         verify(exactly = 1) {
-            listenerRegistrar.register(locator)
+            serviceRegistrar.register(locator)
         }
     }
 
     @Test
     fun `registered hooks receive lifecycle callbacks and unregistered hooks do not`() {
-        val listenerRegistrar = mockk<RewardVerificationListenerRegistrar>()
-        every { listenerRegistrar.register(any()) } just Runs
-        val locator = RewardVerificationServiceLocator(listenerRegistrar)
+        val serviceRegistrar = mockk<RewardVerificationServiceRegistrar>()
+        every { serviceRegistrar.register(any()) } just Runs
+        val locator = RewardVerificationServiceLocator(serviceRegistrar)
         val hook = mockk<RewardVerificationLifecycleHook>(relaxed = true)
         val purchases = mockk<Purchases>(relaxed = true)
 
@@ -64,9 +64,9 @@ internal class RewardVerificationServiceLocatorTest {
 
     @Test
     fun `hook callbacks can mutate locator without deadlock and use a hook snapshot`() {
-        val listenerRegistrar = mockk<RewardVerificationListenerRegistrar>()
-        every { listenerRegistrar.register(any()) } just Runs
-        val locator = RewardVerificationServiceLocator(listenerRegistrar)
+        val serviceRegistrar = mockk<RewardVerificationServiceRegistrar>()
+        every { serviceRegistrar.register(any()) } just Runs
+        val locator = RewardVerificationServiceLocator(serviceRegistrar)
         val purchases = mockk<Purchases>(relaxed = true)
         val lateHook = mockk<RewardVerificationLifecycleHook>(relaxed = true)
         val callbackCompleted = CountDownLatch(1)
@@ -105,10 +105,10 @@ internal class RewardVerificationServiceLocatorTest {
     fun `replayed configured callback can mutate locator from another thread without deadlock`() {
         val purchases = mockk<Purchases>(relaxed = true)
         lateinit var locator: RewardVerificationServiceLocator
-        val listenerRegistrar = RewardVerificationListenerRegistrar { listener ->
+        val serviceRegistrar = RewardVerificationServiceRegistrar { listener ->
             listener.initialize(purchases)
         }
-        locator = RewardVerificationServiceLocator(listenerRegistrar)
+        locator = RewardVerificationServiceLocator(serviceRegistrar)
         val lateHook = mockk<RewardVerificationLifecycleHook>(relaxed = true)
         val callbackCompleted = CountDownLatch(1)
         val executor = Executors.newSingleThreadExecutor()
@@ -145,11 +145,11 @@ internal class RewardVerificationServiceLocatorTest {
         val purchases = mockk<Purchases>(relaxed = true)
         lateinit var locator: RewardVerificationServiceLocator
         var registerCount = 0
-        val listenerRegistrar = RewardVerificationListenerRegistrar { listener ->
+        val serviceRegistrar = RewardVerificationServiceRegistrar { listener ->
             registerCount += 1
             listener.initialize(purchases)
         }
-        locator = RewardVerificationServiceLocator(listenerRegistrar)
+        locator = RewardVerificationServiceLocator(serviceRegistrar)
         val lateHook = mockk<RewardVerificationLifecycleHook>(relaxed = true)
         var hookCallbackCount = 0
         var lateHookRegistered = false
