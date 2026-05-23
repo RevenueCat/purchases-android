@@ -1191,6 +1191,18 @@ public class Purchases internal constructor(
         internal var serviceForwarder: PurchasesService = PurchasesServices.default()
 
         @InternalRevenueCatAPI
+        @JvmStatic
+        public fun registerService(service: PurchasesService) {
+            PurchasesServices.register(service)
+        }
+
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public fun unregisterService(service: PurchasesService) {
+            PurchasesServices.unregister(service)
+        }
+
+        @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
             return PurchasesOrchestrator.getImageLoader(context)
         }
