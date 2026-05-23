@@ -2,7 +2,7 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesLifecycleListener
+import com.revenuecat.purchases.PurchasesService
 
 internal interface RewardVerificationLifecycleHook {
     fun onPurchasesConfigured(purchases: Purchases)
@@ -11,13 +11,13 @@ internal interface RewardVerificationLifecycleHook {
 
 @OptIn(InternalRevenueCatAPI::class)
 internal fun interface RewardVerificationListenerRegistrar {
-    fun register(listener: PurchasesLifecycleListener)
+    fun register(listener: PurchasesService)
 }
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationServiceLocator(
     private val listenerRegistrar: RewardVerificationListenerRegistrar,
-) : PurchasesLifecycleListener {
+) : PurchasesService {
 
     private var isRegistered = false
     private val hooks = mutableSetOf<RewardVerificationLifecycleHook>()
@@ -43,13 +43,13 @@ internal class RewardVerificationServiceLocator(
         hooks.remove(hook)
     }
 
-    override fun onPurchasesConfigured(purchases: Purchases) {
+    override fun initialize(purchases: Purchases) {
         snapshotHooks().forEach { hook ->
             hook.onPurchasesConfigured(purchases)
         }
     }
 
-    override fun onPurchasesClosed(purchases: Purchases) {
+    override fun close(purchases: Purchases) {
         snapshotHooks().forEach { hook ->
             hook.onPurchasesClosed(purchases)
         }

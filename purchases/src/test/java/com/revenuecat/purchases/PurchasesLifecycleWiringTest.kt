@@ -7,7 +7,7 @@ import org.junit.Before
 import org.junit.Test
 
 internal class PurchasesLifecycleWiringTest {
-    private lateinit var originalLifecycleListener: PurchasesLifecycleListener
+    private lateinit var originalLifecycleListener: PurchasesService
 
     @Before
     fun setUp() {
@@ -24,14 +24,14 @@ internal class PurchasesLifecycleWiringTest {
     fun `close notifies purchases lifecycle bus`() {
         val orchestrator = mockk<PurchasesOrchestrator>(relaxed = true)
         val purchases = Purchases(orchestrator)
-        val lifecycleListener = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val lifecycleListener = mockk<PurchasesService>(relaxed = true)
         Purchases.backingFieldSharedInstance = purchases
         Purchases.lifecycleListener = lifecycleListener
 
         purchases.close()
 
         verify(exactly = 1) {
-            lifecycleListener.onPurchasesClosed(purchases)
+            lifecycleListener.close(purchases)
             orchestrator.close()
         }
     }

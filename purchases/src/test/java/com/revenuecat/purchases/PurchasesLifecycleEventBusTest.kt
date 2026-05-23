@@ -11,13 +11,13 @@ internal class PurchasesLifecycleEventBusTest {
     fun `register notifies configured immediately when bus is already configured`() {
         val eventBus = PurchasesLifecycleEventBus()
         val purchases = mockk<Purchases>(relaxed = true)
-        val listener = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val listener = mockk<PurchasesService>(relaxed = true)
         eventBus.onConfigured(purchases)
 
         eventBus.register(listener)
 
         verify(exactly = 1) {
-            listener.onPurchasesConfigured(purchases)
+            listener.initialize(purchases)
         }
 
         eventBus.unregister(listener)
@@ -27,8 +27,8 @@ internal class PurchasesLifecycleEventBusTest {
     fun `onConfigured and onClosed are broadcast to registered listeners`() {
         val eventBus = PurchasesLifecycleEventBus()
         val purchases = mockk<Purchases>(relaxed = true)
-        val listenerOne = mockk<PurchasesLifecycleListener>(relaxed = true)
-        val listenerTwo = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val listenerOne = mockk<PurchasesService>(relaxed = true)
+        val listenerTwo = mockk<PurchasesService>(relaxed = true)
 
         eventBus.register(listenerOne)
         eventBus.register(listenerTwo)
@@ -37,10 +37,10 @@ internal class PurchasesLifecycleEventBusTest {
         eventBus.onClosed(purchases)
 
         verify(exactly = 1) {
-            listenerOne.onPurchasesConfigured(purchases)
-            listenerOne.onPurchasesClosed(purchases)
-            listenerTwo.onPurchasesConfigured(purchases)
-            listenerTwo.onPurchasesClosed(purchases)
+            listenerOne.initialize(purchases)
+            listenerOne.close(purchases)
+            listenerTwo.initialize(purchases)
+            listenerTwo.close(purchases)
         }
 
         eventBus.unregister(listenerOne)
@@ -51,7 +51,7 @@ internal class PurchasesLifecycleEventBusTest {
     fun `unregister prevents further lifecycle callbacks`() {
         val eventBus = PurchasesLifecycleEventBus()
         val purchases = mockk<Purchases>(relaxed = true)
-        val listener = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val listener = mockk<PurchasesService>(relaxed = true)
 
         eventBus.register(listener)
         eventBus.unregister(listener)
@@ -59,8 +59,8 @@ internal class PurchasesLifecycleEventBusTest {
         eventBus.onClosed(purchases)
 
         verify(exactly = 0) {
-            listener.onPurchasesConfigured(purchases)
-            listener.onPurchasesClosed(purchases)
+            listener.initialize(purchases)
+            listener.close(purchases)
         }
     }
 
@@ -68,19 +68,19 @@ internal class PurchasesLifecycleEventBusTest {
     fun `onConfigured then register then onClosed notifies listener in order`() {
         val eventBus = PurchasesLifecycleEventBus()
         val purchases = mockk<Purchases>(relaxed = true)
-        val listener = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val listener = mockk<PurchasesService>(relaxed = true)
 
         eventBus.onConfigured(purchases)
         eventBus.register(listener)
         eventBus.onClosed(purchases)
 
         verifyOrder {
-            listener.onPurchasesConfigured(purchases)
-            listener.onPurchasesClosed(purchases)
+            listener.initialize(purchases)
+            listener.close(purchases)
         }
         verify(exactly = 1) {
-            listener.onPurchasesConfigured(purchases)
-            listener.onPurchasesClosed(purchases)
+            listener.initialize(purchases)
+            listener.close(purchases)
         }
     }
 
@@ -88,15 +88,15 @@ internal class PurchasesLifecycleEventBusTest {
     fun `onConfigured then onClosed then register does not deliver stale configured`() {
         val eventBus = PurchasesLifecycleEventBus()
         val purchases = mockk<Purchases>(relaxed = true)
-        val listener = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val listener = mockk<PurchasesService>(relaxed = true)
 
         eventBus.onConfigured(purchases)
         eventBus.onClosed(purchases)
         eventBus.register(listener)
 
         verify(exactly = 0) {
-            listener.onPurchasesConfigured(purchases)
-            listener.onPurchasesClosed(purchases)
+            listener.initialize(purchases)
+            listener.close(purchases)
         }
     }
 }

@@ -13,7 +13,7 @@ import org.junit.Before
 import org.junit.Test
 
 internal class PurchasesLifecycleWiringCustomEntitlementTest {
-    private lateinit var originalLifecycleListener: PurchasesLifecycleListener
+    private lateinit var originalLifecycleListener: PurchasesService
 
     @Before
     fun setUp() {
@@ -44,7 +44,7 @@ internal class PurchasesLifecycleWiringCustomEntitlementTest {
             apiKey = "api_key",
             appUserID = "app_user_id",
         ).build()
-        val lifecycleListener = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val lifecycleListener = mockk<PurchasesService>(relaxed = true)
 
         mockkConstructor(PurchasesFactory::class)
         Purchases.lifecycleListener = lifecycleListener
@@ -53,7 +53,7 @@ internal class PurchasesLifecycleWiringCustomEntitlementTest {
         Purchases.configureInCustomEntitlementsComputationMode(configuration)
 
         verify(exactly = 1) {
-            lifecycleListener.onPurchasesConfigured(configuredPurchases)
+            lifecycleListener.initialize(configuredPurchases)
         }
         assertThat(Purchases.sharedInstance).isSameAs(configuredPurchases)
     }

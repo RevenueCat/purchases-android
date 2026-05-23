@@ -563,7 +563,7 @@ public class Purchases internal constructor(
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun notifyLifecycleClosed() {
-        lifecycleListener.onPurchasesClosed(this)
+        lifecycleListener.close(this)
     }
 
     /**
@@ -1188,7 +1188,7 @@ public class Purchases internal constructor(
     public companion object {
         @OptIn(InternalRevenueCatAPI::class)
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal var lifecycleListener: PurchasesLifecycleListener = PurchasesLifecycleListeners.default()
+        internal var lifecycleListener: PurchasesService = PurchasesLifecycleListeners.default()
 
         @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
@@ -1338,7 +1338,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
-                lifecycleListener.onPurchasesConfigured(it)
+                lifecycleListener.initialize(it)
             }
         }
 

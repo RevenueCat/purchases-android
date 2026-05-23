@@ -44,8 +44,8 @@ internal class RewardVerificationServiceLocatorTest {
         locator.registerHook(hook)
         clearMocks(hook)
 
-        locator.onPurchasesConfigured(purchases)
-        locator.onPurchasesClosed(purchases)
+        locator.initialize(purchases)
+        locator.close(purchases)
 
         verify(exactly = 1) {
             hook.onPurchasesConfigured(purchases)
@@ -53,8 +53,8 @@ internal class RewardVerificationServiceLocatorTest {
         }
 
         locator.unregisterHook(hook)
-        locator.onPurchasesConfigured(purchases)
-        locator.onPurchasesClosed(purchases)
+        locator.initialize(purchases)
+        locator.close(purchases)
 
         verify(exactly = 1) {
             hook.onPurchasesConfigured(purchases)
@@ -88,12 +88,12 @@ internal class RewardVerificationServiceLocatorTest {
         try {
             locator.registerHook(reentrantHook)
 
-            locator.onPurchasesConfigured(purchases)
+            locator.initialize(purchases)
 
             assertTrue(callbackCompleted.await(1, TimeUnit.SECONDS))
             verify(exactly = 0) { lateHook.onPurchasesConfigured(any()) }
 
-            locator.onPurchasesConfigured(purchases)
+            locator.initialize(purchases)
 
             verify(exactly = 1) { lateHook.onPurchasesConfigured(purchases) }
         } finally {
@@ -106,7 +106,7 @@ internal class RewardVerificationServiceLocatorTest {
         val purchases = mockk<Purchases>(relaxed = true)
         lateinit var locator: RewardVerificationServiceLocator
         val listenerRegistrar = RewardVerificationListenerRegistrar { listener ->
-            listener.onPurchasesConfigured(purchases)
+            listener.initialize(purchases)
         }
         locator = RewardVerificationServiceLocator(listenerRegistrar)
         val lateHook = mockk<RewardVerificationLifecycleHook>(relaxed = true)
@@ -132,7 +132,7 @@ internal class RewardVerificationServiceLocatorTest {
             assertTrue(callbackCompleted.await(1, TimeUnit.SECONDS))
             verify(exactly = 0) { lateHook.onPurchasesConfigured(any()) }
 
-            locator.onPurchasesConfigured(purchases)
+            locator.initialize(purchases)
 
             verify(exactly = 1) { lateHook.onPurchasesConfigured(purchases) }
         } finally {
@@ -147,7 +147,7 @@ internal class RewardVerificationServiceLocatorTest {
         var registerCount = 0
         val listenerRegistrar = RewardVerificationListenerRegistrar { listener ->
             registerCount += 1
-            listener.onPurchasesConfigured(purchases)
+            listener.initialize(purchases)
         }
         locator = RewardVerificationServiceLocator(listenerRegistrar)
         val lateHook = mockk<RewardVerificationLifecycleHook>(relaxed = true)

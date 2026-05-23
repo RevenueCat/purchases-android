@@ -1,26 +1,26 @@
 package com.revenuecat.purchases
 
 @InternalRevenueCatAPI
-public interface PurchasesLifecycleListener {
-    public fun onPurchasesConfigured(purchases: Purchases)
-    public fun onPurchasesClosed(purchases: Purchases)
+public interface PurchasesService {
+    public fun initialize(purchases: Purchases)
+    public fun close(purchases: Purchases)
 }
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class PurchasesLifecycleEventBus {
-    private val listeners = mutableSetOf<PurchasesLifecycleListener>()
+    private val listeners = mutableSetOf<PurchasesService>()
     private var configuredPurchases: Purchases? = null
 
     @Synchronized
-    fun register(listener: PurchasesLifecycleListener) {
+    fun register(listener: PurchasesService) {
         listeners.add(listener)
         configuredPurchases?.let { configured ->
-            listener.onPurchasesConfigured(configured)
+            listener.initialize(configured)
         }
     }
 
     @Synchronized
-    fun unregister(listener: PurchasesLifecycleListener) {
+    fun unregister(listener: PurchasesService) {
         listeners.remove(listener)
     }
 
@@ -31,7 +31,7 @@ internal class PurchasesLifecycleEventBus {
         // Keep callback dispatch in this critical section so register/configured/closed
         // notifications are observed in a single total order.
         listenersToNotify.forEach { listener ->
-            listener.onPurchasesConfigured(purchases)
+            listener.initialize(purchases)
         }
     }
 
@@ -43,7 +43,7 @@ internal class PurchasesLifecycleEventBus {
         val listenersToNotify = listeners.toList()
         // See onConfigured: ordering correctness is prioritized over minimizing lock hold time.
         listenersToNotify.forEach { listener ->
-            listener.onPurchasesClosed(purchases)
+            listener.close(purchases)
         }
     }
 }

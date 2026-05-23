@@ -13,7 +13,7 @@ import org.junit.Before
 import org.junit.Test
 
 internal class PurchasesLifecycleWiringDefaultsTest {
-    private lateinit var originalLifecycleListener: PurchasesLifecycleListener
+    private lateinit var originalLifecycleListener: PurchasesService
 
     @Before
     fun setUp() {
@@ -40,7 +40,7 @@ internal class PurchasesLifecycleWiringDefaultsTest {
         every { applicationContext.applicationContext } returns applicationContext
         every { applicationContext.applicationInfo } returns applicationInfo
         val configuration = PurchasesConfiguration.Builder(context, "api_key").build()
-        val lifecycleListener = mockk<PurchasesLifecycleListener>(relaxed = true)
+        val lifecycleListener = mockk<PurchasesService>(relaxed = true)
 
         mockkConstructor(PurchasesFactory::class)
         Purchases.lifecycleListener = lifecycleListener
@@ -49,7 +49,7 @@ internal class PurchasesLifecycleWiringDefaultsTest {
         Purchases.configure(configuration)
 
         verify(exactly = 1) {
-            lifecycleListener.onPurchasesConfigured(configuredPurchases)
+            lifecycleListener.initialize(configuredPurchases)
         }
         assertThat(Purchases.sharedInstance).isSameAs(configuredPurchases)
     }
