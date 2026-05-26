@@ -311,10 +311,6 @@ jobs:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
-      - run:
           name: Validate Galaxy API Signature with Metalava
           command: |
             ./gradlew :feature:galaxy:metalavaGenerateSignatureBc8Release --no-daemon
@@ -403,10 +399,6 @@ jobs:
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
-      - run:
           name: Deployment
           command: |
             bundle exec fastlane android deploy
@@ -438,10 +430,6 @@ jobs:
       - android/restore_build_cache:
           cache_prefix: v1a
       - prepare-signing-key
-      - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
