@@ -1,15 +1,12 @@
 package com.revenuecat.purchasetester
 
-import android.content.Context
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.Toast
 import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -17,12 +14,15 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.DebugEventListener
 import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
+import com.revenuecat.purchases.galaxy.GalaxyConfiguration
 import com.revenuecat.purchases_sample.BuildConfig
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentConfigureBinding
@@ -134,7 +134,7 @@ class ConfigureFragment : Fragment() {
     }
 
     @Suppress("CyclomaticComplexMethod")
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun configureSDK(): Boolean {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
@@ -163,10 +163,7 @@ class ConfigureFragment : Fragment() {
         val configurationBuilder =
             when (selectedStore) {
                 Store.AMAZON -> AmazonConfiguration.Builder(application, apiKey)
-                Store.GALAXY -> createGalaxyConfigurationBuilder(application, apiKey) ?: run {
-                    showError("Galaxy Store support is unavailable in this build.")
-                    return false
-                }
+                Store.GALAXY -> GalaxyConfiguration.Builder(application, apiKey, GalaxyBillingMode.TEST)
                 Store.GOOGLE -> PurchasesConfiguration.Builder(application, apiKey)
             }
 
@@ -214,7 +211,7 @@ class ConfigureFragment : Fragment() {
             binding.amazonStoreRadioId.isEnabled = false
             binding.amazonUnavailableTextView.visibility = View.VISIBLE
         }
-        if (!supportedStores.contains("galaxy") || !isGalaxyAvailable()) {
+        if (!supportedStores.contains("galaxy")) {
             binding.galaxyStoreRadioId.isEnabled = false
         }
     }
@@ -222,48 +219,6 @@ class ConfigureFragment : Fragment() {
     private fun updateGalaxyWarningVisibility() {
         val isGalaxySelected = binding.storeRadioGroup.checkedRadioButtonId == R.id.galaxy_store_radio_id
         binding.galaxyWarningTextView.visibility = if (isGalaxySelected) View.VISIBLE else View.GONE
-    }
-
-    private fun isGalaxyAvailable(): Boolean {
-        return try {
-            Class.forName("com.revenuecat.purchases.galaxy.GalaxyConfiguration")
-            true
-        } catch (_: ClassNotFoundException) {
-            false
-        }
-    }
-
-    private fun createGalaxyConfigurationBuilder(
-        context: Context,
-        apiKey: String,
-    ): PurchasesConfiguration.Builder? {
-        return try {
-            // Galaxy types are instantiated via reflection because the Samsung IAP AAR isn't always present,
-            // and settings.gradle.kts conditionally includes the purchases-galaxy module depending on the presence
-            // of the Samsung IAP AAR. In our case, we want to be able to compile and run the purchase tester app
-            // with and without the Samsung IAP, so the module's conditional availability is necessary. In a normal
-            // app, you wouldn't need to do that and could avoid the reflection here.
-            val builderClass =
-                Class.forName("com.revenuecat.purchases.galaxy.GalaxyConfiguration\$Builder")
-            val constructor = builderClass.getConstructor(Context::class.java, String::class.java)
-            val builder = constructor.newInstance(context, apiKey) as PurchasesConfiguration.Builder
-            try {
-                val modeClass = Class.forName("com.revenuecat.purchases.galaxy.GalaxyBillingMode")
-                val testMode = modeClass.getField("TEST").get(null)
-                val method = builderClass.getMethod("galaxyBillingMode", modeClass)
-                method.invoke(builder, testMode)
-            } catch (e: ReflectiveOperationException) {
-                Log.e("PurchaseTester", "Failed to set Galaxy billing mode via reflection.", e)
-                Toast.makeText(
-                    context,
-                    "Galaxy billing mode unavailable. Using defaults.",
-                    Toast.LENGTH_SHORT,
-                ).show()
-            }
-            builder
-        } catch (_: Exception) {
-            null
-        }
     }
 
     private fun navigateToLoginFragment() {
