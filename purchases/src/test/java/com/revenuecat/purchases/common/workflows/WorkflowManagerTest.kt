@@ -248,6 +248,7 @@ class WorkflowManagerTest {
             mockBackend.getWorkflows(appUserID = "user_1", appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
+        verify(exactly = 0) { mockBackend.getWorkflow(any(), any(), any(), any(), any()) }
     }
 
     @Test

@@ -86,12 +86,13 @@ internal class WorkflowManager(
             appInBackground = appInBackground,
             onSuccess = { response ->
                 workflowsListCachedObject.cacheInstance(response)
+                // Write-only: warms disk for future read-back; in-memory cache governs staleness within a session.
                 deviceCache.cacheWorkflowsListResponse(
                     JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
                 )
                 offeringIdToWorkflowIdMap = response.workflows
-                    .filter { it.offeringId != null }
-                    .associate { it.offeringId!! to it.id }
+                    .mapNotNull { summary -> summary.offeringId?.let { it to summary.id } }
+                    .toMap()
                 response.workflows
                     .filter { it.prefetch }
                     .forEach { summary ->
