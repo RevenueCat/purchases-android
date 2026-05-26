@@ -16,6 +16,13 @@ val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
+// Resolves a property: Gradle -P flags take priority, then local.properties.
+fun resolveProperty(name: String, default: String = ""): String {
+    val projectProp = project.findProperty(name) as? String
+    if (projectProp != null) return projectProp
+    return localProperties.getProperty(name) ?: default
+}
+
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
 
@@ -55,7 +62,7 @@ android {
         buildConfigField(
             type = "boolean",
             name = "USE_WORKFLOWS_ENDPOINT",
-            value = (localProperties["revenuecat.useWorkflowsEndpoint"] == "true").toString(),
+            value = (resolveProperty("revenuecat.useWorkflowsEndpoint") == "true").toString(),
         )
     }
 
