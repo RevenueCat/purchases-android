@@ -35,6 +35,13 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean) =
             pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
     }
+    data class GetWorkflows(val userId: String) : Endpoint(
+        "/v1/subscribers/%s/workflows",
+        "get_workflows",
+    ) {
+        override fun getPath(useFallback: Boolean) =
+            pathTemplate.format(Uri.encode(userId))
+    }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
@@ -133,6 +140,7 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            is GetWorkflows,
             // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
             GetRemoteConfig,
             ->
@@ -159,6 +167,7 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            is GetWorkflows,
             // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
             GetRemoteConfig,
             ->
