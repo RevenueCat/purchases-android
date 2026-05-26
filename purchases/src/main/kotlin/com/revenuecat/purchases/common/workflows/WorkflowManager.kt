@@ -3,8 +3,14 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.caching.InMemoryCachedObject
+import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
@@ -22,8 +28,17 @@ internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
+    private val deviceCache: DeviceCache,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
+
+    private val workflowsListCachedObject = InMemoryCachedObject<WorkflowsListResponse>(
+        dateProvider = dateProvider,
+    )
+
+    @Volatile
+    private var offeringIdToWorkflowIdMap: Map<String, String> = emptyMap()
 
     fun close() {
         scope.cancel()
@@ -61,4 +76,44 @@ internal class WorkflowManager(
             onError = onError,
         )
     }
+
+    fun getWorkflowsList(appUserID: String, appInBackground: Boolean) {
+        if (!workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)) {
+            return
+        }
+        backend.getWorkflows(
+            appUserID = appUserID,
+            appInBackground = appInBackground,
+            onSuccess = { response ->
+                workflowsListCachedObject.cacheInstance(response)
+                deviceCache.cacheWorkflowsListResponse(
+                    JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
+                )
+                offeringIdToWorkflowIdMap = response.workflows
+                    .filter { it.offeringId != null }
+                    .associate { it.offeringId!! to it.id }
+                response.workflows
+                    .filter { it.prefetch }
+                    .forEach { summary ->
+                        getWorkflow(
+                            appUserID = appUserID,
+                            workflowId = summary.id,
+                            appInBackground = appInBackground,
+                            onSuccess = {},
+                            onError = { error ->
+                                errorLog {
+                                    "Failed to prefetch workflow ${summary.id}: ${error.underlyingErrorMessage}"
+                                }
+                            },
+                        )
+                    }
+            },
+            onError = { error ->
+                errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
+            },
+        )
+    }
+
+    fun workflowIdForOfferingId(offeringId: String): String? =
+        offeringIdToWorkflowIdMap[offeringId]
 }

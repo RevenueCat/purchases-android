@@ -5,6 +5,8 @@ import com.revenuecat.purchases.NoOpLogHandler
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import io.mockk.coEvery
@@ -20,12 +22,15 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
+import java.util.Date
 
 class WorkflowManagerTest {
 
     private val mockBackend: Backend = mockk(relaxed = true)
     private val mockResolver: WorkflowDetailResolver = mockk()
     private val mockAssetPreDownloader: WorkflowAssetPreDownloader = mockk(relaxed = true)
+    private val mockDeviceCache: DeviceCache = mockk(relaxed = true)
+    private val mockDateProvider: DateProvider = mockk()
     private lateinit var workflowManager: WorkflowManager
     private lateinit var originalLogHandler: LogHandler
 
@@ -33,10 +38,13 @@ class WorkflowManagerTest {
     fun setUp() {
         originalLogHandler = currentLogHandler
         currentLogHandler = NoOpLogHandler
+        every { mockDateProvider.now } returns Date(0) // ensures cache is always stale by default
         workflowManager = WorkflowManager(
             backend = mockBackend,
             workflowDetailResolver = mockResolver,
             workflowAssetPreDownloader = mockAssetPreDownloader,
+            deviceCache = mockDeviceCache,
+            dateProvider = mockDateProvider,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
         )
     }
@@ -214,4 +222,136 @@ class WorkflowManagerTest {
         assertThat(error).isNotNull
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
+
+    // region getWorkflowsList
+
+    @Test
+    fun `getWorkflowsList calls backend and caches payload in DeviceCache`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow A", offeringId = "default", prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(
+                appUserID = "user_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 1) {
+            mockBackend.getWorkflows(appUserID = "user_1", appInBackground = false, onSuccess = any(), onError = any())
+        }
+        verify(exactly = 1) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
+    @Test
+    fun `getWorkflowsList skips network call when in-memory cache is fresh`() {
+        val response = WorkflowsListResponse(workflows = emptyList())
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+        // First call at t=0
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Second call at t=1ms — still fresh (threshold is 5 minutes)
+        every { mockDateProvider.now } returns Date(1)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+    }
+
+    @Test
+    fun `getWorkflowsList triggers getWorkflow for each prefetch=true entry only`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_prefetch", displayName = "A", prefetch = true),
+                WorkflowSummary(id = "wf_skip", displayName = "B", prefetch = false),
+                WorkflowSummary(id = "wf_also_prefetch", displayName = "C", prefetch = true),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 1) {
+            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_prefetch", any(), any(), any())
+        }
+        verify(exactly = 0) {
+            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_skip", any(), any(), any())
+        }
+        verify(exactly = 1) {
+            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_also_prefetch", any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `getWorkflowsList silently logs error on backend failure`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+
+        // Should not throw
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
+    // endregion getWorkflowsList
+
+    // region workflowIdForOfferingId
+
+    @Test
+    fun `workflowIdForOfferingId returns null before list is fetched`() {
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+    }
+
+    @Test
+    fun `workflowIdForOfferingId returns workflow id after list is fetched`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_abc", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_abc")
+        assertThat(workflowManager.workflowIdForOfferingId("premium")).isNull()
+    }
+
+    @Test
+    fun `workflowIdForOfferingId returns null for workflow with null offering_id`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_no_offering", displayName = "Flow", offeringId = null, prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+    }
+
+    // endregion workflowIdForOfferingId
 }

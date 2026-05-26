@@ -366,6 +366,7 @@ internal class PurchasesFactory(
                     paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
                     offeringFontPreDownloader = offeringFontPreDownloader,
                 ),
+                deviceCache = cache,
             )
 
             val offeringsManager = OfferingsManager(
