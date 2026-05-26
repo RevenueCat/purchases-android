@@ -1,9 +1,12 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.common.workflows
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
-class WorkflowModelsDeserializationTest {
+internal class WorkflowModelsDeserializationTest {
 
     @Test
     fun `WorkflowSummary deserializes with all fields`() {
