@@ -41,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
@@ -88,6 +89,7 @@ internal fun TabsComponentView(
     AnimatedContent(
         targetState = state.selectedTabIndex,
         modifier = modifier
+            .size(tabsState.size)
             .padding(tabsState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, tabsState.shape) }
             .applyIfNotNull(backgroundStyle) { background(it, tabsState.shape) }

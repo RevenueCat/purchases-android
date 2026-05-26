@@ -1,8 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertHeightIsEqualTo
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -12,8 +17,10 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isToggleable
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -49,6 +56,8 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
@@ -77,6 +86,68 @@ class TabsComponentViewTests {
 
     private val defaultLocaleIdentifier = LocaleId("en_US")
     private val testAssetBaseURL = URL("https://assets.pawwalls.com")
+
+    @Test
+    fun `Should apply fill height to tabs component`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val tabControlKey = LocalizationKey("standard_tab_control")
+        val tabContentKey = LocalizationKey("contained_text")
+        val tabsComponent = TabsComponent(
+            size = Size(width = Fill, height = Fill),
+            tabs = listOf(
+                TabsComponent.Tab(
+                    id = "standard",
+                    stack = StackComponent(
+                        components = listOf(
+                            TabControlComponent,
+                            TextComponent(text = tabContentKey, color = textColor),
+                        ),
+                    ),
+                ),
+            ),
+            control = TabsComponent.TabControl.Buttons(
+                stack = StackComponent(
+                    components = listOf(
+                        TabControlButtonComponent(
+                            tabIndex = 0,
+                            tabId = "standard",
+                            stack = StackComponent(
+                                components = listOf(
+                                    TextComponent(text = tabControlKey, color = textColor),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val rootStack = StackComponent(components = listOf(tabsComponent))
+        val offering = Offering(rootStack = rootStack, packages = listOf(TestData.Packages.monthly))
+        val styleFactory = StyleFactory(offering)
+        val tabsComponentStyle = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
+        val state = paywallComponentsState(offering)
+        val parentHeight = 200.dp
+
+        // Act
+        setContent {
+            Box(
+                modifier = Modifier.requiredSize(width = 120.dp, height = parentHeight),
+            ) {
+                TabsComponentView(
+                    style = tabsComponentStyle,
+                    state = state,
+                    clickHandler = { },
+                    modifier = Modifier.testTag("tabs"),
+                )
+            }
+        }
+
+        // Assert
+        onNodeWithTag("tabs")
+            .assertIsDisplayed()
+            .assertHeightIsEqualTo(parentHeight)
+    }
 
     @Test
     fun `Should properly update selected state of tab control button children`(): Unit = with(composeTestRule) {
