@@ -66,7 +66,7 @@ android {
 
         buildConfigField(
             type = "boolean",
-            name = "WORKFLOWS_ENABLED",
+            name = "USE_WORKFLOWS_ENDPOINT",
             value = (resolveProperty("revenuecat.useWorkflowsEndpoint") == "true").toString(),
         )
 

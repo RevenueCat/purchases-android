@@ -201,19 +201,19 @@ class PurchasesFactoryTest {
     // region createWorkflowPreWarmer
 
     @Test
-    fun `createWorkflowPreWarmer returns null when workflows are disabled`() {
+    fun `createWorkflowPreWarmer returns null when workflows endpoint is disabled`() {
         val workflowManager = mockk<WorkflowManager>()
 
         val workflowPreWarmer = PurchasesFactory.createWorkflowPreWarmer(
             workflowManager = workflowManager,
-            workflowsEnabled = false,
+            useWorkflowsEndpoint = false,
         )
 
         assertThat(workflowPreWarmer).isNull()
     }
 
     @Test
-    fun `createWorkflowPreWarmer fetches workflow when workflows are enabled`() {
+    fun `createWorkflowPreWarmer fetches workflow when workflows endpoint is enabled`() {
         val workflowManager = mockk<WorkflowManager>()
         every {
             workflowManager.getWorkflow(
@@ -227,7 +227,7 @@ class PurchasesFactoryTest {
 
         val workflowPreWarmer = PurchasesFactory.createWorkflowPreWarmer(
             workflowManager = workflowManager,
-            workflowsEnabled = true,
+            useWorkflowsEndpoint = true,
         )
 
         workflowPreWarmer?.invoke("appUserID", "default", true)

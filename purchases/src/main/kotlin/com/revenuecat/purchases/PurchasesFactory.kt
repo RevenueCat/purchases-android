@@ -553,9 +553,9 @@ internal class PurchasesFactory(
         @VisibleForTesting
         internal fun createWorkflowPreWarmer(
             workflowManager: WorkflowManager,
-            workflowsEnabled: Boolean = BuildConfig.WORKFLOWS_ENABLED,
+            useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
         ): WorkflowPreWarmer? {
-            return if (workflowsEnabled) {
+            return if (useWorkflowsEndpoint) {
                 { appUserID, offeringIdentifier, appInBackground ->
                     workflowManager.getWorkflow(
                         appUserID = appUserID,
