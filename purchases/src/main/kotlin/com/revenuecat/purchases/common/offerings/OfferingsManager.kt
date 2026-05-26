@@ -261,9 +261,9 @@ internal class OfferingsManager(
                 offeringsResultData.offerings.current?.let {
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
                 }
-                workflowManager?.getWorkflowsList(appUserID, appInBackground)
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
+                workflowManager?.getWorkflowsList(appUserID, appInBackground)
                 dispatch {
                     onSuccess?.invoke(offeringsResultData)
                 }
