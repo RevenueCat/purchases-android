@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -45,7 +46,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
-    private lateinit var mockWorkflowPreWarmer: (String, String, Boolean) -> Unit
+    private lateinit var mockWorkflowManager: WorkflowManager
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -61,9 +62,7 @@ class OfferingsManagerTest {
         mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
-        mockWorkflowPreWarmer = mockk<(String, String, Boolean) -> Unit>().apply {
-            every { this@apply(any(), any(), any()) } just Runs
-        }
+        mockWorkflowManager = mockk(relaxed = true)
 
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
@@ -75,7 +74,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
-            workflowPreWarmer = mockWorkflowPreWarmer,
+            workflowManager = mockWorkflowManager,
         )
     }
 
@@ -524,7 +523,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `getOfferings calls workflowPreWarmer with current offering identifier after offerings are fetched`() {
+    fun `getOfferings calls getWorkflowsList after offerings are fetched`() {
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory()
         mockDeviceCache()
@@ -537,12 +536,12 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowPreWarmer(appUserId, STUB_OFFERING_IDENTIFIER, false)
+            mockWorkflowManager.getWorkflowsList(appUserId, false)
         }
     }
 
     @Test
-    fun `getOfferings calls workflowPreWarmer with appInBackground true when app is in background`() {
+    fun `getOfferings calls getWorkflowsList with appInBackground true when app is in background`() {
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory()
         mockDeviceCache()
@@ -555,12 +554,12 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowPreWarmer(appUserId, STUB_OFFERING_IDENTIFIER, true)
+            mockWorkflowManager.getWorkflowsList(appUserId, true)
         }
     }
 
     @Test
-    fun `getOfferings does not call workflowPreWarmer if current offering is null`() {
+    fun `getOfferings calls getWorkflowsList even when current offering is null`() {
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory(testOfferings.copy(current = null))
         mockDeviceCache()
@@ -572,8 +571,8 @@ class OfferingsManagerTest {
             onSuccess = {},
         )
 
-        verify(exactly = 0) {
-            mockWorkflowPreWarmer(any(), any(), any())
+        verify(exactly = 1) {
+            mockWorkflowManager.getWorkflowsList(appUserId, false)
         }
     }
 

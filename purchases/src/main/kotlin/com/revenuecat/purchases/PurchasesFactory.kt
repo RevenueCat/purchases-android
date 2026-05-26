@@ -380,7 +380,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
-                workflowPreWarmer = createWorkflowPreWarmer(workflowManager),
+                workflowManager = workflowManager,
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
@@ -549,26 +549,5 @@ internal class PurchasesFactory(
             diagnosticsEnabled: Boolean,
             uiPreviewMode: Boolean,
         ): Boolean = diagnosticsEnabled && !uiPreviewMode
-
-        @OptIn(InternalRevenueCatAPI::class)
-        @VisibleForTesting
-        internal fun createWorkflowPreWarmer(
-            workflowManager: WorkflowManager,
-            useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
-        ): WorkflowPreWarmer? {
-            return if (useWorkflowsEndpoint) {
-                { appUserID, offeringIdentifier, appInBackground ->
-                    workflowManager.getWorkflow(
-                        appUserID = appUserID,
-                        workflowId = offeringIdentifier,
-                        appInBackground = appInBackground,
-                        onSuccess = {},
-                        onError = {},
-                    )
-                }
-            } else {
-                null
-            }
-        }
     }
 }
