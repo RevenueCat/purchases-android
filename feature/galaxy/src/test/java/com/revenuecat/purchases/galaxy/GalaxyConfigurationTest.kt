@@ -2,7 +2,6 @@ package com.revenuecat.purchases.galaxy
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 import io.mockk.every
 import io.mockk.mockk
@@ -11,7 +10,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class GalaxyConfigurationTest {
 
