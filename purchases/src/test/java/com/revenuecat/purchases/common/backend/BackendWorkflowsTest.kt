@@ -280,7 +280,8 @@ class BackendWorkflowsTest {
                 onError = { fail("unexpected error $it") },
             )
         }
-        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        val completed = lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(completed).isTrue() // explicit timeout signal
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
