@@ -340,5 +340,47 @@ class ValueTest {
         assertThat(looseEq(inf, Value.IntValue(Long.MAX_VALUE))).isFalse
     }
 
+    // ---- jsParseFloat (direct helper coverage) ----
+
+    /**
+     * Pins [jsParseFloat] / `parseFloatPrefix` independently of arithmetic
+     * operators so two compensating operator bugs can't hide a coercion
+     * regression in the shared helper.
+     */
+    @Test
+    fun `jsParseFloat matches spec`() {
+        // Numbers pass through without stringification.
+        assertThat(jsParseFloat(Value.IntValue(42))).isEqualTo(42.0)
+        assertThat(jsParseFloat(Value.FloatValue(2.5))).isEqualTo(2.5)
+
+        // Valid numeric strings, including scientific notation.
+        assertThat(jsParseFloat(Value.StringValue("2.5"))).isEqualTo(2.5)
+        assertThat(jsParseFloat(Value.StringValue("1e3"))).isEqualTo(1000.0)
+        assertThat(jsParseFloat(Value.StringValue("1.5e2"))).isEqualTo(150.0)
+        assertThat(jsParseFloat(Value.StringValue("-2.5e-1"))).isEqualTo(-0.25)
+
+        // Leading whitespace and longest-prefix parsing.
+        assertThat(jsParseFloat(Value.StringValue("  7"))).isEqualTo(7.0)
+        assertThat(jsParseFloat(Value.StringValue("3.14abc"))).isEqualTo(3.14)
+
+        // Infinity literal (distinct from overflow).
+        assertThat(jsParseFloat(Value.StringValue("Infinity"))).isEqualTo(Double.POSITIVE_INFINITY)
+        assertThat(jsParseFloat(Value.StringValue("-Infinity"))).isEqualTo(Double.NEGATIVE_INFINITY)
+
+        // Stringify-then-parse path for compounds.
+        assertThat(jsParseFloat(Value.ArrayValue(listOf(Value.IntValue(1))))).isEqualTo(1.0)
+        assertThat(
+            jsParseFloat(Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2)))),
+        ).isEqualTo(1.0)
+
+        // Non-numeric after stringify → NaN.
+        assertThat(jsParseFloat(Value.Null).isNaN()).isTrue
+        assertThat(jsParseFloat(Value.BoolValue(true)).isNaN()).isTrue
+        assertThat(jsParseFloat(Value.StringValue("")).isNaN()).isTrue
+        assertThat(jsParseFloat(Value.StringValue("true")).isNaN()).isTrue
+        assertThat(jsParseFloat(Value.ObjectValue(emptyMap())).isNaN()).isTrue
+        assertThat(jsParseFloat(Value.StringValue("abc")).isNaN()).isTrue
+    }
+
     private fun parse(input: String): Value = ValueJsonHelper.fromJsonString(input)
 }
