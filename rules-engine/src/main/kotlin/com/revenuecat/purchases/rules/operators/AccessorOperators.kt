@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Rules
 import com.revenuecat.purchases.rules.Value
+import com.revenuecat.purchases.rules.jsString
 
 /**
  * `var` and `missing` — the data-accessor operators.
@@ -138,10 +138,6 @@ internal object AccessorOperators {
      * lone argument so that constructs like `{"var": {"var": "key"}}`
      * resolve to a dynamic path string.
      *
-     * One deliberate strict deviation from json-logic-js: when the
-     * singleton form evaluates to a non-primitive (e.g. an array), we
-     * throw [RuleError.TypeMismatch] instead of JS-stringifying it
-     * (`"x,y"`) and looking that up. The malformed case surfaces loudly.
      */
     private fun resolveVarArgs(args: Value, vars: Value): Pair<String, Value?> {
         if (args is Value.ArrayValue) {
@@ -163,21 +159,20 @@ internal object AccessorOperators {
         return path to default
     }
 
+    /**
+     * Coerce the evaluated path argument to a string per
+     * `json-logic-js`'s `String(a).split(".")`. `null`, [Value.Null],
+     * and `""` are treated as the empty path, which signals the caller
+     * to return the entire data scope.
+     */
     private fun pathSegment(value: Value?): String = when (value) {
         null, Value.Null -> ""
-        is Value.StringValue -> value.value
-        is Value.IntValue -> value.value.toString()
-        is Value.FloatValue -> formatNumber(value.value)
-        else -> throw RuleError.TypeMismatch(
-            "var path must be a string or number, got $value",
-        )
+        else -> jsString(value)
     }
 
-    private fun keyAsPath(value: Value): String? = when (value) {
-        is Value.StringValue -> value.value
-        is Value.IntValue -> value.value.toString()
-        is Value.FloatValue -> formatNumber(value.value)
-        else -> null
+    private fun keyAsPath(value: Value): String? {
+        if (value is Value.Null) return null
+        return jsString(value)
     }
 
     /**
@@ -200,17 +195,5 @@ internal object AccessorOperators {
             }
         }
         return current
-    }
-
-    /**
-     * Render a [Double] the way JSON Logic / JS would — `1.0` becomes
-     * `"1"`, `1.5` stays `"1.5"`. Used so a numeric path like `var: 1.0`
-     * looks up `"1"` (i.e. array index 1), not `"1.0"`.
-     */
-    private fun formatNumber(value: Double): String {
-        if (value.isFinite() && value == value.toLong().toDouble()) {
-            return value.toLong().toString()
-        }
-        return value.toString()
     }
 }

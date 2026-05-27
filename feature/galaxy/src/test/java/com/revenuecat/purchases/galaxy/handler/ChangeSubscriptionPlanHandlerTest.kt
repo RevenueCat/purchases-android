@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.galaxy.handler
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -41,7 +40,7 @@ class ChangeSubscriptionPlanHandlerTest {
         changeSubscriptionPlanHandler = ChangeSubscriptionPlanHandler(iapHelperProvider)
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `changeSubscriptionPlan errors when another request is in flight`() {
         every {
@@ -87,7 +86,7 @@ class ChangeSubscriptionPlanHandlerTest {
         }
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `changeSubscriptionPlan errors when old purchase has no product id`() {
         var receivedError: PurchasesError? = null
@@ -116,7 +115,7 @@ class ChangeSubscriptionPlanHandlerTest {
         }
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `changeSubscriptionPlan errors when Galaxy Store rejects request and clears in-flight`() {
         every {
@@ -175,8 +174,7 @@ class ChangeSubscriptionPlanHandlerTest {
         }
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class,
-        InternalRevenueCatAPI::class
+    @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class
     )
     @Test
     fun `changeSubscriptionPlan dispatches request with expected args and forwards success`() {
@@ -246,7 +244,7 @@ class ChangeSubscriptionPlanHandlerTest {
         }
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `changeSubscriptionPlan success with null purchase returns store problem error`() {
         every {
@@ -299,7 +297,7 @@ class ChangeSubscriptionPlanHandlerTest {
         }
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `changeSubscriptionPlan error maps error and clears in-flight`() {
         every {
@@ -352,7 +350,7 @@ class ChangeSubscriptionPlanHandlerTest {
         }
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(GalaxySerialOperation::class)
     @Test
     fun `changeSubscriptionPlan errors when replacement mode is unsupported`() {
         var receivedError: PurchasesError? = null
@@ -381,8 +379,7 @@ class ChangeSubscriptionPlanHandlerTest {
         }
     }
 
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class,
-        InternalRevenueCatAPI::class
+    @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class
     )
     @Test
     fun `changeSubscriptionPlan allows supported request after unsupported replacement mode error`() {

@@ -2071,6 +2071,6 @@ private fun Modifier.headerOrInsetsTopPadding(
     val topPad = if (state.headerHeightPx > 0) state.headerHeightPx else fallbackInsetPx
     val placeable = measurable.measure(constraints.offset(vertical = -topPad))
     layout(placeable.width, placeable.height + topPad) {
-        placeable.place(0, topPad)
+        placeable.placeRelative(0, topPad)
     }
 }

@@ -44,6 +44,17 @@ internal object Operators {
         "substr" -> StringArrayOperators.opSubstr(args, vars)
         "merge" -> StringArrayOperators.opMerge(args, vars)
 
+        "+" -> ArithmeticOperators.opAdd(args, vars)
+        "-" -> ArithmeticOperators.opSub(args, vars)
+        "*" -> ArithmeticOperators.opMul(args, vars)
+        "/" -> ArithmeticOperators.opDiv(args, vars)
+        "%" -> ArithmeticOperators.opMod(args, vars)
+
+        "<" -> ComparisonOperators.opLt(args, vars)
+        "<=" -> ComparisonOperators.opLe(args, vars)
+        ">" -> ComparisonOperators.opGt(args, vars)
+        ">=" -> ComparisonOperators.opGe(args, vars)
+
         else -> throw RuleError.UnsupportedOperator(op)
     }
 
@@ -64,21 +75,32 @@ internal object Operators {
     ): List<Value> = argsAsList(args).map { Evaluator.evaluateValue(it, vars) }
 
     /**
-     * Evaluate exactly two arguments. Used by binary operators (`==`, `!=`,
-     * `===`, `!==`, and the comparison operators a future iteration will
-     * add).
+     * Evaluate args and return the first two operands. Missing operands
+     * default to [Value.Null] (standing in for JS `undefined`) and extras
+     * are silently discarded — matches `json-logic-js`'s `function(a, b)`
+     * operator signatures.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun evalTwo(
         args: Value,
         vars: Value,
         opName: String,
     ): Pair<Value, Value> {
         val evaluated = evalArgs(args, vars)
-        if (evaluated.size != 2) {
-            throw RuleError.TypeMismatch(
-                "operator '$opName' expects 2 arguments, got ${evaluated.size}",
-            )
-        }
-        return evaluated[0] to evaluated[1]
+        val lhs = evaluated.firstOrNull() ?: Value.Null
+        val rhs = if (evaluated.size >= 2) evaluated[1] else Value.Null
+        return lhs to rhs
+    }
+
+    /**
+     * Safely truncate a [Double] to [Int] for index / count math.
+     * `NaN` → `0` (matches JS `ToInteger`); `±Infinity` and
+     * out-of-range finite values clamp to [Int.MAX_VALUE] / [Int.MIN_VALUE].
+     */
+    fun clampedInt(value: Double): Int {
+        if (value.isNaN()) return 0
+        if (value >= Int.MAX_VALUE.toDouble()) return Int.MAX_VALUE
+        if (value <= Int.MIN_VALUE.toDouble()) return Int.MIN_VALUE
+        return value.toInt()
     }
 }

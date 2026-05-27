@@ -42,6 +42,14 @@ class LogicOperatorsTest {
         ).isEqualTo(Value.BoolValue(false))
     }
 
+    @Test
+    fun `not with empty args returns true`() {
+        // Unary `!` with no operands: missing arg stands in for JS
+        // `undefined`, which is falsy, so negation yields `true`.
+        assertThat(LogicOperators.opNot(Value.ArrayValue(emptyList()), Value.Null))
+            .isEqualTo(Value.BoolValue(true))
+    }
+
     // ---- !! ----
 
     @Test
@@ -49,6 +57,12 @@ class LogicOperatorsTest {
         assertThat(LogicOperators.opNotNot(Value.IntValue(5), Value.Null))
             .isEqualTo(Value.BoolValue(true))
         assertThat(LogicOperators.opNotNot(Value.StringValue(""), Value.Null))
+            .isEqualTo(Value.BoolValue(false))
+    }
+
+    @Test
+    fun `notNot with empty args returns false`() {
+        assertThat(LogicOperators.opNotNot(Value.ArrayValue(emptyList()), Value.Null))
             .isEqualTo(Value.BoolValue(false))
     }
 
@@ -186,6 +200,12 @@ class LogicOperatorsTest {
         val args = Value.ArrayValue(listOf(Value.StringValue("only")))
         assertThat(LogicOperators.opIf(args, Value.Null))
             .isEqualTo(Value.StringValue("only"))
+        assertThat(
+            LogicOperators.opIf(
+                Value.ArrayValue(listOf(Value.BoolValue(false))),
+                Value.Null,
+            ),
+        ).isEqualTo(Value.BoolValue(false))
     }
 
     @Test
@@ -202,6 +222,12 @@ class LogicOperatorsTest {
             listOf(Value.BoolValue(false), Value.StringValue("yes")),
         )
         assertThat(LogicOperators.opIf(falsy, Value.Null))
+            .isEqualTo(Value.Null)
+
+        val falsyInt = Value.ArrayValue(
+            listOf(Value.IntValue(0), Value.StringValue("yes")),
+        )
+        assertThat(LogicOperators.opIf(falsyInt, Value.Null))
             .isEqualTo(Value.Null)
     }
 
