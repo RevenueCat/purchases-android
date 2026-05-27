@@ -31,23 +31,24 @@ class ArithmeticOperatorsTest {
         // {"+": ["2.5"]} → 2.5
         assertThat(run(ArithmeticOperators::opAdd, arr(s("2.5"))))
             .isEqualTo(Value.FloatValue(2.5))
-        // {"+": [true]} → 1
-        assertThat(run(ArithmeticOperators::opAdd, arr(Value.BoolValue(true))))
-            .isEqualTo(Value.FloatValue(1.0))
+        // {"+": [true]} → NaN. JS uses parseFloat(value), and
+        // parseFloat("true") is NaN — bool coercion through arithmetic
+        // is *not* the same as Number(true) === 1.
+        val boolResult = run(ArithmeticOperators::opAdd, arr(Value.BoolValue(true))) as Value.FloatValue
+        assertThat(boolResult.value.isNaN()).isTrue
     }
 
     @Test
-    fun `add coerces strings and bools`() {
-        // "1" + 1 → 2
+    fun `add coerces numeric strings`() {
+        // "1" + 1 → 2 — parseFloat("1") is 1.
         assertThat(run(ArithmeticOperators::opAdd, arr(s("1"), Value.IntValue(1))))
             .isEqualTo(Value.FloatValue(2.0))
-        // true + 1 + 1 → 3
-        assertThat(
-            run(
-                ArithmeticOperators::opAdd,
-                arr(Value.BoolValue(true), Value.IntValue(1), Value.IntValue(1)),
-            ),
-        ).isEqualTo(Value.FloatValue(3.0))
+        // "3.14abc" + 0 → 3.14 — parseFloat parses the longest numeric
+        // prefix, so trailing junk doesn't poison the result. This is one
+        // of the visible side-effects of `+` using parseFloat instead of
+        // Number().
+        assertThat(run(ArithmeticOperators::opAdd, arr(s("3.14abc"), Value.IntValue(0))))
+            .isEqualTo(Value.FloatValue(3.14))
     }
 
     @Test
@@ -145,17 +146,24 @@ class ArithmeticOperatorsTest {
             .isEqualTo(Value.FloatValue(3.0))
     }
 
+    /**
+     * `n / 0` follows IEEE 754: positive dividend → `+Infinity`, negative
+     * dividend → `-Infinity`, `0 / 0` → `NaN`. Matches `json-logic-js`,
+     * which delegates to native JS `/` (no short-circuit).
+     */
     @Test
-    fun `div by zero returns null`() {
-        // Both IntValue(0) and FloatValue(0.0) divisors → Null
-        assertThat(run(ArithmeticOperators::opDiv, arr(Value.IntValue(1), Value.IntValue(0))))
-            .isEqualTo(Value.Null)
-        assertThat(run(ArithmeticOperators::opDiv, arr(Value.IntValue(1), Value.FloatValue(0.0))))
-            .isEqualTo(Value.Null)
-        // Even 0/0 returns Null (not NaN) — explicit short-circuit before
-        // arithmetic.
-        assertThat(run(ArithmeticOperators::opDiv, arr(Value.IntValue(0), Value.IntValue(0))))
-            .isEqualTo(Value.Null)
+    fun `div by zero follows IEEE 754`() {
+        // 1 / 0 → +Infinity (covers both IntValue(0) and FloatValue(0.0)
+        // divisors).
+        assertThat(unwrapFloat(run(ArithmeticOperators::opDiv, arr(Value.IntValue(1), Value.IntValue(0)))))
+            .isEqualTo(Double.POSITIVE_INFINITY)
+        assertThat(unwrapFloat(run(ArithmeticOperators::opDiv, arr(Value.IntValue(1), Value.FloatValue(0.0)))))
+            .isEqualTo(Double.POSITIVE_INFINITY)
+        // -1 / 0 → -Infinity.
+        assertThat(unwrapFloat(run(ArithmeticOperators::opDiv, arr(Value.IntValue(-1), Value.IntValue(0)))))
+            .isEqualTo(Double.NEGATIVE_INFINITY)
+        // 0 / 0 → NaN.
+        assertNaN(run(ArithmeticOperators::opDiv, arr(Value.IntValue(0), Value.IntValue(0))))
     }
 
     @Test
@@ -172,10 +180,14 @@ class ArithmeticOperatorsTest {
             .isEqualTo(Value.FloatValue(1.0))
     }
 
+    /**
+     * `n % 0` is always `NaN` per IEEE 754. Matches `json-logic-js`,
+     * which delegates to native JS `%` (no short-circuit).
+     */
     @Test
-    fun `mod by zero returns null`() {
-        assertThat(run(ArithmeticOperators::opMod, arr(Value.IntValue(7), Value.IntValue(0))))
-            .isEqualTo(Value.Null)
+    fun `mod by zero is NaN`() {
+        assertNaN(run(ArithmeticOperators::opMod, arr(Value.IntValue(7), Value.IntValue(0))))
+        assertNaN(run(ArithmeticOperators::opMod, arr(Value.IntValue(0), Value.IntValue(0))))
     }
 
     @Test
@@ -188,6 +200,101 @@ class ArithmeticOperatorsTest {
         }.isInstanceOf(RuleError.TypeMismatch::class.java)
     }
 
+    // ---- coercion semantics (`+`/`*` use parseFloat, others use Number) ----
+
+    /**
+     * `+` and `*` coerce every operand through JS `parseFloat(value)`.
+     * `parseFloat` first calls `String(value)`, then parses the longest
+     * numeric prefix — so `null` becomes the string `"null"` (→ NaN),
+     * bools become `"true"` / `"false"` (→ NaN), the empty string
+     * becomes the empty string (→ NaN), and `[1,2]` becomes `"1,2"`
+     * (parses as `1`). This is asymmetric with `-` / `/` / `%`, which
+     * use `Number(value)` (see `sub div and mod use Number per spec`).
+     */
+    @Test
+    fun `add and mul use parseFloat per spec`() {
+        // null + 1 → NaN (parseFloat("null") is NaN).
+        assertNaN(run(ArithmeticOperators::opAdd, arr(Value.Null, Value.IntValue(1))))
+        // null * 1 → NaN.
+        assertNaN(run(ArithmeticOperators::opMul, arr(Value.Null, Value.IntValue(1))))
+
+        // true + 1 → NaN, false + 1 → NaN. Bools never bridge through
+        // `+` / `*` even though Number(true) === 1.
+        assertNaN(run(ArithmeticOperators::opAdd, arr(Value.BoolValue(true), Value.IntValue(1))))
+        assertNaN(run(ArithmeticOperators::opAdd, arr(Value.BoolValue(false), Value.IntValue(1))))
+
+        // "" + 1 → NaN (parseFloat("") is NaN, unlike Number("") === 0).
+        assertNaN(run(ArithmeticOperators::opAdd, arr(s(""), Value.IntValue(1))))
+
+        // [1] + 1 → 2 — array stringifies to "1", parseFloat → 1.
+        assertThat(run(ArithmeticOperators::opAdd, arr(arr(Value.IntValue(1)), Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(2.0))
+        // [1, 2] + 0 → 1 — array stringifies to "1,2", parseFloat parses
+        // the leading "1" prefix and stops at the comma.
+        assertThat(
+            run(
+                ArithmeticOperators::opAdd,
+                arr(arr(Value.IntValue(1), Value.IntValue(2)), Value.IntValue(0)),
+            ),
+        ).isEqualTo(Value.FloatValue(1.0))
+        // {} + 1 → NaN — objects stringify to "[object Object]".
+        assertNaN(run(ArithmeticOperators::opAdd, arr(Value.ObjectValue(emptyMap()), Value.IntValue(1))))
+    }
+
+    /**
+     * `-`, `/`, `%` delegate to native JS arithmetic, which calls
+     * `Number(value)` on each operand. `Number()` is stricter about
+     * numeric strings (`"3.14abc"` → NaN) but more permissive about
+     * `null` / bools / empty strings (all → 0 or 1) than `parseFloat`.
+     * Arrays / objects coerce via `ToPrimitive("number")` → `toString`
+     * → recurse, so `[]` → 0, `[1]` → 1, `[1,2]` → NaN.
+     */
+    @Test
+    fun `sub div and mod use Number per spec`() {
+        // null is 0 across all three ops.
+        assertThat(run(ArithmeticOperators::opSub, arr(Value.Null, Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(-1.0))
+        // unary; -0.0 == 0.0 by IEEE 754
+        assertThat(unwrapFloat(run(ArithmeticOperators::opSub, arr(Value.Null))))
+            .isEqualTo(0.0)
+        assertThat(run(ArithmeticOperators::opDiv, arr(Value.Null, Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(0.0))
+        assertThat(run(ArithmeticOperators::opMod, arr(Value.Null, Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(0.0))
+
+        // 1 / null → divisor coerces to 0 → +Infinity (IEEE 754, see
+        // `div by zero follows IEEE 754` for the broader pinning).
+        assertThat(unwrapFloat(run(ArithmeticOperators::opDiv, arr(Value.IntValue(1), Value.Null))))
+            .isEqualTo(Double.POSITIVE_INFINITY)
+        // 1 % null → divisor coerces to 0 → NaN.
+        assertNaN(run(ArithmeticOperators::opMod, arr(Value.IntValue(1), Value.Null)))
+
+        // Bools coerce to 0 / 1 (Number(true) === 1, Number(false) === 0).
+        assertThat(run(ArithmeticOperators::opSub, arr(Value.BoolValue(true), Value.BoolValue(false))))
+            .isEqualTo(Value.FloatValue(1.0))
+
+        // Empty string coerces to 0.
+        assertThat(run(ArithmeticOperators::opSub, arr(s(""), Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(-1.0))
+
+        // [] - 1 → -1 (toString → "" → 0).
+        assertThat(run(ArithmeticOperators::opSub, arr(arr(), Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(-1.0))
+        // [1] - 1 → 0 (toString → "1" → 1).
+        assertThat(run(ArithmeticOperators::opSub, arr(arr(Value.IntValue(1)), Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(0.0))
+        // [1, 2] - 0 → NaN (toString → "1,2" → NaN: whole-string parse
+        // fails because of the comma).
+        assertNaN(
+            run(
+                ArithmeticOperators::opSub,
+                arr(arr(Value.IntValue(1), Value.IntValue(2)), Value.IntValue(0)),
+            ),
+        )
+        // {} - 0 → NaN (toString → "[object Object]" → NaN).
+        assertNaN(run(ArithmeticOperators::opSub, arr(Value.ObjectValue(emptyMap()), Value.IntValue(0))))
+    }
+
     // ---- helpers ----
 
     private fun run(
@@ -198,4 +305,16 @@ class ArithmeticOperatorsTest {
     private fun arr(vararg items: Value): Value = Value.ArrayValue(items.toList())
 
     private fun s(literal: String): Value = Value.StringValue(literal)
+
+    private fun unwrapFloat(value: Value): Double {
+        assertThat(value).isInstanceOf(Value.FloatValue::class.java)
+        return (value as Value.FloatValue).value
+    }
+
+    private fun assertNaN(value: Value) {
+        assertThat(value).isInstanceOf(Value.FloatValue::class.java)
+        assertThat((value as Value.FloatValue).value.isNaN())
+            .withFailMessage("expected NaN, got ${value.value}")
+            .isTrue
+    }
 }

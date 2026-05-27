@@ -42,9 +42,19 @@ internal sealed class Value {
         }
 
     /**
-     * Best-effort numeric coercion used by loose comparison. Mirrors JS
-     * `ToNumber` (partial): bool→0/1, int/float→self, string→parsed (or
-     * `null` if unparseable), null→0, everything else→`null`.
+     * JS `Number(value)` (`ToNumber`): bool→0/1, int/float→self, null→0,
+     * string→`""` or whitespace→0 / parsed-or-`null`, array/object →
+     * `ToPrimitive("number")` → `toString` → recurse on the resulting
+     * string. So `[]` → `""` → 0, `[1]` → `"1"` → 1, `[1,2]` → `"1,2"` →
+     * `null` (whole-string parse fails), `{}` → `"[object Object]"` →
+     * `null`.
+     *
+     * Returning `null` rather than [Double.NaN] lets [looseEq]'s numeric
+     * fallback distinguish "no comparable number" from "the number NaN"
+     * (NaN compares unequal to itself, so a `null` short-circuit avoids
+     * an accidental `false` masking a genuine spec match). Arithmetic
+     * callers wrap with `?: Double.NaN` to get the JS arithmetic
+     * propagation.
      */
     fun toNumberOrNull(): Double? = when (this) {
         Null -> 0.0
@@ -55,7 +65,10 @@ internal sealed class Value {
             val trimmed = value.trim()
             if (trimmed.isEmpty()) 0.0 else trimmed.toDoubleOrNull()
         }
-        is ArrayValue, is ObjectValue -> null
+        is ArrayValue, is ObjectValue -> {
+            val trimmed = jsString(this).trim()
+            if (trimmed.isEmpty()) 0.0 else trimmed.toDoubleOrNull()
+        }
     }
 }
 
@@ -120,7 +133,55 @@ internal fun looseEq(lhs: Value, rhs: Value): Boolean {
     return leftNumber == rightNumber
 }
 
-// ---- JS coercion helpers (used by looseEq) ----
+// ---- JS coercion helpers (used by looseEq and arithmetic) ----
+
+/**
+ * JS `String(value)` for top-level conversion. Differs from
+ * [jsArrayElementString] only in `null` handling: `String(null) === "null"`,
+ * but `Array.prototype.join` renders `null` / `undefined` array elements
+ * as the empty string. Use this for callers that need the top-level
+ * `toString` (numeric coercion, `parseFloat`-style stringification).
+ */
+internal fun jsString(value: Value): String = when (value) {
+    Value.Null -> "null"
+    is Value.BoolValue -> if (value.value) "true" else "false"
+    is Value.IntValue -> value.value.toString()
+    is Value.FloatValue -> jsNumberString(value.value)
+    is Value.StringValue -> value.value
+    is Value.ArrayValue -> jsArrayJoin(value.items)
+    is Value.ObjectValue -> JS_OBJECT_STRING
+}
+
+/**
+ * JS `parseFloat(value)`. Stringifies via [jsString], strips leading
+ * whitespace, then parses the longest valid prefix as a JS
+ * `StringNumericLiteral` (optional sign, digits with optional decimal,
+ * optional decimal exponent, plus the `Infinity` literal). Anything else
+ * — including `null` ("null"), bools ("true" / "false"), and the empty
+ * string — yields [Double.NaN]. Lenient about trailing junk (`"3.14abc"`
+ * → 3.14) to match JS's prefix-parsing behavior, which is what `+` /
+ * `*` use in `json-logic-js`.
+ */
+@Suppress("ReturnCount")
+internal fun jsParseFloat(value: Value): Double {
+    if (value is Value.IntValue) return value.value.toDouble()
+    if (value is Value.FloatValue) return value.value
+    return parseFloatPrefix(jsString(value))
+}
+
+@Suppress("ReturnCount")
+private fun parseFloatPrefix(string: String): Double {
+    val trimmed = string.trimStart { it.isWhitespace() }
+    if (trimmed.isEmpty()) return Double.NaN
+    if (trimmed.startsWith("Infinity")) return Double.POSITIVE_INFINITY
+    if (trimmed.startsWith("-Infinity")) return Double.NEGATIVE_INFINITY
+    if (trimmed.startsWith("+Infinity")) return Double.POSITIVE_INFINITY
+    val match = NUMERIC_PREFIX_REGEX.find(trimmed) ?: return Double.NaN
+    if (match.range.first != 0) return Double.NaN
+    return match.value.toDoubleOrNull() ?: Double.NaN
+}
+
+private val NUMERIC_PREFIX_REGEX = Regex("""^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?""")
 
 /**
  * `Array.prototype.toString()` ≡ `Array.prototype.join(",")`. Renders each

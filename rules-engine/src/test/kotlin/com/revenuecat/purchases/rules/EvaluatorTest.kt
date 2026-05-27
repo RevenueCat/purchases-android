@@ -213,10 +213,13 @@ class EvaluatorTest {
     }
 
     @Test
-    fun `divide by zero returns null which is falsy`() {
-        // {"/": [10, 0]} → null → predicate is falsy
-        val predicate = """{"/": [10, 0]}"""
-        assertThat(run(predicate)).isFalse
+    fun `divide by zero produces IEEE 754 values that flow through truthiness`() {
+        // `n / 0` follows IEEE 754 (matches json-logic-js, no short-circuit).
+        // {"/": [10, 0]} → +Infinity → truthy.
+        assertThat(run("""{"/": [10, 0]}""")).isTrue
+        // {"/": [0, 0]} → NaN → falsy (NaN is the one float that isTruthy
+        // reports as false).
+        assertThat(run("""{"/": [0, 0]}""")).isFalse
     }
 
     // ---- multi-key object treated as data, not operator ----
