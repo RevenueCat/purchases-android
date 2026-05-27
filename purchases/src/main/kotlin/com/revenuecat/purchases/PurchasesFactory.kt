@@ -380,7 +380,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
-                workflowManager = workflowManager,
+                workflowManager = if (BuildConfig.USE_WORKFLOWS_ENDPOINT) workflowManager else null,
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
