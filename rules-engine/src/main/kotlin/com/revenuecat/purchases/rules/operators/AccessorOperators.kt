@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
+import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Rules
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
@@ -103,10 +104,10 @@ internal object AccessorOperators {
 
         val total = options.items.size.toLong()
 
-        // Non-numeric `need_count` falls back to 0, mirroring the lenient
-        // coercion of our other operators. With need=0 the condition is
-        // trivially satisfied, so `missing_some` returns `[]`.
-        val need = (needCountValue.toNumberOrNull() ?: 0.0).toLong()
+        // Non-numeric `need_count` coerces to 0 (NaN → 0 satisfies
+        // trivially; +Infinity never satisfies; -Infinity always
+        // satisfies).
+        val need = Operators.clampedInt(needCountValue.toNumberOrNull() ?: 0.0)
 
         val missing = opMissing(options, vars)
         val missingCount = (missing as? Value.ArrayValue)?.items?.size?.toLong() ?: 0L

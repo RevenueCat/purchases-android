@@ -1,9 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 
 @Suppress("LargeClass")
@@ -39,24 +37,24 @@ class StringArrayOperatorsTest {
     }
 
     @Test
-    fun `in array membership uses looseEq`() {
-        // 5 vs "5" — looseEq says equal. Documented deviation from JS
-        // reference's strict `===` membership.
+    fun `in array membership is strict`() {
+        // Array.prototype.indexOf is strict (===), so 5 is not in ["5"].
         val out = StringArrayOperators.opIn(
             arr(Value.IntValue(5), arr(s("5"), s("6"))),
             Value.Null,
         )
-        assertThat(out).isEqualTo(Value.BoolValue(true))
+        assertThat(out).isEqualTo(Value.BoolValue(false))
     }
 
     @Test
-    fun `in non-string needle in string haystack is false`() {
-        // We only support substring search when both sides are strings.
+    fun `in string haystack coerces non-string needle`() {
+        // String.prototype.indexOf coerces a non-string needle to a string
+        // before searching, so 5 is found in "12345".
         val out = StringArrayOperators.opIn(
             arr(Value.IntValue(5), s("12345")),
             Value.Null,
         )
-        assertThat(out).isEqualTo(Value.BoolValue(false))
+        assertThat(out).isEqualTo(Value.BoolValue(true))
     }
 
     @Test
@@ -79,10 +77,11 @@ class StringArrayOperatorsTest {
     }
 
     @Test
-    fun `in arity mismatch is type error`() {
-        assertThatThrownBy {
-            StringArrayOperators.opIn(arr(s("only-one")), Value.Null)
-        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+    fun `in missing operands return false`() {
+        val zeroArgs = StringArrayOperators.opIn(arr(), Value.Null)
+        assertThat(zeroArgs).isEqualTo(Value.BoolValue(false))
+        val oneArg = StringArrayOperators.opIn(arr(s("only-one")), Value.Null)
+        assertThat(oneArg).isEqualTo(Value.BoolValue(false))
     }
 
     // ---- cat ----
@@ -141,6 +140,17 @@ class StringArrayOperatorsTest {
             Value.Null,
         )
         assertThat(out).isEqualTo(s("vals=1,2"))
+    }
+
+    @Test
+    fun `cat stringifies null elements in array as empty`() {
+        // Array.prototype.join renders null elements as empty strings:
+        // String([1, null, 2]) is "1,,2" in JS, not "1,null,2".
+        val out = StringArrayOperators.opCat(
+            arr(arr(Value.IntValue(1), Value.Null, Value.IntValue(2))),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s("1,,2"))
     }
 
     // ---- substr ----
@@ -236,16 +246,21 @@ class StringArrayOperatorsTest {
     }
 
     @Test
-    fun `substr arity mismatch is type error`() {
-        assertThatThrownBy {
-            StringArrayOperators.opSubstr(arr(s("hello")), Value.Null)
-        }.isInstanceOf(RuleError.TypeMismatch::class.java)
-        assertThatThrownBy {
-            StringArrayOperators.opSubstr(
-                arr(s("hello"), Value.IntValue(0), Value.IntValue(0), Value.IntValue(0)),
-                Value.Null,
-            )
-        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+    fun `substr missing start returns entire string`() {
+        val out = StringArrayOperators.opSubstr(
+            arr(s("hello")),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s("hello"))
+    }
+
+    @Test
+    fun `substr ignores args beyond third`() {
+        val out = StringArrayOperators.opSubstr(
+            arr(s("hello"), Value.IntValue(1), Value.IntValue(3), Value.IntValue(999)),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s("ell"))
     }
 
     @Test

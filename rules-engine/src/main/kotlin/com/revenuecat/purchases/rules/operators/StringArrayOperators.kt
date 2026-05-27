@@ -1,45 +1,36 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
-import com.revenuecat.purchases.rules.looseEq
+import com.revenuecat.purchases.rules.jsString
+import com.revenuecat.purchases.rules.strictEq
 
 /**
  * String + array operators: `in`, `cat`, `substr`, `merge`.
  *
- * Behavior follows the JSON Logic JS reference (`json-logic-js`) with
- * two deliberate, documented deviations:
- *
- * - **`in` array membership uses [looseEq]** (so `{"in": [5, ["5"]]}`
- *   is true) instead of the JS reference's strict `===`. Rule authors
- *   typically write integer literals against backend-supplied string
- *   lists, and loose equality is more forgiving for that workflow.
- *   Pure-string and pure-numeric comparisons are unaffected.
- * - **`substr` slices by Unicode code points**, not UTF-16 code units.
- *   Matches Kotlin's `String.codePointCount` semantics and gives the
- *   intuitive answer for multibyte strings; differs from JS only for
- *   surrogate-pair characters (rare in real rule data).
+ * Behavior follows the JSON Logic JS reference (`json-logic-js`).
+ * `substr` slices by Unicode code points, not UTF-16 code units —
+ * matches Kotlin's `String.codePointCount` semantics; differs from JS
+ * only for surrogate-pair characters.
  */
 internal object StringArrayOperators {
 
-    private const val SUBSTR_MIN_ARITY = 2
-    private const val SUBSTR_MAX_ARITY = 3
-
     /**
      * `{"in": [needle, haystack]}` — substring or array-membership test.
-     * For a [Value.StringValue] haystack, the needle must also be a
-     * string and the test is substring containment. For a
-     * [Value.ArrayValue] haystack, the test is element membership via
-     * [looseEq]. Any other haystack type returns `false` (mirrors JS,
-     * where a non-`indexOf`-able haystack short-circuits to false).
+     * For a [Value.StringValue] haystack, the needle is stringified and
+     * the test is substring containment (mirrors JS
+     * `String.prototype.indexOf`). For a [Value.ArrayValue] haystack, the
+     * test is strict element equality (mirrors JS `Array.prototype.indexOf`,
+     * which uses `===`). Any other haystack type returns `false`.
+     * `json-logic-js` declares `in` as `function(a, b)`, so missing or
+     * extra operands short-circuit to `false`.
      */
     fun opIn(args: Value, vars: Value): Value {
-        val (needle, haystack) = Operators.evalTwo(args, vars, "in")
-        val result = when {
-            needle is Value.StringValue && haystack is Value.StringValue ->
-                haystack.value.contains(needle.value)
-            haystack is Value.ArrayValue ->
-                haystack.items.any { looseEq(needle, it) }
+        val evaluated = Operators.evalArgs(args, vars)
+        val needle = evaluated.firstOrNull() ?: Value.Null
+        val haystack = if (evaluated.size >= 2) evaluated[1] else Value.Null
+        val result = when (haystack) {
+            is Value.StringValue -> haystack.value.contains(jsString(needle))
+            is Value.ArrayValue -> haystack.items.any { strictEq(needle, it) }
             else -> false
         }
         return Value.BoolValue(result)
@@ -47,11 +38,11 @@ internal object StringArrayOperators {
 
     /**
      * `{"cat": [a, b, ...]}` — variadic string concatenation. Each
-     * operand is stringified via [stringify]. 0 args returns `""`.
+     * operand is stringified via [jsString]. 0 args returns `""`.
      */
     fun opCat(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
-        return Value.StringValue(evaluated.joinToString(separator = "") { stringify(it) })
+        return Value.StringValue(evaluated.joinToString(separator = "") { jsString(it) })
     }
 
     /**
@@ -59,51 +50,35 @@ internal object StringArrayOperators {
      * `{"substr": [source, start, length]}`. `source` is stringified.
      * Negative `start` counts from the end. A negative `length` drops
      * that many code points from the right of the substring that starts
-     * at `start` (matches the JS reference). Code-point-based, not
-     * char-based — see type docs.
+     * at `start`. Code-point-based, not char-based — see type docs.
+     * `json-logic-js` declares `substr` as
+     * `function(source, start, end)`, so a missing `start` defaults to
+     * `0` and arguments past the third are silently ignored.
      */
     fun opSubstr(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
-        val source: Value
-        val start: Value
-        val length: Value?
-        when (evaluated.size) {
-            SUBSTR_MIN_ARITY -> {
-                source = evaluated[0]
-                start = evaluated[1]
-                length = null
-            }
-            SUBSTR_MAX_ARITY -> {
-                source = evaluated[0]
-                start = evaluated[1]
-                length = evaluated[2]
-            }
-            else -> throw RuleError.TypeMismatch(
-                "operator 'substr' expects 2 or 3 arguments, got ${evaluated.size}",
-            )
-        }
+        val source = evaluated.firstOrNull() ?: Value.Null
+        val start = if (evaluated.size >= 2) evaluated[1] else Value.Null
+        val length = if (evaluated.size >= 3) evaluated[2] else null
 
-        val codePoints = stringify(source).codePoints().toArray()
-        val total = codePoints.size.toLong()
+        val codePoints = jsString(source).codePoints().toArray()
+        val total = codePoints.size
 
-        // Non-numeric start coerces to 0 (mirrors JS:
-        // `Number(undefined)` → NaN → treated as 0 by
-        // `String.prototype.substr`).
-        val startN = (start.toNumberOrNull() ?: 0.0).toLong()
-        val begin: Int = if (startN < 0L) {
-            (total + startN).coerceAtLeast(0L).toInt()
+        val startN = Operators.clampedInt(start.toNumberOrNull() ?: 0.0)
+        val begin = if (startN < 0) {
+            (total + startN).coerceAtLeast(0)
         } else {
-            startN.coerceAtMost(total).toInt()
+            startN.coerceAtMost(total)
         }
 
         val afterStart = codePoints.copyOfRange(begin, codePoints.size)
 
-        val resultPoints: IntArray = if (length != null) {
-            val lenN = (length.toNumberOrNull() ?: 0.0).toLong()
-            val count: Int = if (lenN < 0L) {
-                (afterStart.size.toLong() + lenN).coerceAtLeast(0L).toInt()
+        val resultPoints = if (length != null) {
+            val lenN = Operators.clampedInt(length.toNumberOrNull() ?: 0.0)
+            val count = if (lenN < 0) {
+                (afterStart.size + lenN).coerceAtLeast(0)
             } else {
-                lenN.coerceAtMost(afterStart.size.toLong()).toInt()
+                lenN.coerceAtMost(afterStart.size)
             }
             afterStart.copyOfRange(0, count)
         } else {
@@ -128,40 +103,5 @@ internal object StringArrayOperators {
             }
         }
         return Value.ArrayValue(merged)
-    }
-
-    /**
-     * Coerce a [Value] to a [String] for `cat` / `substr`. Mirrors
-     * JavaScript's `String(value)`:
-     * - `Null` → `"null"`
-     * - `BoolValue` → `"true"` / `"false"`
-     * - `IntValue` / `FloatValue` → numeric repr (integers render
-     *   without a trailing `.0`, matching JS)
-     * - `StringValue` → unchanged
-     * - `ArrayValue` → comma-joined recursive stringify (JS
-     *   `Array.prototype.toString`)
-     * - `ObjectValue` → `"[object Object]"` (matches JS; concatenating
-     *   an object is almost always a rule-authoring bug, but the
-     *   result is at least defined)
-     */
-    private fun stringify(value: Value): String = when (value) {
-        Value.Null -> "null"
-        is Value.BoolValue -> value.value.toString()
-        is Value.IntValue -> value.value.toString()
-        is Value.FloatValue -> formatNumber(value.value)
-        is Value.StringValue -> value.value
-        is Value.ArrayValue -> value.items.joinToString(separator = ",") { stringify(it) }
-        is Value.ObjectValue -> "[object Object]"
-    }
-
-    /**
-     * Render a [Double] the way JS would — `1.0` becomes `"1"`, `1.5`
-     * stays `"1.5"`.
-     */
-    private fun formatNumber(value: Double): String {
-        if (value.isFinite() && value == value.toLong().toDouble()) {
-            return value.toLong().toString()
-        }
-        return value.toString()
     }
 }
