@@ -345,7 +345,7 @@ jobs:
       - run:
           name: Run Rules Engine Internal Unit Tests
           command: |
-            ./gradlew :rules-engine-internal:testDefaultsDebugUnitTest --parallel --no-daemon
+            ./gradlew :rules-engine-internal:testDefaultsDebugUnitTest --no-daemon
       - run:
           name: Collect JUnit XMLs
           when: always
