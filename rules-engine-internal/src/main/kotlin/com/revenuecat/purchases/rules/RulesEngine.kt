@@ -5,9 +5,10 @@ package com.revenuecat.purchases.rules
  *
  * This module is an implementation detail of the RevenueCat SDK. It's
  * pulled in by `:purchases` / `:ui:revenuecatui` as an
- * `implementation` dependency, which keeps every declaration here off
- * the SDK's transitive compile classpath — third-party consumers
- * never see these symbols. Mirrors the iOS `RulesEngine` namespace.
+ * `implementation` dependency on `:rules-engine-internal`, which keeps
+ * every declaration here off the SDK's transitive compile classpath —
+ * third-party consumers never see these symbols. Mirrors the iOS
+ * `RulesEngineInternal` module / `RulesEngine` namespace.
  *
  * Internal for now — will become public once wired into the SDK.
  */
