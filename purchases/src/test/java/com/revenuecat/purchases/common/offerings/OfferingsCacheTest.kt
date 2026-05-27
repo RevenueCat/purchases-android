@@ -52,6 +52,7 @@ class OfferingsCacheTest {
     fun `clear cache clears offerings cache and offerings response cache`() {
         val offeringsResponse = JSONObject()
         every { deviceCache.clearOfferingsResponseCache() } just Runs
+        every { deviceCache.clearWorkflowsListResponseCache() } just Runs
         every { deviceCache.cacheOfferingsResponse(any()) } just Runs
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
@@ -62,6 +63,7 @@ class OfferingsCacheTest {
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue
         verify(exactly = 1) { deviceCache.clearOfferingsResponseCache() }
+        verify(exactly = 1) { deviceCache.clearWorkflowsListResponseCache() }
     }
 
     @Test
@@ -254,6 +256,7 @@ class OfferingsCacheTest {
         val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
         mockDeviceCacheOfferingResponse()
         every { deviceCache.clearOfferingsResponseCache() } just Runs
+        every { deviceCache.clearWorkflowsListResponseCache() } just Runs
 
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
@@ -262,7 +265,7 @@ class OfferingsCacheTest {
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isFalse
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isFalse
         offeringsCache.clearCache()
-        
+
         // Assert
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isTrue
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isTrue

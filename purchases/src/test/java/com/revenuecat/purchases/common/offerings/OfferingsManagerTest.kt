@@ -117,6 +117,17 @@ class OfferingsManagerTest {
         }
     }
 
+    @Test
+    fun `onAppForeground triggers getWorkflowsList when offerings are stale`() {
+        mockCacheStale(offeringsStale = true)
+        mockDeviceCache()
+        mockOfferingsFactory()
+        offeringsManager.onAppForeground(appUserID = "user_1")
+        verify(exactly = 1) {
+            mockWorkflowManager.getWorkflowsList("user_1", appInBackground = false)
+        }
+    }
+
     // endregion onAppForeground
 
     // region getOfferings
@@ -422,6 +433,32 @@ class OfferingsManagerTest {
 
         assertThat(receivedError).isEqualTo(expectedError)
         verify(exactly = 1) { cache.forceCacheStale() }
+    }
+
+    @Test
+    fun `getOfferings succeeds without NPE when workflowManager is null`() {
+        val managerWithNoWorkflows = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = null,
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        managerWithNoWorkflows.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected success but got error: $it") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isEqualTo(testOfferings)
     }
 
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
