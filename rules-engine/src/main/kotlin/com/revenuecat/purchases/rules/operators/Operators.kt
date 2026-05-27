@@ -64,21 +64,20 @@ internal object Operators {
     ): List<Value> = argsAsList(args).map { Evaluator.evaluateValue(it, vars) }
 
     /**
-     * Evaluate exactly two arguments. Used by binary operators (`==`, `!=`,
-     * `===`, `!==`, and the comparison operators a future iteration will
-     * add).
+     * Evaluate args and return the first two operands. Missing operands
+     * default to [Value.Null] (standing in for JS `undefined`) and extras
+     * are silently discarded — matches `json-logic-js`'s `function(a, b)`
+     * operator signatures.
      */
+    @Suppress("UNUSED_PARAMETER")
     fun evalTwo(
         args: Value,
         vars: Value,
         opName: String,
     ): Pair<Value, Value> {
         val evaluated = evalArgs(args, vars)
-        if (evaluated.size != 2) {
-            throw RuleError.TypeMismatch(
-                "operator '$opName' expects 2 arguments, got ${evaluated.size}",
-            )
-        }
-        return evaluated[0] to evaluated[1]
+        val lhs = evaluated.firstOrNull() ?: Value.Null
+        val rhs = if (evaluated.size >= 2) evaluated[1] else Value.Null
+        return lhs to rhs
     }
 }

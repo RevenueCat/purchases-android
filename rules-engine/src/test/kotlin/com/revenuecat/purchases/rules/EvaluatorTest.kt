@@ -188,11 +188,15 @@ class EvaluatorTest {
     }
 
     @Test
-    fun `arity error on binary operator surfaces type mismatch`() {
+    fun `binary operator missing operand compares against null`() {
+        // `json-logic-js` declares binary operators (`==`, `===`, `!=`,
+        // `!==`, `in`, etc.) as `function(a, b)`, so a missing second
+        // operand stands in for JS `undefined`. The loose-equality path
+        // then matches our `null` ↔ `undefined` behavior and returns
+        // `false` for `1 == undefined`.
         val predicate = ValueJsonHelper.fromJsonString("""{"==": [1]}""")
-        assertThatThrownBy {
-            Evaluator.evaluate(predicate, emptyMap())
-        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+        val result = Evaluator.evaluate(predicate, emptyMap())
+        assertThat(result).isFalse
     }
 
     // ---- arithmetic dispatched through evaluator ----
@@ -225,30 +229,29 @@ class EvaluatorTest {
     // ---- multi-key object treated as data, not operator ----
 
     @Test
-    fun `multi-key object is a literal data value`() {
+    fun `multi-key object is literal data value`() {
         // Mirrors json-logic-js's `is_logic`, which only treats an object
         // as an operator when `Object.keys(logic).length === 1`. A two-key
-        // object falls back to `apply`'s "not logic, return as-is" branch,
-        // i.e. literal data — so two structurally-equal multi-key objects
-        // compare equal under our structural `looseEq`.
+        // object falls back to `apply`'s "not logic, return as-is" branch
+        // and reaches `==` as a literal data value. JS abstract equality
+        // then uses reference identity for the two objects → `false`.
         val predicateEq = """
             {"==": [
                 {"a": 1, "b": 2},
                 {"a": 1, "b": 2}
             ]}
         """.trimIndent()
-        assertThat(run(predicateEq)).isTrue
+        assertThat(run(predicateEq)).isFalse
 
-        // Same two literals through `!=` should evaluate to false (they are
-        // equal as data, so the inequality is unsatisfied). Confirms the
-        // literal-vs-operator handling is symmetric across operators.
+        // Symmetric `!=`: distinct object references are unequal, so
+        // the inequality holds.
         val predicateNe = """
             {"!=": [
                 {"a": 1, "b": 2},
                 {"a": 1, "b": 2}
             ]}
         """.trimIndent()
-        assertThat(run(predicateNe)).isFalse
+        assertThat(run(predicateNe)).isTrue
     }
 
     // ---- equality with JS-style array/object coercion ----
@@ -299,6 +302,28 @@ class EvaluatorTest {
             .isInstanceOfSatisfying(RuleError.UnsupportedOperator::class.java) { error ->
                 assertThat(error.name).isEqualTo("a")
             }
+    }
+
+    // ---- literal predicate truthiness ----
+
+    @Test
+    fun `literal empty array predicate is falsy`() {
+        assertThat(run("[]")).isFalse
+    }
+
+    @Test
+    fun `literal non-empty array predicate is truthy even with falsy elements`() {
+        // Per http://jsonlogic.com/truthy — non-empty arrays are truthy
+        // regardless of element values.
+        assertThat(run("[false]")).isTrue
+        assertThat(run("[0]")).isTrue
+    }
+
+    @Test
+    fun `literal object predicate is truthy even with falsy values`() {
+        // Multi-key objects are literal data (not operator dispatch) and
+        // objects are always truthy in JSON Logic.
+        assertThat(run("""{"a": false, "b": 0}""")).isTrue
     }
 
     // ---- helpers ----

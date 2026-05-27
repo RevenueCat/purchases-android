@@ -1,10 +1,8 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.CapturingLoggerRule
-import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
 
@@ -59,10 +57,26 @@ class EqualityOperatorsTest {
     }
 
     @Test
-    fun `arity mismatch is type error`() {
-        assertThatThrownBy {
-            EqualityOperators.opLooseEq(arr(Value.IntValue(1)), Value.Null)
-        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+    fun `missing operands treated as null`() {
+        // `json-logic-js` declares equality operators as `function(a, b)`,
+        // so a missing operand stands in for JS `undefined`. `1 == undefined`
+        // is `false`; equating two missing operands collapses to
+        // `null == null` which is `true` (mirrors JS `null == undefined`).
+        assertThat(evalEq(arr(Value.IntValue(1)))).isEqualTo(Value.BoolValue(false))
+        assertThat(evalEq(arr())).isEqualTo(Value.BoolValue(true))
+    }
+
+    @Test
+    fun `strictEq missing operands both null`() {
+        // Two missing operands → Null on each side → strict equality holds.
+        assertThat(evalStrictEq(arr())).isEqualTo(Value.BoolValue(true))
+        assertThat(evalStrictNe(arr())).isEqualTo(Value.BoolValue(false))
+    }
+
+    @Test
+    fun `strictEq one missing operand does not coerce`() {
+        assertThat(evalStrictEq(arr(Value.IntValue(1)))).isEqualTo(Value.BoolValue(false))
+        assertThat(evalStrictNe(arr(Value.IntValue(1)))).isEqualTo(Value.BoolValue(true))
     }
 
     private fun evalEq(args: Value): Value = EqualityOperators.opLooseEq(args, Value.Null)

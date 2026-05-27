@@ -61,10 +61,14 @@ class ArithmeticOperatorsTest {
         assertThat((result as Value.FloatValue).value.isNaN()).isTrue
     }
 
+    /**
+     * `{"+": []}` returns `0` per `json-logic-js`
+     * (`Array.prototype.reduce(fn, 0)` with no operands returns the seed).
+     */
     @Test
-    fun `add zero args is type error`() {
-        assertThatThrownBy { run(ArithmeticOperators::opAdd, arr()) }
-            .isInstanceOf(RuleError.TypeMismatch::class.java)
+    fun `add zero args is zero`() {
+        assertThat(run(ArithmeticOperators::opAdd, arr()))
+            .isEqualTo(Value.FloatValue(0.0))
     }
 
     // ---- * ----
@@ -79,10 +83,19 @@ class ArithmeticOperatorsTest {
         ).isEqualTo(Value.FloatValue(24.0))
     }
 
+    /**
+     * `{"*": [a]}` returns `a` unchanged per `json-logic-js` (single-arg
+     * `Array.prototype.reduce` without seed returns the lone element
+     * without invoking the reducer, so parseFloat is never applied).
+     */
     @Test
-    fun `mul one arg returns value as float`() {
+    fun `mul one arg returns value unchanged`() {
         assertThat(run(ArithmeticOperators::opMul, arr(Value.IntValue(5))))
-            .isEqualTo(Value.FloatValue(5.0))
+            .isEqualTo(Value.IntValue(5))
+        assertThat(run(ArithmeticOperators::opMul, arr(s("3.14abc"))))
+            .isEqualTo(s("3.14abc"))
+        assertThat(run(ArithmeticOperators::opMul, arr(Value.Null)))
+            .isEqualTo(Value.Null)
     }
 
     @Test
@@ -116,20 +129,28 @@ class ArithmeticOperatorsTest {
             .isEqualTo(Value.FloatValue(7.0))
     }
 
+    /**
+     * `{"-": [a, b, c, ...]}` ignores everything past the first two
+     * operands per `json-logic-js` (`function(a, b)` only references the
+     * first two `arguments`).
+     */
     @Test
-    fun `sub three or more args is type error`() {
-        assertThatThrownBy {
+    fun `sub extra args ignored`() {
+        assertThat(
             run(
                 ArithmeticOperators::opSub,
-                arr(Value.IntValue(1), Value.IntValue(2), Value.IntValue(3)),
-            )
-        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+                arr(Value.IntValue(10), Value.IntValue(3), Value.IntValue(99)),
+            ),
+        ).isEqualTo(Value.FloatValue(7.0))
     }
 
+    /**
+     * `{"-": []}` returns `NaN` per `json-logic-js` (`a` is undefined,
+     * `b === undefined` falls into the unary path → `-undefined` → NaN).
+     */
     @Test
-    fun `sub zero args is type error`() {
-        assertThatThrownBy { run(ArithmeticOperators::opSub, arr()) }
-            .isInstanceOf(RuleError.TypeMismatch::class.java)
+    fun `sub zero args is NaN`() {
+        assertNaN(run(ArithmeticOperators::opSub, arr()))
     }
 
     // ---- / ----
@@ -166,10 +187,22 @@ class ArithmeticOperatorsTest {
         assertNaN(run(ArithmeticOperators::opDiv, arr(Value.IntValue(0), Value.IntValue(0))))
     }
 
+    /**
+     * `{"/": [a]}` and `{"/": [a, b, c, ...]}` mirror `json-logic-js`,
+     * which uses `function(a, b) { return a / b; }`. Missing operands are
+     * `undefined`, so `a / undefined` → `NaN`; extra operands are
+     * ignored.
+     */
     @Test
-    fun `div wrong arity is type error`() {
-        assertThatThrownBy { run(ArithmeticOperators::opDiv, arr(Value.IntValue(1))) }
-            .isInstanceOf(RuleError.TypeMismatch::class.java)
+    fun `div only uses first two operands`() {
+        assertNaN(run(ArithmeticOperators::opDiv, arr(Value.IntValue(1))))
+        assertNaN(run(ArithmeticOperators::opDiv, arr()))
+        assertThat(
+            run(
+                ArithmeticOperators::opDiv,
+                arr(Value.IntValue(10), Value.IntValue(2), Value.IntValue(99)),
+            ),
+        ).isEqualTo(Value.FloatValue(5.0))
     }
 
     // ---- % ----
@@ -190,14 +223,19 @@ class ArithmeticOperatorsTest {
         assertNaN(run(ArithmeticOperators::opMod, arr(Value.IntValue(0), Value.IntValue(0))))
     }
 
+    /**
+     * Mirror of `div only uses first two operands` for `%`.
+     */
     @Test
-    fun `mod wrong arity is type error`() {
-        assertThatThrownBy {
+    fun `mod only uses first two operands`() {
+        assertNaN(run(ArithmeticOperators::opMod, arr(Value.IntValue(1))))
+        assertNaN(run(ArithmeticOperators::opMod, arr()))
+        assertThat(
             run(
                 ArithmeticOperators::opMod,
-                arr(Value.IntValue(1), Value.IntValue(2), Value.IntValue(3)),
-            )
-        }.isInstanceOf(RuleError.TypeMismatch::class.java)
+                arr(Value.IntValue(7), Value.IntValue(3), Value.IntValue(99)),
+            ),
+        ).isEqualTo(Value.FloatValue(1.0))
     }
 
     // ---- coercion semantics (`+`/`*` use parseFloat, others use Number) ----

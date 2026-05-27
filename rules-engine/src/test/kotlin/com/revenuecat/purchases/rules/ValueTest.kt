@@ -112,46 +112,33 @@ class ValueTest {
     }
 
     @Test
-    fun `looseEq arrays structural`() {
-        // Deliberate divergence from JS: in JS, `[1] == [1]` is `false`
-        // (object reference identity). We compare structurally because
-        // rule authors comparing a `var` lookup against a literal list
-        // expect "exact same contents" to mean "equal".
+    fun `looseEq array vs array is always false`() {
+        // JS abstract equality uses reference identity for arrays —
+        // `[1] == [1]` is `false`. Without reference identity, two
+        // distinct array operands always compare unequal.
         assertThat(
             looseEq(
                 Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))),
-                Value.ArrayValue(listOf(Value.IntValue(1), Value.FloatValue(2.0))),
-            ),
-        ).isTrue
-        assertThat(
-            looseEq(
-                Value.ArrayValue(listOf(Value.IntValue(1))),
                 Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))),
             ),
+        ).isFalse
+        assertThat(
+            looseEq(Value.ArrayValue(emptyList()), Value.ArrayValue(emptyList())),
         ).isFalse
     }
 
     @Test
-    fun `looseEq objects structural`() {
-        // Same deliberate structural rule as for arrays: same keys + same
-        // values (loosely) → equal, regardless of insertion order.
+    fun `looseEq object vs object is always false`() {
+        // Same reference-equality rule as arrays — `{a:1} == {a:1}` is
+        // `false` in JS, regardless of structure.
         assertThat(
             looseEq(
                 Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.StringValue("x"))),
-                Value.ObjectValue(mapOf("b" to Value.StringValue("x"), "a" to Value.FloatValue(1.0))),
-            ),
-        ).isTrue
-        assertThat(
-            looseEq(
-                Value.ObjectValue(mapOf("a" to Value.IntValue(1))),
-                Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.IntValue(2))),
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.StringValue("x"))),
             ),
         ).isFalse
         assertThat(
-            looseEq(
-                Value.ObjectValue(mapOf("a" to Value.IntValue(1))),
-                Value.ObjectValue(mapOf("a" to Value.IntValue(2))),
-            ),
+            looseEq(Value.ObjectValue(emptyMap()), Value.ObjectValue(emptyMap())),
         ).isFalse
     }
 
@@ -301,26 +288,56 @@ class ValueTest {
         assertThat(strictEq(Value.Null, Value.BoolValue(false))).isFalse
     }
 
-    // ---- IEEE 754 edge cases ----
+    @Test
+    fun `strictEq arrays and objects always false`() {
+        // JS `===` for arrays/objects is reference identity — same
+        // rationale as `looseEq`. Without references, distinct operands
+        // always compare unequal.
+        assertThat(
+            strictEq(
+                Value.ArrayValue(listOf(Value.IntValue(1))),
+                Value.ArrayValue(listOf(Value.IntValue(1))),
+            ),
+        ).isFalse
+        assertThat(
+            strictEq(Value.ArrayValue(emptyList()), Value.ArrayValue(emptyList())),
+        ).isFalse
+        assertThat(
+            strictEq(
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1))),
+                Value.ObjectValue(mapOf("a" to Value.IntValue(1))),
+            ),
+        ).isFalse
+        assertThat(
+            strictEq(Value.ObjectValue(emptyMap()), Value.ObjectValue(emptyMap())),
+        ).isFalse
+    }
+
+    // ---- NaN / Infinity edge cases ----
 
     @Test
-    fun `NaN never equals NaN under loose or strict eq`() {
-        // Inherited from `Double.NaN == Double.NaN` being false per IEEE 754
-        // (and matches JS `==` / `===` semantics). Locked down so a future
-        // refactor doesn't accidentally special-case NaN-equals-NaN.
+    fun `NaN is falsy and never equals itself`() {
+        // IEEE 754: any comparison involving NaN is false, including NaN==NaN.
         val nan = Value.FloatValue(Double.NaN)
+        assertThat(nan.isTruthy).isFalse
         assertThat(looseEq(nan, nan)).isFalse
         assertThat(strictEq(nan, nan)).isFalse
+        assertThat(looseEq(nan, Value.IntValue(0))).isFalse
+        assertThat(looseEq(nan, Value.FloatValue(0.0))).isFalse
     }
 
     @Test
-    fun `Infinity equals itself under loose and strict eq`() {
-        // `Double.POSITIVE_INFINITY == Double.POSITIVE_INFINITY` is true under
-        // IEEE 754; pinning so cross-platform drift (Android's
-        // `toDoubleOrNull` vs iOS's `Double(String)`) stays visible.
+    fun `Infinity is truthy and compares by IEEE754`() {
+        assertThat(Value.FloatValue(Double.POSITIVE_INFINITY).isTruthy).isTrue
+        assertThat(Value.FloatValue(Double.NEGATIVE_INFINITY).isTruthy).isTrue
+
         val inf = Value.FloatValue(Double.POSITIVE_INFINITY)
         assertThat(looseEq(inf, inf)).isTrue
         assertThat(strictEq(inf, inf)).isTrue
+        assertThat(looseEq(inf, Value.FloatValue(Double.NEGATIVE_INFINITY))).isFalse
+
+        // Cross-type: +Infinity never numerically equals a finite int.
+        assertThat(looseEq(inf, Value.IntValue(Long.MAX_VALUE))).isFalse
     }
 
     private fun parse(input: String): Value = ValueJsonHelper.fromJsonString(input)
