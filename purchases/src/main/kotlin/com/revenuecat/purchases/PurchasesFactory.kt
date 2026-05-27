@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -42,6 +43,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResolver
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowPreWarmer
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -377,15 +379,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
-                workflowPreWarmer = { appUserID, offeringIdentifier, appInBackground ->
-                    workflowManager.getWorkflow(
-                        appUserID = appUserID,
-                        workflowId = offeringIdentifier,
-                        appInBackground = appInBackground,
-                        onSuccess = {},
-                        onError = {},
-                    )
-                },
+                workflowPreWarmer = createWorkflowPreWarmer(workflowManager),
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
@@ -554,5 +548,26 @@ internal class PurchasesFactory(
             diagnosticsEnabled: Boolean,
             uiPreviewMode: Boolean,
         ): Boolean = diagnosticsEnabled && !uiPreviewMode
+
+        @OptIn(InternalRevenueCatAPI::class)
+        @VisibleForTesting
+        internal fun createWorkflowPreWarmer(
+            workflowManager: WorkflowManager,
+            useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
+        ): WorkflowPreWarmer? {
+            return if (useWorkflowsEndpoint) {
+                { appUserID, offeringIdentifier, appInBackground ->
+                    workflowManager.getWorkflow(
+                        appUserID = appUserID,
+                        workflowId = offeringIdentifier,
+                        appInBackground = appInBackground,
+                        onSuccess = {},
+                        onError = {},
+                    )
+                }
+            } else {
+                null
+            }
+        }
     }
 }
