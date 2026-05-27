@@ -277,6 +277,28 @@ class EvaluatorTest {
             }
     }
 
+    // ---- literal predicate truthiness ----
+
+    @Test
+    fun `literal empty array predicate is falsy`() {
+        assertThat(run("[]")).isFalse
+    }
+
+    @Test
+    fun `literal non-empty array predicate is truthy even with falsy elements`() {
+        // Per http://jsonlogic.com/truthy — non-empty arrays are truthy
+        // regardless of element values.
+        assertThat(run("[false]")).isTrue
+        assertThat(run("[0]")).isTrue
+    }
+
+    @Test
+    fun `literal object predicate is truthy even with falsy values`() {
+        // Multi-key objects are literal data (not operator dispatch) and
+        // objects are always truthy in JSON Logic.
+        assertThat(run("""{"a": false, "b": 0}""")).isTrue
+    }
+
     // ---- helpers ----
 
     private fun run(predicateJson: String, vars: Map<String, Value> = emptyMap()): Boolean {

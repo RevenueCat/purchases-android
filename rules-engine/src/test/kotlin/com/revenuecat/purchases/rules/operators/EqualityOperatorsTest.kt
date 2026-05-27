@@ -66,6 +66,19 @@ class EqualityOperatorsTest {
         assertThat(evalEq(arr())).isEqualTo(Value.BoolValue(true))
     }
 
+    @Test
+    fun `strictEq missing operands both null`() {
+        // Two missing operands → Null on each side → strict equality holds.
+        assertThat(evalStrictEq(arr())).isEqualTo(Value.BoolValue(true))
+        assertThat(evalStrictNe(arr())).isEqualTo(Value.BoolValue(false))
+    }
+
+    @Test
+    fun `strictEq one missing operand does not coerce`() {
+        assertThat(evalStrictEq(arr(Value.IntValue(1)))).isEqualTo(Value.BoolValue(false))
+        assertThat(evalStrictNe(arr(Value.IntValue(1)))).isEqualTo(Value.BoolValue(true))
+    }
+
     private fun evalEq(args: Value): Value = EqualityOperators.opLooseEq(args, Value.Null)
     private fun evalNe(args: Value): Value = EqualityOperators.opLooseNe(args, Value.Null)
     private fun evalStrictEq(args: Value): Value = EqualityOperators.opStrictEq(args, Value.Null)

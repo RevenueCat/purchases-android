@@ -70,9 +70,45 @@ class AccessorOperatorsTest {
     }
 
     @Test
+    fun `var default not used when leaf is null`() {
+        // Default applies only when lookup fails. A present key whose value is
+        // Null is returned as-is — json-logic-js distinguishes `undefined`
+        // (missing) from an explicit null leaf.
+        val vars = obj("key" to Value.Null)
+        val out = AccessorOperators.opVar(
+            Value.ArrayValue(listOf(s("key"), s("fallback"))),
+            vars,
+        )
+        assertThat(out).isEqualTo(Value.Null)
+        assertThat(warnings).isEmpty()
+    }
+
+    @Test
+    fun `var default used when mid-path breaks on null`() {
+        // When descent hits a null parent, json-logic-js returns the default
+        // rather than attempting further segments.
+        val vars = obj("a" to Value.Null)
+        val out = AccessorOperators.opVar(
+            Value.ArrayValue(listOf(s("a.b"), s("fallback"))),
+            vars,
+        )
+        assertThat(out).isEqualTo(s("fallback"))
+        assertThat(warnings).isEmpty()
+    }
+
+    @Test
     fun `var empty path returns entire data`() {
         val vars = obj("x" to Value.IntValue(1))
         val out = AccessorOperators.opVar(s(""), vars)
+        assertThat(out).isEqualTo(vars)
+    }
+
+    @Test
+    fun `var null path returns entire data`() {
+        // json-logic-js treats `undefined`, null, and "" as “return the
+        // whole data object”.
+        val vars = obj("x" to Value.IntValue(1))
+        val out = AccessorOperators.opVar(Value.Null, vars)
         assertThat(out).isEqualTo(vars)
     }
 
