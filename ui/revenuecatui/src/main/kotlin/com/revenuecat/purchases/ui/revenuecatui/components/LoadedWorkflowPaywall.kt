@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
@@ -179,11 +180,12 @@ private fun WorkflowStepContent(
     val background = rememberBackgroundStyle(stepState.background)
     val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(stepState.stack)
     val mainScrollState = rememberScrollState()
+    val layoutDirection = LocalLayoutDirection.current
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .workflowTransition(transitionState, stepId)
+            .workflowTransition(transitionState, stepId, layoutDirection)
             .background(background),
     ) {
         WithOptionalBackgroundOverlay(

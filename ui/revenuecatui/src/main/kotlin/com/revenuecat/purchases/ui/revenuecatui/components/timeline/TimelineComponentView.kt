@@ -91,8 +91,6 @@ internal fun TimelineComponentView(
             val (iconRef, titleRef, descriptionRef, itemSpacingRef) = createRefs()
 
             val bottomContentBarrier = createBottomBarrier(iconRef, titleRef, descriptionRef)
-            val iconEndBarrier = createEndBarrier(iconRef, margin = timelineState.columnGutter.dp)
-
             val currentPreviousItem = itemBarriers.lastOrNull()
 
             iconRefs.add(iconRef)
@@ -140,11 +138,14 @@ internal fun TimelineComponentView(
                             top.linkTo(currentPreviousItem ?: parent.top)
                         }
                     }
-                    start.linkTo(iconEndBarrier)
-                    end.linkTo(parent.end)
+                    linkTo(
+                        start = iconRef.end,
+                        end = parent.end,
+                        startMargin = timelineState.columnGutter.dp,
+                        bias = 0f,
+                    )
                     width = Dimension.preferredWrapContent
                     height = Dimension.preferredWrapContent
-                    horizontalBias = 0f
                 },
             )
 
@@ -154,11 +155,9 @@ internal fun TimelineComponentView(
                     state = state,
                     modifier = Modifier.constrainAs(descriptionRef) {
                         top.linkTo(titleRef.bottom, margin = timelineState.textSpacing.dp)
-                        start.linkTo(titleRef.start)
-                        end.linkTo(parent.end)
+                        linkTo(start = titleRef.start, end = parent.end, bias = 0f)
                         width = Dimension.preferredWrapContent
                         height = Dimension.preferredWrapContent
-                        horizontalBias = 0f
                     },
                 )
             }
