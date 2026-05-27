@@ -232,6 +232,35 @@ class BackendWorkflowsTest {
     }
 
     @Test
+    fun `getWorkflows with type passes type query parameter`() {
+        val listJson = """{"workflows": [{"id": "wf_1", "display_name": "Flow A", "prefetch": false}]}"""
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflows(appUserId, type = "paywall"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } returns httpResult(RCHTTPStatusCodes.SUCCESS, listJson)
+
+        var success = false
+        backend.getWorkflows(
+            appUserID = appUserId,
+            appInBackground = false,
+            type = "paywall",
+            onSuccess = { response ->
+                assertThat(response.workflows).hasSize(1)
+                assertThat(response.workflows[0].id).isEqualTo("wf_1")
+                success = true
+            },
+            onError = { fail("unexpected error $it") },
+        )
+        assertThat(success).isTrue()
+    }
+
+    @Test
     fun `getWorkflows propagates HTTP errors`() {
         every {
             mockClient.performRequest(
@@ -257,6 +286,8 @@ class BackendWorkflowsTest {
     @Test
     fun `getWorkflows deduplicates concurrent calls`() {
         val listJson = """{"workflows": []}"""
+        val httpStarted = CountDownLatch(1)
+        val httpProceed = CountDownLatch(1)
         every {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
@@ -267,22 +298,29 @@ class BackendWorkflowsTest {
                 fallbackBaseURLs = emptyList(),
             )
         } answers {
-            Thread.sleep(200)
+            httpStarted.countDown()
+            httpProceed.await(defaultTimeout, TimeUnit.MILLISECONDS)
             httpResult(RCHTTPStatusCodes.SUCCESS, listJson)
         }
 
-        val lock = CountDownLatch(3)
-        repeat(3) {
+        val resultLatch = CountDownLatch(3)
+        asyncBackend.getWorkflows(
+            appUserID = appUserId,
+            appInBackground = false,
+            onSuccess = { resultLatch.countDown() },
+            onError = { fail("unexpected error $it") },
+        )
+        assertThat(httpStarted.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        repeat(2) {
             asyncBackend.getWorkflows(
                 appUserID = appUserId,
                 appInBackground = false,
-                onSuccess = { lock.countDown() },
+                onSuccess = { resultLatch.countDown() },
                 onError = { fail("unexpected error $it") },
             )
         }
-        val completed = lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(completed).isTrue() // explicit timeout signal
-        assertThat(lock.count).isEqualTo(0)
+        httpProceed.countDown()
+        assertThat(resultLatch.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockBaseURL,

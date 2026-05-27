@@ -64,6 +64,13 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetWorkflows with type has correct path`() {
+        val endpoint = Endpoint.GetWorkflows("test user-id", type = "paywall")
+        val expectedPath = "/v1/subscribers/test%20user-id/workflows?type=paywall"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
     fun `LogIn has correct path`() {
         val endpoint = Endpoint.LogIn
         val expectedPath = "/v1/subscribers/identify"

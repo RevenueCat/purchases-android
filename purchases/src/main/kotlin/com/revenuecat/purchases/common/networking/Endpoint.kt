@@ -35,12 +35,14 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean) =
             pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
     }
-    data class GetWorkflows(val userId: String) : Endpoint(
+    data class GetWorkflows(val userId: String, val type: String? = null) : Endpoint(
         "/v1/subscribers/%s/workflows",
         "get_workflows",
     ) {
-        override fun getPath(useFallback: Boolean) =
-            pathTemplate.format(Uri.encode(userId))
+        override fun getPath(useFallback: Boolean): String {
+            val base = pathTemplate.format(Uri.encode(userId))
+            return if (type != null) "$base?type=${Uri.encode(type)}" else base
+        }
     }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate

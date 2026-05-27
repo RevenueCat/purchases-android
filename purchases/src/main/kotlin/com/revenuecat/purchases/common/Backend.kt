@@ -1064,10 +1064,11 @@ internal class Backend(
     fun getWorkflows(
         appUserID: String,
         appInBackground: Boolean,
+        type: String? = null,
         onSuccess: (WorkflowsListResponse) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val endpoint = Endpoint.GetWorkflows(appUserID)
+        val endpoint = Endpoint.GetWorkflows(appUserID, type)
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
         val call = object : Dispatcher.AsyncCall() {
