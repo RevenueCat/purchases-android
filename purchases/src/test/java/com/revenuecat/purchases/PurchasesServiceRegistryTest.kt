@@ -85,6 +85,23 @@ internal class PurchasesServiceRegistryTest {
     }
 
     @Test
+    fun `re-registering an already registered service does not replay initialize`() {
+        val registry = PurchasesServiceRegistry()
+        val purchases = mockk<Purchases>(relaxed = true)
+        val service = mockk<PurchasesService>(relaxed = true)
+        registry.onConfigured(purchases)
+
+        registry.register(service)
+        registry.register(service)
+
+        verify(exactly = 1) {
+            service.initialize(purchases)
+        }
+
+        registry.unregister(service)
+    }
+
+    @Test
     fun `onConfigured then onClosed then register does not deliver stale configured`() {
         val registry = PurchasesServiceRegistry()
         val purchases = mockk<Purchases>(relaxed = true)

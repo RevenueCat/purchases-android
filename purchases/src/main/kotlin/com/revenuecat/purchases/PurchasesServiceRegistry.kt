@@ -13,7 +13,8 @@ internal class PurchasesServiceRegistry {
 
     @Synchronized
     fun register(service: PurchasesService) {
-        services.add(service)
+        val added = services.add(service)
+        if (!added) return
         configuredPurchases?.let { configured ->
             service.initialize(configured)
         }
