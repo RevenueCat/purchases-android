@@ -129,6 +129,7 @@ internal sealed class Endpoint(
             PostReceipt,
             is GetOfferings,
             is GetWorkflow,
+            is GetWorkflows,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
@@ -142,7 +143,6 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
-            is GetWorkflows,
             // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
             GetRemoteConfig,
             ->
@@ -161,6 +161,7 @@ internal sealed class Endpoint(
             is GetAmazonReceipt,
             is GetOfferings,
             is GetWorkflow,
+            is GetWorkflows,
             is PostAttributes,
             PostDiagnostics,
             PostEvents,
@@ -169,7 +170,6 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
-            is GetWorkflows,
             // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
             GetRemoteConfig,
             ->

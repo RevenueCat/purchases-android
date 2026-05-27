@@ -168,6 +168,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.GetWorkflow("test-user-id", "wf_1"),
+            Endpoint.GetWorkflows("test-user-id"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
@@ -188,7 +189,6 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
-            Endpoint.GetWorkflows("test-user-id"),
             Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
