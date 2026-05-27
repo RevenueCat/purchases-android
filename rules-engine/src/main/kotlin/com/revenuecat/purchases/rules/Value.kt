@@ -13,6 +13,10 @@ package com.revenuecat.purchases.rules
  * `ValueJsonHelper` test helper). Production callers will cross any future
  * FFI boundary with a typed `Value` tree they construct from the host
  * SDK's JSON parser.
+ *
+ * Subtypes use structural [equals]/[hashCode] (via `data class` / the
+ * [Null] singleton), so [Value] instances can be stored in [HashSet] for
+ * O(1) membership checks when the upcoming `in` operator lands.
  */
 internal sealed class Value {
 
