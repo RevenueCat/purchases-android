@@ -5,6 +5,7 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +23,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.IOException
+
+internal typealias WorkflowPreWarmer = (appUserID: String, offeringIdentifier: String, appInBackground: Boolean) -> Unit
 
 internal class WorkflowManager(
     private val backend: Backend,
@@ -37,6 +41,9 @@ internal class WorkflowManager(
 
     @Volatile
     private var offeringIdToWorkflowIdMap: Map<String, String> = emptyMap()
+
+    @Volatile
+    private var isFetchingWorkflowsList = false
 
     fun close() {
         scope.cancel()
@@ -76,20 +83,23 @@ internal class WorkflowManager(
     }
 
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean) {
-        if (!workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)) {
+        if (!BuildConfig.USE_WORKFLOWS_ENDPOINT ||
+            !workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider) ||
+            isFetchingWorkflowsList
+        ) {
             return
         }
+        isFetchingWorkflowsList = true
         backend.getWorkflows(
             appUserID = appUserID,
             appInBackground = appInBackground,
             onSuccess = { response ->
+                isFetchingWorkflowsList = false
                 workflowsListCachedObject.cacheInstance(response)
                 deviceCache.cacheWorkflowsListResponse(
                     JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
                 )
-                offeringIdToWorkflowIdMap = response.workflows
-                    .mapNotNull { summary -> summary.offeringId?.let { it to summary.id } }
-                    .toMap()
+                offeringIdToWorkflowIdMap = buildOfferingIdMap(response.workflows)
                 response.workflows
                     .filter { it.prefetch }
                     .forEach { summary ->
@@ -107,13 +117,13 @@ internal class WorkflowManager(
                     }
             },
             onError = { error ->
+                isFetchingWorkflowsList = false
                 errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
                 deviceCache.getWorkflowsListResponseCache()?.let { cached ->
                     runCatching { WorkflowJsonParser.parseWorkflowsListResponse(cached) }
                         .onSuccess { response ->
-                            offeringIdToWorkflowIdMap = response.workflows
-                                .mapNotNull { summary -> summary.offeringId?.let { it to summary.id } }
-                                .toMap()
+                            workflowsListCachedObject.cacheInstance(response)
+                            offeringIdToWorkflowIdMap = buildOfferingIdMap(response.workflows)
                         }
                         .onFailure { errorLog(it) { "Failed to restore workflows list from disk cache" } }
                 }
@@ -123,4 +133,16 @@ internal class WorkflowManager(
 
     fun workflowIdForOfferingId(offeringId: String): String? =
         offeringIdToWorkflowIdMap[offeringId]
+
+    private fun buildOfferingIdMap(workflows: List<WorkflowSummary>): Map<String, String> {
+        val pairs = workflows.mapNotNull { summary -> summary.offeringId?.let { it to summary.id } }
+        return pairs
+            .groupBy { it.first }
+            .also { grouped ->
+                grouped.filter { it.value.size > 1 }.keys.forEach { duplicateOfferingId ->
+                    warnLog { "Duplicate offeringId in workflows response: $duplicateOfferingId" }
+                }
+            }
+            .mapValues { it.value.last().second }
+    }
 }

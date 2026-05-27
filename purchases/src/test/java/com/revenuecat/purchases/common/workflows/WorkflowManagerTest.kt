@@ -385,4 +385,115 @@ class WorkflowManagerTest {
     }
 
     // endregion workflowIdForOfferingId
+
+    // region issue fixes
+
+    // Test A — disk-cache fallback stamps in-memory cache so re-fetch after TTL still fires once more
+    @Test
+    fun `getWorkflowsList after disk-cache restore does not re-fetch before TTL expires`() {
+        val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
+
+        // First call fails → restores from disk
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+
+        // Second call immediately after — in-memory cache should be considered fresh (t=1ms)
+        every { mockDateProvider.now } returns Date(1)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Only one backend call total (the first one that failed)
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+    }
+
+    // Test A (continued) — re-fetch fires again after TTL expires
+    @Test
+    fun `getWorkflowsList re-fetches after TTL expiry following disk-cache restore`() {
+        val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
+
+        // First call at t=0 — fails, restores from disk, stamps in-memory cache at t=0
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Second call well past TTL (6 minutes = 360_000ms) — should fire a new network request
+        val sixMinutesMs = 6L * 60 * 1000
+        every { mockDateProvider.now } returns Date(sixMinutesMs)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Two backend calls total: first failure + re-fetch after TTL
+        verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+    }
+
+    // Test B — concurrent calls only fire one network request
+    @Test
+    fun `getWorkflowsList concurrent calls only fire one network request`() {
+        // Hold the backend call without resolving it so the first call stays in-flight
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { /* intentionally do not call successSlot to simulate in-flight */ }
+
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        // Second call while first is still in-flight
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+    }
+
+    // Test C — duplicate offeringId: last value wins, no crash
+    @Test
+    fun `getWorkflowsList with duplicate offeringId keeps last entry`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_first", displayName = "First", offeringId = "shared", prefetch = false),
+                WorkflowSummary(id = "wf_last", displayName = "Last", offeringId = "shared", prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("shared")).isEqualTo("wf_last")
+    }
+
+    // Test C (disk-cache path) — duplicate offeringId in restored disk cache: last value wins
+    @Test
+    fun `getWorkflowsList disk-cache restore with duplicate offeringId keeps last entry`() {
+        val cachedJson = """{"workflows":[
+            {"id":"wf_first","display_name":"First","offering_id":"shared","prefetch":false},
+            {"id":"wf_last","display_name":"Last","offering_id":"shared","prefetch":false}
+        ]}"""
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("shared")).isEqualTo("wf_last")
+    }
+
+    // Test D — BuildConfig.USE_WORKFLOWS_ENDPOINT is a compile-time constant.
+    // In the test variant it is always true, so we cannot test the false branch here.
+    // TODO: add a test for USE_WORKFLOWS_ENDPOINT=false once the flag can be injected at runtime.
+
+    // endregion issue fixes
 }
