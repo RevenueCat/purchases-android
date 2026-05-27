@@ -60,23 +60,20 @@ internal sealed class Value {
 }
 
 /**
- * JSON Logic loose equality (`==`). Best-effort JS-style coercion:
+ * JSON Logic loose equality (`==`). Mirrors JS abstract equality:
  *
  * - Same-type primitive comparisons are direct value equality.
  * - Cross-numeric (`IntValue` ↔ `FloatValue`) bridges as one number type.
- * - **Same-compound**: arrays/objects compare structurally. This
- *   deliberately diverges from JS's reference identity (which would
- *   make two distinct array literals always unequal); structural
- *   equality is what rule authors actually need when comparing a
- *   `var` lookup against a literal list.
- * - **Compound vs primitive**: mirrors JS abstract equality's
+ * - **Compound vs compound**: always `false`. JS uses reference identity
+ *   for arrays/objects; we have no references, so we mirror the
+ *   literal-vs-literal result (`[1] == [1]` → `false`,
+ *   `{a:1} == {a:1}` → `false`).
+ * - **Compound vs primitive**: applies JS abstract equality's
  *   `ToPrimitive(string-hint)` step. Arrays render via
  *   `Array.prototype.toString()` (recursive comma-join, with
  *   `null` / `undefined` elements rendered as the empty string);
  *   objects render as `"[object Object]"`. So `[1] == "1"`, `[1, 2]
- *   == "1,2"`, `[null, 1] == ",1"`, and `[] == 0` all return `true`,
- *   matching json-logic-js. The recursive call falls through to the
- *   primitive arms (string-vs-string or the numeric fallback).
+ *   == "1,2"`, `[null, 1] == ",1"`, and `[] == 0` all return `true`.
  * - **Last-resort numeric fallback**: when two primitives don't share
  *   a type, both sides are coerced to `Double` (JS `ToNumber`) and
  *   compared. Returns `false` if either coercion fails.
@@ -94,22 +91,17 @@ internal fun looseEq(lhs: Value, rhs: Value): Boolean {
     if (lhs is Value.IntValue && rhs is Value.FloatValue) return lhs.value.toDouble() == rhs.value
     if (lhs is Value.FloatValue && rhs is Value.IntValue) return lhs.value == rhs.value.toDouble()
 
-    if (lhs is Value.ArrayValue && rhs is Value.ArrayValue) {
-        return lhs.items.size == rhs.items.size &&
-            lhs.items.zip(rhs.items).all { (left, right) -> looseEq(left, right) }
-    }
-    if (lhs is Value.ObjectValue && rhs is Value.ObjectValue) {
-        if (lhs.entries.size != rhs.entries.size) return false
-        return lhs.entries.all { (key, value) ->
-            val other = rhs.entries[key] ?: return@all false
-            looseEq(value, other)
-        }
-    }
+    // Compound-vs-compound is reference equality in JS; without references
+    // the only spec-aligned answer for two distinct operands is `false`.
+    if (lhs is Value.ArrayValue && rhs is Value.ArrayValue) return false
+    if (lhs is Value.ObjectValue && rhs is Value.ObjectValue) return false
+    if (lhs is Value.ArrayValue && rhs is Value.ObjectValue) return false
+    if (lhs is Value.ObjectValue && rhs is Value.ArrayValue) return false
 
     // JS abstract-equality coercion: when one side is a compound (Array
     // or Object) and the other is a primitive, ToPrimitive(string-hint)
-    // the compound and re-compare. The same-compound checks above must
-    // run first so `[1] == [1]` stays structural.
+    // the compound and re-compare. Order matters — compound-vs-compound
+    // cases above must match first.
     if (lhs is Value.ArrayValue) return looseEq(Value.StringValue(jsArrayJoin(lhs.items)), rhs)
     if (rhs is Value.ArrayValue) return looseEq(lhs, Value.StringValue(jsArrayJoin(rhs.items)))
     if (lhs is Value.ObjectValue) return looseEq(Value.StringValue(JS_OBJECT_STRING), rhs)
@@ -120,7 +112,25 @@ internal fun looseEq(lhs: Value, rhs: Value): Boolean {
     return leftNumber == rightNumber
 }
 
-// ---- JS coercion helpers (used by looseEq) ----
+// ---- JS coercion helpers (used by looseEq and stringifying operators) ----
+
+/**
+ * JS `String(value)`: `null` → `"null"`, booleans → `"true"` /
+ * `"false"`, numbers → numeric repr (whole-valued doubles render
+ * without a decimal, `NaN` / `±Infinity` keep their JS spellings),
+ * strings unchanged, arrays via `Array.prototype.join(",")` (where
+ * `null` elements render as the empty string), objects as
+ * `"[object Object]"`.
+ */
+internal fun jsString(value: Value): String = when (value) {
+    Value.Null -> "null"
+    is Value.BoolValue -> if (value.value) "true" else "false"
+    is Value.IntValue -> value.value.toString()
+    is Value.FloatValue -> jsNumberString(value.value)
+    is Value.StringValue -> value.value
+    is Value.ArrayValue -> jsArrayJoin(value.items)
+    is Value.ObjectValue -> JS_OBJECT_STRING
+}
 
 /**
  * `Array.prototype.toString()` ≡ `Array.prototype.join(",")`. Renders each
@@ -130,18 +140,13 @@ private fun jsArrayJoin(items: List<Value>): String =
     items.joinToString(",") { jsArrayElementString(it) }
 
 /**
- * JS `String(value)` semantics with the array-element twist: `null` /
- * `undefined` render as the empty string (not `"null"`); nested arrays
- * recurse; everything else uses standard JS `String()`.
+ * JS `Array.prototype.join` element rendering: `null` / `undefined`
+ * render as the empty string (not `"null"`); everything else uses
+ * [jsString].
  */
-private fun jsArrayElementString(value: Value): String = when (value) {
-    Value.Null -> ""
-    is Value.BoolValue -> if (value.value) "true" else "false"
-    is Value.IntValue -> value.value.toString()
-    is Value.FloatValue -> jsNumberString(value.value)
-    is Value.StringValue -> value.value
-    is Value.ArrayValue -> jsArrayJoin(value.items)
-    is Value.ObjectValue -> JS_OBJECT_STRING
+private fun jsArrayElementString(value: Value): String {
+    if (value is Value.Null) return ""
+    return jsString(value)
 }
 
 /**
@@ -167,10 +172,10 @@ private fun jsNumberString(value: Double): String {
 private const val JS_OBJECT_STRING = "[object Object]"
 
 /**
- * JSON Logic strict equality (`===`). Same type, same value. Numeric
- * strict-eq treats `IntValue(1)` and `FloatValue(1.0)` as equal — they
- * represent the same JS `Number`, and our split is an internal modeling
- * choice.
+ * JSON Logic strict equality (`===`). Same type, same value. `IntValue(1)`
+ * and `FloatValue(1.0)` compare equal — they represent the same JS
+ * `Number`. Arrays and objects always compare unequal (JS reference
+ * identity; see [looseEq] for the same rationale).
  */
 @Suppress("ReturnCount", "ComplexMethod")
 internal fun strictEq(lhs: Value, rhs: Value): Boolean {
@@ -181,16 +186,5 @@ internal fun strictEq(lhs: Value, rhs: Value): Boolean {
     if (lhs is Value.IntValue && rhs is Value.FloatValue) return lhs.value.toDouble() == rhs.value
     if (lhs is Value.FloatValue && rhs is Value.IntValue) return lhs.value == rhs.value.toDouble()
     if (lhs is Value.StringValue && rhs is Value.StringValue) return lhs.value == rhs.value
-    if (lhs is Value.ArrayValue && rhs is Value.ArrayValue) {
-        return lhs.items.size == rhs.items.size &&
-            lhs.items.zip(rhs.items).all { (left, right) -> strictEq(left, right) }
-    }
-    if (lhs is Value.ObjectValue && rhs is Value.ObjectValue) {
-        if (lhs.entries.size != rhs.entries.size) return false
-        return lhs.entries.all { (key, value) ->
-            val other = rhs.entries[key] ?: return@all false
-            strictEq(value, other)
-        }
-    }
     return false
 }

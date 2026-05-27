@@ -1,10 +1,8 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.CapturingLoggerRule
-import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
 
@@ -179,23 +177,52 @@ class AccessorOperatorsTest {
     }
 
     @Test
-    fun `var singleton expression resolving to array throws`() {
-        // json-logic-js JS-stringifies a non-primitive evaluated result
-        // ("x,y") and looks it up; we choose to be strict instead and
-        // throw TypeMismatch so the malformed predicate surfaces loudly.
-        val args = Value.ObjectValue(
-            mapOf(
-                "if" to Value.ArrayValue(
-                    listOf(
-                        Value.BoolValue(true),
-                        Value.ArrayValue(listOf(s("x"), s("y"))),
-                        s("z"),
+    fun `var singleton expression resolving to array stringifies path`() {
+        // `json-logic-js` stringifies any non-primitive evaluated path
+        // via `String(value).split(".")`; for arrays that yields a
+        // comma-joined key (so `["x", "y"]` looks up the `"x,y"` field).
+        val out = AccessorOperators.opVar(
+            Value.ObjectValue(
+                mapOf(
+                    "if" to Value.ArrayValue(
+                        listOf(
+                            Value.BoolValue(true),
+                            Value.ArrayValue(listOf(s("x"), s("y"))),
+                            s("z"),
+                        ),
                     ),
                 ),
             ),
+            obj("x,y" to s("found")),
         )
-        assertThatThrownBy { AccessorOperators.opVar(args, Value.Null) }
-            .isInstanceOf(RuleError.TypeMismatch::class.java)
+        assertThat(out).isEqualTo(s("found"))
+    }
+
+    @Test
+    fun `var boolean path looks up stringified key`() {
+        // Boolean paths follow the same `String(value).split(".")` rule,
+        // so `{"var": true}` looks up the `"true"` key.
+        val out = AccessorOperators.opVar(
+            Value.BoolValue(true),
+            obj("true" to Value.IntValue(42)),
+        )
+        assertThat(out).isEqualTo(Value.IntValue(42))
+    }
+
+    @Test
+    fun `var object path stringifies and misses`() {
+        // Object paths stringify to `"[object Object]"` and never match a
+        // real key, so `var` returns `Null` and warns.
+        val out = AccessorOperators.opVar(
+            Value.ArrayValue(
+                listOf(
+                    Value.ObjectValue(mapOf("foo" to Value.IntValue(1), "bar" to Value.IntValue(2))),
+                ),
+            ),
+            obj("x" to Value.IntValue(1)),
+        )
+        assertThat(out).isEqualTo(Value.Null)
+        assertThat(warnings).hasSize(1)
     }
 
     @Test
@@ -358,6 +385,23 @@ class AccessorOperatorsTest {
             vars,
         )
         assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("c"))))
+    }
+
+    @Test
+    fun `missing reports dot-path leaf that is null`() {
+        // Same null-leaf rule applies through dot-paths: an existing
+        // nested key whose leaf is null counts as missing.
+        val vars = obj(
+            "user" to obj(
+                "name" to Value.Null,
+                "email" to s("a@b.com"),
+            ),
+        )
+        val result = AccessorOperators.opMissing(
+            Value.ArrayValue(listOf(s("user.name"), s("user.email"))),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("user.name"))))
     }
 
     // ---- helpers ----
