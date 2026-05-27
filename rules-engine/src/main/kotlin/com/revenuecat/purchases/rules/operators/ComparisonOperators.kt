@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -26,22 +25,19 @@ internal object ComparisonOperators {
 
     /** `{"<": [a, b]}` — `a < b`. `{"<": [a, b, c]}` — `a < b AND b < c`. */
     fun opLt(args: Value, vars: Value): Value =
-        evalChain(args, vars, "<", Comparator.LESS)
+        evalChain(args, vars, Comparator.LESS)
 
     /** `{"<=": [a, b]}` — `a <= b`. `{"<=": [a, b, c]}` — `a <= b AND b <= c`. */
     fun opLe(args: Value, vars: Value): Value =
-        evalChain(args, vars, "<=", Comparator.LESS_OR_EQUAL)
+        evalChain(args, vars, Comparator.LESS_OR_EQUAL)
 
     /** `{">": [a, b]}` — `a > b`. Strictly binary; matches the JS reference. */
     fun opGt(args: Value, vars: Value): Value =
-        evalBinary(args, vars, ">", Comparator.GREATER)
+        evalBinary(args, vars, Comparator.GREATER)
 
     /** `{">=": [a, b]}` — `a >= b`. Strictly binary; matches the JS reference. */
     fun opGe(args: Value, vars: Value): Value =
-        evalBinary(args, vars, ">=", Comparator.GREATER_OR_EQUAL)
-
-    private const val BINARY_ARITY = 2
-    private const val BETWEEN_ARITY = 3
+        evalBinary(args, vars, Comparator.GREATER_OR_EQUAL)
 
     /**
      * Comparator dispatch. Driven from one place so the [String] (lex)
@@ -82,8 +78,11 @@ internal object ComparisonOperators {
      * Two-string operands → lex. Otherwise → numeric coercion. Encodes
      * the JSON Logic / JS spec's "lex only when BOTH operands are
      * strings" branch of Abstract Relational Comparison.
+     *
+     * A missing operand stands in for JS `undefined`, which
+     * [Value.toNumberOrNull] reports as [Double.NaN].
      */
-    private fun compare(lhs: Value, rhs: Value, cmp: Comparator): Boolean {
+    private fun compare(lhs: Value?, rhs: Value?, cmp: Comparator): Boolean {
         if (lhs is Value.StringValue && rhs is Value.StringValue) {
             return cmp.apply(lhs.value, rhs.value)
         }
@@ -91,52 +90,51 @@ internal object ComparisonOperators {
     }
 
     /**
-     * Shared 2-or-3 arg "chain" evaluator used by `<` and `<=`. The
-     * 3-arg form is the JSON Logic between-form: each adjacent pair
-     * must satisfy [cmp].
+     * Shared 2-or-3 arg "chain" evaluator used by `<` and `<=`.
+     * `json-logic-js` declares the operator as `function(a, b, c)`:
+     * missing operands resolve to `undefined` (NaN comparisons are
+     * always `false`); the 3-arg form is the between-form
+     * (`a < b AND b < c`); arguments past the third are dropped.
      */
     private fun evalChain(
         args: Value,
         vars: Value,
-        opName: String,
         cmp: Comparator,
     ): Value {
         val evaluated = Operators.evalArgs(args, vars)
-        return when (evaluated.size) {
-            BINARY_ARITY -> Value.BoolValue(compare(evaluated[0], evaluated[1], cmp))
-            BETWEEN_ARITY -> Value.BoolValue(
-                compare(evaluated[0], evaluated[1], cmp) &&
-                    compare(evaluated[1], evaluated[2], cmp),
-            )
-            else -> throw RuleError.TypeMismatch(
-                "operator '$opName' expects 2 or 3 arguments, got ${evaluated.size}",
-            )
+        val lhs = evaluated.firstOrNull()
+        val mid = if (evaluated.size >= 2) evaluated[1] else null
+        if (evaluated.size >= 3) {
+            val rhs = evaluated[2]
+            return Value.BoolValue(compare(lhs, mid, cmp) && compare(mid, rhs, cmp))
         }
+        return Value.BoolValue(compare(lhs, mid, cmp))
     }
 
     /**
-     * Shared 2-arg evaluator used by `>` and `>=`. No between-form per
-     * the JSON Logic spec / JS reference.
+     * Shared 2-arg evaluator used by `>` and `>=`. `json-logic-js`
+     * declares them as `function(a, b)`: extras are silently dropped
+     * and a missing operand becomes NaN (which makes any comparison
+     * `false`).
      */
     private fun evalBinary(
         args: Value,
         vars: Value,
-        opName: String,
         cmp: Comparator,
     ): Value {
         val evaluated = Operators.evalArgs(args, vars)
-        if (evaluated.size != BINARY_ARITY) {
-            throw RuleError.TypeMismatch(
-                "operator '$opName' expects 2 arguments, got ${evaluated.size}",
-            )
-        }
-        return Value.BoolValue(compare(evaluated[0], evaluated[1], cmp))
+        val lhs = evaluated.firstOrNull()
+        val rhs = if (evaluated.size >= 2) evaluated[1] else null
+        return Value.BoolValue(compare(lhs, rhs, cmp))
     }
 
     /**
      * Coerce to [Double], falling back to [Double.NaN] for non-numeric
-     * operands so comparisons against malformed inputs return `false`
-     * per IEEE 754.
+     * operands. A missing operand is treated as JS `undefined`, which
+     * also coerces to [Double.NaN].
      */
-    private fun Value.asDouble(): Double = toNumberOrNull() ?: Double.NaN
+    private fun Value?.asDouble(): Double {
+        if (this == null) return Double.NaN
+        return toNumberOrNull() ?: Double.NaN
+    }
 }
