@@ -103,6 +103,10 @@ class ArithmeticOperatorsTest {
         // "2" * "3" → 6
         assertThat(run(ArithmeticOperators::opMul, arr(s("2"), s("3"))))
             .isEqualTo(Value.FloatValue(6.0))
+        // "3.14abc" * 1 → 3.14 — multi-arg `*` uses parseFloat, unlike
+        // the single-arg form which returns the operand unchanged.
+        assertThat(run(ArithmeticOperators::opMul, arr(s("3.14abc"), Value.IntValue(1))))
+            .isEqualTo(Value.FloatValue(3.14))
     }
 
     @Test
@@ -314,6 +318,9 @@ class ArithmeticOperatorsTest {
         // Empty string coerces to 0.
         assertThat(run(ArithmeticOperators::opSub, arr(s(""), Value.IntValue(1))))
             .isEqualTo(Value.FloatValue(-1.0))
+        // "3.14abc" - 0 → NaN — Number() rejects trailing junk; parseFloat
+        // would yield 3.14 (see `add coerces numeric strings`).
+        assertNaN(run(ArithmeticOperators::opSub, arr(s("3.14abc"), Value.IntValue(0))))
 
         // [] - 1 → -1 (toString → "" → 0).
         assertThat(run(ArithmeticOperators::opSub, arr(arr(), Value.IntValue(1))))
