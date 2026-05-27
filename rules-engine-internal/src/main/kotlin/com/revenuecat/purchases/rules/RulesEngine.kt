@@ -1,15 +1,9 @@
 package com.revenuecat.purchases.rules
 
 /**
- * Namespace for the RevenueCat rules engine.
+ * Namespace for RevenueCat's internal rules engine.
  *
- * This module is an implementation detail of the RevenueCat SDK. It's
- * pulled in by `:purchases` / `:ui:revenuecatui` as an
- * `implementation` dependency on `:rules-engine-internal`, which keeps
- * every declaration here off the SDK's transitive compile classpath —
- * third-party consumers never see these symbols. Mirrors the iOS
- * `RulesEngineInternal` module / `RulesEngine` namespace.
- *
- * Internal for now — will become public once wired into the SDK.
+ * SDK implementation detail; not part of the public API and not intended for use by
+ * third-party developers.
  */
 internal object RulesEngine
