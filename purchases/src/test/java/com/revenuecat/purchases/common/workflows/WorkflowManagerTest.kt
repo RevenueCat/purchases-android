@@ -310,6 +310,36 @@ class WorkflowManagerTest {
         verify(exactly = 0) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
     }
 
+    @Test
+    fun `getWorkflowsList restores offeringId map from disk cache on backend failure`() {
+        val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+    }
+
+    @Test
+    fun `getWorkflowsList silently ignores corrupt disk cache on backend failure`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns "not valid json"
+
+        // Should not throw
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+    }
+
     // endregion getWorkflowsList
 
     // region workflowIdForOfferingId

@@ -84,7 +84,6 @@ internal class WorkflowManager(
             appInBackground = appInBackground,
             onSuccess = { response ->
                 workflowsListCachedObject.cacheInstance(response)
-                // Write-only: warms disk for future read-back; in-memory cache governs staleness within a session.
                 deviceCache.cacheWorkflowsListResponse(
                     JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
                 )
@@ -109,6 +108,15 @@ internal class WorkflowManager(
             },
             onError = { error ->
                 errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
+                deviceCache.getWorkflowsListResponseCache()?.let { cached ->
+                    runCatching { WorkflowJsonParser.parseWorkflowsListResponse(cached) }
+                        .onSuccess { response ->
+                            offeringIdToWorkflowIdMap = response.workflows
+                                .mapNotNull { summary -> summary.offeringId?.let { it to summary.id } }
+                                .toMap()
+                        }
+                        .onFailure { errorLog(it) { "Failed to restore workflows list from disk cache" } }
+                }
             },
         )
     }
