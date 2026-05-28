@@ -346,10 +346,8 @@ class ValueTest {
         // matches JS (`String(1e18) === "1000000000000000000"`).
         assertThat(jsString(Value.FloatValue(1e18))).isEqualTo("1000000000000000000")
 
-        // Spec-divergence pin: see KDoc on jsNumberString. Three-way divergence
-        // between JS ("10000000000000000000"), Swift ("1e+19"), and Kotlin
-        // ("1.0E19") for `1e19`. Locking in the Kotlin spelling so future
-        // contributors have to acknowledge the trade-off explicitly.
+        // Spec-divergence pin: see KDoc on jsNumberString. JS renders `1e19`
+        // as `"10000000000000000000"`; Kotlin uses `"1.0E19"`.
         assertThat(jsString(Value.FloatValue(1e19))).isEqualTo("1.0E19")
     }
 

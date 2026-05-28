@@ -147,13 +147,11 @@ private fun jsArrayElementString(value: Value): String {
  * `NaN` / `±Infinity` keep their JS spellings, fractional doubles use
  * Kotlin's default rendering (matches JS for non-pathological values).
  *
- * Known divergence: for `|value| ≥ Long.MAX_VALUE` (or any non-Long-roundtripping
- * Double) we fall through to Kotlin's `Double.toString()`, which uses scientific
- * notation earlier than JS does (`1e19` → `"1.0E19"` here vs `"10000000000000000000"`
- * in JS). iOS has a different but also off-spec rendering for the same input. The
- * divergence only surfaces through `var` path coercion or `looseEq`'s compound-vs-
- * primitive arm with pathological magnitudes; if conformance fixtures ever start
- * exercising those shapes we can implement ECMA-262 ToString(Number) properly.
+ * Known divergence from JS: for values beyond exact integer round-trip range,
+ * we fall through to Kotlin's `Double.toString()`, which may use scientific
+ * notation earlier than JS (`1e19` → `"1.0E19"` vs `"10000000000000000000"`).
+ * This only surfaces through `var` path coercion or `looseEq`'s compound-vs-
+ * primitive arm with pathological magnitudes.
  */
 @Suppress("ReturnCount")
 private fun jsNumberString(value: Double): String {
