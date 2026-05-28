@@ -18,6 +18,7 @@ import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
@@ -48,6 +49,9 @@ class WorkflowManagerTest {
             deviceCache = mockDeviceCache,
             dateProvider = mockDateProvider,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
+            // Inject true so tests don't depend on BuildConfig.USE_WORKFLOWS_ENDPOINT, which is
+            // only true via local.properties and defaults to false on CI / clean checkouts.
+            useWorkflowsEndpoint = true,
         )
     }
 
@@ -127,6 +131,39 @@ class WorkflowManagerTest {
             data = null,
         )
         coEvery { mockResolver.resolve(response) } throws IllegalStateException("missing data")
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers {
+            successSlot.captured(response)
+        }
+
+        var error: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("expected error") },
+            onError = { error = it },
+        )
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `getWorkflow calls onError when resolver throws SerializationException`() {
+        val response = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn.example.com/workflow.json",
+        )
+        coEvery { mockResolver.resolve(response) } throws SerializationException("malformed compiled workflow json")
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -494,8 +531,26 @@ class WorkflowManagerTest {
         assertThat(workflowManager.workflowIdForOfferingId("shared")).isEqualTo("wf_last")
     }
 
-    // Test D — BuildConfig.USE_WORKFLOWS_ENDPOINT is compile-time true in the test variant;
-    // testing the false branch requires making it injectable. Tracked as a future improvement.
+    // Test D — when useWorkflowsEndpoint is false, getWorkflowsList must short-circuit:
+    // no backend call, and onComplete still fires so offerings delivery is never blocked.
+    @Test
+    fun `getWorkflowsList does nothing and calls onComplete when useWorkflowsEndpoint is false`() {
+        val disabledManager = WorkflowManager(
+            backend = mockBackend,
+            workflowDetailResolver = mockResolver,
+            workflowAssetPreDownloader = mockAssetPreDownloader,
+            deviceCache = mockDeviceCache,
+            dateProvider = mockDateProvider,
+            scope = CoroutineScope(UnconfinedTestDispatcher()),
+            useWorkflowsEndpoint = false,
+        )
+
+        var completed = false
+        disabledManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completed = true }
+
+        assertThat(completed).isTrue()
+        verify(exactly = 0) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+    }
 
     // endregion issue fixes
 
@@ -600,6 +655,31 @@ class WorkflowManagerTest {
         assertThat(completed).isFalse()
 
         detailErrorB.captured(PurchasesError(PurchasesErrorCode.NetworkError, "fail"))
+        assertThat(completed).isTrue()
+    }
+
+    @Test
+    fun `getWorkflowsList calls onComplete when a prefetch workflow resolve throws unexpected exception`() {
+        val response = WorkflowsListResponse(workflows = listOf(
+            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
+        ))
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(response) }
+
+        val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any())
+        } just Runs
+        // resolve throws an exception type not in the explicit catch list (e.g. malformed CDN json)
+        coEvery { mockResolver.resolve(any()) } throws SerializationException("malformed compiled workflow json")
+
+        var completed = false
+        workflowManager.getWorkflowsList("user_1", false) { completed = true }
+
+        detailSuccessA.captured(WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "https://cdn.example.com/wf.json"))
+
         assertThat(completed).isTrue()
     }
 

@@ -14,17 +14,17 @@ import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
-import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import java.io.IOException
 import java.util.concurrent.atomic.AtomicInteger
 
+@Suppress("LongParameterList")
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
@@ -32,6 +32,7 @@ internal class WorkflowManager(
     private val deviceCache: DeviceCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
 ) {
 
     private val workflowsListCachedObject = InMemoryCachedObject<WorkflowsListResponse>(
@@ -63,20 +64,24 @@ internal class WorkflowManager(
             appInBackground = appInBackground,
             onSuccess = { response ->
                 scope.launch {
-                    try {
-                        val result = workflowDetailResolver.resolve(response)
-                        scope.launch {
-                            runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
-                                .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
-                        }
-                        onSuccess(result)
-                    } catch (e: IllegalStateException) {
+                    // resolve() can throw a range of exceptions (IllegalStateException, IOException,
+                    // SignatureVerificationException, and SerializationException from parsing CDN json).
+                    // getWorkflow MUST always invoke exactly one of onSuccess/onError: the prefetch
+                    // counter in getWorkflowsList (and the offerings delivery gated on it) deadlocks if
+                    // a callback is ever skipped. Catch broadly so no unexpected type breaks that contract.
+                    val result = try {
+                        workflowDetailResolver.resolve(response)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         onError(e.toPurchasesError())
-                    } catch (e: IOException) {
-                        onError(e.toPurchasesError())
-                    } catch (e: SignatureVerificationException) {
-                        onError(e.toPurchasesError())
+                        return@launch
                     }
+                    scope.launch {
+                        runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
+                            .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
+                    }
+                    onSuccess(result)
                 }
             },
             onError = onError,
@@ -93,7 +98,7 @@ internal class WorkflowManager(
      * drained together when the in-flight work finishes.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
-        if (!BuildConfig.USE_WORKFLOWS_ENDPOINT ||
+        if (!useWorkflowsEndpoint ||
             !workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
         ) {
             onComplete()
