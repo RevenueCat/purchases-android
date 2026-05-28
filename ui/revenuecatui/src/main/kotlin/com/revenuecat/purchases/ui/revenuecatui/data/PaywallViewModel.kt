@@ -759,7 +759,7 @@ internal class PaywallViewModelImpl(
                 coroutineScope {
                     val fetchResultDeferred = async { purchases.awaitGetWorkflow(offeringId) }
                     val offeringsDeferred = async { purchases.awaitOfferings() }
-                    applyWorkflowState(
+                    startWorkflowPresentation(
                         fetchResultDeferred.await(),
                         offeringsDeferred.await(),
                         presentedOfferingContext,
@@ -834,11 +834,11 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         cancelStateUpdate()
-        applyWorkflowState(fetchResult, offerings, presentedOfferingContext)
+        startWorkflowPresentation(fetchResult, offerings, presentedOfferingContext)
     }
 
     @Suppress("ReturnCount")
-    private fun applyWorkflowState(
+    private fun startWorkflowPresentation(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -1080,14 +1080,14 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate to step '${candidate.id}': $error")
             return
         }
-        val fromStepId = navigator.currentStep?.id
+        val fromStep = navigator.currentStep
+        val fromStepId = fromStep?.id
         // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
         // given the peek succeeded, but guard anyway to avoid a hard crash.
         val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
             Logger.e("triggerAction returned null after peekTriggerStep succeeded — this is a bug")
             return
         }
-        val fromStep = fromStepId?.let { result.workflow.steps[it] }
         buildStateFromStep(
             newStep,
             result.workflow,
@@ -1099,7 +1099,6 @@ internal class PaywallViewModelImpl(
         trackWorkflowStepNavigation(
             fromStep = fromStep,
             toStep = newStep,
-            fromStepId = fromStepId,
             entryReason = "forward",
         )
     }
@@ -1115,13 +1114,13 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate back to step '${candidate.id}': $error")
             return false
         }
-        val fromStepId = navigator.currentStep?.id
+        val fromStep = navigator.currentStep
+        val fromStepId = fromStep?.id
         // navigateBack should not return null given canNavigateBack is true, but guard to be safe.
         val newStep = navigator.navigateBack() ?: run {
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
             return false
         }
-        val fromStep = fromStepId?.let { result.workflow.steps[it] }
         buildStateFromStep(
             newStep,
             result.workflow,
@@ -1133,7 +1132,6 @@ internal class PaywallViewModelImpl(
         trackWorkflowStepNavigation(
             fromStep = fromStep,
             toStep = newStep,
-            fromStepId = fromStepId,
             entryReason = "back",
         )
         return true
@@ -1142,7 +1140,6 @@ internal class PaywallViewModelImpl(
     private fun trackWorkflowStepNavigation(
         fromStep: WorkflowStep?,
         toStep: WorkflowStep,
-        fromStepId: String?,
         entryReason: String,
     ) {
         // If _workflowState is null after buildStateFromStep, an error occurred and
@@ -1154,7 +1151,7 @@ internal class PaywallViewModelImpl(
         }
         trackWorkflowStepStarted(
             step = toStep,
-            fromStepId = fromStepId,
+            fromStepId = fromStep?.id,
             entryReason = entryReason,
         )
     }
