@@ -1052,6 +1052,60 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `color scheme rebuild during workflow does not track another StepStarted`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        val initialTraceId = captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId
+        captured.clear()
+
+        vm.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val navigationTraceIds = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct()
+        assertThat(navigationTraceIds).isEqualTo(listOf(initialTraceId))
+    }
+
+    @Test
+    fun `failed initial step after successful fallback cache build does not complete fallback step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val workflowWithFailingInitialAndSuccessfulFallback = PublishedWorkflow(
+            id = "wfl-failing-with-fallback",
+            displayName = "Failing with fallback",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to step1WithEmptyOffering, "step-2" to step2),
+            screens = mapOf(
+                "screen-empty-initial" to screenWithEmptyOffering2,
+                screenId2 to makeScreen(screenId2),
+            ),
+            uiConfig = UiConfig(),
+            metadata = emptyMap(),
+            singleStepFallbackId = "step-2",
+        )
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(
+            WorkflowDataResult(workflowWithFailingInitialAndSuccessfulFallback, enrolledVariants = null),
+            testOfferingsWithEmpty,
+            null,
+        )
+
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
+        assertThat(vm.workflowState.value).isNull()
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Error::class.java)
+    }
+
+    @Test
     fun `forward navigation fires StepCompleted for current step and StepStarted for next`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }

@@ -872,7 +872,14 @@ internal class PaywallViewModelImpl(
         if (stepWithPackagesId != null && workflow.steps[stepWithPackagesId] == null) {
             Logger.w("Workflow singleStepFallbackId '$stepWithPackagesId' not found in steps")
         }
-        buildWorkflowStates(workflow, offerings, presentedOfferingContext, currentStep = initialStep)
+        buildWorkflowStates(
+            workflow = workflow,
+            offerings = offerings,
+            presentedOfferingContext = presentedOfferingContext,
+            currentStep = initialStep,
+            shouldTrackStart = true,
+            shouldResetTraceId = true,
+        )
     }
 
     /**
@@ -890,6 +897,8 @@ internal class PaywallViewModelImpl(
             offerings = offerings,
             presentedOfferingContext = currentWorkflowPresentedOfferingContext,
             currentStep = currentStep,
+            shouldTrackStart = false,
+            shouldResetTraceId = false,
         )
     }
 
@@ -903,21 +912,31 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         currentStep: WorkflowStep,
+        shouldTrackStart: Boolean,
+        shouldResetTraceId: Boolean,
     ) {
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
-        workflowTraceId = UUID.randomUUID().toString()
+        if (shouldResetTraceId) {
+            workflowTraceId = UUID.randomUUID().toString()
+        }
 
         // Pre-compute the package step so its default package is available in cache
         // for early packageless steps to use as context.
         val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
         if (stepWithPackages != null && stepWithPackages.id != currentStep.id) {
-            buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
+            buildStateFromStep(
+                stepWithPackages,
+                workflow,
+                offerings,
+                presentedOfferingContext,
+                shouldApplyState = false,
+            )
         }
 
         buildStateFromStep(currentStep, workflow, offerings, presentedOfferingContext)
-        if (_workflowState.value != null) {
+        if (shouldTrackStart && _workflowState.value != null) {
             trackWorkflowStepStarted(
                 step = currentStep,
                 fromStepId = null,
@@ -934,6 +953,7 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
+        shouldApplyState: Boolean = true,
     ) {
         val cached = workflowStepStateCache[step.id]
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
@@ -950,6 +970,7 @@ internal class PaywallViewModelImpl(
                 newState.setDefaultPackage(defaultPackage)
             }
         }
+        if (!shouldApplyState) return
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,
