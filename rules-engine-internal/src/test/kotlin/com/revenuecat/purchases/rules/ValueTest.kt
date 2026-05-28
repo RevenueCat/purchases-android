@@ -342,6 +342,10 @@ class ValueTest {
 
     @Test
     fun `jsNumberString falls through to Kotlin Double toString for out-of-Long range`() {
+        // Last whole number that still round-trips through Long — fast path,
+        // matches JS (`String(1e18) === "1000000000000000000"`).
+        assertThat(jsString(Value.FloatValue(1e18))).isEqualTo("1000000000000000000")
+
         // Spec-divergence pin: see KDoc on jsNumberString. Three-way divergence
         // between JS ("10000000000000000000"), Swift ("1e+19"), and Kotlin
         // ("1.0E19") for `1e19`. Locking in the Kotlin spelling so future

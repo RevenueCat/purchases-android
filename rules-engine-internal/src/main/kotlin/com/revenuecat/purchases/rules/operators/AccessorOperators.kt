@@ -29,12 +29,7 @@ internal object AccessorOperators {
     @Suppress("ReturnCount")
     fun opVar(args: Value, vars: Value): Value {
         val (path, default) = resolveVarArgs(args, vars)
-
-        if (path.isEmpty()) {
-            return vars
-        }
-
-        val found = lookupPath(vars, path)
+        val found = lookupVar(vars, path)
         if (found != null) return found
         if (default != null) return default
         RulesEngine.logger.warn("missing variable: $path")
@@ -137,14 +132,21 @@ internal object AccessorOperators {
     }
 
     /**
-     * Resolve [path] the way `var` does, without warning on misses.
-     * Empty path returns the entire data scope; a non-resolving path
-     * returns [Value.Null].
+     * Resolve [path] the way `var` does. Empty path returns the entire
+     * data scope; a resolving path returns its value (including explicit
+     * [Value.Null]); a non-resolving path returns `null`.
      */
-    private fun varLookup(vars: Value, path: String): Value {
+    private fun lookupVar(vars: Value, path: String): Value? {
         if (path.isEmpty()) return vars
-        return lookupPath(vars, path) ?: Value.Null
+        return lookupPath(vars, path)
     }
+
+    /**
+     * Like [lookupVar], but maps a non-resolving path to [Value.Null]
+     * instead of `null` — the shape `missing` needs.
+     */
+    private fun varLookup(vars: Value, path: String): Value =
+        lookupVar(vars, path) ?: Value.Null
 
     /**
      * Walk [vars] following [path] (dot-separated). Numeric segments index
