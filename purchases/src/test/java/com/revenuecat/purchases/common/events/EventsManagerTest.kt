@@ -469,6 +469,7 @@ class EventsManagerTest {
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = "wfl_abc",
             stepId = "step-1",
+            traceId = "trace_session_1",
             entryReason = "start",
             isFirstStep = true,
         )

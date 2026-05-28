@@ -361,7 +361,6 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
 @JvmSynthetic
 internal fun WorkflowEvent.toBackendStoredEvent(
     appUserID: String,
-    traceId: String,
 ): BackendStoredEvent {
     val eventName = when (this) {
         is WorkflowEvent.StepStarted -> "workflows_step_started"
