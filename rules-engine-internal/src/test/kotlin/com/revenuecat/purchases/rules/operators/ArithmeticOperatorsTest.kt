@@ -243,8 +243,8 @@ class ArithmeticOperatorsTest {
     }
 
     /**
-     * JS `%` keeps the dividend's sign. Pins Kotlin `%` against Swift
-     * `truncatingRemainder(dividingBy:)` on the other platform.
+     * JS `%` is IEEE 754 remainder: the result sign matches the dividend,
+     * not the divisor (`-7 % 3 === -1`, `7 % -3 === 1`).
      */
     @Test
     fun `mod negative operands match JS`() {
