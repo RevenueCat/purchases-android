@@ -1,9 +1,15 @@
 package com.revenuecat.purchases.rules
 
-/**
- * Namespace for RevenueCat's internal rules engine.
- *
- * SDK implementation detail; not part of the public API and not intended for use by
- * third-party developers.
- */
-internal object RulesEngine
+/** Namespace for the RevenueCat rules engine. */
+public object RulesEngine {
+    @Volatile
+    private var _logger: RulesEngineLogger = PrintLogger
+
+    internal val logger: RulesEngineLogger
+        get() = _logger
+
+    @Synchronized
+    public fun setLogger(logger: RulesEngineLogger) {
+        _logger = logger
+    }
+}
