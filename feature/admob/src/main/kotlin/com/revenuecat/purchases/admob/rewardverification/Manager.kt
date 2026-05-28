@@ -20,20 +20,18 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "PurchasesAdMob"
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal object RewardVerificationManager {
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     private val runtime = RewardVerificationRuntime(
         mainHandler = mainHandler,
     )
 
     init {
-        @OptIn(InternalRevenueCatAPI::class)
         Purchases.registerService(runtime)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun install(onAd: Any) {
         if (!Purchases.isConfigured) {
             Log.w(
@@ -56,7 +54,6 @@ internal object RewardVerificationManager {
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun handleRewardEarned(
         onAd: Any,
         rewardVerificationStarted: (() -> Unit)?,
