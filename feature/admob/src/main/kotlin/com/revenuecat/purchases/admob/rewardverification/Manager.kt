@@ -6,6 +6,7 @@ import android.util.Log
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesService
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +28,8 @@ internal object RewardVerificationManager {
     )
 
     init {
-        RewardVerificationServices.locator.registerHook(runtime)
+        @OptIn(InternalRevenueCatAPI::class)
+        Purchases.registerService(runtime)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -76,7 +78,7 @@ internal class RewardVerificationRuntime(
     private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
         Poller.poll(clientTransactionId)
     },
-) : RewardVerificationLifecycleHook {
+) : PurchasesService {
     private var clientTransactionIdByAd: MutableMap<Any, String>? = null
     private var verificationScope: CoroutineScope? = null
 
@@ -148,14 +150,14 @@ internal class RewardVerificationRuntime(
     }
 
     @Synchronized
-    override fun onPurchasesConfigured(purchases: Purchases) {
+    override fun initialize(purchases: Purchases) {
         verificationScope?.cancel()
         verificationScope = createVerificationScope()
         clientTransactionIdByAd = WeakHashMap()
     }
 
     @Synchronized
-    override fun onPurchasesClosed(purchases: Purchases) {
+    override fun close(purchases: Purchases) {
         clientTransactionIdByAd?.clear()
         clientTransactionIdByAd = null
         verificationScope?.cancel()

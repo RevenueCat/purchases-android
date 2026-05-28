@@ -44,7 +44,7 @@ internal class RewardVerificationRuntimeTest {
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
-        runtime.onPurchasesConfigured(mockk<Purchases>(relaxed = true))
+        runtime.initialize(mockk<Purchases>(relaxed = true))
         runtime.setClientTransactionId(ad, "client-transaction-id")
 
         runtime.handleRewardEarned(
@@ -56,7 +56,7 @@ internal class RewardVerificationRuntimeTest {
             },
         )
         assertTrue(pollStarted.await(1, TimeUnit.SECONDS))
-        runtime.onPurchasesClosed(mockk<Purchases>(relaxed = true))
+        runtime.close(mockk<Purchases>(relaxed = true))
         val completionDelivered = (1..10).any {
             shadowOf(Looper.getMainLooper()).idle()
             completed.await(100, TimeUnit.MILLISECONDS)
