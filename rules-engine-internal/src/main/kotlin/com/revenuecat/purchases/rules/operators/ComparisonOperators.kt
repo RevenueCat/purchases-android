@@ -129,10 +129,6 @@ internal object ComparisonOperators {
         return Value.BoolValue(compare(lhs, rhs, cmp))
     }
 
-    /**
-     * Coerce to [Double], falling back to [Double.NaN] for non-numeric
-     * operands. `null` means the argument was omitted → [Double.NaN]
-     * (not a number), matching JS `Number(undefined)`.
-     */
+    /** Omitted arg or failed coercion → [Double.NaN]; [Value.Null] → 0. */
     private fun Value?.asDouble(): Double = this?.toNumberOrNull() ?: Double.NaN
 }
