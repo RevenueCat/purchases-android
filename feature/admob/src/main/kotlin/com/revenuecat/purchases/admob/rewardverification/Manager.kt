@@ -98,8 +98,6 @@ internal class RewardVerificationRuntime(
         val clientTransactionId = removeClientTransactionId(onAd)
         warnAndAssertIfMissingClientTransactionId(clientTransactionId)
 
-        notifyStarted(rewardVerificationStarted)
-
         val completionDelivered = AtomicBoolean(false)
         fun deliverOnce(result: RewardVerificationResult) {
             if (completionDelivered.compareAndSet(false, true)) {
@@ -122,6 +120,8 @@ internal class RewardVerificationRuntime(
             deliverOnce(RewardVerificationResult.failed)
             return
         }
+
+        notifyStarted(rewardVerificationStarted)
 
         verificationTask.invokeOnCompletion { cause ->
             if (cause != null) {
