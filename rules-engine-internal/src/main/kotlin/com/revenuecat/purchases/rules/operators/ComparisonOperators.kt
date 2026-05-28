@@ -5,8 +5,7 @@ import com.revenuecat.purchases.rules.Value
 /**
  * Comparison operators: `<`, `<=`, `>`, `>=`.
  *
- * Mirrors the JSON Logic / ECMAScript Abstract Relational Comparison
- * rules:
+ * Per JSON Logic:
  *
  * - **Both operands are strings** → lexicographic comparison
  *   (`"10" < "9"` is `true` because `'1' < '9'` byte-wise).
@@ -19,7 +18,7 @@ import com.revenuecat.purchases.rules.Value
  *
  * `<` and `<=` accept a 3-arg "between" form per the JSON Logic spec:
  * `{"<": [a, b, c]}` reads as `a < b AND b < c`. `>` and `>=` are
- * binary only, matching the JS reference implementation.
+ * binary only.
  */
 internal object ComparisonOperators {
 
@@ -76,8 +75,7 @@ internal object ComparisonOperators {
 
     /**
      * Two-string operands → lex. Otherwise → numeric coercion. Encodes
-     * the JSON Logic / JS spec's "lex only when BOTH operands are
-     * strings" branch of Abstract Relational Comparison.
+     * JSON Logic's "lex only when BOTH operands are strings" rule.
      *
      * `null` lhs/rhs means that argument was omitted (e.g. `{">": [1]}`);
      * we coerce it to [Double.NaN], and any comparison involving NaN
