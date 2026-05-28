@@ -79,8 +79,9 @@ internal object ComparisonOperators {
      * the JSON Logic / JS spec's "lex only when BOTH operands are
      * strings" branch of Abstract Relational Comparison.
      *
-     * A missing operand stands in for JS `undefined`, which
-     * [Value.toNumberOrNull] reports as [Double.NaN].
+     * `null` lhs/rhs means that argument was omitted (e.g. `{">": [1]}`);
+     * we coerce it to [Double.NaN], and any comparison involving NaN
+     * is `false`.
      */
     private fun compare(lhs: Value?, rhs: Value?, cmp: Comparator): Boolean {
         if (lhs is Value.StringValue && rhs is Value.StringValue) {
@@ -130,8 +131,8 @@ internal object ComparisonOperators {
 
     /**
      * Coerce to [Double], falling back to [Double.NaN] for non-numeric
-     * operands. A missing operand is treated as JS `undefined`, which
-     * also coerces to [Double.NaN].
+     * operands. `null` means the argument was omitted → [Double.NaN]
+     * (not a number), matching JS `Number(undefined)`.
      */
     private fun Value?.asDouble(): Double {
         if (this == null) return Double.NaN
