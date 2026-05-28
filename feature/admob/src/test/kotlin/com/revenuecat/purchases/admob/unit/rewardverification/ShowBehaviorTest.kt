@@ -36,15 +36,21 @@ class ShowBehaviorTest {
         every { ad.show(activity, capture(rewardListenerSlot)) } answers {}
 
         var callbackCount = 0
+        var startedCount = 0
         var latestResult: RewardVerificationResult? = null
 
-        ad.showWithRewardVerification(activity = activity, placement = "placement") { result ->
+        ad.showWithRewardVerification(
+            activity = activity,
+            placement = "placement",
+            rewardVerificationStarted = { startedCount++ },
+        ) { result ->
             callbackCount++
             latestResult = result
         }
         rewardListenerSlot.captured.onUserEarnedReward(mockk<RewardItem>(relaxed = true))
 
         assertEquals(1, callbackCount)
+        assertEquals(0, startedCount)
         assertNotNull(latestResult)
         assertTrue(latestResult!!.failed)
     }
