@@ -340,6 +340,41 @@ class ValueTest {
         assertThat(looseEq(inf, Value.IntValue(Long.MAX_VALUE))).isFalse
     }
 
+    // ---- toNumberOrNull (direct helper coverage) ----
+
+    /**
+     * Pins [Value.toNumberOrNull] (`ToNumber`) independently of arithmetic
+     * operators so two compensating operator bugs can't hide a coercion
+     * regression in the shared helper.
+     */
+    @Test
+    fun `toNumberOrNull matches spec`() {
+        // Numbers pass through without stringification.
+        assertThat(Value.IntValue(42).toNumberOrNull()).isEqualTo(42.0)
+        assertThat(Value.FloatValue(2.5).toNumberOrNull()).isEqualTo(2.5)
+
+        // null → 0; bools → 0 / 1.
+        assertThat(Value.Null.toNumberOrNull()).isEqualTo(0.0)
+        assertThat(Value.BoolValue(true).toNumberOrNull()).isEqualTo(1.0)
+        assertThat(Value.BoolValue(false).toNumberOrNull()).isEqualTo(0.0)
+
+        // Strings: empty / whitespace-only → 0; trim-then-parse otherwise.
+        assertThat(Value.StringValue("2.5").toNumberOrNull()).isEqualTo(2.5)
+        assertThat(Value.StringValue("").toNumberOrNull()).isEqualTo(0.0)
+        assertThat(Value.StringValue("   ").toNumberOrNull()).isEqualTo(0.0)
+        assertThat(Value.StringValue("  7").toNumberOrNull()).isEqualTo(7.0)
+        assertThat(Value.StringValue("3.14abc").toNumberOrNull()).isNull()
+        assertThat(Value.StringValue("abc").toNumberOrNull()).isNull()
+
+        // Compounds: toString → recurse on the resulting string.
+        assertThat(Value.ArrayValue(emptyList()).toNumberOrNull()).isEqualTo(0.0)
+        assertThat(Value.ArrayValue(listOf(Value.IntValue(1))).toNumberOrNull()).isEqualTo(1.0)
+        assertThat(
+            Value.ArrayValue(listOf(Value.IntValue(1), Value.IntValue(2))).toNumberOrNull(),
+        ).isNull()
+        assertThat(Value.ObjectValue(emptyMap()).toNumberOrNull()).isNull()
+    }
+
     // ---- jsParseFloat (direct helper coverage) ----
 
     /**

@@ -242,6 +242,20 @@ class ArithmeticOperatorsTest {
         ).isEqualTo(Value.FloatValue(1.0))
     }
 
+    /**
+     * JS `%` keeps the dividend's sign. Pins Kotlin `%` against Swift
+     * `truncatingRemainder(dividingBy:)` on the other platform.
+     */
+    @Test
+    fun `mod negative operands match JS`() {
+        assertThat(run(ArithmeticOperators::opMod, arr(Value.IntValue(-7), Value.IntValue(3))))
+            .isEqualTo(Value.FloatValue(-1.0))
+        assertThat(run(ArithmeticOperators::opMod, arr(Value.IntValue(7), Value.IntValue(-3))))
+            .isEqualTo(Value.FloatValue(1.0))
+        assertThat(run(ArithmeticOperators::opMod, arr(Value.IntValue(-7), Value.IntValue(-3))))
+            .isEqualTo(Value.FloatValue(-1.0))
+    }
+
     // ---- coercion semantics (`+`/`*` use parseFloat, others use Number) ----
 
     /**
