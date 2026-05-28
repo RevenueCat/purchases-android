@@ -202,6 +202,34 @@ class ComparisonOperatorsTest {
         ).isEqualTo(Value.BoolValue(false))
     }
 
+    // `json-logic-js` declares `<=` as `function(a, b, c)` so missing
+    // operands resolve to `undefined`, which coerces to `NaN`; any
+    // comparison against `NaN` is `false`.
+    @Test
+    fun testLeMissingOperandsCompareAgainstNaN() {
+        assertThat(run(ComparisonOperators::opLe, arr(Value.IntValue(1))))
+            .isEqualTo(Value.BoolValue(false))
+        assertThat(run(ComparisonOperators::opLe, arr()))
+            .isEqualTo(Value.BoolValue(false))
+    }
+
+    // `json-logic-js`'s `<=` ignores arguments past the third (JS
+    // silently drops named parameters' overflow).
+    @Test
+    fun testLeIgnoresArgsBeyondThird() {
+        assertThat(
+            run(
+                ComparisonOperators::opLe,
+                arr(
+                    Value.IntValue(1),
+                    Value.IntValue(2),
+                    Value.IntValue(3),
+                    Value.IntValue(0),
+                ),
+            ),
+        ).isEqualTo(Value.BoolValue(true))
+    }
+
     // ---- > ----
 
     @Test
@@ -221,7 +249,7 @@ class ComparisonOperatorsTest {
     }
 
     // `>` is `function(a, b)` in `json-logic-js`, so extras are
-    /// silently discarded — there is no 3-arg between form.
+    // silently discarded — there is no 3-arg between form.
     @Test
     fun testGtIgnoresArgsBeyondSecond() {
         assertThat(
@@ -233,7 +261,7 @@ class ComparisonOperatorsTest {
     }
 
     // Missing second operand resolves to `undefined`, coerces to
-    /// `NaN`, and any comparison against `NaN` is `false`.
+    // `NaN`, and any comparison against `NaN` is `false`.
     @Test
     fun testGtMissingOperandsCompareAgainstNaN() {
         assertThat(run(ComparisonOperators::opGt, arr(Value.IntValue(1))))
@@ -256,7 +284,7 @@ class ComparisonOperatorsTest {
     }
 
     // `>=` is `function(a, b)` in `json-logic-js`, so extras are
-    /// silently discarded — there is no 3-arg between form.
+    // silently discarded — there is no 3-arg between form.
     @Test
     fun testGeIgnoresArgsBeyondSecond() {
         assertThat(
@@ -265,6 +293,16 @@ class ComparisonOperatorsTest {
                 arr(Value.IntValue(3), Value.IntValue(2), Value.IntValue(1)),
             ),
         ).isEqualTo(Value.BoolValue(true))
+    }
+
+    // Missing second operand resolves to `undefined`, coerces to
+    // `NaN`, and any comparison against `NaN` is `false`.
+    @Test
+    fun testGeMissingOperandsCompareAgainstNaN() {
+        assertThat(run(ComparisonOperators::opGe, arr(Value.IntValue(1))))
+            .isEqualTo(Value.BoolValue(false))
+        assertThat(run(ComparisonOperators::opGe, arr()))
+            .isEqualTo(Value.BoolValue(false))
     }
 
     // ---- helpers ----
