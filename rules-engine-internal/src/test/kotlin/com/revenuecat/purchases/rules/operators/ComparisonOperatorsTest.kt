@@ -95,9 +95,40 @@ class ComparisonOperatorsTest {
         ).isEqualTo(Value.BoolValue(false))
     }
 
+    @Test
+    fun testNullOperandsCoerceToZero() {
+        // Number(null) is 0; object/array operands still hit NaN.
+        assertThat(run(ComparisonOperators::opLt, arr(Value.Null, Value.Null)))
+            .isEqualTo(Value.BoolValue(false))
+        assertThat(run(ComparisonOperators::opLe, arr(Value.Null, Value.Null)))
+            .isEqualTo(Value.BoolValue(true))
+        assertThat(run(ComparisonOperators::opGt, arr(Value.Null, Value.Null)))
+            .isEqualTo(Value.BoolValue(false))
+        assertThat(run(ComparisonOperators::opGe, arr(Value.Null, Value.Null)))
+            .isEqualTo(Value.BoolValue(true))
+        assertThat(run(ComparisonOperators::opLt, arr(Value.Null, Value.ObjectValue(emptyMap()))))
+            .isEqualTo(Value.BoolValue(false))
+        assertThat(run(ComparisonOperators::opLt, arr(Value.ObjectValue(emptyMap()), Value.Null)))
+            .isEqualTo(Value.BoolValue(false))
+        assertThat(run(ComparisonOperators::opLt, arr(Value.Null, Value.ArrayValue(emptyList()))))
+            .isEqualTo(Value.BoolValue(false))
+        assertThat(
+            run(
+                ComparisonOperators::opLe,
+                arr(Value.IntValue(0), Value.Null, Value.IntValue(1)),
+            ),
+        ).isEqualTo(Value.BoolValue(true))
+        assertThat(
+            run(
+                ComparisonOperators::opLt,
+                arr(Value.IntValue(0), Value.Null, Value.IntValue(1)),
+            ),
+        ).isEqualTo(Value.BoolValue(false))
+    }
+
     // `json-logic-js` declares `<` as `function(a, b, c)` so missing
-    /// operands resolve to `undefined`, which coerces to `NaN`; any
-    /// comparison against `NaN` is `false`.
+    // operands resolve to `undefined`, which coerces to `NaN`; any
+    // comparison against `NaN` is `false`.
     @Test
     fun testLtMissingOperandsCompareAgainstNaN() {
         assertThat(run(ComparisonOperators::opLt, arr(Value.IntValue(1))))
@@ -107,7 +138,7 @@ class ComparisonOperatorsTest {
     }
 
     // `json-logic-js`'s `<` ignores arguments past the third (JS
-    /// silently drops named parameters' overflow).
+    // silently drops named parameters' overflow).
     @Test
     fun testLtIgnoresArgsBeyondThird() {
         assertThat(
