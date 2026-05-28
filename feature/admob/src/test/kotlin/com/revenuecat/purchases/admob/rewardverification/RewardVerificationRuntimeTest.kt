@@ -23,11 +23,9 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
 internal class RewardVerificationRuntimeTest {
 
     @Test
