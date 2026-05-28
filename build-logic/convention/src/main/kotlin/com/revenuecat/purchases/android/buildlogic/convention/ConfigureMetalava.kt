@@ -8,6 +8,9 @@ import org.gradle.api.Project
  * Configures Metalava with common settings for RevenueCat libraries
  */
 internal fun Project.configureMetalava() {
+    // Skip Metalava for `:rules-engine-internal` since it's SDK-internal by design.
+    if (project.path == ":rules-engine-internal") return
+
     pluginManager.apply(libs.plugins.metalava.get().pluginId)
 
     // Configure metalava after evaluation when the extension is available
