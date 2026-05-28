@@ -109,6 +109,7 @@ internal class WorkflowManager(
         backend.getWorkflows(
             appUserID = appUserID,
             appInBackground = appInBackground,
+            type = "paywall",
             onSuccess = { response ->
                 workflowsListCachedObject.cacheInstance(response)
                 deviceCache.cacheWorkflowsListResponse(

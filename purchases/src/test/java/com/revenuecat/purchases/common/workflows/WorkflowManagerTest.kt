@@ -239,6 +239,7 @@ class WorkflowManagerTest {
             mockBackend.getWorkflows(
                 appUserID = "user_1",
                 appInBackground = false,
+                type = "paywall",
                 onSuccess = capture(successSlot),
                 onError = any(),
             )
@@ -247,7 +248,7 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         verify(exactly = 1) {
-            mockBackend.getWorkflows(appUserID = "user_1", appInBackground = false, onSuccess = any(), onError = any())
+            mockBackend.getWorkflows(appUserID = "user_1", appInBackground = false, type = "paywall", onSuccess = any(), onError = any())
         }
         verify(exactly = 1) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
         verify(exactly = 0) { mockBackend.getWorkflow(any(), any(), any(), any(), any()) }
@@ -258,7 +259,7 @@ class WorkflowManagerTest {
         val response = WorkflowsListResponse(workflows = emptyList())
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { successSlot.captured(response) }
         // First call at t=0
         every { mockDateProvider.now } returns Date(0)
@@ -268,7 +269,7 @@ class WorkflowManagerTest {
         every { mockDateProvider.now } returns Date(1)
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
-        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
     @Test
@@ -282,7 +283,7 @@ class WorkflowManagerTest {
         )
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { successSlot.captured(response) }
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
@@ -303,7 +304,7 @@ class WorkflowManagerTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
         } answers { errorSlot.captured(error) }
 
         // Should not throw
@@ -318,7 +319,7 @@ class WorkflowManagerTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
         } answers { errorSlot.captured(error) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
@@ -332,7 +333,7 @@ class WorkflowManagerTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
         } answers { errorSlot.captured(error) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns "not valid json"
 
@@ -360,7 +361,7 @@ class WorkflowManagerTest {
         )
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { successSlot.captured(response) }
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
@@ -378,7 +379,7 @@ class WorkflowManagerTest {
         )
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { successSlot.captured(response) }
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
@@ -397,7 +398,7 @@ class WorkflowManagerTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
         } answers { errorSlot.captured(error) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
@@ -411,7 +412,7 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         // Only one backend call total (the first one that failed)
-        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
     // Test A (continued) — re-fetch fires again after TTL expires
@@ -421,7 +422,7 @@ class WorkflowManagerTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
         } answers { errorSlot.captured(error) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
@@ -435,7 +436,7 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         // Two backend calls total: first failure + re-fetch after TTL
-        verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+        verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
     // Test B — concurrent calls only fire one network request
@@ -444,7 +445,7 @@ class WorkflowManagerTest {
         // Hold the backend call without resolving it so the first call stays in-flight
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { /* intentionally do not call successSlot to simulate in-flight */ }
 
         every { mockDateProvider.now } returns Date(0)
@@ -452,7 +453,7 @@ class WorkflowManagerTest {
         // Second call while first is still in-flight
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
-        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
     // Test C — duplicate offeringId: last value wins, no crash
@@ -466,7 +467,7 @@ class WorkflowManagerTest {
         )
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { successSlot.captured(response) }
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
@@ -484,7 +485,7 @@ class WorkflowManagerTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
         } answers { errorSlot.captured(error) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
@@ -507,7 +508,7 @@ class WorkflowManagerTest {
         ))
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { successSlot.captured(response) }
 
         var completed = false
@@ -521,7 +522,7 @@ class WorkflowManagerTest {
         val response = WorkflowsListResponse(workflows = emptyList())
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
         } answers { successSlot.captured(response) }
 
         every { mockDateProvider.now } returns Date(0)
@@ -532,7 +533,7 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList("user_1", false) { completed = true }
 
         assertThat(completed).isTrue()
-        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
     @Test
@@ -543,7 +544,7 @@ class WorkflowManagerTest {
         ))
         val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(listSuccessSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
         } answers { listSuccessSlot.captured(response) }
 
         val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
@@ -577,7 +578,7 @@ class WorkflowManagerTest {
         ))
         val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(listSuccessSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
         } answers { listSuccessSlot.captured(response) }
 
         val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
@@ -607,7 +608,7 @@ class WorkflowManagerTest {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "fail")
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
         } answers { errorSlot.captured(error) }
 
         var completed = false
@@ -620,7 +621,7 @@ class WorkflowManagerTest {
     fun `getWorkflowsList concurrent in-flight calls both receive onComplete`() {
         val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
-            mockBackend.getWorkflows(any(), any(), onSuccess = capture(listSuccessSlot), onError = any())
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
         } just Runs // hold the request in-flight
 
         var completed1 = false
@@ -635,7 +636,7 @@ class WorkflowManagerTest {
 
         assertThat(completed1).isTrue()
         assertThat(completed2).isTrue()
-        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
     // endregion onComplete callback
