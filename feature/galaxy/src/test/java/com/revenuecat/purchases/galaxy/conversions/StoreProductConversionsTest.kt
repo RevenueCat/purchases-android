@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.galaxy.conversions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.galaxy.GalaxyPurchasingData
 import com.revenuecat.purchases.galaxy.GalaxyStoreTest
@@ -67,7 +66,6 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
         assertThat(storeProduct.defaultOption).isNull()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `toStoreProduct creates expected INAPP shape for Samsung item products`() {
         val productId = "inapp_product"
@@ -89,7 +87,6 @@ class StoreProductConversionsTest : GalaxyStoreTest() {
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `toStoreProduct creates subscriptionOptions and defaultOption for subscriptions with parsable period`() {
         val productId = "sub_product"
