@@ -70,7 +70,7 @@ class WorkflowEventTest {
             isLastStep = false,
         )
 
-        val stored = event.toBackendStoredEvent("user_42")
+        val stored = event.toBackendStoredEvent("user_42", "trace_session_1")
         assertThat(stored).isInstanceOf(BackendStoredEvent.Workflows::class.java)
         val backend = (stored as BackendStoredEvent.Workflows).event
         assertThat(backend.id).isEqualTo(id.toString())
@@ -79,6 +79,7 @@ class WorkflowEventTest {
         assertThat(backend.appUserID).isEqualTo("user_42")
         assertThat(backend.properties.workflowId).isEqualTo("wfl_abc")
         assertThat(backend.properties.stepId).isEqualTo("step-1")
+        assertThat(backend.properties.traceId).isEqualTo("trace_session_1")
         assertThat(backend.properties.entryReason).isEqualTo("start")
         assertThat(backend.properties.isFirstStep).isTrue
     }
@@ -94,8 +95,9 @@ class WorkflowEventTest {
             isLastStep = false,
         )
 
-        val stored = event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows
+        val stored = event.toBackendStoredEvent("user_42", "trace_session_1") as BackendStoredEvent.Workflows
         assertThat(stored.event.eventName).isEqualTo("workflows_step_completed")
+        assertThat(stored.event.properties.traceId).isEqualTo("trace_session_1")
         assertThat(stored.event.properties.toStepId).isEqualTo("step-2")
         assertThat(stored.event.properties.fromStepId).isNull()
     }

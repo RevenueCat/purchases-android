@@ -87,8 +87,31 @@ class WorkflowEventsRequestSerializationTest {
     }
 
     @Test
-    fun `trace_id absent from JSON output`() {
+    fun `trace_id absent from JSON output when not set`() {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
         assertThat(requestString).doesNotContain("trace_id")
+    }
+
+    @Test
+    fun `trace_id present in JSON output when set`() {
+        val requestWithTrace = EventsRequest(
+            listOf(
+                BackendEvent.Workflows(
+                    id = "evt_id",
+                    version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
+                    type = BackendEvent.WORKFLOW_EVENT_TYPE,
+                    eventName = "workflows_step_started",
+                    timestampMs = 123456789L,
+                    appUserID = "appUserID",
+                    properties = BackendEvent.Workflows.Properties(
+                        workflowId = "wfl_abc",
+                        stepId = "step-1",
+                        traceId = "session_abc",
+                    ),
+                ),
+            ),
+        )
+        val requestString = JsonProvider.defaultJson.encodeToString(requestWithTrace)
+        assertThat(requestString).contains("\"trace_id\":\"session_abc\"")
     }
 }

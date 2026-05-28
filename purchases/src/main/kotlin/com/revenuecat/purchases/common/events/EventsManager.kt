@@ -229,6 +229,7 @@ internal class EventsManager(
                 )
                 is WorkflowEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
+                    appSessionID.toString(),
                 )
                 else -> null
             }

@@ -361,6 +361,7 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
 @JvmSynthetic
 internal fun WorkflowEvent.toBackendStoredEvent(
     appUserID: String,
+    traceId: String,
 ): BackendStoredEvent {
     val eventName = when (this) {
         is WorkflowEvent.StepStarted -> "workflows_step_started"
@@ -370,6 +371,7 @@ internal fun WorkflowEvent.toBackendStoredEvent(
         is WorkflowEvent.StepStarted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
             stepId = stepId,
+            traceId = traceId,
             fromStepId = fromStepId,
             entryReason = entryReason,
             isFirstStep = isFirstStep,
@@ -378,6 +380,7 @@ internal fun WorkflowEvent.toBackendStoredEvent(
         is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
             stepId = stepId,
+            traceId = traceId,
             toStepId = toStepId,
             isFirstStep = isFirstStep,
             isLastStep = isLastStep,

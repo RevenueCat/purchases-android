@@ -237,6 +237,8 @@ internal sealed class BackendEvent : Event {
             val workflowId: String,
             @SerialName("step_id")
             val stepId: String,
+            @SerialName("trace_id")
+            val traceId: String? = null,
             @SerialName("from_step_id")
             val fromStepId: String? = null,
             @SerialName("to_step_id")
