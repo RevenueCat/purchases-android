@@ -8,6 +8,7 @@ import com.revenuecat.purchases.rules.jsString
 /**
  * `var` and `missing` — the data-accessor operators.
  */
+@Suppress("TooManyFunctions")
 internal object AccessorOperators {
 
     /**
