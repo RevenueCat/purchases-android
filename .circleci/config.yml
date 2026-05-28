@@ -334,6 +334,29 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test-rules-engine-internal:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run Rules Engine Internal Unit Tests
+          command: |
+            ./gradlew :rules-engine-internal:testDefaultsDebugUnitTest --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          when: always
+          command: |
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
+      - store_test_results:
+          path: build/test-results-collected
+      - store_artifacts:
+          path: build/reports
+
   detekt:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -378,7 +401,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.7.0-SNAPSHOT s3://purchases-docs/android/10.7.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.8.0-SNAPSHOT s3://purchases-docs/android/10.8.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -1054,6 +1077,9 @@ workflows:
       - test-galaxy:
           requires:
             - prepare-tests
+      - test-rules-engine-internal:
+          requires:
+            - prepare-tests
       - run-backend-integration-tests:
           requires:
             - prepare-tests
@@ -1091,6 +1117,7 @@ workflows:
             - test_defaults_bc8_release
             - test_defaults_bc7_release
             - test-galaxy
+            - test-rules-engine-internal
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester

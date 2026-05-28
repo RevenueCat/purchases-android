@@ -1,13 +1,15 @@
 ## RevenueCat SDK
 ### 🐞 Bugfixes
-* Fix RTL layout issues in paywall components (#3493) via Tarek M. Ben Lechhab (@bilqisium)
+* Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
+### Galaxy Store
+#### ✨ New Features
+* [Galaxy Store]: Upgrade Samsung IAP SDK to version 6.5.2 + use Maven distribution (#3492) via Will Taylor (@fire-at-will)
 
 ## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Rebuild workflow step states on color scheme change (#3419) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* Remove `workflow_trigger` interaction event (#3467) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Update baseline profiles (#3490) via RevenueCat Git Bot (@RCGitBot)
-* [AUTOMATIC] Update golden test files for backend integration tests (#3491) via RevenueCat Git Bot (@RCGitBot)
-* [AUTOMATIC] Update golden test files for backend integration tests (#3479) via RevenueCat Git Bot (@RCGitBot)
+* build(deps): bump fastlane from 2.234.0 to 2.235.0 (#3506) via dependabot[bot] (@dependabot[bot])
+* [Galaxy Store]: Remove @Experimental annotations from Galaxy Module (#3494) via Will Taylor (@fire-at-will)
+* Update baseline profiles (#3504) via RevenueCat Git Bot (@RCGitBot)
