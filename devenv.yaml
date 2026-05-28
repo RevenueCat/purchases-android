@@ -1,0 +1,2 @@
+nixpkgs:
+  allowUnfree: true
