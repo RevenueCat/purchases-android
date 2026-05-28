@@ -147,3 +147,16 @@ internal data class WorkflowDetailResponse(
     @SerialName("enrolled_variants")
     val enrolledVariants: Map<String, String>? = null,
 )
+
+@Serializable
+internal data class WorkflowSummary(
+    val id: String,
+    @SerialName("display_name") val displayName: String,
+    @SerialName("offering_id") val offeringId: String? = null,
+    val prefetch: Boolean = false,
+)
+
+@Serializable
+internal data class WorkflowsListResponse(
+    val workflows: List<WorkflowSummary>,
+)

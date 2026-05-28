@@ -12,4 +12,7 @@ internal object WorkflowJsonParser {
 
     fun parseWorkflowDetailResponse(payload: String): WorkflowDetailResponse =
         JsonTools.json.decodeFromString<WorkflowDetailResponse>(payload)
+
+    fun parseWorkflowsListResponse(payload: String): WorkflowsListResponse =
+        JsonTools.json.decodeFromString<WorkflowsListResponse>(payload)
 }
