@@ -134,8 +134,5 @@ internal object ComparisonOperators {
      * operands. `null` means the argument was omitted → [Double.NaN]
      * (not a number), matching JS `Number(undefined)`.
      */
-    private fun Value?.asDouble(): Double {
-        if (this == null) return Double.NaN
-        return toNumberOrNull() ?: Double.NaN
-    }
+    private fun Value?.asDouble(): Double = this?.toNumberOrNull() ?: Double.NaN
 }
