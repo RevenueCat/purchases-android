@@ -4,10 +4,6 @@ plugins {
 
 android {
     namespace = "com.revenuecat.purchases.rules"
-
-    testOptions {
-        unitTests.isIncludeAndroidResources = true
-    }
 }
 
 dependencies {
