@@ -23,6 +23,7 @@ class EndpointTest {
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
         Endpoint.GetWorkflow("test-user-id", "wf_test"),
+        Endpoint.GetWorkflows("test-user-id"),
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig,
     )
@@ -52,6 +53,20 @@ class EndpointTest {
     fun `GetWorkflow has correct path`() {
         val endpoint = Endpoint.GetWorkflow("test user-id", "wf abc")
         val expectedPath = "/v1/subscribers/test%20user-id/workflows/wf%20abc"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetWorkflows has correct path`() {
+        val endpoint = Endpoint.GetWorkflows("test user-id")
+        val expectedPath = "/v1/subscribers/test%20user-id/workflows"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetWorkflows with type has correct path`() {
+        val endpoint = Endpoint.GetWorkflows("test user-id", type = "paywall")
+        val expectedPath = "/v1/subscribers/test%20user-id/workflows?type=paywall"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
@@ -153,6 +168,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.GetWorkflow("test-user-id", "wf_1"),
+            Endpoint.GetWorkflows("test-user-id"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
@@ -221,6 +237,7 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
+            Endpoint.GetWorkflows("test-user-id"),
             Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedEndpoints) {
