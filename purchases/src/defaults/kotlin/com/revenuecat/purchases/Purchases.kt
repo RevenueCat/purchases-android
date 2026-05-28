@@ -689,12 +689,18 @@ public class Purchases internal constructor(
             params.offeringId != null -> {
                 val resolvedOffering = cachedOfferings?.get(params.offeringId)
                 resolvedOfferingId = params.offeringId
-                resolvedPresentedOfferingContext = resolvedOffering?.availablePackages?.firstOrNull()?.presentedOfferingContext
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
             }
             else -> {
                 val resolvedOffering = cachedOfferings?.current
                 resolvedOfferingId = resolvedOffering?.identifier
-                resolvedPresentedOfferingContext = resolvedOffering?.availablePackages?.firstOrNull()?.presentedOfferingContext
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
             }
         }
 
