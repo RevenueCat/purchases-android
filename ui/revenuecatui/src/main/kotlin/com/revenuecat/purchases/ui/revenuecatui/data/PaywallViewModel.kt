@@ -728,7 +728,7 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        if (updateStateFromWorkflowEndpointIfNeeded(offeringSelection)) {
+        if (startWorkflowPresentationFromEndpointIfNeeded(offeringSelection)) {
             return
         }
 
@@ -750,7 +750,7 @@ internal class PaywallViewModelImpl(
         updatePaywallState(currentOffering)
     }
 
-    private suspend fun updateStateFromWorkflowEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
+    private suspend fun startWorkflowPresentationFromEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
         var updatedFromWorkflow = false
         if (useWorkflowsEndpoint) {
             val workflowParams = when (offeringSelection) {
@@ -834,7 +834,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    internal fun updateStateFromWorkflow(
+    internal fun startWorkflowPresentationFromResult(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
