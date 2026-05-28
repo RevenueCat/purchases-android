@@ -41,7 +41,7 @@ internal object Evaluator {
      * Recursive evaluator. Module-internal so operator implementations can
      * call it for short-circuit / nested evaluation.
      */
-    fun evaluateValue(
+    internal fun evaluateValue(
         predicate: Value,
         vars: Value,
     ): Value = when (predicate) {
