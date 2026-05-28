@@ -3,6 +3,8 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools
+import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -63,5 +65,42 @@ internal class WorkflowModelsDeserializationTest {
         val json = """{"workflows": [{"id": "wf_5", "display_name": "Flow E", "unknown_field": "value"}]}"""
         val result = WorkflowJsonParser.parseWorkflowsListResponse(json)
         assertThat(result.workflows[0].id).isEqualTo("wf_5")
+    }
+
+    // Round-trip tests: disk cache WRITE uses JsonTools.json.encodeToString, READ uses
+    // WorkflowJsonParser.parseWorkflowsListResponse. Both go through the same JsonTools.json
+    // instance today, but a round-trip test catches silent breakage if someone adds a custom
+    // serializer or changes JsonTools.json configuration.
+
+    @Test
+    fun `WorkflowsListResponse round-trips through disk cache encode and decode with offeringId and prefetch true`() {
+        val original = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val encoded = JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), original)
+        val decoded = WorkflowJsonParser.parseWorkflowsListResponse(encoded)
+        assertThat(decoded).isEqualTo(original)
+    }
+
+    @Test
+    fun `WorkflowsListResponse round-trips through disk cache encode and decode with null offeringId and prefetch false`() {
+        val original = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_2", displayName = "Flow B", offeringId = null, prefetch = false),
+            ),
+        )
+        val encoded = JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), original)
+        val decoded = WorkflowJsonParser.parseWorkflowsListResponse(encoded)
+        assertThat(decoded).isEqualTo(original)
+    }
+
+    @Test
+    fun `WorkflowsListResponse round-trips through disk cache encode and decode with empty workflows list`() {
+        val original = WorkflowsListResponse(workflows = emptyList())
+        val encoded = JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), original)
+        val decoded = WorkflowJsonParser.parseWorkflowsListResponse(encoded)
+        assertThat(decoded).isEqualTo(original)
     }
 }

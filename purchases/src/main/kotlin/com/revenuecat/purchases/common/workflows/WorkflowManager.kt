@@ -16,7 +16,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -66,13 +65,11 @@ internal class WorkflowManager(
                 scope.launch {
                     // resolve() can throw a range of exceptions (IllegalStateException, IOException,
                     // SignatureVerificationException, and SerializationException from parsing CDN json).
-                    // getWorkflow MUST always invoke exactly one of onSuccess/onError: the prefetch
-                    // counter in getWorkflowsList (and the offerings delivery gated on it) deadlocks if
-                    // a callback is ever skipped. Catch broadly so no unexpected type breaks that contract.
+                    // CancellationException is caught here intentionally: rethrowing it would skip the
+                    // callback and deadlock the prefetch counter in getWorkflowsList. The scope is already
+                    // cancelled so further coroutine work in this scope will not execute regardless.
                     val result = try {
                         workflowDetailResolver.resolve(response)
-                    } catch (e: CancellationException) {
-                        throw e
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         onError(e.toPurchasesError())
                         return@launch
