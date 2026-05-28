@@ -69,6 +69,7 @@ private class PurchasesAPI {
         webPurchaseRedemption: WebPurchaseRedemption,
         redeemWebPurchaseListener: RedeemWebPurchaseListener,
         intent: Intent,
+        offering: Offering,
     ) {
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {}
@@ -143,12 +144,6 @@ private class PurchasesAPI {
         val defaultParams = CustomPaywallImpressionParams()
         val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
         val paramsWithOffering = CustomPaywallImpressionParams(paywallId = "my-paywall", offeringId = "my-offering")
-        val offering = Offering(
-            identifier = "my-offering",
-            serverDescription = "",
-            metadata = emptyMap(),
-            availablePackages = emptyList(),
-        )
         val paramsWithOfferingObject = CustomPaywallImpressionParams(paywallId = "my-paywall", offering = offering)
         val paramsOfferingObjectOnly = CustomPaywallImpressionParams(offering = offering)
         val presentedOfferingContext: PresentedOfferingContext? = paramsWithOfferingObject.presentedOfferingContext

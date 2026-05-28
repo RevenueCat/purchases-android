@@ -39,7 +39,6 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -51,7 +50,8 @@ final class PurchasesAPI {
             final Purchases purchases,
             final WebPurchaseRedemption webPurchaseRedemption,
             final RedeemWebPurchaseListener redeemWebPurchaseListener,
-            final Intent intent
+            final Intent intent,
+            final Offering offering
             ) {
         final ReceiveCustomerInfoCallback receiveCustomerInfoListener = new ReceiveCustomerInfoCallback() {
             @Override
@@ -142,12 +142,6 @@ final class PurchasesAPI {
         VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
 
         // trackCustomPaywallImpression API
-        Offering offering = new Offering(
-                "my-offering",
-                "",
-                new HashMap<>(),
-                new ArrayList<>()
-        );
         CustomPaywallImpressionParams paramsWithOfferingObject =
                 new CustomPaywallImpressionParams("my-paywall", offering);
         PresentedOfferingContext presentedOfferingContext = paramsWithOfferingObject.getPresentedOfferingContext();
