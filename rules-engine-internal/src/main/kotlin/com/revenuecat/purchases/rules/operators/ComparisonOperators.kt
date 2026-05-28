@@ -22,6 +22,11 @@ import com.revenuecat.purchases.rules.Value
  */
 internal object ComparisonOperators {
 
+    private const val BINARY_OPERAND_COUNT = 2
+    private const val BETWEEN_OPERAND_COUNT = 3
+    private const val MID_OPERAND_INDEX = 1
+    private const val RHS_OPERAND_INDEX = 2
+
     /** `{"<": [a, b]}` — `a < b`. `{"<": [a, b, c]}` — `a < b AND b < c`. */
     fun opLt(args: Value, vars: Value): Value =
         evalChain(args, vars, Comparator.LESS)
@@ -102,9 +107,13 @@ internal object ComparisonOperators {
     ): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val lhs = evaluated.firstOrNull()
-        val mid = if (evaluated.size >= 2) evaluated[1] else null
-        if (evaluated.size >= 3) {
-            val rhs = evaluated[2]
+        val mid = if (evaluated.size >= BINARY_OPERAND_COUNT) {
+            evaluated[MID_OPERAND_INDEX]
+        } else {
+            null
+        }
+        if (evaluated.size >= BETWEEN_OPERAND_COUNT) {
+            val rhs = evaluated[RHS_OPERAND_INDEX]
             return Value.BoolValue(compare(lhs, mid, cmp) && compare(mid, rhs, cmp))
         }
         return Value.BoolValue(compare(lhs, mid, cmp))
@@ -123,7 +132,11 @@ internal object ComparisonOperators {
     ): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val lhs = evaluated.firstOrNull()
-        val rhs = if (evaluated.size >= 2) evaluated[1] else null
+        val rhs = if (evaluated.size >= BINARY_OPERAND_COUNT) {
+            evaluated[MID_OPERAND_INDEX]
+        } else {
+            null
+        }
         return Value.BoolValue(compare(lhs, rhs, cmp))
     }
 
