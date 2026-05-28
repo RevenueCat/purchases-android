@@ -8,29 +8,35 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 @JvmSynthetic
 @Composable
 internal fun WebViewComponentView(
     style: WebViewComponentStyle,
+    state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
-    if (!style.visible || !style.url.isHttps) return
+    val resolvedUrl = remember(style.urlTemplate, state) {
+        WebViewUrlResolver.resolve(style.urlTemplate, state)
+    }
+    if (!style.visible || resolvedUrl == null) return
 
     AndroidView(
         factory = { context ->
             WebView(context).apply {
                 configure()
-                loadUrl(style.url.toString())
+                loadUrl(resolvedUrl.toString())
             }
         },
         update = { webView ->
-            if (webView.url != style.url.toString()) {
-                webView.loadUrl(style.url.toString())
+            if (webView.url != resolvedUrl.toString()) {
+                webView.loadUrl(resolvedUrl.toString())
             }
         },
         onRelease = { webView ->
@@ -58,8 +64,5 @@ private fun WebView.configure() {
         }
     }
 }
-
-private val java.net.URL.isHttps: Boolean
-    get() = protocol == HTTPS_SCHEME
 
 private const val HTTPS_SCHEME = "https"

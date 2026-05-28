@@ -132,7 +132,7 @@ internal class PaywallComponentsImagePreDownloader(
         return filter { true }
             .flatMapTo(mutableSetOf()) { component ->
                 when (component) {
-                    is WebViewComponent -> setOf(component.url)
+                    is WebViewComponent -> component.url.toStaticWebViewUrlOrNull()?.let(::setOf).orEmpty()
                     is ButtonComponent,
                     is CarouselComponent,
                     is CountdownComponent,
@@ -154,6 +154,14 @@ internal class PaywallComponentsImagePreDownloader(
                     -> emptySet()
                 }
             }
+    }
+
+    private fun String.toStaticWebViewUrlOrNull(): URL? {
+        if (contains(TEMPLATE_VARIABLE_START)) return null
+
+        return runCatching { URL(this) }
+            .getOrNull()
+            ?.takeIf { it.protocol == HTTPS_SCHEME && it.host.isNotBlank() }
     }
 
     private fun <T : PartialComponent> List<ComponentOverride<T>>?.imageUrisToDownload(
@@ -182,5 +190,10 @@ internal class PaywallComponentsImagePreDownloader(
             light.webpLowRes.toString().let { Uri.parse(it) },
             dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
         )
+    }
+
+    private companion object {
+        private const val HTTPS_SCHEME = "https"
+        private const val TEMPLATE_VARIABLE_START = "{{"
     }
 }

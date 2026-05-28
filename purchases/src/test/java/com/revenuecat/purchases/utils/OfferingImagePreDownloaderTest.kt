@@ -409,10 +409,10 @@ class OfferingImagePreDownloaderTest {
                 paywallComponentsConfig = PaywallComponentsConfig(
                     stack = StackComponent(
                         components = listOf(
-                            WebViewComponent(url = rootUrl),
+                            WebViewComponent(url = rootUrl.toString()),
                             StackComponent(
                                 components = listOf(
-                                    WebViewComponent(url = nestedUrl),
+                                    WebViewComponent(url = nestedUrl.toString()),
                                 ),
                             ),
                             ButtonComponent(
@@ -421,7 +421,7 @@ class OfferingImagePreDownloaderTest {
                                         id = "sheet-id",
                                         name = null,
                                         stack = StackComponent(
-                                            components = listOf(WebViewComponent(url = sheetUrl)),
+                                            components = listOf(WebViewComponent(url = sheetUrl.toString())),
                                         ),
                                         backgroundBlur = false,
                                         size = null,
@@ -434,12 +434,12 @@ class OfferingImagePreDownloaderTest {
                     background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
                     header = HeaderComponent(
                         stack = StackComponent(
-                            components = listOf(WebViewComponent(url = headerUrl)),
+                            components = listOf(WebViewComponent(url = headerUrl.toString())),
                         ),
                     ),
                     stickyFooter = StickyFooterComponent(
                         stack = StackComponent(
-                            components = listOf(WebViewComponent(url = stickyFooterUrl)),
+                            components = listOf(WebViewComponent(url = stickyFooterUrl.toString())),
                         ),
                     ),
                 ),
@@ -452,6 +452,32 @@ class OfferingImagePreDownloaderTest {
             webViewPreDownloader.preDownloadWebView(sheetUrl)
             webViewPreDownloader.preDownloadWebView(headerUrl)
             webViewPreDownloader.preDownloadWebView(stickyFooterUrl)
+        }
+    }
+
+    @Test
+    fun `paywalls V2 - skips templated malformed and non-https web view URLs`() {
+        val staticUrl = URL("https://paywalls.com/static.html")
+
+        preDownloader.preDownloadOfferingImages(
+            createOfferingWithV2Paywall(
+                paywallComponentsConfig = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            WebViewComponent(url = staticUrl.toString()),
+                            WebViewComponent(url = "https://paywalls.com/{{ custom.animal }}.html"),
+                            WebViewComponent(url = "not a url"),
+                            WebViewComponent(url = "https:///missing-host"),
+                            WebViewComponent(url = "http://paywalls.com/insecure.html"),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+                ),
+            ),
+        )
+
+        verifyAll {
+            webViewPreDownloader.preDownloadWebView(staticUrl)
         }
     }
 

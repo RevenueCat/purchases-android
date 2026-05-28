@@ -584,7 +584,7 @@ internal class StyleFactory(
     private fun createWebViewComponentStyle(component: WebViewComponent): Result<WebViewComponentStyle, Nothing> =
         Result.Success(
             WebViewComponentStyle(
-                url = component.url,
+                urlTemplate = component.url,
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
             ),
