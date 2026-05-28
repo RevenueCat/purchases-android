@@ -311,10 +311,6 @@ jobs:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
-      - run:
           name: Validate Galaxy API Signature with Metalava
           command: |
             ./gradlew :feature:galaxy:metalavaGenerateSignatureBc8Release --no-daemon
@@ -382,7 +378,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.7.0-SNAPSHOT s3://purchases-docs/android/10.7.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.8.0-SNAPSHOT s3://purchases-docs/android/10.8.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -402,10 +398,6 @@ jobs:
       - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
-      - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -438,10 +430,6 @@ jobs:
       - android/restore_build_cache:
           cache_prefix: v1a
       - prepare-signing-key
-      - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |

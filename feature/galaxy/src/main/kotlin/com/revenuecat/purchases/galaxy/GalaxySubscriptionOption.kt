@@ -1,14 +1,11 @@
 package com.revenuecat.purchases.galaxy
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.SubscriptionOption
 import dev.drewhamilton.poko.Poko
-
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class GalaxySubscriptionOption(
     /**
