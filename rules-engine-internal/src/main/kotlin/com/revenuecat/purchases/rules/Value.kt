@@ -1,22 +1,10 @@
 package com.revenuecat.purchases.rules
 
 /**
- * A JSON-shaped value. Used both as the parsed JSON Logic predicate tree
- * and as the resolved variable map handed in by callers.
+ * A JSON-shaped value for JSON Logic predicates and variable data.
  *
- * Maps directly onto the JSON data model with one tweak: numbers are split
- * into [IntValue] (`Long`) and [FloatValue] (`Double`) so callers can
- * preserve type intent. Cross-type numeric comparisons / arithmetic still
- * work — see [looseEq], [strictEq], and the comparison helpers below.
- *
- * JSON parsing intentionally lives only in tests (see the
- * `ValueJsonHelper` test helper). Production callers will cross any future
- * FFI boundary with a typed `Value` tree they construct from the host
- * SDK's JSON parser.
- *
- * Subtypes use structural [equals]/[hashCode] (via `data class` / the
- * [Null] singleton), so [Value] instances can be stored in [HashSet] for
- * O(1) membership checks when the upcoming `in` operator lands.
+ * Numbers are split into [IntValue] and [FloatValue] to preserve type intent.
+ * Cross-type numeric comparisons still work — see [looseEq] and [strictEq].
  */
 internal sealed class Value {
 
