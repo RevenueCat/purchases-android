@@ -149,6 +149,24 @@ internal object AccessorOperators {
         lookupVar(vars, path) ?: Value.Null
 
     /**
+     * Mirrors `String(path).split(".")` in json-logic-js — preserves empty
+     * segments at the start, middle, and end (unlike Kotlin's default split).
+     */
+    private fun jsDotSplit(path: String): List<String> {
+        if (path.isEmpty()) return listOf("")
+        val segments = mutableListOf<String>()
+        var start = 0
+        for (i in path.indices) {
+            if (path[i] == '.') {
+                segments.add(path.substring(start, i))
+                start = i + 1
+            }
+        }
+        segments.add(path.substring(start))
+        return segments
+    }
+
+    /**
      * Walk [vars] following [path] (dot-separated). Numeric segments index
      * into arrays; string segments key into objects. Returns `null` if any
      * segment can't resolve.
@@ -156,7 +174,7 @@ internal object AccessorOperators {
     @Suppress("ReturnCount")
     private fun lookupPath(vars: Value, path: String): Value? {
         var current: Value = vars
-        for (segment in path.split(".")) {
+        for (segment in jsDotSplit(path)) {
             current = when (val node = current) {
                 is Value.ObjectValue -> node.entries[segment] ?: return null
                 is Value.ArrayValue -> {

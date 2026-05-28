@@ -41,6 +41,23 @@ class AccessorOperatorsTest {
     }
 
     @Test
+    fun `var splits dot paths like json-logic-js preserving empty segments`() {
+        // json-logic-js uses `String(path).split(".")`, which keeps empty
+        // segments — e.g. `"a..b"` → `["a", "", "b"]`.
+        val doubleDot = obj("a" to obj("" to obj("b" to s("middle"))))
+        assertThat(AccessorOperators.opVar(s("a..b"), doubleDot)).isEqualTo(s("middle"))
+
+        val leadingDot = obj("" to obj("a" to s("leading")))
+        assertThat(AccessorOperators.opVar(s(".a"), leadingDot)).isEqualTo(s("leading"))
+
+        val trailingDot = obj("a" to obj("" to s("trailing")))
+        assertThat(AccessorOperators.opVar(s("a."), trailingDot)).isEqualTo(s("trailing"))
+
+        val onlyDots = obj("" to obj("" to s("only-dots")))
+        assertThat(AccessorOperators.opVar(s("."), onlyDots)).isEqualTo(s("only-dots"))
+    }
+
+    @Test
     fun `var missing key returns null and warns`() {
         val vars = obj("a" to Value.IntValue(1))
         val out = AccessorOperators.opVar(s("missing_key"), vars)
