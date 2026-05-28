@@ -16,6 +16,8 @@ class WorkflowEventsRequestSerializationTest {
         listOf(
             BackendEvent.Workflows(
                 id = "evt_id",
+                version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
+                type = BackendEvent.WORKFLOW_EVENT_TYPE,
                 eventName = "workflows_step_started",
                 timestampMs = 123456789L,
                 appUserID = "appUserID",
@@ -40,6 +42,8 @@ class WorkflowEventsRequestSerializationTest {
                     "{" +
                         "\"discriminator\":\"workflows\"," +
                         "\"id\":\"evt_id\"," +
+                        "\"version\":1," +
+                        "\"type\":\"workflows\"," +
                         "\"event_name\":\"workflows_step_started\"," +
                         "\"timestamp_ms\":123456789," +
                         "\"app_user_id\":\"appUserID\"," +

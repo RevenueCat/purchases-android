@@ -386,6 +386,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
     return BackendStoredEvent.Workflows(
         BackendEvent.Workflows(
             id = creationData.id.toString(),
+            version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
+            type = BackendEvent.WORKFLOW_EVENT_TYPE,
             eventName = eventName,
             timestampMs = creationData.date.time,
             appUserID = appUserID,

@@ -214,8 +214,8 @@ internal sealed class BackendEvent : Event {
     @SerialName("workflows")
     data class Workflows(
         val id: String,
-        val version: Int = WORKFLOW_EVENT_SCHEMA_VERSION,
-        val type: String = WORKFLOW_EVENT_TYPE,
+        val version: Int,
+        val type: String,
         @SerialName("event_name")
         val eventName: String,
         @SerialName("timestamp_ms")

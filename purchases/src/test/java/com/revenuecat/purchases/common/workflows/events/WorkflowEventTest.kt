@@ -114,6 +114,8 @@ class WorkflowEventTest {
         val original = BackendStoredEvent.Workflows(
             BackendEvent.Workflows(
                 id = "evt_id",
+                version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
+                type = BackendEvent.WORKFLOW_EVENT_TYPE,
                 eventName = "workflows_step_started",
                 timestampMs = 1L,
                 appUserID = "u",
