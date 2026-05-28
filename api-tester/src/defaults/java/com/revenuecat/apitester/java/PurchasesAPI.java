@@ -12,6 +12,7 @@ import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
@@ -43,7 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings({"unused", "deprecation"})
 final class PurchasesAPI {
     @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void check(
@@ -149,7 +150,7 @@ final class PurchasesAPI {
         );
         CustomPaywallImpressionParams paramsWithOfferingObject =
                 new CustomPaywallImpressionParams("my-paywall", offering);
-        Offering offeringObject = paramsWithOfferingObject.getOffering();
+        PresentedOfferingContext presentedOfferingContext = paramsWithOfferingObject.getPresentedOfferingContext();
         purchases.trackCustomPaywallImpression();
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams());
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall"));

@@ -678,20 +678,34 @@ public class Purchases internal constructor(
     @JvmOverloads
     public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
         val cachedOfferings = purchasesOrchestrator.cachedOfferings
-        val resolvedOffering = params.offering
-            ?: params.offeringId?.let { cachedOfferings?.get(it) }
-            ?: if (params.offeringId == null) cachedOfferings?.current else null
-        val presentedOfferingContext = resolvedOffering?.availablePackages?.firstOrNull()?.presentedOfferingContext
-        val offeringId = params.offeringId ?: resolvedOffering?.identifier
+        val resolvedOfferingId: String?
+        val resolvedPresentedOfferingContext: PresentedOfferingContext?
+
+        when {
+            params.presentedOfferingContext != null -> {
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = params.presentedOfferingContext
+            }
+            params.offeringId != null -> {
+                val resolvedOffering = cachedOfferings?.get(params.offeringId)
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = resolvedOffering?.availablePackages?.firstOrNull()?.presentedOfferingContext
+            }
+            else -> {
+                val resolvedOffering = cachedOfferings?.current
+                resolvedOfferingId = resolvedOffering?.identifier
+                resolvedPresentedOfferingContext = resolvedOffering?.availablePackages?.firstOrNull()?.presentedOfferingContext
+            }
+        }
 
         purchasesOrchestrator.track(
             CustomPaywallEvent.Impression(
                 data = CustomPaywallEvent.Impression.Data(
                     paywallId = params.paywallId,
-                    offeringId = offeringId,
-                    placementIdentifier = presentedOfferingContext?.placementIdentifier,
-                    targetingRevision = presentedOfferingContext?.targetingContext?.revision,
-                    targetingRuleId = presentedOfferingContext?.targetingContext?.ruleId,
+                    offeringId = resolvedOfferingId,
+                    placementIdentifier = resolvedPresentedOfferingContext?.placementIdentifier,
+                    targetingRevision = resolvedPresentedOfferingContext?.targetingContext?.revision,
+                    targetingRuleId = resolvedPresentedOfferingContext?.targetingContext?.ruleId,
                 ),
             ),
         )

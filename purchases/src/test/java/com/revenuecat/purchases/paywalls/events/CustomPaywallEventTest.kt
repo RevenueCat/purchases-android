@@ -363,15 +363,16 @@ class CustomPaywallEventTest {
     // region Params: Offering-based init
 
     @Test
-    fun `CustomPaywallImpressionParams default has null offering`() {
+    fun `CustomPaywallImpressionParams default has null presentedOfferingContext`() {
         val params = CustomPaywallImpressionParams()
-        assertThat(params.offering).isNull()
+        assertThat(params.presentedOfferingContext).isNull()
     }
 
     @Test
-    fun `CustomPaywallImpressionParams string-id init does not store offering`() {
+    @Suppress("DEPRECATION")
+    fun `CustomPaywallImpressionParams string-id init has null presentedOfferingContext`() {
         val params = CustomPaywallImpressionParams(paywallId = "pw", offeringId = "my-offering")
-        assertThat(params.offering).isNull()
+        assertThat(params.presentedOfferingContext).isNull()
     }
 
     @Test
@@ -384,11 +385,12 @@ class CustomPaywallEventTest {
     }
 
     @Test
-    fun `CustomPaywallImpressionParams Offering-based init stores offering`() {
+    fun `CustomPaywallImpressionParams Offering-based init stores presentedOfferingContext`() {
         val offering = makeOffering(identifier = "my-offering")
         val params = CustomPaywallImpressionParams(paywallId = "pw", offering = offering)
 
-        assertThat(params.offering).isSameAs(offering)
+        val expectedContext = offering.availablePackages.first().presentedOfferingContext
+        assertThat(params.presentedOfferingContext).isEqualTo(expectedContext)
     }
 
     @Test
@@ -396,9 +398,10 @@ class CustomPaywallEventTest {
         val offering = makeOffering(identifier = "offering_1")
         val params = CustomPaywallImpressionParams(offering = offering)
 
+        val expectedContext = offering.availablePackages.first().presentedOfferingContext
         assertThat(params.paywallId).isNull()
         assertThat(params.offeringId).isEqualTo("offering_1")
-        assertThat(params.offering).isSameAs(offering)
+        assertThat(params.presentedOfferingContext).isEqualTo(expectedContext)
     }
 
     // endregion

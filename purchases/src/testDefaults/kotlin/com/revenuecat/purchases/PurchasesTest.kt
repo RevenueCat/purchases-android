@@ -1574,6 +1574,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @OptIn(InternalRevenueCatAPI::class)
+    @Suppress("DEPRECATION")
     @Test
     fun `trackCustomPaywallImpression derives context from cached offering matching passed id`() {
         val currentContext = PresentedOfferingContext(
@@ -1609,6 +1610,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(data.targetingRuleId).isEqualTo("other_rule")
     }
 
+    @Suppress("DEPRECATION")
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `trackCustomPaywallImpression leaves context null when passed id not in cache`() {

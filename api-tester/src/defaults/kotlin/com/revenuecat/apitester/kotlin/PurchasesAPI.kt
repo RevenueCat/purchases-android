@@ -11,6 +11,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Purchases.Companion.sharedInstance
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -150,7 +151,7 @@ private class PurchasesAPI {
         )
         val paramsWithOfferingObject = CustomPaywallImpressionParams(paywallId = "my-paywall", offering = offering)
         val paramsOfferingObjectOnly = CustomPaywallImpressionParams(offering = offering)
-        val offeringObject: Offering? = paramsWithOfferingObject.offering
+        val presentedOfferingContext: PresentedOfferingContext? = paramsWithOfferingObject.presentedOfferingContext
         purchases.trackCustomPaywallImpression()
         purchases.trackCustomPaywallImpression(defaultParams)
         purchases.trackCustomPaywallImpression(paramsWithId)
