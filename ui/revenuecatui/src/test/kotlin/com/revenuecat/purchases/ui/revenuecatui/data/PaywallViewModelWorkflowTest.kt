@@ -2,15 +2,19 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.data
 
+import android.app.Activity
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
@@ -1112,6 +1116,29 @@ class PaywallViewModelWorkflowTest {
         val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
         assertThat(completed.stepId).isEqualTo("step-1")
         assertThat(completed.toStepId).isNull()
+    }
+
+    @Test
+    fun `RevenueCat purchase completion during workflow fires StepCompleted with null toStepId`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
+        assertThat(completed).hasSize(1)
+        assertThat(completed[0].stepId).isEqualTo("step-1")
+        assertThat(completed[0].toStepId).isNull()
     }
 
     @Test

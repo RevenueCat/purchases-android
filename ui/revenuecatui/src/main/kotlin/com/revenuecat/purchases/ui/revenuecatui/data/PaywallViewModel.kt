@@ -679,7 +679,7 @@ internal class PaywallViewModelImpl(
                     _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
-                    options.dismissRequest()
+                    closePaywall(PaywallResult.Purchased(purchaseResult.customerInfo))
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
@@ -1075,18 +1075,12 @@ internal class PaywallViewModelImpl(
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.FORWARD,
         )
-        // If _workflowState is null after buildStateFromStep, an error occurred and
-        // StepCompleted was already fired inside buildStateFromStep.
-        if (_workflowState.value != null) {
-            fromStep?.let { from ->
-                trackWorkflowStepCompleted(step = from, toStepId = newStep.id)
-            }
-            trackWorkflowStepStarted(
-                step = newStep,
-                fromStepId = fromStepId,
-                entryReason = "forward",
-            )
-        }
+        trackWorkflowStepNavigation(
+            fromStep = fromStep,
+            toStep = newStep,
+            fromStepId = fromStepId,
+            entryReason = "forward",
+        )
     }
 
     @Suppress("ReturnCount")
@@ -1115,19 +1109,33 @@ internal class PaywallViewModelImpl(
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.BACKWARD,
         )
+        trackWorkflowStepNavigation(
+            fromStep = fromStep,
+            toStep = newStep,
+            fromStepId = fromStepId,
+            entryReason = "back",
+        )
+        return true
+    }
+
+    private fun trackWorkflowStepNavigation(
+        fromStep: WorkflowStep?,
+        toStep: WorkflowStep,
+        fromStepId: String?,
+        entryReason: String,
+    ) {
         // If _workflowState is null after buildStateFromStep, an error occurred and
         // StepCompleted was already fired inside buildStateFromStep.
-        if (_workflowState.value != null) {
-            fromStep?.let { from ->
-                trackWorkflowStepCompleted(step = from, toStepId = newStep.id)
-            }
-            trackWorkflowStepStarted(
-                step = newStep,
-                fromStepId = fromStepId,
-                entryReason = "back",
-            )
+        if (_workflowState.value == null) return
+
+        fromStep?.let { from ->
+            trackWorkflowStepCompleted(step = from, toStepId = toStep.id)
         }
-        return true
+        trackWorkflowStepStarted(
+            step = toStep,
+            fromStepId = fromStepId,
+            entryReason = entryReason,
+        )
     }
 
     private fun trackWorkflowStepStarted(
