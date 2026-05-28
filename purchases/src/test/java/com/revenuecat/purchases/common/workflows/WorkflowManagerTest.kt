@@ -9,8 +9,10 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
@@ -491,9 +493,150 @@ class WorkflowManagerTest {
         assertThat(workflowManager.workflowIdForOfferingId("shared")).isEqualTo("wf_last")
     }
 
-    // Test D — BuildConfig.USE_WORKFLOWS_ENDPOINT is a compile-time constant.
-    // In the test variant it is always true, so we cannot test the false branch here.
-    // TODO: add a test for USE_WORKFLOWS_ENDPOINT=false once the flag can be injected at runtime.
+    // Test D — BuildConfig.USE_WORKFLOWS_ENDPOINT is compile-time true in the test variant;
+    // testing the false branch requires making it injectable. Tracked as a future improvement.
 
     // endregion issue fixes
+
+    // region onComplete callback
+
+    @Test
+    fun `getWorkflowsList calls onComplete after backend success with no prefetch workflows`() {
+        val response = WorkflowsListResponse(workflows = listOf(
+            WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+        ))
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        var completed = false
+        workflowManager.getWorkflowsList("user_1", false) { completed = true }
+
+        assertThat(completed).isTrue()
+    }
+
+    @Test
+    fun `getWorkflowsList calls onComplete immediately when cache is fresh`() {
+        val response = WorkflowsListResponse(workflows = emptyList())
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList("user_1", false)
+
+        every { mockDateProvider.now } returns Date(1) // still within TTL
+        var completed = false
+        workflowManager.getWorkflowsList("user_1", false) { completed = true }
+
+        assertThat(completed).isTrue()
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+    }
+
+    @Test
+    fun `getWorkflowsList calls onComplete only after all prefetch workflows complete`() {
+        val response = WorkflowsListResponse(workflows = listOf(
+            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
+            WorkflowSummary(id = "wf_b", displayName = "B", prefetch = true),
+        ))
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(response) }
+
+        val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
+        val detailSuccessB = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any())
+        } just Runs
+        every {
+            mockBackend.getWorkflow("user_1", "wf_b", false, capture(detailSuccessB), any())
+        } just Runs
+        coEvery { mockResolver.resolve(any()) } returns mockk()
+
+        var completed = false
+        workflowManager.getWorkflowsList("user_1", false) { completed = true }
+
+        assertThat(completed).isFalse()
+
+        val detailResponse = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        detailSuccessA.captured(detailResponse)
+        assertThat(completed).isFalse()
+
+        detailSuccessB.captured(detailResponse)
+        assertThat(completed).isTrue()
+    }
+
+    @Test
+    fun `getWorkflowsList calls onComplete even if a prefetch workflow fails`() {
+        val response = WorkflowsListResponse(workflows = listOf(
+            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
+            WorkflowSummary(id = "wf_b", displayName = "B", prefetch = true),
+        ))
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(response) }
+
+        val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
+        val detailErrorB = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any())
+        } just Runs
+        every {
+            mockBackend.getWorkflow("user_1", "wf_b", false, any(), capture(detailErrorB))
+        } just Runs
+        coEvery { mockResolver.resolve(any()) } returns mockk()
+
+        var completed = false
+        workflowManager.getWorkflowsList("user_1", false) { completed = true }
+
+        assertThat(completed).isFalse()
+
+        detailSuccessA.captured(WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk()))
+        assertThat(completed).isFalse()
+
+        detailErrorB.captured(PurchasesError(PurchasesErrorCode.NetworkError, "fail"))
+        assertThat(completed).isTrue()
+    }
+
+    @Test
+    fun `getWorkflowsList calls onComplete after network error`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "fail")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+
+        var completed = false
+        workflowManager.getWorkflowsList("user_1", false) { completed = true }
+
+        assertThat(completed).isTrue()
+    }
+
+    @Test
+    fun `getWorkflowsList concurrent in-flight calls both receive onComplete`() {
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } just Runs // hold the request in-flight
+
+        var completed1 = false
+        var completed2 = false
+        workflowManager.getWorkflowsList("user_1", false) { completed1 = true }
+        workflowManager.getWorkflowsList("user_1", false) { completed2 = true }
+
+        assertThat(completed1).isFalse()
+        assertThat(completed2).isFalse()
+
+        listSuccessSlot.captured(WorkflowsListResponse(workflows = emptyList()))
+
+        assertThat(completed1).isTrue()
+        assertThat(completed2).isTrue()
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), onSuccess = any(), onError = any()) }
+    }
+
+    // endregion onComplete callback
 }

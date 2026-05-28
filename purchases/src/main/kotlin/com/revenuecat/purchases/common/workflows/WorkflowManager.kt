@@ -23,6 +23,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
 
 internal class WorkflowManager(
     private val backend: Backend,
@@ -40,8 +41,10 @@ internal class WorkflowManager(
     @Volatile
     private var offeringIdToWorkflowIdMap: Map<String, String> = emptyMap()
 
-    @Volatile
+    // Guards isFetchingWorkflowsList and pendingCompletionCallbacks together.
+    private val callbackLock = Any()
     private var isFetchingWorkflowsList = false
+    private val pendingCompletionCallbacks = mutableListOf<() -> Unit>()
 
     fun close() {
         scope.cancel()
@@ -80,42 +83,63 @@ internal class WorkflowManager(
         )
     }
 
-    fun getWorkflowsList(appUserID: String, appInBackground: Boolean) {
+    /**
+     * Fetches the workflows list, then prefetches all entries marked `prefetch = true`.
+     * [onComplete] fires only after the list fetch AND all prefetch CDN fetches finish
+     * (success or failure), making it safe to call [workflowIdForOfferingId] in [onComplete].
+     *
+     * Concurrent callers while a request is in-flight are deduplicated: the second call queues
+     * its [onComplete] and returns without a new network request. All pending callbacks are
+     * drained together when the in-flight work finishes.
+     */
+    fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
         if (!BuildConfig.USE_WORKFLOWS_ENDPOINT ||
-            !workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider) ||
-            isFetchingWorkflowsList
+            !workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
         ) {
+            onComplete()
             return
         }
-        isFetchingWorkflowsList = true
+
+        synchronized(callbackLock) {
+            pendingCompletionCallbacks.add(onComplete)
+            if (isFetchingWorkflowsList) return
+            isFetchingWorkflowsList = true
+        }
+
         backend.getWorkflows(
             appUserID = appUserID,
             appInBackground = appInBackground,
             onSuccess = { response ->
-                isFetchingWorkflowsList = false
                 workflowsListCachedObject.cacheInstance(response)
                 deviceCache.cacheWorkflowsListResponse(
                     JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
                 )
                 offeringIdToWorkflowIdMap = buildOfferingIdMap(response.workflows)
-                response.workflows
-                    .filter { it.prefetch }
-                    .forEach { summary ->
+
+                val prefetchWorkflows = response.workflows.filter { it.prefetch }
+                if (prefetchWorkflows.isEmpty()) {
+                    drainCompletionCallbacks()
+                } else {
+                    val remaining = AtomicInteger(prefetchWorkflows.size)
+                    prefetchWorkflows.forEach { summary ->
                         getWorkflow(
                             appUserID = appUserID,
                             workflowId = summary.id,
                             appInBackground = appInBackground,
-                            onSuccess = {},
+                            onSuccess = {
+                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks()
+                            },
                             onError = { error ->
                                 errorLog {
                                     "Failed to prefetch workflow ${summary.id}: ${error.underlyingErrorMessage}"
                                 }
+                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks()
                             },
                         )
                     }
+                }
             },
             onError = { error ->
-                isFetchingWorkflowsList = false
                 errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
                 deviceCache.getWorkflowsListResponseCache()?.let { cached ->
                     runCatching { WorkflowJsonParser.parseWorkflowsListResponse(cached) }
@@ -125,12 +149,21 @@ internal class WorkflowManager(
                         }
                         .onFailure { errorLog(it) { "Failed to restore workflows list from disk cache" } }
                 }
+                drainCompletionCallbacks()
             },
         )
     }
 
     fun workflowIdForOfferingId(offeringId: String): String? =
         offeringIdToWorkflowIdMap[offeringId]
+
+    private fun drainCompletionCallbacks() {
+        val callbacks = synchronized(callbackLock) {
+            isFetchingWorkflowsList = false
+            pendingCompletionCallbacks.toList().also { pendingCompletionCallbacks.clear() }
+        }
+        callbacks.forEach { it() }
+    }
 
     private fun buildOfferingIdMap(workflows: List<WorkflowSummary>): Map<String, String> {
         val pairs = workflows.mapNotNull { summary -> summary.offeringId?.let { it to summary.id } }

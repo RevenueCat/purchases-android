@@ -263,10 +263,9 @@ internal class OfferingsManager(
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                workflowManager?.getWorkflowsList(appUserID, appInBackground)
-                dispatch {
-                    onSuccess?.invoke(offeringsResultData)
-                }
+                val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
+                workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
+                    ?: dispatchSuccess()
             },
         )
     }
