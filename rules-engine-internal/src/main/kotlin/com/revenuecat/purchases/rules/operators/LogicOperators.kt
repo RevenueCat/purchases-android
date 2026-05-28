@@ -29,12 +29,9 @@ internal object LogicOperators {
 
     /**
      * `{"and": [a, b, c]}` — short-circuit AND. Returns the first falsy
-     * value or, if all are truthy, the last value (matches JS / JSON Logic
-     * semantics: `and` returns the actual value, not a coerced boolean).
-     *
-     * Empty args (`{"and": []}`) returns [Value.Null], matching the JS
-     * reference impl whose `current` variable is left `undefined` when
-     * the loop body never runs.
+     * value or, if all are truthy, the last value (matches JS / JSON Logic:
+     * `and` returns the actual value, not a coerced boolean). Empty input
+     * returns [Value.Null].
      */
     fun opAnd(args: Value, vars: Value): Value {
         var last: Value = Value.Null
