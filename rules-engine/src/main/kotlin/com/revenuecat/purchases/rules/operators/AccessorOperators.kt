@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.Rules
+import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
 
@@ -37,7 +37,7 @@ internal object AccessorOperators {
         val found = lookupPath(vars, path)
         if (found != null) return found
         if (default != null) return default
-        Rules.logger.warn("missing variable: $path")
+        RulesEngine.logger.warn("missing variable: $path")
         return Value.Null
     }
 
@@ -72,7 +72,7 @@ internal object AccessorOperators {
         val missing = mutableListOf<Value>()
         for (key in keys) {
             val path = keyAsPath(key) ?: continue
-            if (isMissing(lookupPath(vars, path))) {
+            if (isMissing(varLookup(vars, path))) {
                 missing += Value.StringValue(path)
             }
         }
@@ -113,7 +113,7 @@ internal object AccessorOperators {
         val path = pathSegment(items.firstOrNull())
         val default = if (items.size >= 2) items[1] else null
         if (items.size > 2) {
-            Rules.logger.warn(
+            RulesEngine.logger.warn(
                 "var: ignoring ${items.size - 2} extra arg(s); expected [path] or [path, default]",
             )
         }
@@ -134,6 +134,16 @@ internal object AccessorOperators {
     private fun keyAsPath(value: Value): String? {
         if (value is Value.Null) return null
         return jsString(value)
+    }
+
+    /**
+     * Resolve [path] the way `var` does, without warning on misses.
+     * Empty path returns the entire data scope; a non-resolving path
+     * returns [Value.Null].
+     */
+    private fun varLookup(vars: Value, path: String): Value {
+        if (path.isEmpty()) return vars
+        return lookupPath(vars, path) ?: Value.Null
     }
 
     /**

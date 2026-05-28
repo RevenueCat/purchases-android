@@ -299,6 +299,19 @@ class AccessorOperatorsTest {
     // ---- missing ----
 
     @Test
+    fun `missing empty-string key resolves to entire scope and is not missing`() {
+        // json-logic-js routes `missing` through `var`; `var` with empty path
+        // returns the full data scope, which is neither null nor empty string,
+        // so the empty key is not missing.
+        val vars = obj("a" to Value.IntValue(1))
+        val result = AccessorOperators.opMissing(
+            Value.ArrayValue(listOf(s(""))),
+            vars,
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(emptyList()))
+    }
+
+    @Test
     fun `missing returns keys not present`() {
         val vars = obj("a" to Value.IntValue(1), "b" to Value.IntValue(2))
         val result = AccessorOperators.opMissing(

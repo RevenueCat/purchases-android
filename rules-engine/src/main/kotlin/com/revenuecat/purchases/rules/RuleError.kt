@@ -11,18 +11,18 @@ package com.revenuecat.purchases.rules
 internal sealed class RuleError(message: String) : RuntimeException(message) {
 
     /** The predicate JSON could not be parsed. */
-    class Parse(val reason: String) : RuleError("failed to parse predicate JSON: $reason")
+    data class Parse(val reason: String) : RuleError("failed to parse predicate JSON: $reason")
 
     /**
      * An operator was given arguments of the wrong shape (e.g. wrong arity)
      * or types that cannot be reconciled.
      */
-    class TypeMismatch(val detail: String) : RuleError("type mismatch: $detail")
+    data class TypeMismatch(val detail: String) : RuleError("type mismatch: $detail")
 
     /**
      * The predicate references a JSON Logic operator the engine does not
      * implement. Carries the operator name so callers can decide policy
      * (default-deny, log, etc.).
      */
-    class UnsupportedOperator(val name: String) : RuleError("unsupported operator: $name")
+    data class UnsupportedOperator(val name: String) : RuleError("unsupported operator: $name")
 }

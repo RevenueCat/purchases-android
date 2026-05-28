@@ -1,11 +1,11 @@
 // Signature format: 4.0
 package com.revenuecat.purchases.rules {
 
-  public final class Rules {
+  public final class RulesEngine {
     method public com.revenuecat.purchases.rules.RulesEngineLogger getLogger();
     method public void setLogger(com.revenuecat.purchases.rules.RulesEngineLogger);
     property public final com.revenuecat.purchases.rules.RulesEngineLogger logger;
-    field public static final com.revenuecat.purchases.rules.Rules INSTANCE;
+    field public static final com.revenuecat.purchases.rules.RulesEngine INSTANCE;
   }
 
   public interface RulesEngineLogger {

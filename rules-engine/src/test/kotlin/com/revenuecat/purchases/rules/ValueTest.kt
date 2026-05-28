@@ -340,5 +340,14 @@ class ValueTest {
         assertThat(looseEq(inf, Value.IntValue(Long.MAX_VALUE))).isFalse
     }
 
+    @Test
+    fun `jsNumberString falls through to Kotlin Double toString for out-of-Long range`() {
+        // Spec-divergence pin: see KDoc on jsNumberString. Three-way divergence
+        // between JS ("10000000000000000000"), Swift ("1e+19"), and Kotlin
+        // ("1.0E19") for `1e19`. Locking in the Kotlin spelling so future
+        // contributors have to acknowledge the trade-off explicitly.
+        assertThat(jsString(Value.FloatValue(1e19))).isEqualTo("1.0E19")
+    }
+
     private fun parse(input: String): Value = ValueJsonHelper.fromJsonString(input)
 }

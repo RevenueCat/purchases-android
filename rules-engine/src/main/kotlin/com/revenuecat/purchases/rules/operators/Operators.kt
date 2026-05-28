@@ -63,11 +63,9 @@ internal object Operators {
      * are silently discarded — matches `json-logic-js`'s `function(a, b)`
      * operator signatures.
      */
-    @Suppress("UNUSED_PARAMETER")
     fun evalTwo(
         args: Value,
         vars: Value,
-        opName: String,
     ): Pair<Value, Value> {
         val evaluated = evalArgs(args, vars)
         val lhs = evaluated.firstOrNull() ?: Value.Null

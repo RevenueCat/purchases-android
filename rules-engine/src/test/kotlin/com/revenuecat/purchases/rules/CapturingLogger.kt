@@ -3,7 +3,7 @@ package com.revenuecat.purchases.rules
 /**
  * Test-only logger that captures messages for assertion. Lives in the
  * test source set — no production caller needs it now that the engine
- * routes warnings through [Rules.logger].
+ * routes warnings through [RulesEngine.logger].
  */
 internal class CapturingLogger : RulesEngineLogger {
 

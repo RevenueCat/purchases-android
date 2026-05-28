@@ -14,13 +14,13 @@ internal object EqualityOperators {
      * types (e.g. `1 == "1"` is true). Full coercion table in [looseEq].
      */
     fun opLooseEq(args: Value, vars: Value): Value {
-        val (lhs, rhs) = Operators.evalTwo(args, vars, "==")
+        val (lhs, rhs) = Operators.evalTwo(args, vars)
         return Value.BoolValue(looseEq(lhs, rhs))
     }
 
     /** `{"!=": [a, b]}` — JSON Logic loose inequality. Negation of `==`. */
     fun opLooseNe(args: Value, vars: Value): Value {
-        val (lhs, rhs) = Operators.evalTwo(args, vars, "!=")
+        val (lhs, rhs) = Operators.evalTwo(args, vars)
         return Value.BoolValue(!looseEq(lhs, rhs))
     }
 
@@ -30,13 +30,13 @@ internal object EqualityOperators {
      * around `IntValue` vs `FloatValue`.
      */
     fun opStrictEq(args: Value, vars: Value): Value {
-        val (lhs, rhs) = Operators.evalTwo(args, vars, "===")
+        val (lhs, rhs) = Operators.evalTwo(args, vars)
         return Value.BoolValue(strictEq(lhs, rhs))
     }
 
     /** `{"!==": [a, b]}` — JSON Logic strict inequality. Negation of `===`. */
     fun opStrictNe(args: Value, vars: Value): Value {
-        val (lhs, rhs) = Operators.evalTwo(args, vars, "!==")
+        val (lhs, rhs) = Operators.evalTwo(args, vars)
         return Value.BoolValue(!strictEq(lhs, rhs))
     }
 }

@@ -10,7 +10,7 @@ import com.revenuecat.purchases.rules.operators.Operators
  * multi-key objects are treated as literal data. Operators handle their
  * own short-circuit / arity logic.
  *
- * Diagnostic warnings flow through [Rules.logger] so the engine
+ * Diagnostic warnings flow through [RulesEngine.logger] so the engine
  * internals don't have to thread a logger argument through every call.
  */
 internal object Evaluator {
