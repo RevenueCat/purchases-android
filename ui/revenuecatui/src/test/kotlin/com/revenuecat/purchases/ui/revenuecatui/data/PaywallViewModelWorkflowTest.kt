@@ -1044,9 +1044,7 @@ class PaywallViewModelWorkflowTest {
         assertThat(started.first().entryReason).isEqualTo("start")
         assertThat(started.first().fromStepId).isNull()
         assertThat(started.first().isFirstStep).isTrue
-        assertThat(started.first().workflowType).isEqualTo("paywall")
-        assertThat(started.first().stepType).isEqualTo("screen")
-        assertThat(started.first().screenType).isEmpty()
+        assertThat(started.first().traceId).isNotEmpty()
     }
 
     @Test
@@ -1071,6 +1069,7 @@ class PaywallViewModelWorkflowTest {
         assertThat(nextStarted.stepId).isEqualTo("step-2")
         assertThat(nextStarted.entryReason).isEqualTo("forward")
         assertThat(nextStarted.fromStepId).isEqualTo("step-1")
+        assertThat(completed.traceId).isEqualTo(nextStarted.traceId)
     }
 
     @Test
@@ -1148,40 +1147,23 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `StepStarted event carries non-empty screenType when step has screenType set`() {
-        val stepWithScreenType = WorkflowStep(
-            id = "step-1",
-            type = "screen",
-            screenId = screenId1,
-            screenType = listOf("initial", "paywall"),
-            triggers = listOf(
-                WorkflowTrigger(
-                    name = "Next",
-                    type = WorkflowTriggerType.ON_PRESS,
-                    actionId = "action-next",
-                    componentId = "btn-next",
-                ),
-            ),
-            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
-        )
-        val workflowWithScreenType = workflow.copy(
-            steps = mapOf("step-1" to stepWithScreenType, "step-2" to step2),
-        )
-        val fetchResultWithScreenType = WorkflowDataResult(
-            workflow = workflowWithScreenType,
-            enrolledVariants = null,
-        )
-
+    fun `all events within one impression share the same traceId, new impression gets a new one`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResultWithScreenType, testOfferings, null)
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
-        assertThat(started).hasSize(1)
-        assertThat(started.first().stepId).isEqualTo("step-1")
-        assertThat(started.first().screenType).isEqualTo(listOf("initial", "paywall"))
+        val firstImpressionTrace = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct()
+        assertThat(firstImpressionTrace).hasSize(1)
+
+        captured.clear()
+        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+
+        val secondImpressionTrace = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct()
+        assertThat(secondImpressionTrace).hasSize(1)
+        assertThat(secondImpressionTrace.first()).isNotEqualTo(firstImpressionTrace.first())
     }
 
     // endregion

@@ -185,6 +185,7 @@ internal class PaywallViewModelImpl(
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
+    private var workflowTraceId: String = UUID.randomUUID().toString()
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -906,6 +907,7 @@ internal class PaywallViewModelImpl(
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
+        workflowTraceId = UUID.randomUUID().toString()
 
         // Pre-compute the package step so its default package is available in cache
         // for early packageless steps to use as context.
@@ -1140,9 +1142,7 @@ internal class PaywallViewModelImpl(
                 creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
                 workflowId = workflow.id,
                 stepId = step.id,
-                workflowType = "paywall",
-                stepType = step.type,
-                screenType = step.screenType,
+                traceId = workflowTraceId,
                 fromStepId = fromStepId,
                 entryReason = entryReason,
                 isFirstStep = step.id == workflow.initialStepId,
@@ -1159,9 +1159,7 @@ internal class PaywallViewModelImpl(
                 creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
                 workflowId = workflow.id,
                 stepId = step.id,
-                workflowType = "paywall",
-                stepType = step.type,
-                screenType = step.screenType,
+                traceId = workflowTraceId,
                 toStepId = toStepId,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
