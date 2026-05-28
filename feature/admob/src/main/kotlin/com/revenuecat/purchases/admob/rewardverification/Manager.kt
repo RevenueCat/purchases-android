@@ -16,6 +16,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.util.UUID
 import java.util.WeakHashMap
+import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "PurchasesAdMob"
 
@@ -99,25 +100,32 @@ internal class RewardVerificationRuntime(
 
         notifyStarted(rewardVerificationStarted)
 
+        val completionDelivered = AtomicBoolean(false)
+        fun deliverOnce(result: RewardVerificationResult) {
+            if (completionDelivered.compareAndSet(false, true)) {
+                notifyCompleted(result, rewardVerificationCompleted)
+            }
+        }
+
         if (clientTransactionId == null) {
-            notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
+            deliverOnce(RewardVerificationResult.failed)
             return
         }
 
         val verificationTask = synchronized(this) {
             verificationScope?.launch {
                 val result = poll(clientTransactionId)
-                notifyCompleted(result, rewardVerificationCompleted)
+                deliverOnce(result)
             }
         }
         if (verificationTask == null) {
-            notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
+            deliverOnce(RewardVerificationResult.failed)
             return
         }
 
         verificationTask.invokeOnCompletion { cause ->
             if (cause != null) {
-                notifyCompleted(RewardVerificationResult.failed, rewardVerificationCompleted)
+                deliverOnce(RewardVerificationResult.failed)
             }
         }
     }
