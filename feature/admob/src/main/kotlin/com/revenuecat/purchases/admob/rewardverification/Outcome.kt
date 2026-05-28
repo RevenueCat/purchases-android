@@ -6,7 +6,7 @@ import com.revenuecat.purchases.admob.VerifiedReward
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal sealed interface Outcome {
-    data class Verified(val reward: VerifiedReward) : Outcome
+    class Verified(val reward: VerifiedReward) : Outcome
 
     object Failed : Outcome
 }
