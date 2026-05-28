@@ -27,9 +27,6 @@ class WorkflowEventTest {
             creationData = WorkflowEvent.CreationData(id = id, date = date),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            workflowType = "paywall",
-            stepType = "screen",
-            screenType = emptyList(),
             fromStepId = null,
             entryReason = "start",
             isFirstStep = true,
@@ -38,9 +35,6 @@ class WorkflowEventTest {
 
         assertThat(event.workflowId).isEqualTo("wfl_abc")
         assertThat(event.stepId).isEqualTo("step-1")
-        assertThat(event.workflowType).isEqualTo("paywall")
-        assertThat(event.stepType).isEqualTo("screen")
-        assertThat(event.screenType).isEmpty()
         assertThat(event.entryReason).isEqualTo("start")
         assertThat(event.isFirstStep).isTrue
         assertThat(event.isPriorityEvent).isFalse
@@ -52,8 +46,6 @@ class WorkflowEventTest {
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            workflowType = "paywall",
-            stepType = "screen",
             toStepId = "step-2",
             isFirstStep = true,
             isLastStep = false,
@@ -72,9 +64,6 @@ class WorkflowEventTest {
             creationData = WorkflowEvent.CreationData(id, date),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            workflowType = "paywall",
-            stepType = "screen",
-            screenType = emptyList(),
             fromStepId = null,
             entryReason = "start",
             isFirstStep = true,
@@ -100,8 +89,6 @@ class WorkflowEventTest {
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            workflowType = "paywall",
-            stepType = "screen",
             toStepId = "step-2",
             isFirstStep = true,
             isLastStep = false,

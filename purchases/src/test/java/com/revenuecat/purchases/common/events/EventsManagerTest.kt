@@ -469,8 +469,6 @@ class EventsManagerTest {
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = "wfl_abc",
             stepId = "step-1",
-            workflowType = "paywall",
-            stepType = "screen",
             entryReason = "start",
             isFirstStep = true,
         )
