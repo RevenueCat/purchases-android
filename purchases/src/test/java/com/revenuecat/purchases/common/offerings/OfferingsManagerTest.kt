@@ -64,6 +64,9 @@ class OfferingsManagerTest {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
         mockWorkflowManager = mockk(relaxed = true)
+        every { mockWorkflowManager.getWorkflowsList(any(), any(), any()) } answers {
+            thirdArg<() -> Unit>().invoke()
+        }
 
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
@@ -125,7 +128,7 @@ class OfferingsManagerTest {
         mockOfferingsFactory()
         offeringsManager.onAppForeground(appUserID = "user_1")
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList("user_1", appInBackground = false)
+            mockWorkflowManager.getWorkflowsList("user_1", appInBackground = false, onComplete = any())
         }
     }
 
@@ -574,7 +577,7 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList(appUserId, false)
+            mockWorkflowManager.getWorkflowsList(appUserId, false, onComplete = any())
         }
     }
 
@@ -592,7 +595,7 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList(appUserId, true)
+            mockWorkflowManager.getWorkflowsList(appUserId, true, onComplete = any())
         }
     }
 
@@ -610,7 +613,7 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList(appUserId, false)
+            mockWorkflowManager.getWorkflowsList(appUserId, false, onComplete = any())
         }
     }
 
