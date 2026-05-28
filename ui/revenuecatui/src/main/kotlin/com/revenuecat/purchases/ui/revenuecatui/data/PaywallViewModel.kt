@@ -208,6 +208,12 @@ internal class PaywallViewModelImpl(
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
+    private enum class WorkflowStepEntryReason(val value: String) {
+        START("start"),
+        FORWARD("forward"),
+        BACK("back"),
+    }
+
     private sealed interface ExitOfferData {
         val preloadRequested: Boolean
 
@@ -940,7 +946,7 @@ internal class PaywallViewModelImpl(
             trackWorkflowStepStarted(
                 step = currentStep,
                 fromStepId = null,
-                entryReason = "start",
+                entryReason = WorkflowStepEntryReason.START,
             )
         }
         preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
@@ -1099,7 +1105,7 @@ internal class PaywallViewModelImpl(
         trackWorkflowStepNavigation(
             fromStep = fromStep,
             toStep = newStep,
-            entryReason = "forward",
+            entryReason = WorkflowStepEntryReason.FORWARD,
         )
     }
 
@@ -1132,7 +1138,7 @@ internal class PaywallViewModelImpl(
         trackWorkflowStepNavigation(
             fromStep = fromStep,
             toStep = newStep,
-            entryReason = "back",
+            entryReason = WorkflowStepEntryReason.BACK,
         )
         return true
     }
@@ -1140,7 +1146,7 @@ internal class PaywallViewModelImpl(
     private fun trackWorkflowStepNavigation(
         fromStep: WorkflowStep?,
         toStep: WorkflowStep,
-        entryReason: String,
+        entryReason: WorkflowStepEntryReason,
     ) {
         // If _workflowState is null after buildStateFromStep, an error occurred and
         // StepCompleted was already fired inside buildStateFromStep.
@@ -1159,7 +1165,7 @@ internal class PaywallViewModelImpl(
     private fun trackWorkflowStepStarted(
         step: WorkflowStep,
         fromStepId: String?,
-        entryReason: String,
+        entryReason: WorkflowStepEntryReason,
     ) {
         val workflowResult = currentWorkflowResult ?: return
         val workflow = workflowResult.workflow
@@ -1170,7 +1176,7 @@ internal class PaywallViewModelImpl(
                 stepId = step.id,
                 traceId = workflowTraceId,
                 fromStepId = fromStepId,
-                entryReason = entryReason,
+                entryReason = entryReason.value,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
             ),
