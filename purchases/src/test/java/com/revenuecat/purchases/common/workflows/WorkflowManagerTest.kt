@@ -790,6 +790,38 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflowsList second caller waits for in-flight prefetch when list cache is fresh`() {
+        val response = WorkflowsListResponse(workflows = listOf(
+            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
+        ))
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(response) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccess), any())
+        } just Runs
+        coEvery { mockResolver.resolve(any()) } returns mockk()
+
+        var firstCompleted = false
+        var secondCompleted = false
+        workflowManager.getWorkflowsList("user_1", false) { firstCompleted = true }
+
+        assertThat(firstCompleted).isFalse()
+
+        workflowManager.getWorkflowsList("user_1", false) { secondCompleted = true }
+
+        assertThat(secondCompleted).isFalse()
+
+        detailSuccess.captured(WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk()))
+
+        assertThat(firstCompleted).isTrue()
+        assertThat(secondCompleted).isTrue()
+    }
+
+    @Test
     fun `getWorkflowsList calls onComplete even if a prefetch workflow fails`() {
         val response = WorkflowsListResponse(workflows = listOf(
             WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
