@@ -84,16 +84,17 @@ internal object ComparisonOperators {
      * strings, else numeric. `null` lhs/rhs is an omitted argument
      * (`undefined` → `NaN` → `false`).
      */
-    private fun compare(lhs: Value?, rhs: Value?, cmp: Comparator): Boolean {
-        if (lhs == null || rhs == null) {
-            return cmp.apply(lhs.asDouble(), rhs.asDouble())
+    private fun compare(lhs: Value?, rhs: Value?, cmp: Comparator): Boolean = when {
+        lhs == null || rhs == null -> cmp.apply(lhs.asDouble(), rhs.asDouble())
+        else -> {
+            val left = toPrimitiveForComparison(lhs)
+            val right = toPrimitiveForComparison(rhs)
+            when {
+                left is Value.StringValue && right is Value.StringValue ->
+                    cmp.apply(left.value, right.value)
+                else -> cmp.apply(left.asDouble(), right.asDouble())
+            }
         }
-        val left = toPrimitiveForComparison(lhs)
-        val right = toPrimitiveForComparison(rhs)
-        if (left is Value.StringValue && right is Value.StringValue) {
-            return cmp.apply(left.value, right.value)
-        }
-        return cmp.apply(left.asDouble(), right.asDouble())
     }
 
     /** `ToPrimitive` with number hint: arrays/objects stringify. */
