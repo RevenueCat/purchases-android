@@ -399,7 +399,7 @@ platform :android do
 
   desc "Build paywall tester app bundle"
   lane :build_paywall_tester_bundle do |options|
-    api_key_a = options[:api_key].to_s.empty? ? (ENV['PAYWALLS_V2_ALPHA_API_KEY'] || '') : options[:api_key]
+    api_key_a = ENV['PAYWALL_TESTER_OVERRIDE_API_KEY'].to_s.empty? ? (ENV['PAYWALLS_V2_ALPHA_API_KEY'] || '') : ENV['PAYWALL_TESTER_OVERRIDE_API_KEY']
     use_workflows_endpoint = options[:use_workflows_endpoint].to_s == "true"
     build_bundle(
       build_task: 'examples:paywall-tester:bundleBc8',

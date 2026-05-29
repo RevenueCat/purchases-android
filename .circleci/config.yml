@@ -101,9 +101,6 @@ commands:
 
   build-paywall-tester:
     parameters:
-      api_key:
-        type: string
-        default: ""
       use_workflows_endpoint:
         type: boolean
         default: false
@@ -117,8 +114,10 @@ commands:
           command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
       - run:
           name: Create app bundle
+          environment:
+            PAYWALL_TESTER_OVERRIDE_API_KEY: << parameters.api_key >>
           command: |
-            bundle exec fastlane android build_paywall_tester_bundle api_key:'<< parameters.api_key >>' use_workflows_endpoint:'<< parameters.use_workflows_endpoint >>'
+            bundle exec fastlane android build_paywall_tester_bundle use_workflows_endpoint:'<< parameters.use_workflows_endpoint >>'
       - store_artifacts:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
       - android/save_gradle_cache
@@ -512,6 +511,7 @@ jobs:
             bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab'
 
   assemble-paywall-tester-release:
+    # Used in the regular CI pipeline — always uses env-var defaults, not the manual ad-hoc params.
     <<: *android-executor
     steps:
       - checkout
@@ -525,9 +525,6 @@ jobs:
     parameters:
       track:
         type: string
-      api_key:
-        type: string
-        default: ""
       use_workflows_endpoint:
         type: boolean
         default: false
@@ -537,7 +534,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-paywall-tester:
-          api_key: << parameters.api_key >>
           use_workflows_endpoint: << parameters.use_workflows_endpoint >>
       - run:
           name: Publish aab

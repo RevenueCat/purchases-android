@@ -34,7 +34,7 @@ interface PaywallScreenViewModel : PaywallListener {
     fun refreshOffering()
 }
 
-@SuppressWarnings("TooManyFunctions")
+@Suppress("TooManyFunctions")
 class PaywallScreenViewModelImpl(
     application: Application,
     savedStateHandle: SavedStateHandle,
