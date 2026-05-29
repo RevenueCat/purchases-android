@@ -13,7 +13,7 @@ internal class CapturingLogger : RulesEngineLogger {
         @Synchronized get() = captured.toList()
 
     @Synchronized
-    override fun warn(message: String) {
+    override fun warn(message: String, tag: String) {
         captured += message
     }
 }
