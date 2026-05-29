@@ -38,6 +38,9 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -411,7 +414,7 @@ class PaywallViewModelWorkflowTest {
     private val fetchResultFailingInitial = WorkflowDataResult(workflow = workflowFailingInitial, enrolledVariants = null)
 
     private val workflowToError = PublishedWorkflow(
-        id = "wfl-test",
+        id = "wfl-to-error",
         displayName = "Test",
         initialStepId = "step-1",
         steps = mapOf("step-1" to step1ToStep3, "step-3" to step3EmptyOffering),
@@ -1048,6 +1051,7 @@ class PaywallViewModelWorkflowTest {
         assertThat(started.first().entryReason).isEqualTo("start")
         assertThat(started.first().fromStepId).isNull()
         assertThat(started.first().isFirstStep).isTrue
+        assertThat(started.first().isLastStep).isFalse
         assertThat(started.first().traceId).isNotEmpty()
     }
 
@@ -1123,10 +1127,14 @@ class PaywallViewModelWorkflowTest {
         val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
         assertThat(completed.stepId).isEqualTo("step-1")
         assertThat(completed.toStepId).isEqualTo("step-2")
+        assertThat(completed.isFirstStep).isTrue
+        assertThat(completed.isLastStep).isFalse
         val nextStarted = workflowEvents[1] as WorkflowEvent.StepStarted
         assertThat(nextStarted.stepId).isEqualTo("step-2")
         assertThat(nextStarted.entryReason).isEqualTo("forward")
         assertThat(nextStarted.fromStepId).isEqualTo("step-1")
+        assertThat(nextStarted.isFirstStep).isFalse
+        assertThat(nextStarted.isLastStep).isTrue
         assertThat(completed.traceId).isEqualTo(nextStarted.traceId)
     }
 
@@ -1148,10 +1156,14 @@ class PaywallViewModelWorkflowTest {
         val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
         assertThat(completed.stepId).isEqualTo("step-2")
         assertThat(completed.toStepId).isEqualTo("step-1")
+        assertThat(completed.isFirstStep).isFalse
+        assertThat(completed.isLastStep).isTrue
         val started = workflowEvents[1] as WorkflowEvent.StepStarted
         assertThat(started.stepId).isEqualTo("step-1")
         assertThat(started.entryReason).isEqualTo("back")
         assertThat(started.fromStepId).isEqualTo("step-2")
+        assertThat(started.isFirstStep).isTrue
+        assertThat(started.isLastStep).isFalse
     }
 
     @Test
@@ -1190,6 +1202,76 @@ class PaywallViewModelWorkflowTest {
 
         val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
         val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
+        assertThat(completed).hasSize(1)
+        assertThat(completed[0].stepId).isEqualTo("step-1")
+        assertThat(completed[0].toStepId).isNull()
+    }
+
+    @Test
+    fun `MY_APP purchase success during workflow fires StepCompleted with null toStepId`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        coEvery { purchases.awaitSyncPurchases() } returns mockk<CustomerInfo> {
+            every { activeSubscriptions } returns setOf()
+            every { nonSubscriptionTransactions } returns listOf()
+        }
+
+        val myAppPurchaseLogic = object : PaywallPurchaseLogic {
+            override suspend fun performPurchase(
+                activity: Activity,
+                params: PaywallPurchaseLogicParams,
+            ): PurchaseLogicResult = PurchaseLogicResult.Success
+
+            override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
+                PurchaseLogicResult.Success
+        }
+
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .setPurchaseLogic(myAppPurchaseLogic)
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
+        assertThat(completed).hasSize(1)
+        assertThat(completed[0].stepId).isEqualTo("step-1")
+        assertThat(completed[0].toStepId).isNull()
+    }
+
+    @Test
+    fun `RevenueCat restore dismiss during workflow fires StepCompleted with null toStepId`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = { false },
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        val completed = captured.filterIsInstance<WorkflowEvent.StepCompleted>()
         assertThat(completed).hasSize(1)
         assertThat(completed[0].stepId).isEqualTo("step-1")
         assertThat(completed[0].toStepId).isNull()

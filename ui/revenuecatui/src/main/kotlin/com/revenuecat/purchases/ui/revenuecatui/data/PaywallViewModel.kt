@@ -314,9 +314,7 @@ internal class PaywallViewModelImpl(
 
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
-        currentWorkflowStep()?.let { step ->
-            trackWorkflowStepCompleted(step = step, toStepId = null)
-        }
+        trackCurrentWorkflowStepCompleted()
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
@@ -524,6 +522,7 @@ internal class PaywallViewModelImpl(
                         if (!it(customerInfo)) {
                             _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
+                            trackCurrentWorkflowStepCompleted()
                             options.dismissRequest()
                         }
                     }
@@ -685,7 +684,8 @@ internal class PaywallViewModelImpl(
                     _purchaseCompleted.value = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
-                    closePaywall(PaywallResult.Purchased(purchaseResult.customerInfo))
+                    trackCurrentWorkflowStepCompleted()
+                    options.dismissRequest()
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
@@ -991,7 +991,7 @@ internal class PaywallViewModelImpl(
         // On error, clear workflowState so the UI falls through to the normal error path rather
         // than entering workflow mode with a currentStepId absent from stepStates.
         if (newState !is PaywallState.Loaded.Components) {
-            currentWorkflowStep()?.let { currentStep ->
+            currentWorkflowStep?.let { currentStep ->
                 trackWorkflowStepCompleted(step = currentStep, toStepId = null)
             }
         }
@@ -1204,9 +1204,23 @@ internal class PaywallViewModelImpl(
         return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
     }
 
-    private fun currentWorkflowStep(): WorkflowStep? {
-        val stepId = _workflowState.value?.currentStepId ?: return null
-        return currentWorkflowResult?.workflow?.steps?.get(stepId)
+    private val currentWorkflowStep: WorkflowStep?
+        get() {
+            val stepId = _workflowState.value?.currentStepId ?: return null
+            return currentWorkflowResult?.workflow?.steps?.get(stepId)
+        }
+
+    /**
+     * Fires [WorkflowEvent.StepCompleted] for the step the user is currently on, if any. No-op for
+     * non-workflow paywalls. Used when the current step is left without navigating to another one.
+     * Called directly on dismiss paths that intentionally do not emit a paywall close event (a
+     * successful purchase, and the REVENUECAT restore-dismiss), and from [closePaywall] (which
+     * additionally emits the close event). This keeps paywall_close behavior identical to non-workflow.
+     */
+    private fun trackCurrentWorkflowStepCompleted() {
+        currentWorkflowStep?.let { step ->
+            trackWorkflowStepCompleted(step = step, toStepId = null)
+        }
     }
 
     @Suppress("ReturnCount")
