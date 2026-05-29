@@ -11,6 +11,13 @@ import com.revenuecat.purchases.common.caching.isCacheStale
  * workflows list (plus its derived offeringId → workflowId map). It is the single owner of this
  * state so that clearing it on identity transitions wipes everything at once, mirroring how
  * [com.revenuecat.purchases.common.offerings.OfferingsCache] owns the in-memory offerings cache.
+ *
+ * Why in-memory, like offerings: the durable copy of the workflows list already lives on disk in
+ * [com.revenuecat.purchases.common.caching.DeviceCache] (and is restored from there on backend
+ * failure). This layer exists on top of it for the same reason the offerings cache does — to serve
+ * already-fetched and prefetched data synchronously within a session, so opening a paywall reuses a
+ * resolved workflow instead of paying another backend/CDN round-trip. Time-based staleness
+ * ([isWorkflowsListCacheStale] / [isWorkflowCacheStale]) then decides when a refetch is due.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class WorkflowsCache(
