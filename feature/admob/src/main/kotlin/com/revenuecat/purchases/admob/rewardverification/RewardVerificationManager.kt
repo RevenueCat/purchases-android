@@ -33,7 +33,7 @@ internal object RewardVerificationManager {
 
     fun install(onAd: Any) {
         if (!Purchases.isConfigured) {
-            Log.w(
+            Log.e(
                 Constants.TAG,
                 "Purchases is not configured. Call Purchases.configure() before enabling reward verification.",
             )
@@ -45,7 +45,7 @@ internal object RewardVerificationManager {
             clientTransactionId = UUID.randomUUID().toString(),
         )
         if (!didStoreClientTransactionId) {
-            Log.w(
+            Log.e(
                 Constants.TAG,
                 "Reward verification setup is not ready. " +
                     "Try enabling reward verification after Purchases is configured.",
