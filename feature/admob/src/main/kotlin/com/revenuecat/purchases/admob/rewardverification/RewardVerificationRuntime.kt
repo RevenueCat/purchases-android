@@ -43,7 +43,7 @@ internal class RewardVerificationRuntime(
         rewardVerificationStarted: (() -> Unit)?,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
-        val clientTransactionId = adResponseId?.let { removeClientTransactionId(it) }
+        val clientTransactionId = adResponseId?.let { getClientTransactionId(it) }
         warnAndAssertIfMissingClientTransactionId(clientTransactionId)
 
         val completionDelivered = AtomicBoolean(false)
@@ -53,7 +53,7 @@ internal class RewardVerificationRuntime(
             }
         }
 
-        if (clientTransactionId == null) {
+        if (adResponseId == null || clientTransactionId == null) {
             deliverOnce(RewardVerificationResult.failed)
             return
         }
@@ -63,6 +63,7 @@ internal class RewardVerificationRuntime(
             deliverOnce(result)
         }
         if (verificationTask == null) {
+            removeClientTransactionId(adResponseId)
             deliverOnce(RewardVerificationResult.failed)
             return
         }
@@ -70,6 +71,7 @@ internal class RewardVerificationRuntime(
         notifyStarted(rewardVerificationStarted)
 
         verificationTask.invokeOnCompletion { cause ->
+            removeClientTransactionId(adResponseId)
             if (cause != null) {
                 deliverOnce(RewardVerificationResult.failed)
             }
@@ -96,8 +98,13 @@ internal class RewardVerificationRuntime(
     }
 
     @Synchronized
-    private fun removeClientTransactionId(adResponseId: String): String? {
-        return clientTransactionIdByAdResponseId?.remove(adResponseId)
+    private fun getClientTransactionId(adResponseId: String): String? {
+        return clientTransactionIdByAdResponseId?.get(adResponseId)
+    }
+
+    @Synchronized
+    private fun removeClientTransactionId(adResponseId: String) {
+        clientTransactionIdByAdResponseId?.remove(adResponseId)
     }
 
     @Synchronized
