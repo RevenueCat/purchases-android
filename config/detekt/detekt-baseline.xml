@@ -155,7 +155,6 @@
     <ID>PreviewPublic:PaywallLoadingView.kt$PaywallLoadingViewPreview</ID>
     <ID>PreviewPublic:PaywallsScreen.kt$PaywallsScreenPreview</ID>
     <ID>PreviewPublic:WeatherApp.kt$WeatherAppPreview</ID>
-    <ID>ReturnCount:ForbiddenPublicSealedClass.kt$ForbiddenPublicSealedClass$private fun isPublicApi(klass: KtClass): Boolean</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: JSONException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>SwallowedException:utils.kt$e: PackageManager.NameNotFoundException</ID>
