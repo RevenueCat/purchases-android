@@ -55,8 +55,8 @@ internal class PaywallComponentsImagePreDownloader(
             coilImageDownloader.downloadImage(it)
         }
 
-        val webViewUrls = findWebViewUrlsToDownload(paywallComponentsConfig)
-        webViewUrls.forEach {
+        val webViewUrlStrings = findWebViewUrlStringsToDownload(paywallComponentsConfig)
+        webViewUrlStrings.forEach {
             debugLog { "Pre-downloading Paywall V2 web view: $it" }
             webViewPreDownloader.preDownloadWebView(it)
         }
@@ -121,18 +121,18 @@ internal class PaywallComponentsImagePreDownloader(
             }
     }
 
-    private fun findWebViewUrlsToDownload(paywallComponentsConfig: PaywallComponentsConfig): Set<URL> {
-        return paywallComponentsConfig.stack.findWebViewUrlsToDownload() +
-            (paywallComponentsConfig.header?.stack?.findWebViewUrlsToDownload().orEmpty()) +
-            (paywallComponentsConfig.stickyFooter?.stack?.findWebViewUrlsToDownload().orEmpty())
+    private fun findWebViewUrlStringsToDownload(paywallComponentsConfig: PaywallComponentsConfig): Set<String> {
+        return paywallComponentsConfig.stack.findWebViewUrlStringsToDownload() +
+            (paywallComponentsConfig.header?.stack?.findWebViewUrlStringsToDownload().orEmpty()) +
+            (paywallComponentsConfig.stickyFooter?.stack?.findWebViewUrlStringsToDownload().orEmpty())
     }
 
     @Suppress("CyclomaticComplexMethod")
-    private fun StackComponent.findWebViewUrlsToDownload(): Set<URL> {
+    private fun StackComponent.findWebViewUrlStringsToDownload(): Set<String> {
         return filter { true }
             .flatMapTo(mutableSetOf()) { component ->
                 when (component) {
-                    is WebViewComponent -> component.url.toStaticWebViewUrlOrNull()?.let(::setOf).orEmpty()
+                    is WebViewComponent -> component.url.toStaticWebViewUrlStringOrNull()?.let(::setOf).orEmpty()
                     is ButtonComponent,
                     is CarouselComponent,
                     is CountdownComponent,
@@ -156,12 +156,13 @@ internal class PaywallComponentsImagePreDownloader(
             }
     }
 
-    private fun String.toStaticWebViewUrlOrNull(): URL? {
+    private fun String.toStaticWebViewUrlStringOrNull(): String? {
         if (contains(TEMPLATE_VARIABLE_START)) return null
 
         return runCatching { URL(this) }
             .getOrNull()
             ?.takeIf { it.protocol == HTTPS_SCHEME && it.host.isNotBlank() }
+            ?.toString()
     }
 
     private fun <T : PartialComponent> List<ComponentOverride<T>>?.imageUrisToDownload(

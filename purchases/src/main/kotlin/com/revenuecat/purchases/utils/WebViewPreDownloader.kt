@@ -12,11 +12,11 @@ import com.revenuecat.purchases.common.verboseLog
 import java.net.URL
 
 internal interface WebViewPreDownloader {
-    fun preDownloadWebView(url: URL)
+    fun preDownloadWebView(url: String)
 }
 
 internal object NoOpWebViewPreDownloader : WebViewPreDownloader {
-    override fun preDownloadWebView(url: URL) = Unit
+    override fun preDownloadWebView(url: String) = Unit
 }
 
 internal class DefaultWebViewPreDownloader(
@@ -25,8 +25,8 @@ internal class DefaultWebViewPreDownloader(
     private val webViewFactory: (Context) -> WebView = { WebView(it) },
 ) : WebViewPreDownloader {
 
-    override fun preDownloadWebView(url: URL) {
-        if (url.protocol != HTTPS_SCHEME) {
+    override fun preDownloadWebView(url: String) {
+        if (!url.isHttpsUrlWithHost()) {
             verboseLog { "Skipping Paywall V2 web view pre-download for non-HTTPS URL: $url" }
             return
         }
@@ -48,7 +48,7 @@ internal class DefaultWebViewPreDownloader(
                     POST_LOAD_DESTROY_DELAY_MILLIS,
                 )
             })
-            webView.loadUrl(url.toString())
+            webView.loadUrl(url)
             mainHandler.postDelayed(
                 ::destroyWebView,
                 MAX_PRE_DOWNLOAD_DURATION_MILLIS,
@@ -73,6 +73,13 @@ internal class DefaultWebViewPreDownloader(
                 onFinished()
             }
         }
+    }
+
+    private fun String.isHttpsUrlWithHost(): Boolean {
+        return runCatching { URL(this) }
+            .getOrNull()
+            ?.let { it.protocol == HTTPS_SCHEME && it.host.isNotBlank() }
+            ?: false
     }
 
     private companion object {

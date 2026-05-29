@@ -38,11 +38,13 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import io.mockk.Runs
+import io.mockk.capture
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -447,12 +449,39 @@ class OfferingImagePreDownloaderTest {
         )
 
         verifyAll {
-            webViewPreDownloader.preDownloadWebView(rootUrl)
-            webViewPreDownloader.preDownloadWebView(nestedUrl)
-            webViewPreDownloader.preDownloadWebView(sheetUrl)
-            webViewPreDownloader.preDownloadWebView(headerUrl)
-            webViewPreDownloader.preDownloadWebView(stickyFooterUrl)
+            webViewPreDownloader.preDownloadWebView(rootUrl.toString())
+            webViewPreDownloader.preDownloadWebView(nestedUrl.toString())
+            webViewPreDownloader.preDownloadWebView(sheetUrl.toString())
+            webViewPreDownloader.preDownloadWebView(headerUrl.toString())
+            webViewPreDownloader.preDownloadWebView(stickyFooterUrl.toString())
         }
+    }
+
+    @Test
+    fun `paywalls V2 - deduplicates web view URLs by string without URL equality`() {
+        val localhostUrl = "https://localhost/web-view.html"
+        val loopbackUrl = "https://127.0.0.1/web-view.html"
+        val downloadedUrls = mutableListOf<String>()
+
+        preDownloader.preDownloadOfferingImages(
+            createOfferingWithV2Paywall(
+                paywallComponentsConfig = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            WebViewComponent(url = localhostUrl),
+                            WebViewComponent(url = localhostUrl),
+                            WebViewComponent(url = loopbackUrl),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+                ),
+            ),
+        )
+
+        verify(exactly = 2) {
+            webViewPreDownloader.preDownloadWebView(capture(downloadedUrls))
+        }
+        assertThat(downloadedUrls).containsExactly(localhostUrl, loopbackUrl)
     }
 
     @Test
@@ -477,7 +506,7 @@ class OfferingImagePreDownloaderTest {
         )
 
         verifyAll {
-            webViewPreDownloader.preDownloadWebView(staticUrl)
+            webViewPreDownloader.preDownloadWebView(staticUrl.toString())
         }
     }
 
