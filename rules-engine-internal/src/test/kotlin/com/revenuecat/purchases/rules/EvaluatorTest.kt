@@ -199,6 +199,33 @@ class EvaluatorTest {
         assertThat(result).isFalse
     }
 
+    // ---- arithmetic dispatched through evaluator ----
+
+    @Test
+    fun `arithmetic predicate with var operand`() {
+        // session.app_launch_count * 2 == 6 → true when count is 3
+        val predicate = """
+            {"==": [
+                {"*": [{"var": "session.app_launch_count"}, 2]},
+                6
+            ]}
+        """.trimIndent()
+        val vars = mapOf<String, Value>(
+            "session" to obj("app_launch_count" to Value.IntValue(3)),
+        )
+        assertThat(run(predicate, vars)).isTrue
+    }
+
+    @Test
+    fun `divide by zero produces IEEE 754 values that flow through truthiness`() {
+        // `n / 0` follows IEEE 754 (matches json-logic-js, no short-circuit).
+        // {"/": [10, 0]} → +Infinity → truthy.
+        assertThat(run("""{"/": [10, 0]}""")).isTrue
+        // {"/": [0, 0]} → NaN → falsy (NaN is the one float that isTruthy
+        // reports as false).
+        assertThat(run("""{"/": [0, 0]}""")).isFalse
+    }
+
     // ---- multi-key object treated as data, not operator ----
 
     @Test
