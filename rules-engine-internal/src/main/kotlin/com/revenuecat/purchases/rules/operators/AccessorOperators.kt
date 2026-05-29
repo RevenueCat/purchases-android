@@ -5,6 +5,7 @@ import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
+import com.revenuecat.purchases.rules.jsToNumber
 
 /**
  * `var` and `missing` — the data-accessor operators.
@@ -100,15 +101,15 @@ internal object AccessorOperators {
 
         val total = options.items.size.toLong()
 
-        // Non-numeric `need_count` coerces to 0 (NaN → 0 satisfies
-        // trivially; +Infinity never satisfies; -Infinity always
-        // satisfies).
-        val need = Operators.clampedInt(needCountValue.toNumberOrNull() ?: 0.0)
+        // Threshold uses JS `ToNumber` + `>=`. `NaN` and unparseable
+        // strings never satisfy; `+Infinity` never satisfies for finite
+        // present counts; `-Infinity` always satisfies.
+        val need = jsToNumber(needCountValue)
 
         val missing = opMissing(options, vars)
         val missingCount = (missing as? Value.ArrayValue)?.items?.size?.toLong() ?: 0L
 
-        return if (total - missingCount >= need) {
+        return if ((total - missingCount).toDouble() >= need) {
             Value.ArrayValue(emptyList())
         } else {
             missing

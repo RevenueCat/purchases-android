@@ -123,12 +123,13 @@ class StringArrayOperatorsTest {
     }
 
     @Test
-    fun `cat stringifies null as string null`() {
+    fun `cat null operand renders empty`() {
+        // Array.prototype.join renders null operands as "", not "null".
         val out = StringArrayOperators.opCat(
             arr(s("x="), Value.Null),
             Value.Null,
         )
-        assertThat(out).isEqualTo(s("x=null"))
+        assertThat(out).isEqualTo(s("x="))
     }
 
     @Test

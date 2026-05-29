@@ -453,12 +453,8 @@ class AccessorOperatorsTest {
     }
 
     @Test
-    fun `missing_some with NaN threshold treats it as zero`() {
-        // `Double.toLong()` is total on Kotlin/JVM (NaN → 0), but the
-        // spec semantics still need pinning so a future refactor can't
-        // slip in an unguarded narrower-int cast and trap on a malformed
-        // `need_count` (e.g. NaN out of `{"+": ["abc"]}`). NaN → 0 →
-        // trivially satisfied → [].
+    fun `missing_some with NaN threshold never satisfies`() {
+        // >= with a NaN threshold is always false in JS.
         val result = runMissingSome(
             Value.ArrayValue(
                 listOf(
@@ -468,7 +464,21 @@ class AccessorOperatorsTest {
             ),
             obj(),
         )
-        assertThat(result).isEqualTo(Value.ArrayValue(emptyList()))
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"), s("b"))))
+    }
+
+    @Test
+    fun `missing_some with non-numeric string threshold never satisfies`() {
+        val result = runMissingSome(
+            Value.ArrayValue(
+                listOf(
+                    s("abc"),
+                    Value.ArrayValue(listOf(s("a"), s("b"))),
+                ),
+            ),
+            obj(),
+        )
+        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"), s("b"))))
     }
 
     @Test

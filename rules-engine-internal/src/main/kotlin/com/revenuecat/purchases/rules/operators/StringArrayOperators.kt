@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Value
+import com.revenuecat.purchases.rules.jsArrayElementString
 import com.revenuecat.purchases.rules.jsString
 import com.revenuecat.purchases.rules.strictEq
 
@@ -38,11 +39,13 @@ internal object StringArrayOperators {
 
     /**
      * `{"cat": [a, b, ...]}` — variadic string concatenation. Each
-     * operand is stringified via [jsString]. 0 args returns `""`.
+     * operand is rendered via [jsArrayElementString] (mirrors
+     * `Array.prototype.join` on the argument list: `null` → `""`).
+     * 0 args returns `""`.
      */
     fun opCat(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
-        return Value.StringValue(evaluated.joinToString(separator = "") { jsString(it) })
+        return Value.StringValue(evaluated.joinToString(separator = "") { jsArrayElementString(it) })
     }
 
     /**
