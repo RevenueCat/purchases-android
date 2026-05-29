@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -34,6 +35,7 @@ internal class IdentityManager(
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offeringsCache: OfferingsCache,
+    private val workflowsCache: WorkflowsCache,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
@@ -102,6 +104,7 @@ internal class IdentityManager(
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
                         }
                         offeringsCache.clearCache()
+                        workflowsCache.clearCache()
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
@@ -154,6 +157,7 @@ internal class IdentityManager(
                         }
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
                         offeringsCache.clearCache()
+                        workflowsCache.clearCache()
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -256,6 +260,7 @@ internal class IdentityManager(
     private fun resetAndSaveUserID(newUserID: String) {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         offeringsCache.clearCache()
+        workflowsCache.clearCache()
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)

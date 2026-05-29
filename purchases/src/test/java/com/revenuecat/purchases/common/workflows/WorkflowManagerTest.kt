@@ -34,6 +34,7 @@ class WorkflowManagerTest {
     private val mockAssetPreDownloader: WorkflowAssetPreDownloader = mockk(relaxed = true)
     private val mockDeviceCache: DeviceCache = mockk(relaxed = true)
     private val mockDateProvider: DateProvider = mockk()
+    private lateinit var workflowsCache: WorkflowsCache
     private lateinit var workflowManager: WorkflowManager
     private lateinit var originalLogHandler: LogHandler
 
@@ -42,12 +43,13 @@ class WorkflowManagerTest {
         originalLogHandler = currentLogHandler
         currentLogHandler = NoOpLogHandler
         every { mockDateProvider.now } returns Date(0) // ensures cache is always stale by default
+        workflowsCache = WorkflowsCache(dateProvider = mockDateProvider)
         workflowManager = WorkflowManager(
             backend = mockBackend,
             workflowDetailResolver = mockResolver,
             workflowAssetPreDownloader = mockAssetPreDownloader,
             deviceCache = mockDeviceCache,
-            dateProvider = mockDateProvider,
+            workflowsCache = workflowsCache,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
             // Inject true so tests don't depend on BuildConfig.USE_WORKFLOWS_ENDPOINT, which is
             // only true via local.properties and defaults to false on CI / clean checkouts.
@@ -261,6 +263,135 @@ class WorkflowManagerTest {
         assertThat(error).isNotNull
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
+
+    // region getWorkflow cache
+
+    @Test
+    fun `getWorkflow caches result on success`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val expectedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(response) } returns expectedResult
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(expectedResult)
+    }
+
+    @Test
+    fun `getWorkflow returns cached result without calling backend when cache is fresh`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val expectedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(response) } returns expectedResult
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        // First call populates the cache (stamped at t=0).
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Second call within TTL should hit the cache and skip the backend.
+        var secondResult: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { secondResult = it },
+            onError = { fail("unexpected error $it") },
+        )
+
+        assertThat(secondResult).isSameAs(expectedResult)
+        verify(exactly = 1) {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getWorkflow re-fetches when cache is stale`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val expectedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(response) } returns expectedResult
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        // First call at t=0 populates the cache.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Second call past the 5-minute foreground TTL should re-fetch.
+        val sixMinutesMs = 6L * 60 * 1000
+        every { mockDateProvider.now } returns Date(sixMinutesMs)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        verify(exactly = 2) {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any(),
+            )
+        }
+    }
+
+    // endregion getWorkflow cache
 
     // region getWorkflowsList
 
@@ -540,7 +671,7 @@ class WorkflowManagerTest {
             workflowDetailResolver = mockResolver,
             workflowAssetPreDownloader = mockAssetPreDownloader,
             deviceCache = mockDeviceCache,
-            dateProvider = mockDateProvider,
+            workflowsCache = workflowsCache,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
             useWorkflowsEndpoint = false,
         )
@@ -550,6 +681,39 @@ class WorkflowManagerTest {
 
         assertThat(completed).isTrue()
         verify(exactly = 0) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+    }
+
+    // Clearing the workflows cache (e.g. on user switch) must drop the in-memory list cache and
+    // offeringId map so the next call re-fetches instead of serving the previous user's workflows.
+    @Test
+    fun `clearing workflows cache drops offeringId map and forces re-fetch within TTL`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        // First fetch at t=0 populates the list cache + offeringId map.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+
+        // Simulate a user switch clearing the cache.
+        workflowsCache.clearCache()
+
+        // The offeringId map must be gone.
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+
+        // The next call within TTL must re-fetch because the in-memory list cache was cleared.
+        every { mockDateProvider.now } returns Date(1)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        verify(exactly = 2) {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any())
+        }
     }
 
     // endregion issue fixes

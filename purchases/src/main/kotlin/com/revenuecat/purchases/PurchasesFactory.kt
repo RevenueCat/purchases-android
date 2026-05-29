@@ -43,6 +43,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResolver
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -259,11 +260,14 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
+            val workflowsCache = WorkflowsCache()
+
             val identityManager = IdentityManager(
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
                 offeringsCache,
+                workflowsCache,
                 backend,
                 offlineEntitlementsManager,
                 dispatcher,
@@ -366,6 +370,7 @@ internal class PurchasesFactory(
                     offeringFontPreDownloader = offeringFontPreDownloader,
                 ),
                 deviceCache = cache,
+                workflowsCache = workflowsCache,
             )
 
             val offeringsManager = OfferingsManager(

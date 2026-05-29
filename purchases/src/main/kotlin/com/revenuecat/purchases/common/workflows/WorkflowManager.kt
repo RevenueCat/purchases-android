@@ -7,11 +7,7 @@ import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.InMemoryCachedObject
-import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.warnLog
@@ -29,17 +25,10 @@ internal class WorkflowManager(
     private val workflowDetailResolver: WorkflowDetailResolver,
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val deviceCache: DeviceCache,
-    private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val workflowsCache: WorkflowsCache,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
 ) {
-
-    private val workflowsListCachedObject = InMemoryCachedObject<WorkflowsListResponse>(
-        dateProvider = dateProvider,
-    )
-
-    @Volatile
-    private var offeringIdToWorkflowIdMap: Map<String, String> = emptyMap()
 
     // Guards isFetchingWorkflowsList and pendingCompletionCallbacks together.
     private val callbackLock = Any()
@@ -57,6 +46,11 @@ internal class WorkflowManager(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        val cached = workflowsCache.cachedWorkflow(workflowId)
+        if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
+            onSuccess(cached)
+            return
+        }
         backend.getWorkflow(
             appUserID = appUserID,
             workflowId = workflowId,
@@ -67,13 +61,14 @@ internal class WorkflowManager(
                     // SignatureVerificationException, and SerializationException from parsing CDN json).
                     // CancellationException is caught here intentionally: rethrowing it would skip the
                     // callback and deadlock the prefetch counter in getWorkflowsList. The scope is already
-                    // cancelled so further coroutine work in this scope will not execute regardless.
+                    // canceled so further coroutine work in this scope will not execute regardless.
                     val result = try {
                         workflowDetailResolver.resolve(response)
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         onError(e.toPurchasesError())
                         return@launch
                     }
+                    workflowsCache.cacheWorkflow(workflowId, result)
                     scope.launch {
                         runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
                             .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
@@ -96,7 +91,7 @@ internal class WorkflowManager(
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
         if (!useWorkflowsEndpoint ||
-            !workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
+            !workflowsCache.isWorkflowsListCacheStale(appInBackground)
         ) {
             onComplete()
             return
@@ -113,11 +108,10 @@ internal class WorkflowManager(
             appInBackground = appInBackground,
             type = "paywall",
             onSuccess = { response ->
-                workflowsListCachedObject.cacheInstance(response)
+                workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
                 deviceCache.cacheWorkflowsListResponse(
                     JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
                 )
-                offeringIdToWorkflowIdMap = buildOfferingIdMap(response.workflows)
 
                 val prefetchWorkflows = response.workflows.filter { it.prefetch }
                 if (prefetchWorkflows.isEmpty()) {
@@ -147,8 +141,7 @@ internal class WorkflowManager(
                 deviceCache.getWorkflowsListResponseCache()?.let { cached ->
                     runCatching { WorkflowJsonParser.parseWorkflowsListResponse(cached) }
                         .onSuccess { response ->
-                            workflowsListCachedObject.cacheInstance(response)
-                            offeringIdToWorkflowIdMap = buildOfferingIdMap(response.workflows)
+                            workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
                         }
                         .onFailure { errorLog(it) { "Failed to restore workflows list from disk cache" } }
                 }
@@ -158,7 +151,7 @@ internal class WorkflowManager(
     }
 
     fun workflowIdForOfferingId(offeringId: String): String? =
-        offeringIdToWorkflowIdMap[offeringId]
+        workflowsCache.workflowIdForOfferingId(offeringId)
 
     private fun drainCompletionCallbacks() {
         val callbacks = synchronized(callbackLock) {
