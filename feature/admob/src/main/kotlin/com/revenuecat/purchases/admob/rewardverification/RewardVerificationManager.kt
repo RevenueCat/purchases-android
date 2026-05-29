@@ -3,6 +3,8 @@ package com.revenuecat.purchases.admob.rewardverification
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -22,7 +24,30 @@ internal object RewardVerificationManager {
         Purchases.registerService(runtime)
     }
 
-    fun install(onAd: Any) {
+    fun install(ad: RewardedAd) = installInternal(ad.responseInfo?.responseId)
+    fun install(ad: RewardedInterstitialAd) = installInternal(ad.responseInfo?.responseId)
+
+    fun handleRewardEarned(
+        ad: RewardedAd,
+        rewardVerificationStarted: (() -> Unit)?,
+        rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
+    ) = handleRewardEarnedInternal(
+        ad.responseInfo?.responseId,
+        rewardVerificationStarted,
+        rewardVerificationCompleted,
+    )
+
+    fun handleRewardEarned(
+        ad: RewardedInterstitialAd,
+        rewardVerificationStarted: (() -> Unit)?,
+        rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
+    ) = handleRewardEarnedInternal(
+        ad.responseInfo?.responseId,
+        rewardVerificationStarted,
+        rewardVerificationCompleted,
+    )
+
+    private fun installInternal(adResponseId: String?) {
         if (!Purchases.isConfigured) {
             Log.e(
                 Constants.TAG,
@@ -30,9 +55,17 @@ internal object RewardVerificationManager {
             )
             return
         }
+        if (adResponseId == null) {
+            Log.e(
+                Constants.TAG,
+                "Reward verification requires a loaded ad with a responseId. " +
+                    "Call enableRewardVerification() after the ad has loaded.",
+            )
+            return
+        }
 
         val didStoreClientTransactionId = runtime.setClientTransactionId(
-            ad = onAd,
+            adResponseId = adResponseId,
             clientTransactionId = UUID.randomUUID().toString(),
         )
         if (!didStoreClientTransactionId) {
@@ -44,13 +77,13 @@ internal object RewardVerificationManager {
         }
     }
 
-    fun handleRewardEarned(
-        onAd: Any,
+    private fun handleRewardEarnedInternal(
+        adResponseId: String?,
         rewardVerificationStarted: (() -> Unit)?,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
         runtime.handleRewardEarned(
-            onAd = onAd,
+            adResponseId = adResponseId,
             rewardVerificationStarted = rewardVerificationStarted,
             rewardVerificationCompleted = rewardVerificationCompleted,
         )

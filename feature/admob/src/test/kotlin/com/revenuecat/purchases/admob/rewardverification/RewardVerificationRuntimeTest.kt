@@ -41,16 +41,16 @@ internal class RewardVerificationRuntimeTest {
                 awaitCancellation()
             },
         )
-        val ad = Any()
+        val adResponseId = "ad-response-id"
         var started = false
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
         runtime.initialize(mockk<Purchases>(relaxed = true))
-        runtime.setClientTransactionId(ad, "client-transaction-id")
+        runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
-            onAd = ad,
+            adResponseId = adResponseId,
             rewardVerificationStarted = { started = true },
             rewardVerificationCompleted = {
                 completedResult = it
@@ -80,17 +80,17 @@ internal class RewardVerificationRuntimeTest {
             },
             poll = { RewardVerificationResult.verified(verifiedReward) },
         )
-        val ad = Any()
+        val adResponseId = "ad-response-id"
         var startedThread: Thread? = null
         var completedThread: Thread? = null
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
         runtime.initialize(mockk<Purchases>(relaxed = true))
-        runtime.setClientTransactionId(ad, "client-transaction-id")
+        runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
-            onAd = ad,
+            adResponseId = adResponseId,
             rewardVerificationStarted = { startedThread = Thread.currentThread() },
             rewardVerificationCompleted = {
                 completedThread = Thread.currentThread()
@@ -120,7 +120,7 @@ internal class RewardVerificationRuntimeTest {
             },
             poll = { error("poll should not run when no client transaction id is registered") },
         )
-        val ad = Any()
+        val adResponseId = "ad-response-id"
         var startedCount = 0
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
@@ -129,7 +129,7 @@ internal class RewardVerificationRuntimeTest {
         // Intentionally skip setClientTransactionId.
 
         runtime.handleRewardEarned(
-            onAd = ad,
+            adResponseId = adResponseId,
             rewardVerificationStarted = { startedCount++ },
             rewardVerificationCompleted = {
                 completedResult = it

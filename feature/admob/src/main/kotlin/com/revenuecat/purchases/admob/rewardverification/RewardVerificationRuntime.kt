@@ -15,7 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
@@ -28,24 +27,24 @@ internal class RewardVerificationRuntime(
         Poller.poll(clientTransactionId)
     },
 ) : PurchasesService {
-    private var clientTransactionIdByAd: MutableMap<Any, String>? = null
+    private var clientTransactionIdByAdResponseId: MutableMap<String, String>? = null
 
     @Volatile
     private var verificationScope: CoroutineScope? = null
 
     @Synchronized
-    fun setClientTransactionId(ad: Any, clientTransactionId: String): Boolean {
-        val store = clientTransactionIdByAd ?: return false
-        store[ad] = clientTransactionId
+    fun setClientTransactionId(adResponseId: String, clientTransactionId: String): Boolean {
+        val store = clientTransactionIdByAdResponseId ?: return false
+        store[adResponseId] = clientTransactionId
         return true
     }
 
     fun handleRewardEarned(
-        onAd: Any,
+        adResponseId: String?,
         rewardVerificationStarted: (() -> Unit)?,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
-        val clientTransactionId = removeClientTransactionId(onAd)
+        val clientTransactionId = adResponseId?.let { removeClientTransactionId(it) }
         warnAndAssertIfMissingClientTransactionId(clientTransactionId)
 
         val completionDelivered = AtomicBoolean(false)
@@ -101,21 +100,21 @@ internal class RewardVerificationRuntime(
     }
 
     @Synchronized
-    private fun removeClientTransactionId(ad: Any): String? {
-        return clientTransactionIdByAd?.remove(ad)
+    private fun removeClientTransactionId(adResponseId: String): String? {
+        return clientTransactionIdByAdResponseId?.remove(adResponseId)
     }
 
     @Synchronized
     override fun initialize(purchases: Purchases) {
         verificationScope?.cancel()
         verificationScope = createVerificationScope()
-        clientTransactionIdByAd = WeakHashMap()
+        clientTransactionIdByAdResponseId = mutableMapOf()
     }
 
     @Synchronized
     override fun close(purchases: Purchases) {
-        clientTransactionIdByAd?.clear()
-        clientTransactionIdByAd = null
+        clientTransactionIdByAdResponseId?.clear()
+        clientTransactionIdByAdResponseId = null
         verificationScope?.cancel()
         verificationScope = null
     }

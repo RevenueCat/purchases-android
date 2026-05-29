@@ -73,6 +73,7 @@ internal class RewardVerificationManagerTest {
         originalServiceForwarder.initialize(mockPurchases)
 
         val ad = mockk<RewardedAd>(relaxed = true)
+        every { ad.responseInfo.responseId } returns "ad-response-id"
         val activity = mockk<Activity>(relaxed = true)
         val rewardListenerSlot = slot<OnUserEarnedRewardListener>()
         every { ad.show(activity, capture(rewardListenerSlot)) } answers {}

@@ -10,13 +10,28 @@ import kotlin.jvm.JvmSynthetic
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun rewardVerificationListener(
-    onAd: Any,
+    onAd: RewardedAd,
     rewardVerificationStarted: (() -> Unit)?,
     rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
 ): OnUserEarnedRewardListener {
     return OnUserEarnedRewardListener {
         RewardVerificationManager.handleRewardEarned(
-            onAd = onAd,
+            ad = onAd,
+            rewardVerificationStarted = rewardVerificationStarted,
+            rewardVerificationCompleted = rewardVerificationCompleted,
+        )
+    }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+private fun rewardVerificationListener(
+    onAd: RewardedInterstitialAd,
+    rewardVerificationStarted: (() -> Unit)?,
+    rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
+): OnUserEarnedRewardListener {
+    return OnUserEarnedRewardListener {
+        RewardVerificationManager.handleRewardEarned(
+            ad = onAd,
             rewardVerificationStarted = rewardVerificationStarted,
             rewardVerificationCompleted = rewardVerificationCompleted,
         )
