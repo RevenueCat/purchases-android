@@ -9,6 +9,8 @@ import io.gitlab.arturbosch.detekt.api.Rule
 import io.gitlab.arturbosch.detekt.api.Severity
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtModifierListOwner
 import org.jetbrains.kotlin.psi.psiUtil.parents
 
 class ForbiddenPublicSealedClass(config: Config) : Rule(config) {
@@ -27,25 +29,19 @@ class ForbiddenPublicSealedClass(config: Config) : Rule(config) {
     override fun visitClass(klass: KtClass) {
         super.visitClass(klass)
         if (klass.isSealed() && isPublicApi(klass) && !isAnnotatedWith(klass, ignoreAnnotated)) {
-            report(CodeSmell(issue, Entity.atName(klass), message = issue.description))
+            report(CodeSmell(issue, Entity.atName(klass), message = "${klass.name}: ${issue.description}"))
         }
     }
 
     private fun isPublicApi(klass: KtClass): Boolean {
-        val modifiers = klass.modifierList ?: return true
-        if (modifiers.hasModifier(KtTokens.PRIVATE_KEYWORD) ||
-            modifiers.hasModifier(KtTokens.INTERNAL_KEYWORD) ||
-            modifiers.hasModifier(KtTokens.PROTECTED_KEYWORD)
-        ) {
-            return false
-        }
-        return klass.parents.filterIsInstance<KtClass>().none { parent ->
-            val parentMods = parent.modifierList ?: return@none false
-            parentMods.hasModifier(KtTokens.PRIVATE_KEYWORD) ||
-                parentMods.hasModifier(KtTokens.INTERNAL_KEYWORD) ||
-                parentMods.hasModifier(KtTokens.PROTECTED_KEYWORD)
-        }
+        if (klass.isNonPublic()) return false
+        return klass.parents.filterIsInstance<KtClassOrObject>().none { it.isNonPublic() }
     }
+
+    private fun KtModifierListOwner.isNonPublic(): Boolean =
+        hasModifier(KtTokens.PRIVATE_KEYWORD) ||
+            hasModifier(KtTokens.INTERNAL_KEYWORD) ||
+            hasModifier(KtTokens.PROTECTED_KEYWORD)
 
     private fun isAnnotatedWith(klass: KtClass, annotationNames: List<String>): Boolean {
         if (annotationNames.isEmpty()) return false

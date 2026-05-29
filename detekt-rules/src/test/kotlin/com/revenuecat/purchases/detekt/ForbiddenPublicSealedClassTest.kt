@@ -20,12 +20,14 @@ class ForbiddenPublicSealedClassTest {
     fun `flags public sealed class`() {
         val findings = rule().lint("public sealed class MySealedClass")
         assertEquals(1, findings.size)
+        assertEquals(true, findings[0].message.contains("MySealedClass"))
     }
 
     @Test
     fun `flags public sealed interface`() {
         val findings = rule().lint("public sealed interface MySealedInterface")
         assertEquals(1, findings.size)
+        assertEquals(true, findings[0].message.contains("MySealedInterface"))
     }
 
     @Test
@@ -119,6 +121,17 @@ class ForbiddenPublicSealedClassTest {
         val code = """
             @Suppress("ForbiddenPublicSealedClass")
             public sealed class MySealedClass
+        """.trimIndent()
+        val findings = rule().lint(code)
+        assertEquals(0, findings.size)
+    }
+
+    @Test
+    fun `does not flag sealed class nested inside internal object`() {
+        val code = """
+            internal object Outer {
+                sealed class Inner
+            }
         """.trimIndent()
         val findings = rule().lint(code)
         assertEquals(0, findings.size)
