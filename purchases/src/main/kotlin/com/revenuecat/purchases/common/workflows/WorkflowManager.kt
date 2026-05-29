@@ -90,17 +90,14 @@ internal class WorkflowManager(
      * drained together when the in-flight work finishes.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
-        if (!useWorkflowsEndpoint ||
-            !workflowsCache.isWorkflowsListCacheStale(appInBackground)
-        ) {
-            onComplete()
-            return
-        }
-
-        synchronized(callbackLock) {
-            pendingCompletionCallbacks.add(onComplete)
-            if (isFetchingWorkflowsList) return
-            isFetchingWorkflowsList = true
+        when (resolveWorkflowsListFetch(appInBackground, onComplete)) {
+            // Callback queued onto in-flight work; it drains when that work finishes.
+            FetchDecision.JOIN -> return
+            FetchDecision.COMPLETE_NOW -> {
+                onComplete()
+                return
+            }
+            FetchDecision.FETCH -> Unit
         }
 
         backend.getWorkflows(
@@ -152,6 +149,34 @@ internal class WorkflowManager(
 
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowsCache.workflowIdForOfferingId(offeringId)
+
+    private enum class FetchDecision { FETCH, JOIN, COMPLETE_NOW }
+
+    /**
+     * Decides how a [getWorkflowsList] call should proceed, queueing [onComplete] when it must wait.
+     *
+     * Returns [FetchDecision.JOIN] when a fetch is already in flight: the call joins it regardless
+     * of list-cache freshness, because the list response refreshes the cache before its prefetch
+     * details finish — completing on a fresh cache would fire [onComplete] before the prefetched
+     * workflows land. [FetchDecision.COMPLETE_NOW] means there is no in-flight work to wait for.
+     */
+    private fun resolveWorkflowsListFetch(appInBackground: Boolean, onComplete: () -> Unit): FetchDecision {
+        if (!useWorkflowsEndpoint) return FetchDecision.COMPLETE_NOW
+        return synchronized(callbackLock) {
+            when {
+                isFetchingWorkflowsList -> {
+                    pendingCompletionCallbacks.add(onComplete)
+                    FetchDecision.JOIN
+                }
+                workflowsCache.isWorkflowsListCacheStale(appInBackground) -> {
+                    pendingCompletionCallbacks.add(onComplete)
+                    isFetchingWorkflowsList = true
+                    FetchDecision.FETCH
+                }
+                else -> FetchDecision.COMPLETE_NOW
+            }
+        }
+    }
 
     private fun drainCompletionCallbacks() {
         val callbacks = synchronized(callbackLock) {
