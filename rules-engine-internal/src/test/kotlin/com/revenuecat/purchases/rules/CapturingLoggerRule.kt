@@ -21,11 +21,11 @@ internal class CapturingLoggerRule : TestRule {
         return object : Statement() {
             override fun evaluate() {
                 val previous = RulesEngine.logger
-                RulesEngine.logger = capturing
+                RulesEngine.setLogger(capturing)
                 try {
                     base.evaluate()
                 } finally {
-                    RulesEngine.logger = previous
+                    RulesEngine.setLogger(previous)
                 }
             }
         }
