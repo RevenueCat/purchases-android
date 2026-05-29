@@ -2,33 +2,28 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
-import com.revenuecat.purchases.awaitGetRewardVerificationResult
 import kotlinx.coroutines.CancellationException
 import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal object Poller {
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     suspend fun poll(
         clientTransactionId: String,
-        fetchResult: suspend (String) -> CoreRewardVerificationResult = {
-            Purchases.sharedInstance.awaitGetRewardVerificationResult(clientTransactionId = it)
-        },
+        fetcher: RewardVerificationFetcher = RewardVerificationFetcher.default,
     ): RewardVerificationResult {
-        return pollOutcome(clientTransactionId, fetchResult).toResult()
+        return pollOutcome(clientTransactionId, fetcher).toResult()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     private suspend fun pollOutcome(
         clientTransactionId: String,
-        fetchResult: suspend (String) -> CoreRewardVerificationResult,
+        fetcher: RewardVerificationFetcher,
     ): Outcome {
         return try {
-            mapResultToOutcome(fetchResult(clientTransactionId))
+            mapResultToOutcome(fetcher.fetch(clientTransactionId))
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
