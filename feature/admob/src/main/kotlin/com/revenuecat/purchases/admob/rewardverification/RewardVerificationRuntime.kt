@@ -58,17 +58,21 @@ internal class RewardVerificationRuntime(
             return
         }
 
-        val verificationTask = verificationScope?.launch {
-            val result = poll(clientTransactionId)
-            deliverOnce(result)
-        }
-        if (verificationTask == null) {
+        val scope = verificationScope
+        if (scope == null) {
             removeClientTransactionId(adResponseId)
             deliverOnce(RewardVerificationResult.failed)
             return
         }
 
+        // Notify started before launching so that on a non-main caller, the started post
+        // is enqueued on the main handler before any completed post from the IO coroutine.
         notifyStarted(rewardVerificationStarted)
+
+        val verificationTask = scope.launch {
+            val result = poll(clientTransactionId)
+            deliverOnce(result)
+        }
 
         verificationTask.invokeOnCompletion { cause ->
             removeClientTransactionId(adResponseId)
