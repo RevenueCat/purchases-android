@@ -3,8 +3,7 @@ package com.revenuecat.purchases.admob.tracking
 import android.util.Log
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
-
-private const val TAG = "PurchasesAdMob"
+import com.revenuecat.purchases.admob.Constants
 
 /**
  * Executes [block] with the [Purchases] ad tracker if the SDK is configured.
@@ -17,7 +16,7 @@ private const val TAG = "PurchasesAdMob"
 internal inline fun trackIfConfigured(block: Purchases.() -> Unit) {
     if (!Purchases.isConfigured) {
         Log.w(
-            TAG,
+            Constants.TAG,
             "Purchases is not configured. " +
                 "Call Purchases.configure() before loading ads to enable RevenueCat ad tracking.",
         )

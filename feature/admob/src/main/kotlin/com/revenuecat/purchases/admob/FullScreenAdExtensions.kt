@@ -14,15 +14,13 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import kotlin.jvm.JvmSynthetic
 
-private const val TAG = "PurchasesAdMob"
-
 private fun applyPlacementOverride(callback: FullScreenContentCallback?, placement: String?) {
     val trackingCallback = callback as? TrackingFullScreenContentCallback
     if (trackingCallback != null) {
         trackingCallback.placement = placement
     } else {
         Log.w(
-            TAG,
+            Constants.TAG,
             "Placement override ignored: fullScreenContentCallback was manually reassigned",
         )
     }

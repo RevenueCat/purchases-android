@@ -8,6 +8,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesService
 import com.revenuecat.purchases.admob.RewardVerificationResult
+import com.revenuecat.purchases.admob.Constants
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,8 +18,6 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 import java.util.WeakHashMap
 import java.util.concurrent.atomic.AtomicBoolean
-
-private const val TAG = "PurchasesAdMob"
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal object RewardVerificationManager {
@@ -35,7 +34,7 @@ internal object RewardVerificationManager {
     fun install(onAd: Any) {
         if (!Purchases.isConfigured) {
             Log.w(
-                TAG,
+                Constants.TAG,
                 "Purchases is not configured. Call Purchases.configure() before enabling reward verification.",
             )
             return
@@ -47,7 +46,7 @@ internal object RewardVerificationManager {
         )
         if (!didStoreClientTransactionId) {
             Log.w(
-                TAG,
+                Constants.TAG,
                 "Reward verification setup is not ready. " +
                     "Try enabling reward verification after Purchases is configured.",
             )
@@ -144,7 +143,7 @@ internal class RewardVerificationRuntime(
         if (clientTransactionId != null) return
 
         Log.w(
-            TAG,
+            Constants.TAG,
             "Reward verification callback requires enableRewardVerification() before show().",
         )
     }
