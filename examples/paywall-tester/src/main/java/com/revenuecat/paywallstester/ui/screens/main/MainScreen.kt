@@ -62,9 +62,9 @@ fun MainScreenPreview() {
 }
 
 private val bottomNavigationItems = listOf(
-    Tab.AppInfo,
-    Tab.Paywalls,
     Tab.Offerings,
+    Tab.Paywalls,
+    Tab.AppInfo,
     Tab.Locale,
 )
 
@@ -81,7 +81,7 @@ private fun MainNavHost(
 ) {
     NavHost(
         navController,
-        startDestination = Tab.Paywalls.route,
+        startDestination = Tab.Offerings.route,
         modifier = modifier,
     ) {
         composable(Tab.AppInfo.route) {

@@ -231,6 +231,7 @@ private fun LoginDialog(viewModel: AppInfoScreenViewModel, onDismissed: () -> Un
 
 @Composable
 private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Unit) {
+    var customApiKey by remember { mutableStateOf("") }
     Dialog(onDismissRequest = { onDismissed() }) {
         Surface(shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(all = 16.dp)) {
@@ -246,6 +247,19 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                     onClick = onApiKeyClick,
                 )
 
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = "Custom API key",
+                    style = MaterialTheme.typography.labelSmall,
+                )
+                OutlinedTextField(
+                    value = customApiKey,
+                    onValueChange = { customApiKey = it },
+                    label = { Text("Paste your API key") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
                 Spacer(Modifier.size(4.dp))
                 Row(
                     Modifier
@@ -255,6 +269,12 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                 ) {
                     TextButton(onClick = { onDismissed() }) {
                         Text("CANCEL")
+                    }
+                    TextButton(
+                        enabled = customApiKey.isNotBlank(),
+                        onClick = { onApiKeyClick(customApiKey.trim()) },
+                    ) {
+                        Text("USE CUSTOM")
                     }
                 }
             }

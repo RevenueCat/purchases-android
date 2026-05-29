@@ -1,6 +1,7 @@
 package com.revenuecat.paywallstester.ui.screens.paywall
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
@@ -33,10 +34,15 @@ interface PaywallScreenViewModel : PaywallListener {
     fun refreshOffering()
 }
 
+@SuppressWarnings("TooManyFunctions")
 class PaywallScreenViewModelImpl(
     application: Application,
     savedStateHandle: SavedStateHandle,
 ) : AndroidViewModel(application), PaywallScreenViewModel {
+
+    companion object {
+        const val TAG = "PaywallScreenViewModel"
+    }
 
     override val state: StateFlow<PaywallScreenState>
         get() = _state.asStateFlow()
@@ -94,6 +100,14 @@ class PaywallScreenViewModelImpl(
                 )
             }
         }
+    }
+
+    override fun onPurchaseStarted(rcPackage: Package) {
+        Log.d(TAG, "onPurchaseStarted")
+    }
+
+    override fun onPurchaseCancelled() {
+        Log.d(TAG, "onPurchaseCancelled")
     }
 
     override fun onPurchaseError(error: PurchasesError) = Unit

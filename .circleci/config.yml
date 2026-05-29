@@ -53,6 +53,12 @@ parameters:
     type: enum
     enum: [internal, alpha, beta, production]
     default: alpha
+  paywall_tester_api_key:
+    type: string
+    default: ""
+  paywall_tester_use_workflows_endpoint:
+    type: boolean
+    default: false
 
 commands:
   install-sdkman:
@@ -94,6 +100,13 @@ commands:
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
   build-paywall-tester:
+    parameters:
+      api_key:
+        type: string
+        default: ""
+      use_workflows_endpoint:
+        type: boolean
+        default: false
     steps:
       - android/accept_licenses
       - android/restore_gradle_cache
@@ -105,7 +118,7 @@ commands:
       - run:
           name: Create app bundle
           command: |
-            bundle exec fastlane android build_paywall_tester_bundle
+            bundle exec fastlane android build_paywall_tester_bundle api_key:'<< parameters.api_key >>' use_workflows_endpoint:'<< parameters.use_workflows_endpoint >>'
       - store_artifacts:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
       - android/save_gradle_cache
@@ -512,12 +525,20 @@ jobs:
     parameters:
       track:
         type: string
+      api_key:
+        type: string
+        default: ""
+      use_workflows_endpoint:
+        type: boolean
+        default: false
     steps:
       - checkout
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - build-paywall-tester
+      - build-paywall-tester:
+          api_key: << parameters.api_key >>
+          use_workflows_endpoint: << parameters.use_workflows_endpoint >>
       - run:
           name: Publish aab
           command: |
@@ -1210,6 +1231,8 @@ workflows:
     jobs:
         - publish-paywall-tester-release:
             track: << pipeline.parameters.paywall_tester_track >>
+            api_key: << pipeline.parameters.paywall_tester_api_key >>
+            use_workflows_endpoint: << pipeline.parameters.paywall_tester_use_workflows_endpoint >>
 
   manual-rct-tester-release:
     when:

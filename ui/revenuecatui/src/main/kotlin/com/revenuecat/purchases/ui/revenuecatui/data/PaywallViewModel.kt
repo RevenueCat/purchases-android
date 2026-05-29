@@ -528,10 +528,6 @@ internal class PaywallViewModelImpl(
                         }
                     }
                 }
-
-                else -> {
-                    Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
-                }
             }
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases: $e")
@@ -634,8 +630,7 @@ internal class PaywallViewModelImpl(
                         },
                         subscriptionOption = subscriptionOption,
                     )
-                    val result = myAppPurchaseLogic.performPurchase(activity, purchaseParams)
-                    when (result) {
+                    when (val result = myAppPurchaseLogic.performPurchase(activity, purchaseParams)) {
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
@@ -687,9 +682,6 @@ internal class PaywallViewModelImpl(
                     Logger.d("Dismissing paywall after purchase")
                     trackCurrentWorkflowStepCompleted()
                     options.dismissRequest()
-                }
-                else -> {
-                    Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
                 }
             }
         } catch (e: PurchasesException) {
