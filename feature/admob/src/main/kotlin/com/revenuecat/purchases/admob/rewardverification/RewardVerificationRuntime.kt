@@ -60,10 +60,6 @@ internal class RewardVerificationRuntime(
             return
         }
 
-        // verificationScope is @Volatile rather than locked: launch returns a Job immediately,
-        // so the poll runs on Dispatchers.IO outside any lock. A concurrent close() either nulls
-        // the scope (we deliver failed below) or cancels it after launch (invokeOnCompletion
-        // delivers failed). Holding a lock across the launch would gain nothing.
         val verificationTask = verificationScope?.launch {
             val result = poll(clientTransactionId)
             deliverOnce(result)
