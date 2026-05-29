@@ -915,5 +915,39 @@ class WorkflowManagerTest {
         verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
+    @Test
+    fun `getWorkflowsList for a different user does not join an in-flight fetch for the previous user`() {
+        val user1Success = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows("user_1", any(), type = any(), onSuccess = capture(user1Success), onError = any())
+        } just Runs // hold user_1 in-flight
+
+        val user2Success = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows("user_2", any(), type = any(), onSuccess = capture(user2Success), onError = any())
+        } just Runs // hold user_2 in-flight
+
+        var user1Completed = false
+        var user2Completed = false
+        workflowManager.getWorkflowsList("user_1", false) { user1Completed = true }
+        workflowManager.getWorkflowsList("user_2", false) { user2Completed = true }
+
+        // user_2 must start its own fetch rather than join user_1's in-flight request.
+        verify(exactly = 1) {
+            mockBackend.getWorkflows("user_2", any(), type = any(), onSuccess = any(), onError = any())
+        }
+        assertThat(user1Completed).isFalse()
+        assertThat(user2Completed).isFalse()
+
+        // user_2's fetch landing completes only user_2, not user_1.
+        user2Success.captured(WorkflowsListResponse(workflows = emptyList()))
+        assertThat(user2Completed).isTrue()
+        assertThat(user1Completed).isFalse()
+
+        // user_1's fetch landing then completes user_1.
+        user1Success.captured(WorkflowsListResponse(workflows = emptyList()))
+        assertThat(user1Completed).isTrue()
+    }
+
     // endregion onComplete callback
 }

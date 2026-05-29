@@ -30,10 +30,11 @@ internal class WorkflowManager(
     private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
 ) {
 
-    // Guards isFetchingWorkflowsList and pendingCompletionCallbacks together.
+    // Guards pendingCompletionCallbacks. A key is present while a workflows-list fetch (plus its
+    // prefetch) is in flight for that appUserID, so concurrent callers join only their own user's
+    // request — a different user starts its own fetch instead of receiving the wrong user's list.
     private val callbackLock = Any()
-    private var isFetchingWorkflowsList = false
-    private val pendingCompletionCallbacks = mutableListOf<() -> Unit>()
+    private val pendingCompletionCallbacks = mutableMapOf<String, MutableList<() -> Unit>>()
 
     fun close() {
         scope.cancel()
@@ -85,12 +86,13 @@ internal class WorkflowManager(
      * [onComplete] fires only after the list fetch AND all prefetch CDN fetches finish
      * (success or failure), making it safe to call [workflowIdForOfferingId] in [onComplete].
      *
-     * Concurrent callers while a request is in-flight are deduplicated: the second call queues
-     * its [onComplete] and returns without a new network request. All pending callbacks are
-     * drained together when the in-flight work finishes.
+     * Concurrent callers for the same [appUserID] while a request is in-flight are deduplicated:
+     * the second call queues its [onComplete] and returns without a new network request. All
+     * pending callbacks for that user are drained together when the in-flight work finishes.
+     * A call for a different user starts its own fetch rather than joining the in-flight one.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
-        when (resolveWorkflowsListFetch(appInBackground, onComplete)) {
+        when (resolveWorkflowsListFetch(appUserID, appInBackground, onComplete)) {
             // Callback queued onto in-flight work; it drains when that work finishes.
             FetchDecision.JOIN -> return
             FetchDecision.COMPLETE_NOW -> {
@@ -112,7 +114,7 @@ internal class WorkflowManager(
 
                 val prefetchWorkflows = response.workflows.filter { it.prefetch }
                 if (prefetchWorkflows.isEmpty()) {
-                    drainCompletionCallbacks()
+                    drainCompletionCallbacks(appUserID)
                 } else {
                     val remaining = AtomicInteger(prefetchWorkflows.size)
                     prefetchWorkflows.forEach { summary ->
@@ -121,13 +123,13 @@ internal class WorkflowManager(
                             workflowId = summary.id,
                             appInBackground = appInBackground,
                             onSuccess = {
-                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks()
+                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks(appUserID)
                             },
                             onError = { error ->
                                 errorLog {
                                     "Failed to prefetch workflow ${summary.id}: ${error.underlyingErrorMessage}"
                                 }
-                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks()
+                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks(appUserID)
                             },
                         )
                     }
@@ -142,7 +144,7 @@ internal class WorkflowManager(
                         }
                         .onFailure { errorLog(it) { "Failed to restore workflows list from disk cache" } }
                 }
-                drainCompletionCallbacks()
+                drainCompletionCallbacks(appUserID)
             },
         )
     }
@@ -155,22 +157,28 @@ internal class WorkflowManager(
     /**
      * Decides how a [getWorkflowsList] call should proceed, queueing [onComplete] when it must wait.
      *
-     * Returns [FetchDecision.JOIN] when a fetch is already in flight: the call joins it regardless
-     * of list-cache freshness, because the list response refreshes the cache before its prefetch
-     * details finish — completing on a fresh cache would fire [onComplete] before the prefetched
-     * workflows land. [FetchDecision.COMPLETE_NOW] means there is no in-flight work to wait for.
+     * Returns [FetchDecision.JOIN] when a fetch for the same [appUserID] is already in flight: the
+     * call joins it regardless of list-cache freshness, because the list response refreshes the
+     * cache before its prefetch details finish — completing on a fresh cache would fire [onComplete]
+     * before the prefetched workflows land. A fetch in flight for a *different* user is not joined,
+     * so an identity switch starts its own fetch instead of inheriting the previous user's list.
+     * [FetchDecision.COMPLETE_NOW] means there is no in-flight work for this user to wait for.
      */
-    private fun resolveWorkflowsListFetch(appInBackground: Boolean, onComplete: () -> Unit): FetchDecision {
+    private fun resolveWorkflowsListFetch(
+        appUserID: String,
+        appInBackground: Boolean,
+        onComplete: () -> Unit,
+    ): FetchDecision {
         if (!useWorkflowsEndpoint) return FetchDecision.COMPLETE_NOW
         return synchronized(callbackLock) {
+            val inFlight = pendingCompletionCallbacks[appUserID]
             when {
-                isFetchingWorkflowsList -> {
-                    pendingCompletionCallbacks.add(onComplete)
+                inFlight != null -> {
+                    inFlight.add(onComplete)
                     FetchDecision.JOIN
                 }
                 workflowsCache.isWorkflowsListCacheStale(appInBackground) -> {
-                    pendingCompletionCallbacks.add(onComplete)
-                    isFetchingWorkflowsList = true
+                    pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
                     FetchDecision.FETCH
                 }
                 else -> FetchDecision.COMPLETE_NOW
@@ -178,10 +186,9 @@ internal class WorkflowManager(
         }
     }
 
-    private fun drainCompletionCallbacks() {
+    private fun drainCompletionCallbacks(appUserID: String) {
         val callbacks = synchronized(callbackLock) {
-            isFetchingWorkflowsList = false
-            pendingCompletionCallbacks.toList().also { pendingCompletionCallbacks.clear() }
+            pendingCompletionCallbacks.remove(appUserID).orEmpty()
         }
         callbacks.forEach { it() }
     }
