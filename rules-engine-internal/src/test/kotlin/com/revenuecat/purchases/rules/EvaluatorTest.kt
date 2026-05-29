@@ -226,6 +226,28 @@ class EvaluatorTest {
         assertThat(run("""{"/": [0, 0]}""")).isFalse
     }
 
+    // ---- comparison dispatched through evaluator ----
+
+    @Test
+    fun testComparisonPredicateWithVarOperand() {
+        // session.app_launch_count >= 3 → true when count is 3
+        val predicate = """{">=": [{"var": "session.app_launch_count"}, 3]}"""
+        val vars = mapOf<String, Value>(
+            "session" to obj("app_launch_count" to Value.IntValue(3)),
+        )
+        assertThat(run(predicate, vars)).isTrue
+    }
+
+    @Test
+    fun testBetweenFormWithVarOperand() {
+        // 1 <= session.app_launch_count <= 10 → true when count is 5
+        val predicate = """{"<=": [1, {"var": "session.app_launch_count"}, 10]}"""
+        val vars = mapOf<String, Value>(
+            "session" to obj("app_launch_count" to Value.IntValue(5)),
+        )
+        assertThat(run(predicate, vars)).isTrue
+    }
+
     // ---- multi-key object treated as data, not operator ----
 
     @Test
