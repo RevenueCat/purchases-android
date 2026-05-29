@@ -1,20 +1,21 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Value
+import com.revenuecat.purchases.rules.jsString
 
 /**
  * Comparison operators: `<`, `<=`, `>`, `>=`.
  *
  * Per JSON Logic:
  *
- * - **Both operands are strings** → lexicographic comparison
- *   (`"10" < "9"` is `true` because `'1' < '9'` byte-wise).
+ * - After `ToPrimitive` (number hint), **both operands are strings**
+ *   → lexicographic comparison (`"10" < "9"` is `true`). Arrays and
+ *   objects stringify first (`[] < "a"` → `"" < "a"` → `true`).
  * - **Otherwise** → coerce both operands to [Double] via
- *   [Value.toNumberOrNull] and compare numerically. Operands that
- *   can't coerce ([Value.ObjectValue], [Value.ArrayValue], unparseable
- *   strings) become [Double.NaN]; per IEEE 754 every comparison
- *   against NaN returns `false`, so a malformed operand makes the
- *   predicate fail closed — a safe default for rule authoring.
+ *   [Value.toNumberOrNull] and compare numerically (`"10" < 9` →
+ *   `false`). Unparseable strings compared numerically become
+ *   [Double.NaN]; per IEEE 754 every comparison against NaN returns
+ *   `false`.
  *
  * `<` and `<=` accept a 3-arg "between" form per the JSON Logic spec:
  * `{"<": [a, b, c]}` reads as `a < b AND b < c`. `>` and `>=` are
@@ -79,18 +80,33 @@ internal object ComparisonOperators {
     }
 
     /**
-     * Two-string operands → lex. Otherwise → numeric coercion. Encodes
-     * JSON Logic's "lex only when BOTH operands are strings" rule.
-     *
-     * `null` lhs/rhs means that argument was omitted (e.g. `{">": [1]}`);
-     * we coerce it to [Double.NaN], and any comparison involving NaN
-     * is `false`.
+     * Mirrors JS `<`: `ToPrimitive` (number hint), lex when both are
+     * strings, else numeric. `null` lhs/rhs is an omitted argument
+     * (`undefined` → `NaN` → `false`).
      */
     private fun compare(lhs: Value?, rhs: Value?, cmp: Comparator): Boolean {
-        if (lhs is Value.StringValue && rhs is Value.StringValue) {
-            return cmp.apply(lhs.value, rhs.value)
+        if (lhs == null || rhs == null) {
+            return cmp.apply(lhs.asDouble(), rhs.asDouble())
         }
-        return cmp.apply(lhs.asDouble(), rhs.asDouble())
+        val left = toPrimitiveForComparison(lhs)
+        val right = toPrimitiveForComparison(rhs)
+        if (left is Value.StringValue && right is Value.StringValue) {
+            return cmp.apply(left.value, right.value)
+        }
+        return cmp.apply(left.asDouble(), right.asDouble())
+    }
+
+    /** `ToPrimitive` with number hint: arrays/objects stringify. */
+    private fun toPrimitiveForComparison(value: Value): Value = when (value) {
+        is Value.StringValue,
+        Value.Null,
+        is Value.BoolValue,
+        is Value.IntValue,
+        is Value.FloatValue,
+        -> value
+        is Value.ArrayValue,
+        is Value.ObjectValue,
+        -> Value.StringValue(jsString(value))
     }
 
     /**

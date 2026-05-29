@@ -58,8 +58,7 @@ class ComparisonOperatorsTest {
 
     @Test
     fun testLtComparesTwoStringsLexicographically() {
-        // Per the JSON Logic spec (ECMAScript Abstract Relational
-        // Comparison), two string operands compare lexicographically.
+        // After ToPrimitive, both strings → lex compare.
         // "10" < "9" → true because '1' (0x31) < '9' (0x39).
         assertThat(run(ComparisonOperators::opLt, arr(s("10"), s("9"))))
             .isEqualTo(Value.BoolValue(true))
@@ -73,10 +72,8 @@ class ComparisonOperatorsTest {
 
     @Test
     fun testLtMixedStringAndNumberCoercesNumerically() {
-        // Mixed types fall through to numeric coercion, NOT lex — `"10" < 9`
-        // becomes `10 < 9` → false, while a pure-string compare would have
-        // said true. This is the JS spec's "only lex when BOTH are strings"
-        // branch.
+        // Only lex when BOTH operands are strings after ToPrimitive — `"10" < 9`
+        // becomes `10 < 9` → false, not lex `"10" < "9"`.
         assertThat(run(ComparisonOperators::opLt, arr(s("10"), Value.IntValue(9))))
             .isEqualTo(Value.BoolValue(false))
         // Non-numeric string coerces to NaN → comparison is false.
@@ -91,6 +88,25 @@ class ComparisonOperatorsTest {
             run(
                 ComparisonOperators::opLt,
                 arr(Value.ObjectValue(emptyMap()), Value.IntValue(1)),
+            ),
+        ).isEqualTo(Value.BoolValue(false))
+    }
+
+    @Test
+    fun testLtCompoundComparedToStringUsesLex() {
+        assertThat(
+            run(ComparisonOperators::opLt, arr(Value.ArrayValue(emptyList()), s("a"))),
+        ).isEqualTo(Value.BoolValue(true))
+        assertThat(
+            run(
+                ComparisonOperators::opLt,
+                arr(Value.ArrayValue(listOf(Value.IntValue(10))), s("9")),
+            ),
+        ).isEqualTo(Value.BoolValue(true))
+        assertThat(
+            run(
+                ComparisonOperators::opLt,
+                arr(Value.ArrayValue(listOf(Value.IntValue(1))), s("02")),
             ),
         ).isEqualTo(Value.BoolValue(false))
     }
