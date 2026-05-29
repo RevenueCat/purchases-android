@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.admob
 
 import android.app.Activity
-import android.util.Log
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.appopen.AppOpenAd
@@ -19,10 +18,7 @@ private fun applyPlacementOverride(callback: FullScreenContentCallback?, placeme
     if (trackingCallback != null) {
         trackingCallback.placement = placement
     } else {
-        Log.w(
-            Constants.TAG,
-            "Placement override ignored: fullScreenContentCallback was manually reassigned",
-        )
+        Logger.w("Placement override ignored: fullScreenContentCallback was manually reassigned")
     }
 }
 

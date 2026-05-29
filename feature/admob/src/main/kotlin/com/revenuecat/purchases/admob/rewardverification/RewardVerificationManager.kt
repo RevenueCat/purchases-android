@@ -2,13 +2,12 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.admob.Constants
+import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import java.util.UUID
 
@@ -49,15 +48,11 @@ internal object RewardVerificationManager {
 
     private fun installInternal(adResponseId: String?) {
         if (!Purchases.isConfigured) {
-            Log.e(
-                Constants.TAG,
-                "Purchases is not configured. Call Purchases.configure() before enabling reward verification.",
-            )
+            Logger.e("Purchases is not configured. Call Purchases.configure() before enabling reward verification.")
             return
         }
         if (adResponseId == null) {
-            Log.e(
-                Constants.TAG,
+            Logger.e(
                 "Reward verification requires a loaded ad with a responseId. " +
                     "Call enableRewardVerification() after the ad has loaded.",
             )
@@ -69,8 +64,7 @@ internal object RewardVerificationManager {
             clientTransactionId = UUID.randomUUID().toString(),
         )
         if (!didStoreClientTransactionId) {
-            Log.e(
-                Constants.TAG,
+            Logger.e(
                 "Reward verification setup is not ready. " +
                     "Try enabling reward verification after Purchases is configured.",
             )

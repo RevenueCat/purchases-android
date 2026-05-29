@@ -2,12 +2,11 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesService
-import com.revenuecat.purchases.admob.Constants
+import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import kotlinx.coroutines.CoroutineScope
@@ -93,10 +92,7 @@ internal class RewardVerificationRuntime(
     private fun warnAndAssertIfMissingClientTransactionId(clientTransactionId: String?) {
         if (clientTransactionId != null) return
 
-        Log.w(
-            Constants.TAG,
-            "Reward verification callback requires enableRewardVerification() before show().",
-        )
+        Logger.w("Reward verification callback requires enableRewardVerification() before show().")
     }
 
     @Synchronized
