@@ -77,7 +77,14 @@ internal object Poller {
             }
 
             try {
-                terminalOutcomeOrNull(fetcher.fetch(clientTransactionId))?.let { return it }
+                val outcome = when (val result = fetcher.fetch(clientTransactionId)) {
+                    is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
+                    CoreRewardVerificationResult.FAILED -> Outcome.Failed
+                    CoreRewardVerificationResult.PENDING,
+                    CoreRewardVerificationResult.UNKNOWN,
+                    -> null
+                }
+                if (outcome != null) return outcome
             } catch (e: CancellationException) {
                 // Preserve cooperative cancellation for coroutine callers.
                 throw e
@@ -91,21 +98,6 @@ internal object Poller {
 
         // Exhausted every attempt without reaching a terminal verified/failed status.
         return Outcome.Failed
-    }
-
-    /**
-     * Maps a single status read to a terminal [Outcome], or `null` when the status is non-terminal
-     * (pending / unknown) and polling should keep retrying.
-     */
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
-    internal fun terminalOutcomeOrNull(result: CoreRewardVerificationResult): Outcome? {
-        return when (result) {
-            is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
-            CoreRewardVerificationResult.FAILED -> Outcome.Failed
-            CoreRewardVerificationResult.PENDING,
-            CoreRewardVerificationResult.UNKNOWN,
-            -> null
-        }
     }
 
     private fun Throwable.isTransientPollingError(): Boolean {
