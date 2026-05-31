@@ -54,7 +54,6 @@ internal object Poller {
         ).toResult()
     }
 
-    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     private suspend fun pollOutcome(
         clientTransactionId: String,
         fetcher: RewardVerificationFetcher,
@@ -62,47 +61,68 @@ internal object Poller {
         jitterSeconds: () -> Double,
         maxAttempts: Int,
     ): Outcome {
-        for (attempt in 0 until maxAttempts) {
-            if (attempt > 0) {
-                try {
-                    sleepSeconds(jitterSeconds())
-                } catch (e: CancellationException) {
-                    // Preserve cooperative cancellation for coroutine callers.
-                    throw e
-                } catch (_: Exception) {
-                    // If scheduling the backoff fails, finish with a deterministic failure instead
-                    // of spinning in a tight retry loop.
-                    return Outcome.Failed
-                }
+        var outcome: Outcome? = null
+        var attempt = 0
+        while (outcome == null && attempt < maxAttempts) {
+            outcome = if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds)) {
+                Outcome.Failed
+            } else {
+                fetchOutcomeOrRetry(clientTransactionId, fetcher)
             }
-
-            try {
-                val outcome = when (val result = fetcher.fetch(clientTransactionId)) {
-                    is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
-                    CoreRewardVerificationResult.FAILED -> Outcome.Failed
-                    CoreRewardVerificationResult.PENDING,
-                    CoreRewardVerificationResult.UNKNOWN,
-                    -> null
-                }
-                if (outcome != null) return outcome
-            } catch (e: CancellationException) {
-                // Preserve cooperative cancellation for coroutine callers.
-                throw e
-            } catch (e: Exception) {
-                if (e.isTransientPollingError()) {
-                    continue
-                }
-                return Outcome.Failed
-            }
+            attempt++
         }
-
-        // Exhausted every attempt without reaching a terminal verified/failed status.
-        return Outcome.Failed
+        // A null outcome means every attempt was exhausted without reaching a terminal status.
+        return outcome ?: Outcome.Failed
     }
 
-    private fun Throwable.isTransientPollingError(): Boolean {
-        val purchasesException = this as? PurchasesException ?: return false
-        return when (purchasesException.code) {
+    /**
+     * Awaits the backoff before the next attempt. Returns `true` to proceed, or `false` when
+     * scheduling the backoff fails for a non-cancellation reason (the loop then fails deterministically
+     * instead of spinning in a tight retry). Cancellation is rethrown to preserve cooperative
+     * cancellation for coroutine callers.
+     */
+    private suspend fun awaitBackoff(
+        sleepSeconds: suspend (Double) -> Unit,
+        jitterSeconds: () -> Double,
+    ): Boolean {
+        return try {
+            sleepSeconds(jitterSeconds())
+            true
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /**
+     * Performs a single status read. Returns a terminal [Outcome] (verified/failed), or `null` when
+     * the status is non-terminal (pending/unknown) or the read hit a transient error and polling
+     * should keep retrying. Cancellation is rethrown to preserve cooperative cancellation.
+     */
+    private suspend fun fetchOutcomeOrRetry(
+        clientTransactionId: String,
+        fetcher: RewardVerificationFetcher,
+    ): Outcome? {
+        return try {
+            when (val result = fetcher.fetch(clientTransactionId)) {
+                is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
+                CoreRewardVerificationResult.FAILED -> Outcome.Failed
+                CoreRewardVerificationResult.PENDING,
+                CoreRewardVerificationResult.UNKNOWN,
+                -> null
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: PurchasesException) {
+            if (e.isTransientPollingError()) null else Outcome.Failed
+        } catch (_: Exception) {
+            Outcome.Failed
+        }
+    }
+
+    private fun PurchasesException.isTransientPollingError(): Boolean {
+        return when (code) {
             PurchasesErrorCode.NetworkError,
             PurchasesErrorCode.UnknownBackendError,
             -> true
