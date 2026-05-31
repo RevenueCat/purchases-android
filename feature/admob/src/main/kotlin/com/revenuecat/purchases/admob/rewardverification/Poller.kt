@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
 import kotlinx.coroutines.CancellationException
@@ -61,10 +62,14 @@ internal object Poller {
         jitterSeconds: () -> Double,
         maxAttempts: Int,
     ): Outcome {
+        Logger.d("Reward verification poll start transactionId=$clientTransactionId maxAttempts=$maxAttempts")
         var outcome: Outcome? = null
         var attempt = 0
         while (outcome == null && attempt < maxAttempts) {
-            outcome = if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds)) {
+            Logger.d(
+                "Reward verification poll attempt ${attempt + 1}/$maxAttempts transactionId=$clientTransactionId",
+            )
+            outcome = if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds, clientTransactionId)) {
                 Outcome.Failed
             } else {
                 fetchOutcomeOrRetry(clientTransactionId, fetcher)
@@ -72,6 +77,11 @@ internal object Poller {
             attempt++
         }
         // A null outcome means every attempt was exhausted without reaching a terminal status.
+        if (outcome == null) {
+            Logger.w(
+                "Reward verification poll exhausted $maxAttempts attempts transactionId=$clientTransactionId",
+            )
+        }
         return outcome ?: Outcome.Failed
     }
 
@@ -84,6 +94,7 @@ internal object Poller {
     private suspend fun awaitBackoff(
         sleepSeconds: suspend (Double) -> Unit,
         jitterSeconds: () -> Double,
+        clientTransactionId: String,
     ): Boolean {
         return try {
             sleepSeconds(jitterSeconds())
@@ -91,6 +102,7 @@ internal object Poller {
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
+            Logger.e("Reward verification poll backoff scheduling failed transactionId=$clientTransactionId")
             false
         }
     }
@@ -105,7 +117,9 @@ internal object Poller {
         fetcher: RewardVerificationFetcher,
     ): Outcome? {
         return try {
-            when (val result = fetcher.fetch(clientTransactionId)) {
+            val result = fetcher.fetch(clientTransactionId)
+            Logger.d("Reward verification poll status=${result.logDescription()} transactionId=$clientTransactionId")
+            when (result) {
                 is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
                 CoreRewardVerificationResult.FAILED -> Outcome.Failed
                 CoreRewardVerificationResult.PENDING,
@@ -115,8 +129,18 @@ internal object Poller {
         } catch (e: CancellationException) {
             throw e
         } catch (e: PurchasesException) {
-            if (e.isTransientPollingError()) null else Outcome.Failed
+            if (e.isTransientPollingError()) {
+                Logger.d(
+                    "Reward verification poll transient error, retrying: ${e.code} " +
+                        "transactionId=$clientTransactionId",
+                )
+                null
+            } else {
+                Logger.e("Reward verification poll terminal error: ${e.code} transactionId=$clientTransactionId")
+                Outcome.Failed
+            }
         } catch (_: Exception) {
+            Logger.e("Reward verification poll unexpected error transactionId=$clientTransactionId")
             Outcome.Failed
         }
     }
@@ -127,6 +151,15 @@ internal object Poller {
             PurchasesErrorCode.UnknownBackendError,
             -> true
             else -> false
+        }
+    }
+
+    private fun CoreRewardVerificationResult.logDescription(): String {
+        return when (this) {
+            is CoreRewardVerificationResult.Verified -> "verified"
+            CoreRewardVerificationResult.PENDING -> "pending"
+            CoreRewardVerificationResult.FAILED -> "failed"
+            CoreRewardVerificationResult.UNKNOWN -> "unknown"
         }
     }
 
