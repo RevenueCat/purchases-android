@@ -17,16 +17,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.revenuecat.sample.admob.ui.ads.verification.VerificationMessage.Severity
+import com.revenuecat.sample.admob.ui.ads.verification.RewardedVerificationMessage.Severity
 
 /**
- * Renders a [VerificationMessage] in a tinted card, mirroring the iOS `ResultCard`.
+ * Renders a [RewardedVerificationMessage] in a tinted card, mirroring the iOS `ResultCard`.
  *
  * The tint reflects the message [Severity]; a progress indicator is shown while the message
  * represents an in-progress (loading / verifying) state.
  */
 @Composable
-internal fun ResultCard(message: VerificationMessage) {
+internal fun RewardedResultCard(message: RewardedVerificationMessage) {
     val tint = tintFor(message.severity)
     Surface(
         modifier = Modifier.fillMaxWidth(),

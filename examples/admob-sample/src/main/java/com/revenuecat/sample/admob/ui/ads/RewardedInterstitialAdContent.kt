@@ -30,8 +30,8 @@ import com.revenuecat.purchases.admob.enableRewardVerification
 import com.revenuecat.purchases.admob.loadAndTrackRewardedInterstitialAd
 import com.revenuecat.purchases.admob.show
 import com.revenuecat.sample.admob.data.Constants
-import com.revenuecat.sample.admob.ui.ads.verification.ResultCard
-import com.revenuecat.sample.admob.ui.ads.verification.VerificationMessage
+import com.revenuecat.sample.admob.ui.ads.verification.RewardedResultCard
+import com.revenuecat.sample.admob.ui.ads.verification.RewardedVerificationMessage
 
 @Suppress("MultipleEmitters", "LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -39,7 +39,7 @@ import com.revenuecat.sample.admob.ui.ads.verification.VerificationMessage
 internal fun RewardedInterstitialAdContent(activity: Activity) {
     val context = LocalContext.current
     var useRewardVerification by remember { mutableStateOf(true) }
-    var message by remember { mutableStateOf<VerificationMessage?>(null) }
+    var message by remember { mutableStateOf<RewardedVerificationMessage?>(null) }
     var rewardedInterstitialAd by remember { mutableStateOf<RewardedInterstitialAd?>(null) }
     // Captured at load time: the toggle can change before Show, but the show path must match how
     // the ad was loaded (enableRewardVerification() is a precondition of the verification overload).
@@ -79,7 +79,7 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
     ) {
         Button(
             onClick = {
-                message = VerificationMessage.loading
+                message = RewardedVerificationMessage.loading
                 val verifyReward = useRewardVerification
                 Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
                     context = context,
@@ -90,9 +90,9 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
                         override fun onAdLoaded(ad: RewardedInterstitialAd) {
                             if (verifyReward) {
                                 ad.enableRewardVerification()
-                                message = VerificationMessage.readyWithVerification
+                                message = RewardedVerificationMessage.readyWithVerification
                             } else {
-                                message = VerificationMessage.readyWithoutVerification
+                                message = RewardedVerificationMessage.readyWithoutVerification
                             }
                             loadedWithVerification = verifyReward
                             rewardedInterstitialAd = ad
@@ -100,7 +100,7 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
 
                         override fun onAdFailedToLoad(error: LoadAdError) {
                             rewardedInterstitialAd = null
-                            message = VerificationMessage.loadFailed
+                            message = RewardedVerificationMessage.loadFailed
                         }
                     },
                 )
@@ -117,16 +117,16 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
                 if (loadedWithVerification) {
                     ad.show(
                         activity,
-                        rewardVerificationStarted = { message = VerificationMessage.verifyingReward },
+                        rewardVerificationStarted = { message = RewardedVerificationMessage.verifyingReward },
                         rewardVerificationCompleted = { result ->
-                            message = VerificationMessage.forVerificationResult(result)
+                            message = RewardedVerificationMessage.forVerificationResult(result)
                         },
                     )
                 } else {
                     ad.show(
                         activity,
                         OnUserEarnedRewardListener { reward ->
-                            message = VerificationMessage.rewardEarned(reward.amount, reward.type)
+                            message = RewardedVerificationMessage.rewardEarned(reward.amount, reward.type)
                             Toast.makeText(
                                 context,
                                 "Earned reward: ${reward.amount} ${reward.type}",
@@ -144,5 +144,5 @@ internal fun RewardedInterstitialAdContent(activity: Activity) {
         }
     }
 
-    message?.let { ResultCard(it) }
+    message?.let { RewardedResultCard(it) }
 }
