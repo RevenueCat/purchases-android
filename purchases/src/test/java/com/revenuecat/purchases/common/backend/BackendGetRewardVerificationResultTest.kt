@@ -182,7 +182,7 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { fail("Expected error. Got success") },
-            onError = { error -> obtainedError = error },
+            onError = { error -> obtainedError = error.error },
         )
 
         assertThat(obtainedError).isNotNull
@@ -196,14 +196,19 @@ class BackendGetRewardVerificationResultTest {
             payload = """{"code": 7000, "message": "internal error"}""",
         )
         var obtainedError: PurchasesError? = null
+        var obtainedIsServerError: Boolean? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { fail("Expected error. Got success") },
-            onError = { error -> obtainedError = error },
+            onError = { error ->
+                obtainedError = error.error
+                obtainedIsServerError = error.isServerError
+            },
         )
 
         assertThat(obtainedError).isNotNull
+        assertThat(obtainedIsServerError).isTrue
     }
 
     @Test
@@ -214,13 +219,13 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { lock.countDown() },
-            onError = { fail("Expected success. Got error: $it") },
+            onError = { error -> fail("Expected success. Got error: $error") },
         )
         asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { lock.countDown() },
-            onError = { fail("Expected success. Got error: $it") },
+            onError = { error -> fail("Expected success. Got error: $error") },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isEqualTo(0)
