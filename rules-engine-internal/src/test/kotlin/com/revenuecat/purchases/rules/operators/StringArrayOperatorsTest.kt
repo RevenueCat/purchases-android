@@ -87,7 +87,7 @@ class StringArrayOperatorsTest {
     @Test
     fun `in empty string haystack is false`() {
         // json-logic-js rejects empty-string haystacks before indexOf
-        // (`if (!b) return false`), even though "".indexOf("") === 0.
+        // (`if (!haystack) return false`), even though "".indexOf("") === 0.
         val needles = listOf(s(""), s("x"), Value.Null, Value.IntValue(0))
         for (needle in needles) {
             val out = StringArrayOperators.opIn(arr(needle, s("")), Value.Null)

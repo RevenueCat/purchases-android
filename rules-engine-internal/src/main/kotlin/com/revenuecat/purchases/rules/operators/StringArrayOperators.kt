@@ -19,13 +19,14 @@ internal object StringArrayOperators {
      * `{"in": [needle, haystack]}` — substring or array-membership test.
      * For a [Value.StringValue] haystack, the needle is stringified and
      * the test is substring containment (mirrors JS
-     * `String.prototype.indexOf`); an empty haystack is falsy in
-     * json-logic-js (`if (!b) return false`), so `in` never matches. For a
+     * `String.prototype.indexOf`); when the haystack is falsy,
+     * json-logic-js returns false immediately
+     * (`if (!haystack) return false`), so an empty string never matches. For a
      * [Value.ArrayValue] haystack, the test is strict element equality
      * (mirrors JS `Array.prototype.indexOf`, which uses `===`). Any other
-     * haystack type returns `false`. `json-logic-js` declares `in` as
-     * `function(a, b)`, so missing or extra operands short-circuit to
-     * `false`.
+     * haystack type returns `false`. `json-logic-js` implements `in` as
+     * `function(a, b)` (needle, haystack); missing or extra operands
+     * short-circuit to `false`.
      */
     fun opIn(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
@@ -33,8 +34,8 @@ internal object StringArrayOperators {
         val haystack = if (evaluated.size >= 2) evaluated[1] else Value.Null
         val result = when (haystack) {
             is Value.StringValue -> {
-                // json-logic-js: `if (!b || …) return false` — empty string is
-                // falsy, so `in` never matches regardless of needle.
+                // json-logic-js: `if (!haystack || …) return false` — empty
+                // string is falsy, so `in` never matches regardless of needle.
                 if (haystack.value.isEmpty()) false
                 else haystack.value.contains(jsString(needle))
             }
