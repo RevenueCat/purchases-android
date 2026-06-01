@@ -26,7 +26,7 @@ internal class RewardVerificationRuntime(
     private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
         Poller.poll(clientTransactionId)
     },
-    private val invalidateVirtualCurrenciesCache: () -> Unit = ::invalidateVirtualCurrenciesCacheIfConfigured,
+    private val invalidateVirtualCurrenciesCache: () -> Unit = { invalidateVirtualCurrenciesCacheIfConfigured() },
 ) : PurchasesService {
     private var clientTransactionIdByAdResponseId: MutableMap<String, String>? = null
 
@@ -129,5 +129,26 @@ internal class RewardVerificationRuntime(
         clientTransactionIdByAdResponseId = null
         verificationScope?.cancel()
         verificationScope = null
+    }
+
+    private companion object {
+
+        /**
+         * Invalidates the virtual currencies cache if the SDK is configured.
+         *
+         * Called after reward verification grants a virtual-currency reward so the next
+         * [Purchases.getVirtualCurrencies] fetch returns the updated balance instead of a stale cached value.
+         * If [Purchases] has not been configured yet, logs a warning and skips invalidation.
+         */
+        fun invalidateVirtualCurrenciesCacheIfConfigured() {
+            if (!Purchases.isConfigured) {
+                Logger.w(
+                    "Purchases is not configured. " +
+                        "Skipping virtual currencies cache invalidation after reward verification.",
+                )
+                return
+            }
+            Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+        }
     }
 }
