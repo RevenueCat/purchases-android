@@ -9,8 +9,8 @@ import java.util.UUID
 /**
  * Sealed class representing custom paywall events. Each subtype represents a specific event type.
  */
-@OptIn(InternalRevenueCatAPI::class)
-internal sealed class CustomPaywallEvent : FeatureEvent {
+@InternalRevenueCatAPI
+public sealed class CustomPaywallEvent : FeatureEvent {
 
     override val isPriorityEvent: Boolean get() = true
 
@@ -18,23 +18,23 @@ internal sealed class CustomPaywallEvent : FeatureEvent {
      * Type representing a custom paywall impression event. Meant for tracking custom paywall views.
      */
     @Poko
-    internal class Impression(
-        val creationData: CreationData = CreationData(),
-        val data: Data,
+    public class Impression(
+        public val creationData: CreationData = CreationData(),
+        public val data: Data,
     ) : CustomPaywallEvent() {
         @Poko
-        internal class CreationData(
-            val id: UUID = UUID.randomUUID(),
-            val date: Date = Date(),
+        public class CreationData(
+            public val id: UUID = UUID.randomUUID(),
+            public val date: Date = Date(),
         )
 
         @Poko
-        internal class Data(
-            val paywallId: String?,
-            val offeringId: String? = null,
-            val placementIdentifier: String? = null,
-            val targetingRevision: Int? = null,
-            val targetingRuleId: String? = null,
+        public class Data(
+            public val paywallId: String?,
+            public val offeringId: String? = null,
+            public val placementIdentifier: String? = null,
+            public val targetingRevision: Int? = null,
+            public val targetingRuleId: String? = null,
         )
     }
 }
