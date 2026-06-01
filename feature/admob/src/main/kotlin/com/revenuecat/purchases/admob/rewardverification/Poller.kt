@@ -16,7 +16,7 @@ import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal object Poller {
 
-    internal const val DEFAULT_MAX_ATTEMPTS: Int = 10
+    private const val DEFAULT_MAX_ATTEMPTS: Int = 10
     private const val DEFAULT_JITTER_LOWER_BOUND_SECONDS: Double = 0.75
     private const val DEFAULT_JITTER_UPPER_BOUND_SECONDS: Double = 1.25
     private const val MILLIS_PER_SECOND: Double = 1_000.0
@@ -25,7 +25,7 @@ internal object Poller {
      * Per-attempt backoff in seconds, jittered around a 1s interval so that concurrent verifications
      * do not align their polls. The defaults give an ~10s overall verification window.
      */
-    internal val defaultJitterSeconds: () -> Double = {
+    private val defaultJitterSeconds: () -> Double = {
         Random.nextDouble(
             from = DEFAULT_JITTER_LOWER_BOUND_SECONDS,
             until = DEFAULT_JITTER_UPPER_BOUND_SECONDS,
@@ -163,7 +163,6 @@ internal object Poller {
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     private fun CoreVerifiedReward.toAdMobReward(): VerifiedReward {
         return when (this) {
             is CoreVerifiedReward.VirtualCurrency ->
