@@ -21,10 +21,7 @@ internal object Poller {
     private const val DEFAULT_JITTER_UPPER_BOUND_SECONDS: Double = 1.25
     private const val MILLIS_PER_SECOND: Double = 1_000.0
 
-    /**
-     * Per-attempt backoff in seconds, jittered around a 1s interval so that concurrent verifications
-     * do not align their polls. The defaults give an ~10s overall verification window.
-     */
+    // Jittered ~1s per-attempt backoff so concurrent verifications don't align their polls.
     private val defaultJitterSeconds: () -> Double = {
         Random.nextDouble(
             from = DEFAULT_JITTER_LOWER_BOUND_SECONDS,
@@ -32,13 +29,6 @@ internal object Poller {
         )
     }
 
-    /**
-     * Polls the backend for the verification status of [clientTransactionId] until it reaches a
-     * terminal state (verified or failed), [maxAttempts] is exhausted, or the coroutine is cancelled.
-     *
-     * Pending/unknown statuses and transient network errors are retried after a [jitterSeconds]
-     * backoff; any other error and an exhausted attempt budget resolve to a failed result.
-     */
     suspend fun poll(
         clientTransactionId: String,
         fetcher: RewardVerificationFetcher = RewardVerificationFetcher.default,
@@ -76,7 +66,7 @@ internal object Poller {
             }
             attempt++
         }
-        // A null outcome means every attempt was exhausted without reaching a terminal status.
+        // Null outcome => every attempt exhausted without a terminal status.
         if (outcome == null) {
             Logger.w(
                 "Reward verification poll exhausted $maxAttempts attempts transactionId=$clientTransactionId",
@@ -85,12 +75,7 @@ internal object Poller {
         return outcome ?: Outcome.Failed
     }
 
-    /**
-     * Awaits the backoff before the next attempt. Returns `true` to proceed, or `false` when
-     * scheduling the backoff fails for a non-cancellation reason (the loop then fails deterministically
-     * instead of spinning in a tight retry). Cancellation is rethrown to preserve cooperative
-     * cancellation for coroutine callers.
-     */
+    // Returns false (fail deterministically) if scheduling the backoff fails, rather than spinning in a tight retry.
     private suspend fun awaitBackoff(
         sleepSeconds: suspend (Double) -> Unit,
         jitterSeconds: () -> Double,
@@ -107,11 +92,7 @@ internal object Poller {
         }
     }
 
-    /**
-     * Performs a single status read. Returns a terminal [Outcome] (verified/failed), or `null` when
-     * the status is non-terminal (pending/unknown) or the read hit a transient error and polling
-     * should keep retrying. Cancellation is rethrown to preserve cooperative cancellation.
-     */
+    // Returns a terminal Outcome, or null when polling should retry (pending/unknown or a transient error).
     private suspend fun fetchOutcomeOrRetry(
         clientTransactionId: String,
         fetcher: RewardVerificationFetcher,
