@@ -296,6 +296,11 @@ rewardedInterstitialAd?.show(
 )
 ```
 
+When `rewardVerificationResult` returns a `verifiedReward` of type `VerifiedReward.VirtualCurrency`, the adapter
+automatically calls `Purchases.sharedInstance.invalidateVirtualCurrenciesCache()` (if Purchases is configured) before
+delivering the callback. You only need to refetch balances (`Purchases.sharedInstance.getVirtualCurrencies(...)`) when
+your UI needs fresh values.
+
 ### App open ads
 
 **AdMob only** ([docs](https://developers.google.com/admob/android/app-open)):
