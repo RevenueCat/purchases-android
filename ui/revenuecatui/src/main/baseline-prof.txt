@@ -466,7 +466,7 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateKt;->getSelectedLo
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateKt;->isInFullScreenMode(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;)Z
 Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel;
 Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel$DefaultImpls;
-HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel$DefaultImpls;->closePaywall$default(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel;Lcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallResult;ILjava/lang/Object;)V
+PLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel$DefaultImpls;->closePaywall$default(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel;Lcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallResult;ILjava/lang/Object;)V
 Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelFactory;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelFactory;-><clinit>()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelFactory;-><init>(Lcom/revenuecat/purchases/ui/revenuecatui/helpers/ResourceProvider;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallOptions;Landroidx/compose/material3/ColorScheme;ZLkotlin/jvm/functions/Function1;Z)V
@@ -736,7 +736,7 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/LocaleHelpersKt;->toLayoutD
 Lcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;-><clinit>()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;-><init>()V
-HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;->d(Ljava/lang/String;)V
+PLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;->d(Ljava/lang/String;)V
 Lcom/revenuecat/purchases/ui/revenuecatui/helpers/NonEmptyList;
 Lcom/revenuecat/purchases/ui/revenuecatui/helpers/OfferingToStateMapperKt;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/OfferingToStateMapperKt;->toLegacyPaywallState(Lcom/revenuecat/purchases/Offering;Lcom/revenuecat/purchases/ui/revenuecatui/data/processed/VariableDataProvider;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallMode;Lcom/revenuecat/purchases/paywalls/PaywallData;Lcom/revenuecat/purchases/ui/revenuecatui/data/processed/PaywallTemplate;ZLjava/lang/String;Lcom/revenuecat/purchases/ui/revenuecatui/helpers/PaywallWarning;)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState;
