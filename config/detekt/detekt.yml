@@ -39,3 +39,9 @@ libraries:
 Compose:
   CompositionLocalAllowlist:
     allowedCompositionLocals: LocalPreviewImageLoader
+revenuecat:
+  active: true
+  ForbiddenPublicSealedClass:
+    active: true
+    excludes: [ '**/examples/**' ]
+    ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
