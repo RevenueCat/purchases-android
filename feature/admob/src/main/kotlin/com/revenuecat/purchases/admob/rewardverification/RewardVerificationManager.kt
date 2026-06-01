@@ -17,13 +17,13 @@ import java.util.UUID
 internal object RewardVerificationManager {
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private val runtime = RewardVerificationRuntime(
+    /**
+     * Receives [Purchases] lifecycle callbacks through [RewardVerificationService], which is discovered via
+     * [java.util.ServiceLoader], and also holds the per-show correlation state used by [install]/[handleRewardEarned].
+     */
+    internal val runtime = RewardVerificationRuntime(
         mainHandler = mainHandler,
     )
-
-    init {
-        Purchases.registerService(runtime)
-    }
 
     fun install(ad: RewardedAd) = installInternal(ad.responseInfo?.responseId, ad::setServerSideVerificationOptions)
 

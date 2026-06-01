@@ -215,18 +215,6 @@ public class Purchases internal constructor(
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal var serviceForwarder: PurchasesService = PurchasesServices.default()
 
-        @InternalRevenueCatAPI
-        @JvmStatic
-        public fun registerService(service: PurchasesService) {
-            PurchasesServices.register(service)
-        }
-
-        @InternalRevenueCatAPI
-        @JvmStatic
-        public fun unregisterService(service: PurchasesService) {
-            PurchasesServices.unregister(service)
-        }
-
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
          * being used
