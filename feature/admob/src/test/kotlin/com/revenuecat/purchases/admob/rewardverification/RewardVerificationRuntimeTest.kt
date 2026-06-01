@@ -3,11 +3,8 @@ package com.revenuecat.purchases.admob.rewardverification
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
-import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,7 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(RobolectricTestRunner::class)
 internal class RewardVerificationRuntimeTest {
 
@@ -46,7 +43,7 @@ internal class RewardVerificationRuntimeTest {
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
-        runtime.initialize(mockk<Purchases>(relaxed = true))
+        runtime.initialize()
         runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
@@ -58,7 +55,7 @@ internal class RewardVerificationRuntimeTest {
             },
         )
         assertTrue(pollStarted.await(1, TimeUnit.SECONDS))
-        runtime.close(mockk<Purchases>(relaxed = true))
+        runtime.close()
         val completionDelivered = (1..10).any {
             shadowOf(Looper.getMainLooper()).idle()
             completed.await(100, TimeUnit.MILLISECONDS)
@@ -86,7 +83,7 @@ internal class RewardVerificationRuntimeTest {
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
-        runtime.initialize(mockk<Purchases>(relaxed = true))
+        runtime.initialize()
         runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
@@ -181,7 +178,7 @@ internal class RewardVerificationRuntimeTest {
         val adResponseId = "ad-response-id"
         val completed = CountDownLatch(1)
 
-        runtime.initialize(mockk<Purchases>(relaxed = true))
+        runtime.initialize()
         runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
@@ -210,7 +207,7 @@ internal class RewardVerificationRuntimeTest {
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
-        runtime.initialize(mockk<Purchases>(relaxed = true))
+        runtime.initialize()
         // Intentionally skip setClientTransactionId.
 
         runtime.handleRewardEarned(

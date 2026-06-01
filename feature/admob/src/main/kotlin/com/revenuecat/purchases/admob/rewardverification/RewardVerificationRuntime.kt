@@ -3,9 +3,7 @@ package com.revenuecat.purchases.admob.rewardverification
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesService
 import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
@@ -17,7 +15,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class RewardVerificationRuntime(
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     private val createVerificationScope: () -> CoroutineScope = {
@@ -27,7 +25,7 @@ internal class RewardVerificationRuntime(
         Poller.poll(clientTransactionId)
     },
     private val invalidateVirtualCurrenciesCache: () -> Unit = { invalidateVirtualCurrenciesCacheIfConfigured() },
-) : PurchasesService {
+) {
     private var clientTransactionIdByAdResponseId: MutableMap<String, String>? = null
 
     @Volatile
@@ -117,14 +115,14 @@ internal class RewardVerificationRuntime(
     }
 
     @Synchronized
-    override fun initialize(purchases: Purchases) {
+    fun initialize() {
         verificationScope?.cancel()
         verificationScope = createVerificationScope()
         clientTransactionIdByAdResponseId = mutableMapOf()
     }
 
     @Synchronized
-    override fun close(purchases: Purchases) {
+    fun close() {
         clientTransactionIdByAdResponseId?.clear()
         clientTransactionIdByAdResponseId = null
         verificationScope?.cancel()

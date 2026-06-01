@@ -16,10 +16,10 @@ import com.revenuecat.purchases.PurchasesService
 @OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationService : PurchasesService {
     override fun initialize(purchases: Purchases) {
-        RewardVerificationManager.runtime.initialize(purchases)
+        RewardVerificationManager.runtime.initialize()
     }
 
     override fun close(purchases: Purchases) {
-        RewardVerificationManager.runtime.close(purchases)
+        RewardVerificationManager.runtime.close()
     }
 }
