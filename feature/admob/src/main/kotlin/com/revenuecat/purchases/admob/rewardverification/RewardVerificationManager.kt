@@ -97,7 +97,6 @@ internal object RewardVerificationManager {
             .setUserId(appUserID)
             .build()
 
-    // JSON keys and ordering must stay in sync with the other RevenueCat SDKs that hit the same SSV endpoint.
     private fun customData(apiKey: String, clientTransactionId: String): String =
         JSONObject()
             .put("api_key", apiKey)
