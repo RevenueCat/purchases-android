@@ -41,6 +41,9 @@ internal fun RewardedAdContent(activity: Activity) {
     var useRewardVerification by remember { mutableStateOf(true) }
     var message by remember { mutableStateOf<VerificationMessage?>(null) }
     var rewardedAd by remember { mutableStateOf<RewardedAd?>(null) }
+    // Captured at load time: the toggle can change before Show, but the show path must match how
+    // the ad was loaded (enableRewardVerification() is a precondition of the verification overload).
+    var loadedWithVerification by remember { mutableStateOf(false) }
 
     val isLoading = message?.isLoading == true
 
@@ -91,6 +94,7 @@ internal fun RewardedAdContent(activity: Activity) {
                             } else {
                                 message = VerificationMessage.readyWithoutVerification
                             }
+                            loadedWithVerification = verifyReward
                             rewardedAd = ad
                         }
 
@@ -110,7 +114,7 @@ internal fun RewardedAdContent(activity: Activity) {
         Button(
             onClick = {
                 val ad = rewardedAd ?: return@Button
-                if (useRewardVerification) {
+                if (loadedWithVerification) {
                     ad.show(
                         activity,
                         rewardVerificationStarted = { message = VerificationMessage.verifyingReward },
