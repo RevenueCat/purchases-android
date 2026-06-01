@@ -12,6 +12,7 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.RewardVerificationException
 import com.revenuecat.purchases.RewardVerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
@@ -105,7 +106,7 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias RewardVerificationResultCallback =
-    Pair<(RewardVerificationResult) -> Unit, (PurchasesError) -> Unit>
+    Pair<(RewardVerificationResult) -> Unit, (RewardVerificationException) -> Unit>
 
 internal typealias RemoteConfigCallback = Pair<(RemoteConfigResponse) -> Unit, (PurchasesError) -> Unit>
 
@@ -1197,7 +1198,7 @@ internal class Backend(
         appUserID: String,
         clientTransactionId: String,
         onSuccess: (RewardVerificationResult) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        onError: (RewardVerificationException) -> Unit,
     ) {
         val endpoint = Endpoint.GetRewardVerification(
             userId = appUserID,
@@ -1221,7 +1222,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     rewardVerificationResultCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    onErrorHandler(RewardVerificationException(error, isServerError = false))
                 }
             }
 
@@ -1236,12 +1237,21 @@ internal class Backend(
                             )
                             onSuccessHandler(response.toRewardVerificationResult())
                         } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                RewardVerificationException(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
                         } catch (e: IllegalArgumentException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                RewardVerificationException(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
                         }
                     } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                        onErrorHandler(
+                            RewardVerificationException(
+                                result.toPurchasesError().also { errorLog(it) },
+                                isServerError = RCHTTPStatusCodes.isServerError(result.responseCode),
+                            ),
+                        )
                     }
                 }
             }

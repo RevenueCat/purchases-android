@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.RewardVerificationException
 import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
@@ -126,13 +127,12 @@ internal object Poller {
         }
     }
 
+    // Retry transient failures only: transport NetworkError and HTTP 5xx server errors (a retry may
+    // reach a healthy instance). Deterministic errors — 4xx and unrecognized backend codes
+    // (UnknownBackendError) — yield the same response on retry, so they fail fast.
     private fun PurchasesException.isTransientPollingError(): Boolean {
-        return when (code) {
-            PurchasesErrorCode.NetworkError,
-            PurchasesErrorCode.UnknownBackendError,
-            -> true
-            else -> false
-        }
+        return code == PurchasesErrorCode.NetworkError ||
+            (this is RewardVerificationException && isServerError)
     }
 
     // Readable log form: object statuses log their name; Verified inlines the reward payload.

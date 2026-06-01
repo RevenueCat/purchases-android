@@ -1733,7 +1733,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                     receivedResult = result
                 }
 
-                override fun onError(error: PurchasesError) {
+                override fun onError(exception: RewardVerificationException) {
                     fail("should be success")
                 }
             },
@@ -1754,7 +1754,9 @@ internal class PurchasesTest : BasePurchasesTest() {
                 onError = captureLambda(),
             )
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(expectedError)
+            lambda<(RewardVerificationException) -> Unit>().captured.invoke(
+                RewardVerificationException(expectedError, false),
+            )
         }
 
         var receivedError: PurchasesError? = null
@@ -1765,8 +1767,8 @@ internal class PurchasesTest : BasePurchasesTest() {
                     fail("should be error")
                 }
 
-                override fun onError(error: PurchasesError) {
-                    receivedError = error
+                override fun onError(exception: RewardVerificationException) {
+                    receivedError = exception.error
                 }
             },
         )
@@ -1806,7 +1808,9 @@ internal class PurchasesTest : BasePurchasesTest() {
                 onError = captureLambda(),
             )
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(expectedError)
+            lambda<(RewardVerificationException) -> Unit>().captured.invoke(
+                RewardVerificationException(expectedError, false),
+            )
         }
 
         val thrown = runCatching {

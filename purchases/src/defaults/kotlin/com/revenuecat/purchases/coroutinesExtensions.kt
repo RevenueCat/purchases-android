@@ -228,8 +228,8 @@ public suspend fun Purchases.awaitGetRewardVerificationResult(
                     continuation.safeResume(result)
                 }
 
-                override fun onError(error: PurchasesError) {
-                    continuation.safeResumeWithException(PurchasesException(error))
+                override fun onError(exception: RewardVerificationException) {
+                    continuation.safeResumeWithException(exception)
                 }
             },
         )

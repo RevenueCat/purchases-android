@@ -89,7 +89,7 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { receivedResult = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
+            onError = { exception -> fail("Expected success. Got error: $exception") },
         )
 
         assertThat(receivedResult).isEqualTo(
@@ -115,7 +115,7 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { receivedResult = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
+            onError = { exception -> fail("Expected success. Got error: $exception") },
         )
 
         assertThat(receivedResult).isEqualTo(RewardVerificationResult.UNKNOWN)
@@ -130,7 +130,7 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { receivedResult = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
+            onError = { exception -> fail("Expected success. Got error: $exception") },
         )
 
         assertThat(receivedResult).isEqualTo(
@@ -147,7 +147,7 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { receivedResult = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
+            onError = { exception -> fail("Expected success. Got error: $exception") },
         )
 
         assertThat(receivedResult).isEqualTo(
@@ -166,7 +166,7 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { receivedResult = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
+            onError = { exception -> fail("Expected success. Got error: $exception") },
         )
 
         assertThat(receivedResult).isEqualTo(
@@ -182,7 +182,7 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { fail("Expected error. Got success") },
-            onError = { error -> obtainedError = error },
+            onError = { exception -> obtainedError = exception.error },
         )
 
         assertThat(obtainedError).isNotNull
@@ -196,14 +196,19 @@ class BackendGetRewardVerificationResultTest {
             payload = """{"code": 7000, "message": "internal error"}""",
         )
         var obtainedError: PurchasesError? = null
+        var obtainedIsServerError: Boolean? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { fail("Expected error. Got success") },
-            onError = { error -> obtainedError = error },
+            onError = { exception ->
+                obtainedError = exception.error
+                obtainedIsServerError = exception.isServerError
+            },
         )
 
         assertThat(obtainedError).isNotNull
+        assertThat(obtainedIsServerError).isTrue
     }
 
     @Test
@@ -214,13 +219,13 @@ class BackendGetRewardVerificationResultTest {
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { lock.countDown() },
-            onError = { fail("Expected success. Got error: $it") },
+            onError = { exception -> fail("Expected success. Got error: $exception") },
         )
         asyncBackend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
             onSuccess = { lock.countDown() },
-            onError = { fail("Expected success. Got error: $it") },
+            onError = { exception -> fail("Expected success. Got error: $exception") },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isEqualTo(0)
