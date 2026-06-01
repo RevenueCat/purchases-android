@@ -112,6 +112,91 @@ internal class RewardVerificationRuntimeTest {
     }
 
     @Test
+    fun `verified virtual currency reward invalidates virtual currencies cache`() {
+        var invalidationCount = 0
+        val runtime = runtimeDeliveringResult(
+            result = RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 5)),
+            invalidateVirtualCurrenciesCache = { invalidationCount++ },
+        )
+
+        deliverRewardEarned(runtime)
+
+        assertEquals(1, invalidationCount)
+    }
+
+    @Test
+    fun `verified no reward does not invalidate virtual currencies cache`() {
+        var invalidationCount = 0
+        val runtime = runtimeDeliveringResult(
+            result = RewardVerificationResult.verified(VerifiedReward.NoReward),
+            invalidateVirtualCurrenciesCache = { invalidationCount++ },
+        )
+
+        deliverRewardEarned(runtime)
+
+        assertEquals(0, invalidationCount)
+    }
+
+    @Test
+    fun `verified unsupported reward does not invalidate virtual currencies cache`() {
+        var invalidationCount = 0
+        val runtime = runtimeDeliveringResult(
+            result = RewardVerificationResult.verified(VerifiedReward.UnsupportedReward),
+            invalidateVirtualCurrenciesCache = { invalidationCount++ },
+        )
+
+        deliverRewardEarned(runtime)
+
+        assertEquals(0, invalidationCount)
+    }
+
+    @Test
+    fun `failed result does not invalidate virtual currencies cache`() {
+        var invalidationCount = 0
+        val runtime = runtimeDeliveringResult(
+            result = RewardVerificationResult.failed,
+            invalidateVirtualCurrenciesCache = { invalidationCount++ },
+        )
+
+        deliverRewardEarned(runtime)
+
+        assertEquals(0, invalidationCount)
+    }
+
+    private fun runtimeDeliveringResult(
+        result: RewardVerificationResult,
+        invalidateVirtualCurrenciesCache: () -> Unit,
+    ): RewardVerificationRuntime {
+        return RewardVerificationRuntime(
+            mainHandler = Handler(Looper.getMainLooper()),
+            createVerificationScope = {
+                CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            },
+            poll = { result },
+            invalidateVirtualCurrenciesCache = invalidateVirtualCurrenciesCache,
+        )
+    }
+
+    private fun deliverRewardEarned(runtime: RewardVerificationRuntime) {
+        val adResponseId = "ad-response-id"
+        val completed = CountDownLatch(1)
+
+        runtime.initialize(mockk<Purchases>(relaxed = true))
+        runtime.setClientTransactionId(adResponseId, "client-transaction-id")
+
+        runtime.handleRewardEarned(
+            adResponseId = adResponseId,
+            rewardVerificationStarted = null,
+            rewardVerificationCompleted = { completed.countDown() },
+        )
+        val completionDelivered = (1..10).any {
+            shadowOf(Looper.getMainLooper()).idle()
+            completed.await(100, TimeUnit.MILLISECONDS)
+        }
+        assertTrue(completionDelivered)
+    }
+
+    @Test
     fun `missing client transaction id skips started callback and delivers failed`() {
         val runtime = RewardVerificationRuntime(
             mainHandler = Handler(Looper.getMainLooper()),

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesService
 import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
+import com.revenuecat.purchases.admob.VerifiedReward
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ internal class RewardVerificationRuntime(
     private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
         Poller.poll(clientTransactionId)
     },
+    private val invalidateVirtualCurrenciesCache: () -> Unit = ::invalidateVirtualCurrenciesCacheIfConfigured,
 ) : PurchasesService {
     private var clientTransactionIdByAdResponseId: MutableMap<String, String>? = null
 
@@ -49,6 +51,9 @@ internal class RewardVerificationRuntime(
         val completionDelivered = AtomicBoolean(false)
         fun deliverOnce(result: RewardVerificationResult) {
             if (completionDelivered.compareAndSet(false, true)) {
+                if (result.verifiedReward is VerifiedReward.VirtualCurrency) {
+                    invalidateVirtualCurrenciesCache()
+                }
                 notifyCompleted(result, rewardVerificationCompleted)
             }
         }
