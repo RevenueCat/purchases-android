@@ -127,9 +127,11 @@ internal object Poller {
         }
     }
 
-    // Retry transient failures only: transport NetworkError and HTTP 5xx server errors (a retry may
-    // reach a healthy instance). Deterministic errors — 4xx and unrecognized backend codes
-    // (UnknownBackendError) — yield the same response on retry, so they fail fast.
+    // Retry only transient failures: transport NetworkError and HTTP 5xx server errors (a retry may
+    // reach a healthy backend instance). The decision is keyed on the transport error and the 5xx
+    // flag, NOT on the backend error code — so an infra 5xx that maps to UnknownBackendError is
+    // retried, while any non-5xx failure (4xx, or a non-5xx UnknownBackendError) is deterministic
+    // and fails fast.
     private fun PurchasesException.isTransientPollingError(): Boolean {
         return code == PurchasesErrorCode.NetworkError ||
             (this is RewardVerificationException && isServerError)

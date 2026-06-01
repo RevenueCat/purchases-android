@@ -4,7 +4,6 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.RewardVerificationException
 import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
@@ -162,7 +161,10 @@ class PollerTest {
             fetcher = {
                 attempts++
                 if (attempts < 2) {
-                    throw PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+                    throw RewardVerificationException(
+                        PurchasesError(PurchasesErrorCode.NetworkError),
+                        isServerError = false,
+                    )
                 }
                 CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
             },
@@ -222,34 +224,66 @@ class PollerTest {
     }
 
     @Test
-    fun `poll stops on unknown backend errors`() = runBlocking {
+    fun `poll does not retry non-server unknown backend errors`() = runBlocking {
         var attempts = 0
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                throw PurchasesException(PurchasesError(PurchasesErrorCode.UnknownBackendError))
+                // A non-5xx unrecognized backend code is deterministic; retrying is pointless.
+                throw RewardVerificationException(
+                    PurchasesError(PurchasesErrorCode.UnknownBackendError),
+                    isServerError = false,
+                )
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
         )
 
-        // UnknownBackendError means the backend returned an unrecognized code; retrying is pointless.
         assertEquals(1, attempts)
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
     }
 
     @Test
-    fun `poll stops on non-transient purchases errors`() = runBlocking {
+    fun `poll retries server errors even when mapped to an unknown backend code`() = runBlocking {
         var attempts = 0
 
         val result = Poller.poll(
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                throw PurchasesException(PurchasesError(PurchasesErrorCode.InvalidCredentialsError))
+                if (attempts < 2) {
+                    // An infra 5xx with no recognized code surfaces as UnknownBackendError; retry is
+                    // keyed on isServerError (the 5xx), not on the code.
+                    throw RewardVerificationException(
+                        PurchasesError(PurchasesErrorCode.UnknownBackendError),
+                        isServerError = true,
+                    )
+                }
+                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+            },
+            sleepSeconds = noSleep,
+            jitterSeconds = fixedJitter,
+        )
+
+        assertEquals(2, attempts)
+        assertFalse(result.failed)
+    }
+
+    @Test
+    fun `poll stops on non-transient errors`() = runBlocking {
+        var attempts = 0
+
+        val result = Poller.poll(
+            clientTransactionId = "ct_1",
+            fetcher = {
+                attempts++
+                throw RewardVerificationException(
+                    PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+                    isServerError = false,
+                )
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
