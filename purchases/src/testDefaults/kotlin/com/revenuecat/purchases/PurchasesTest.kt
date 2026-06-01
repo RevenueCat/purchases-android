@@ -1733,7 +1733,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                     receivedResult = result
                 }
 
-                override fun onError(exception: RewardVerificationException) {
+                override fun onError(error: RewardVerificationError) {
                     fail("should be success")
                 }
             },
@@ -1754,8 +1754,8 @@ internal class PurchasesTest : BasePurchasesTest() {
                 onError = captureLambda(),
             )
         } answers {
-            lambda<(RewardVerificationException) -> Unit>().captured.invoke(
-                RewardVerificationException(expectedError, false),
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
             )
         }
 
@@ -1767,8 +1767,8 @@ internal class PurchasesTest : BasePurchasesTest() {
                     fail("should be error")
                 }
 
-                override fun onError(exception: RewardVerificationException) {
-                    receivedError = exception.error
+                override fun onError(error: RewardVerificationError) {
+                    receivedError = error.error
                 }
             },
         )
@@ -1808,8 +1808,8 @@ internal class PurchasesTest : BasePurchasesTest() {
                 onError = captureLambda(),
             )
         } answers {
-            lambda<(RewardVerificationException) -> Unit>().captured.invoke(
-                RewardVerificationException(expectedError, false),
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
             )
         }
 
