@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.common.errorLog
 import java.util.ServiceLoader
 
 internal object PurchasesServices {
@@ -10,17 +11,22 @@ internal object PurchasesServices {
 /**
  * Forwards [Purchases] lifecycle events to every [PurchasesService] declared on the classpath.
  *
- * Implementations are discovered with [ServiceLoader]. The lookup is performed lazily and cached, so
- * the classpath is scanned at most once. Passing the interface's own [ClassLoader] keeps the call in
- * the shape R8 can optimize into direct instantiation of the known providers.
+ * Implementations are discovered lazily (once) with [ServiceLoader], passing the interface's own
+ * [ClassLoader] so the call stays in the shape R8 can optimize.
  */
 @OptIn(InternalRevenueCatAPI::class)
 private class ServiceLoaderForwarder : PurchasesService {
+    // A broken provider must not crash Purchases.configure()/close(), so failures degrade to no-op.
     private val services: List<PurchasesService> by lazy {
-        ServiceLoader.load(
-            PurchasesService::class.java,
-            PurchasesService::class.java.classLoader,
-        ).toList()
+        runCatching {
+            ServiceLoader.load(
+                PurchasesService::class.java,
+                PurchasesService::class.java.classLoader,
+            ).toList()
+        }.getOrElse { error ->
+            errorLog(error) { "Failed to load PurchasesService implementations." }
+            emptyList()
+        }
     }
 
     override fun initialize(purchases: Purchases) {
