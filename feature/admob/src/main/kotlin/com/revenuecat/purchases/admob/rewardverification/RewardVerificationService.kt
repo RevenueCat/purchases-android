@@ -5,13 +5,9 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesService
 
 /**
- * [PurchasesService] entry point for AdMob reward verification.
- *
- * Discovered through [java.util.ServiceLoader] (see
- * `META-INF/services/com.revenuecat.purchases.PurchasesService`), so it must keep a public
- * no-argument constructor. It forwards lifecycle callbacks to [RewardVerificationManager]'s shared
- * runtime, which is the same instance that [RewardVerificationManager.install] and
- * [RewardVerificationManager.handleRewardEarned] operate on.
+ * [PurchasesService] that wires AdMob reward verification into the [Purchases] lifecycle. Discovered
+ * via [java.util.ServiceLoader], so it must keep a no-argument constructor. Forwards to
+ * [RewardVerificationManager]'s shared runtime.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationService : PurchasesService {
