@@ -99,7 +99,7 @@ internal object Poller {
     ): Outcome? {
         return try {
             val result = fetcher.fetch(clientTransactionId)
-            Logger.d("Reward verification poll status=${result.logDescription()} transactionId=$clientTransactionId")
+            Logger.d("Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId")
             when (result) {
                 is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
                 CoreRewardVerificationResult.FAILED -> Outcome.Failed
@@ -135,9 +135,10 @@ internal object Poller {
         }
     }
 
+    // Readable log form: object statuses log their name; Verified inlines the reward payload.
     private fun CoreRewardVerificationResult.logDescription(): String {
         return when (this) {
-            is CoreRewardVerificationResult.Verified -> "verified"
+            is CoreRewardVerificationResult.Verified -> "verified(reward=$reward)"
             CoreRewardVerificationResult.PENDING -> "pending"
             CoreRewardVerificationResult.FAILED -> "failed"
             CoreRewardVerificationResult.UNKNOWN -> "unknown"
