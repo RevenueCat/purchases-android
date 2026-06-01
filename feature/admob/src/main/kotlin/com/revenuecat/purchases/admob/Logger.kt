@@ -24,4 +24,8 @@ internal object Logger {
     fun d(message: String) {
         Log.d(TAG, message)
     }
+
+    fun v(message: String) {
+        Log.v(TAG, message)
+    }
 }

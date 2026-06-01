@@ -56,7 +56,7 @@ internal object Poller {
         var outcome: Outcome? = null
         var attempt = 0
         while (outcome == null && attempt < maxAttempts) {
-            Logger.d(
+            Logger.v(
                 "Reward verification poll attempt ${attempt + 1}/$maxAttempts transactionId=$clientTransactionId",
             )
             outcome = if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds, clientTransactionId)) {
