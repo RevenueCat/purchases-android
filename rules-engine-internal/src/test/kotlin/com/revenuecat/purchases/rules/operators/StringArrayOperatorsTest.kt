@@ -84,6 +84,17 @@ class StringArrayOperatorsTest {
         assertThat(oneArg).isEqualTo(Value.BoolValue(false))
     }
 
+    @Test
+    fun `in empty string haystack is false`() {
+        // json-logic-js rejects empty-string haystacks before indexOf
+        // (`if (!b) return false`), even though "".indexOf("") === 0.
+        val needles = listOf(s(""), s("x"), Value.Null, Value.IntValue(0))
+        for (needle in needles) {
+            val out = StringArrayOperators.opIn(arr(needle, s("")), Value.Null)
+            assertThat(out).isEqualTo(Value.BoolValue(false))
+        }
+    }
+
     // ---- cat ----
 
     @Test
@@ -152,6 +163,17 @@ class StringArrayOperatorsTest {
             Value.Null,
         )
         assertThat(out).isEqualTo(s("1,,2"))
+    }
+
+    @Test
+    fun `cat stringifies object as object object`() {
+        // Single-key objects are operator expressions when evaluated; use a
+        // multi-key object so evalArgs treats it as literal data.
+        val out = StringArrayOperators.opCat(
+            arr(Value.ObjectValue(mapOf("a" to Value.IntValue(1), "b" to Value.IntValue(2)))),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s("[object Object]"))
     }
 
     // ---- substr ----
@@ -262,6 +284,16 @@ class StringArrayOperatorsTest {
             Value.Null,
         )
         assertThat(out).isEqualTo(s("ell"))
+    }
+
+    @Test
+    fun `substr null length returns empty`() {
+        // String.prototype.substr(start, null) coerces length to 0.
+        val out = StringArrayOperators.opSubstr(
+            arr(s("hello"), Value.IntValue(0), Value.Null),
+            Value.Null,
+        )
+        assertThat(out).isEqualTo(s(""))
     }
 
     @Test
