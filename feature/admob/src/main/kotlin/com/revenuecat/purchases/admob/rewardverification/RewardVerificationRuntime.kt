@@ -8,6 +8,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesService
 import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
+import com.revenuecat.purchases.admob.VerifiedReward
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +26,7 @@ internal class RewardVerificationRuntime(
     private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
         Poller.poll(clientTransactionId)
     },
+    private val invalidateVirtualCurrenciesCache: () -> Unit = { invalidateVirtualCurrenciesCacheIfConfigured() },
 ) : PurchasesService {
     private var clientTransactionIdByAdResponseId: MutableMap<String, String>? = null
 
@@ -49,6 +51,9 @@ internal class RewardVerificationRuntime(
         val completionDelivered = AtomicBoolean(false)
         fun deliverOnce(result: RewardVerificationResult) {
             if (completionDelivered.compareAndSet(false, true)) {
+                if (result.verifiedReward is VerifiedReward.VirtualCurrency) {
+                    invalidateVirtualCurrenciesCache()
+                }
                 notifyCompleted(result, rewardVerificationCompleted)
             }
         }
@@ -124,5 +129,26 @@ internal class RewardVerificationRuntime(
         clientTransactionIdByAdResponseId = null
         verificationScope?.cancel()
         verificationScope = null
+    }
+
+    private companion object {
+
+        /**
+         * Invalidates the virtual currencies cache if the SDK is configured.
+         *
+         * Called after reward verification grants a virtual-currency reward so the next
+         * [Purchases.getVirtualCurrencies] fetch returns the updated balance instead of a stale cached value.
+         * If [Purchases] has not been configured yet, logs a warning and skips invalidation.
+         */
+        fun invalidateVirtualCurrenciesCacheIfConfigured() {
+            if (!Purchases.isConfigured) {
+                Logger.w(
+                    "Purchases is not configured. " +
+                        "Skipping virtual currencies cache invalidation after reward verification.",
+                )
+                return
+            }
+            Purchases.sharedInstance.invalidateVirtualCurrenciesCache()
+        }
     }
 }
