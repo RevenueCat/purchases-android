@@ -4,7 +4,6 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.safeResume
@@ -19,14 +18,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
-@Suppress("LongParameterList")
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val workflowsCache: WorkflowsCache,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
 ) {
 
     // Guards pendingCompletionCallbacks. A key is present while a workflows-list fetch (plus its
@@ -94,11 +91,6 @@ internal class WorkflowManager(
      * for a different user starts its own fetch rather than joining the in-flight one.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
-        if (!useWorkflowsEndpoint) {
-            onComplete()
-            return
-        }
-
         // Decide under the lock and act outside it, so onComplete never fires while the lock is held.
         // The decision is keyed by appUserID: a call only joins an in-flight fetch for the *same* user,
         // so an identity switch starts its own fetch instead of inheriting the previous one.

@@ -50,9 +50,6 @@ class WorkflowManagerTest {
             workflowAssetPreDownloader = mockAssetPreDownloader,
             workflowsCache = workflowsCache,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
-            // Inject true so tests don't depend on BuildConfig.USE_WORKFLOWS_ENDPOINT, which is
-            // only true via local.properties and defaults to false on CI / clean checkouts.
-            useWorkflowsEndpoint = true,
         )
     }
 
@@ -682,26 +679,6 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         assertThat(workflowManager.workflowIdForOfferingId("shared")).isEqualTo("wf_last")
-    }
-
-    // Test D — when useWorkflowsEndpoint is false, getWorkflowsList must short-circuit:
-    // no backend call, and onComplete still fires so offerings delivery is never blocked.
-    @Test
-    fun `getWorkflowsList does nothing and calls onComplete when useWorkflowsEndpoint is false`() {
-        val disabledManager = WorkflowManager(
-            backend = mockBackend,
-            workflowDetailResolver = mockResolver,
-            workflowAssetPreDownloader = mockAssetPreDownloader,
-            workflowsCache = workflowsCache,
-            scope = CoroutineScope(UnconfinedTestDispatcher()),
-            useWorkflowsEndpoint = false,
-        )
-
-        var completed = false
-        disabledManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completed = true }
-
-        assertThat(completed).isTrue()
-        verify(exactly = 0) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
     }
 
     // Clearing the workflows cache (e.g. on user switch) must drop the in-memory list cache and
