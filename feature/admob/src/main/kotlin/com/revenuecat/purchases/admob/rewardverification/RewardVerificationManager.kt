@@ -10,6 +10,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
+import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import org.json.JSONObject
 import java.util.UUID
 
@@ -17,13 +18,16 @@ import java.util.UUID
 internal object RewardVerificationManager {
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private val runtime = RewardVerificationRuntime(
-        mainHandler = mainHandler,
-    )
+    /**
+     * The [RewardVerificationService] for the active [Purchases] configuration, or `null` before
+     * configuration / after close. The service owns the [RewardVerificationRuntime], so the verification
+     * state is held on that instance and cleared when it is closed, rather than living on this object.
+     */
+    @Volatile
+    internal var activeService: RewardVerificationService? = null
 
-    init {
-        Purchases.registerService(runtime)
-    }
+    private val runtime: RewardVerificationRuntime?
+        get() = activeService?.runtime
 
     fun install(ad: RewardedAd) = installInternal(ad.responseInfo?.responseId, ad::setServerSideVerificationOptions)
 
@@ -51,39 +55,37 @@ internal object RewardVerificationManager {
     )
 
     private fun installInternal(adResponseId: String?, attachOptions: (ServerSideVerificationOptions) -> Unit) {
-        if (!Purchases.isConfigured) {
-            Logger.e("Purchases is not configured. Call Purchases.configure() before enabling reward verification.")
-            return
-        }
-        if (adResponseId == null) {
-            Logger.e(
-                "Reward verification requires a loaded ad with a responseId. " +
-                    "Call enableRewardVerification() after the ad has loaded.",
-            )
-            return
-        }
-
-        val purchases = Purchases.sharedInstance
-        val clientTransactionId = UUID.randomUUID().toString()
-        val didStoreClientTransactionId = runtime.setClientTransactionId(
-            adResponseId = adResponseId,
-            clientTransactionId = clientTransactionId,
-        )
-        if (didStoreClientTransactionId) {
-            // Correlate the ad with the backend verification through AdMob's server-side verification options. The
-            // SSV callback forwards these to RevenueCat, which keys the verification by the client transaction id.
-            attachOptions(
-                serverSideVerificationOptions(
-                    apiKey = purchases.currentConfiguration.apiKey,
-                    appUserID = purchases.appUserID,
+        val runtime = runtime
+        when {
+            !Purchases.isConfigured ->
+                Logger.e("Purchases is not configured. Call Purchases.configure() before enabling reward verification.")
+            adResponseId == null ->
+                Logger.e(
+                    "Reward verification requires a loaded ad with a responseId. " +
+                        "Call enableRewardVerification() after the ad has loaded.",
+                )
+            runtime == null ->
+                Logger.e(
+                    "Reward verification setup is not ready. " +
+                        "Try enabling reward verification after Purchases is configured.",
+                )
+            else -> {
+                val purchases = Purchases.sharedInstance
+                val clientTransactionId = UUID.randomUUID().toString()
+                runtime.setClientTransactionId(
+                    adResponseId = adResponseId,
                     clientTransactionId = clientTransactionId,
-                ),
-            )
-        } else {
-            Logger.e(
-                "Reward verification setup is not ready. " +
-                    "Try enabling reward verification after Purchases is configured.",
-            )
+                )
+                // Correlate the ad with the backend verification through AdMob's server-side verification options. The
+                // SSV callback forwards these to RevenueCat, which keys the verification by the client transaction id.
+                attachOptions(
+                    serverSideVerificationOptions(
+                        apiKey = purchases.currentConfiguration.apiKey,
+                        appUserID = purchases.appUserID,
+                        clientTransactionId = clientTransactionId,
+                    ),
+                )
+            }
         }
     }
 
@@ -108,6 +110,12 @@ internal object RewardVerificationManager {
         rewardVerificationStarted: (() -> Unit)?,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
+        val runtime = runtime
+        if (runtime == null) {
+            // Not configured (or already closed): nothing to verify, so fail on the main thread.
+            runOnMainIfPresent(mainHandler) { rewardVerificationCompleted(RewardVerificationResult.failed) }
+            return
+        }
         runtime.handleRewardEarned(
             adResponseId = adResponseId,
             rewardVerificationStarted = rewardVerificationStarted,

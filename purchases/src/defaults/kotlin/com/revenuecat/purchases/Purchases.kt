@@ -561,9 +561,8 @@ public class Purchases internal constructor(
         backingFieldSharedInstance = null
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
     private fun notifyLifecycleClosed() {
-        serviceForwarder.close(this)
+        serviceDispatcher.close(this)
     }
 
     /**
@@ -1186,21 +1185,8 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
-        @OptIn(InternalRevenueCatAPI::class)
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal var serviceForwarder: PurchasesService = PurchasesServices.default()
-
-        @InternalRevenueCatAPI
-        @JvmStatic
-        public fun registerService(service: PurchasesService) {
-            PurchasesServices.register(service)
-        }
-
-        @InternalRevenueCatAPI
-        @JvmStatic
-        public fun unregisterService(service: PurchasesService) {
-            PurchasesServices.unregister(service)
-        }
+        internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 
         @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
@@ -1350,7 +1336,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
-                serviceForwarder.initialize(it)
+                serviceDispatcher.initialize(it)
             }
         }
 

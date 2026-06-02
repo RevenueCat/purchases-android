@@ -13,22 +13,22 @@ import org.junit.Before
 import org.junit.Test
 
 internal class PurchasesLifecycleWiringDefaultsTest {
-    private lateinit var originalServiceForwarder: PurchasesService
+    private lateinit var originalServiceDispatcher: PurchasesServiceDispatcher
 
     @Before
     fun setUp() {
-        originalServiceForwarder = Purchases.serviceForwarder
+        originalServiceDispatcher = Purchases.serviceDispatcher
     }
 
     @After
     fun tearDownMocks() {
         unmockkConstructor(PurchasesFactory::class)
-        Purchases.serviceForwarder = originalServiceForwarder
+        Purchases.serviceDispatcher = originalServiceDispatcher
         Purchases.backingFieldSharedInstance = null
     }
 
     @Test
-    fun `configure notifies purchases service forwarder in defaults path`() {
+    fun `configure notifies purchases service dispatcher in defaults path`() {
         val context = mockk<Context>()
         val applicationContext = mockk<Context>()
         val configuredPurchases = mockk<Purchases>(relaxed = true)
@@ -40,16 +40,16 @@ internal class PurchasesLifecycleWiringDefaultsTest {
         every { applicationContext.applicationContext } returns applicationContext
         every { applicationContext.applicationInfo } returns applicationInfo
         val configuration = PurchasesConfiguration.Builder(context, "api_key").build()
-        val serviceForwarder = mockk<PurchasesService>(relaxed = true)
+        val serviceDispatcher = mockk<PurchasesServiceDispatcher>(relaxed = true)
 
         mockkConstructor(PurchasesFactory::class)
-        Purchases.serviceForwarder = serviceForwarder
+        Purchases.serviceDispatcher = serviceDispatcher
         every { anyConstructed<PurchasesFactory>().createPurchases(any(), any(), any()) } returns configuredPurchases
 
         Purchases.configure(configuration)
 
         verify(exactly = 1) {
-            serviceForwarder.initialize(configuredPurchases)
+            serviceDispatcher.initialize(configuredPurchases)
         }
         assertThat(Purchases.sharedInstance).isSameAs(configuredPurchases)
     }
