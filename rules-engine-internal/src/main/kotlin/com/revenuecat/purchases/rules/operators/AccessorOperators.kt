@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
+import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
+import com.revenuecat.purchases.rules.jsToNumber
 
 /**
  * `var` and `missing` — the data-accessor operators.
@@ -73,6 +75,45 @@ internal object AccessorOperators {
             }
         }
         return Value.ArrayValue(missing)
+    }
+
+    /**
+     * `{"missing_some": [min_required, [path, ...]]}` returns the
+     * missing-keys array (same shape as `missing`) IF fewer than
+     * `min_required` of the requested paths are present. Otherwise
+     * returns `[]` (the rule's required-data condition is satisfied).
+     * Used to express "any 2 of these 5 fields must be present" style
+     * requirements.
+     */
+    fun opMissingSome(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
+        if (evaluated.size != 2) {
+            throw RuleError.TypeMismatch(
+                "operator 'missing_some' expects 2 arguments, got ${evaluated.size}",
+            )
+        }
+        val needCountValue = evaluated[0]
+        val options = evaluated[1] as? Value.ArrayValue
+            ?: throw RuleError.TypeMismatch(
+                "operator 'missing_some': second argument must be an array of paths, " +
+                    "got ${evaluated[1]}",
+            )
+
+        val total = options.items.size.toLong()
+
+        // Threshold uses JS `ToNumber` + `>=`. `NaN` and unparseable
+        // strings never satisfy; `+Infinity` never satisfies for finite
+        // present counts; `-Infinity` always satisfies.
+        val need = jsToNumber(needCountValue)
+
+        val missing = opMissing(options, vars)
+        val missingCount = (missing as? Value.ArrayValue)?.items?.size?.toLong() ?: 0L
+
+        return if ((total - missingCount).toDouble() >= need) {
+            Value.ArrayValue(emptyList())
+        } else {
+            missing
+        }
     }
 
     /**

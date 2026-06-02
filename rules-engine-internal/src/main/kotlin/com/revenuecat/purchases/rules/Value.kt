@@ -65,6 +65,23 @@ internal sealed class Value {
 }
 
 /**
+ * JS `ToNumber` for numeric comparisons (`>=`, etc.). Unlike
+ * [toNumberOrNull], unparseable strings and compound values yield
+ * [Double.NaN] so relational comparisons fail per the spec.
+ */
+internal fun jsToNumber(value: Value): Double = when (value) {
+    Value.Null -> 0.0
+    is Value.BoolValue -> if (value.value) 1.0 else 0.0
+    is Value.IntValue -> value.value.toDouble()
+    is Value.FloatValue -> value.value
+    is Value.StringValue -> {
+        val trimmed = value.value.trim()
+        if (trimmed.isEmpty()) 0.0 else trimmed.toDoubleOrNull() ?: Double.NaN
+    }
+    is Value.ArrayValue, is Value.ObjectValue -> Double.NaN
+}
+
+/**
  * JSON Logic loose equality (`==`). Mirrors JS abstract equality:
  *
  * - Same-type primitive comparisons are direct value equality.
@@ -186,7 +203,7 @@ private fun jsArrayJoin(items: List<Value>): String =
  * render as the empty string (not `"null"`); everything else uses
  * [jsString].
  */
-private fun jsArrayElementString(value: Value): String {
+internal fun jsArrayElementString(value: Value): String {
     if (value is Value.Null) return ""
     return jsString(value)
 }
