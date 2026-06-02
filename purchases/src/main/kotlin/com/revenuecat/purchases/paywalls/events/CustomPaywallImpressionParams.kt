@@ -71,6 +71,6 @@ public class CustomPaywallImpressionParams @InternalRevenueCatAPI constructor(
     public constructor(paywallId: String? = null, offering: Offering) : this(
         paywallId = paywallId,
         offeringId = offering.identifier,
-        presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+        presentedOfferingContext = offering.presentedOfferingContext,
     )
 }

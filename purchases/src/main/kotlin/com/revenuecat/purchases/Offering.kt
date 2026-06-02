@@ -127,6 +127,14 @@ constructor(
         return this.metadata[key] as? String ?: default
     }
 
+    /**
+     * The presented offering context (placement and targeting information) derived from the
+     * first available package, if any.
+     */
+    @InternalRevenueCatAPI
+    public val presentedOfferingContext: PresentedOfferingContext?
+        get() = availablePackages.firstOrNull()?.presentedOfferingContext
+
     @InternalRevenueCatAPI
     public fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
         return Offering(

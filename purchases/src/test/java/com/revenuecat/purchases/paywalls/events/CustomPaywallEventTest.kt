@@ -404,6 +404,20 @@ class CustomPaywallEventTest {
         assertThat(params.presentedOfferingContext).isEqualTo(expectedContext)
     }
 
+    @Test
+    fun `CustomPaywallImpressionParams Offering-based init with no packages has null presentedOfferingContext`() {
+        val offering = Offering(
+            identifier = "empty-offering",
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+        )
+        val params = CustomPaywallImpressionParams(paywallId = "pw", offering = offering)
+
+        assertThat(params.offeringId).isEqualTo("empty-offering")
+        assertThat(params.presentedOfferingContext).isNull()
+    }
+
     // endregion
 
     // region Data: placement and targeting fields
