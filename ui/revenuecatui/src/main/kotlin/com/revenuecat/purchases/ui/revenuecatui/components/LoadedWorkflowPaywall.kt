@@ -33,6 +33,11 @@ internal data class WorkflowHeaderStepInfo(
 
 internal enum class WorkflowHeaderTransitionRole { ENTERING, LEAVING, STABLE }
 
+internal data class WorkflowHeaderPresentation(
+    val headerStepId: String,
+    val role: WorkflowHeaderTransitionRole,
+)
+
 internal fun headerAlpha(role: WorkflowHeaderTransitionRole, progress: Float): Float = when (role) {
     WorkflowHeaderTransitionRole.ENTERING -> progress
     WorkflowHeaderTransitionRole.LEAVING -> 1f - progress
@@ -122,11 +127,11 @@ private fun workflowHeaderState(
             }
         }
     }
-    val headerStepId = selectWorkflowHeaderStepId(
+    val headerStepId = selectWorkflowHeaderPresentation(
         currentStepId = currentStepId,
         stepInfoByStepId = headerStepInfo,
         pendingTransition = pendingTransition,
-    )
+    ).headerStepId
 
     return stepStates[headerStepId] ?: currentState
 }
@@ -231,21 +236,35 @@ private fun WorkflowStepContent(
     }
 }
 
-internal fun selectWorkflowHeaderStepId(
+internal fun selectWorkflowHeaderPresentation(
     currentStepId: String,
     stepInfoByStepId: Map<String, WorkflowHeaderStepInfo>,
     pendingTransition: WorkflowPendingTransition?,
-): String {
+): WorkflowHeaderPresentation {
     val fromStepId = pendingTransition?.fromStepId
-    val direction = pendingTransition?.direction
-    val fromStepInfo = fromStepId?.let(stepInfoByStepId::get)
-    val toStepInfo = stepInfoByStepId[currentStepId]
-    val useOutgoingHeader = pendingTransition != null &&
-        fromStepInfo != null &&
-        toStepInfo != null &&
-        shouldUseOutgoingHeader(direction, fromStepInfo, toStepInfo)
+        ?: return WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.STABLE)
+    val fromInfo = stepInfoByStepId[fromStepId]
+    val toInfo = stepInfoByStepId[currentStepId]
+    val fromHasHeader = fromInfo?.hasHeader == true
+    val toHasHeader = toInfo?.hasHeader == true
 
-    return if (useOutgoingHeader) fromStepId!! else currentStepId
+    return when {
+        fromHasHeader && !toHasHeader ->
+            WorkflowHeaderPresentation(fromStepId, WorkflowHeaderTransitionRole.LEAVING)
+        !fromHasHeader && toHasHeader ->
+            WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.ENTERING)
+        fromHasHeader && toHasHeader -> {
+            // Both steps have a header: keep the existing selection, no fade.
+            // Crossfade between genuinely different headers is deferred until shared headers exist.
+            val stepId = if (shouldUseOutgoingHeader(pendingTransition.direction, fromInfo!!, toInfo!!)) {
+                fromStepId
+            } else {
+                currentStepId
+            }
+            WorkflowHeaderPresentation(stepId, WorkflowHeaderTransitionRole.STABLE)
+        }
+        else -> WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.STABLE)
+    }
 }
 
 private fun shouldUseOutgoingHeader(
