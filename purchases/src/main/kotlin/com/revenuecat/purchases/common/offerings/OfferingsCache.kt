@@ -30,7 +30,6 @@ internal class OfferingsCache(
     fun clearCache() {
         offeringsCachedObject.clearCache()
         deviceCache.clearOfferingsResponseCache()
-        deviceCache.clearWorkflowsListResponseCache()
         cachedLanguageTags = null
     }
 

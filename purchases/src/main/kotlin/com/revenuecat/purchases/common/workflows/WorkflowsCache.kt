@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
+import com.revenuecat.purchases.common.errorLog
 
 /**
  * In-memory cache for all workflow data: the resolved per-workflow [WorkflowDataResult]s and the
@@ -12,15 +15,20 @@ import com.revenuecat.purchases.common.caching.isCacheStale
  * state so that clearing it on identity transitions wipes everything at once, mirroring how
  * [com.revenuecat.purchases.common.offerings.OfferingsCache] owns the in-memory offerings cache.
  *
- * Why in-memory, like offerings: the durable copy of the workflows list already lives on disk in
- * [com.revenuecat.purchases.common.caching.DeviceCache] (and is restored from there on backend
- * failure). This layer exists on top of it for the same reason the offerings cache does — to serve
- * already-fetched and prefetched data synchronously within a session, so opening a paywall reuses a
- * resolved workflow instead of paying another backend/CDN round-trip. Time-based staleness
+ * Why in-memory, like offerings: this layer sits on top of the durable copy that lives on disk in
+ * [DeviceCache], for the same reason the offerings cache does — to serve already-fetched and
+ * prefetched data synchronously within a session, so opening a paywall reuses a resolved workflow
+ * instead of paying another backend/CDN round-trip. Time-based staleness
  * ([isWorkflowsListCacheStale] / [isWorkflowCacheStale]) then decides when a refetch is due.
+ *
+ * It also owns the disk copy of the workflows list, mirroring how
+ * [com.revenuecat.purchases.common.offerings.OfferingsCache] owns the offerings response on disk:
+ * [cacheWorkflowsList] persists it, [cachedWorkflowsListResponseFromDisk] restores it on backend
+ * failure, and [clearCache] wipes it on identity transitions.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class WorkflowsCache(
+    private val deviceCache: DeviceCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
     private val cachedWorkflows = mutableMapOf<String, InMemoryCachedObject<WorkflowDataResult>>()
@@ -54,7 +62,7 @@ internal class WorkflowsCache(
         workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
 
     /**
-     * Caches the workflows list unconditionally, the same way
+     * Caches the workflows list in memory and persists it to disk, the same way
      * [com.revenuecat.purchases.common.offerings.OfferingsCache.cacheOfferings] caches offerings.
      *
      * This means workflows share the same accepted appUserID limitation as offerings: a fetch that
@@ -67,7 +75,23 @@ internal class WorkflowsCache(
     fun cacheWorkflowsList(response: WorkflowsListResponse, offeringIdMap: Map<String, String>) {
         workflowsListCachedObject.cacheInstance(response)
         offeringIdToWorkflowIdMap = offeringIdMap
+        deviceCache.cacheWorkflowsListResponse(
+            JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
+        )
     }
+
+    /**
+     * Reads the last workflows list persisted by [cacheWorkflowsList], or null when nothing is
+     * cached or the payload can't be parsed (the parse failure is logged). Used to recover the
+     * list after a backend failure, mirroring
+     * [com.revenuecat.purchases.common.offerings.OfferingsCache.cachedOfferingsResponse].
+     */
+    fun cachedWorkflowsListResponseFromDisk(): WorkflowsListResponse? =
+        deviceCache.getWorkflowsListResponseCache()?.let { cached ->
+            runCatching { WorkflowJsonParser.parseWorkflowsListResponse(cached) }
+                .onFailure { errorLog(it) { "Failed to restore workflows list from disk cache" } }
+                .getOrNull()
+        }
 
     fun workflowIdForOfferingId(offeringId: String): String? =
         offeringIdToWorkflowIdMap[offeringId]
@@ -79,5 +103,6 @@ internal class WorkflowsCache(
         cachedWorkflows.clear()
         workflowsListCachedObject.clearCache()
         offeringIdToWorkflowIdMap = emptyMap()
+        deviceCache.clearWorkflowsListResponseCache()
     }
 }

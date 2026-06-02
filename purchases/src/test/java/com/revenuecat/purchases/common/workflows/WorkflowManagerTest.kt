@@ -43,12 +43,11 @@ class WorkflowManagerTest {
         originalLogHandler = currentLogHandler
         currentLogHandler = NoOpLogHandler
         every { mockDateProvider.now } returns Date(0) // ensures cache is always stale by default
-        workflowsCache = WorkflowsCache(dateProvider = mockDateProvider)
+        workflowsCache = WorkflowsCache(deviceCache = mockDeviceCache, dateProvider = mockDateProvider)
         workflowManager = WorkflowManager(
             backend = mockBackend,
             workflowDetailResolver = mockResolver,
             workflowAssetPreDownloader = mockAssetPreDownloader,
-            deviceCache = mockDeviceCache,
             workflowsCache = workflowsCache,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
             // Inject true so tests don't depend on BuildConfig.USE_WORKFLOWS_ENDPOINT, which is
@@ -670,7 +669,6 @@ class WorkflowManagerTest {
             backend = mockBackend,
             workflowDetailResolver = mockResolver,
             workflowAssetPreDownloader = mockAssetPreDownloader,
-            deviceCache = mockDeviceCache,
             workflowsCache = workflowsCache,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
             useWorkflowsEndpoint = false,

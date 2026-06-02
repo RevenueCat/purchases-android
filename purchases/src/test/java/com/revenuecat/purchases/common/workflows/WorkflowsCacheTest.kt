@@ -3,8 +3,11 @@ package com.revenuecat.purchases.common.workflows
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.add
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -22,6 +25,7 @@ class WorkflowsCacheTest {
     private val initialDate = Date(1685098228L) // Friday, May 26, 2023 10:50:28 AM GMT
     private lateinit var currentDate: Date
     private lateinit var dateProvider: DateProvider
+    private lateinit var deviceCache: DeviceCache
 
     private lateinit var workflowsCache: WorkflowsCache
 
@@ -32,7 +36,8 @@ class WorkflowsCacheTest {
             override val now: Date
                 get() = currentDate
         }
-        workflowsCache = WorkflowsCache(dateProvider = dateProvider)
+        deviceCache = mockk(relaxed = true)
+        workflowsCache = WorkflowsCache(deviceCache = deviceCache, dateProvider = dateProvider)
     }
 
     @Test
@@ -124,6 +129,46 @@ class WorkflowsCacheTest {
         workflowsCache.clearCache()
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
         assertThat(workflowsCache.workflowIdForOfferingId("default")).isNull()
+    }
+
+    @Test
+    fun `cacheWorkflowsList persists the response to disk`() {
+        workflowsCache.cacheWorkflowsList(
+            WorkflowsListResponse(
+                workflows = listOf(
+                    WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+                ),
+            ),
+            mapOf("default" to "wf_1"),
+        )
+        verify(exactly = 1) { deviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
+    @Test
+    fun `clearCache clears the disk cache`() {
+        workflowsCache.clearCache()
+        verify(exactly = 1) { deviceCache.clearWorkflowsListResponseCache() }
+    }
+
+    @Test
+    fun `cachedWorkflowsListResponseFromDisk parses the persisted response`() {
+        val cachedJson =
+            """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
+        every { deviceCache.getWorkflowsListResponseCache() } returns cachedJson
+        val response = workflowsCache.cachedWorkflowsListResponseFromDisk()
+        assertThat(response?.workflows?.single()?.id).isEqualTo("wf_1")
+    }
+
+    @Test
+    fun `cachedWorkflowsListResponseFromDisk returns null when nothing is cached`() {
+        every { deviceCache.getWorkflowsListResponseCache() } returns null
+        assertThat(workflowsCache.cachedWorkflowsListResponseFromDisk()).isNull()
+    }
+
+    @Test
+    fun `cachedWorkflowsListResponseFromDisk returns null when the payload is corrupt`() {
+        every { deviceCache.getWorkflowsListResponseCache() } returns "not valid json"
+        assertThat(workflowsCache.cachedWorkflowsListResponseFromDisk()).isNull()
     }
 
     @Test

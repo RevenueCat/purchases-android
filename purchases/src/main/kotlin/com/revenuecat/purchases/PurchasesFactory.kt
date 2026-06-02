@@ -260,7 +260,7 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            val workflowsCache = WorkflowsCache()
+            val workflowsCache = WorkflowsCache(deviceCache = cache)
 
             val identityManager = IdentityManager(
                 cache,
@@ -369,7 +369,6 @@ internal class PurchasesFactory(
                     paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
                     offeringFontPreDownloader = offeringFontPreDownloader,
                 ),
-                deviceCache = cache,
                 workflowsCache = workflowsCache,
             )
 

@@ -3,11 +3,9 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.warnLog
@@ -24,7 +22,6 @@ internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
-    private val deviceCache: DeviceCache,
     private val workflowsCache: WorkflowsCache,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
@@ -108,9 +105,6 @@ internal class WorkflowManager(
             type = "paywall",
             onSuccess = { response ->
                 workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
-                deviceCache.cacheWorkflowsListResponse(
-                    JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
-                )
 
                 val prefetchWorkflows = response.workflows.filter { it.prefetch }
                 if (prefetchWorkflows.isEmpty()) {
@@ -137,12 +131,8 @@ internal class WorkflowManager(
             },
             onError = { error ->
                 errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
-                deviceCache.getWorkflowsListResponseCache()?.let { cached ->
-                    runCatching { WorkflowJsonParser.parseWorkflowsListResponse(cached) }
-                        .onSuccess { response ->
-                            workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
-                        }
-                        .onFailure { errorLog(it) { "Failed to restore workflows list from disk cache" } }
+                workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
+                    workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
                 }
                 drainCompletionCallbacks(appUserID)
             },
