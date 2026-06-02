@@ -95,6 +95,7 @@ internal object Operators {
      * `NaN` → `0` (matches JS `ToInteger`); `±Infinity` and
      * out-of-range finite values clamp to [Int.MAX_VALUE] / [Int.MIN_VALUE].
      */
+    @Suppress("ReturnCount")
     fun clampedInt(value: Double): Int {
         if (value.isNaN()) return 0
         if (value >= Int.MAX_VALUE.toDouble()) return Int.MAX_VALUE

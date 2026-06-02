@@ -15,6 +15,11 @@ import com.revenuecat.purchases.rules.strictEq
  */
 internal object StringArrayOperators {
 
+    private const val BINARY_OPERAND_COUNT = 2
+    private const val TERNARY_OPERAND_COUNT = 3
+    private const val START_OPERAND_INDEX = 1
+    private const val LENGTH_OPERAND_INDEX = 2
+
     /**
      * `{"in": [needle, haystack]}` — substring or array-membership test.
      * For a [Value.StringValue] haystack, the needle is stringified and
@@ -31,13 +36,20 @@ internal object StringArrayOperators {
     fun opIn(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val needle = evaluated.firstOrNull() ?: Value.Null
-        val haystack = if (evaluated.size >= 2) evaluated[1] else Value.Null
+        val haystack = if (evaluated.size >= BINARY_OPERAND_COUNT) {
+            evaluated[START_OPERAND_INDEX]
+        } else {
+            Value.Null
+        }
         val result = when (haystack) {
             is Value.StringValue -> {
                 // json-logic-js: `if (!haystack || …) return false` — empty
                 // string is falsy, so `in` never matches regardless of needle.
-                if (haystack.value.isEmpty()) false
-                else haystack.value.contains(jsString(needle))
+                if (haystack.value.isEmpty()) {
+                    false
+                } else {
+                    haystack.value.contains(jsString(needle))
+                }
             }
             is Value.ArrayValue -> haystack.items.any { strictEq(needle, it) }
             else -> false
@@ -69,10 +81,18 @@ internal object StringArrayOperators {
     fun opSubstr(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val source = evaluated.firstOrNull() ?: Value.Null
-        val start = if (evaluated.size >= 2) evaluated[1] else Value.Null
-        val length = if (evaluated.size >= 3) evaluated[2] else null
+        val start = if (evaluated.size >= BINARY_OPERAND_COUNT) {
+            evaluated[START_OPERAND_INDEX]
+        } else {
+            Value.Null
+        }
+        val length = if (evaluated.size >= TERNARY_OPERAND_COUNT) {
+            evaluated[LENGTH_OPERAND_INDEX]
+        } else {
+            null
+        }
 
-        val codePoints = jsString(source).codePoints().toArray()
+        val codePoints = jsString(source).toCodePointArray()
         val total = codePoints.size
 
         val startN = Operators.clampedInt(start.toNumberOrNull() ?: 0.0)
@@ -82,20 +102,42 @@ internal object StringArrayOperators {
             startN.coerceAtMost(total)
         }
 
-        val afterStart = codePoints.copyOfRange(begin, codePoints.size)
+        val afterStartLength = total - begin
 
-        val resultPoints = if (length != null) {
+        val result = if (length != null) {
             val lenN = Operators.clampedInt(length.toNumberOrNull() ?: 0.0)
             val count = if (lenN < 0) {
-                (afterStart.size + lenN).coerceAtLeast(0)
+                (afterStartLength + lenN).coerceAtLeast(0)
             } else {
-                lenN.coerceAtMost(afterStart.size)
+                lenN.coerceAtMost(afterStartLength)
             }
-            afterStart.copyOfRange(0, count)
+            codePoints.toStringFromCodePoints(begin, begin + count)
         } else {
-            afterStart
+            codePoints.toStringFromCodePoints(begin, total)
         }
-        return Value.StringValue(String(resultPoints, 0, resultPoints.size))
+        return Value.StringValue(result)
+    }
+
+    /**
+     * Unicode code points without [String.codePoints] (API 24+).
+     */
+    private fun String.toCodePointArray(): IntArray {
+        val points = mutableListOf<Int>()
+        var index = 0
+        while (index < length) {
+            val codePoint = codePointAt(index)
+            points.add(codePoint)
+            index += Character.charCount(codePoint)
+        }
+        return points.toIntArray()
+    }
+
+    private fun IntArray.toStringFromCodePoints(start: Int, end: Int): String {
+        val builder = StringBuilder()
+        for (index in start until end) {
+            builder.appendCodePoint(this[index])
+        }
+        return builder.toString()
     }
 
     /**
