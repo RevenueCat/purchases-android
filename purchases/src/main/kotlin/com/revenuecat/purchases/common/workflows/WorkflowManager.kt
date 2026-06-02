@@ -85,12 +85,12 @@ internal class WorkflowManager(
      *
      * Concurrent callers for the same [appUserID] while a request is in-flight are deduplicated:
      * the second call queues its [onComplete] and returns without a new network request. All
-     * pending callbacks for that user are drained together when the in-flight work finishes.
+     * pending callbacks for that user complete together when the in-flight work finishes.
      * A call for a different user starts its own fetch rather than joining the in-flight one.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
         when (resolveWorkflowsListFetch(appUserID, appInBackground, onComplete)) {
-            // Callback queued onto in-flight work; it drains when that work finishes.
+            // Callback queued onto in-flight work; it completes when that work finishes.
             FetchDecision.JOIN -> return
             FetchDecision.COMPLETE_NOW -> {
                 onComplete()
@@ -108,7 +108,7 @@ internal class WorkflowManager(
 
                 val prefetchWorkflows = response.workflows.filter { it.prefetch }
                 if (prefetchWorkflows.isEmpty()) {
-                    drainCompletionCallbacks(appUserID)
+                    completePendingCallbacks(appUserID)
                 } else {
                     val remaining = AtomicInteger(prefetchWorkflows.size)
                     prefetchWorkflows.forEach { summary ->
@@ -117,13 +117,13 @@ internal class WorkflowManager(
                             workflowId = summary.id,
                             appInBackground = appInBackground,
                             onSuccess = {
-                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks(appUserID)
+                                if (remaining.decrementAndGet() == 0) completePendingCallbacks(appUserID)
                             },
                             onError = { error ->
                                 errorLog {
                                     "Failed to prefetch workflow ${summary.id}: ${error.underlyingErrorMessage}"
                                 }
-                                if (remaining.decrementAndGet() == 0) drainCompletionCallbacks(appUserID)
+                                if (remaining.decrementAndGet() == 0) completePendingCallbacks(appUserID)
                             },
                         )
                     }
@@ -134,7 +134,7 @@ internal class WorkflowManager(
                 workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
                     workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
                 }
-                drainCompletionCallbacks(appUserID)
+                completePendingCallbacks(appUserID)
             },
         )
     }
@@ -176,7 +176,7 @@ internal class WorkflowManager(
         }
     }
 
-    private fun drainCompletionCallbacks(appUserID: String) {
+    private fun completePendingCallbacks(appUserID: String) {
         val callbacks = synchronized(callbackLock) {
             pendingCompletionCallbacks.remove(appUserID).orEmpty()
         }
