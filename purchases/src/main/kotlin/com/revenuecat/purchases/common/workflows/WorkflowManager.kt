@@ -106,7 +106,10 @@ internal class WorkflowManager(
             onSuccess = { response ->
                 workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
 
-                val prefetchWorkflows = response.workflows.filter { it.prefetch }
+                // A workflow with no offeringId can't be reached via workflowIdForOfferingId, so
+                // prefetching its assets would be wasted work. The backend should already only set
+                // prefetch = true for workflows tied to an offering; this is a defensive guard on top.
+                val prefetchWorkflows = response.workflows.filter { it.prefetch && it.offeringId != null }
                 if (prefetchWorkflows.isEmpty()) {
                     completePendingCallbacks(appUserID)
                 } else {

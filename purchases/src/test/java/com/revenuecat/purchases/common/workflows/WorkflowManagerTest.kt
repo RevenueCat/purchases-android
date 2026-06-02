@@ -443,9 +443,9 @@ class WorkflowManagerTest {
     fun `getWorkflowsList triggers getWorkflow for each prefetch=true entry only`() {
         val response = WorkflowsListResponse(
             workflows = listOf(
-                WorkflowSummary(id = "wf_prefetch", displayName = "A", prefetch = true),
-                WorkflowSummary(id = "wf_skip", displayName = "B", prefetch = false),
-                WorkflowSummary(id = "wf_also_prefetch", displayName = "C", prefetch = true),
+                WorkflowSummary(id = "wf_prefetch", displayName = "A", offeringId = "default", prefetch = true),
+                WorkflowSummary(id = "wf_skip", displayName = "B", offeringId = "premium", prefetch = false),
+                WorkflowSummary(id = "wf_also_prefetch", displayName = "C", offeringId = "pro", prefetch = true),
             ),
         )
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
@@ -463,6 +463,29 @@ class WorkflowManagerTest {
         }
         verify(exactly = 1) {
             mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_also_prefetch", any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `getWorkflowsList does not prefetch workflows without an offeringId`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_no_offering", displayName = "A", offeringId = null, prefetch = true),
+                WorkflowSummary(id = "wf_with_offering", displayName = "B", offeringId = "default", prefetch = true),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 0) {
+            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_no_offering", any(), any(), any())
+        }
+        verify(exactly = 1) {
+            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_with_offering", any(), any(), any())
         }
     }
 
@@ -756,8 +779,8 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflowsList calls onComplete only after all prefetch workflows complete`() {
         val response = WorkflowsListResponse(workflows = listOf(
-            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
-            WorkflowSummary(id = "wf_b", displayName = "B", prefetch = true),
+            WorkflowSummary(id = "wf_a", displayName = "A", offeringId = "default", prefetch = true),
+            WorkflowSummary(id = "wf_b", displayName = "B", offeringId = "premium", prefetch = true),
         ))
         val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
@@ -790,7 +813,7 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflowsList second caller waits for in-flight prefetch when list cache is fresh`() {
         val response = WorkflowsListResponse(workflows = listOf(
-            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
+            WorkflowSummary(id = "wf_a", displayName = "A", offeringId = "default", prefetch = true),
         ))
         val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
@@ -822,8 +845,8 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflowsList calls onComplete even if a prefetch workflow fails`() {
         val response = WorkflowsListResponse(workflows = listOf(
-            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
-            WorkflowSummary(id = "wf_b", displayName = "B", prefetch = true),
+            WorkflowSummary(id = "wf_a", displayName = "A", offeringId = "default", prefetch = true),
+            WorkflowSummary(id = "wf_b", displayName = "B", offeringId = "premium", prefetch = true),
         ))
         val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
@@ -855,7 +878,7 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflowsList calls onComplete when a prefetch workflow resolve throws unexpected exception`() {
         val response = WorkflowsListResponse(workflows = listOf(
-            WorkflowSummary(id = "wf_a", displayName = "A", prefetch = true),
+            WorkflowSummary(id = "wf_a", displayName = "A", offeringId = "default", prefetch = true),
         ))
         val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
         every {
