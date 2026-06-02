@@ -267,8 +267,7 @@ internal fun selectWorkflowHeaderPresentation(
         !fromHasHeader && toHasHeader ->
             WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.ENTERING)
         fromInfo != null && toInfo != null && fromHasHeader && toHasHeader -> {
-            // Both steps have a header: no fade, keep the existing selection. Animating a change
-            // between two different headers is a separate, deferred decision.
+            // Both steps have a header, no fade
             val stepId = if (shouldUseOutgoingHeader(pendingTransition.direction, fromInfo, toInfo)) {
                 fromStepId
             } else {
