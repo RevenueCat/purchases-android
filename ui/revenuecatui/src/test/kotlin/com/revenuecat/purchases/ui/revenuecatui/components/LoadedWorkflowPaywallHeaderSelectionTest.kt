@@ -186,6 +186,22 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
     }
 
     @Test
+    fun `unknown current step treated as no header so outgoing header leaves`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                // "target" (the current step) is intentionally absent from the map, so it is
+                // treated as having no header: the outgoing "from" header fades out (LEAVING).
+                "from" to info(hasHeroImage = false, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("from")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.LEAVING)
+    }
+
+    @Test
     fun `idle state uses current step header stable`() {
         val presentation = selectWorkflowHeaderPresentation(
             currentStepId = "target",

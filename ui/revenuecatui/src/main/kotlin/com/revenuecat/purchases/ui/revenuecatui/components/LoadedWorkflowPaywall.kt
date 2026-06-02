@@ -97,6 +97,9 @@ internal fun LoadedWorkflowPaywall(
                     onClick = onClick,
                     modifier = Modifier
                         .fillMaxWidth()
+                        // animatable.value is a draw-phase state read (no recomposition per frame, same as
+                        // workflowTransition); headerRender.role is a plain closed-over value, refreshed when
+                        // a recomposition rebuilds this modifier (role only changes when the transition changes).
                         .graphicsLayer { alpha = headerAlpha(headerRender.role, transitionState.animatable.value) },
                 )
             }
@@ -267,6 +270,8 @@ internal fun selectWorkflowHeaderPresentation(
         fromHasHeader && toHasHeader -> {
             // Both steps have a header: keep the existing selection, no fade.
             // Crossfade between genuinely different headers is deferred until shared headers exist.
+            // fromInfo/toInfo are non-null here (fromHasHeader/toHasHeader imply it); the explicit
+            // null checks are only to let the compiler smart-cast them into shouldUseOutgoingHeader.
             val keepOutgoing = fromInfo != null && toInfo != null &&
                 shouldUseOutgoingHeader(pendingTransition.direction, fromInfo, toInfo)
             val stepId = if (keepOutgoing) fromStepId else currentStepId
