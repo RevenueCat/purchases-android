@@ -171,6 +171,21 @@ internal class LoadedWorkflowPaywallHeaderSelectionTest {
     }
 
     @Test
+    fun `pending transition with unknown from step renders current step`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                // "from" is intentionally absent from the map
+                "target" to info(hasHeroImage = false, hasHeader = false),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    @Test
     fun `idle state uses current step header stable`() {
         val presentation = selectWorkflowHeaderPresentation(
             currentStepId = "target",
