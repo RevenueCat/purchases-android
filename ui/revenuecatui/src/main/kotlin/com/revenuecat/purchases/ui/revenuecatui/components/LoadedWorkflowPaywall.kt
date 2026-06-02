@@ -31,6 +31,14 @@ internal data class WorkflowHeaderStepInfo(
     val hasHeader: Boolean,
 )
 
+internal enum class WorkflowHeaderTransitionRole { ENTERING, LEAVING, STABLE }
+
+internal fun headerAlpha(role: WorkflowHeaderTransitionRole, progress: Float): Float = when (role) {
+    WorkflowHeaderTransitionRole.ENTERING -> progress
+    WorkflowHeaderTransitionRole.LEAVING -> 1f - progress
+    WorkflowHeaderTransitionRole.STABLE -> 1f
+}
+
 @Suppress("LongParameterList")
 @Composable
 internal fun LoadedWorkflowPaywall(
