@@ -94,47 +94,69 @@ internal class WorkflowManager(
      * for a different user starts its own fetch rather than joining the in-flight one.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
-        when (resolveWorkflowsListFetch(appUserID, appInBackground, onComplete)) {
-            // Callback queued onto in-flight work; it completes when that work finishes.
-            FetchDecision.JOIN -> return
-            FetchDecision.COMPLETE_NOW -> {
-                onComplete()
-                return
-            }
-            FetchDecision.FETCH -> Unit
+        if (!useWorkflowsEndpoint) {
+            onComplete()
+            return
         }
 
-        backend.getWorkflows(
-            appUserID = appUserID,
-            appInBackground = appInBackground,
-            type = "paywall",
-            onSuccess = { response ->
-                workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
+        // Decide under the lock and act outside it, so onComplete never fires while the lock is held.
+        // The decision is keyed by appUserID: a call only joins an in-flight fetch for the *same* user,
+        // so an identity switch starts its own fetch instead of inheriting the previous one.
+        val startFetch = synchronized(callbackLock) {
+            val inFlight = pendingCompletionCallbacks[appUserID]
+            if (inFlight != null) {
+                // A fetch for this user is already running. Queue our callback onto it and return; it
+                // fires when that in-flight sequence finishes. Joining is independent of cache freshness
+                // on purpose: the list response stamps the cache fresh partway through the sequence
+                // (before its prefetch finishes), so a freshness-only check would let this caller
+                // complete early, before the sequence it joined is done.
+                inFlight.add(onComplete)
+                return
+            }
+            // Nothing in flight: register this callback as the head of a new batch, then fetch only if
+            // the cached list is stale. A fresh cache means there's nothing to wait for, so we complete
+            // the batch immediately below instead of starting a request.
+            pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
+            workflowsCache.isWorkflowsListCacheStale(appInBackground)
+        }
 
-                // A workflow with no offeringId can't be reached via workflowIdForOfferingId, so
-                // prefetching its assets would be wasted work. The backend should already only set
-                // prefetch = true for workflows tied to an offering; this is a defensive guard on top.
-                val prefetchWorkflows = response.workflows.filter { it.prefetch && it.offeringId != null }
-                scope.launch {
-                    // Prefetch each workflow concurrently and wait for all of them before completing,
-                    // so onComplete fires only once the whole sequence settles (empty list completes
-                    // right away). A failed prefetch is logged and does not fail the others.
-                    coroutineScope {
-                        prefetchWorkflows.forEach { summary ->
-                            launch { prefetchWorkflow(appUserID, summary.id, appInBackground) }
+        // Fresh cache and nothing in flight: nothing to wait for, so complete the batch right away.
+        // Otherwise start the request; its onSuccess/onError fire the queued callbacks when it settles.
+        if (!startFetch) {
+            completePendingCallbacks(appUserID)
+        } else {
+            backend.getWorkflows(
+                appUserID = appUserID,
+                appInBackground = appInBackground,
+                type = "paywall",
+                onSuccess = { response ->
+                    workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
+
+                    // A workflow with no offeringId can't be reached via workflowIdForOfferingId, so
+                    // prefetching its assets would be wasted work. The backend should already only set
+                    // prefetch = true for workflows tied to an offering; this is a defensive guard on top.
+                    val prefetchWorkflows = response.workflows.filter { it.prefetch && it.offeringId != null }
+                    scope.launch {
+                        // Prefetch each workflow concurrently and wait for all of them before completing,
+                        // so onComplete fires only once the whole sequence settles (empty list completes
+                        // right away). A failed prefetch is logged and does not fail the others.
+                        coroutineScope {
+                            prefetchWorkflows.forEach { summary ->
+                                launch { prefetchWorkflow(appUserID, summary.id, appInBackground) }
+                            }
                         }
+                        completePendingCallbacks(appUserID)
+                    }
+                },
+                onError = { error ->
+                    errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
+                    workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
+                        workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
                     }
                     completePendingCallbacks(appUserID)
-                }
-            },
-            onError = { error ->
-                errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
-                workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
-                    workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
-                }
-                completePendingCallbacks(appUserID)
-            },
-        )
+                },
+            )
+        }
     }
 
     /**
@@ -159,61 +181,6 @@ internal class WorkflowManager(
 
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowsCache.workflowIdForOfferingId(offeringId)
-
-    /**
-     * What a [getWorkflowsList] call should do, decided under [callbackLock] by
-     * [resolveWorkflowsListFetch] and acted on *outside* the lock so the completion callback is
-     * never invoked while holding it.
-     */
-    private enum class FetchDecision {
-        /** No in-flight fetch and the list cache is stale: start a new backend request. */
-        FETCH,
-
-        /**
-         * A fetch for the same appUserID is already running. This call's completion callback is
-         * queued onto it and fires when that in-flight sequence finishes, so the caller just returns
-         * without a new request. Joining is independent of cache freshness on purpose: the list
-         * response stamps the cache fresh partway through the sequence (before its prefetch
-         * finishes), so a freshness-only check would let this caller complete early, before the
-         * sequence it joined is done.
-         */
-        JOIN,
-
-        /**
-         * Nothing to wait for, so the completion callback fires right away. Either the workflows
-         * endpoint is disabled, or the list cache is fresh and no fetch is in flight.
-         */
-        COMPLETE_NOW,
-    }
-
-    /**
-     * Decides how a [getWorkflowsList] call should proceed, queueing [onComplete] when it must wait.
-     * See [FetchDecision] for what each outcome means.
-     *
-     * The decision is keyed by [appUserID]: a call only joins an in-flight fetch for the *same*
-     * user, so an identity switch starts its own fetch instead of inheriting the previous one.
-     */
-    private fun resolveWorkflowsListFetch(
-        appUserID: String,
-        appInBackground: Boolean,
-        onComplete: () -> Unit,
-    ): FetchDecision {
-        if (!useWorkflowsEndpoint) return FetchDecision.COMPLETE_NOW
-        return synchronized(callbackLock) {
-            val inFlight = pendingCompletionCallbacks[appUserID]
-            when {
-                inFlight != null -> {
-                    inFlight.add(onComplete)
-                    FetchDecision.JOIN
-                }
-                workflowsCache.isWorkflowsListCacheStale(appInBackground) -> {
-                    pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
-                    FetchDecision.FETCH
-                }
-                else -> FetchDecision.COMPLETE_NOW
-            }
-        }
-    }
 
     private fun completePendingCallbacks(appUserID: String) {
         val callbacks = synchronized(callbackLock) {
