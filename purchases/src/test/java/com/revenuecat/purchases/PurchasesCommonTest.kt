@@ -2963,4 +2963,73 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     // endregion
 
+    // region showManageSubscriptions
+
+    @Test
+    fun `showManageSubscriptions opens management URL from CustomerInfo`() {
+        val managementUri = android.net.Uri.parse("https://billing.stripe.com/portal/session/1234")
+        every { mockInfo.managementURL } returns managementUri
+
+        val context = mockk<android.content.Context>(relaxed = true)
+        val intentSlot = io.mockk.slot<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString()).isEqualTo("https://billing.stripe.com/portal/session/1234")
+    }
+
+    @Test
+    fun `showManageSubscriptions uses store default URL when CustomerInfo has no management URL`() {
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<android.content.Context>(relaxed = true)
+        val intentSlot = io.mockk.slot<android.content.Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString())
+            .isEqualTo(com.revenuecat.purchases.common.Constants.GOOGLE_PLAY_MANAGEMENT_URL)
+    }
+
+    @Test
+    fun `showManageSubscriptions calls success callback after opening URL`() {
+        val managementUri = android.net.Uri.parse("https://app.revenuecat.com/manage")
+        every { mockInfo.managementURL } returns managementUri
+
+        val context = mockk<android.content.Context>(relaxed = true)
+        every { context.startActivity(any()) } just Runs
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(context, object : ManageSubscriptionsCallback {
+            override fun onSuccess() { successCalled = true }
+            override fun onError(error: PurchasesError) { errorReceived = error }
+        })
+
+        assertThat(successCalled).isTrue()
+        assertThat(errorReceived).isNull()
+    }
+
+    @Test
+    fun `showManageSubscriptions calls error callback when CustomerInfo fetch fails`() {
+        val fetchError = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
+        mockCustomerInfoHelper(errorGettingCustomerInfo = fetchError)
+
+        val context = mockk<android.content.Context>(relaxed = true)
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(context, object : ManageSubscriptionsCallback {
+            override fun onSuccess() { successCalled = true }
+            override fun onError(error: PurchasesError) { errorReceived = error }
+        })
+
+        assertThat(successCalled).isFalse()
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    // endregion
+
 }

@@ -212,6 +212,11 @@ package com.revenuecat.purchases {
   public static final class LogLevel.Companion {
   }
 
+  public interface ManageSubscriptionsCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onSuccess();
+  }
+
   public final class NoCoreLibraryDesugaringException extends java.lang.RuntimeException {
     ctor public NoCoreLibraryDesugaringException(Throwable cause);
   }
@@ -473,6 +478,8 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.Synchronized public void setUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener?);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity, optional java.util.List<? extends com.revenuecat.purchases.models.InAppMessageType> inAppMessageTypes);
+    method public void showManageSubscriptions(android.content.Context context);
+    method public void showManageSubscriptions(android.content.Context context, optional com.revenuecat.purchases.ManageSubscriptionsCallback? callback);
     method @Deprecated public void syncAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price);
     method public void syncAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price, long purchaseTime);
     method public void syncAttributesAndOfferingsIfNeeded(com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback callback);
