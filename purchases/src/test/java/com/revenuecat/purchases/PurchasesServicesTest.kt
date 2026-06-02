@@ -39,9 +39,9 @@ internal class PurchasesServicesTest {
         dispatcher.initialize(first)
         dispatcher.initialize(second)
 
-        // The second initialize must tear down the services from the first configuration before reloading,
-        // so they don't leak resources across a reconfigure.
+        // The second initialize must tear down the first configuration's services before reloading, and
+        // close them with the instance they were initialized with (first) — not the new one (second).
         assertThat(RecordingPurchasesService.initialized).containsExactly(first, second)
-        assertThat(RecordingPurchasesService.closed).containsExactly(second)
+        assertThat(RecordingPurchasesService.closed).containsExactly(first)
     }
 }

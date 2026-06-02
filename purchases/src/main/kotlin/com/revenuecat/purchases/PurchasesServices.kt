@@ -20,19 +20,30 @@ internal interface PurchasesServiceDispatcher {
 private class ServiceLoaderDispatcher : PurchasesServiceDispatcher {
     private var services: List<PurchasesService> = emptyList()
 
+    // The Purchases the current services were initialized with, so they can be closed with that same
+    // instance (honoring PurchasesService.close) even on a reconfigure that passes a different one.
+    private var configuredPurchases: Purchases? = null
+
     @Synchronized
     override fun initialize(purchases: Purchases) {
-        // Close any services from a previous configuration before replacing them, so reconfiguring
-        // without an explicit close() doesn't leave the old services holding resources.
-        services.forEach { service -> service.close(purchases) }
+        // Tear down a previous configuration's services before replacing them, so reconfiguring without
+        // an explicit close() doesn't leave the old services holding resources.
+        closeServices()
         services = loadServices()
+        configuredPurchases = purchases
         services.forEach { service -> service.initialize(purchases) }
     }
 
     @Synchronized
     override fun close(purchases: Purchases) {
+        closeServices()
+    }
+
+    private fun closeServices() {
+        val purchases = configuredPurchases ?: return
         services.forEach { service -> service.close(purchases) }
         services = emptyList()
+        configuredPurchases = null
     }
 
     /**
