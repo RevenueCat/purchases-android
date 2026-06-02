@@ -145,17 +145,37 @@ internal class WorkflowManager(
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowsCache.workflowIdForOfferingId(offeringId)
 
-    private enum class FetchDecision { FETCH, JOIN, COMPLETE_NOW }
+    /**
+     * What a [getWorkflowsList] call should do, decided under [callbackLock] by
+     * [resolveWorkflowsListFetch] and acted on *outside* the lock so the completion callback is
+     * never invoked while holding it.
+     */
+    private enum class FetchDecision {
+        /** No in-flight fetch and the list cache is stale: start a new backend request. */
+        FETCH,
+
+        /**
+         * A fetch for the same appUserID is already running. This call's completion callback was
+         * queued onto it and fires when that fetch and its prefetch finish, so the caller just
+         * returns without a new request. Joining is independent of cache freshness on purpose: the
+         * list response stamps the cache fresh before its prefetch details land, so completing on a
+         * fresh cache would fire the callback too early.
+         */
+        JOIN,
+
+        /**
+         * Nothing to wait for, so the completion callback fires right away. Either the workflows
+         * endpoint is disabled, or the list cache is fresh and no fetch is in flight.
+         */
+        COMPLETE_NOW,
+    }
 
     /**
      * Decides how a [getWorkflowsList] call should proceed, queueing [onComplete] when it must wait.
+     * See [FetchDecision] for what each outcome means.
      *
-     * Returns [FetchDecision.JOIN] when a fetch for the same [appUserID] is already in flight: the
-     * call joins it regardless of list-cache freshness, because the list response refreshes the
-     * cache before its prefetch details finish — completing on a fresh cache would fire [onComplete]
-     * before the prefetched workflows land. A fetch in flight for a *different* user is not joined,
-     * so an identity switch starts its own fetch instead of inheriting the previous user's list.
-     * [FetchDecision.COMPLETE_NOW] means there is no in-flight work for this user to wait for.
+     * The decision is keyed by [appUserID]: a call only joins an in-flight fetch for the *same*
+     * user, so an identity switch starts its own fetch instead of inheriting the previous one.
      */
     private fun resolveWorkflowsListFetch(
         appUserID: String,
