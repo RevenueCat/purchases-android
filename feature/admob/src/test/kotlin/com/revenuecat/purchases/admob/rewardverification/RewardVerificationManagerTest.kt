@@ -13,7 +13,7 @@ import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesService
+import com.revenuecat.purchases.PurchasesServiceDispatcher
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
 import com.revenuecat.purchases.admob.enableRewardVerification
@@ -43,26 +43,25 @@ import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 @RunWith(RobolectricTestRunner::class)
 internal class RewardVerificationManagerTest {
 
-    private lateinit var originalServiceForwarder: PurchasesService
+    private lateinit var originalServiceDispatcher: PurchasesServiceDispatcher
 
     @Before
     fun setUp() {
-        originalServiceForwarder = Purchases.serviceForwarder
+        originalServiceDispatcher = Purchases.serviceDispatcher
     }
 
     @After
     fun tearDown() {
-        // Close whatever Purchases mock the registry believes is configured so the singleton
-        // runtime resets its state for subsequent tests.
+        // Close through the dispatcher so the per-configuration runtime is torn down for the next test.
         Purchases.backingFieldSharedInstance?.let { configured ->
-            originalServiceForwarder.close(configured)
+            originalServiceDispatcher.close(configured)
         }
         Purchases.backingFieldSharedInstance = null
         unmockkAll()
     }
 
     @Test
-    fun `verified result flows from enable through show to completed callback via singleton`() {
+    fun `verified result flows from enable through show to completed callback`() {
         val verifiedReward = CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 7)
         val mockPurchases = mockk<Purchases>(relaxed = true)
         val polledClientTransactionId = slot<String>()
@@ -74,12 +73,11 @@ internal class RewardVerificationManagerTest {
             )
         }
 
-        // Configure Purchases and notify the default registry so the singleton manager's
-        // runtime initializes.
+        // Configure Purchases and drive the dispatcher so the reward verification runtime is created.
         every { mockPurchases.currentConfiguration.apiKey } returns "test_api_key"
         every { mockPurchases.appUserID } returns "app-user-id"
         Purchases.backingFieldSharedInstance = mockPurchases
-        originalServiceForwarder.initialize(mockPurchases)
+        originalServiceDispatcher.initialize(mockPurchases)
 
         val ad = mockk<RewardedAd>(relaxed = true)
         every { ad.responseInfo.responseId } returns "ad-response-id"
@@ -145,7 +143,7 @@ internal class RewardVerificationManagerTest {
         every { mockPurchases.currentConfiguration.apiKey } returns "test_api_key"
         every { mockPurchases.appUserID } returns "app-user-id"
         Purchases.backingFieldSharedInstance = mockPurchases
-        originalServiceForwarder.initialize(mockPurchases)
+        originalServiceDispatcher.initialize(mockPurchases)
 
         val ad = mockk<RewardedInterstitialAd>(relaxed = true)
         every { ad.responseInfo.responseId } returns "interstitial-response-id"
@@ -185,7 +183,7 @@ internal class RewardVerificationManagerTest {
 
     @Test
     fun `install before Purchases is configured does not store transaction id and show fails safely`() {
-        // Intentionally skip backingFieldSharedInstance and forwarder.initialize().
+        // Intentionally skip backingFieldSharedInstance and dispatcher.initialize().
         val ad = mockk<RewardedAd>(relaxed = true)
         val activity = mockk<Activity>(relaxed = true)
         val rewardListenerSlot = slot<OnUserEarnedRewardListener>()

@@ -6,7 +6,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(InternalRevenueCatAPI::class)
 internal class PurchasesServicesTest {
 
     @Before
@@ -20,12 +19,12 @@ internal class PurchasesServicesTest {
     }
 
     @Test
-    fun `default forwarder discovers ServiceLoader providers and forwards lifecycle`() {
+    fun `default dispatcher discovers ServiceLoader providers and forwards lifecycle`() {
         val purchases = mockk<Purchases>(relaxed = true)
-        val forwarder = PurchasesServices.default()
+        val dispatcher = PurchasesServices.default()
 
-        forwarder.initialize(purchases)
-        forwarder.close(purchases)
+        dispatcher.initialize(purchases)
+        dispatcher.close(purchases)
 
         assertThat(RecordingPurchasesService.initialized).containsExactly(purchases)
         assertThat(RecordingPurchasesService.closed).containsExactly(purchases)

@@ -6,33 +6,32 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(InternalRevenueCatAPI::class)
 internal class PurchasesLifecycleWiringTest {
-    private lateinit var originalServiceForwarder: PurchasesService
+    private lateinit var originalServiceDispatcher: PurchasesServiceDispatcher
 
     @Before
     fun setUp() {
-        originalServiceForwarder = Purchases.serviceForwarder
+        originalServiceDispatcher = Purchases.serviceDispatcher
     }
 
     @After
     fun tearDownMocks() {
-        Purchases.serviceForwarder = originalServiceForwarder
+        Purchases.serviceDispatcher = originalServiceDispatcher
         Purchases.backingFieldSharedInstance = null
     }
 
     @Test
-    fun `close notifies purchases service forwarder`() {
+    fun `close notifies purchases service dispatcher`() {
         val orchestrator = mockk<PurchasesOrchestrator>(relaxed = true)
         val purchases = Purchases(orchestrator)
-        val serviceForwarder = mockk<PurchasesService>(relaxed = true)
+        val serviceDispatcher = mockk<PurchasesServiceDispatcher>(relaxed = true)
         Purchases.backingFieldSharedInstance = purchases
-        Purchases.serviceForwarder = serviceForwarder
+        Purchases.serviceDispatcher = serviceDispatcher
 
         purchases.close()
 
         verify(exactly = 1) {
-            serviceForwarder.close(purchases)
+            serviceDispatcher.close(purchases)
             orchestrator.close()
         }
     }

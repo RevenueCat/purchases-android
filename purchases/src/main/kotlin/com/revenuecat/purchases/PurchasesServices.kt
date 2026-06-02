@@ -4,36 +4,46 @@ import com.revenuecat.purchases.common.errorLog
 import java.util.ServiceLoader
 
 internal object PurchasesServices {
-    @OptIn(InternalRevenueCatAPI::class)
-    fun default(): PurchasesService = ServiceLoaderForwarder()
+    fun default(): PurchasesServiceDispatcher = ServiceLoaderDispatcher()
 }
 
 /**
- * Forwards [Purchases] lifecycle events to every [PurchasesService] declared on the classpath.
- *
- * Implementations are discovered lazily (once) with [ServiceLoader], passing the interface's own
- * [ClassLoader] so the call stays in the shape R8 can optimize.
+ * Drives the [Purchases] lifecycle for every [PurchasesService] on the classpath. This is the internal
+ * dispatcher that [Purchases] talks to, not a [PurchasesService] itself.
  */
-@OptIn(InternalRevenueCatAPI::class)
-private class ServiceLoaderForwarder : PurchasesService {
-    // A broken provider must not crash Purchases.configure()/close(), so failures degrade to no-op.
-    private val services: List<PurchasesService> by lazy {
-        runCatching {
-            ServiceLoader.load(
-                PurchasesService::class.java,
-                PurchasesService::class.java.classLoader,
-            ).toList()
-        }.getOrElse { error ->
-            errorLog(error) { "Failed to load PurchasesService implementations." }
-            emptyList()
-        }
-    }
+internal interface PurchasesServiceDispatcher {
+    fun initialize(purchases: Purchases)
+    fun close(purchases: Purchases)
+}
 
+@OptIn(InternalRevenueCatAPI::class)
+private class ServiceLoaderDispatcher : PurchasesServiceDispatcher {
+    private var services: List<PurchasesService> = emptyList()
+
+    @Synchronized
     override fun initialize(purchases: Purchases) {
+        services = loadServices()
         services.forEach { service -> service.initialize(purchases) }
     }
 
+    @Synchronized
     override fun close(purchases: Purchases) {
         services.forEach { service -> service.close(purchases) }
+        services = emptyList()
+    }
+
+    /**
+     * Discovers implementations with [ServiceLoader], passing the interface's own [ClassLoader] so the
+     * call stays in the shape R8 can optimize. A broken provider must not crash
+     * [Purchases.configure]/[Purchases.close], so failures degrade to an empty list.
+     */
+    private fun loadServices(): List<PurchasesService> = runCatching {
+        ServiceLoader.load(
+            PurchasesService::class.java,
+            PurchasesService::class.java.classLoader,
+        ).toList()
+    }.getOrElse { error ->
+        errorLog(error) { "Failed to load PurchasesService implementations." }
+        emptyList()
     }
 }
