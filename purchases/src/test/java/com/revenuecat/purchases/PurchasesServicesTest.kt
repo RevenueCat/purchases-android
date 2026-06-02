@@ -29,4 +29,19 @@ internal class PurchasesServicesTest {
         assertThat(RecordingPurchasesService.initialized).containsExactly(purchases)
         assertThat(RecordingPurchasesService.closed).containsExactly(purchases)
     }
+
+    @Test
+    fun `reinitializing without an explicit close still closes the previously loaded services`() {
+        val first = mockk<Purchases>(relaxed = true)
+        val second = mockk<Purchases>(relaxed = true)
+        val dispatcher = PurchasesServices.default()
+
+        dispatcher.initialize(first)
+        dispatcher.initialize(second)
+
+        // The second initialize must tear down the services from the first configuration before reloading,
+        // so they don't leak resources across a reconfigure.
+        assertThat(RecordingPurchasesService.initialized).containsExactly(first, second)
+        assertThat(RecordingPurchasesService.closed).containsExactly(second)
+    }
 }

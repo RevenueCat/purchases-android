@@ -22,6 +22,9 @@ private class ServiceLoaderDispatcher : PurchasesServiceDispatcher {
 
     @Synchronized
     override fun initialize(purchases: Purchases) {
+        // Close any services from a previous configuration before replacing them, so reconfiguring
+        // without an explicit close() doesn't leave the old services holding resources.
+        services.forEach { service -> service.close(purchases) }
         services = loadServices()
         services.forEach { service -> service.initialize(purchases) }
     }
