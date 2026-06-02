@@ -100,7 +100,7 @@ internal object Poller {
     ): Outcome? {
         return try {
             val result = fetcher.fetch(clientTransactionId)
-            Logger.d("Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId")
+            Logger.v("Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId")
             when (result) {
                 is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
                 CoreRewardVerificationResult.FAILED -> Outcome.Failed
@@ -112,7 +112,7 @@ internal object Poller {
             throw e
         } catch (e: PurchasesException) {
             if (e.isTransientPollingError()) {
-                Logger.d(
+                Logger.v(
                     "Reward verification poll transient error, retrying: ${e.code} " +
                         "transactionId=$clientTransactionId",
                 )
