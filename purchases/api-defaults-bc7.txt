@@ -230,6 +230,7 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.Throws(exceptionClasses=NoSuchElementException::class) public com.revenuecat.purchases.Package getPackage(String identifier) throws java.util.NoSuchElementException;
     method public com.revenuecat.purchases.paywalls.PaywallData? getPaywall();
     method public com.revenuecat.purchases.Offering.PaywallComponents? getPaywallComponents();
+    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
     method public String getServerDescription();
     method public com.revenuecat.purchases.Package? getSixMonth();
     method public com.revenuecat.purchases.Package? getThreeMonth();
