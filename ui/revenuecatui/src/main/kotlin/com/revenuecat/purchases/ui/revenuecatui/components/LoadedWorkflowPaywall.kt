@@ -97,9 +97,8 @@ internal fun LoadedWorkflowPaywall(
                     onClick = onClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        // animatable.value is a draw-phase state read (no recomposition per frame, same as
-                        // workflowTransition); headerRender.role is a plain closed-over value, refreshed when
-                        // a recomposition rebuilds this modifier (role only changes when the transition changes).
+                        // Read animatable.value inside graphicsLayer (draw phase), like workflowTransition,
+                        // so the fade stays in lock-step with the slide without recomposing every frame.
                         .graphicsLayer { alpha = headerAlpha(headerRender.role, transitionState.animatable.value) },
                 )
             }
