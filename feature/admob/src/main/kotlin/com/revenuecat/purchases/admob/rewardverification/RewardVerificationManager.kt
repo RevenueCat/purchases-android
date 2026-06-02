@@ -19,12 +19,15 @@ internal object RewardVerificationManager {
     private val mainHandler = Handler(Looper.getMainLooper())
 
     /**
-     * Per-configuration verification state used by [install]/[handleRewardEarned]. Set by
-     * [RewardVerificationService] while [Purchases] is configured and cleared to `null` on close, so a
-     * reward earned before configuration (or after close) fails safely.
+     * The [RewardVerificationService] for the active [Purchases] configuration, or `null` before
+     * configuration / after close. The service owns the [RewardVerificationRuntime], so the verification
+     * state is held on that instance and cleared when it is closed, rather than living on this object.
      */
     @Volatile
-    internal var runtime: RewardVerificationRuntime? = null
+    internal var activeService: RewardVerificationService? = null
+
+    private val runtime: RewardVerificationRuntime?
+        get() = activeService?.runtime
 
     fun install(ad: RewardedAd) = installInternal(ad.responseInfo?.responseId, ad::setServerSideVerificationOptions)
 
