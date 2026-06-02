@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
@@ -14,8 +15,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import java.util.concurrent.atomic.AtomicInteger
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 @Suppress("LongParameterList")
 internal class WorkflowManager(
@@ -80,13 +82,16 @@ internal class WorkflowManager(
 
     /**
      * Fetches the workflows list, then prefetches all entries marked `prefetch = true`.
-     * [onComplete] fires only after the list fetch AND all prefetch CDN fetches finish
-     * (success or failure), making it safe to call [workflowIdForOfferingId] in [onComplete].
+     *
+     * Offerings delivery is gated on [onComplete] (see
+     * [com.revenuecat.purchases.common.offerings.OfferingsManager]): it is invoked once the whole
+     * sequence settles — list fetched, every prefetch finished or failed — so it must always fire
+     * exactly once, otherwise offerings would never be delivered to the caller.
      *
      * Concurrent callers for the same [appUserID] while a request is in-flight are deduplicated:
-     * the second call queues its [onComplete] and returns without a new network request. All
-     * pending callbacks for that user complete together when the in-flight work finishes.
-     * A call for a different user starts its own fetch rather than joining the in-flight one.
+     * the second call queues its [onComplete] and returns without a new network request, then all
+     * pending callbacks for that user fire together when the in-flight sequence finishes. A call
+     * for a different user starts its own fetch rather than joining the in-flight one.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
         when (resolveWorkflowsListFetch(appUserID, appInBackground, onComplete)) {
@@ -110,26 +115,16 @@ internal class WorkflowManager(
                 // prefetching its assets would be wasted work. The backend should already only set
                 // prefetch = true for workflows tied to an offering; this is a defensive guard on top.
                 val prefetchWorkflows = response.workflows.filter { it.prefetch && it.offeringId != null }
-                if (prefetchWorkflows.isEmpty()) {
-                    completePendingCallbacks(appUserID)
-                } else {
-                    val remaining = AtomicInteger(prefetchWorkflows.size)
-                    prefetchWorkflows.forEach { summary ->
-                        getWorkflow(
-                            appUserID = appUserID,
-                            workflowId = summary.id,
-                            appInBackground = appInBackground,
-                            onSuccess = {
-                                if (remaining.decrementAndGet() == 0) completePendingCallbacks(appUserID)
-                            },
-                            onError = { error ->
-                                errorLog {
-                                    "Failed to prefetch workflow ${summary.id}: ${error.underlyingErrorMessage}"
-                                }
-                                if (remaining.decrementAndGet() == 0) completePendingCallbacks(appUserID)
-                            },
-                        )
+                scope.launch {
+                    // Prefetch each workflow concurrently and wait for all of them before completing,
+                    // so onComplete fires only once the whole sequence settles (empty list completes
+                    // right away). A failed prefetch is logged and does not fail the others.
+                    coroutineScope {
+                        prefetchWorkflows.forEach { summary ->
+                            launch { prefetchWorkflow(appUserID, summary.id, appInBackground) }
+                        }
                     }
+                    completePendingCallbacks(appUserID)
                 }
             },
             onError = { error ->
@@ -140,6 +135,26 @@ internal class WorkflowManager(
                 completePendingCallbacks(appUserID)
             },
         )
+    }
+
+    /**
+     * Suspends until [getWorkflow] for [workflowId] resolves. Prefetch is best-effort, so a failure
+     * is logged and the coroutine resumes normally instead of throwing, keeping one failed prefetch
+     * from cancelling its siblings in the surrounding [coroutineScope].
+     */
+    private suspend fun prefetchWorkflow(appUserID: String, workflowId: String, appInBackground: Boolean) {
+        suspendCancellableCoroutine { continuation ->
+            getWorkflow(
+                appUserID = appUserID,
+                workflowId = workflowId,
+                appInBackground = appInBackground,
+                onSuccess = { continuation.safeResume(Unit) },
+                onError = { error ->
+                    errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }
+                    continuation.safeResume(Unit)
+                },
+            )
+        }
     }
 
     fun workflowIdForOfferingId(offeringId: String): String? =
@@ -155,11 +170,12 @@ internal class WorkflowManager(
         FETCH,
 
         /**
-         * A fetch for the same appUserID is already running. This call's completion callback was
-         * queued onto it and fires when that fetch and its prefetch finish, so the caller just
-         * returns without a new request. Joining is independent of cache freshness on purpose: the
-         * list response stamps the cache fresh before its prefetch details land, so completing on a
-         * fresh cache would fire the callback too early.
+         * A fetch for the same appUserID is already running. This call's completion callback is
+         * queued onto it and fires when that in-flight sequence finishes, so the caller just returns
+         * without a new request. Joining is independent of cache freshness on purpose: the list
+         * response stamps the cache fresh partway through the sequence (before its prefetch
+         * finishes), so a freshness-only check would let this caller complete early, before the
+         * sequence it joined is done.
          */
         JOIN,
 
