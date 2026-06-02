@@ -267,14 +267,14 @@ internal fun selectWorkflowHeaderPresentation(
             WorkflowHeaderPresentation(fromStepId, WorkflowHeaderTransitionRole.LEAVING)
         !fromHasHeader && toHasHeader ->
             WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.ENTERING)
-        fromHasHeader && toHasHeader -> {
-            // Both steps have a header: keep the existing selection, no fade.
-            // Crossfade between genuinely different headers is deferred until shared headers exist.
-            // fromInfo/toInfo are non-null here (fromHasHeader/toHasHeader imply it); the explicit
-            // null checks are only to let the compiler smart-cast them into shouldUseOutgoingHeader.
-            val keepOutgoing = fromInfo != null && toInfo != null &&
-                shouldUseOutgoingHeader(pendingTransition.direction, fromInfo, toInfo)
-            val stepId = if (keepOutgoing) fromStepId else currentStepId
+        fromInfo != null && toInfo != null && fromHasHeader && toHasHeader -> {
+            // Both steps have a header: no fade, keep the existing selection. Animating a change
+            // between two different headers is a separate, deferred decision.
+            val stepId = if (shouldUseOutgoingHeader(pendingTransition.direction, fromInfo, toInfo)) {
+                fromStepId
+            } else {
+                currentStepId
+            }
             WorkflowHeaderPresentation(stepId, WorkflowHeaderTransitionRole.STABLE)
         }
         else -> WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.STABLE)
