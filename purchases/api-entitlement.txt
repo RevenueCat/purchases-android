@@ -1512,12 +1512,16 @@ package com.revenuecat.purchases.paywalls.events {
 
   @dev.drewhamilton.poko.Poko public final class CustomPaywallImpressionParams {
     ctor public CustomPaywallImpressionParams();
+    ctor public CustomPaywallImpressionParams(com.revenuecat.purchases.Offering offering);
     ctor public CustomPaywallImpressionParams(optional String? paywallId);
-    ctor public CustomPaywallImpressionParams(optional String? paywallId, optional String? offeringId);
+    ctor public CustomPaywallImpressionParams(optional String? paywallId, com.revenuecat.purchases.Offering offering);
+    ctor @Deprecated public CustomPaywallImpressionParams(optional String? paywallId, String? offeringId);
     method public String? getOfferingId();
     method public String? getPaywallId();
+    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
     property public final String? offeringId;
     property public final String? paywallId;
+    property public final com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext;
   }
 
 }
