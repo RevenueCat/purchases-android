@@ -31,7 +31,7 @@ private class ServiceLoaderDispatcher : PurchasesServiceDispatcher {
         closeServices()
         services = loadServices()
         configuredPurchases = purchases
-        services.forEach { service -> service.initialize(purchases) }
+        services.forEach { service -> service.safelyInitialize(purchases) }
     }
 
     @Synchronized
@@ -41,9 +41,23 @@ private class ServiceLoaderDispatcher : PurchasesServiceDispatcher {
 
     private fun closeServices() {
         val purchases = configuredPurchases ?: return
-        services.forEach { service -> service.close(purchases) }
+        services.forEach { service -> service.safelyClose(purchases) }
         services = emptyList()
         configuredPurchases = null
+    }
+
+    // A misbehaving service must not crash Purchases.configure()/close() or leave the dispatcher in a
+    // half-initialized state, so each notification is isolated: a throwing service is logged and skipped.
+    private fun PurchasesService.safelyInitialize(purchases: Purchases) {
+        runCatching { initialize(purchases) }.onFailure { error ->
+            errorLog(error) { "PurchasesService ${this::class.java.name} threw during initialize." }
+        }
+    }
+
+    private fun PurchasesService.safelyClose(purchases: Purchases) {
+        runCatching { close(purchases) }.onFailure { error ->
+            errorLog(error) { "PurchasesService ${this::class.java.name} threw during close." }
+        }
     }
 
     /**
