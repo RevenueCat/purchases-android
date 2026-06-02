@@ -77,6 +77,16 @@ android {
     testOptions {
         unitTests {
             isIncludeAndroidResources = true
+            all {
+                it.systemProperty(
+                    "paywall.input.dir",
+                    project.findProperty("paywall.input.dir")?.toString().orEmpty(),
+                )
+                it.systemProperty(
+                    "paywall.offering.id",
+                    project.findProperty("paywall.offering.id")?.toString().orEmpty(),
+                )
+            }
         }
     }
 }
