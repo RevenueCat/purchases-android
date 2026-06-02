@@ -15,10 +15,14 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 
+/**
+ * Holds the per-configuration reward verification state. A fresh instance is created when [Purchases] is
+ * configured and discarded with [close] when it closes, so no verification state outlives a configuration.
+ */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class RewardVerificationRuntime(
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
-    private val createVerificationScope: () -> CoroutineScope = {
+    createVerificationScope: () -> CoroutineScope = {
         CoroutineScope(SupervisorJob() + Dispatchers.IO)
     },
     private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
@@ -26,16 +30,12 @@ internal class RewardVerificationRuntime(
     },
     private val invalidateVirtualCurrenciesCache: () -> Unit = { invalidateVirtualCurrenciesCacheIfConfigured() },
 ) {
-    private var clientTransactionIdByAdResponseId: MutableMap<String, String>? = null
-
-    @Volatile
-    private var verificationScope: CoroutineScope? = null
+    private val clientTransactionIdByAdResponseId = mutableMapOf<String, String>()
+    private val verificationScope: CoroutineScope = createVerificationScope()
 
     @Synchronized
-    fun setClientTransactionId(adResponseId: String, clientTransactionId: String): Boolean {
-        val store = clientTransactionIdByAdResponseId ?: return false
-        store[adResponseId] = clientTransactionId
-        return true
+    fun setClientTransactionId(adResponseId: String, clientTransactionId: String) {
+        clientTransactionIdByAdResponseId[adResponseId] = clientTransactionId
     }
 
     fun handleRewardEarned(
@@ -61,18 +61,11 @@ internal class RewardVerificationRuntime(
             return
         }
 
-        val scope = verificationScope
-        if (scope == null) {
-            removeClientTransactionId(adResponseId)
-            deliverOnce(RewardVerificationResult.failed)
-            return
-        }
-
         // Notify started before launching so that on a non-main caller, the started post
         // is enqueued on the main handler before any completed post from the IO coroutine.
         notifyStarted(rewardVerificationStarted)
 
-        val verificationTask = scope.launch {
+        val verificationTask = verificationScope.launch {
             val result = poll(clientTransactionId)
             deliverOnce(result)
         }
@@ -106,27 +99,18 @@ internal class RewardVerificationRuntime(
 
     @Synchronized
     private fun getClientTransactionId(adResponseId: String): String? {
-        return clientTransactionIdByAdResponseId?.get(adResponseId)
+        return clientTransactionIdByAdResponseId[adResponseId]
     }
 
     @Synchronized
     private fun removeClientTransactionId(adResponseId: String) {
-        clientTransactionIdByAdResponseId?.remove(adResponseId)
-    }
-
-    @Synchronized
-    fun initialize() {
-        verificationScope?.cancel()
-        verificationScope = createVerificationScope()
-        clientTransactionIdByAdResponseId = mutableMapOf()
+        clientTransactionIdByAdResponseId.remove(adResponseId)
     }
 
     @Synchronized
     fun close() {
-        clientTransactionIdByAdResponseId?.clear()
-        clientTransactionIdByAdResponseId = null
-        verificationScope?.cancel()
-        verificationScope = null
+        verificationScope.cancel()
+        clientTransactionIdByAdResponseId.clear()
     }
 
     private companion object {

@@ -43,7 +43,6 @@ internal class RewardVerificationRuntimeTest {
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
-        runtime.initialize()
         runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
@@ -83,7 +82,6 @@ internal class RewardVerificationRuntimeTest {
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
-        runtime.initialize()
         runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
@@ -178,7 +176,6 @@ internal class RewardVerificationRuntimeTest {
         val adResponseId = "ad-response-id"
         val completed = CountDownLatch(1)
 
-        runtime.initialize()
         runtime.setClientTransactionId(adResponseId, "client-transaction-id")
 
         runtime.handleRewardEarned(
@@ -207,7 +204,6 @@ internal class RewardVerificationRuntimeTest {
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
 
-        runtime.initialize()
         // Intentionally skip setClientTransactionId.
 
         runtime.handleRewardEarned(
