@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -35,6 +36,11 @@ internal enum class WorkflowHeaderTransitionRole { ENTERING, LEAVING, STABLE }
 
 internal data class WorkflowHeaderPresentation(
     val headerStepId: String,
+    val role: WorkflowHeaderTransitionRole,
+)
+
+internal data class WorkflowHeaderRender(
+    val state: PaywallState.Loaded.Components,
     val role: WorkflowHeaderTransitionRole,
 )
 
@@ -70,7 +76,7 @@ internal fun LoadedWorkflowPaywall(
         transition = transition,
     )
 
-    val headerState = workflowHeaderState(
+    val headerRender = workflowHeaderState(
         currentStepId = currentStepId,
         currentState = currentState,
         stepStates = stepStates,
@@ -83,13 +89,15 @@ internal fun LoadedWorkflowPaywall(
         state = currentState,
         modifier = modifier,
         background = null,
-        headerContent = headerState.header?.let { headerStyle ->
+        headerContent = headerRender.state.header?.let { headerStyle ->
             {
                 ComponentView(
                     style = headerStyle,
-                    state = headerState,
+                    state = headerRender.state,
                     onClick = onClick,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer { alpha = headerAlpha(headerRender.role, transitionState.animatable.value) },
                 )
             }
         },
@@ -109,7 +117,7 @@ private fun workflowHeaderState(
     currentState: PaywallState.Loaded.Components,
     stepStates: Map<String, PaywallState.Loaded.Components>,
     transitionState: WorkflowTransitionState,
-): PaywallState.Loaded.Components {
+): WorkflowHeaderRender {
     val headerStepInfo = stepStates.mapValues { (_, stepState) ->
         WorkflowHeaderStepInfo(
             hasHeroImage = stepState.mainStackHasHeroImage,
@@ -127,13 +135,16 @@ private fun workflowHeaderState(
             }
         }
     }
-    val headerStepId = selectWorkflowHeaderPresentation(
+    val presentation = selectWorkflowHeaderPresentation(
         currentStepId = currentStepId,
         stepInfoByStepId = headerStepInfo,
         pendingTransition = pendingTransition,
-    ).headerStepId
+    )
 
-    return stepStates[headerStepId] ?: currentState
+    return WorkflowHeaderRender(
+        state = stepStates[presentation.headerStepId] ?: currentState,
+        role = presentation.role,
+    )
 }
 
 @Suppress("LongParameterList")
