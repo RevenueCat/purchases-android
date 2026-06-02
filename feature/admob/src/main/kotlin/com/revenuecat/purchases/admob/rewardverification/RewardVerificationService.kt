@@ -15,14 +15,17 @@ import com.revenuecat.purchases.PurchasesService
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal class RewardVerificationService : PurchasesService {
-    val runtime: RewardVerificationRuntime = RewardVerificationRuntime()
+    var runtime: RewardVerificationRuntime? = null
+        private set
 
     override fun initialize(purchases: Purchases) {
+        runtime = RewardVerificationRuntime()
         RewardVerificationManager.activeService = this
     }
 
     override fun close(purchases: Purchases) {
-        runtime.close()
+        runtime?.close()
+        runtime = null
         if (RewardVerificationManager.activeService === this) {
             RewardVerificationManager.activeService = null
         }
