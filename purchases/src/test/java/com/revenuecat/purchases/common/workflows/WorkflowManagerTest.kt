@@ -17,6 +17,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.serialization.SerializationException
@@ -189,6 +190,40 @@ class WorkflowManagerTest {
         )
         assertThat(error).isNotNull
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `getWorkflow does not report cancellation as an error`() {
+        val response = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn.example.com/workflow.json",
+        )
+        coEvery { mockResolver.resolve(response) } throws CancellationException("scope cancelled")
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers {
+            successSlot.captured(response)
+        }
+
+        var error: PurchasesError? = null
+        var result: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { result = it },
+            onError = { error = it },
+        )
+        assertThat(error).isNull()
+        assertThat(result).isNull()
     }
 
     @Test

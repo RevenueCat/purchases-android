@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,9 +27,8 @@ internal class WorkflowManager(
     private val workflowDetailResolver: WorkflowDetailResolver,
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val workflowsCache: WorkflowsCache,
-    // Dispatcher the prefetch detail fetches run on, so they fan out instead of serializing on the
-    // backend's default single-threaded dispatcher. Only the prefetch path uses it; on-demand fetches
-    // stay on the default dispatcher.
+    // Detail fetches in the prefetch path run here so they fan out instead of serializing on the
+    // backend's single-threaded dispatcher. On-demand fetches use the default dispatcher.
     private val prefetchDispatcher: Dispatcher,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
@@ -39,20 +39,15 @@ internal class WorkflowManager(
         private const val MAX_CONCURRENT_PREFETCHES = 4
     }
 
-    // Guards pendingCompletionCallbacks. A key is present while a workflows-list fetch (plus its
-    // prefetch) is in flight for that appUserID, so concurrent callers join only their own user's
-    // request — a different user starts its own fetch instead of receiving the wrong user's list.
+    // Tracks in-flight workflows-list fetches per appUserID so concurrent callers for the same user
+    // join the running request, while a different user starts its own.
     private val callbackLock = Any()
     private val pendingCompletionCallbacks = mutableMapOf<String, MutableList<() -> Unit>>()
 
-    // A Semaphore rather than a limitedParallelism dispatcher (as RemoteConfig's TopicFetcher uses)
-    // because a single prefetch is suspended almost the whole time: the detail fetch is a callback
-    // suspending on backend.getWorkflow, and the CDN/asset downloads run on the FileRepository/Coil
-    // scopes, not this one. A limitedParallelism dispatcher only caps actively-running coroutines, so
-    // a suspended prefetch would free its slot and let the next one start — capping nothing. The
-    // Semaphore holds its permit across those suspension points, bounding the in-flight pipeline end
-    // to end. The detail HTTP calls themselves run on [prefetchDispatcher] so they fan out rather than
-    // serialize.
+    // A Semaphore, not a limitedParallelism dispatcher: a prefetch stays suspended almost the whole
+    // time (callback-based detail fetch, downloads on other scopes), and limitedParallelism only caps
+    // running coroutines, so a suspended prefetch would free its slot. The permit is held across the
+    // suspension points, bounding the in-flight pipeline end to end.
     private val prefetchSemaphore = Semaphore(MAX_CONCURRENT_PREFETCHES)
 
     fun close() {
@@ -76,13 +71,13 @@ internal class WorkflowManager(
         }
         val onSuccessHandler: (WorkflowDetailResponse) -> Unit = { response ->
             scope.launch {
-                // resolve() can throw a range of exceptions (IllegalStateException, IOException,
-                // SignatureVerificationException, and SerializationException from parsing CDN json).
-                // CancellationException is caught here intentionally: rethrowing it would skip the
-                // callback and deadlock the prefetch counter in getWorkflowsList. The scope is already
-                // canceled so further coroutine work in this scope will not execute regardless.
+                // resolve() can fail in several ways (missing inline data, CDN fetch/parse failures,
+                // signature verification), so surface any of them through onError. Cancellation is not
+                // a failure: let it propagate so the coroutine unwinds normally.
                 val result = try {
                     workflowDetailResolver.resolve(response)
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                     onError(e.toPurchasesError())
                     return@launch
@@ -129,29 +124,23 @@ internal class WorkflowManager(
      * for a different user starts its own fetch rather than joining the in-flight one.
      */
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
-        // Decide under the lock and act outside it, so onComplete never fires while the lock is held.
-        // The decision is keyed by appUserID: a call only joins an in-flight fetch for the *same* user,
-        // so an identity switch starts its own fetch instead of inheriting the previous one.
+        // Decide under the lock, act outside it so onComplete never fires while holding it.
         val startFetch = synchronized(callbackLock) {
             val inFlight = pendingCompletionCallbacks[appUserID]
             if (inFlight != null) {
-                // A fetch for this user is already running. Queue our callback onto it and return; it
-                // fires when that in-flight sequence finishes. Joining is independent of cache freshness
-                // on purpose: the list response stamps the cache fresh partway through the sequence
-                // (before its prefetch finishes), so a freshness-only check would let this caller
-                // complete early, before the sequence it joined is done.
+                // Already fetching for this user: queue onto it. Joining ignores cache freshness on
+                // purpose — the list response stamps the cache fresh mid-sequence, before its prefetch
+                // finishes, so a freshness check would let this caller complete early.
                 inFlight.add(onComplete)
                 return
             }
-            // Nothing in flight: register this callback as the head of a new batch, then fetch only if
-            // the cached list is stale. A fresh cache means there's nothing to wait for, so we complete
-            // the batch immediately below instead of starting a request.
+            // Nothing in flight: open a batch and fetch only if the cached list is stale.
             pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
             workflowsCache.isWorkflowsListCacheStale(appInBackground)
         }
 
-        // Fresh cache and nothing in flight: nothing to wait for, so complete the batch right away.
-        // Otherwise start the request; its onSuccess/onError fire the queued callbacks when it settles.
+        // Fresh cache and nothing in flight: complete now. Otherwise the request's onSuccess/onError
+        // fire the queued callbacks when it settles.
         if (!startFetch) {
             completePendingCallbacks(appUserID)
         } else {
@@ -160,18 +149,16 @@ internal class WorkflowManager(
                 appInBackground = appInBackground,
                 type = "paywall",
                 onSuccess = { response ->
-                    // Drop workflows without an offeringId up front: they can't be reached via
-                    // workflowIdForOfferingId, so caching or prefetching them would be wasted work. The
-                    // backend should only return offering-tied workflows here; this is a guard on top.
+                    // Drop workflows without an offeringId: they can't be reached via
+                    // workflowIdForOfferingId, so caching or prefetching them is wasted work.
                     val filtered = response.onlyWorkflowsWithOfferingId()
                     workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
 
                     val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
                     scope.launch {
-                        // Prefetch workflows with bounded concurrency (at most MAX_CONCURRENT_PREFETCHES
-                        // at a time) and wait for all of them before completing, so onComplete fires only
-                        // once the whole sequence settles (empty list completes right away). A failed
-                        // prefetch is logged and does not fail the others.
+                        // Prefetch with bounded concurrency, waiting for all before completing so
+                        // onComplete fires once the whole sequence settles. A failed prefetch is logged
+                        // and does not fail the others.
                         coroutineScope {
                             prefetchWorkflows.forEach { summary ->
                                 launch {
@@ -186,8 +173,8 @@ internal class WorkflowManager(
                 },
                 onError = { error ->
                     errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
-                    // Restore the in-memory cache from the disk copy without rewriting disk: the disk
-                    // already holds this payload, so a write would just persist the same bytes again.
+                    // Restore the in-memory cache from disk without rewriting it — disk already holds
+                    // this payload.
                     workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
                         val filtered = response.onlyWorkflowsWithOfferingId()
                         workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
