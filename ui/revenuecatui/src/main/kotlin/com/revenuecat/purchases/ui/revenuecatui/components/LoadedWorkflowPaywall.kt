@@ -39,11 +39,6 @@ internal data class WorkflowHeaderPresentation(
     val role: WorkflowHeaderTransitionRole,
 )
 
-internal data class WorkflowHeaderRender(
-    val state: PaywallState.Loaded.Components,
-    val role: WorkflowHeaderTransitionRole,
-)
-
 internal fun headerAlpha(role: WorkflowHeaderTransitionRole, progress: Float): Float = when (role) {
     WorkflowHeaderTransitionRole.ENTERING -> progress
     WorkflowHeaderTransitionRole.LEAVING -> 1f - progress
@@ -76,12 +71,12 @@ internal fun LoadedWorkflowPaywall(
         transition = transition,
     )
 
-    val headerRender = workflowHeaderState(
+    val headerPresentation = workflowHeaderState(
         currentStepId = currentStepId,
-        currentState = currentState,
         stepStates = stepStates,
         transitionState = transitionState,
     )
+    val headerState = stepStates[headerPresentation.headerStepId] ?: currentState
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, currentState, clickHandler, componentInteractionTracker)
     }
@@ -89,17 +84,19 @@ internal fun LoadedWorkflowPaywall(
         state = currentState,
         modifier = modifier,
         background = null,
-        headerContent = headerRender.state.header?.let { headerStyle ->
+        headerContent = headerState.header?.let { headerStyle ->
             {
                 ComponentView(
                     style = headerStyle,
-                    state = headerRender.state,
+                    state = headerState,
                     onClick = onClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         // Read animatable.value inside graphicsLayer (draw phase), like workflowTransition,
                         // so the fade stays in lock-step with the slide without recomposing every frame.
-                        .graphicsLayer { alpha = headerAlpha(headerRender.role, transitionState.animatable.value) },
+                        .graphicsLayer {
+                            alpha = headerAlpha(headerPresentation.role, transitionState.animatable.value)
+                        },
                 )
             }
         },
@@ -116,10 +113,9 @@ internal fun LoadedWorkflowPaywall(
 
 private fun workflowHeaderState(
     currentStepId: String,
-    currentState: PaywallState.Loaded.Components,
     stepStates: Map<String, PaywallState.Loaded.Components>,
     transitionState: WorkflowTransitionState,
-): WorkflowHeaderRender {
+): WorkflowHeaderPresentation {
     val headerStepInfo = stepStates.mapValues { (_, stepState) ->
         WorkflowHeaderStepInfo(
             hasHeroImage = stepState.mainStackHasHeroImage,
@@ -137,15 +133,10 @@ private fun workflowHeaderState(
             }
         }
     }
-    val presentation = selectWorkflowHeaderPresentation(
+    return selectWorkflowHeaderPresentation(
         currentStepId = currentStepId,
         stepInfoByStepId = headerStepInfo,
         pendingTransition = pendingTransition,
-    )
-
-    return WorkflowHeaderRender(
-        state = stepStates[presentation.headerStepId] ?: currentState,
-        role = presentation.role,
     )
 }
 
@@ -266,9 +257,10 @@ internal fun selectWorkflowHeaderPresentation(
             WorkflowHeaderPresentation(fromStepId, WorkflowHeaderTransitionRole.LEAVING)
         !fromHasHeader && toHasHeader ->
             WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.ENTERING)
-        fromInfo != null && toInfo != null && fromHasHeader && toHasHeader -> {
+        fromHasHeader && toHasHeader -> {
             // Both steps have a header, no fade
-            val stepId = if (shouldUseOutgoingHeader(pendingTransition.direction, fromInfo, toInfo)) {
+            // !! safe: fromHasHeader/toHasHeader imply their info is non-null
+            val stepId = if (shouldUseOutgoingHeader(pendingTransition.direction, fromInfo!!, toInfo!!)) {
                 fromStepId
             } else {
                 currentStepId
@@ -283,6 +275,5 @@ private fun shouldUseOutgoingHeader(
     direction: NavigationDirection?,
     fromStepInfo: WorkflowHeaderStepInfo,
     toStepInfo: WorkflowHeaderStepInfo,
-): Boolean = fromStepInfo.hasHeader &&
-    !toStepInfo.hasHeroImage &&
+): Boolean = !toStepInfo.hasHeroImage &&
     (direction == NavigationDirection.BACKWARD || fromStepInfo.hasHeroImage)
