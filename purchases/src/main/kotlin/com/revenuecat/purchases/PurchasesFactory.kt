@@ -49,6 +49,7 @@ import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
+import com.revenuecat.purchases.storage.DefaultFileCache
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
@@ -64,6 +65,10 @@ import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -74,7 +79,11 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(
+        ExperimentalPreviewRevenueCatPurchasesAPI::class,
+        InternalRevenueCatAPI::class,
+        ExperimentalCoroutinesApi::class,
+    )
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
@@ -363,7 +372,15 @@ internal class PurchasesFactory(
                     backend = backend,
                     workflowDetailResolver = WorkflowDetailResolver(
                         workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                            fileRepository = DefaultFileRepository(contextForStorage, "rc_compiled_workflows"),
+                            // Dedicated FileRepository instance with a concurrency-limited scope, so workflow
+                            // CDN downloads are capped without affecting the instances used for images/video.
+                            fileRepository = DefaultFileRepository(
+                                fileCacheManager = DefaultFileCache(contextForStorage, "rc_compiled_workflows"),
+                                ioScope = CoroutineScope(
+                                    Dispatchers.IO.limitedParallelism(MAX_CONCURRENT_WORKFLOW_CDN_FETCHES) +
+                                        NonCancellable,
+                                ),
+                            ),
                         ),
                     ),
                     workflowAssetPreDownloader = WorkflowAssetPreDownloader(
@@ -560,6 +577,10 @@ internal class PurchasesFactory(
 
     companion object {
         private const val CONCURRENT_BACKEND_CALLS = 4
+
+        // Caps concurrent workflow CDN downloads on the dedicated workflows FileRepository scope, the
+        // same way CONCURRENT_BACKEND_CALLS caps concurrent workflow detail fetches on prefetchDispatcher.
+        private const val MAX_CONCURRENT_WORKFLOW_CDN_FETCHES = 4
 
         @VisibleForTesting
         internal fun shouldInitializeDiagnostics(

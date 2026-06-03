@@ -19,8 +19,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 
 internal class WorkflowManager(
     private val backend: Backend,
@@ -33,22 +31,10 @@ internal class WorkflowManager(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
-    private companion object {
-        // Caps how many workflows are prefetched at once, so a long workflows list does not fan out
-        // into an unbounded number of concurrent CDN/asset downloads.
-        private const val MAX_CONCURRENT_PREFETCHES = 4
-    }
-
     // Tracks in-flight workflows-list fetches per appUserID so concurrent callers for the same user
     // join the running request, while a different user starts its own.
     private val callbackLock = Any()
     private val pendingCompletionCallbacks = mutableMapOf<String, MutableList<() -> Unit>>()
-
-    // A Semaphore, not a limitedParallelism dispatcher: a prefetch stays suspended almost the whole
-    // time (callback-based detail fetch, downloads on other scopes), and limitedParallelism only caps
-    // running coroutines, so a suspended prefetch would free its slot. The permit is held across the
-    // suspension points, bounding the in-flight pipeline end to end.
-    private val prefetchSemaphore = Semaphore(MAX_CONCURRENT_PREFETCHES)
 
     fun close() {
         scope.cancel()
@@ -156,15 +142,14 @@ internal class WorkflowManager(
 
                     val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
                     scope.launch {
-                        // Prefetch with bounded concurrency, waiting for all before completing so
-                        // onComplete fires once the whole sequence settles. A failed prefetch is logged
-                        // and does not fail the others.
+                        // Wait for all prefetches before completing so onComplete fires once the whole
+                        // sequence settles. A failed prefetch is logged and does not fail the others.
+                        // Concurrency is bounded downstream, not here: detail fetches by prefetchDispatcher's
+                        // thread pool, CDN downloads by the workflows FileRepository's limited scope.
                         coroutineScope {
                             prefetchWorkflows.forEach { summary ->
                                 launch {
-                                    prefetchSemaphore.withPermit {
-                                        prefetchWorkflow(appUserID, summary.id, appInBackground)
-                                    }
+                                    prefetchWorkflow(appUserID, summary.id, appInBackground)
                                 }
                             }
                         }

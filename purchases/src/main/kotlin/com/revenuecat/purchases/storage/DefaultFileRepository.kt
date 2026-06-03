@@ -16,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -128,19 +127,20 @@ internal class DefaultFileRepository(
             if (fileCacheManager.cachedContentExists(it)) it else null
         }
 
-    private suspend fun downloadFile(url: URL): UrlConnection = try {
-        withContext(Dispatchers.IO) {
-            verboseLog { "Downloading remote file from $url" }
+    // Runs on the ioScope's dispatcher (Dispatchers.IO by default). Callers that inject a
+    // concurrency-limited dispatcher rely on the whole download running here, so this must not
+    // switch dispatchers.
+    private fun downloadFile(url: URL): UrlConnection = try {
+        verboseLog { "Downloading remote file from $url" }
 
-            val connection = urlConnectionFactory.createConnection(url.toString())
+        val connection = urlConnectionFactory.createConnection(url.toString())
 
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                connection.disconnect()
-                throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
-            }
-
-            return@withContext connection
+        if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+            connection.disconnect()
+            throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
         }
+
+        connection
     } catch (e: IOException) {
         val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
         logHandler.e("FileRepository", message, e)

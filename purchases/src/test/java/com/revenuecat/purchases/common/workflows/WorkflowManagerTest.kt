@@ -567,7 +567,7 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getWorkflowsList prefetches at most 4 workflows concurrently`() {
+    fun `getWorkflowsList fetches every prefetch=true workflow`() {
         val workflows = (0 until 10).map {
             WorkflowSummary(id = "wf_$it", displayName = "W$it", offeringId = "off_$it", prefetch = true)
         }
@@ -577,13 +577,14 @@ class WorkflowManagerTest {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
         } answers { listSuccessSlot.captured(response) }
 
-        // Hold every prefetch in flight by never invoking its callback, so each one keeps its
-        // semaphore permit. Only as many fetches as there are permits can start.
+        // Hold every prefetch in flight by never invoking its callback. The manager does not cap
+        // concurrency itself: detail fetches are bounded by prefetchDispatcher's thread pool and CDN
+        // downloads by the workflows FileRepository scope, so every prefetch=true workflow is launched.
         every { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) } answers { }
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
-        verify(exactly = 4) { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 10) { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
