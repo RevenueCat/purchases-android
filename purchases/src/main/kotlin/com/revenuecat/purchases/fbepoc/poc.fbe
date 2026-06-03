@@ -3,53 +3,11 @@
 // Domain declaration (becomes Kotlin package prefix)
 domain com.revenuecat.purchases.fbepoc
 
-// Package declaration (becomes Kotlin package suffix)
-package models
+package payload
 
-// HTTP verb
-enum HttpMethod : byte
+struct Payload
 {
-    get;
-    post;
-    put;
-    delete;
-}
-
-// Response status (int32-backed enum)
-enum ResponseStatus : int32
-{
-    ok = 200;
-    created = 201;
-    bad_request = 400;
-    not_found = 404;
-    server_error = 500;
-}
-
-// A single header key/value pair (nested struct)
-struct Header
-{
-    string name;
-    string value;
-}
-
-// Dummy request: primitives, enum, nested struct list, optional field
-struct DummyRequest
-{
-    [key] int32 id;
-    HttpMethod method;
-    string path;
-    Header[] headers;
-    string? body;
-    int64 createdAt;
-}
-
-// Dummy response
-struct DummyResponse
-{
-    [key] int32 id;
-    ResponseStatus status;
-    Header[] headers;
-    string body;
-    double elapsedMs = 0.0;
-    bool cached = false;
+    bytes config;
+    // FBE map syntax is value<key>, so this is a map of bytes (key) -> bytes (value)
+    bytes<bytes> blobs;
 }

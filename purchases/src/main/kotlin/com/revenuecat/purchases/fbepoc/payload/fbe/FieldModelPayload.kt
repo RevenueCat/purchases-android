@@ -7,30 +7,22 @@
 
 @file:Suppress("UnusedImport", "unused")
 
-package com.revenuecat.purchases.fbepoc.models.fbe
+package com.revenuecat.purchases.fbepoc.payload.fbe
 
-// Fast Binary Encoding DummyRequest field model
+// Fast Binary Encoding Payload field model
 @Suppress("MemberVisibilityCanBePrivate", "RemoveRedundantCallsOfConversionMethods", "ReplaceGetOrSet")
-internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fbe.Buffer, offset: Long) : com.revenuecat.purchases.fbepoc.fbe.FieldModel(buffer, offset)
+internal class FieldModelPayload(buffer: com.revenuecat.purchases.fbepoc.fbe.Buffer, offset: Long) : com.revenuecat.purchases.fbepoc.fbe.FieldModel(buffer, offset)
 {
-    val id: com.revenuecat.purchases.fbepoc.fbe.FieldModelInt32 = com.revenuecat.purchases.fbepoc.fbe.FieldModelInt32(buffer, 4 + 4)
-    val method: FieldModelHttpMethod = FieldModelHttpMethod(buffer, id.fbeOffset + id.fbeSize)
-    val path: com.revenuecat.purchases.fbepoc.fbe.FieldModelString = com.revenuecat.purchases.fbepoc.fbe.FieldModelString(buffer, method.fbeOffset + method.fbeSize)
-    val headers: FieldModelVectorHeader = FieldModelVectorHeader(buffer, path.fbeOffset + path.fbeSize)
-    val body: FieldModelOptionalString = FieldModelOptionalString(buffer, headers.fbeOffset + headers.fbeSize)
-    val createdAt: com.revenuecat.purchases.fbepoc.fbe.FieldModelInt64 = com.revenuecat.purchases.fbepoc.fbe.FieldModelInt64(buffer, body.fbeOffset + body.fbeSize)
+    val config: com.revenuecat.purchases.fbepoc.fbe.FieldModelBytes = com.revenuecat.purchases.fbepoc.fbe.FieldModelBytes(buffer, 4 + 4)
+    val blobs: FieldModelMapBytesBytes = FieldModelMapBytesBytes(buffer, config.fbeOffset + config.fbeSize)
 
     // Field size
     override val fbeSize: Long = 4
 
     // Field body size
     val fbeBody: Long = (4 + 4
-        + id.fbeSize
-        + method.fbeSize
-        + path.fbeSize
-        + headers.fbeSize
-        + body.fbeSize
-        + createdAt.fbeSize
+        + config.fbeSize
+        + blobs.fbeSize
         )
 
     // Field extra size
@@ -46,12 +38,8 @@ internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fb
         _buffer.shift(fbeStructOffset)
 
         val fbeResult = (fbeBody
-            + id.fbeExtra
-            + method.fbeExtra
-            + path.fbeExtra
-            + headers.fbeExtra
-            + body.fbeExtra
-            + createdAt.fbeExtra
+            + config.fbeExtra
+            + blobs.fbeExtra
             )
 
         _buffer.unshift(fbeStructOffset)
@@ -64,7 +52,7 @@ internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fb
 
     companion object
     {
-        const val fbeTypeConst: Long = 2
+        const val fbeTypeConst: Long = 1
     }
 
     // Check if the struct value is valid
@@ -97,41 +85,17 @@ internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fb
     {
         var fbeCurrentSize = 4L + 4L
 
-        if ((fbeCurrentSize + id.fbeSize) > fbeStructSize)
+        if ((fbeCurrentSize + config.fbeSize) > fbeStructSize)
             return true
-        if (!id.verify())
+        if (!config.verify())
             return false
-        fbeCurrentSize += id.fbeSize
+        fbeCurrentSize += config.fbeSize
 
-        if ((fbeCurrentSize + method.fbeSize) > fbeStructSize)
+        if ((fbeCurrentSize + blobs.fbeSize) > fbeStructSize)
             return true
-        if (!method.verify())
+        if (!blobs.verify())
             return false
-        fbeCurrentSize += method.fbeSize
-
-        if ((fbeCurrentSize + path.fbeSize) > fbeStructSize)
-            return true
-        if (!path.verify())
-            return false
-        fbeCurrentSize += path.fbeSize
-
-        if ((fbeCurrentSize + headers.fbeSize) > fbeStructSize)
-            return true
-        if (!headers.verify())
-            return false
-        fbeCurrentSize += headers.fbeSize
-
-        if ((fbeCurrentSize + body.fbeSize) > fbeStructSize)
-            return true
-        if (!body.verify())
-            return false
-        fbeCurrentSize += body.fbeSize
-
-        if ((fbeCurrentSize + createdAt.fbeSize) > fbeStructSize)
-            return true
-        if (!createdAt.verify())
-            return false
-        fbeCurrentSize += createdAt.fbeSize
+        fbeCurrentSize += blobs.fbeSize
 
         return true
     }
@@ -163,7 +127,7 @@ internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fb
     }
 
     // Get the struct value
-    fun get(fbeValue: com.revenuecat.purchases.fbepoc.models.DummyRequest = com.revenuecat.purchases.fbepoc.models.DummyRequest()): com.revenuecat.purchases.fbepoc.models.DummyRequest
+    fun get(fbeValue: com.revenuecat.purchases.fbepoc.payload.Payload = com.revenuecat.purchases.fbepoc.payload.Payload()): com.revenuecat.purchases.fbepoc.payload.Payload
     {
         val fbeBegin = getBegin()
         if (fbeBegin == 0L)
@@ -177,45 +141,21 @@ internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fb
 
     // Get the struct fields values
     @Suppress("UNUSED_PARAMETER")
-    fun getFields(fbeValue: com.revenuecat.purchases.fbepoc.models.DummyRequest, fbeStructSize: Long)
+    fun getFields(fbeValue: com.revenuecat.purchases.fbepoc.payload.Payload, fbeStructSize: Long)
     {
         var fbeCurrentSize = 4L + 4L
 
-        if ((fbeCurrentSize + id.fbeSize) <= fbeStructSize)
-            fbeValue.id = id.get()
+        if ((fbeCurrentSize + config.fbeSize) <= fbeStructSize)
+            fbeValue.config = config.get()
         else
-            fbeValue.id = 0
-        fbeCurrentSize += id.fbeSize
+            fbeValue.config = ByteArray(0)
+        fbeCurrentSize += config.fbeSize
 
-        if ((fbeCurrentSize + method.fbeSize) <= fbeStructSize)
-            fbeValue.method = method.get()
+        if ((fbeCurrentSize + blobs.fbeSize) <= fbeStructSize)
+            blobs.get(fbeValue.blobs)
         else
-            fbeValue.method = com.revenuecat.purchases.fbepoc.models.HttpMethod()
-        fbeCurrentSize += method.fbeSize
-
-        if ((fbeCurrentSize + path.fbeSize) <= fbeStructSize)
-            fbeValue.path = path.get()
-        else
-            fbeValue.path = ""
-        fbeCurrentSize += path.fbeSize
-
-        if ((fbeCurrentSize + headers.fbeSize) <= fbeStructSize)
-            headers.get(fbeValue.headers)
-        else
-            fbeValue.headers.clear()
-        fbeCurrentSize += headers.fbeSize
-
-        if ((fbeCurrentSize + body.fbeSize) <= fbeStructSize)
-            fbeValue.body = body.get()
-        else
-            fbeValue.body = null
-        fbeCurrentSize += body.fbeSize
-
-        if ((fbeCurrentSize + createdAt.fbeSize) <= fbeStructSize)
-            fbeValue.createdAt = createdAt.get()
-        else
-            fbeValue.createdAt = 0L
-        fbeCurrentSize += createdAt.fbeSize
+            fbeValue.blobs.clear()
+        fbeCurrentSize += blobs.fbeSize
     }
 
     // Set the struct value (begin phase)
@@ -246,7 +186,7 @@ internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fb
     }
 
     // Set the struct value
-    fun set(fbeValue: com.revenuecat.purchases.fbepoc.models.DummyRequest)
+    fun set(fbeValue: com.revenuecat.purchases.fbepoc.payload.Payload)
     {
         val fbeBegin = setBegin()
         if (fbeBegin == 0L)
@@ -258,13 +198,9 @@ internal class FieldModelDummyRequest(buffer: com.revenuecat.purchases.fbepoc.fb
 
     // Set the struct fields values
     @Suppress("UNUSED_PARAMETER")
-    fun setFields(fbeValue: com.revenuecat.purchases.fbepoc.models.DummyRequest)
+    fun setFields(fbeValue: com.revenuecat.purchases.fbepoc.payload.Payload)
     {
-        id.set(fbeValue.id)
-        method.set(fbeValue.method)
-        path.set(fbeValue.path)
-        headers.set(fbeValue.headers)
-        body.set(fbeValue.body)
-        createdAt.set(fbeValue.createdAt)
+        config.set(fbeValue.config)
+        blobs.set(fbeValue.blobs)
     }
 }

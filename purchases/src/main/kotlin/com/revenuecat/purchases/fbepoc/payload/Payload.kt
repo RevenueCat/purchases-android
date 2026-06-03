@@ -7,37 +7,37 @@
 
 @file:Suppress("UnusedImport", "unused")
 
-package com.revenuecat.purchases.fbepoc.models
+package com.revenuecat.purchases.fbepoc.payload
 
 @Suppress("MemberVisibilityCanBePrivate", "RemoveRedundantCallsOfConversionMethods")
-internal open class Header : Comparable<Any?>
+internal open class Payload : Comparable<Any?>
 {
-    var name: String
-    var value: String
+    var config: ByteArray
+    var blobs: java.util.TreeMap<ByteArray, ByteArray>
 
     @Transient open var fbeType: Long = 1
 
-    constructor(name: String = "", value: String = "")
+    constructor(config: ByteArray = ByteArray(0), blobs: java.util.TreeMap<ByteArray, ByteArray> = java.util.TreeMap())
     {
-        this.name = name
-        this.value = value
+        this.config = config
+        this.blobs = blobs
     }
 
     @Suppress("UNUSED_PARAMETER")
-    constructor(other: Header)
+    constructor(other: Payload)
     {
-        this.name = other.name
-        this.value = other.value
+        this.config = other.config
+        this.blobs = other.blobs
     }
 
-    open fun clone(): Header
+    open fun clone(): Payload
     {
         // Serialize the struct to the FBE stream
-        val writer = com.revenuecat.purchases.fbepoc.models.fbe.HeaderModel()
+        val writer = com.revenuecat.purchases.fbepoc.payload.fbe.PayloadModel()
         writer.serialize(this)
 
         // Deserialize the struct from the FBE stream
-        val reader = com.revenuecat.purchases.fbepoc.models.fbe.HeaderModel()
+        val reader = com.revenuecat.purchases.fbepoc.payload.fbe.PayloadModel()
         reader.attach(writer.buffer)
         return reader.deserialize()
     }
@@ -47,11 +47,11 @@ internal open class Header : Comparable<Any?>
         if (other == null)
             return -1
 
-        if (!Header::class.java.isAssignableFrom(other.javaClass))
+        if (!Payload::class.java.isAssignableFrom(other.javaClass))
             return -1
 
         @Suppress("UNUSED_VARIABLE")
-        val obj = other as Header? ?: return -1
+        val obj = other as Payload? ?: return -1
 
         @Suppress("VARIABLE_WITH_REDUNDANT_INITIALIZER", "CanBeVal", "UnnecessaryVariable")
         var result = 0
@@ -63,11 +63,11 @@ internal open class Header : Comparable<Any?>
         if (other == null)
             return false
 
-        if (!Header::class.java.isAssignableFrom(other.javaClass))
+        if (!Payload::class.java.isAssignableFrom(other.javaClass))
             return false
 
         @Suppress("UNUSED_VARIABLE")
-        val obj = other as Header? ?: return false
+        val obj = other as Payload? ?: return false
 
         return true
     }
@@ -82,9 +82,22 @@ internal open class Header : Comparable<Any?>
     override fun toString(): String
     {
         val sb = StringBuilder()
-        sb.append("Header(")
-        sb.append("name="); sb.append("\"").append(name).append("\"")
-        sb.append(",value="); sb.append("\"").append(value).append("\"")
+        sb.append("Payload(")
+        sb.append("config="); sb.append("bytes[").append(config.size).append("]")
+        @Suppress("ConstantConditionIf")
+        if (true)
+        {
+            var first = true
+            sb.append(",blobs=[").append(blobs.size).append("]<{")
+            for (item in blobs.entries)
+            {
+                sb.append(if (first) "" else ",").append("bytes[").append(item.key.size).append("]")
+                sb.append("->")
+                sb.append("bytes[").append(item.value.size).append("]")
+                first = false
+            }
+            sb.append("}>")
+        }
         sb.append(")")
         return sb.toString()
     }

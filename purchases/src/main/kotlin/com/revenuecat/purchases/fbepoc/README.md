@@ -12,25 +12,30 @@ because it compiles into the same module.
 
 ## Layout
 
-- `poc.fbe` — the schema (source of truth). Generic dummy models: `DummyRequest`, `DummyResponse`,
-  `Header`, plus the `HttpMethod` and `ResponseStatus` enums. Exercises primitives, an optional
-  field (`string?`), a nested-struct list (`Header[]`), and byte/int32-backed enums.
-- `models/` — generated domain objects (`DummyRequest`, etc.) and their FBE field models under
-  `models/fbe/`.
+- `poc.fbe` — the schema (source of truth). A single `Payload { bytes config; bytes<bytes> blobs; }`,
+  exercising a raw byte field and a bytes-keyed map. Note FBE's collection syntax is `value<key>`,
+  so `bytes<bytes>` is a map of bytes (key) -> bytes (value); there is no `map<K, V>` keyword.
+- `payload/` — the generated `Payload` domain object and its FBE field models under `payload/fbe/`.
 - `fbe/` — the shared FBE runtime (`Buffer`, `Model`, per-type `FieldModel*`). Emitted by the
   compiler; identical across schemas for a given FBE version.
-- `FbeProofOfConceptTest.kt` — round-trip encode/decode tests + a size-vs-JSON comparison.
+- `FbeProofOfConceptTest.kt` — round-trip encode/decode tests + a size-vs-base64-JSON comparison.
+  Lives in the test source set (`purchases/src/test/java/com/revenuecat/purchases/fbepoc/`).
 
-`FbeProofOfConceptTest.kt` lives in the test source set
-(`purchases/src/test/java/com/revenuecat/purchases/fbepoc/`).
+### Caveat: bytes-keyed maps
 
-All files under `models/` and `fbe/` are generated. Do not edit by hand; change `poc.fbe` and
+`bytes<bytes>` generates a `java.util.TreeMap<ByteArray, ByteArray>`, but `ByteArray` is not
+`Comparable`. A natural-ordering `TreeMap` throws `ClassCastException` once it holds more than one
+key, so the no-arg `deserialize()` (which builds a default `TreeMap()`) only works for empty/single
+entry maps. For multi-entry maps, build the target `Payload` with a `TreeMap` that has an explicit
+comparator and use the `deserialize(target)` overload. See the test for an example.
+
+All files under `payload/` and `fbe/` are generated. Do not edit by hand; change `poc.fbe` and
 regenerate. After regenerating, re-apply the `internal` visibility modifier to every top-level type
 (the `fbec` compiler emits them as public):
 
 ```bash
 # from this directory, after running fbec
-find models fbe -name '*.kt' -print0 | xargs -0 sed -i '' -E \
+find payload fbe -name '*.kt' -print0 | xargs -0 sed -i '' -E \
   's/^((open |abstract |sealed |data )*(class|object|interface|enum class) )/internal \1/'
 ```
 
@@ -58,6 +63,10 @@ PATH="/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/flex/bin:$PATH" make -j4 fbe
 The compiler also supports `--json` (Gson-based JSON serialization), `--final` (faster fixed-layout
 serialization), and `--proto` (sender/receiver protocol). This PoC uses only the default binary
 serialization, which has no third-party dependencies.
+
+Note on size: FBE is not automatically smaller than JSON. For tiny, binary-heavy payloads the
+per-field and per-map-entry framing (4-byte offsets + 4-byte sizes) is fixed overhead that only
+pays off as payloads grow. The size test reports both numbers rather than asserting a winner.
 
 ## Notes for productionizing
 

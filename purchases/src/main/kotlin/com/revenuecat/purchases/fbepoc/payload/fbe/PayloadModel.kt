@@ -7,15 +7,15 @@
 
 @file:Suppress("UnusedImport", "unused")
 
-package com.revenuecat.purchases.fbepoc.models.fbe
+package com.revenuecat.purchases.fbepoc.payload.fbe
 
-// Fast Binary Encoding DummyResponse model
-internal class DummyResponseModel : com.revenuecat.purchases.fbepoc.fbe.Model
+// Fast Binary Encoding Payload model
+internal class PayloadModel : com.revenuecat.purchases.fbepoc.fbe.Model
 {
-    val model: FieldModelDummyResponse
+    val model: FieldModelPayload
 
-    constructor() { model = FieldModelDummyResponse(buffer, 4) }
-    constructor(buffer: com.revenuecat.purchases.fbepoc.fbe.Buffer) : super(buffer) { model = FieldModelDummyResponse(buffer, 4) }
+    constructor() { model = FieldModelPayload(buffer, 4) }
+    constructor(buffer: com.revenuecat.purchases.fbepoc.fbe.Buffer) : super(buffer) { model = FieldModelPayload(buffer, 4) }
 
     // Model size
     fun fbeSize(): Long = model.fbeSize + model.fbeExtra
@@ -24,7 +24,7 @@ internal class DummyResponseModel : com.revenuecat.purchases.fbepoc.fbe.Model
 
     companion object
     {
-        const val fbeTypeConst: Long = FieldModelDummyResponse.fbeTypeConst
+        const val fbeTypeConst: Long = FieldModelPayload.fbeTypeConst
     }
 
     // Check if the struct value is valid
@@ -56,7 +56,7 @@ internal class DummyResponseModel : com.revenuecat.purchases.fbepoc.fbe.Model
     }
 
     // Serialize the struct value
-    fun serialize(value: com.revenuecat.purchases.fbepoc.models.DummyResponse): Long
+    fun serialize(value: com.revenuecat.purchases.fbepoc.payload.Payload): Long
     {
         val fbeBegin = createBegin()
         model.set(value)
@@ -64,15 +64,15 @@ internal class DummyResponseModel : com.revenuecat.purchases.fbepoc.fbe.Model
     }
 
     // Deserialize the struct value
-    fun deserialize(): com.revenuecat.purchases.fbepoc.models.DummyResponse { val value = com.revenuecat.purchases.fbepoc.models.DummyResponse(); deserialize(value); return value }
+    fun deserialize(): com.revenuecat.purchases.fbepoc.payload.Payload { val value = com.revenuecat.purchases.fbepoc.payload.Payload(); deserialize(value); return value }
     @Suppress("UNUSED_VALUE")
-    fun deserialize(value: com.revenuecat.purchases.fbepoc.models.DummyResponse): Long
+    fun deserialize(value: com.revenuecat.purchases.fbepoc.payload.Payload): Long
     {
         var valueRef = value
 
         if ((buffer.offset + model.fbeOffset - 4) > buffer.size)
         {
-            valueRef = com.revenuecat.purchases.fbepoc.models.DummyResponse()
+            valueRef = com.revenuecat.purchases.fbepoc.payload.Payload()
             return 0
         }
 
@@ -80,7 +80,7 @@ internal class DummyResponseModel : com.revenuecat.purchases.fbepoc.fbe.Model
         assert(fbeFullSize >= model.fbeSize) { "Model is broken!" }
         if (fbeFullSize < model.fbeSize)
         {
-            valueRef = com.revenuecat.purchases.fbepoc.models.DummyResponse()
+            valueRef = com.revenuecat.purchases.fbepoc.payload.Payload()
             return 0
         }
 
