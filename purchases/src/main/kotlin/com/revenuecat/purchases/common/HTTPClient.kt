@@ -81,6 +81,9 @@ internal class HTTPClient(
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
+
+        // Proof-of-concept: media type used to request/detect CBOR-encoded response bodies.
+        const val CBOR_CONTENT_TYPE = "application/cbor"
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
@@ -96,6 +99,11 @@ internal class HTTPClient(
     @Throws(IOException::class)
     private fun readFully(inputStream: InputStream): String {
         return buffer(inputStream).readText()
+    }
+
+    @Throws(IOException::class)
+    private fun readFullyBytes(inputStream: InputStream): ByteArray {
+        return inputStream.readBytes()
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -149,6 +157,9 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
+        // Proof-of-concept: when true, requests CBOR (Accept: application/cbor) and reads the
+        // response body as raw bytes into HTTPResult.payloadBytes instead of as a JSON string.
+        preferCbor: Boolean = false,
     ): HTTPResult {
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
@@ -170,6 +181,7 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
+                preferCbor,
             )
         }
 
@@ -190,6 +202,7 @@ internal class HTTPClient(
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
+                preferCbor,
             )
             callSuccessful = true
 
@@ -230,6 +243,7 @@ internal class HTTPClient(
                 refreshETag = true,
                 fallbackBaseURLs,
                 fallbackURLIndex,
+                preferCbor,
             )
         } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) && canUseFallback()) {
             // Handle server errors with fallback URLs
@@ -238,7 +252,14 @@ internal class HTTPClient(
         return callResult
     }
 
-    @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
+    @Suppress(
+        "ThrowsCount",
+        "LongParameterList",
+        "LongMethod",
+        "CyclomaticComplexMethod",
+        "NestedBlockDepth",
+        "ReturnCount",
+    )
     private fun performCall(
         baseURL: URL,
         isFallbackURL: Boolean,
@@ -247,6 +268,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        preferCbor: Boolean = false,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL)
@@ -285,6 +307,7 @@ internal class HTTPClient(
                 nonce,
                 shouldSignResponse,
                 postFieldsToSignHeader,
+                preferCbor,
             )
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
@@ -304,6 +327,12 @@ internal class HTTPClient(
         }
 
         val inputStream = getInputStream(connection)
+
+        // CBOR proof-of-concept: when the server responds with CBOR, read the body as raw bytes and
+        // return early, bypassing the JSON/ETag/signature pipeline.
+        if (preferCbor && isCborContentType(connection)) {
+            return performCborCall(connection, inputStream, path, isFallbackURL)
+        }
 
         val payload: String?
         val responseCode: Int
@@ -393,6 +422,52 @@ internal class HTTPClient(
         )
     }
 
+    /**
+     * CBOR proof-of-concept read path. Reads the response body as raw bytes into
+     * [HTTPResult.payloadBytes]. Intentionally skips ETag caching and signature verification, which
+     * are not part of this evaluation.
+     */
+    private fun performCborCall(
+        connection: HttpURLConnection,
+        inputStream: InputStream?,
+        path: String,
+        isFallbackURL: Boolean,
+    ): HTTPResult {
+        val responseCode: Int
+        val payloadBytes: ByteArray?
+        try {
+            debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
+            responseCode = connection.responseCode
+            payloadBytes = inputStream?.let { readFullyBytes(it) }
+            if (enableExtraRequestLogging) {
+                debugLog { "HTTP CBOR response:\\n  status code: $responseCode \\n  bytes: ${payloadBytes?.size ?: 0}" }
+            }
+        } finally {
+            inputStream?.close()
+            connection.disconnect()
+        }
+
+        debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
+        if (payloadBytes == null) {
+            throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
+        }
+
+        return HTTPResult(
+            responseCode = responseCode,
+            payload = "",
+            origin = HTTPResult.Origin.BACKEND,
+            requestDate = getRequestDateHeader(connection),
+            verificationResult = VerificationResult.NOT_REQUESTED,
+            isLoadShedderResponse = getLoadShedderHeader(connection),
+            isFallbackURL = isFallbackURL,
+            payloadBytes = payloadBytes,
+        )
+    }
+
+    private fun isCborContentType(connection: URLConnection): Boolean {
+        return connection.getHeaderField("Content-Type")?.contains(CBOR_CONTENT_TYPE, ignoreCase = true) == true
+    }
+
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
         val builder = StringBuilder("curl -v ")
 
@@ -466,9 +541,11 @@ internal class HTTPClient(
         nonce: String?,
         shouldSignResponse: Boolean,
         postFieldsToSignHeader: String?,
+        preferCbor: Boolean = false,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
+            "Accept" to if (preferCbor) CBOR_CONTENT_TYPE else null,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,

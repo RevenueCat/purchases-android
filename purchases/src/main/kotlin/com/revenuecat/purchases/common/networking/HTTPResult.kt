@@ -26,6 +26,11 @@ public data class HTTPResult(
     val verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
+    /**
+     * Proof-of-concept: raw response bytes when the body was received as CBOR
+     * (Content-Type: application/cbor). Null for the standard JSON/text path.
+     */
+    val payloadBytes: ByteArray? = null,
 ) {
     internal companion object {
         internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
