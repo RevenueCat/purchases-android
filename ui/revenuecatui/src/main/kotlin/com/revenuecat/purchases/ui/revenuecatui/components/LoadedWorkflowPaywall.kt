@@ -80,6 +80,9 @@ internal fun LoadedWorkflowPaywall(
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, currentState, clickHandler, componentInteractionTracker)
     }
+    val headerOnClick: suspend (PaywallAction) -> Unit = { action ->
+        handleClick(action, headerState, clickHandler, componentInteractionTracker)
+    }
 
     // When the header is LEAVING (fading out over an incoming step that has no header), routing it
     // through HeaderOverlayLayout would write its measured height into currentState.headerHeightPx.
@@ -92,7 +95,7 @@ internal fun LoadedWorkflowPaywall(
             ComponentView(
                 style = headerStyle,
                 state = headerState,
-                onClick = onClick,
+                onClick = headerOnClick,
                 modifier = Modifier
                     .fillMaxWidth()
                     // Read animatable.value inside graphicsLayer (draw phase), like workflowTransition,
