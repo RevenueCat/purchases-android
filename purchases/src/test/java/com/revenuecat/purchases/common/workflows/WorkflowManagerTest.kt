@@ -511,6 +511,27 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflowsList does not cache workflows without an offeringId`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_no_offering", displayName = "A", offeringId = null, prefetch = false),
+                WorkflowSummary(id = "wf_with_offering", displayName = "B", offeringId = "default", prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+        val cachedJson = slot<String>()
+        every { mockDeviceCache.cacheWorkflowsListResponse(capture(cachedJson)) } just Runs
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(cachedJson.captured).contains("wf_with_offering")
+        assertThat(cachedJson.captured).doesNotContain("wf_no_offering")
+    }
+
+    @Test
     fun `getWorkflowsList prefetches at most 4 workflows concurrently`() {
         val workflows = (0 until 10).map {
             WorkflowSummary(id = "wf_$it", displayName = "W$it", offeringId = "off_$it", prefetch = true)

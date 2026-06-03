@@ -151,12 +151,13 @@ internal class WorkflowManager(
                 appInBackground = appInBackground,
                 type = "paywall",
                 onSuccess = { response ->
-                    workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
+                    // Drop workflows without an offeringId up front: they can't be reached via
+                    // workflowIdForOfferingId, so caching or prefetching them would be wasted work. The
+                    // backend should only return offering-tied workflows here; this is a guard on top.
+                    val filtered = response.onlyWorkflowsWithOfferingId()
+                    workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
 
-                    // A workflow with no offeringId can't be reached via workflowIdForOfferingId, so
-                    // prefetching its assets would be wasted work. The backend should already only set
-                    // prefetch = true for workflows tied to an offering; this is a defensive guard on top.
-                    val prefetchWorkflows = response.workflows.filter { it.prefetch && it.offeringId != null }
+                    val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
                     scope.launch {
                         // Prefetch workflows with bounded concurrency (at most MAX_CONCURRENT_PREFETCHES
                         // at a time) and wait for all of them before completing, so onComplete fires only
@@ -179,7 +180,8 @@ internal class WorkflowManager(
                     // Restore the in-memory cache from the disk copy without rewriting disk: the disk
                     // already holds this payload, so a write would just persist the same bytes again.
                     workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
-                        workflowsCache.cacheWorkflowsListInMemory(response, buildOfferingIdMap(response.workflows))
+                        val filtered = response.onlyWorkflowsWithOfferingId()
+                        workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
                     }
                     completePendingCallbacks(appUserID)
                 },
@@ -217,6 +219,9 @@ internal class WorkflowManager(
         }
         callbacks.forEach { it() }
     }
+
+    private fun WorkflowsListResponse.onlyWorkflowsWithOfferingId(): WorkflowsListResponse =
+        copy(workflows = workflows.filter { it.offeringId != null })
 
     private fun buildOfferingIdMap(workflows: List<WorkflowSummary>): Map<String, String> {
         val pairs = workflows.mapNotNull { summary -> summary.offeringId?.let { it to summary.id } }
