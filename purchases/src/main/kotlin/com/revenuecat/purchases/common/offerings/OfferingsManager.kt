@@ -264,6 +264,14 @@ internal class OfferingsManager(
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
+                // We just refreshed offerings from the network, so realign the workflows list with
+                // them: force it stale so getWorkflowsList refetches instead of skipping on its own
+                // TTL. Skipped on the disk-cache fallback, where offerings did not actually change and
+                // the backend is likely unavailable anyway. getWorkflowsList still dedups concurrent
+                // callers, so racing offerings fetches share a single workflows fetch.
+                if (!loadedFromDiskCache) {
+                    workflowManager?.forceWorkflowsListCacheStale()
+                }
                 workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
                     ?: dispatchSuccess()
             },

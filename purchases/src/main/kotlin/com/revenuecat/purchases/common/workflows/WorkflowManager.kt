@@ -213,6 +213,15 @@ internal class WorkflowManager(
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowsCache.workflowIdForOfferingId(offeringId)
 
+    /**
+     * Marks the workflows list stale so the next [getWorkflowsList] refetches it. Called when
+     * offerings are refetched off their normal TTL (forced/locale change) to keep the workflow map
+     * aligned with the offerings the caller just received.
+     */
+    fun forceWorkflowsListCacheStale() {
+        workflowsCache.forceWorkflowsListCacheStale()
+    }
+
     private fun completePendingCallbacks(appUserID: String) {
         val callbacks = synchronized(callbackLock) {
             pendingCompletionCallbacks.remove(appUserID).orEmpty()

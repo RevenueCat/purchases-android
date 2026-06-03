@@ -111,6 +111,21 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `forceWorkflowsListCacheStale marks the list stale but keeps the offeringId map`() {
+        workflowsCache.cacheWorkflowsList(
+            WorkflowsListResponse(workflows = emptyList()),
+            mapOf("default" to "wf_1"),
+        )
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isFalse
+
+        workflowsCache.forceWorkflowsListCacheStale()
+
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
+        // The map is kept so workflowIdForOfferingId still resolves while the refetch is in flight.
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+    }
+
+    @Test
     fun `workflowIdForOfferingId returns mapped id or null`() {
         workflowsCache.cacheWorkflowsList(
             WorkflowsListResponse(workflows = emptyList()),

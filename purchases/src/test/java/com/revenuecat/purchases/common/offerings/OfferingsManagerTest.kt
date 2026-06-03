@@ -579,6 +579,30 @@ class OfferingsManagerTest {
         verify(exactly = 1) {
             mockWorkflowManager.getWorkflowsList(appUserId, false, onComplete = any())
         }
+        // Offerings came fresh from the network, so the workflows list is realigned by being forced
+        // stale before the fetch, rather than skipped on its own TTL.
+        verify(exactly = 1) { mockWorkflowManager.forceWorkflowsListCacheStale() }
+    }
+
+    @Test
+    fun `getOfferings does not force workflows list stale on disk-cache fallback`() {
+        every { cache.cachedOfferings } returns null
+        every { cache.cacheOfferings(any(), any()) } just Runs
+        mockBackendResponseError()
+        every { cache.cachedOfferingsResponse } returns JSONObject(ONE_OFFERINGS_RESPONSE)
+        mockDeviceCache(wasSuccessful = false)
+        mockOfferingsFactory()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Should be success") },
+            onSuccess = {},
+        )
+
+        // Offerings were restored from disk (no real change, backend likely down), so we must not
+        // force a workflows refetch here.
+        verify(exactly = 0) { mockWorkflowManager.forceWorkflowsListCacheStale() }
     }
 
     @Test
@@ -1034,6 +1058,7 @@ class OfferingsManagerTest {
     @Test
     fun `getOfferings does not call onSuccess until getWorkflowsList completes`() {
         val mockWorkflowManager = mockk<WorkflowManager>()
+        every { mockWorkflowManager.forceWorkflowsListCacheStale() } just Runs
         val onCompleteSlot = slot<() -> Unit>()
         every {
             mockWorkflowManager.getWorkflowsList(
