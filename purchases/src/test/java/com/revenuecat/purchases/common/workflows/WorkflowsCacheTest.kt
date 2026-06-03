@@ -145,6 +145,21 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `cacheWorkflowsListInMemory populates in-memory state without writing to disk`() {
+        workflowsCache.cacheWorkflowsListInMemory(
+            WorkflowsListResponse(
+                workflows = listOf(
+                    WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+                ),
+            ),
+            mapOf("default" to "wf_1"),
+        )
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isFalse
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+        verify(exactly = 0) { deviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
+    @Test
     fun `clearCache clears the disk cache`() {
         workflowsCache.clearCache()
         verify(exactly = 1) { deviceCache.clearWorkflowsListResponseCache() }

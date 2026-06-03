@@ -142,8 +142,10 @@ internal class WorkflowManager(
                 },
                 onError = { error ->
                     errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
+                    // Restore the in-memory cache from the disk copy without rewriting disk: the disk
+                    // already holds this payload, so a write would just persist the same bytes again.
                     workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
-                        workflowsCache.cacheWorkflowsList(response, buildOfferingIdMap(response.workflows))
+                        workflowsCache.cacheWorkflowsListInMemory(response, buildOfferingIdMap(response.workflows))
                     }
                     completePendingCallbacks(appUserID)
                 },

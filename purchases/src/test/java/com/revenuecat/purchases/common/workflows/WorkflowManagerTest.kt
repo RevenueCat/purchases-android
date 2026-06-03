@@ -513,6 +513,8 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+        // The disk copy is the source we restored from, so the recovery path must not rewrite it.
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
     }
 
     @Test

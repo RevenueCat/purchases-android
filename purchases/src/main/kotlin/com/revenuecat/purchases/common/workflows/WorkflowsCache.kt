@@ -73,11 +73,21 @@ internal class WorkflowsCache(
      */
     @Synchronized
     fun cacheWorkflowsList(response: WorkflowsListResponse, offeringIdMap: Map<String, String>) {
-        workflowsListCachedObject.cacheInstance(response)
-        offeringIdToWorkflowIdMap = offeringIdMap
+        cacheWorkflowsListInMemory(response, offeringIdMap)
         deviceCache.cacheWorkflowsListResponse(
             JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
         )
+    }
+
+    /**
+     * Populates only the in-memory list cache and offeringId map, leaving disk untouched. Used to
+     * restore in-memory state from the disk copy after a backend failure, where the disk already
+     * holds this exact payload so rewriting it would be wasted work.
+     */
+    @Synchronized
+    fun cacheWorkflowsListInMemory(response: WorkflowsListResponse, offeringIdMap: Map<String, String>) {
+        workflowsListCachedObject.cacheInstance(response)
+        offeringIdToWorkflowIdMap = offeringIdMap
     }
 
     /**
