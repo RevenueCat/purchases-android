@@ -80,34 +80,46 @@ internal fun LoadedWorkflowPaywall(
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, currentState, clickHandler, componentInteractionTracker)
     }
+
+    // When the header is LEAVING (fading out over an incoming step that has no header), routing it
+    // through HeaderOverlayLayout would write its measured height into currentState.headerHeightPx.
+    // The incoming step would then use that height as its hero ZLayer top inset instead of the
+    // status-bar fallback. To avoid this, LEAVING headers are rendered as a Box overlay inside the
+    // mainContent lambda — outside HeaderOverlayLayout — so currentState.headerHeightPx stays 0.
+    val isLeavingHeader = headerPresentation.role == WorkflowHeaderTransitionRole.LEAVING
+    val headerComposable: (@Composable () -> Unit)? = headerState.header?.let { headerStyle ->
+        {
+            ComponentView(
+                style = headerStyle,
+                state = headerState,
+                onClick = onClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    // Read animatable.value inside graphicsLayer (draw phase), like workflowTransition,
+                    // so the fade stays in lock-step with the slide without recomposing every frame.
+                    .graphicsLayer {
+                        alpha = headerAlpha(headerPresentation.role, transitionState.animatable.value)
+                    },
+            )
+        }
+    }
+
     PaywallComponentsScaffold(
         state = currentState,
         modifier = modifier,
         background = null,
-        headerContent = headerState.header?.let { headerStyle ->
-            {
-                ComponentView(
-                    style = headerStyle,
-                    state = headerState,
-                    onClick = onClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        // Read animatable.value inside graphicsLayer (draw phase), like workflowTransition,
-                        // so the fade stays in lock-step with the slide without recomposing every frame.
-                        .graphicsLayer {
-                            alpha = headerAlpha(headerPresentation.role, transitionState.animatable.value)
-                        },
-                )
-            }
-        },
+        headerContent = if (!isLeavingHeader) headerComposable else null,
     ) {
-        WorkflowStepsContent(
-            currentStepId = currentStepId,
-            stepStates = stepStates,
-            transitionState = transitionState,
-            clickHandler = clickHandler,
-            componentInteractionTracker = componentInteractionTracker,
-        )
+        Box(Modifier.fillMaxSize()) {
+            WorkflowStepsContent(
+                currentStepId = currentStepId,
+                stepStates = stepStates,
+                transitionState = transitionState,
+                clickHandler = clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
+            )
+            if (isLeavingHeader) headerComposable?.invoke()
+        }
     }
 }
 
@@ -173,7 +185,8 @@ private fun WorkflowStepsContent(
 
 /**
  * Renders one workflow step's body and footer as a self-contained sliding surface.
- * Header is rendered at scaffold level and stays fixed.
+ * The header is rendered outside this surface (either via the scaffold's HeaderOverlayLayout or,
+ * when LEAVING, as a Box overlay in the main content — see [LoadedWorkflowPaywall]).
  * Off-screen (parked) steps still receive a click handler, but it short-circuits because they are
  * translated off-screen and can't receive touches.
  */
