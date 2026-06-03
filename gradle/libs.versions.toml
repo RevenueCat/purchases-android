@@ -38,6 +38,9 @@ emergeSnapshots = "1.5.0"
 espresso = "3.6.1"
 googleMobileAds = "23.6.0"
 fragment = "1.6.1"
+# FlatBuffers PoC: the runtime version MUST match the flatc compiler used to generate
+# the accessors under purchases/.../flatbuffers/generated. See purchases/src/flatbuffers/README.md.
+flatbuffers = "25.2.10"
 googleBlockstore = "16.4.0"
 hamcrest = "1.3"
 recyclerview = "1.2.1"
@@ -154,6 +157,7 @@ dokka-testApi = { module = "org.jetbrains.dokka:dokka-test-api", version.ref = "
 emerge-snapshots = { module = "com.emergetools.snapshots:snapshots", version.ref = "emergeSnapshots" }
 emerge-snapshots-runtime = { module = "com.emergetools.snapshots:snapshots-runtime", version.ref = "emergeSnapshots" }
 
+flatbuffers-java = { module = "com.google.flatbuffers:flatbuffers-java", version.ref = "flatbuffers" }
 google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
 google-mobile-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "googleMobileAds" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }

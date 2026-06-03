@@ -44,6 +44,9 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
         "**/testDefaults/**/*.kt",
         "**/testCustomEntitlementComputation/**/*.kt",
     )
+    // FlatBuffers PoC: accessors under .../flatbuffers/generated are emitted by flatc and do
+    // not follow the repo's style rules.
+    exclude("**/flatbuffers/generated/**")
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
@@ -68,6 +71,7 @@ tasks.register<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>("detektAllB
         "**/test/**/*.kt",
         "**/testDefaults/**/*.kt",
         "**/testCustomEntitlementComputation/**/*.kt",
+        "**/flatbuffers/generated/**",
     )
 }
 

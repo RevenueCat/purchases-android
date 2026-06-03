@@ -1,0 +1,20 @@
+// Mock schema for the FlatBuffers PoC. See ../README.md.
+// Regenerate Kotlin accessors with scripts/generate-flatbuffers.sh.
+namespace com.revenuecat.purchases.flatbuffers.generated;
+
+enum ProductType : byte { SUBSCRIPTION = 0, CONSUMABLE = 1, NON_CONSUMABLE = 2 }
+
+table Product {
+  id:string (required);
+  title:string;
+  price_micros:long;
+  currency_code:string;
+  type:ProductType = SUBSCRIPTION;
+}
+
+table ProductsSection {
+  products:[Product];
+  fetched_at_ms:long;
+}
+
+root_type ProductsSection;
