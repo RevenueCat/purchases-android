@@ -6,6 +6,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
@@ -331,6 +332,85 @@ class BackendWorkflowsTest {
                 fallbackBaseURLs = emptyList(),
             )
         }
+    }
+
+    @Test
+    fun `getWorkflow runs on the concurrent dispatcher, not the default one`() {
+        val mainDispatcher = CountingSyncDispatcher()
+        val concurrentDispatcher = CountingSyncDispatcher()
+        val routedBackend = Backend(
+            mockAppConfig,
+            mainDispatcher,
+            mainDispatcher,
+            mockClient,
+            BackendHelper(apiKey, mainDispatcher, mockAppConfig, mockClient),
+            concurrentDispatcher = concurrentDispatcher,
+        )
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflow(appUserId, "wf_1"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } returns httpResult(RCHTTPStatusCodes.SUCCESS, """{"action":"inline","data":null}""")
+
+        routedBackend.getWorkflow(
+            appUserID = appUserId,
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = {},
+        )
+
+        assertThat(concurrentDispatcher.enqueueCount).isEqualTo(1)
+        assertThat(mainDispatcher.enqueueCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `getWorkflows runs on the default dispatcher, not the concurrent one`() {
+        val mainDispatcher = CountingSyncDispatcher()
+        val concurrentDispatcher = CountingSyncDispatcher()
+        val routedBackend = Backend(
+            mockAppConfig,
+            mainDispatcher,
+            mainDispatcher,
+            mockClient,
+            BackendHelper(apiKey, mainDispatcher, mockAppConfig, mockClient),
+            concurrentDispatcher = concurrentDispatcher,
+        )
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflows(appUserId),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } returns httpResult(RCHTTPStatusCodes.SUCCESS, """{"workflows":[]}""")
+
+        routedBackend.getWorkflows(
+            appUserID = appUserId,
+            appInBackground = false,
+            onSuccess = {},
+            onError = {},
+        )
+
+        assertThat(mainDispatcher.enqueueCount).isEqualTo(1)
+        assertThat(concurrentDispatcher.enqueueCount).isEqualTo(0)
+    }
+
+    private class CountingSyncDispatcher : Dispatcher(mockk()) {
+        var enqueueCount = 0
+        override fun enqueue(command: Runnable, delay: Delay) {
+            enqueueCount++
+            command.run()
+        }
+        override fun close() = Unit
+        override fun isClosed() = false
     }
 
     private fun httpResult(responseCode: Int, payload: String) = HTTPResult(

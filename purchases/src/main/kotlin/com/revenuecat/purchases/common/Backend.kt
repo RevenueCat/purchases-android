@@ -127,6 +127,10 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
+    // Dispatcher for calls that benefit from running concurrently rather than on the default
+    // single-threaded [dispatcher]. Defaults to [dispatcher] so callers that don't need parallelism
+    // keep the existing serialized behavior.
+    private val concurrentDispatcher: Dispatcher = dispatcher,
 ) {
     companion object {
         private const val APP_USER_ID = "app_user_id"
@@ -203,6 +207,9 @@ internal class Backend(
 
     fun close() {
         this.dispatcher.close()
+        // No-op when concurrentDispatcher is the default (same instance as dispatcher); closes the
+        // dedicated pool otherwise. Dispatcher.close() is idempotent, so the double call is safe.
+        this.concurrentDispatcher.close()
     }
 
     fun getCustomerInfo(
@@ -1053,7 +1060,9 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             workflowDetailCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                // Detail fetches are issued many-at-a-time when prefetching a workflows list, so they
+                // run on the concurrent dispatcher to fan out instead of serializing on [dispatcher].
+                concurrentDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,

@@ -156,6 +156,10 @@ internal class PurchasesFactory(
                 createEventsExecutor(),
                 runningIntegrationTests = runningIntegrationTests,
             )
+            val concurrentDispatcher = Dispatcher(
+                createConcurrentExecutor(),
+                runningIntegrationTests = runningIntegrationTests,
+            )
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
@@ -204,6 +208,7 @@ internal class PurchasesFactory(
                 eventsDispatcher,
                 httpClient,
                 backendHelper,
+                concurrentDispatcher = concurrentDispatcher,
             )
             val coilImageDownloader = CoilImageDownloader(application)
             val fileRepository = DefaultFileRepository(application)
@@ -536,6 +541,12 @@ internal class PurchasesFactory(
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
     }
 
+    // Bounded pool for backend calls that are issued many-at-a-time (workflow detail prefetch), so
+    // they run concurrently instead of serializing on the single-threaded default executor.
+    private fun createConcurrentExecutor(): ExecutorService {
+        return Executors.newScheduledThreadPool(CONCURRENT_BACKEND_CALLS)
+    }
+
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
@@ -549,6 +560,10 @@ internal class PurchasesFactory(
     }
 
     companion object {
+        // Size of the concurrent backend executor. Matches the workflow prefetch concurrency cap so
+        // the bounded prefetch fan-out is never starved for threads.
+        private const val CONCURRENT_BACKEND_CALLS = 4
+
         @VisibleForTesting
         internal fun shouldInitializeDiagnostics(
             diagnosticsEnabled: Boolean,
