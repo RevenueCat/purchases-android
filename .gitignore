@@ -146,3 +146,6 @@ libs/samsung-iap-*.aar
 
 # Claude Code
 .claude/
+
+# Superpowers brainstorming companion (local only)
+.superpowers/
