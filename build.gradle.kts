@@ -43,6 +43,8 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
         "**/test/**/*.kt",
         "**/testDefaults/**/*.kt",
         "**/testCustomEntitlementComputation/**/*.kt",
+        // FastBinaryEncoding PoC: generated code, not subject to our style rules.
+        "**/fbepoc/**/*.kt",
     )
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
@@ -68,6 +70,8 @@ tasks.register<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>("detektAllB
         "**/test/**/*.kt",
         "**/testDefaults/**/*.kt",
         "**/testCustomEntitlementComputation/**/*.kt",
+        // FastBinaryEncoding PoC: generated code, not subject to our style rules.
+        "**/fbepoc/**/*.kt",
     )
 }
 
