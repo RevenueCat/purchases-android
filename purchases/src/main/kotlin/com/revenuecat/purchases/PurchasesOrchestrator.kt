@@ -567,11 +567,7 @@ internal class PurchasesOrchestrator(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val workflowManager = workflowManager
         if (workflowManager == null) {
-            // The workflows feature is disabled (BuildConfig.USE_WORKFLOWS_ENDPOINT is false), so there
-            // is no manager to serve the request. Callers gate on the same flag, so this is effectively
-            // unreachable when configured consistently; we still surface an error instead of crashing.
             onError(
                 PurchasesError(
                     PurchasesErrorCode.ConfigurationError,

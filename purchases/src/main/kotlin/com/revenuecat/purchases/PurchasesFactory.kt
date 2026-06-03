@@ -260,9 +260,6 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            // Gated on the same flag as workflowManager below: when workflows are disabled there is
-            // no writer for this cache, so we skip creating it (and the no-op clearCache work in
-            // IdentityManager) entirely. workflowsCache != null <=> workflowManager != null.
             val workflowsCache = if (BuildConfig.USE_WORKFLOWS_ENDPOINT) WorkflowsCache(deviceCache = cache) else null
 
             val identityManager = IdentityManager(
