@@ -2712,7 +2712,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `overridePreferredUILocale skips cache clear and fetch when rate limited`() {
+    fun `overridePreferredUILocale still clears cache but skips fetch when rate limited`() {
         every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
         mockOfferingsManagerGetOfferings()
 
@@ -2723,7 +2723,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(result1).isTrue
         assertThat(result2).isTrue
         assertThat(result3).isFalse
-        verify(exactly = 2) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        // The cache is cleared on every locale change (so the next paywall reflects the new locale),
+        // but the third call is rate-limited and skips only the network re-fetch.
+        verify(exactly = 3) { mockOfferingsManager.clearInMemoryOfferingsCache() }
         verify(exactly = 2) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
     }
 

@@ -1139,8 +1139,9 @@ internal class PurchasesOrchestrator(
     // endregion
 
     /**
-     * Clears the in-memory offerings cache and fetches fresh offerings, subject to rate
-     * limiting. Both the cache clear and the fetch are skipped when the rate limit is reached.
+     * Clears the in-memory offerings cache (always, so a locale change is reflected on the next
+     * paywall presentation) and re-fetches fresh offerings, subject to rate limiting. Only the
+     * network re-fetch is skipped when the rate limit is reached; the cache is always cleared.
      *
      * @param callback Callback to handle the result
      * @return true if fresh fetch was triggered, false if rate limited
@@ -1148,8 +1149,11 @@ internal class PurchasesOrchestrator(
     private fun clearInMemoryCacheAndFetchOfferingsWithRateLimit(
         callback: (Offerings?, PurchasesError?) -> Unit,
     ): Boolean {
+        // Always clear the in-memory cache on a locale change, so the next paywall presentation
+        // reflects the new locale even when the network re-fetch is rate-limited. The rate limiter
+        // throttles the network re-fetch only, never cache correctness.
+        offeringsManager.clearInMemoryOfferingsCache()
         return if (preferredLocaleOverrideRateLimiter.shouldProceed()) {
-            offeringsManager.clearInMemoryOfferingsCache()
             verboseLog { "Fetching fresh offerings" }
             getOfferings(
                 object : ReceiveOfferingsCallback {
