@@ -564,7 +564,7 @@ class WorkflowManagerTest {
         )
 
         verify(exactly = 1) {
-            mockBackend.getWorkflow("user_1", "wf_1", false, any(), any(), callbackDispatcher = null)
+            mockBackend.getWorkflow("user_1", "wf_1", false, any(), any())
         }
     }
 

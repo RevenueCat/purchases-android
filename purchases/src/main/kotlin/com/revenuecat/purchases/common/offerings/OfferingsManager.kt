@@ -155,11 +155,6 @@ internal class OfferingsManager(
             null,
         )
         val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
-        // Ensure the workflows list (and its offeringId map) is loaded before delivering offerings,
-        // mirroring the network path so workflowIdForOfferingId is populated on a cache hit too.
-        // getWorkflowsList no-ops when the list is already fresh — the common case here, since
-        // offerings and workflows are fetched together and share a TTL — so it only does work when the
-        // map is missing or stale (e.g. a prior workflows fetch failed).
         workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
             ?: dispatchSuccess()
         if (isCacheStale) {
@@ -271,11 +266,6 @@ internal class OfferingsManager(
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                // We just refreshed offerings from the network, so realign the workflows list with
-                // them: force it stale so getWorkflowsList refetches instead of skipping on its own
-                // TTL. Skipped on the disk-cache fallback, where offerings did not actually change and
-                // the backend is likely unavailable anyway. getWorkflowsList still dedups concurrent
-                // callers, so racing offerings fetches share a single workflows fetch.
                 if (!loadedFromDiskCache) {
                     workflowManager?.forceWorkflowsListCacheStale()
                 }

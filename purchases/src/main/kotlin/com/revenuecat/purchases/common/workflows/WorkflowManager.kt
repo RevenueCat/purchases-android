@@ -67,8 +67,6 @@ internal class WorkflowManager(
         appInBackground: Boolean,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
-        // Set by the prefetch path to fan the detail fetches out across [prefetchDispatcher]. Left null
-        // for on-demand fetches, which run on the backend's default dispatcher.
         callbackDispatcher: Dispatcher? = null,
     ) {
         val cached = workflowsCache.cachedWorkflow(workflowId)
@@ -76,34 +74,45 @@ internal class WorkflowManager(
             onSuccess(cached)
             return
         }
-        backend.getWorkflow(
-            appUserID = appUserID,
-            workflowId = workflowId,
-            appInBackground = appInBackground,
-            callbackDispatcher = callbackDispatcher,
-            onSuccess = { response ->
-                scope.launch {
-                    // resolve() can throw a range of exceptions (IllegalStateException, IOException,
-                    // SignatureVerificationException, and SerializationException from parsing CDN json).
-                    // CancellationException is caught here intentionally: rethrowing it would skip the
-                    // callback and deadlock the prefetch counter in getWorkflowsList. The scope is already
-                    // canceled so further coroutine work in this scope will not execute regardless.
-                    val result = try {
-                        workflowDetailResolver.resolve(response)
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        onError(e.toPurchasesError())
-                        return@launch
-                    }
-                    workflowsCache.cacheWorkflow(workflowId, result)
-                    scope.launch {
-                        runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
-                            .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
-                    }
-                    onSuccess(result)
+        val onSuccessHandler: (WorkflowDetailResponse) -> Unit = { response ->
+            scope.launch {
+                // resolve() can throw a range of exceptions (IllegalStateException, IOException,
+                // SignatureVerificationException, and SerializationException from parsing CDN json).
+                // CancellationException is caught here intentionally: rethrowing it would skip the
+                // callback and deadlock the prefetch counter in getWorkflowsList. The scope is already
+                // canceled so further coroutine work in this scope will not execute regardless.
+                val result = try {
+                    workflowDetailResolver.resolve(response)
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    onError(e.toPurchasesError())
+                    return@launch
                 }
-            },
-            onError = onError,
-        )
+                workflowsCache.cacheWorkflow(workflowId, result)
+                scope.launch {
+                    runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
+                        .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
+                }
+                onSuccess(result)
+            }
+        }
+        if (callbackDispatcher != null) {
+            backend.getWorkflow(
+                appUserID = appUserID,
+                workflowId = workflowId,
+                appInBackground = appInBackground,
+                callbackDispatcher = callbackDispatcher,
+                onSuccess = onSuccessHandler,
+                onError = onError,
+            )
+        } else {
+            backend.getWorkflow(
+                appUserID = appUserID,
+                workflowId = workflowId,
+                appInBackground = appInBackground,
+                onSuccess = onSuccessHandler,
+                onError = onError,
+            )
+        }
     }
 
     /**

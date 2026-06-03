@@ -559,8 +559,6 @@ internal class PurchasesFactory(
     }
 
     companion object {
-        // Size of the concurrent backend executor. Matches the workflow prefetch concurrency cap so
-        // the bounded prefetch fan-out is never starved for threads.
         private const val CONCURRENT_BACKEND_CALLS = 4
 
         @VisibleForTesting

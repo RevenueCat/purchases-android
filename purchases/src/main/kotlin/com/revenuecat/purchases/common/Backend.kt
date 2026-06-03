@@ -1006,10 +1006,7 @@ internal class Backend(
         appInBackground: Boolean,
         onSuccess: (WorkflowDetailResponse) -> Unit,
         onError: (PurchasesError) -> Unit,
-        // Optional override for the dispatcher the call runs on. Defaults to the standard single-threaded
-        // [dispatcher]; callers that issue many fetches at once (workflows-list prefetch) pass a
-        // concurrent dispatcher so the fetches fan out instead of serializing.
-        callbackDispatcher: Dispatcher? = null,
+        callbackDispatcher: Dispatcher = dispatcher,
     ) {
         val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
         val path = endpoint.getPath()
@@ -1058,7 +1055,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             workflowDetailCallbacks.addBackgroundAwareCallback(
                 call,
-                callbackDispatcher ?: dispatcher,
+                callbackDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,
