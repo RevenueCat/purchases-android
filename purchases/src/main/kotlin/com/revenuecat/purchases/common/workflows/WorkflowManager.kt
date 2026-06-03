@@ -5,6 +5,7 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.toPurchasesError
@@ -25,6 +26,10 @@ internal class WorkflowManager(
     private val workflowDetailResolver: WorkflowDetailResolver,
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val workflowsCache: WorkflowsCache,
+    // Dispatcher the prefetch detail fetches run on, so they fan out instead of serializing on the
+    // backend's default single-threaded dispatcher. Only the prefetch path uses it; on-demand fetches
+    // stay on the default dispatcher.
+    private val prefetchDispatcher: Dispatcher,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -46,20 +51,25 @@ internal class WorkflowManager(
     // scopes, not this one. A limitedParallelism dispatcher only caps actively-running coroutines, so
     // a suspended prefetch would free its slot and let the next one start — capping nothing. The
     // Semaphore holds its permit across those suspension points, bounding the in-flight pipeline end
-    // to end. The detail HTTP calls are separately parallelized and capped by the Backend concurrent
-    // dispatcher pool (also sized to MAX_CONCURRENT_PREFETCHES).
+    // to end. The detail HTTP calls themselves run on [prefetchDispatcher] so they fan out rather than
+    // serialize.
     private val prefetchSemaphore = Semaphore(MAX_CONCURRENT_PREFETCHES)
 
     fun close() {
         scope.cancel()
+        prefetchDispatcher.close()
     }
 
+    @Suppress("LongParameterList")
     fun getWorkflow(
         appUserID: String,
         workflowId: String,
         appInBackground: Boolean,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
+        // Set by the prefetch path to fan the detail fetches out across [prefetchDispatcher]. Left null
+        // for on-demand fetches, which run on the backend's default dispatcher.
+        callbackDispatcher: Dispatcher? = null,
     ) {
         val cached = workflowsCache.cachedWorkflow(workflowId)
         if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
@@ -70,6 +80,7 @@ internal class WorkflowManager(
             appUserID = appUserID,
             workflowId = workflowId,
             appInBackground = appInBackground,
+            callbackDispatcher = callbackDispatcher,
             onSuccess = { response ->
                 scope.launch {
                     // resolve() can throw a range of exceptions (IllegalStateException, IOException,
@@ -187,6 +198,7 @@ internal class WorkflowManager(
                 appUserID = appUserID,
                 workflowId = workflowId,
                 appInBackground = appInBackground,
+                callbackDispatcher = prefetchDispatcher,
                 onSuccess = { continuation.safeResume(Unit) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }

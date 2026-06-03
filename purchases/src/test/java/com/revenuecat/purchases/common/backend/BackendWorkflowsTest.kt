@@ -335,16 +335,50 @@ class BackendWorkflowsTest {
     }
 
     @Test
-    fun `getWorkflow runs on the concurrent dispatcher, not the default one`() {
+    fun `getWorkflow runs on the provided callbackDispatcher when one is given`() {
         val mainDispatcher = CountingSyncDispatcher()
-        val concurrentDispatcher = CountingSyncDispatcher()
+        val overrideDispatcher = CountingSyncDispatcher()
         val routedBackend = Backend(
             mockAppConfig,
             mainDispatcher,
             mainDispatcher,
             mockClient,
             BackendHelper(apiKey, mainDispatcher, mockAppConfig, mockClient),
-            concurrentDispatcher = concurrentDispatcher,
+        )
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflow(appUserId, "wf_1"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } returns httpResult(RCHTTPStatusCodes.SUCCESS, """{"action":"inline","data":null}""")
+
+        routedBackend.getWorkflow(
+            appUserID = appUserId,
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = {},
+            callbackDispatcher = overrideDispatcher,
+        )
+
+        assertThat(overrideDispatcher.enqueueCount).isEqualTo(1)
+        assertThat(mainDispatcher.enqueueCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `getWorkflow runs on the default dispatcher when no callbackDispatcher is given`() {
+        val mainDispatcher = CountingSyncDispatcher()
+        val overrideDispatcher = CountingSyncDispatcher()
+        val routedBackend = Backend(
+            mockAppConfig,
+            mainDispatcher,
+            mainDispatcher,
+            mockClient,
+            BackendHelper(apiKey, mainDispatcher, mockAppConfig, mockClient),
         )
         every {
             mockClient.performRequest(
@@ -365,42 +399,8 @@ class BackendWorkflowsTest {
             onError = {},
         )
 
-        assertThat(concurrentDispatcher.enqueueCount).isEqualTo(1)
-        assertThat(mainDispatcher.enqueueCount).isEqualTo(0)
-    }
-
-    @Test
-    fun `getWorkflows runs on the default dispatcher, not the concurrent one`() {
-        val mainDispatcher = CountingSyncDispatcher()
-        val concurrentDispatcher = CountingSyncDispatcher()
-        val routedBackend = Backend(
-            mockAppConfig,
-            mainDispatcher,
-            mainDispatcher,
-            mockClient,
-            BackendHelper(apiKey, mainDispatcher, mockAppConfig, mockClient),
-            concurrentDispatcher = concurrentDispatcher,
-        )
-        every {
-            mockClient.performRequest(
-                baseURL = mockBaseURL,
-                endpoint = Endpoint.GetWorkflows(appUserId),
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = defaultAuthHeaders,
-                fallbackBaseURLs = emptyList(),
-            )
-        } returns httpResult(RCHTTPStatusCodes.SUCCESS, """{"workflows":[]}""")
-
-        routedBackend.getWorkflows(
-            appUserID = appUserId,
-            appInBackground = false,
-            onSuccess = {},
-            onError = {},
-        )
-
         assertThat(mainDispatcher.enqueueCount).isEqualTo(1)
-        assertThat(concurrentDispatcher.enqueueCount).isEqualTo(0)
+        assertThat(overrideDispatcher.enqueueCount).isEqualTo(0)
     }
 
     private class CountingSyncDispatcher : Dispatcher(mockk()) {

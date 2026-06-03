@@ -156,10 +156,6 @@ internal class PurchasesFactory(
                 createEventsExecutor(),
                 runningIntegrationTests = runningIntegrationTests,
             )
-            val concurrentDispatcher = Dispatcher(
-                createConcurrentExecutor(),
-                runningIntegrationTests = runningIntegrationTests,
-            )
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
@@ -208,7 +204,6 @@ internal class PurchasesFactory(
                 eventsDispatcher,
                 httpClient,
                 backendHelper,
-                concurrentDispatcher = concurrentDispatcher,
             )
             val coilImageDownloader = CoilImageDownloader(application)
             val fileRepository = DefaultFileRepository(application)
@@ -376,6 +371,10 @@ internal class PurchasesFactory(
                         offeringFontPreDownloader = offeringFontPreDownloader,
                     ),
                     workflowsCache = it,
+                    prefetchDispatcher = Dispatcher(
+                        createConcurrentExecutor(),
+                        runningIntegrationTests = runningIntegrationTests,
+                    ),
                 )
             }
 

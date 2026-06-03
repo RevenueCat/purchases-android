@@ -127,10 +127,6 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
-    // Dispatcher for calls that benefit from running concurrently rather than on the default
-    // single-threaded [dispatcher]. Defaults to [dispatcher] so callers that don't need parallelism
-    // keep the existing serialized behavior.
-    private val concurrentDispatcher: Dispatcher = dispatcher,
 ) {
     companion object {
         private const val APP_USER_ID = "app_user_id"
@@ -207,9 +203,6 @@ internal class Backend(
 
     fun close() {
         this.dispatcher.close()
-        // No-op when concurrentDispatcher is the default (same instance as dispatcher); closes the
-        // dedicated pool otherwise. Dispatcher.close() is idempotent, so the double call is safe.
-        this.concurrentDispatcher.close()
     }
 
     fun getCustomerInfo(
@@ -1006,12 +999,17 @@ internal class Backend(
         }
     }
 
+    @Suppress("LongParameterList")
     fun getWorkflow(
         appUserID: String,
         workflowId: String,
         appInBackground: Boolean,
         onSuccess: (WorkflowDetailResponse) -> Unit,
         onError: (PurchasesError) -> Unit,
+        // Optional override for the dispatcher the call runs on. Defaults to the standard single-threaded
+        // [dispatcher]; callers that issue many fetches at once (workflows-list prefetch) pass a
+        // concurrent dispatcher so the fetches fan out instead of serializing.
+        callbackDispatcher: Dispatcher? = null,
     ) {
         val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
         val path = endpoint.getPath()
@@ -1060,9 +1058,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             workflowDetailCallbacks.addBackgroundAwareCallback(
                 call,
-                // Detail fetches are issued many-at-a-time when prefetching a workflows list, so they
-                // run on the concurrent dispatcher to fan out instead of serializing on [dispatcher].
-                concurrentDispatcher,
+                callbackDispatcher ?: dispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,

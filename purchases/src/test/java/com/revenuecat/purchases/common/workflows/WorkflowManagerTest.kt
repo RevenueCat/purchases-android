@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
@@ -34,6 +35,7 @@ class WorkflowManagerTest {
     private val mockAssetPreDownloader: WorkflowAssetPreDownloader = mockk(relaxed = true)
     private val mockDeviceCache: DeviceCache = mockk(relaxed = true)
     private val mockDateProvider: DateProvider = mockk()
+    private val mockPrefetchDispatcher: Dispatcher = mockk(relaxed = true)
     private lateinit var workflowsCache: WorkflowsCache
     private lateinit var workflowManager: WorkflowManager
     private lateinit var originalLogHandler: LogHandler
@@ -49,6 +51,7 @@ class WorkflowManagerTest {
             workflowDetailResolver = mockResolver,
             workflowAssetPreDownloader = mockAssetPreDownloader,
             workflowsCache = workflowsCache,
+            prefetchDispatcher = mockPrefetchDispatcher,
             scope = CoroutineScope(UnconfinedTestDispatcher()),
         )
     }
@@ -453,13 +456,27 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         verify(exactly = 1) {
-            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_prefetch", any(), any(), any())
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_prefetch",
+                any(),
+                any(),
+                any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
         }
         verify(exactly = 0) {
-            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_skip", any(), any(), any())
+            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_skip", any(), any(), any(), any())
         }
         verify(exactly = 1) {
-            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_also_prefetch", any(), any(), any())
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_also_prefetch",
+                any(),
+                any(),
+                any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
         }
     }
 
@@ -479,10 +496,17 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         verify(exactly = 0) {
-            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_no_offering", any(), any(), any())
+            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_no_offering", any(), any(), any(), any())
         }
         verify(exactly = 1) {
-            mockBackend.getWorkflow(appUserID = "user_1", workflowId = "wf_with_offering", any(), any(), any())
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_with_offering",
+                any(),
+                any(),
+                any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
         }
     }
 
@@ -499,11 +523,28 @@ class WorkflowManagerTest {
 
         // Hold every prefetch in flight by never invoking its callback, so each one keeps its
         // semaphore permit. Only as many fetches as there are permits can start.
-        every { mockBackend.getWorkflow(any(), any(), any(), any(), any()) } answers { }
+        every { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) } answers { }
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
-        verify(exactly = 4) { mockBackend.getWorkflow(any(), any(), any(), any(), any()) }
+        verify(exactly = 4) { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `on-demand getWorkflow runs on the default dispatcher, not the prefetch one`() {
+        every { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) } answers { }
+
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = {},
+        )
+
+        verify(exactly = 1) {
+            mockBackend.getWorkflow("user_1", "wf_1", false, any(), any(), callbackDispatcher = null)
+        }
     }
 
     @Test
@@ -789,10 +830,10 @@ class WorkflowManagerTest {
         val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
         val detailSuccessB = slot<(WorkflowDetailResponse) -> Unit>()
         every {
-            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any())
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any(), any())
         } just Runs
         every {
-            mockBackend.getWorkflow("user_1", "wf_b", false, capture(detailSuccessB), any())
+            mockBackend.getWorkflow("user_1", "wf_b", false, capture(detailSuccessB), any(), any())
         } just Runs
         coEvery { mockResolver.resolve(any()) } returns mockk()
 
@@ -821,7 +862,7 @@ class WorkflowManagerTest {
 
         val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
         every {
-            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccess), any())
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccess), any(), any())
         } just Runs
         coEvery { mockResolver.resolve(any()) } returns mockk()
 
@@ -855,10 +896,10 @@ class WorkflowManagerTest {
         val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
         val detailErrorB = slot<(PurchasesError) -> Unit>()
         every {
-            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any())
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any(), any())
         } just Runs
         every {
-            mockBackend.getWorkflow("user_1", "wf_b", false, any(), capture(detailErrorB))
+            mockBackend.getWorkflow("user_1", "wf_b", false, any(), capture(detailErrorB), any())
         } just Runs
         coEvery { mockResolver.resolve(any()) } returns mockk()
 
@@ -886,7 +927,7 @@ class WorkflowManagerTest {
 
         val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
         every {
-            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any())
+            mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any(), any())
         } just Runs
         // resolve throws an exception type not in the explicit catch list (e.g. malformed CDN json)
         coEvery { mockResolver.resolve(any()) } throws SerializationException("malformed compiled workflow json")
