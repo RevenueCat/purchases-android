@@ -154,7 +154,7 @@ internal class PurchasesOrchestrator(
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
 
-    private val workflowManager: WorkflowManager,
+    private val workflowManager: WorkflowManager?,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
@@ -567,6 +567,19 @@ internal class PurchasesOrchestrator(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        val workflowManager = workflowManager
+        if (workflowManager == null) {
+            // The workflows feature is disabled (BuildConfig.USE_WORKFLOWS_ENDPOINT is false), so there
+            // is no manager to serve the request. Callers gate on the same flag, so this is effectively
+            // unreachable when configured consistently; we still surface an error instead of crashing.
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.ConfigurationError,
+                    "Workflows are not enabled.",
+                ),
+            )
+            return
+        }
         workflowManager.getWorkflow(
             appUserID = identityManager.currentAppUserID,
             workflowId = workflowId,
@@ -807,7 +820,7 @@ internal class PurchasesOrchestrator(
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
         this.backend.close()
-        this.workflowManager.close()
+        this.workflowManager?.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff

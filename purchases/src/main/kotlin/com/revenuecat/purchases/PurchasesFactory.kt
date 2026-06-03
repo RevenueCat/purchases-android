@@ -260,7 +260,10 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            val workflowsCache = WorkflowsCache(deviceCache = cache)
+            // Gated on the same flag as workflowManager below: when workflows are disabled there is
+            // no writer for this cache, so we skip creating it (and the no-op clearCache work in
+            // IdentityManager) entirely. workflowsCache != null <=> workflowManager != null.
+            val workflowsCache = if (BuildConfig.USE_WORKFLOWS_ENDPOINT) WorkflowsCache(deviceCache = cache) else null
 
             val identityManager = IdentityManager(
                 cache,
@@ -358,19 +361,21 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
             )
 
-            val workflowManager = WorkflowManager(
-                backend = backend,
-                workflowDetailResolver = WorkflowDetailResolver(
-                    workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                        fileRepository = DefaultFileRepository(contextForStorage, "rc_compiled_workflows"),
+            val workflowManager = workflowsCache?.let {
+                WorkflowManager(
+                    backend = backend,
+                    workflowDetailResolver = WorkflowDetailResolver(
+                        workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
+                            fileRepository = DefaultFileRepository(contextForStorage, "rc_compiled_workflows"),
+                        ),
                     ),
-                ),
-                workflowAssetPreDownloader = WorkflowAssetPreDownloader(
-                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                    offeringFontPreDownloader = offeringFontPreDownloader,
-                ),
-                workflowsCache = workflowsCache,
-            )
+                    workflowAssetPreDownloader = WorkflowAssetPreDownloader(
+                        paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
+                        offeringFontPreDownloader = offeringFontPreDownloader,
+                    ),
+                    workflowsCache = it,
+                )
+            }
 
             val offeringsManager = OfferingsManager(
                 offeringsCache,
@@ -383,7 +388,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
-                workflowManager = if (BuildConfig.USE_WORKFLOWS_ENDPOINT) workflowManager else null,
+                workflowManager = workflowManager,
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
