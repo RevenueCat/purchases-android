@@ -45,7 +45,7 @@ internal fun headerAlpha(role: WorkflowHeaderTransitionRole, progress: Float): F
     WorkflowHeaderTransitionRole.STABLE -> 1f
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 internal fun LoadedWorkflowPaywall(
     workflowState: WorkflowPaywallUiState,
@@ -110,7 +110,20 @@ internal fun LoadedWorkflowPaywall(
         background = null,
         headerContent = if (!isLeavingHeader) headerComposable else null,
     ) {
-        Box(Modifier.fillMaxSize()) {
+        if (isLeavingHeader && headerComposable != null) {
+            // Box required to overlay the LEAVING header above WorkflowStepsContent.
+            // Only present during a header→no-header transition; not added in the common case.
+            Box(Modifier.fillMaxSize()) {
+                WorkflowStepsContent(
+                    currentStepId = currentStepId,
+                    stepStates = stepStates,
+                    transitionState = transitionState,
+                    clickHandler = clickHandler,
+                    componentInteractionTracker = componentInteractionTracker,
+                )
+                headerComposable()
+            }
+        } else {
             WorkflowStepsContent(
                 currentStepId = currentStepId,
                 stepStates = stepStates,
@@ -118,7 +131,6 @@ internal fun LoadedWorkflowPaywall(
                 clickHandler = clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
             )
-            if (isLeavingHeader) headerComposable?.invoke()
         }
     }
 }
