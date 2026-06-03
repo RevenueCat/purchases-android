@@ -29,9 +29,8 @@ internal class WorkflowManager(
 ) {
 
     private companion object {
-        // Caps how many workflows are prefetched at once. The cap matters for the CDN/asset
-        // download work each prefetch kicks off on Dispatchers.IO, so a long workflows list does
-        // not fan out into an unbounded number of concurrent downloads.
+        // Caps how many workflows are prefetched at once, so a long workflows list does not fan out
+        // into an unbounded number of concurrent CDN/asset downloads.
         private const val MAX_CONCURRENT_PREFETCHES = 4
     }
 
@@ -41,6 +40,14 @@ internal class WorkflowManager(
     private val callbackLock = Any()
     private val pendingCompletionCallbacks = mutableMapOf<String, MutableList<() -> Unit>>()
 
+    // A Semaphore rather than a limitedParallelism dispatcher (as RemoteConfig's TopicFetcher uses)
+    // because a single prefetch is suspended almost the whole time: the detail fetch is a callback
+    // suspending on backend.getWorkflow, and the CDN/asset downloads run on the FileRepository/Coil
+    // scopes, not this one. A limitedParallelism dispatcher only caps actively-running coroutines, so
+    // a suspended prefetch would free its slot and let the next one start — capping nothing. The
+    // Semaphore holds its permit across those suspension points, bounding the in-flight pipeline end
+    // to end. The detail HTTP calls are separately parallelized and capped by the Backend concurrent
+    // dispatcher pool (also sized to MAX_CONCURRENT_PREFETCHES).
     private val prefetchSemaphore = Semaphore(MAX_CONCURRENT_PREFETCHES)
 
     fun close() {
