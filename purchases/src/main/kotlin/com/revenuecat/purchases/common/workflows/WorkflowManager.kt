@@ -17,6 +17,8 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 
 internal class WorkflowManager(
     private val backend: Backend,
@@ -26,11 +28,20 @@ internal class WorkflowManager(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
+    private companion object {
+        // Caps how many workflows are prefetched at once. The cap matters for the CDN/asset
+        // download work each prefetch kicks off on Dispatchers.IO, so a long workflows list does
+        // not fan out into an unbounded number of concurrent downloads.
+        private const val MAX_CONCURRENT_PREFETCHES = 4
+    }
+
     // Guards pendingCompletionCallbacks. A key is present while a workflows-list fetch (plus its
     // prefetch) is in flight for that appUserID, so concurrent callers join only their own user's
     // request — a different user starts its own fetch instead of receiving the wrong user's list.
     private val callbackLock = Any()
     private val pendingCompletionCallbacks = mutableMapOf<String, MutableList<() -> Unit>>()
+
+    private val prefetchSemaphore = Semaphore(MAX_CONCURRENT_PREFETCHES)
 
     fun close() {
         scope.cancel()
@@ -129,12 +140,17 @@ internal class WorkflowManager(
                     // prefetch = true for workflows tied to an offering; this is a defensive guard on top.
                     val prefetchWorkflows = response.workflows.filter { it.prefetch && it.offeringId != null }
                     scope.launch {
-                        // Prefetch each workflow concurrently and wait for all of them before completing,
-                        // so onComplete fires only once the whole sequence settles (empty list completes
-                        // right away). A failed prefetch is logged and does not fail the others.
+                        // Prefetch workflows with bounded concurrency (at most MAX_CONCURRENT_PREFETCHES
+                        // at a time) and wait for all of them before completing, so onComplete fires only
+                        // once the whole sequence settles (empty list completes right away). A failed
+                        // prefetch is logged and does not fail the others.
                         coroutineScope {
                             prefetchWorkflows.forEach { summary ->
-                                launch { prefetchWorkflow(appUserID, summary.id, appInBackground) }
+                                launch {
+                                    prefetchSemaphore.withPermit {
+                                        prefetchWorkflow(appUserID, summary.id, appInBackground)
+                                    }
+                                }
                             }
                         }
                         completePendingCallbacks(appUserID)

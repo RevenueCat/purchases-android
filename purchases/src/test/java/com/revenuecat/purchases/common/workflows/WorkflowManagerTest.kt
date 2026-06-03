@@ -487,6 +487,26 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflowsList prefetches at most 4 workflows concurrently`() {
+        val workflows = (0 until 10).map {
+            WorkflowSummary(id = "wf_$it", displayName = "W$it", offeringId = "off_$it", prefetch = true)
+        }
+        val response = WorkflowsListResponse(workflows = workflows)
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(response) }
+
+        // Hold every prefetch in flight by never invoking its callback, so each one keeps its
+        // semaphore permit. Only as many fetches as there are permits can start.
+        every { mockBackend.getWorkflow(any(), any(), any(), any(), any()) } answers { }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 4) { mockBackend.getWorkflow(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `getWorkflowsList silently logs error on backend failure`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
