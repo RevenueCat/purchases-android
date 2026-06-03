@@ -1124,5 +1124,47 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isNotNull()
     }
 
+    @Test
+    fun `getOfferings from valid cache does not call onSuccess until getWorkflowsList completes`() {
+        val mockWorkflowManager = mockk<WorkflowManager>()
+        val onCompleteSlot = slot<() -> Unit>()
+        every {
+            mockWorkflowManager.getWorkflowsList(
+                appUserID = appUserId,
+                appInBackground = false,
+                onComplete = capture(onCompleteSlot),
+            )
+        } just Runs
+
+        val managerWithWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        every { cache.cachedOfferings } returns testOfferings
+        mockDeviceCache()
+        mockCacheStale(offeringsStale = false)
+
+        var receivedOfferings: Offerings? = null
+        managerWithWorkflow.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        // Cache hit still waits for the workflows list so the offeringId map is populated on success.
+        assertThat(receivedOfferings).isNull()
+
+        onCompleteSlot.captured.invoke()
+
+        assertThat(receivedOfferings).isNotNull()
+    }
+
     // endregion workflowManager onComplete integration
 }

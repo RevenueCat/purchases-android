@@ -154,7 +154,14 @@ internal class OfferingsManager(
             null,
             null,
         )
-        dispatch { onSuccess?.invoke(cachedOfferings) }
+        val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
+        // Ensure the workflows list (and its offeringId map) is loaded before delivering offerings,
+        // mirroring the network path so workflowIdForOfferingId is populated on a cache hit too.
+        // getWorkflowsList no-ops when the list is already fresh — the common case here, since
+        // offerings and workflows are fetched together and share a TTL — so it only does work when the
+        // map is missing or stale (e.g. a prior workflows fetch failed).
+        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
+            ?: dispatchSuccess()
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
