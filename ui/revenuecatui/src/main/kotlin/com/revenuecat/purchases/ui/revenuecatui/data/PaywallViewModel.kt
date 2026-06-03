@@ -1271,7 +1271,7 @@ internal class PaywallViewModelImpl(
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
             paywallIdentifier = paywallId,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -1288,7 +1288,7 @@ internal class PaywallViewModelImpl(
         }
         return PaywallEvent.Data(
             paywallIdentifier = paywallData.data.id,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -1325,7 +1325,7 @@ internal class PaywallViewModelImpl(
         val locale = localeList.get(0) ?: Locale.getDefault()
         return PaywallPresentationFingerprint(
             paywallIdentifier = paywallId,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = revision,
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
@@ -1340,7 +1340,7 @@ internal class PaywallViewModelImpl(
         val paywallData = offering.paywallComponents ?: return null
         return PaywallPresentationFingerprint(
             paywallIdentifier = paywallData.data.id,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = paywallData.data.revision,
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
@@ -1366,6 +1366,6 @@ internal class PaywallViewModelImpl(
             ?.mapValues { (_, definition) -> CustomVariableValue.from(definition.defaultValue) }
             ?: emptyMap()
 
-    private val Offering.presentedOfferingContext: PresentedOfferingContext
-        get() = availablePackages.firstOrNull()?.presentedOfferingContext ?: PresentedOfferingContext(identifier)
+    private val Offering.presentedOfferingContextOrDefault: PresentedOfferingContext
+        get() = presentedOfferingContext ?: PresentedOfferingContext(identifier)
 }
