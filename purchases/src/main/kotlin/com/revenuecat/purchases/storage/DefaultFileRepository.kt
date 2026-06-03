@@ -127,9 +127,6 @@ internal class DefaultFileRepository(
             if (fileCacheManager.cachedContentExists(it)) it else null
         }
 
-    // Runs on the ioScope's dispatcher (Dispatchers.IO by default). Callers that inject a
-    // concurrency-limited dispatcher rely on the whole download running here, so this must not
-    // switch dispatchers.
     private fun downloadFile(url: URL): UrlConnection = try {
         verboseLog { "Downloading remote file from $url" }
 
