@@ -90,7 +90,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
                 offeringIdAndPresentedOfferingContext = offering?.let {
                     OfferingSelection.IdAndPresentedOfferingContext(
                         offeringId = it.identifier,
-                        presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                        presentedOfferingContext = it.presentedOfferingContext,
                     )
                 },
                 fontProvider = fontProvider,
@@ -211,7 +211,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
                         offeringIdAndPresentedOfferingContext = offering?.let {
                             OfferingSelection.IdAndPresentedOfferingContext(
                                 offeringId = it.identifier,
-                                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                                presentedOfferingContext = it.presentedOfferingContext,
                             )
                         },
                         fontProvider = fontProvider,
@@ -345,7 +345,7 @@ public class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultH
                         offeringIdAndPresentedOfferingContext = offering?.let {
                             OfferingSelection.IdAndPresentedOfferingContext(
                                 offeringId = it.identifier,
-                                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                                presentedOfferingContext = it.presentedOfferingContext,
                             )
                         },
                         fontProvider = fontProvider,

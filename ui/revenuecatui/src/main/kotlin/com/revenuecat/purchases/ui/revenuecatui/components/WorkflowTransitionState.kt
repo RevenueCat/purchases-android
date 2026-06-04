@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
+import kotlin.math.roundToInt
 
 /**
  * Snapshot of the data needed to render and animate the two-surface workflow paywall transition.
@@ -147,11 +148,40 @@ private fun GraphicsLayerScope.applyWorkflowTransition(
         val navigationDirectionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
         val layoutDirectionFactor = if (layoutDirection == LayoutDirection.Rtl) -1f else 1f
         val directionFactor = navigationDirectionFactor * layoutDirectionFactor
-        translationX = when (stepId) {
-            state.animatingToStepId -> (1f - progress) * directionFactor * size.width
-            state.animatingFromStepId -> -progress * directionFactor * size.width
-            else -> 0f
-        }
+        translationX = workflowSlideTranslationX(
+            stepId = stepId,
+            animatingToStepId = state.animatingToStepId,
+            animatingFromStepId = state.animatingFromStepId,
+            progress = progress,
+            width = size.width,
+            directionFactor = directionFactor,
+        )
+    }
+}
+
+/**
+ * Horizontal offset for a workflow step's sliding surface.
+ *
+ * The incoming step's leading edge is snapped to a whole pixel, and the outgoing step's offset is
+ * derived from it (`incoming - directionFactor * width`) so the two surfaces share a byte-identical
+ * edge. Computing the two offsets from independent float expressions leaves a sub-pixel gap between
+ * the two graphics layers, which renders as a 1px seam (the background showing through) during the
+ * slide.
+ */
+@Suppress("LongParameterList")
+internal fun workflowSlideTranslationX(
+    stepId: String,
+    animatingToStepId: String,
+    animatingFromStepId: String?,
+    progress: Float,
+    width: Float,
+    directionFactor: Float,
+): Float {
+    val incomingTranslationX = ((1f - progress) * directionFactor * width).roundToInt().toFloat()
+    return when (stepId) {
+        animatingToStepId -> incomingTranslationX
+        animatingFromStepId -> incomingTranslationX - directionFactor * width
+        else -> 0f
     }
 }
 

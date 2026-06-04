@@ -302,6 +302,21 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test_detekt_rules:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run detekt-rules Tests
+          command: ./gradlew :detekt-rules:test --parallel --no-daemon
+      - store_test_results:
+          path: detekt-rules/build/test-results/test
+      - store_artifacts:
+          path: build/reports
+
   test-galaxy:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -323,6 +338,29 @@ jobs:
           name: Run Galaxy Unit Tests
           command: |
             ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+      - run:
+          name: Collect JUnit XMLs
+          when: always
+          command: |
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
+      - store_test_results:
+          path: build/test-results-collected
+      - store_artifacts:
+          path: build/reports
+
+  test-rules-engine-internal:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run Rules Engine Internal Unit Tests
+          command: |
+            ./gradlew :rules-engine-internal:testDefaultsDebugUnitTest --no-daemon
       - run:
           name: Collect JUnit XMLs
           when: always
@@ -378,7 +416,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.7.0 s3://purchases-docs/android/10.7.0 --delete
+          command: aws s3 sync ~/project/docs/10.9.0-SNAPSHOT s3://purchases-docs/android/10.9.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -1051,7 +1089,13 @@ workflows:
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+      - test_detekt_rules:
+          requires:
+            - prepare-tests
       - test-galaxy:
+          requires:
+            - prepare-tests
+      - test-rules-engine-internal:
           requires:
             - prepare-tests
       - run-backend-integration-tests:
@@ -1091,6 +1135,7 @@ workflows:
             - test_defaults_bc8_release
             - test_defaults_bc7_release
             - test-galaxy
+            - test-rules-engine-internal
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester

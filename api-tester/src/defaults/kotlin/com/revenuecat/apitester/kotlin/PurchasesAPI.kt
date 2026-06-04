@@ -9,7 +9,9 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Purchases.Companion.sharedInstance
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -67,6 +69,7 @@ private class PurchasesAPI {
         webPurchaseRedemption: WebPurchaseRedemption,
         redeemWebPurchaseListener: RedeemWebPurchaseListener,
         intent: Intent,
+        offering: Offering,
     ) {
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {}
@@ -141,10 +144,15 @@ private class PurchasesAPI {
         val defaultParams = CustomPaywallImpressionParams()
         val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
         val paramsWithOffering = CustomPaywallImpressionParams(paywallId = "my-paywall", offeringId = "my-offering")
+        val paramsWithOfferingObject = CustomPaywallImpressionParams(paywallId = "my-paywall", offering = offering)
+        val paramsOfferingObjectOnly = CustomPaywallImpressionParams(offering = offering)
+        val presentedOfferingContext: PresentedOfferingContext? = paramsWithOfferingObject.presentedOfferingContext
         purchases.trackCustomPaywallImpression()
         purchases.trackCustomPaywallImpression(defaultParams)
         purchases.trackCustomPaywallImpression(paramsWithId)
         purchases.trackCustomPaywallImpression(paramsWithOffering)
+        purchases.trackCustomPaywallImpression(paramsWithOfferingObject)
+        purchases.trackCustomPaywallImpression(paramsOfferingObjectOnly)
     }
 
     @Suppress("LongParameterList")

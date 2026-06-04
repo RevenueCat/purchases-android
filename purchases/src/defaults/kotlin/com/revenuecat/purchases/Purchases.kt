@@ -677,11 +677,41 @@ public class Purchases internal constructor(
     @OptIn(InternalRevenueCatAPI::class)
     @JvmOverloads
     public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
+        val cachedOfferings = purchasesOrchestrator.cachedOfferings
+        val resolvedOfferingId: String?
+        val resolvedPresentedOfferingContext: PresentedOfferingContext?
+
+        when {
+            params.presentedOfferingContext != null -> {
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = params.presentedOfferingContext
+            }
+            params.offeringId != null -> {
+                val resolvedOffering = cachedOfferings?.get(params.offeringId)
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
+            }
+            else -> {
+                val resolvedOffering = cachedOfferings?.current
+                resolvedOfferingId = resolvedOffering?.identifier
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
+            }
+        }
+
         purchasesOrchestrator.track(
             CustomPaywallEvent.Impression(
                 data = CustomPaywallEvent.Impression.Data(
                     paywallId = params.paywallId,
-                    offeringId = params.offeringId ?: purchasesOrchestrator.cachedCurrentOfferingIdentifier,
+                    offeringId = resolvedOfferingId,
+                    placementIdentifier = resolvedPresentedOfferingContext?.placementIdentifier,
+                    targetingRevision = resolvedPresentedOfferingContext?.targetingContext?.revision,
+                    targetingRuleId = resolvedPresentedOfferingContext?.targetingContext?.ruleId,
                 ),
             ),
         )

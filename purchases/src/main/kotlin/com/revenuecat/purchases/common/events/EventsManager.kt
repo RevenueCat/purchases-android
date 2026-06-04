@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
@@ -85,6 +86,10 @@ internal class EventsManager(
                     subclass(
                         BackendStoredEvent.CustomPaywall::class,
                         BackendStoredEvent.CustomPaywall.serializer(),
+                    )
+                    subclass(
+                        BackendStoredEvent.Workflows::class,
+                        BackendStoredEvent.Workflows.serializer(),
                     )
                 }
             }
@@ -221,6 +226,9 @@ internal class EventsManager(
                 is CustomPaywallEvent.Impression -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
+                )
+                is WorkflowEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
                 )
                 else -> null
             }
