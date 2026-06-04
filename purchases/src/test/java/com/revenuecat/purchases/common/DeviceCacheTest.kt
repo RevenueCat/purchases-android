@@ -65,6 +65,7 @@ class DeviceCacheTest {
     private val productEntitlementMappingLastUpdatedCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMappingLastUpdated"
     private val productEntitlementMappingCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMapping"
     private val offeringsResponseCacheKey = "com.revenuecat.purchases.api_key.offeringsResponse"
+    private val workflowsListResponseCacheKey = "com.revenuecat.purchases.api_key.workflowsListResponse"
 
     private val slotForPutLong = slot<Long>()
 
@@ -718,6 +719,35 @@ class DeviceCacheTest {
     }
 
     // endregion offerings response
+
+    // region workflows list response
+
+    @Test
+    fun `getWorkflowsListResponseCache returns null when nothing is cached`() {
+        every { mockPrefs.getString(workflowsListResponseCacheKey, null) } returns null
+        assertThat(cache.getWorkflowsListResponseCache()).isNull()
+    }
+
+    @Test
+    fun `cacheWorkflowsListResponse stores string in preferences`() {
+        val payload = """{"workflows":[]}"""
+        cache.cacheWorkflowsListResponse(payload)
+        verifyAll {
+            mockEditor.putString(workflowsListResponseCacheKey, payload)
+            mockEditor.apply()
+        }
+    }
+
+    @Test
+    fun `clearWorkflowsListResponseCache removes key from preferences`() {
+        cache.clearWorkflowsListResponseCache()
+        verifyAll {
+            mockEditor.remove(workflowsListResponseCacheKey)
+            mockEditor.apply()
+        }
+    }
+
+    // endregion workflows list response
 
     // region storefront
 

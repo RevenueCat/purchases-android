@@ -999,12 +999,14 @@ internal class Backend(
         }
     }
 
+    @Suppress("LongParameterList")
     fun getWorkflow(
         appUserID: String,
         workflowId: String,
         appInBackground: Boolean,
         onSuccess: (WorkflowDetailResponse) -> Unit,
         onError: (PurchasesError) -> Unit,
+        callbackDispatcher: Dispatcher = dispatcher,
     ) {
         val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
         val path = endpoint.getPath()
@@ -1053,7 +1055,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             workflowDetailCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                callbackDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,
