@@ -20,6 +20,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
+@Suppress("TooManyFunctions")
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
@@ -68,6 +69,27 @@ internal class WorkflowManager(
             onSuccess(cached)
             return
         }
+        fetchAndCacheWorkflow(
+            appUserID = appUserID,
+            workflowId = workflowId,
+            appInBackground = appInBackground,
+            callbackDispatcher = callbackDispatcher,
+            persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+            onSuccess = onSuccess,
+            onError = onError,
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private fun fetchAndCacheWorkflow(
+        appUserID: String,
+        workflowId: String,
+        appInBackground: Boolean,
+        callbackDispatcher: Dispatcher?,
+        persistEnvelopeOnResolve: Boolean,
+        onSuccess: (WorkflowDataResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
         val onSuccessHandler: (WorkflowDetailResponse) -> Unit = { response ->
             scope.launch {
                 // resolve() can fail in several ways (missing inline data, CDN fetch/parse failures,
