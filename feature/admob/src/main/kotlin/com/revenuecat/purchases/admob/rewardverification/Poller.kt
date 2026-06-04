@@ -22,6 +22,17 @@ internal object Poller {
     private const val DEFAULT_JITTER_UPPER_BOUND_SECONDS: Double = 1.25
     private const val MILLIS_PER_SECOND: Double = 1_000.0
 
+    private const val BACKOFF_SCHEDULING_FAILED_DESCRIPTION: String =
+        "Failed to schedule the next reward verification poll attempt."
+
+    // The retry variants track why a read asked to retry, so an exhausted poll can report the most actionable reason.
+    private sealed interface Step {
+        class Terminal(val outcome: Outcome) : Step
+        object RetryPending : Step
+        object RetryTransientError : Step
+        object RetryUnknown : Step
+    }
+
     // Jittered ~1s per-attempt backoff so concurrent verifications don't align their polls.
     private val defaultJitterSeconds: () -> Double = {
         Random.nextDouble(
@@ -30,20 +41,27 @@ internal object Poller {
         )
     }
 
+    // sleepSeconds/jitterSeconds/maxAttempts/logFailure are injectable test seams; all default for production callers.
+    @Suppress("LongParameterList")
     suspend fun poll(
         clientTransactionId: String,
         fetcher: RewardVerificationFetcher = RewardVerificationFetcher.default,
         sleepSeconds: suspend (Double) -> Unit = { delay((it * MILLIS_PER_SECOND).toLong()) },
         jitterSeconds: () -> Double = defaultJitterSeconds,
         maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
+        logFailure: (message: String, isError: Boolean) -> Unit = ::logFailureToLogcat,
     ): RewardVerificationResult {
-        return pollOutcome(
+        val outcome = pollOutcome(
             clientTransactionId = clientTransactionId,
             fetcher = fetcher,
             sleepSeconds = sleepSeconds,
             jitterSeconds = jitterSeconds,
             maxAttempts = maxAttempts,
-        ).toResult()
+        )
+        if (outcome is Outcome.Failed) {
+            logFailure(outcome.logMessage, outcome.isError)
+        }
+        return outcome.toResult()
     }
 
     private suspend fun pollOutcome(
@@ -54,26 +72,41 @@ internal object Poller {
         maxAttempts: Int,
     ): Outcome {
         Logger.d("Reward verification poll start transactionId=$clientTransactionId maxAttempts=$maxAttempts")
-        var outcome: Outcome? = null
+        var sawUnknownStatus = false
+        var lastRetryWasTransientError = false
+        var terminal: Outcome? = null
         var attempt = 0
-        while (outcome == null && attempt < maxAttempts) {
+        while (terminal == null && attempt < maxAttempts) {
             Logger.v(
                 "Reward verification poll attempt ${attempt + 1}/$maxAttempts transactionId=$clientTransactionId",
             )
-            outcome = if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds, clientTransactionId)) {
-                Outcome.Failed
+            if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds, clientTransactionId)) {
+                terminal = Outcome.Failed.TerminalError(BACKOFF_SCHEDULING_FAILED_DESCRIPTION)
             } else {
-                fetchOutcomeOrRetry(clientTransactionId, fetcher)
+                when (val step = fetchStep(clientTransactionId, fetcher)) {
+                    is Step.Terminal -> terminal = step.outcome
+                    Step.RetryPending -> lastRetryWasTransientError = false
+                    Step.RetryTransientError -> lastRetryWasTransientError = true
+                    Step.RetryUnknown -> {
+                        sawUnknownStatus = true
+                        lastRetryWasTransientError = false
+                    }
+                }
             }
             attempt++
         }
-        // Null outcome => every attempt exhausted without a terminal status.
-        if (outcome == null) {
-            Logger.w(
-                "Reward verification poll exhausted $maxAttempts attempts transactionId=$clientTransactionId",
-            )
+        if (terminal != null) {
+            return terminal
         }
-        return outcome ?: Outcome.Failed
+        // Exhausted without a terminal status. An unknown status seen along the way is the most
+        // actionable signal (likely version skew), so it takes precedence over the timeout buckets.
+        // Diagnostic only; the user-facing exhaustion message is logged once by poll().
+        Logger.v("Reward verification poll exhausted $maxAttempts attempts transactionId=$clientTransactionId")
+        return when {
+            sawUnknownStatus -> Outcome.Failed.UnexpectedResponse
+            lastRetryWasTransientError -> Outcome.Failed.ExhaustedWhileTransientErroring
+            else -> Outcome.Failed.ExhaustedWhilePending
+        }
     }
 
     // Returns false (fail deterministically) if scheduling the backoff fails, rather than spinning in a tight retry.
@@ -88,25 +121,28 @@ internal object Poller {
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            Logger.e("Reward verification poll backoff scheduling failed transactionId=$clientTransactionId")
+            // Diagnostic only; the user-facing terminal-error message is logged once by poll().
+            Logger.v("Reward verification poll backoff scheduling failed transactionId=$clientTransactionId")
             false
         }
     }
 
-    // Returns a terminal Outcome, or null when polling should retry (pending/unknown or a transient error).
-    private suspend fun fetchOutcomeOrRetry(
+    // The broad Exception catch is the deliberate backstop that turns any unexpected failure into a terminal error.
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun fetchStep(
         clientTransactionId: String,
         fetcher: RewardVerificationFetcher,
-    ): Outcome? {
+    ): Step {
         return try {
             val result = fetcher.fetch(clientTransactionId)
             Logger.v("Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId")
             when (result) {
-                is CoreRewardVerificationResult.Verified -> Outcome.Verified(result.reward.toAdMobReward())
-                CoreRewardVerificationResult.FAILED -> Outcome.Failed
-                CoreRewardVerificationResult.PENDING,
-                CoreRewardVerificationResult.UNKNOWN,
-                -> null
+                is CoreRewardVerificationResult.Verified ->
+                    Step.Terminal(Outcome.Verified(result.reward.toAdMobReward()))
+                is CoreRewardVerificationResult.Failed ->
+                    Step.Terminal(Outcome.Failed.BackendRejected(result.message))
+                CoreRewardVerificationResult.PENDING -> Step.RetryPending
+                CoreRewardVerificationResult.UNKNOWN -> Step.RetryUnknown
             }
         } catch (e: CancellationException) {
             throw e
@@ -116,14 +152,14 @@ internal object Poller {
                     "Reward verification poll transient error, retrying: ${e.code} " +
                         "transactionId=$clientTransactionId",
                 )
-                null
+                Step.RetryTransientError
             } else {
-                Logger.e("Reward verification poll terminal error: ${e.code} transactionId=$clientTransactionId")
-                Outcome.Failed
+                Logger.v("Reward verification poll terminal error: ${e.code} transactionId=$clientTransactionId")
+                Step.Terminal(Outcome.Failed.TerminalError(e.describeForLog()))
             }
-        } catch (_: Exception) {
-            Logger.e("Reward verification poll unexpected error transactionId=$clientTransactionId")
-            Outcome.Failed
+        } catch (e: Exception) {
+            Logger.v("Reward verification poll unexpected error transactionId=$clientTransactionId")
+            Step.Terminal(Outcome.Failed.TerminalError(e.describeForLog()))
         }
     }
 
@@ -137,12 +173,25 @@ internal object Poller {
             (this is RewardVerificationException && isServerError)
     }
 
+    private fun PurchasesException.describeForLog(): String {
+        val underlying = underlyingErrorMessage?.takeIf { it.isNotBlank() }
+        return if (underlying != null) "$message ($underlying)" else message
+    }
+
+    private fun Exception.describeForLog(): String {
+        return message?.takeIf { it.isNotBlank() } ?: this::class.java.simpleName
+    }
+
+    private fun logFailureToLogcat(message: String, isError: Boolean) {
+        if (isError) Logger.e(message) else Logger.w(message)
+    }
+
     // Readable log form: object statuses log their name; Verified inlines the reward payload.
     private fun CoreRewardVerificationResult.logDescription(): String {
         return when (this) {
             is CoreRewardVerificationResult.Verified -> "verified(reward=$reward)"
             CoreRewardVerificationResult.PENDING -> "pending"
-            CoreRewardVerificationResult.FAILED -> "failed"
+            is CoreRewardVerificationResult.Failed -> "failed"
             CoreRewardVerificationResult.UNKNOWN -> "unknown"
         }
     }

@@ -20,6 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowLog
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(RobolectricTestRunner::class)
@@ -64,6 +65,8 @@ internal class RewardVerificationRuntimeTest {
         assertTrue(completionDelivered)
         assertNotNull(completedResult)
         assertTrue(completedResult!!.failed)
+        // Cancellation is logged so it isn't bucketed as a silent failure.
+        assertTrue(ShadowLog.getLogs().any { it.msg == RewardVerificationStrings.CANCELLED })
     }
 
     @Test

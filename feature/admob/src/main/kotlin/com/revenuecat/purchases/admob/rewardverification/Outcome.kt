@@ -4,17 +4,52 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
 
+// Internal poll result. The public [RewardVerificationResult] stays binary (verified/failed); these subtypes
+// capture *why* polling ended so the poller can log an actionable reason without adding public cases.
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal sealed interface Outcome {
     class Verified(val reward: VerifiedReward) : Outcome
 
-    object Failed : Outcome
+    sealed interface Failed : Outcome {
+        val logMessage: String
+
+        // True when [logMessage] should be logged at error level rather than warning.
+        val isError: Boolean
+
+        // Logs the backend-provided message verbatim.
+        class BackendRejected(private val backendMessage: String?) : Failed {
+            override val logMessage: String
+                get() = backendMessage?.takeIf { it.isNotBlank() }
+                    ?: RewardVerificationStrings.BACKEND_REJECTED_WITHOUT_MESSAGE
+            override val isError: Boolean get() = false
+        }
+
+        object ExhaustedWhilePending : Failed {
+            override val logMessage: String get() = RewardVerificationStrings.EXHAUSTED_WHILE_PENDING
+            override val isError: Boolean get() = false
+        }
+
+        object ExhaustedWhileTransientErroring : Failed {
+            override val logMessage: String get() = RewardVerificationStrings.EXHAUSTED_WHILE_TRANSIENT_ERRORING
+            override val isError: Boolean get() = false
+        }
+
+        object UnexpectedResponse : Failed {
+            override val logMessage: String get() = RewardVerificationStrings.UNEXPECTED_RESPONSE
+            override val isError: Boolean get() = true
+        }
+
+        class TerminalError(private val error: String) : Failed {
+            override val logMessage: String get() = RewardVerificationStrings.terminalError(error)
+            override val isError: Boolean get() = true
+        }
+    }
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun Outcome.toResult(): RewardVerificationResult {
     return when (this) {
         is Outcome.Verified -> RewardVerificationResult.verified(reward)
-        Outcome.Failed -> RewardVerificationResult.failed
+        is Outcome.Failed -> RewardVerificationResult.failed
     }
 }
