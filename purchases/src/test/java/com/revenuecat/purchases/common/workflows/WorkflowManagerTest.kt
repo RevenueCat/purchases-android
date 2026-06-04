@@ -482,6 +482,59 @@ class WorkflowManagerTest {
         }
     }
 
+    @Test
+    fun `getWorkflow stale hit does not surface a failing background refresh to the caller`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(response) } returns staleResult
+
+        // First backend call succeeds (populates the cache); the second fails (background refresh).
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        var call = 0
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            call++
+            if (call == 1) {
+                successSlot.captured(response)
+            } else {
+                errorSlot.captured(PurchasesError(PurchasesErrorCode.NetworkError, "boom"))
+            }
+        }
+
+        // First call at t=0 populates the cache.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale call whose background refresh fails: caller still gets the stale value, no error.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        var served: WorkflowDataResult? = null
+        var erroredWith: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { erroredWith = it },
+        )
+
+        assertThat(served).isSameAs(staleResult)
+        assertThat(erroredWith).isNull()
+    }
+
     // endregion getWorkflow cache
 
     // region getWorkflowsList
