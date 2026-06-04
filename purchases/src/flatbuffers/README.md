@@ -11,10 +11,10 @@ only by unit tests.
 Backend                                   SDK
 -------                                   ---
 build FlatBuffer (FlatBufferBuilder)      HTTPResult.body : JSONObject   (existing, unchanged)
-  -> base64 encode                          -> read "products_section_fb" field
-  -> put in JSON field "products_section_fb"  -> base64 decode
-                                              -> ProductsSection.getRootAsProductsSection(bytes)
-JSON: { ..., "products_section_fb": "<b64>" } -> map to ProductsSectionData (plain Kotlin)
+  -> base64 encode                          -> read "payload_fb" field
+  -> put in JSON field "payload_fb"          -> base64 decode
+                                              -> Payload.getRootAsPayload(bytes)
+JSON: { ..., "payload_fb": "<b64>" }         -> map to PayloadData (plain Kotlin)
 ```
 
 The FlatBuffer rides as a base64 string inside the normal JSON body, so the transport
@@ -23,19 +23,22 @@ the already-parsed `JSONObject` and decodes it.
 
 ## Files
 
-- `schema/products_section.fbs` — the mock schema (a products section: list of products + a
-  fetched-at timestamp; exercises a table, a vector, scalars, strings, and an enum).
+- `schema/payload.fbs` — the mock schema: a single `Payload` table with a `config` byte array and
+  a `blobs` "map" of bytes to bytes. FlatBuffers has no native map type, so the map is modeled as
+  a vector of key/value entries (`Blob { key:[ubyte]; value:[ubyte]; }`).
 - `../main/kotlin/com/revenuecat/purchases/flatbuffers/generated/` — Kotlin accessors generated
   by `flatc` (committed; do not hand-edit). flatc emits **public** top-level classes with no
   visibility modifiers, which would both leak these types into the SDK's public API and fail the
   module's `-Xexplicit-api=strict`. The regen script post-processes the top-level classes to
   `internal`, which fixes both (the types are no longer public API, and members of an `internal`
   class are exempt from the explicit-API requirement).
-- `../main/kotlin/com/revenuecat/purchases/flatbuffers/FlatBuffersProductsSectionParser.kt` — the
+- `../main/kotlin/com/revenuecat/purchases/flatbuffers/FlatBuffersPayloadParser.kt` — the
   SDK-side parser. Decodes the section and returns the domain model, or `null` on any error
   (same swallow-and-log behavior as `OfferingParser`).
-- `../main/kotlin/com/revenuecat/purchases/flatbuffers/ProductsSectionData.kt` — plain Kotlin
-  domain models. Generated types never leak past the parser.
+- `../main/kotlin/com/revenuecat/purchases/flatbuffers/PayloadData.kt` — plain Kotlin domain
+  models (`PayloadData`, `BlobEntry`). The `blobs` map is exposed as a list of key/value entries
+  because `ByteArray` is unsound as a `Map` key (identity equality). Generated types never leak
+  past the parser.
 - `../test/java/com/revenuecat/purchases/flatbuffers/` — the encoder fixture (the "backend side")
   and a roundtrip test.
 

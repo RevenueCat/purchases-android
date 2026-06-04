@@ -10,7 +10,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SCHEMA="$REPO_ROOT/purchases/src/flatbuffers/schema/products_section.fbs"
+SCHEMA="$REPO_ROOT/purchases/src/flatbuffers/schema/payload.fbs"
 OUT_DIR="$REPO_ROOT/purchases/src/main/kotlin"
 GEN_DIR="$OUT_DIR/com/revenuecat/purchases/flatbuffers/generated"
 EXPECTED_VERSION="$(grep -E '^flatbuffers = ' "$REPO_ROOT/gradle/libs.versions.toml" | sed -E 's/.*"([^"]+)".*/\1/')"

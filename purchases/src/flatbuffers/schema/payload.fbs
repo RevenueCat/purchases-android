@@ -1,0 +1,18 @@
+// Mock schema for the FlatBuffers PoC. See ../README.md.
+// Regenerate Kotlin accessors with scripts/generate-flatbuffers.sh.
+namespace com.revenuecat.purchases.flatbuffers.generated;
+
+// FlatBuffers has no native map type. A "map of bytes -> bytes" is modeled as a vector of
+// key/value entries (the idiomatic FlatBuffers representation of a map). Note: byte-array
+// keys cannot use the `key`/binary-search lookup attribute, so this is a plain vector.
+table Blob {
+  key:[ubyte];
+  value:[ubyte];
+}
+
+table Payload {
+  config:[ubyte];
+  blobs:[Blob];
+}
+
+root_type Payload;
