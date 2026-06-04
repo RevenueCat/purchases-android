@@ -1,15 +1,21 @@
 ## RevenueCat SDK
-### 🐞 Bugfixes
-* Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
-### Galaxy Store
-#### ✨ New Features
-* [Galaxy Store]: Upgrade Samsung IAP SDK to version 6.5.2 + use Maven distribution (#3492) via Will Taylor (@fire-at-will)
+### ✨ New Features
+* Add presented offering context to custom paywall events (#3424) via Rick (@rickvdl)
+* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
 
 ## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Remove `workflow_trigger` interaction event (#3467) via Cesar de la Vega (@vegaro)
+### Paywalls_v2
+#### 🐞 Bugfixes
+* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* build(deps): bump fastlane from 2.234.0 to 2.235.0 (#3506) via dependabot[bot] (@dependabot[bot])
-* [Galaxy Store]: Remove @Experimental annotations from Galaxy Module (#3494) via Will Taylor (@fire-at-will)
-* Update baseline profiles (#3504) via RevenueCat Git Bot (@RCGitBot)
+* refactor: extract Offering.presentedOfferingContext() helper and apply across SDK (#3513) via Rick (@rickvdl)
+* Add JSON Logic string + array operators (#3485) via Antonio Pallares (@ajpallares)
+* Add ForbiddenPublicSealedClass detekt rule (#3503) via Toni Rico (@tonidero)
+* Update baseline profiles (#3519) via RevenueCat Git Bot (@RCGitBot)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `af7bb5c` to `ce6a7ef` (#3515) via dependabot[bot] (@dependabot[bot])
+* Add JSON Logic comparison operators (<, <=, >, >=) (#3484) via Antonio Pallares (@ajpallares)
+* Add JSON Logic arithmetic operators (+, -, *, /, %) (#3483) via Antonio Pallares (@ajpallares)
+* Add WorkflowEvent model and backend serialization (#3486) via Cesar de la Vega (@vegaro)
+* RulesEngine: add JSON Logic predicate evaluator (#3482) via Antonio Pallares (@ajpallares)
+* Add :rules-engine-internal skeleton module (#3478) via Antonio Pallares (@ajpallares)
