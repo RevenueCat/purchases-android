@@ -68,6 +68,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
@@ -395,9 +396,10 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     } else {
                         viewModel.invalidateCustomerInfoCache()
                         context.handleUrlDestination(url, action.openMethod)
+                        viewModel.notifyWebCheckoutOpened()
                         if (action.autoDismiss) {
                             Logger.d("Auto-dismissing paywall after launching web checkout.")
-                            viewModel.closePaywall()
+                            viewModel.closePaywall(PaywallResult.WebCheckoutOpened)
                         }
                     }
                 }

@@ -37,4 +37,11 @@ public sealed class PaywallResult : Parcelable {
     @Parcelize
     @Poko
     public class Restored(public val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
+
+    /**
+     * User tapped web checkout and left the app to complete payment externally.
+     * This is not a cancellation — the purchase flow may still succeed in the background.
+     */
+    @Parcelize
+    public object WebCheckoutOpened : PaywallResult(), Parcelable
 }

@@ -521,6 +521,7 @@ internal class MockViewModel(
     validationWarning: PaywallWarning? = null,
     private val allowsPurchases: Boolean = false,
     private val shouldErrorOnUnsupportedMethods: Boolean = true,
+    private val webCheckoutUrl: String? = null,
 ) : ViewModel(), PaywallViewModel {
     override val resourceProvider: ResourceProvider
         get() = MockResourceProvider()
@@ -608,8 +609,17 @@ internal class MockViewModel(
 
     var closePaywallCallCount = 0
         private set
+    var closePaywallResults = mutableListOf<PaywallResult?>()
+        private set
     override fun closePaywall(result: PaywallResult?) {
         closePaywallCallCount++
+        closePaywallResults.add(result)
+    }
+
+    var notifyWebCheckoutOpenedCallCount = 0
+        private set
+    override fun notifyWebCheckoutOpened() {
+        notifyWebCheckoutOpenedCallCount++
     }
 
     var getWebCheckoutUrlCallCount = 0
@@ -619,7 +629,7 @@ internal class MockViewModel(
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
         getWebCheckoutUrlCallCount++
         getWebCheckoutUrlParams.add(launchWebCheckout)
-        return null
+        return webCheckoutUrl
     }
 
     var invalidateCustomerInfoCacheCallCount = 0
