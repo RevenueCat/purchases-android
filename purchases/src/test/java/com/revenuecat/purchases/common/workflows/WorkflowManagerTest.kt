@@ -635,6 +635,24 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflowsList with forceRefresh fetches even when the in-memory cache is fresh`() {
+        val response = WorkflowsListResponse(workflows = emptyList())
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
+        } answers { successSlot.captured(response) }
+        // First call at t=0 populates a fresh cache.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Second call at t=1ms would normally be skipped as fresh, but forceRefresh overrides the TTL.
+        every { mockDateProvider.now } returns Date(1)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false, forceRefresh = true)
+
+        verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+    }
+
+    @Test
     fun `getWorkflowsList triggers getWorkflow for each prefetch=true entry only`() {
         val response = WorkflowsListResponse(
             workflows = listOf(
