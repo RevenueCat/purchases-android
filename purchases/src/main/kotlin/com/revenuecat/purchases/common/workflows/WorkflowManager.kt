@@ -43,9 +43,16 @@ internal class WorkflowManager(
     }
 
     /**
-     * Fetches and resolves a single workflow, serving a fresh in-memory cache hit when one exists
-     * and otherwise fetching from the backend.
+     * Fetches and resolves a single workflow using stale-while-revalidate, mirroring
+     * [com.revenuecat.purchases.common.offerings.OfferingsManager]'s offerings serving:
+     * a fresh cache hit is served directly; a stale-but-present hit is served immediately and the
+     * cache is refreshed in the background (no callbacks, failures logged); a miss fetches from the
+     * backend and delivers the outcome through [onSuccess]/[onError].
      *
+     * @param staleWhileRevalidate when true (the default, used by the on-demand render path), a
+     * stale-but-present cached workflow is served immediately with a background refresh. When false
+     * (the prefetch path), a stale workflow blocks on a full refetch instead — so prefetch keeps
+     * forcing a fresh fetch and persisting its envelope rather than serving a stale value.
      * @param persistEnvelopeOnResolve when true, also persists the raw detail envelope to disk after
      * a successful resolve, so it survives an app restart and can be re-resolved while the backend is
      * down (see [getWorkflowsList]'s recovery path). Only the prefetch path sets this: prefetched
@@ -63,21 +70,48 @@ internal class WorkflowManager(
         onError: (PurchasesError) -> Unit,
         callbackDispatcher: Dispatcher? = null,
         persistEnvelopeOnResolve: Boolean = false,
+        staleWhileRevalidate: Boolean = true,
     ) {
         val cached = workflowsCache.cachedWorkflow(workflowId)
-        if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
-            onSuccess(cached)
-            return
+        when {
+            cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground) -> {
+                onSuccess(cached)
+            }
+            cached != null && staleWhileRevalidate -> {
+                // Serve the stale value immediately, then refresh the cache in the background.
+                // The caller already has a usable value, so the refresh delivers no callbacks: a
+                // success only updates the cache, and a failure is logged and swallowed. Mirrors
+                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. Concurrent stale callers can
+                // each fire a refresh; this is not deduplicated, matching the offerings stale path.
+                onSuccess(cached)
+                fetchAndCacheWorkflow(
+                    appUserID = appUserID,
+                    workflowId = workflowId,
+                    appInBackground = appInBackground,
+                    callbackDispatcher = callbackDispatcher,
+                    persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    onSuccess = {},
+                    onError = { error ->
+                        errorLog {
+                            "Background workflow refresh failed for $workflowId: " +
+                                error.underlyingErrorMessage
+                        }
+                    },
+                )
+            }
+            else -> {
+                // Miss, or stale with SWR disabled (the prefetch path): block on the fetch.
+                fetchAndCacheWorkflow(
+                    appUserID = appUserID,
+                    workflowId = workflowId,
+                    appInBackground = appInBackground,
+                    callbackDispatcher = callbackDispatcher,
+                    persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    onSuccess = onSuccess,
+                    onError = onError,
+                )
+            }
         }
-        fetchAndCacheWorkflow(
-            appUserID = appUserID,
-            workflowId = workflowId,
-            appInBackground = appInBackground,
-            callbackDispatcher = callbackDispatcher,
-            persistEnvelopeOnResolve = persistEnvelopeOnResolve,
-            onSuccess = onSuccess,
-            onError = onError,
-        )
     }
 
     @Suppress("LongParameterList")
