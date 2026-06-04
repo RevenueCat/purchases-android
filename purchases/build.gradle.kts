@@ -235,7 +235,6 @@ dependencies {
     implementation(libs.androidx.lifecycle.common)
     implementation(libs.androidx.lifecycle.process)
     implementation(libs.kotlinx.serialization.json)
-    implementation(libs.flatbuffers.java)
     implementation(libs.google.blockstore)
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
@@ -252,6 +251,11 @@ dependencies {
     dokkaPlugin(project(":dokka-hide-internal"))
 
     testImplementation(libs.coil.base)
+    // FlatBuffers PoC: the runtime is a TEST-ONLY dependency. The shipped SDK decodes with a
+    // vendored, package-private read-only runtime (purchases/src/main/java/.../flatbuffers/generated),
+    // so no com.google.flatbuffers ships in the AAR. The encoder fixture (the "backend side") uses
+    // the real runtime here. See purchases/src/flatbuffers/README.md.
+    testImplementation(libs.flatbuffers.java)
     testImplementation(libs.bundles.test)
     "testBc8Implementation"(libs.billing.bc8)
     "testBc7Implementation"(libs.billing.bc7)

@@ -4,8 +4,8 @@ package com.revenuecat.purchases.flatbuffers
 
 import android.util.Base64
 import com.google.flatbuffers.FlatBufferBuilder
-import com.revenuecat.purchases.flatbuffers.generated.Blob
-import com.revenuecat.purchases.flatbuffers.generated.Payload
+import com.revenuecat.purchases.flatbuffers.testgen.Blob
+import com.revenuecat.purchases.flatbuffers.testgen.Payload
 
 /**
  * Demonstrates the symmetric "backend side": how a producer would build the FlatBuffer with

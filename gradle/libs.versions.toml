@@ -38,8 +38,10 @@ emergeSnapshots = "1.5.0"
 espresso = "3.6.1"
 googleMobileAds = "23.6.0"
 fragment = "1.6.1"
-# FlatBuffers PoC: the runtime version MUST match the flatc compiler used to generate
-# the accessors under purchases/.../flatbuffers/generated. See purchases/src/flatbuffers/README.md.
+# FlatBuffers PoC: this version is shared by three things that MUST stay in lockstep: the flatc
+# compiler used to generate the accessors, the vendored read-only runtime committed under
+# purchases/src/main/java/.../flatbuffers/generated, and the test-only flatbuffers-java dependency
+# (the SDK ships no flatbuffers at runtime). See purchases/src/flatbuffers/README.md.
 flatbuffers = "25.2.10"
 googleBlockstore = "16.4.0"
 hamcrest = "1.3"
