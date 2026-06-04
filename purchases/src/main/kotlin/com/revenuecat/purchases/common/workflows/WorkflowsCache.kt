@@ -33,7 +33,6 @@ import kotlinx.serialization.builtins.serializer
  * [cachedWorkflowDetailEnvelopesFromDisk] restores the full map after a backend failure, and
  * [clearCache] wipes the envelope store on identity transitions (alongside the list disk cache).
  */
-// Coherent owner of all workflow cache state; splitting would obscure the single clearCache semantics
 @Suppress("TooManyFunctions")
 @OptIn(InternalRevenueCatAPI::class)
 internal class WorkflowsCache(
