@@ -282,6 +282,43 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `cacheWorkflowsList prunes persisted envelopes not in the new list`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_old":{"action":"use_cdn","url":"u1","hash":"h1"},"wf_keep":{"action":"use_cdn","url":"u2","hash":"h2"}}"""
+        val payloadSlot = slot<String>()
+        every { deviceCache.cacheWorkflowDetailEnvelopes(capture(payloadSlot)) } just Runs
+
+        workflowsCache.cacheWorkflowsList(
+            WorkflowsListResponse(
+                workflows = listOf(
+                    WorkflowSummary(id = "wf_keep", displayName = "Keep", offeringId = "default", prefetch = true),
+                ),
+            ),
+            mapOf("default" to "wf_keep"),
+        )
+
+        assertThat(payloadSlot.captured).contains("wf_keep")
+        assertThat(payloadSlot.captured).doesNotContain("wf_old")
+    }
+
+    @Test
+    fun `cacheWorkflowsList does not rewrite envelopes when nothing is pruned`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_keep":{"action":"use_cdn","url":"u","hash":"h"}}"""
+
+        workflowsCache.cacheWorkflowsList(
+            WorkflowsListResponse(
+                workflows = listOf(
+                    WorkflowSummary(id = "wf_keep", displayName = "Keep", offeringId = "default", prefetch = true),
+                ),
+            ),
+            mapOf("default" to "wf_keep"),
+        )
+
+        verify(exactly = 0) { deviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
+    @Test
     fun `different workflowIds are cached independently`() {
         val first = mockk<WorkflowDataResult>()
         val second = mockk<WorkflowDataResult>()

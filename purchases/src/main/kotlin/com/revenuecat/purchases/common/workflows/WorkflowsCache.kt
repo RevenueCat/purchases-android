@@ -97,6 +97,7 @@ internal class WorkflowsCache(
         deviceCache.cacheWorkflowsListResponse(
             JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
         )
+        pruneWorkflowDetailEnvelopesToList(response.workflows.map { it.id }.toSet())
     }
 
     /**
@@ -158,6 +159,22 @@ internal class WorkflowsCache(
                 .onFailure { errorLog(it) { "Failed to restore workflow detail envelopes from disk cache" } }
                 .getOrNull()
         }
+
+    /**
+     * Drops persisted envelopes whose workflowId is no longer in the latest list. This is the
+     * keyed-map equivalent of how [com.revenuecat.purchases.common.offerings.OfferingsCache] stays
+     * bounded by wholesale-replacing its single response blob: the persisted set always equals what
+     * the latest backend response says exists, so workflows the backend stopped sending don't
+     * linger on disk.
+     */
+    @Synchronized
+    private fun pruneWorkflowDetailEnvelopesToList(workflowIds: Set<String>) {
+        val current = cachedWorkflowDetailEnvelopesFromDisk() ?: return
+        val pruned = current.filterKeys { it in workflowIds }
+        if (pruned.size != current.size) {
+            persistWorkflowDetailEnvelopes(pruned)
+        }
+    }
 
     private fun persistWorkflowDetailEnvelopes(envelopes: Map<String, WorkflowDetailResponse>) {
         deviceCache.cacheWorkflowDetailEnvelopes(
