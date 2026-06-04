@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -15,7 +16,9 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -62,7 +65,7 @@ class EntitlementInfoHelperTest {
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
             mockDiagnosticsTracker,
-            mockDateProvider,
+            dateProvider = mockDateProvider,
             handler = mockHandler,
         )
     }
@@ -891,6 +894,90 @@ class EntitlementInfoHelperTest {
     // endregion Get Customer Info Diagnostics
 
     // endregion
+
+    // region UI Preview Mode
+
+    @Test
+    fun `createPreviewCustomerInfo returns empty CustomerInfo with preview user ID`() {
+        val info = CustomerInfoHelper.createPreviewCustomerInfo()
+
+        assertThat(info.entitlements.all).isEmpty()
+        assertThat(info.activeSubscriptions).isEmpty()
+        assertThat(info.allExpirationDatesByProduct).isEmpty()
+        assertThat(info.allPurchaseDatesByProduct).isEmpty()
+        assertThat(info.subscriptionsByProductIdentifier).isEmpty()
+        assertThat(info.nonSubscriptionTransactions).isEmpty()
+        assertThat(info.originalAppUserId).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+        assertThat(info.managementURL).isNull()
+        assertThat(info.originalPurchaseDate).isNull()
+        assertThat(info.entitlements.verification).isEqualTo(VerificationResult.NOT_REQUESTED)
+    }
+
+    @Test
+    fun `retrieveCustomerInfo returns mock immediately in preview mode`() {
+        val previewHelper = CustomerInfoHelper(
+            mockCache,
+            mockBackend,
+            mockOfflineEntitlementsManager,
+            mockCustomerInfoUpdateHandler,
+            mockPostPendingTransactionsHelper,
+            mockDiagnosticsTracker,
+            uiPreviewMode = true,
+            dateProvider = mockDateProvider,
+            handler = mockHandler,
+        )
+
+        val receivedInfo = slot<CustomerInfo>()
+        val callback = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        every { callback.onReceived(capture(receivedInfo)) } just runs
+
+        previewHelper.retrieveCustomerInfo(
+            appUserId,
+            CacheFetchPolicy.FETCH_CURRENT,
+            appInBackground,
+            allowSharingPlayStoreAccount,
+            callback = callback,
+        )
+
+        verify { callback.onReceived(any()) }
+        assertThat(receivedInfo.captured.originalAppUserId)
+            .isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+        assertThat(receivedInfo.captured.entitlements.all).isEmpty()
+
+        verify(exactly = 0) { mockBackend.getCustomerInfo(any(), any(), any(), any()) }
+        verify(exactly = 0) { mockCache.getCachedCustomerInfo(any()) }
+    }
+
+    @Test
+    fun `retrieveCustomerInfo does not track diagnostics in preview mode`() {
+        val previewHelper = CustomerInfoHelper(
+            mockCache,
+            mockBackend,
+            mockOfflineEntitlementsManager,
+            mockCustomerInfoUpdateHandler,
+            mockPostPendingTransactionsHelper,
+            mockDiagnosticsTracker,
+            uiPreviewMode = true,
+            dateProvider = mockDateProvider,
+            handler = mockHandler,
+        )
+
+        previewHelper.retrieveCustomerInfo(
+            appUserId,
+            CacheFetchPolicy.FETCH_CURRENT,
+            appInBackground,
+            allowSharingPlayStoreAccount,
+            trackDiagnostics = true,
+            callback = mockk(relaxed = true),
+        )
+
+        verify(exactly = 0) { mockDiagnosticsTracker.trackGetCustomerInfoStarted() }
+        verify(exactly = 0) {
+            mockDiagnosticsTracker.trackGetCustomerInfoResult(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    // endregion UI Preview Mode
 
     private fun setupBackendMock(
         errorGettingCustomerInfo: PurchasesError? = null,

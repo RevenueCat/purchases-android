@@ -5,8 +5,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Purchases
+import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
@@ -47,7 +49,6 @@ class ProxySettingsBottomSheetViewModel(
         performRequest(statusURL)
     }
 
-    @Suppress("TooGenericExceptionCaught")
     private fun performRequest(url: URL) {
         executor.execute {
             try {
@@ -57,14 +58,23 @@ class ProxySettingsBottomSheetViewModel(
                 val inputStream = httpURLConnection.inputStream
                 val responseCode = httpURLConnection.responseCode
                 if (responseCode != OK_CODE) {
-                    error("Invalid response code while executing request to $url: $responseCode")
+                    updateState(
+                        ProxySettingsState.Error(
+                            "Invalid response code while executing request to $url: $responseCode",
+                        ),
+                    )
+                    return@execute
                 }
                 val responseBody = BufferedReader(InputStreamReader(inputStream)).readText()
                 Log.w("PurchaseTester", "Received response from proxy: $responseBody")
                 val jsonResponse = JSONObject(responseBody)
                 val mode = ProxyMode.fromString(jsonResponse.getString("mode"))
                 updateState(ProxySettingsState.CurrentMode(mode))
-            } catch (e: Exception) {
+            } catch (e: IOException) {
+                updateState(ProxySettingsState.Error(e.message ?: "Unknown error"))
+            } catch (e: JSONException) {
+                updateState(ProxySettingsState.Error(e.message ?: "Unknown error"))
+            } catch (e: IllegalArgumentException) {
                 updateState(ProxySettingsState.Error(e.message ?: "Unknown error"))
             }
         }

@@ -1,12 +1,10 @@
 {
   "statusCode": 502,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
     "Content-Length": "960",
     "Content-Type": "text\/html",
-    "Server": "CloudFront",
-    "X-Cache": "Error from cloudfront"
+    "Server": "CloudFront"
   },
   "body": null
 }

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StickyFooterComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
 @Composable
 internal fun StickyFooterComponentView(
@@ -15,6 +16,13 @@ internal fun StickyFooterComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    StackComponentView(style.stackComponentStyle, state, clickHandler, modifier)
+    StackComponentView(
+        style = style.stackComponentStyle,
+        state = state,
+        clickHandler = clickHandler,
+        modifier = modifier,
+        componentInteractionTracker = componentInteractionTracker,
+    )
 }

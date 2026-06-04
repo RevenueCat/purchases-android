@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
@@ -69,6 +70,12 @@ internal sealed class BackendEvent : Event {
      * @property displayMode The display mode of the Paywall.
      * @property darkMode Whether the app was in dark mode at the time of the event.
      * @property localeIdentifier The locale identifier of the device.
+     * @property exitOfferType The type of exit offer shown. Only for exit offer events.
+     * @property exitOfferingID The offering ID of the exit offer shown. Only for exit offer events.
+     * @property packageID The package ID of the purchase attempted. Only for purchase attempt events.
+     * @property productID The product ID of the purchase attempted. Only for purchase attempt events.
+     * @property errorCode The error code if an error occurred. Only for purchase attempt error events.
+     * @property errorMessage The error message if an error occurred. Only for purchase attempt error events.
      */
     @Serializable
     @SerialName("paywalls")
@@ -82,6 +89,8 @@ internal sealed class BackendEvent : Event {
         val sessionID: String,
         @SerialName("offering_id")
         val offeringID: String,
+        @SerialName("paywall_id")
+        val paywallID: String?,
         @SerialName("paywall_revision")
         val paywallRevision: Int,
         val timestamp: Long,
@@ -91,7 +100,194 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: PresentedOfferingContextData? = null,
+        @SerialName("exit_offer_type")
+        val exitOfferType: String? = null,
+        @SerialName("exit_offering_id")
+        val exitOfferingID: String? = null,
+        @SerialName("package_id")
+        val packageID: String? = null,
+        @SerialName("product_id")
+        val productID: String? = null,
+        @SerialName("error_code")
+        val errorCode: Int? = null,
+        @SerialName("error_message")
+        val errorMessage: String? = null,
+        @SerialName("component_type")
+        val componentType: String? = null,
+        @SerialName("component_name")
+        val componentName: String? = null,
+        @SerialName("component_value")
+        val componentValue: String? = null,
+        @SerialName("component_url")
+        val componentUrl: String? = null,
+        @SerialName("origin_index")
+        val originIndex: Int? = null,
+        @SerialName("destination_index")
+        val destinationIndex: Int? = null,
+        @SerialName("origin_context_name")
+        val originContextName: String? = null,
+        @SerialName("destination_context_name")
+        val destinationContextName: String? = null,
+        @SerialName("default_index")
+        val defaultIndex: Int? = null,
+        @SerialName("origin_package_id")
+        val originPackageIdentifier: String? = null,
+        @SerialName("destination_package_id")
+        val destinationPackageIdentifier: String? = null,
+        @SerialName("default_package_id")
+        val defaultPackageIdentifier: String? = null,
+        @SerialName("origin_product_id")
+        val originProductIdentifier: String? = null,
+        @SerialName("destination_product_id")
+        val destinationProductIdentifier: String? = null,
+        @SerialName("default_product_id")
+        val defaultProductIdentifier: String? = null,
+        @SerialName("current_package_id")
+        val currentPackageIdentifier: String? = null,
+        @SerialName("resulting_package_id")
+        val resultingPackageIdentifier: String? = null,
+        @SerialName("current_product_id")
+        val currentProductIdentifier: String? = null,
+        @SerialName("resulting_product_id")
+        val resultingProductIdentifier: String? = null,
     ) : BackendEvent()
+
+    @Serializable
+    data class PresentedOfferingContextData(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    ) {
+        companion object {
+            fun fromContext(
+                context: PresentedOfferingContext,
+            ): PresentedOfferingContextData? {
+                if (context.placementIdentifier == null && context.targetingContext == null) {
+                    return null
+                }
+                return PresentedOfferingContextData(
+                    placementIdentifier = context.placementIdentifier,
+                    targetingRevision = context.targetingContext?.revision,
+                    targetingRuleId = context.targetingContext?.ruleId,
+                )
+            }
+        }
+    }
+
+    /**
+     * Represents an event related to a custom paywall.
+     *
+     * @property id Unique identifier for the event.
+     * @property version Version number of the event schema.
+     * @property type Type of the event.
+     * @property appUserID The app user identifier associated with this event.
+     * @property appSessionID The session ID of the app session when this event occurred.
+     * @property timestamp Unix timestamp representing when the event occurred.
+     * @property paywallID The identifier of the custom paywall.
+     * @property offeringID The offering ID related to this custom paywall event.
+     * @property presentedOfferingContext The placement and targeting context for the offering, if any.
+     */
+    @Serializable
+    @SerialName("custom_paywall_event")
+    data class CustomPaywall(
+        val id: String,
+        val version: Int,
+        val type: String,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String? = null,
+        val timestamp: Long,
+        @SerialName("paywall_id")
+        val paywallID: String? = null,
+        @SerialName("offering_id")
+        val offeringID: String? = null,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: CustomPaywallPresentedOfferingContextData? = null,
+    ) : BackendEvent()
+
+    /**
+     * Wire shape for workflow lifecycle events. Matches khepri's WorkflowsEvent schema.
+     */
+    @Serializable
+    @SerialName("workflows")
+    data class Workflows(
+        val id: String,
+        val version: Int,
+        val type: String,
+        @SerialName("event_name")
+        val eventName: String,
+        @SerialName("timestamp_ms")
+        val timestampMs: Long,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        val context: Context = Context(),
+        val properties: Properties,
+    ) : BackendEvent() {
+
+        @Serializable
+        data class Context(
+            val locale: String? = null,
+        )
+
+        @Serializable
+        data class Properties(
+            @SerialName("workflow_id")
+            val workflowId: String,
+            @SerialName("step_id")
+            val stepId: String,
+            @SerialName("trace_id")
+            val traceId: String? = null,
+            @SerialName("from_step_id")
+            val fromStepId: String? = null,
+            @SerialName("to_step_id")
+            val toStepId: String? = null,
+            @SerialName("entry_reason")
+            val entryReason: String? = null,
+            @SerialName("is_first_step")
+            val isFirstStep: Boolean? = null,
+            @SerialName("is_last_step")
+            val isLastStep: Boolean? = null,
+            @SerialName("experiment_id")
+            val experimentId: String? = null,
+            @SerialName("experiment_variant")
+            val experimentVariant: String? = null,
+            @SerialName("is_last_variant_step")
+            val isLastVariantStep: Boolean? = null,
+        )
+    }
+
+    @Serializable
+    data class CustomPaywallPresentedOfferingContextData(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    ) {
+        companion object {
+            fun from(
+                placementIdentifier: String?,
+                targetingRevision: Int?,
+                targetingRuleId: String?,
+            ): CustomPaywallPresentedOfferingContextData? {
+                if (placementIdentifier == null && targetingRevision == null && targetingRuleId == null) {
+                    return null
+                }
+                return CustomPaywallPresentedOfferingContextData(
+                    placementIdentifier = placementIdentifier,
+                    targetingRevision = targetingRevision,
+                    targetingRuleId = targetingRuleId,
+                )
+            }
+        }
+    }
 
     @Serializable
     @SerialName("ad")
@@ -102,9 +298,11 @@ internal sealed class BackendEvent : Event {
         @SerialName("timestamp_ms")
         val timestamp: Long,
         @SerialName("network_name")
-        val networkName: String,
+        val networkName: String? = null,
         @SerialName("mediator_name")
         val mediatorName: String,
+        @SerialName("ad_format")
+        val adFormat: String? = null,
         val placement: String?,
         @SerialName("ad_unit_id")
         val adUnitId: String,
@@ -144,5 +342,20 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the ad event schema.
          */
         const val AD_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the custom paywall event schema.
+         */
+        const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the workflow event schema.
+         */
+        const val WORKFLOW_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the type identifier for workflow events.
+         */
+        const val WORKFLOW_EVENT_TYPE = "workflows"
     }
 }

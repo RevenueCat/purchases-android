@@ -103,4 +103,22 @@ class SimulatedStoreErrorDialogActivityTest {
         )
     }
 
+    @Test
+    fun `activity finishes gracefully when not launched through SDK`() {
+        // Arrange - launch without the redactedApiKey extra (simulating Google automated testing)
+        val intent = Intent(ApplicationProvider.getApplicationContext<Context>(), SimulatedStoreErrorDialogActivity::class.java)
+
+        // Act & Assert - should not throw, activity should call finish()
+        launchActivity<SimulatedStoreErrorDialogActivity>(intent).use { scenario ->
+            scenario.moveToState(Lifecycle.State.RESUMED)
+            // Moving to STARTED triggers onPause(), which calls crashApp()
+            // Without SDK extras, crashApp() should call finish() instead of throwing
+            scenario.moveToState(Lifecycle.State.STARTED)
+            // If we get here without an exception, the activity finished gracefully
+            scenario.onActivity { activity ->
+                assertThat(activity.isFinishing).isTrue()
+            }
+        }
+    }
+
 }

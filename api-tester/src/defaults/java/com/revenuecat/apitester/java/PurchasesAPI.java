@@ -10,7 +10,9 @@ import com.revenuecat.purchases.AmazonLWAConsentStatus;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
@@ -20,6 +22,9 @@ import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.customercenter.CustomerCenterListener;
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption;
+import com.revenuecat.purchases.customercenter.Resumable;
+import com.revenuecat.purchases.models.StoreTransaction;
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
@@ -29,18 +34,24 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies;
 
+import androidx.annotation.OptIn;
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
+
 import org.jetbrains.annotations.NotNull;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings({"unused", "deprecation"})
 final class PurchasesAPI {
+    @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void check(
             final Purchases purchases,
             final WebPurchaseRedemption webPurchaseRedemption,
             final RedeemWebPurchaseListener redeemWebPurchaseListener,
-            final Intent intent
+            final Intent intent,
+            final Offering offering
             ) {
         final ReceiveCustomerInfoCallback receiveCustomerInfoListener = new ReceiveCustomerInfoCallback() {
             @Override
@@ -129,6 +140,28 @@ final class PurchasesAPI {
         purchases.getVirtualCurrencies(getVirtualCurrenciesCallback);
         purchases.invalidateVirtualCurrenciesCache();
         VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
+
+        // trackCustomPaywallImpression API
+        CustomPaywallImpressionParams paramsWithOfferingObject =
+                new CustomPaywallImpressionParams("my-paywall", offering);
+        PresentedOfferingContext presentedOfferingContext = paramsWithOfferingObject.getPresentedOfferingContext();
+        purchases.trackCustomPaywallImpression();
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams());
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall"));
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall", "my-offering"));
+        purchases.trackCustomPaywallImpression(paramsWithOfferingObject);
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams(offering));
+    }
+
+    static void checkSyncAmazonPurchase(final Purchases purchases,
+                                        final String productId,
+                                        final String receiptId,
+                                        final String amazonUserId,
+                                        final String isoCurrencyCode,
+                                        final Double price,
+                                        final Long purchaseTime) {
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price, purchaseTime);
+        purchases.syncAmazonPurchase(productId, receiptId, amazonUserId, isoCurrencyCode, price);
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {
@@ -150,12 +183,41 @@ final class PurchasesAPI {
         purchases.setCleverTapID("");
         purchases.setKochavaDeviceID("");
         purchases.setAirbridgeDeviceID("");
+        purchases.setSolarEngineDistinctId("");
+        purchases.setSolarEngineAccountId("");
+        purchases.setSolarEngineVisitorId("");
         purchases.setTenjinAnalyticsInstallationID("");
         purchases.setPostHogUserId("");
         purchases.setAdGroup("");
         purchases.setAd("");
         purchases.setKeyword("");
         purchases.setCreative("");
+    }
+
+    static void checkSetAppsFlyerAttributionData(final Purchases purchases) {
+        Map<String, Object> mapStringAny = new HashMap<>();
+        purchases.setAppsFlyerConversionData(mapStringAny);
+
+        purchases.setAppsFlyerConversionData(null);
+
+        Map<String, String> mapStringString = new HashMap<>();
+        purchases.setAppsFlyerConversionData(mapStringString);
+
+        Map<String, Integer> mapStringInt = new HashMap<>();
+        purchases.setAppsFlyerConversionData(mapStringInt);
+    }
+
+    static void checkSetAppstackAttributionParams(final Purchases purchases) {
+        final SyncAttributesAndOfferingsCallback callback = new SyncAttributesAndOfferingsCallback() {
+            @Override
+            public void onSuccess(@NonNull Offerings offerings) {}
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {}
+        };
+
+        Map<String, String> mapStringString = new HashMap<>();
+        purchases.setAppstackAttributionParams(mapStringString, callback);
     }
 
     static void checkConfiguration(final Context context,
@@ -186,6 +248,10 @@ final class PurchasesAPI {
     static void checkCustomerCenter() {
         CustomerCenterListener customerInfoListener = new CustomerCenterListener() {
             @Override
+            public void onRestoreInitiated(@NonNull Resumable resume) {
+            }
+
+            @Override
             public void onRestoreStarted() {
             }
         };
@@ -207,6 +273,10 @@ final class PurchasesAPI {
             }
 
             @Override
+            public void onRestoreInitiated(@NonNull Resumable resume) {
+            }
+
+            @Override
             public void onRestoreStarted() {
             }
             @Override
@@ -219,6 +289,13 @@ final class PurchasesAPI {
                     CustomerCenterManagementOption.CustomUrl customUrl = (CustomerCenterManagementOption.CustomUrl) action;
                     Uri uri = customUrl.getUri();
                 }
+            }
+
+            @Override
+            public void onPromotionalOfferSucceeded(
+                    @NonNull CustomerInfo customerInfo,
+                    @NonNull StoreTransaction transaction
+            ) {
             }
         };
         Purchases.getSharedInstance().setCustomerCenterListener(new CustomerCenterListener() {});

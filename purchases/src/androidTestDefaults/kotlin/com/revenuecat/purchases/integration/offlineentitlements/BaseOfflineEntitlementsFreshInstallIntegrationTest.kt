@@ -1,0 +1,71 @@
+package com.revenuecat.purchases.integration.offlineentitlements
+
+import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.helpers.mockQueryProductDetails
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
+import org.junit.Before
+import org.junit.Test
+
+abstract class BaseOfflineEntitlementsFreshInstallNoPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
+
+    override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
+
+    @Before
+    fun setUp() {
+        ensureBlockFinishes { latch ->
+            setUpTest {
+                latch.countDown()
+            }
+        }
+    }
+
+    @Test
+    fun doesNotEnterOfflineEntitlementsModeIfNoProductEntitlementMappingAvailable() {
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = {
+                    assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+                    latch.countDown()
+                },
+                onSuccess = {
+                    fail("Expected error")
+                },
+            )
+        }
+    }
+}
+
+abstract class BaseOfflineEntitlementsFreshInstallInitialPurchasesTest : BaseOfflineEntitlementsIntegrationTest() {
+
+    override val initialActivePurchasesToUse get() = initialActivePurchases
+    override var forceServerErrorsStrategy: ForceServerErrorStrategy? = ForceServerErrorStrategy.failAll
+
+    @Before
+    fun setUp() {
+        ensureBlockFinishes { latch ->
+            setUpTest {
+                mockBillingAbstract.mockQueryProductDetails()
+                latch.countDown()
+            }
+        }
+    }
+
+    @Test
+    fun doesNotEnterOfflineEntitlementsModeIfNoProductEntitlementMappingAvailable() {
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = {
+                    assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+                    latch.countDown()
+                },
+                onSuccess = {
+                    fail("Expected error")
+                },
+            )
+        }
+    }
+}

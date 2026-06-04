@@ -27,6 +27,23 @@ internal sealed class Endpoint(
             }
         }
     }
+
+    data class GetWorkflow(val userId: String, val workflowId: String) : Endpoint(
+        "/v1/subscribers/%s/workflows/%s",
+        "get_workflow",
+    ) {
+        override fun getPath(useFallback: Boolean) =
+            pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
+    }
+    data class GetWorkflows(val userId: String, val type: String? = null) : Endpoint(
+        "/v1/subscribers/%s/workflows",
+        "get_workflows",
+    ) {
+        override fun getPath(useFallback: Boolean): String {
+            val base = pathTemplate.format(Uri.encode(userId))
+            return if (type != null) "$base?type=${Uri.encode(type)}" else base
+        }
+    }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
@@ -39,7 +56,9 @@ internal sealed class Endpoint(
     object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
-    data class PostAttributes(val userId: String) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
+    data class PostAttributes(
+        val userId: String,
+    ) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
     data class GetAmazonReceipt(
@@ -66,6 +85,15 @@ internal sealed class Endpoint(
         "get_customer_center_config",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+    }
+
+    // WIP: Change to final endpoint
+    // WIP: Verify if this will have a different fallback path.
+    object GetRemoteConfig : Endpoint(
+        pathTemplate = "/v2/config",
+        name = "get_remote_config",
+    ) {
+        override fun getPath(useFallback: Boolean) = pathTemplate
     }
     object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",
@@ -100,6 +128,8 @@ internal sealed class Endpoint(
             LogIn,
             PostReceipt,
             is GetOfferings,
+            is GetWorkflow,
+            is GetWorkflows,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
@@ -113,6 +143,8 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
+            GetRemoteConfig,
             ->
                 false
         }
@@ -128,6 +160,8 @@ internal sealed class Endpoint(
                 true
             is GetAmazonReceipt,
             is GetOfferings,
+            is GetWorkflow,
+            is GetWorkflows,
             is PostAttributes,
             PostDiagnostics,
             PostEvents,
@@ -136,6 +170,8 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
+            GetRemoteConfig,
             ->
                 false
         }

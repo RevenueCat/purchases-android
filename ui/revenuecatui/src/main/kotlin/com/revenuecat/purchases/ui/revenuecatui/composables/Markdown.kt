@@ -203,15 +203,20 @@ private fun MDHeading(
         val text = buildAnnotatedString {
             appendMarkdownChildren(heading, color, allowLinks, baseFontWeight = fontWeight)
         }
+        val resolvedTextStyle = resolveMarkdownTextStyle(
+            style = overriddenStyle,
+            overrides = TextStyle(
+                color = color,
+                fontSize = TextUnit.Unspecified,
+                fontWeight = fontWeight,
+                fontFamily = fontFamily,
+                textAlign = textAlign ?: TextAlign.Unspecified,
+            ),
+        )
         MarkdownText(
-            text,
-            color,
-            overriddenStyle,
-            TextUnit.Unspecified,
-            fontWeight,
-            fontFamily,
-            textAlign,
-            textFillMaxWidth,
+            text = text,
+            style = resolvedTextStyle,
+            textFillMaxWidth = textFillMaxWidth,
         )
     }
 }
@@ -231,29 +236,25 @@ private fun MDParagraph(
     applyFontSizeToParagraph: Boolean,
 ) {
     Box {
+        val resolvedTextStyle = resolveMarkdownTextStyle(
+            style = style,
+            overrides = TextStyle(
+                color = color,
+                fontSize = if (applyFontSizeToParagraph) fontSize else TextUnit.Unspecified,
+                fontWeight = fontWeight,
+                fontFamily = fontFamily,
+                textAlign = textAlign ?: TextAlign.Unspecified,
+            ),
+        )
         val styledText = buildAnnotatedString {
-            pushStyle(
-                style
-                    .copy(
-                        color = color,
-                        fontWeight = fontWeight,
-                        fontSize = if (applyFontSizeToParagraph) fontSize else style.fontSize,
-                        fontFamily = fontFamily,
-                    )
-                    .toSpanStyle(),
-            )
+            pushStyle(resolvedTextStyle.toSpanStyle())
             appendMarkdownChildren(paragraph as Node, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
         MarkdownText(
-            styledText,
-            color,
-            style,
-            fontSize,
-            fontWeight,
-            fontFamily,
-            textAlign,
-            textFillMaxWidth,
+            text = styledText,
+            style = resolvedTextStyle,
+            textFillMaxWidth = textFillMaxWidth,
         )
     }
 }
@@ -272,6 +273,16 @@ private fun MDBulletList(
     textFillMaxWidth: Boolean,
 ) {
     val marker = bulletList.bulletMarker
+    val resolvedTextStyle = resolveMarkdownTextStyle(
+        style = style,
+        overrides = TextStyle(
+            color = color,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            fontFamily = fontFamily,
+            textAlign = textAlign ?: TextAlign.Unspecified,
+        ),
+    )
     MDListItems(
         bulletList,
         color = color,
@@ -284,20 +295,15 @@ private fun MDBulletList(
         textFillMaxWidth = textFillMaxWidth,
     ) {
         val text = buildAnnotatedString {
-            pushStyle(MaterialTheme.typography.bodyLarge.toSpanStyle())
+            pushStyle(resolvedTextStyle.toSpanStyle())
             append("$marker ")
             appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
         MarkdownText(
-            text,
-            color,
-            style,
-            fontSize,
-            fontWeight,
-            fontFamily,
-            textAlign,
-            textFillMaxWidth,
+            text = text,
+            style = resolvedTextStyle,
+            textFillMaxWidth = textFillMaxWidth,
         )
     }
 }
@@ -317,6 +323,16 @@ private fun MDOrderedList(
 ) {
     var number = orderedList.startNumber
     val delimiter = orderedList.delimiter
+    val resolvedTextStyle = resolveMarkdownTextStyle(
+        style = style,
+        overrides = TextStyle(
+            color = color,
+            fontSize = fontSize,
+            fontWeight = fontWeight,
+            fontFamily = fontFamily,
+            textAlign = textAlign ?: TextAlign.Unspecified,
+        ),
+    )
     MDListItems(
         orderedList,
         color = color,
@@ -329,20 +345,15 @@ private fun MDOrderedList(
         textFillMaxWidth = textFillMaxWidth,
     ) {
         val text = buildAnnotatedString {
-            pushStyle(style.toSpanStyle())
+            pushStyle(resolvedTextStyle.toSpanStyle())
             append("${number++}$delimiter ")
             appendMarkdownChildren(it, color, allowLinks, baseFontWeight = fontWeight)
             pop()
         }
         MarkdownText(
-            text,
-            color,
-            style,
-            fontSize,
-            fontWeight,
-            fontFamily,
-            textAlign,
-            textFillMaxWidth,
+            text = text,
+            style = resolvedTextStyle,
+            textFillMaxWidth = textFillMaxWidth,
         )
     }
 }
@@ -636,23 +647,13 @@ internal fun AnnotatedString.Builder.appendTextWithUnderlines(
 @Composable
 private fun MarkdownText(
     text: AnnotatedString,
-    color: Color,
     style: TextStyle,
-    fontSize: TextUnit,
-    fontWeight: FontWeight?,
-    fontFamily: FontFamily?,
-    textAlign: TextAlign?,
     textFillMaxWidth: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Text(
         text = text,
-        color = color,
         style = style,
-        fontSize = fontSize,
-        fontWeight = fontWeight,
-        fontFamily = fontFamily,
-        textAlign = textAlign,
         modifier = modifier
             .conditional(textFillMaxWidth) {
                 fillMaxWidth()
@@ -670,4 +671,11 @@ private fun PreviewText() {
             modifier = Modifier.padding(20.dp),
         )
     }
+}
+
+private fun resolveMarkdownTextStyle(
+    style: TextStyle,
+    overrides: TextStyle,
+): TextStyle {
+    return style.merge(overrides)
 }

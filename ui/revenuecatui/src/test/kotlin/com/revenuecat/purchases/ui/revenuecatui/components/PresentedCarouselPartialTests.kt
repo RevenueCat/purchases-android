@@ -306,16 +306,18 @@ internal class PresentedCarouselPartialTests {
         }
     }
 
-    @Suppress("MaxLineLength")
     @Test
-    fun `Should create successfully if the PartialCarouselComponent has no ColorAlias, alias map is empty`() {
+    fun `Should create successfully without color aliases when alias map is empty`() {
         // Arrange, Act
         val actualResult = PresentedCarouselPartial(
             from = PartialCarouselComponent(
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))),
                 border = Border(color = ColorScheme(light = ColorInfo.Hex(Color.Cyan.toArgb())), width = 2.0),
                 shadow = Shadow(
-                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())), radius = 2.0, x = 2.0, y = 2.0
+                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                    radius = 2.0,
+                    x = 2.0,
+                    y = 2.0
                 ),
                 pageControl = CarouselComponent.PageControl(
                     position = CarouselComponent.PageControl.Position.TOP,

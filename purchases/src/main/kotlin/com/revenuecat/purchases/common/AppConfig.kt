@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 @Suppress("LongParameterList")
 internal class AppConfig(
     context: Context,
-    purchasesAreCompletedBy: PurchasesAreCompletedBy,
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy,
     val showInAppMessagesAutomatically: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
@@ -60,6 +60,10 @@ internal class AppConfig(
     }
     val customEntitlementComputation: Boolean
         get() = dangerousSettings.customEntitlementComputation
+    val uiPreviewMode: Boolean
+        get() = dangerousSettings.uiPreviewMode
+    val applyObfuscatedAccountIdToSubscriptionChanges: Boolean
+        get() = dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges
 
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName

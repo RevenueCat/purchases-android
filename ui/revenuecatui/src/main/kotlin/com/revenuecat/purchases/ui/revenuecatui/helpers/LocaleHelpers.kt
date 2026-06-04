@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import android.content.res.Configuration
+import android.view.View
+import androidx.compose.ui.unit.LayoutDirection
 import java.util.Locale
 
 /**
@@ -22,5 +25,18 @@ internal fun createLocaleFromString(localeString: String): Locale {
         }
     } else {
         Locale(localeString)
+    }
+}
+
+/**
+ * Returns the Compose [LayoutDirection] matching this locale's character direction.
+ */
+internal fun Locale.toLayoutDirection(): LayoutDirection {
+    val configuration = Configuration().apply { setLocale(this@toLayoutDirection) }
+
+    return if (configuration.layoutDirection == View.LAYOUT_DIRECTION_RTL) {
+        LayoutDirection.Rtl
+    } else {
+        LayoutDirection.Ltr
     }
 }

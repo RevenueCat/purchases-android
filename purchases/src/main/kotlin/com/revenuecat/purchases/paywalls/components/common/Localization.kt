@@ -24,30 +24,30 @@ import kotlinx.serialization.encoding.Encoder
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class LocaleId(@get:JvmSynthetic val value: String)
+public value class LocaleId(@get:JvmSynthetic public val value: String)
 
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class LocalizationKey(@get:JvmSynthetic val value: String)
+public value class LocalizationKey(@get:JvmSynthetic public val value: String)
 
 /**
  * A make-shift union type. LocalizationData is either a plain String or a ThemeImageUrls object.
  */
 @InternalRevenueCatAPI
 @Serializable(with = LocalizationDataSerializer::class)
-sealed interface LocalizationData {
+public sealed interface LocalizationData {
     @Serializable
     @JvmInline
-    value class Text(@get:JvmSynthetic val value: String) : LocalizationData
+    public value class Text(@get:JvmSynthetic public val value: String) : LocalizationData
 
     @Serializable
     @JvmInline
-    value class Image(@get:JvmSynthetic val value: ThemeImageUrls) : LocalizationData
+    public value class Image(@get:JvmSynthetic public val value: ThemeImageUrls) : LocalizationData
 
     @Serializable
     @JvmInline
-    value class Video(@get:JvmSynthetic val value: ThemeVideoUrls) : LocalizationData
+    public value class Video(@get:JvmSynthetic public val value: ThemeVideoUrls) : LocalizationData
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -128,7 +128,7 @@ internal object VariableLocalizationKeyMapSerializer : KSerializer<Map<VariableL
  */
 @InternalRevenueCatAPI
 @Serializable
-enum class VariableLocalizationKey {
+public enum class VariableLocalizationKey {
     @SerialName("day")
     DAY,
 

@@ -7,25 +7,27 @@ import com.revenuecat.purchases.PurchasesConfigurationForCustomEntitlementsCompu
  * Holds parameters to initialize the SDK in Custom Entitlements Computation mode. Create an instance of this class
  * using the [Builder] and pass it to [Purchases.configureInCustomEntitlementsComputationMode].
  */
-class PurchasesConfigurationForCustomEntitlementsComputationMode internal constructor(
+public class PurchasesConfigurationForCustomEntitlementsComputationMode internal constructor(
     internal val context: Context,
     internal val apiKey: String,
     internal val appUserID: String,
     internal val showInAppMessagesAutomatically: Boolean,
     internal val pendingTransactionsForPrepaidPlansEnabled: Boolean,
+    internal val applyObfuscatedAccountIdToSubscriptionChanges: Boolean,
 ) {
     /**
      * @param context: the Application context object of your Application.
      * @param apiKey: the API Key for your app. Obtained from the RevenueCat dashboard.
      * @param appUserID: a unique id for identifying the user.
      */
-    class Builder(
+    public class Builder(
         private val context: Context,
         private val apiKey: String,
         private val appUserID: String,
     ) {
         private var showInAppMessagesAutomatically: Boolean = true
         private var pendingTransactionsForPrepaidPlansEnabled: Boolean = true
+        private var applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false
 
         /**
          * Enable this setting to show in-app messages from Google Play automatically. Default is enabled.
@@ -33,7 +35,7 @@ class PurchasesConfigurationForCustomEntitlementsComputationMode internal constr
          *
          * If this setting is disabled, you can show the snackbar by calling [Purchases.showInAppMessagesIfNeeded].
          */
-        fun showInAppMessagesAutomatically(enabled: Boolean): Builder {
+        public fun showInAppMessagesAutomatically(enabled: Boolean): Builder {
             showInAppMessagesAutomatically = enabled
             return this
         }
@@ -42,8 +44,22 @@ class PurchasesConfigurationForCustomEntitlementsComputationMode internal constr
          * Enable this setting if you want to allow pending purchases for prepaid subscriptions (only supported in
          * Google Play). Note that entitlements are not granted until payment is done. Default is enabled.
          */
-        fun pendingTransactionsForPrepaidPlansEnabled(enabled: Boolean): Builder {
+        public fun pendingTransactionsForPrepaidPlansEnabled(enabled: Boolean): Builder {
             pendingTransactionsForPrepaidPlansEnabled = enabled
+            return this
+        }
+
+        /**
+         * Enable this setting to set the Google Play `obfuscatedAccountId` when performing subscription product
+         * changes (upgrades or downgrades). Default is disabled.
+         *
+         * @warning Enabling this setting can make a product change fail if a previous transaction in the subscription
+         * had a different `obfuscatedAccountId`.
+         *
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        public fun applyObfuscatedAccountIdToSubscriptionChanges(enabled: Boolean): Builder {
+            applyObfuscatedAccountIdToSubscriptionChanges = enabled
             return this
         }
 
@@ -51,12 +67,14 @@ class PurchasesConfigurationForCustomEntitlementsComputationMode internal constr
          * Creates a [PurchasesConfigurationForCustomEntitlementsComputationMode] instance with the specified
          * properties.
          */
-        fun build() = PurchasesConfigurationForCustomEntitlementsComputationMode(
-            context = context,
-            apiKey = apiKey,
-            appUserID = appUserID,
-            showInAppMessagesAutomatically = showInAppMessagesAutomatically,
-            pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled,
-        )
+        public fun build(): PurchasesConfigurationForCustomEntitlementsComputationMode =
+            PurchasesConfigurationForCustomEntitlementsComputationMode(
+                context = context,
+                apiKey = apiKey,
+                appUserID = appUserID,
+                showInAppMessagesAutomatically = showInAppMessagesAutomatically,
+                pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled,
+                applyObfuscatedAccountIdToSubscriptionChanges = applyObfuscatedAccountIdToSubscriptionChanges,
+            )
     }
 }

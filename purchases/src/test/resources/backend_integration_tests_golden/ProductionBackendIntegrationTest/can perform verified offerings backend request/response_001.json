@@ -1,11 +1,9 @@
 {
   "statusCode": 200,
   "headers": {
-    "Alt-Svc": "h3=\":443\"; ma=86400",
     "Connection": "keep-alive",
-    "Content-Length": "23277",
+    "Content-Length": "23415",
     "Content-Type": "application\/json",
-    "X-Cache": "Miss from cloudfront",
     "access-control-allow-origin": "*",
     "access-control-expose-headers": "X-Request-Id",
     "server": "envoy"
@@ -28,6 +26,7 @@
         ],
         "paywall_components": {
           "asset_base_url": "https:\/\/assets.pawwalls.com",
+          "automatically_scale_font_size": true,
           "components_config": {
             "base": {
               "background": {
@@ -2084,6 +2083,9 @@
             }
           },
           "default_locale": "en_US",
+          "exit_offers": {},
+          "id": "pw13dea1ae2d694a7c",
+          "play_store_product_change_mode": {},
           "revision": 2,
           "template_name": "components",
           "zero_decimal_place_countries": {
@@ -2114,6 +2116,7 @@
         "colors": {},
         "fonts": {}
       },
+      "custom_variables": {},
       "localizations": {
         "en_US": {
           "annual": "annual",

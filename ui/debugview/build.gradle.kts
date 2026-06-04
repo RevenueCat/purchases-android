@@ -1,5 +1,5 @@
 plugins {
-    id("revenuecat-public-library")
+    alias(libs.plugins.revenuecat.public.library)
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.compose.compiler)
 }
@@ -20,7 +20,7 @@ android {
     }
 
     defaultConfig {
-        minSdk = 21
+        minSdk = 23
     }
 
     buildFeatures {

@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">התחל את תקופת הניסיון של {{ sub_offer_duration }} ולאחר מכן {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">אין דפדפן מותקן. לא ניתן לפתוח את הקישור.</string>
     <string name="cannot_open_link">הקישור אינו חוקי. לא ניתן לפתוח.</string>
+    <string name="revenuecatui_purchase">לרכוש</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

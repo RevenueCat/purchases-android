@@ -8,9 +8,7 @@ import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.clearAllMocks
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -137,10 +135,72 @@ class PurchasesFactoryTest {
         assertThat(capturedIntent.getStringExtra("redactedApiKey")).isEqualTo("a_redacted_api_key")
     }
 
-    private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `configuring SDK with simulated store api key in release mode and uiPreviewMode does not show error activity`() {
+        // Arrange
+        purchasesFactory = PurchasesFactory(
+            isDebugBuild = { false },
+            apiKeyValidator = apiKeyValidatorMock,
+        )
+        val applicationContextMock = mockk<Application>()
+        every {
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+        } returns PackageManager.PERMISSION_GRANTED
+        every {
+            applicationMock.applicationContext
+        } returns applicationContextMock
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+
+        // Act
+        purchasesFactory.validateConfiguration(
+            createConfiguration(
+                dangerousSettings = DangerousSettings.forPreviewMode(),
+            ),
+        )
+
+        // Assert
+        verify(exactly = 0) { applicationMock.startActivity(any()) }
+    }
+
+    // region shouldInitializeDiagnostics
+
+    @Test
+    fun `shouldInitializeDiagnostics returns true when diagnostics enabled and preview mode off`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = false))
+            .isTrue
+    }
+
+    @Test
+    fun `shouldInitializeDiagnostics returns false when preview mode is on`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = true, uiPreviewMode = true))
+            .isFalse
+    }
+
+    @Test
+    fun `shouldInitializeDiagnostics returns false when diagnostics disabled`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = false))
+            .isFalse
+    }
+
+    @Test
+    fun `shouldInitializeDiagnostics returns false when both diagnostics disabled and preview mode on`() {
+        assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = true))
+            .isFalse
+    }
+
+    // endregion
+
+    private fun createConfiguration(
+        testApiKey: String = "fakeApiKey",
+        dangerousSettings: DangerousSettings = DangerousSettings(),
+    ): PurchasesConfiguration {
         return PurchasesConfiguration.Builder(contextMock, testApiKey)
             .appUserID("appUserID")
             .store(Store.PLAY_STORE)
+            .dangerousSettings(dangerousSettings)
             .build()
     }
 }

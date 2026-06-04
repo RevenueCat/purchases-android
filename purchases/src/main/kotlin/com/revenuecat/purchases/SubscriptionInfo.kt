@@ -12,55 +12,55 @@ import java.util.Locale
  * Subscription purchases of the Customer.
  */
 @SuppressWarnings("LongParameterList")
-class SubscriptionInfo(
+public class SubscriptionInfo(
     /**
      * The product identifier.
      */
-    val productIdentifier: String,
+    public val productIdentifier: String,
     /**
      * Date when the last subscription period started.
      */
-    val purchaseDate: Date,
+    public val purchaseDate: Date,
     /**
      * Date when this subscription first started. This property does not update with renewals.
      * This property also does not update for product changes within a subscription group or
      * re-subscriptions by lapsed subscribers.
      */
-    val originalPurchaseDate: Date?,
+    public val originalPurchaseDate: Date?,
     /**
      * Date when the subscription expires/expired
      */
-    val expiresDate: Date?,
+    public val expiresDate: Date?,
     /**
      * Store where the subscription was purchased.
      */
-    val store: Store,
+    public val store: Store,
     /**
      * Date when RevenueCat detected that auto-renewal was turned off for this subscription.
      * Note the subscription may still be active, check the ``expiresDate`` attribute.
      */
-    val unsubscribeDetectedAt: Date?,
+    public val unsubscribeDetectedAt: Date?,
     /**
      * Whether or not the purchase was made in sandbox mode.
      */
-    val isSandbox: Boolean,
+    public val isSandbox: Boolean,
     /**
      * Date when RevenueCat detected any billing issues with this subscription.
      * If and when the billing issue gets resolved, this field is set to nil.
      * Note the subscription may still be active, check the ``expiresDate`` attribute.
      */
-    val billingIssuesDetectedAt: Date?,
+    public val billingIssuesDetectedAt: Date?,
     /**
      * Date when any grace period for this subscription expires/expired.
      * nil if the customer has never been in a grace period.
      */
-    val gracePeriodExpiresDate: Date?,
+    public val gracePeriodExpiresDate: Date?,
     /**
      * How the Customer received access to this subscription:
      * - [OwnershipType.PURCHASED]: The customer bought the subscription.
      * - [OwnershipType.FAMILY_SHARED]: The Customer has access to the product via their family.
      */
-    val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+    public val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
     /**
      * Type of the current subscription period:
      * - [PeriodType.NORMAL]: The product is in a normal period (default)
@@ -68,36 +68,36 @@ class SubscriptionInfo(
      * - [PeriodType.INTRO]: The product is in an introductory pricing period
      * - [PeriodType.PREPAID]: The product is in a prepaid pricing period
      */
-    val periodType: PeriodType,
+    public val periodType: PeriodType,
     /**
      * Date when RevenueCat detected a refund of this subscription.
      */
-    val refundedAt: Date?,
+    public val refundedAt: Date?,
     /**
      * The transaction id in the store of the subscription.
      */
-    val storeTransactionId: String?,
+    public val storeTransactionId: String?,
     /**
      * Date when the subscription will auto-resume. This property is only applicable for Google Play subscriptions
      * and will only have a value when the subscription is currently paused.
      */
-    val autoResumeDate: Date?,
+    public val autoResumeDate: Date?,
     /**
      * The display name of the subscription as configured in the RevenueCat dashboard.
      */
-    val displayName: String?,
+    public val displayName: String?,
     /**
      * Paid price for the subscription.
      */
-    val price: Price?,
+    public val price: Price?,
     /**
      * The identifier of the product plan.
      */
-    val productPlanIdentifier: String?,
+    public val productPlanIdentifier: String?,
     /**
      * URL to manage this subscription.
      */
-    val managementURL: Uri?,
+    public val managementURL: Uri?,
     /**
      * The date the request was made.
      */
@@ -107,12 +107,12 @@ class SubscriptionInfo(
     /**
      * Whether the subscription is currently active.
      */
-    val isActive: Boolean = DateHelper.isDateActive(expiresDate, requestDate).isActive
+    public val isActive: Boolean = DateHelper.isDateActive(expiresDate, requestDate).isActive
 
     /**
      * Whether the subscription will renew at the next billing period.
      */
-    val willRenew: Boolean = EntitlementInfoHelper.getWillRenew(
+    public val willRenew: Boolean = EntitlementInfoHelper.getWillRenew(
         store,
         expiresDate,
         unsubscribeDetectedAt,
@@ -122,7 +122,7 @@ class SubscriptionInfo(
 
     @Deprecated(
         message = """
-            Use the constructor with all fields instead. This constructor is missing the new fields: 
+            Use the constructor with all fields instead. This constructor is missing the new fields:
             autoResumeDate, displayName, price, and productPlanIdentifier
             """,
         replaceWith = ReplaceWith(
@@ -132,7 +132,7 @@ class SubscriptionInfo(
                 "productPlanIdentifier, requestDate)",
         ),
     )
-    constructor(
+    public constructor(
         productIdentifier: String,
         purchaseDate: Date,
         originalPurchaseDate: Date?,
@@ -180,7 +180,7 @@ class SubscriptionInfo(
                 "productPlanIdentifier, managementURL, requestDate)",
         ),
     )
-    constructor(
+    public constructor(
         productIdentifier: String,
         purchaseDate: Date,
         originalPurchaseDate: Date?,

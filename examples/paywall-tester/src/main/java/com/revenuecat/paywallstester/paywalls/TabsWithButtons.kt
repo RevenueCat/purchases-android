@@ -69,6 +69,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
 
     return SampleData.Components(
         data = PaywallComponentsData(
+            id = "sample_tabs_with_buttons_paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
             componentsConfig = ComponentsConfig(

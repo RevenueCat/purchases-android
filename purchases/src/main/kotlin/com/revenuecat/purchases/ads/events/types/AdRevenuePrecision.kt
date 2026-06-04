@@ -1,20 +1,20 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 
 /**
  * Common ad revenue precision values.
  */
-@InternalRevenueCatAPI
+@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmInline
-value class AdRevenuePrecision internal constructor(internal val value: String) {
-    companion object {
-        val EXACT = AdRevenuePrecision("exact")
-        val PUBLISHER_DEFINED = AdRevenuePrecision("publisher_defined")
-        val ESTIMATED = AdRevenuePrecision("estimated")
-        val UNKNOWN = AdRevenuePrecision("unknown")
+public value class AdRevenuePrecision internal constructor(internal val value: String) {
+    public companion object {
+        public val EXACT: AdRevenuePrecision = AdRevenuePrecision("exact")
+        public val PUBLISHER_DEFINED: AdRevenuePrecision = AdRevenuePrecision("publisher_defined")
+        public val ESTIMATED: AdRevenuePrecision = AdRevenuePrecision("estimated")
+        public val UNKNOWN: AdRevenuePrecision = AdRevenuePrecision("unknown")
 
-        fun fromString(value: String): AdRevenuePrecision {
+        public fun fromString(value: String): AdRevenuePrecision {
             return when (value.lowercase().trim()) {
                 "exact" -> EXACT
                 "publisher_defined" -> PUBLISHER_DEFINED

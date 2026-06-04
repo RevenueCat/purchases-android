@@ -50,14 +50,14 @@ Or view / build our Android sample app:
 
 ## Codelab
 
-1. [RevenueCat Google Play Integration](https://revenuecat.github.io/codelab/google-play/codelab-1-google-play-integration/index.html#0): In this codelab, you'll learn how to:
+1. [RevenueCat Google Play Integration](https://revenuecat.github.io/codelabs/google-play.html#0): In this codelab, you'll learn how to:
 
    - Properly configure products on Google Play.
    - Set up the RevenueCat dashboard and connect it to your Google Play products.
    - Understanding Product, Offering, Package, and Entitlement.
    - Create paywalls using the [Paywall Editor](https://www.revenuecat.com/docs/tools/paywalls/creating-paywalls#using-the-editor).
 
-2. [Android In-App Purchases & Paywalls](https://revenuecat.github.io/codelab/android/codelab-2-android-sdk/index.html#0): In this codelab, you will:
+2. [Android In-App Purchases & Paywalls](https://revenuecat.github.io/codelabs/android.html#0): In this codelab, you will:
 
    - Integrate the Android RevenueCat SDK into your project
    - Implement in-app purchases in your Android application
@@ -67,7 +67,8 @@ Or view / build our Android sample app:
 ## Requirements
 - Java 8+
 - Kotlin 1.8.0+
-- Minimum target: Android 5.0+ (API level 21+)
+- Minimum target: Android 6.0+ (API level 23+)
+    - Paywalls and Customer Center minimum target: Android 7.0+ (API level 24+)
 
 ## SDK Reference
 Our full SDK reference [can be found here](https://sdk.revenuecat.com/android/index.html).

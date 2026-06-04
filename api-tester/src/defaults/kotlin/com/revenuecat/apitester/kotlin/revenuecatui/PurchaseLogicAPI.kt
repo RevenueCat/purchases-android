@@ -5,30 +5,66 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ReplacementMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 
 @Suppress("unused", "UNUSED_VARIABLE")
-private class PurchaseLogicAPI {
+private class PaywallPurchaseLogicAPI {
 
-    suspend fun check(
-        mySuspendLogic: PurchaseLogic,
+    suspend fun checkPurchase(
+        logic: PaywallPurchaseLogic,
         activity: Activity,
         rcPackage: Package,
-        customerInfo: CustomerInfo,
     ) {
-        val suspendLogicPurchase: PurchaseLogicResult = mySuspendLogic.performPurchase(activity, rcPackage)
-        val suspendLogicRestore: PurchaseLogicResult = mySuspendLogic.performRestore(customerInfo)
+        val params = PaywallPurchaseLogicParams.Builder(rcPackage).build()
+        val result: PurchaseLogicResult = logic.performPurchase(activity, params)
+    }
+
+    suspend fun checkRestore(logic: PaywallPurchaseLogic, customerInfo: CustomerInfo) {
+        val result: PurchaseLogicResult = logic.performRestore(customerInfo)
+    }
+
+    fun checkPaywallPurchaseLogicParams(rcPackage: Package, subscriptionOption: SubscriptionOption) {
+        val params = PaywallPurchaseLogicParams.Builder(rcPackage)
+            .oldProductId("old_product_id")
+            .replacementMode(GoogleReplacementMode.DEFERRED)
+            .subscriptionOption(subscriptionOption)
+            .build()
+        val pkg: Package = params.rcPackage
+        val oldProductId: String? = params.oldProductId
+        val replacementMode: ReplacementMode? = params.replacementMode
+        val option: SubscriptionOption? = params.subscriptionOption
     }
 }
 
 @Suppress("unused")
-private class PurchaseLogicWithCallbackAPI : PurchaseLogicWithCallback() {
+private class PaywallPurchaseLogicSuspendAPI : PaywallPurchaseLogic {
+
+    override suspend fun performPurchase(
+        activity: Activity,
+        params: PaywallPurchaseLogicParams,
+    ): PurchaseLogicResult {
+        return PurchaseLogicResult.Success
+    }
+
+    override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult {
+        return PurchaseLogicResult.Success
+    }
+}
+
+@Suppress("unused")
+private class PaywallPurchaseLogicCallbackAPI : PaywallPurchaseLogicWithCallback() {
 
     override fun performPurchaseWithCompletion(
         activity: Activity,
-        rcPackage: Package,
+        params: PaywallPurchaseLogicParams,
         completion: (PurchaseLogicResult) -> Unit,
     ) {
         val success = PurchaseLogicResult.Success
@@ -43,20 +79,32 @@ private class PurchaseLogicWithCallbackAPI : PurchaseLogicWithCallback() {
         val failed = PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError))
         completion(failed)
     }
+}
 
-    @Suppress("unused")
-    fun check(
+@Suppress("unused", "DEPRECATION")
+private class DeprecatedPurchaseLogicSuspendAPI : PurchaseLogic {
+
+    override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
+        return PurchaseLogicResult.Success
+    }
+
+    override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult {
+        return PurchaseLogicResult.Success
+    }
+}
+
+@Suppress("unused", "DEPRECATION")
+private class DeprecatedPurchaseLogicCallbackAPI : PurchaseLogicWithCallback() {
+
+    override fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
-        customerInfo: CustomerInfo,
+        completion: (PurchaseLogicResult) -> Unit,
     ) {
-        performPurchaseWithCompletion(
-            activity,
-            rcPackage,
-        ) { result: PurchaseLogicResult -> }
+        completion(PurchaseLogicResult.Success)
+    }
 
-        performRestoreWithCompletion(
-            customerInfo,
-        ) { result: PurchaseLogicResult -> }
+    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicResult) -> Unit) {
+        completion(PurchaseLogicResult.Success)
     }
 }

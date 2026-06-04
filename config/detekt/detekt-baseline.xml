@@ -42,6 +42,14 @@
     <ID>Filename:subscriberAttributesFactories.kt$com.revenuecat.purchases.subscriberattributes.subscriberAttributesFactories.kt</ID>
     <ID>Filename:subscriptionOptionConversions.kt$com.revenuecat.purchases.google.subscriptionOptionConversions.kt</ID>
     <ID>Filename:utils.kt$com.revenuecat.purchases.common.utils.kt</ID>
+    <ID>ForbiddenPublicSealedClass:AmazonPurchasingData.kt$AmazonPurchasingData : PurchasingData</ID>
+    <ID>ForbiddenPublicSealedClass:GalaxyPurchasingData.kt$GalaxyPurchasingData : PurchasingData</ID>
+    <ID>ForbiddenPublicSealedClass:GooglePurchasingData.kt$GooglePurchasingData : PurchasingData</ID>
+    <ID>ForbiddenPublicSealedClass:PaywallFont.kt$PaywallFont : Parcelable</ID>
+    <ID>ForbiddenPublicSealedClass:PaywallResult.kt$PaywallResult : Parcelable</ID>
+    <ID>ForbiddenPublicSealedClass:PurchaseLogic.kt$PurchaseLogicResult</ID>
+    <ID>ForbiddenPublicSealedClass:Purchases.kt$Purchases$DeepLink</ID>
+    <ID>ForbiddenPublicSealedClass:RedeemWebPurchaseListener.kt$RedeemWebPurchaseListener$Result</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
@@ -52,8 +60,6 @@
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
     <ID>MagicNumber:storeProductConversions.kt$3</ID>
     <ID>MaxLineLength:Constants.kt$Constants$/* The entitlement ID from the RevenueCat dashboard that is activated upon successful in-app purchase for the duration of the purchase. Modify this property to reflect your app's entitlement identifier. */</ID>
-    <ID>ModifierComposed:Placeholder.kt$placeholder</ID>
-    <ID>ModifierMissing:AppInfoScreen.kt$AppInfoScreen</ID>
     <ID>ModifierMissing:CloseButton.kt$CloseButton</ID>
     <ID>ModifierMissing:CustomerInfoDetailScreen.kt$CustomerInfoDetailScreen</ID>
     <ID>ModifierMissing:CustomerInfoEventList.kt$CustomerInfoEventsList</ID>
@@ -67,7 +73,6 @@
     <ID>ModifierMissing:PaywallFooter.kt$OriginalTemplatePaywallFooter</ID>
     <ID>ModifierMissing:PaywallFooterScreen.kt$PaywallFooterScreen</ID>
     <ID>ModifierMissing:PaywallScreen.kt$PaywallScreen</ID>
-    <ID>ModifierMissing:PaywallsScreen.kt$PaywallsScreen</ID>
     <ID>ModifierMissing:WeatherScreen.kt$WeatherScreen</ID>
     <ID>ModifierNaming:Footer.kt$childModifier</ID>
     <ID>ModifierNaming:IconImage.kt$childModifier</ID>
@@ -84,7 +89,6 @@
     <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier.fillMaxSize()</ID>
     <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier.padding(16.dp)</ID>
     <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier.padding(8.dp)</ID>
-    <ID>ModifierNotUsedAtRoot:Template4.kt$modifier = modifier .alpha(buttonAlpha) // Trick to prevent white line around the button border .padding(with(LocalDensity.current) { 1.toDp() }) .semantics { selected = isSelected // Append discount discountText?.let { text = AnnotatedString(it) } } .fillMaxHeight()</ID>
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp)</ID>
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(horizontal = 32.dp)</ID>
     <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier.padding(16.dp)</ID>
@@ -112,8 +116,6 @@
     <ID>ModifierReused:Template2.kt$Template2PortraitContent(state, viewModel, packageSelectorVisible, childModifier)</ID>
     <ID>ModifierReused:Template2.kt$Title(state, childModifier)</ID>
     <ID>ModifierReused:Template2.kt$Title(state, childModifier, TextAlign.Start)</ID>
-    <ID>ModifierReused:Template4.kt$Button( modifier = modifier .alpha(buttonAlpha) // Trick to prevent white line around the button border .padding(with(LocalDensity.current) { 1.toDp() }) .semantics { selected = isSelected // Append discount discountText?.let { text = AnnotatedString(it) } } .fillMaxHeight(), onClick = { viewModel.selectPackage(packageInfo) }, colors = ButtonDefaults.buttonColors(containerColor = colors.background), shape = RoundedCornerShape(UIConstant.defaultCornerRadius), contentPadding = PaddingValues( vertical = UIConstant.defaultVerticalSpacing, horizontal = UIConstant.defaultHorizontalPadding, ), ) { SelectPackageButtonContent(packageInfo, colors) }</ID>
-    <ID>ModifierReused:Template4.kt$Column( modifier = columnModifier .semantics(mergeDescendants = true) {}, horizontalAlignment = Alignment.CenterHorizontally, ) { DiscountRelativeToMostExpensivePerMonth(colors = colors, text = discountText, selected = isSelected) Box( modifier = Modifier // Apply the border to the box instead of the button to avoid the border showing // a white line around .border( width = UIConstant.defaultPackageBorderWidth, color = mainColor, shape = RoundedCornerShape(UIConstant.defaultCornerRadius), ), ) { Button( modifier = modifier .alpha(buttonAlpha) // Trick to prevent white line around the button border .padding(with(LocalDensity.current) { 1.toDp() }) .semantics { selected = isSelected // Append discount discountText?.let { text = AnnotatedString(it) } } .fillMaxHeight(), onClick = { viewModel.selectPackage(packageInfo) }, colors = ButtonDefaults.buttonColors(containerColor = colors.background), shape = RoundedCornerShape(UIConstant.defaultCornerRadius), contentPadding = PaddingValues( vertical = UIConstant.defaultVerticalSpacing, horizontal = UIConstant.defaultHorizontalPadding, ), ) { SelectPackageButtonContent(packageInfo, colors) } CheckmarkBox( isSelected = isSelected, colors = state.currentColors, modifier = Modifier .align(Alignment.TopEnd) .padding(Template4UIConstants.checkmarkPadding), ) } }</ID>
     <ID>ModifierReused:UserScreen.kt$Box( modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(horizontal = 32.dp), contentAlignment = Alignment.Center, ) { UserInfo(uiState) }</ID>
     <ID>ModifierReused:UserScreen.kt$Button( modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp), onClick = { viewModel.initiateLogIn() }, ) { Text(text = "Login") }</ID>
     <ID>ModifierReused:UserScreen.kt$Button( modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp), onClick = { viewModel.restorePurchases() }, ) { Text(text = "Restore purchases") }</ID>
@@ -124,7 +126,6 @@
     <ID>ModifierWithoutDefault:RemoteImage.kt$modifier</ID>
     <ID>ModifierWithoutDefault:Template2.kt$childModifier</ID>
     <ID>MutableStateAutoboxing:AdaptiveComposable.kt$mutableStateOf(0)</ID>
-    <ID>MutableStateAutoboxing:Placeholder.kt$mutableStateOf(0f)</ID>
     <ID>MutableStateAutoboxing:TierSwitcher.kt$mutableStateOf(0)</ID>
     <ID>MutableStateParam:PurchaseButton.kt$selectedPackage</ID>
     <ID>NoWildcardImports:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
@@ -154,7 +155,6 @@
     <ID>PreviewPublic:PaywallLoadingView.kt$PaywallLoadingViewPreview</ID>
     <ID>PreviewPublic:PaywallsScreen.kt$PaywallsScreenPreview</ID>
     <ID>PreviewPublic:WeatherApp.kt$WeatherAppPreview</ID>
-    <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: ClassCastException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: JSONException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>SwallowedException:utils.kt$e: PackageManager.NameNotFoundException</ID>
@@ -164,11 +164,11 @@
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
+    <ID>TooManyFunctions:coroutinesExtensions.kt$com.revenuecat.purchases.coroutinesExtensions.kt</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>
     <ID>ViewModelForwarding:AppInfoScreen.kt$LoginDialog(viewModel) { showLogInDialog = false }</ID>
     <ID>ViewModelForwarding:Footer.kt$Footer( mode = templateConfiguration.mode, configuration = templateConfiguration.configuration, colors = colors, viewModel = viewModel, childModifier = childModifier, allPlansTapped = allPlansTapped, )</ID>
-    <ID>ViewModelForwarding:InternalPaywall.kt$LoadedPaywall(state = state, viewModel = viewModel)</ID>
     <ID>ViewModelForwarding:InternalPaywall.kt$Template1(state = state, viewModel = viewModel)</ID>
     <ID>ViewModelForwarding:InternalPaywall.kt$Template2(state = state, viewModel = viewModel)</ID>
     <ID>ViewModelForwarding:InternalPaywall.kt$Template3(state = state, viewModel = viewModel)</ID>
@@ -211,13 +211,6 @@
     <ID>ViewModelForwarding:Template5.kt$SelectPackageButton(state, packageInfo, viewModel)</ID>
     <ID>ViewModelForwarding:Template5.kt$Template5LandscapeContent(state, viewModel)</ID>
     <ID>ViewModelForwarding:Template5.kt$Template5PortraitContent(state, viewModel, packageSelectorVisible)</ID>
-    <ID>ViewModelForwarding:Template7.kt$AnimatedPackages( state = state, viewModel = viewModel, packages = selectedTier.packages, colors = colorForTier, )</ID>
-    <ID>ViewModelForwarding:Template7.kt$AnimatedPackages( state = state, viewModel = viewModel, packages = selectedTier.packages, colors = colorForTier, packageSelectionVisible = packageSelectionVisible, )</ID>
-    <ID>ViewModelForwarding:Template7.kt$Footer( templateConfiguration = state.templateConfiguration, viewModel = viewModel, colors = colorForTier, allPlansTapped = { packageSelectorVisible = !packageSelectorVisible }, )</ID>
-    <ID>ViewModelForwarding:Template7.kt$PurchaseButton(state, viewModel, colors = colorForTier)</ID>
-    <ID>ViewModelForwarding:Template7.kt$SelectPackageButton(state, packageInfo, viewModel, colors)</ID>
-    <ID>ViewModelForwarding:Template7.kt$Template7LandscapeContent( state, viewModel, allTiers, selectedTier, ) { selectedTier = it state.selectPackage(selectedTier.defaultPackage) }</ID>
-    <ID>ViewModelForwarding:Template7.kt$Template7PortraitContent( state, viewModel, packageSelectorVisible, allTiers, selectedTier, ) { selectedTier = it state.selectPackage(selectedTier.defaultPackage) }</ID>
     <ID>ViewModelForwarding:UserScreen.kt$LoginDialog(viewModel)</ID>
     <ID>ViewModelInjection:InternalPaywall.kt$viewModel</ID>
     <ID>ViewModelInjection:MainScreen.kt$viewModel</ID>

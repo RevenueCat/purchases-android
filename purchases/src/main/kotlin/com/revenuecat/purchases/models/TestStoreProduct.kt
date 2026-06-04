@@ -11,7 +11,7 @@ import dev.drewhamilton.poko.Poko
  */
 
 @Poko
-class TestStoreProduct @JvmOverloads constructor(
+public class TestStoreProduct @JvmOverloads constructor(
     override val id: String,
     override val name: String,
     override val title: String,
@@ -30,7 +30,7 @@ class TestStoreProduct @JvmOverloads constructor(
                 "freeTrialPricingPhase, introPricePricingPhase)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         name: String,
         title: String,
@@ -71,7 +71,7 @@ class TestStoreProduct @JvmOverloads constructor(
                 "freeTrialPeriod, introPrice)",
         ),
     )
-    constructor(
+    public constructor(
         id: String,
         title: String,
         description: String,

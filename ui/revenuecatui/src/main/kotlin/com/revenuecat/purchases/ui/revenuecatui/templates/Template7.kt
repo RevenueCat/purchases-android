@@ -1,4 +1,5 @@
-@file:Suppress("TooManyFunctions")
+@file:Suppress("TooManyFunctions", "ViewModelForwarding")
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
@@ -77,9 +79,11 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallTierSelection
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template7UIConstants {
@@ -88,6 +92,13 @@ private object Template7UIConstants {
     val discountPadding = 8.dp
     const val headerAspectRatio = 2f
 }
+
+/**
+ * `component_value` for Template 7 tier component interaction).
+ */
+@JvmSynthetic
+internal fun tierSelectorComponentInteractionValue(tier: TemplateConfiguration.TierInfo): String =
+    tier.name.takeUnless { it.isBlank() } ?: tier.id
 
 @Composable
 internal fun Template7(
@@ -113,6 +124,19 @@ internal fun Template7(
 
     val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
+    val onTierSelected: (TemplateConfiguration.TierInfo) -> Unit = { tier ->
+        viewModel.trackComponentInteraction(
+            paywallTierSelection(
+                tierDisplayName = tierSelectorComponentInteractionValue(tier),
+                componentName = PaywallLegacyComponentInteraction.TIER_SELECTOR_NAME,
+                originPackage = state.selectedPackage.value.rcPackage,
+                destinationPackage = tier.defaultPackage.rcPackage,
+            ),
+        )
+        selectedTier = tier
+        state.selectPackage(tier.defaultPackage)
+    }
+
     Column(
         Modifier.background(colorForTier.background),
     ) {
@@ -122,10 +146,8 @@ internal fun Template7(
                 viewModel,
                 allTiers,
                 selectedTier,
-            ) {
-                selectedTier = it
-                state.selectPackage(selectedTier.defaultPackage)
-            }
+                onTierSelected,
+            )
         } else {
             Template7PortraitContent(
                 state,
@@ -133,10 +155,8 @@ internal fun Template7(
                 packageSelectorVisible,
                 allTiers,
                 selectedTier,
-            ) {
-                selectedTier = it
-                state.selectPackage(selectedTier.defaultPackage)
-            }
+                onTierSelected,
+            )
         }
 
         PurchaseButton(state, viewModel, colors = colorForTier)
@@ -220,6 +240,7 @@ private fun ColumnScope.Template7PortraitContent(
             viewModel = viewModel,
             packages = selectedTier.packages,
             colors = colorForTier,
+            selectedTier = selectedTier,
             packageSelectionVisible = packageSelectionVisible,
         )
 
@@ -314,6 +335,7 @@ private fun ColumnScope.Template7LandscapeContent(
                 viewModel = viewModel,
                 packages = selectedTier.packages,
                 colors = colorForTier,
+                selectedTier = selectedTier,
             )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
@@ -441,6 +463,7 @@ private fun Feature(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun AnimatedPackages(
     state: PaywallState.Loaded.Legacy,
@@ -448,6 +471,7 @@ private fun AnimatedPackages(
     packageSelectionVisible: Boolean = true,
     packages: List<TemplateConfiguration.PackageInfo>,
     colors: TemplateConfiguration.Colors,
+    selectedTier: TemplateConfiguration.TierInfo,
 ) {
     val packagesContentAlignment = if (state.isInFullScreenMode) {
         Alignment.TopStart
@@ -480,7 +504,7 @@ private fun AnimatedPackages(
                 ),
             ) {
                 packages.forEach { packageInfo ->
-                    SelectPackageButton(state, packageInfo, viewModel, colors)
+                    SelectPackageButton(state, packageInfo, viewModel, colors, selectedTier)
                 }
             }
         }
@@ -494,6 +518,7 @@ private fun ColumnScope.SelectPackageButton(
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
     colors: TemplateConfiguration.Colors,
+    selectedTier: TemplateConfiguration.TierInfo,
 ) {
     val isSelected = packageInfo == state.selectedPackage.value
 
@@ -513,7 +538,14 @@ private fun ColumnScope.SelectPackageButton(
             .semantics {
                 selected = isSelected
             },
-        onClick = { viewModel.selectPackage(packageInfo) },
+        onClick = {
+            viewModel.trackTemplatePackageRowSelectionIfChanged(
+                state = state,
+                packageInfo = packageInfo,
+                defaultPackageInfo = selectedTier.defaultPackage,
+            )
+            viewModel.selectPackage(packageInfo)
+        },
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
         contentPadding = PaddingValues(
@@ -552,7 +584,7 @@ private fun ColumnScope.SelectPackageButton(
                 textWithNoIntroOffer = packageInfo.localization.offerDetails,
                 textWithIntroOffer = packageInfo.localization.offerDetailsWithIntroOffer,
                 textWithMultipleIntroOffers = packageInfo.localization.offerDetailsWithMultipleIntroOffers,
-                eligibility = packageInfo.introEligibility,
+                eligibility = packageInfo.offerEligibility,
                 color = textColor,
                 style = MaterialTheme.typography.bodyMedium,
                 allowLinks = false,

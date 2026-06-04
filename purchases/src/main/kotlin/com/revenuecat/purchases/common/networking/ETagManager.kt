@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -18,6 +19,7 @@ internal data class ETagData(
     val lastRefreshTime: Date?,
 )
 
+@OptIn(InternalRevenueCatAPI::class)
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal data class HTTPResultWithETag(
     val eTagData: ETagData,
@@ -48,6 +50,7 @@ internal data class HTTPResultWithETag(
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class ETagManager(
     context: Context,
     private val prefs: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },

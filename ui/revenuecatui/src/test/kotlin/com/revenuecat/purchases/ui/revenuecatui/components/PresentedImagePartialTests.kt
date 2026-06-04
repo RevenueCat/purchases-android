@@ -169,9 +169,8 @@ internal class PresentedImagePartialTests {
         assert(actualResult.isSuccess)
     }
 
-    @Suppress("MaxLineLength")
     @Test
-    fun `Should create successfully if the PartialImageComponent has no ColorAlias, alias map is empty`() {
+    fun `Should create successfully without color aliases when alias map is empty`() {
         // Arrange, Act
         val actualResult = PresentedImagePartial(
             from = PartialImageComponent(

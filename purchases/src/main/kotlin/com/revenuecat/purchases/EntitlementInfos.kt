@@ -11,29 +11,29 @@ import kotlinx.parcelize.Parcelize
  * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
-class EntitlementInfos(
-    val all: Map<String, EntitlementInfo>,
-    val verification: VerificationResult,
+public class EntitlementInfos(
+    public val all: Map<String, EntitlementInfo>,
+    public val verification: VerificationResult,
 ) : Parcelable {
 
     @Deprecated(
         "Use the constructor with the verification parameter",
         ReplaceWith("EntitlementInfos(all, verification)"),
     )
-    constructor(
+    public constructor(
         all: Map<String, EntitlementInfo>,
     ) : this(all, VerificationResult.NOT_REQUESTED)
 
     /**
      * Dictionary of active [EntitlementInfo] objects keyed by entitlement identifier.
      */
-    val active = all.filter { it.value.isActive }
+    public val active: Map<String, EntitlementInfo> = all.filter { it.value.isActive }
 
     /**
      * Retrieves an specific entitlementInfo by its entitlement identifier. It's equivalent to
      * accessing the `all` map by entitlement identifier.
      */
-    operator fun get(s: String) = all[s]
+    public operator fun get(s: String): EntitlementInfo? = all[s]
 
     /** @suppress */
     override fun equals(other: Any?): Boolean {

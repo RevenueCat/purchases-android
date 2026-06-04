@@ -94,6 +94,7 @@ internal abstract class BaseHTTPClientTest {
         store: Store = Store.PLAY_STORE,
         isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
+        uiPreviewMode: Boolean = false,
         forceSigningErrors: Boolean = false,
         baseUrlString: String = AppConfig.baseUrlString
     ): AppConfig {
@@ -106,7 +107,10 @@ internal abstract class BaseHTTPClientTest {
             store = store,
             isDebugBuild = isDebugBuild,
             apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
-            dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
+            dangerousSettings = DangerousSettings(
+                customEntitlementComputation = customEntitlementComputation,
+                uiPreviewMode = uiPreviewMode,
+            ),
             runningTests = true,
             forceSigningErrors = forceSigningErrors,
             baseUrlString = baseUrlString,

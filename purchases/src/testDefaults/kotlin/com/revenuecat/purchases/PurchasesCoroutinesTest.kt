@@ -3,7 +3,9 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.models.StoreTransaction
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -448,6 +450,75 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
     
+    // endregion
+
+    // region awaitSetAppstackAttributionParams
+
+    @Test
+    fun `setAppstackAttributionParams - Success`() = runTest {
+        val data = mapOf("appstack_id" to "test_id")
+        every {
+            mockSubscriberAttributesManager.setAppstackAttributionParams(appUserId, data, any())
+        } just Runs
+
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        every {
+            mockOfferingsManager.getOfferings(any(), any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(Offerings?) -> Unit>().captured.invoke(mockOfferings)
+        }
+
+        val result = purchases.awaitSetAppstackAttributionParams(data)
+
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.setAppstackAttributionParams(appUserId, data, any())
+        }
+        assertThat(result).isNotNull
+        assertThat(result).isEqualTo(mockOfferings)
+    }
+
+    @Test
+    fun `setAppstackAttributionParams - Error`() = runTest {
+        val data = mapOf("appstack_id" to "test_id")
+        val error = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Backend error")
+        every {
+            mockSubscriberAttributesManager.setAppstackAttributionParams(appUserId, data, any())
+        } just Runs
+
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        every {
+            mockOfferingsManager.getOfferings(any(), any(), captureLambda(), any(), any())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+        }
+
+        var result: Offerings? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitSetAppstackAttributionParams(data)
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.setAppstackAttributionParams(appUserId, data, any())
+        }
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+    }
+
     // endregion
 
     // region awaitGetAmazonLWAConsentStatus

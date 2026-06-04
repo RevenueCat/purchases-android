@@ -29,6 +29,9 @@ final class PaywallListenerAPI {
             public void onPurchaseCancelled() {}
 
             @Override
+            public void onRestoreInitiated(@NonNull Resumable resume) {}
+
+            @Override
             public void onRestoreStarted() {}
 
             @Override

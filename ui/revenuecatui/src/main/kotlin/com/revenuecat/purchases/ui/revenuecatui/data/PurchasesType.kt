@@ -17,7 +17,9 @@ import com.revenuecat.purchases.awaitGetVirtualCurrencies
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
+import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -52,7 +54,7 @@ internal interface PurchasesType {
 
     val purchasesAreCompletedBy: PurchasesAreCompletedBy
 
-    fun syncPurchases()
+    suspend fun awaitSyncPurchases(): CustomerInfo
 
     val storefrontCountryCode: String?
 
@@ -62,6 +64,9 @@ internal interface PurchasesType {
 
     @Throws(PurchasesException::class)
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
+
+    @Throws(PurchasesException::class)
+    suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult
 }
 
 @Suppress("TooManyFunctions")
@@ -110,8 +115,8 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         purchases.track(event)
     }
 
-    override fun syncPurchases() {
-        purchases.syncPurchases()
+    override suspend fun awaitSyncPurchases(): CustomerInfo {
+        return purchases.awaitSyncPurchases()
     }
 
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy
@@ -129,5 +134,10 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @Throws(PurchasesException::class)
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         return purchases.awaitCreateSupportTicket(email, description)
+    }
+
+    @Throws(PurchasesException::class)
+    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+        return purchases.awaitGetWorkflow(workflowId)
     }
 }

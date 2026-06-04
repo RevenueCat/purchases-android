@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 /**
  * Specifies behavior for a caching API.
  */
-enum class CacheFetchPolicy {
+public enum class CacheFetchPolicy {
     /**
      * Returns values from the cache, or throws an error if not available. It won't initiate a fetch.
      */
@@ -29,7 +29,7 @@ enum class CacheFetchPolicy {
 
     ;
 
-    companion object {
-        fun default() = CACHED_OR_FETCHED
+    public companion object {
+        public fun default(): CacheFetchPolicy = CACHED_OR_FETCHED
     }
 }

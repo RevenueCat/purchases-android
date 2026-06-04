@@ -14,6 +14,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 
@@ -87,6 +88,13 @@ internal fun createCustomerCenterListener(
                     "purchaseIdentifier: $purchaseIdentifier",
             )
             onCustomAction(actionIdentifier, purchaseIdentifier)
+        }
+
+        override fun onPromotionalOfferSucceeded(
+            customerInfo: CustomerInfo,
+            transaction: StoreTransaction,
+        ) {
+            Log.d(tag, "Local listener: onPromotionalOfferSucceeded called")
         }
     }
 }

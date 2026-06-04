@@ -10,7 +10,7 @@ package com.revenuecat.purchases
  * - Note: Verification is only performed if enabled using PurchasesConfiguration.Builder's
  * entitlementVerificationMode property. This is disabled by default.
  */
-enum class VerificationResult {
+public enum class VerificationResult {
     /**
      * No verification was done.
      *
@@ -38,7 +38,7 @@ enum class VerificationResult {
     /**
      * Whether the result is [VerificationResult.VERIFIED] or [VerificationResult.VERIFIED_ON_DEVICE].
      */
-    val isVerified: Boolean
+    public val isVerified: Boolean
         get() {
             return when (this) {
                 VERIFIED, VERIFIED_ON_DEVICE -> true

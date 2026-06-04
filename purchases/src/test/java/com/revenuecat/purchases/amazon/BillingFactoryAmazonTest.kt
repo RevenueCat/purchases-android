@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
 import io.mockk.mockk
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -33,7 +34,9 @@ class BillingFactoryAmazonTest {
             finishTransactions = true,
             mockDiagnosticsTracker,
             stateProvider = PurchasesStateCache(PurchasesState()),
+            applyObfuscatedAccountIdToSubscriptionChanges = false,
             pendingTransactionsForPrepaidPlansEnabled = true,
+            GalaxyBillingMode.TEST,
             backend = mockBackend,
         )
     }
@@ -53,7 +56,9 @@ class BillingFactoryAmazonTest {
             finishTransactions = true,
             diagnosticsTrackerIfEnabled = null,
             stateProvider = PurchasesStateCache(PurchasesState()),
+            applyObfuscatedAccountIdToSubscriptionChanges = false,
             pendingTransactionsForPrepaidPlansEnabled = true,
+            GalaxyBillingMode.TEST,
             backend = mockBackend,
         )
     }

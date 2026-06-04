@@ -9,5 +9,6 @@ sealed class PaywallScreenState {
         val offering: Offering,
         val dialogText: String? = null,
         val footerCondensed: Boolean = false,
+        val refreshCount: Int = 0,
     ) : PaywallScreenState()
 }

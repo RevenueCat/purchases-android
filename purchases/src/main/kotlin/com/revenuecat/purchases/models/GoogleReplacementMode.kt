@@ -11,8 +11,9 @@ import com.revenuecat.purchases.ReplacementMode
  *
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
-enum class GoogleReplacementMode(
-    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int,
+@Deprecated("Use StoreReplacementMode instead")
+public enum class GoogleReplacementMode(
+    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode public val playBillingClientMode: Int,
 ) : ReplacementMode {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.
@@ -74,8 +75,8 @@ enum class GoogleReplacementMode(
         out.writeString(this.name)
     }
 
-    companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
-        fun fromPlayBillingClientMode(
+    public companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
+        public fun fromPlayBillingClientMode(
             @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode playBillingClientMode: Int?,
         ): GoogleReplacementMode? {
             return playBillingClientMode?.let {

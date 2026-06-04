@@ -4,7 +4,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.SharedConstants
 
-class SubscriptionOptions(
+public class SubscriptionOptions(
     private val subscriptionOptions: List<SubscriptionOption>,
 ) : List<SubscriptionOption> by subscriptionOptions {
 
@@ -15,20 +15,20 @@ class SubscriptionOptions(
     /**
      * The base plan [SubscriptionOption].
      */
-    val basePlan: SubscriptionOption?
+    public val basePlan: SubscriptionOption?
         get() = this.firstOrNull { it.isBasePlan }
 
     /**
      * The first [SubscriptionOption] with a free trial [PricingPhase].
      */
-    val freeTrial: SubscriptionOption?
+    public val freeTrial: SubscriptionOption?
         get() = this.firstOrNull { it.freePhase != null }
 
     /**
      * The first [SubscriptionOption] with an intro trial [PricingPhase].
      * There can be a free trial [PricingPhase] and intro trial [PricingPhase] in the same [SubscriptionOption].
      */
-    val introOffer: SubscriptionOption?
+    public val introOffer: SubscriptionOption?
         get() = this.firstOrNull { it.introPhase != null }
 
     /**
@@ -38,7 +38,7 @@ class SubscriptionOptions(
      *   - Falls back to use base plan
      */
     @OptIn(InternalRevenueCatAPI::class)
-    val defaultOffer: SubscriptionOption?
+    public val defaultOffer: SubscriptionOption?
         get() {
             val basePlan = this.firstOrNull { it.isBasePlan } ?: return null
 
@@ -54,7 +54,7 @@ class SubscriptionOptions(
      * Finds all [SubscriptionOption]s with a specific tag.
      * Note: All offers inherit base plan tags.
      */
-    fun withTag(tag: String): List<SubscriptionOption> {
+    public fun withTag(tag: String): List<SubscriptionOption> {
         return this.filter { it.tags.contains(tag) }
     }
 

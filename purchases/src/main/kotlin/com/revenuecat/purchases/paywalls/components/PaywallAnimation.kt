@@ -18,14 +18,14 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("animation")
-class PaywallAnimation(
-    @get:JvmSynthetic val type: AnimationType,
-    @get:JvmSynthetic @SerialName("ms_delay") val msDelay: Int,
-    @get:JvmSynthetic @SerialName("ms_duration") val msDuration: Int,
+public class PaywallAnimation(
+    @get:JvmSynthetic public val type: AnimationType,
+    @get:JvmSynthetic @SerialName("ms_delay") public val msDelay: Int,
+    @get:JvmSynthetic @SerialName("ms_duration") public val msDuration: Int,
 ) {
 
     @Serializable(with = AnimationTypeSerializer::class)
-    enum class AnimationType {
+    public enum class AnimationType {
         EASE_IN,
         EASE_OUT,
         EASE_IN_OUT,

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.video
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -12,8 +13,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
@@ -29,7 +36,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlinx.coroutines.launch
 import java.net.URI
+import java.net.URL
 
 @Suppress("CyclomaticComplexMethod", "LongMethod", "ModifierNotUsedAtRoot", "ModifierReused")
 @JvmSynthetic
@@ -41,12 +51,45 @@ internal fun VideoComponentView(
     repository: FileRepository = Purchases.sharedInstance.fileRepository,
 ) {
     val videoState = rememberUpdatedVideoComponentState(style, state)
+
     if (videoState.visible) {
         val overlay = videoState.overlay?.forCurrentTheme
         val borderStyle = videoState.border?.let { rememberBorderStyle(border = it) }
         val shadowStyle = videoState.shadow?.let { rememberShadowStyle(shadow = it) }
         val composeShape by remember(videoState.shape) { derivedStateOf { videoState.shape ?: RectangleShape } }
-        val (videoUrl, fallbackImageViewStyle) = rememberVideoContentState(style, videoState.videoUrls, repository)
+
+        var isVisible by remember { mutableStateOf(false) }
+        var videoReady by remember(isVisible) { mutableStateOf(false) }
+        val view = LocalView.current
+
+        // Fallback style - always available so it shows while scrolling
+        val fallbackStyle = remember(style.fallbackSources) {
+            style.fallbackSources?.let { sources ->
+                ImageComponentStyle(
+                    sources = sources,
+                    visible = style.visible,
+                    size = style.size,
+                    padding = PaddingValues(0.dp),
+                    margin = PaddingValues(0.dp),
+                    shape = null,
+                    border = null,
+                    shadow = null,
+                    overlay = style.overlay,
+                    contentScale = style.contentScale,
+                    rcPackage = style.rcPackage,
+                    tabIndex = style.tabIndex,
+                    overrides = emptyList(),
+                    ignoreTopWindowInsets = style.ignoreTopWindowInsets,
+                )
+            }
+        }
+
+        // Get video URL - only when visible to avoid initializing all videos at once
+        val videoUrl = if (isVisible) {
+            rememberVideoContentState(videoState.videoUrls, repository)
+        } else {
+            null
+        }
 
         Box(
             modifier = modifier
@@ -55,15 +98,15 @@ internal fun VideoComponentView(
                 .padding(videoState.margin)
                 .applyIfNotNull(shadowStyle) { shadow(it, composeShape) }
                 .clip(composeShape)
-                .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) },
+                .applyIfNotNull(borderStyle) { border(it, composeShape).padding(it.width) }
+                .onGloballyPositioned { coordinates ->
+                    isVisible = coordinates.boundsInWindow().isVisibleInViewport(view.width, view.height)
+                },
         ) {
-            if (fallbackImageViewStyle != null) {
-                ImageComponentView(fallbackImageViewStyle, state, modifier)
-            }
-
-            videoUrl?.let {
+            // VideoView renders first (underneath)
+            if (isVisible && videoUrl != null) {
                 VideoView(
-                    videoUri = it.toString(),
+                    videoUri = videoUrl.toString(),
                     modifier = Modifier
                         .size(videoState.size)
                         .applyIfNotNull(videoState.aspectRatio, Modifier::aspectRatio)
@@ -74,87 +117,71 @@ internal fun VideoComponentView(
                     loop = style.loop,
                     muteAudio = style.muteAudio,
                     contentScale = style.contentScale,
+                    onReady = { videoReady = true },
                 )
+            }
+
+            // Fallback shows on top until video's first frame is rendered
+            if (fallbackStyle != null && !videoReady) {
+                ImageComponentView(fallbackStyle, state)
             }
         }
     }
 }
 
+@JvmSynthetic
+internal fun Rect.isVisibleInViewport(viewportWidth: Int, viewportHeight: Int): Boolean {
+    return right > 0 && bottom > 0 && left < viewportWidth && top < viewportHeight
+}
+
 @Composable
 private fun rememberVideoContentState(
-    style: VideoComponentStyle,
     videoUrls: VideoUrls,
     repository: FileRepository,
-): Pair<URI?, ImageComponentStyle?> {
-    var fallbackImageViewStyle: ImageComponentStyle? by remember(style.fallbackSources) {
-        if (style.fallbackSources != null) {
-            mutableStateOf(
-                ImageComponentStyle(
-                    sources = style.fallbackSources,
-                    visible = style.visible,
-                    size = style.size,
-                    padding = style.padding,
-                    margin = style.margin,
-                    shape = style.shape,
-                    border = style.border,
-                    shadow = style.shadow,
-                    overlay = style.overlay,
-                    contentScale = style.contentScale,
-                    rcPackage = style.rcPackage,
-                    tabIndex = style.tabIndex,
-                    overrides = emptyList(), // fallback overrides will be supplied by the video component overrides
-                    ignoreTopWindowInsets = style.ignoreTopWindowInsets,
-                ),
-            )
-        } else {
-            mutableStateOf(null)
+): URI {
+    val videoUrl = rememberSaveable(videoUrls.url) {
+        resolveVideoUrl(videoUrls, repository)
+    }
+
+    // Cache both resolutions in parallel in the background
+    LaunchedEffect(videoUrls.url) {
+        launch { cacheVideo(videoUrls.url, videoUrls.checksum, repository) }
+        videoUrls.urlLowRes?.takeIf { it != videoUrls.url }?.let {
+            launch { cacheVideo(it, videoUrls.checksumLowRes, repository) }
         }
     }
 
-    var videoUrl by rememberSaveable(videoUrls.url) {
-        mutableStateOf(repository.getFile(videoUrls.url, videoUrls.checksum))
+    return videoUrl
+}
+
+@Suppress("ReturnCount")
+@JvmSynthetic
+internal fun resolveVideoUrl(
+    videoUrls: VideoUrls,
+    repository: FileRepository,
+): URI {
+    // 1. High-res cached → use immediately
+    repository.getFile(videoUrls.url, videoUrls.checksum)?.let { return it }
+
+    // 2. Low-res cached → use as fallback
+    videoUrls.urlLowRes
+        ?.takeIf { it != videoUrls.url }
+        ?.let { repository.getFile(it, videoUrls.checksumLowRes) }
+        ?.let { return it }
+
+    // 3. Nothing cached → stream remote URL
+    return videoUrls.url.toURI()
+}
+
+@JvmSynthetic
+internal suspend fun cacheVideo(
+    url: URL,
+    checksum: Checksum?,
+    repository: FileRepository,
+) {
+    try {
+        repository.generateOrGetCachedFileURL(url, checksum)
+    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+        Logger.e("Failed to cache video: $url", e)
     }
-
-    suspend fun fetchVideoUrl(setLowResVideoURLFirst: Boolean) {
-        try {
-            if (setLowResVideoURLFirst) {
-                videoUrl = videoUrls.urlLowRes?.toString()?.let(::URI)
-            }
-
-            val url = repository.generateOrGetCachedFileURL(videoUrls.url, videoUrls.checksum)
-            videoUrl = url
-            // If we have a cached video, no need to display a fallback image
-            fallbackImageViewStyle = null
-        } catch (_: Exception) {
-            videoUrl = videoUrls.url.toString().let(::URI)
-        }
-    }
-
-    if (videoUrl == null) {
-        videoUrls.urlLowRes
-            ?.takeIf { it != videoUrls.url }
-            ?.run {
-                videoUrl = repository.getFile(this, videoUrls.checksumLowRes)
-
-                if (videoUrl != null) {
-                    // If we have a cached video, no need to display a fallback image
-                    fallbackImageViewStyle = null
-                }
-
-                LaunchedEffect(Unit) {
-                    fetchVideoUrl(setLowResVideoURLFirst = videoUrl == null)
-                }
-            }
-    } else {
-        // If we have a cached video, no need to display a fallback image
-        fallbackImageViewStyle = null
-    }
-
-    if (videoUrl == null) {
-        LaunchedEffect(Unit) {
-            fetchVideoUrl(setLowResVideoURLFirst = fallbackImageViewStyle == null)
-        }
-    }
-
-    return videoUrl to fallbackImageViewStyle
 }

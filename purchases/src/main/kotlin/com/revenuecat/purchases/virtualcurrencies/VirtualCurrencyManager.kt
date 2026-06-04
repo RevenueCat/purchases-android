@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.virtualcurrencies
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -10,7 +11,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.strings.VirtualCurrencyStrings
 
-@Suppress("UnusedPrivateProperty")
+@OptIn(InternalRevenueCatAPI::class)
 internal class VirtualCurrencyManager(
     private val identityManager: IdentityManager,
     private val deviceCache: DeviceCache,
@@ -62,10 +63,8 @@ internal class VirtualCurrencyManager(
             log(LogIntent.DEBUG) {
                 VirtualCurrencyStrings.VENDING_FROM_CACHE
             }
-            return cachedVirtualCurrencies
-        } else {
-            return null
         }
+        return cachedVirtualCurrencies
     }
 
     @Synchronized

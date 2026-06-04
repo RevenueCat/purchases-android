@@ -9,6 +9,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
+import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -18,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -55,6 +58,9 @@ internal fun FakePaywallState(
         )
     ),
     defaultLocaleIdentifier: LocaleId = LocaleId("en_US"),
+    customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    header: HeaderComponent? = null,
+    stickyFooter: StickyFooterComponent? = null,
 ): PaywallState.Loaded.Components {
     val packageComponents = packages.map { pkg ->
         PackageComponent(
@@ -64,13 +70,15 @@ internal fun FakePaywallState(
         )
     }
     val data = PaywallComponentsData(
+        id = "paywall_id",
         templateName = "template",
         assetBaseURL = URL("https://assets.pawwalls.com"),
         componentsConfig = ComponentsConfig(
             base = PaywallComponentsConfig(
                 stack = StackComponent(components = components + packageComponents),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
-                stickyFooter = null,
+                header = header,
+                stickyFooter = stickyFooter,
             ),
         ),
         componentsLocalizations = localizations,
@@ -84,5 +92,5 @@ internal fun FakePaywallState(
         paywallComponents = Offering.PaywallComponents(UiConfig(), data),
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated)
+    return offering.toComponentsPaywallState(validated, customVariables = customVariables)
 }

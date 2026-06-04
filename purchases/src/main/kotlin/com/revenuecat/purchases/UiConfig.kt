@@ -6,71 +6,86 @@ import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationK
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class ColorAlias(@get:JvmSynthetic val value: String)
+public value class ColorAlias(@get:JvmSynthetic public val value: String)
 
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class FontAlias(@get:JvmSynthetic val value: String)
+public value class FontAlias(@get:JvmSynthetic public val value: String)
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class UiConfig(
+public class UiConfig(
     @get:JvmSynthetic
-    val app: AppConfig = AppConfig(),
+    public val app: AppConfig = AppConfig(),
     @Serializable(with = LocalizedVariableLocalizationKeyMapSerializer::class)
     @get:JvmSynthetic
-    val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
+    public val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
     @SerialName("variable_config")
     @get:JvmSynthetic
-    val variableConfig: VariableConfig = VariableConfig(),
+    public val variableConfig: VariableConfig = VariableConfig(),
+    @SerialName("custom_variables")
+    @get:JvmSynthetic
+    public val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
 ) {
 
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class AppConfig(
+    public class AppConfig(
         @get:JvmSynthetic
-        val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
+        public val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
         @get:JvmSynthetic
-        val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
+        public val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
     ) {
         @InternalRevenueCatAPI
         @Poko
         @Serializable
-        class FontsConfig(
+        public class FontsConfig(
             @get:JvmSynthetic
-            val android: FontInfo,
+            public val android: FontInfo,
         ) {
 
             @InternalRevenueCatAPI
             @Serializable
-            sealed interface FontInfo {
+            public sealed interface FontInfo {
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("name")
-                class Name(
-                    @get:JvmSynthetic val value: String,
-                    @get:JvmSynthetic val url: String? = null,
-                    @get:JvmSynthetic val hash: String? = null,
-                    @get:JvmSynthetic val family: String? = null,
-                    @get:JvmSynthetic val weight: Int? = null,
-                    @get:JvmSynthetic val style: FontStyle? = null,
+                public class Name(
+                    @get:JvmSynthetic public val value: String,
+                    @get:JvmSynthetic public val url: String? = null,
+                    @get:JvmSynthetic public val hash: String? = null,
+                    @get:JvmSynthetic public val family: String? = null,
+                    @get:JvmSynthetic public val weight: Int? = null,
+                    @get:JvmSynthetic public val style: FontStyle? = null,
                 ) : FontInfo
 
                 @InternalRevenueCatAPI
                 @Poko
                 @Serializable
                 @SerialName("google_fonts")
-                class GoogleFonts(@get:JvmSynthetic val value: String) : FontInfo
+                public class GoogleFonts(@get:JvmSynthetic public val value: String) : FontInfo
             }
         }
     }
@@ -78,12 +93,72 @@ class UiConfig(
     @InternalRevenueCatAPI
     @Poko
     @Serializable
-    class VariableConfig(
+    public class VariableConfig(
         @SerialName("variable_compatibility_map")
         @get:JvmSynthetic
-        val variableCompatibilityMap: Map<String, String> = emptyMap(),
+        public val variableCompatibilityMap: Map<String, String> = emptyMap(),
         @SerialName("function_compatibility_map")
         @get:JvmSynthetic
-        val functionCompatibilityMap: Map<String, String> = emptyMap(),
+        public val functionCompatibilityMap: Map<String, String> = emptyMap(),
     )
+
+    @InternalRevenueCatAPI
+    @Poko
+    @Serializable(with = CustomVariableDefinitionSerializer::class)
+    public class CustomVariableDefinition(
+        @get:JvmSynthetic
+        public val type: String,
+        @get:JvmSynthetic
+        public val defaultValue: Any,
+    )
+}
+
+/**
+ * Custom serializer for [UiConfig.CustomVariableDefinition] that deserializes
+ * the `default_value` field based on the `type` field.
+ *
+ * Supported types (matching the backend):
+ * - "string" -> String
+ * - "number" -> Double
+ * - "boolean" -> Boolean
+ *
+ * Falls back to String representation for unknown types.
+ */
+@InternalRevenueCatAPI
+internal object CustomVariableDefinitionSerializer : KSerializer<UiConfig.CustomVariableDefinition> {
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("CustomVariableDefinition") {
+        element<String>("type")
+        element<String>("default_value")
+    }
+
+    override fun deserialize(decoder: Decoder): UiConfig.CustomVariableDefinition {
+        require(decoder is JsonDecoder) { "CustomVariableDefinition can only be deserialized from JSON" }
+
+        val jsonObject = decoder.decodeJsonElement().jsonObject
+        val type = jsonObject["type"]?.jsonPrimitive?.content ?: "string"
+        // Use safe cast to handle null, arrays, or objects gracefully - default to empty string
+        val defaultValueElement = jsonObject["default_value"] as? JsonPrimitive
+            ?: return UiConfig.CustomVariableDefinition(type = type, defaultValue = "")
+
+        val defaultValue: Any = when (type) {
+            "string" -> defaultValueElement.content
+            "number" -> {
+                defaultValueElement.doubleOrNull
+                    ?: defaultValueElement.content.toDoubleOrNull()
+                    ?: defaultValueElement.content
+            }
+            "boolean" -> {
+                defaultValueElement.booleanOrNull
+                    ?: defaultValueElement.content.toBooleanStrictOrNull()
+                    ?: defaultValueElement.content
+            }
+            else -> defaultValueElement.content
+        }
+
+        return UiConfig.CustomVariableDefinition(type = type, defaultValue = defaultValue)
+    }
+
+    override fun serialize(encoder: Encoder, value: UiConfig.CustomVariableDefinition) {
+        error("Serialization of CustomVariableDefinition is not implemented as it is not needed.")
+    }
 }

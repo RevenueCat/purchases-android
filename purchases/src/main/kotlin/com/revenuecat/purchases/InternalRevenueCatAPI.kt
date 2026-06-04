@@ -13,4 +13,4 @@ package com.revenuecat.purchases
     AnnotationTarget.TYPEALIAS,
     AnnotationTarget.CONSTRUCTOR,
 )
-annotation class InternalRevenueCatAPI
+public annotation class InternalRevenueCatAPI

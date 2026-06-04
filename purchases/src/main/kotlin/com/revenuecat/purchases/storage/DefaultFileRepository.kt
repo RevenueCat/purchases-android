@@ -16,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -30,14 +29,14 @@ import java.security.MessageDigest
  * A file repository that handles downloading and caching files from remote URLs.
  */
 @InternalRevenueCatAPI
-interface FileRepository {
+public interface FileRepository {
     /**
      * Prefetch files at the given urls.
      * @param urls An array of the pairs of URL to their checksum to fetch data from.
      * @param checksums Optional checksums for each URL (must match length of urls if provided)
      * @return The Job that is executing the prefetch
      */
-    fun prefetch(urls: List<Pair<URL, Checksum?>>)
+    public fun prefetch(urls: List<Pair<URL, Checksum?>>)
 
     /**
      * Create and/or get the cached file url.
@@ -45,7 +44,7 @@ interface FileRepository {
      * @param checksum Optional checksum to validate the downloaded file
      * @return The local file's URI where the data can be found after caching is complete.
      */
-    suspend fun generateOrGetCachedFileURL(url: URL, checksum: Checksum? = null): URI
+    public suspend fun generateOrGetCachedFileURL(url: URL, checksum: Checksum? = null): URI
 
     /**
      * Get the cached file url if it exists.
@@ -53,17 +52,17 @@ interface FileRepository {
      * @param checksum Optional checksum (files cached with different checksums are separate)
      * @return The local file's URI where the data can be found after caching is complete.
      * */
-    fun getFile(url: URL, checksum: Checksum? = null): URI?
+    public fun getFile(url: URL, checksum: Checksum? = null): URI?
 }
 
 /**
  * The file repository is a service capable of storing data and returning the URL where that stored data exists.
  */
 @InternalRevenueCatAPI
-interface LocalFileCache {
-    fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum? = null): URI?
-    fun cachedContentExists(uri: URI): Boolean
-    fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum? = null)
+public interface LocalFileCache {
+    public fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum? = null): URI?
+    public fun cachedContentExists(uri: URI): Boolean
+    public fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum? = null)
 }
 
 @InternalRevenueCatAPI
@@ -83,8 +82,9 @@ internal class DefaultFileRepository(
 
     constructor(
         context: Context,
+        subDir: String = DefaultFileCache.DEFAULT_SUBDIR,
     ) : this(
-        fileCacheManager = DefaultFileCache(context),
+        fileCacheManager = DefaultFileCache(context, subDir),
     )
 
     override fun prefetch(urls: List<Pair<URL, Checksum?>>) {
@@ -127,19 +127,17 @@ internal class DefaultFileRepository(
             if (fileCacheManager.cachedContentExists(it)) it else null
         }
 
-    private suspend fun downloadFile(url: URL): UrlConnection = try {
-        withContext(Dispatchers.IO) {
-            verboseLog { "Downloading remote file from $url" }
+    private fun downloadFile(url: URL): UrlConnection = try {
+        verboseLog { "Downloading remote file from $url" }
 
-            val connection = urlConnectionFactory.createConnection(url.toString())
+        val connection = urlConnectionFactory.createConnection(url.toString())
 
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                connection.disconnect()
-                throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
-            }
-
-            return@withContext connection
+        if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+            connection.disconnect()
+            throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
         }
+
+        connection
     } catch (e: IOException) {
         val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
         logHandler.e("FileRepository", message, e)
@@ -193,14 +191,20 @@ internal class DefaultFileRepository(
 @OptIn(InternalRevenueCatAPI::class)
 internal class DefaultFileCache(
     private val context: Context,
+    private val subDir: String = DEFAULT_SUBDIR,
 ) : LocalFileCache {
+
+    companion object {
+        internal const val DEFAULT_SUBDIR = "rc_files"
+        private const val BUFFER_SIZE = 256 * 1024 // 256KB
+    }
 
     private val md: MessageDigest by lazy {
         MessageDigest.getInstance("MD5")
     }
 
     private val cacheDir: File by lazy {
-        val dir = File(context.cacheDir, "rc_files")
+        val dir = File(context.cacheDir, subDir)
         if (!dir.exists()) {
             dir.mkdirs()
         }
@@ -301,9 +305,5 @@ internal class DefaultFileCache(
         )
 
         return checksum == computedChecksum
-    }
-
-    companion object {
-        private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 }

@@ -1,12 +1,16 @@
 package com.revenuecat.purchases
 
-internal enum class PostReceiptInitiationSource {
+import kotlinx.serialization.Serializable
+
+@InternalRevenueCatAPI
+@Serializable
+public enum class PostReceiptInitiationSource {
     RESTORE,
     PURCHASE,
     UNSYNCED_ACTIVE_PURCHASES,
     ;
 
-    val postReceiptFieldValue: String
+    public val postReceiptFieldValue: String
         get() = when (this) {
             RESTORE -> "restore"
             PURCHASE -> "purchase"

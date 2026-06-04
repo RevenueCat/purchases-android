@@ -1,8 +1,3 @@
-buildscript {
-    extra["compileVersion"] = 35
-    extra["minVersion"] = 21
-}
-
 plugins {
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.android.application) apply false
@@ -29,10 +24,11 @@ dependencies {
     detektPlugins(libs.detekt.formatting)
     detektPlugins(libs.detekt.compose)
     detektPlugins(libs.detekt.libraries)
+    detektPlugins(project(":detekt-rules"))
 }
 
 tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
+    delete(rootProject.layout.buildDirectory)
 }
 
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {

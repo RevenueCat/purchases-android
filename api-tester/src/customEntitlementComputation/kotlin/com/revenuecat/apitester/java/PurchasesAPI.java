@@ -18,7 +18,8 @@ final class PurchasesAPI {
                         context,
                         "",
                         ""
-                ).showInAppMessagesAutomatically(false)
+                ).applyObfuscatedAccountIdToSubscriptionChanges(true)
+                        .showInAppMessagesAutomatically(false)
                         .pendingTransactionsForPrepaidPlansEnabled(false)
                         .build()
         );

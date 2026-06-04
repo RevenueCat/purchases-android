@@ -13,7 +13,7 @@ import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.offerEligibility
 
 /**
  * Displays the offer details of the selected package. For templates that allow to select
@@ -44,7 +44,7 @@ internal fun OfferDetails(
             textWithNoIntroOffer = state.selectedLocalization.offerDetails,
             textWithIntroOffer = state.selectedLocalization.offerDetailsWithIntroOffer,
             textWithMultipleIntroOffers = state.selectedLocalization.offerDetailsWithMultipleIntroOffers,
-            eligibility = state.selectedPackage.value.introEligibility,
+            eligibility = state.selectedPackage.value.offerEligibility,
             color = color,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Normal,

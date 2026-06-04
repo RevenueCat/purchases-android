@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.paywalls.fonts.toDownloadableFontInfo
@@ -32,7 +33,11 @@ internal class OfferingFontPreDownloader(
         val fontsToCheck = offerings.all.values
             .firstNotNullOfOrNull { it.paywallComponents?.uiConfig?.app?.fonts?.values }
             ?: emptyList()
-        val fontInfosToDownload = fontsToCheck
+        preDownloadFontsIfNeeded(fontsToCheck)
+    }
+
+    fun preDownloadFontsIfNeeded(fonts: Collection<AppConfig.FontsConfig>) {
+        val fontInfosToDownload = fonts
             .map { it.android }
             .filterIsInstance<FontInfo.Name>()
             .filter {

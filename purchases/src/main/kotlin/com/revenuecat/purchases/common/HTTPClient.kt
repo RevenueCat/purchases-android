@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
@@ -61,6 +62,7 @@ internal interface RequestResponseListener {
     )
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList")
 internal class HTTPClient(
     private val appConfig: AppConfig,
@@ -291,7 +293,10 @@ internal class HTTPClient(
                 debugLog { "HTTP request:\\n ${toCurlRequest(httpRequest)}" }
             }
 
-            val timeout = timeoutManager.getTimeoutForRequest(endpoint, isFallbackURL)
+            val timeout = timeoutManager.getTimeoutForRequest(
+                isFallback = isFallbackURL,
+                fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
+            )
 
             connection = getConnection(httpRequest, timeout)
         } catch (e: MalformedURLException) {
@@ -479,6 +484,7 @@ internal class HTTPClient(
             "X-Nonce" to nonce,
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
+            "X-UI-Preview-Mode" to if (appConfig.uiPreviewMode) "true" else null,
             "X-Storefront" to storefrontProvider.getStorefront(),
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
             "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),

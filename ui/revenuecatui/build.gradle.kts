@@ -1,13 +1,20 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.FileInputStream
+import java.util.Properties
 
 plugins {
-    id("revenuecat-public-library")
+    alias(libs.plugins.revenuecat.public.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.poko)
 }
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
@@ -41,6 +48,15 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // Tester-only toggle: when true, ID-based paywall selections resolve via
+        // GET /workflows/{id} instead of the offerings cache. Enable with
+        // `-Prevenuecat.useWorkflowsEndpoint=true` when building the SDK locally.
+        buildConfigField(
+            type = "boolean",
+            name = "USE_WORKFLOWS_ENDPOINT",
+            value = (localProperties["revenuecat.useWorkflowsEndpoint"] == "true").toString(),
+        )
     }
 
     buildFeatures {
@@ -78,10 +94,10 @@ metalava {
     )
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
         if (project.findProperty("revenuecat.enableComposeCompilerReports") == "true") {
-            val composeMetricsDir = "${project.buildDir.absolutePath}/compose_metrics"
+            val composeMetricsDir = "${project.layout.buildDirectory.get().asFile.absolutePath}/compose_metrics"
             freeCompilerArgs.addAll(
                 listOf(
                     "-P",
@@ -124,6 +140,8 @@ dependencies {
     implementation(libs.commonmark)
     implementation(libs.commonmark.strikethrough)
 
+    implementation(libs.kotlinx.serialization.json)
+
     compileOnly(libs.emerge.snapshots.runtime)
 
     debugImplementation(libs.compose.ui.tooling)
@@ -132,7 +150,6 @@ dependencies {
     testImplementation(libs.bundles.test)
     testImplementation(libs.coil.test)
     testImplementation(libs.coroutines.test)
-    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.androidx.test.compose)
     testImplementation(libs.androidx.test.compose.manifest)
     testImplementation(libs.hamcrest.core)

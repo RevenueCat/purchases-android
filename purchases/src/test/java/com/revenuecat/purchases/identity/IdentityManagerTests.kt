@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -41,6 +42,7 @@ class IdentityManagerTests {
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
     private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
     private lateinit var mockOfferingsCache: OfferingsCache
+    private lateinit var mockWorkflowsCache: WorkflowsCache
     private lateinit var mockBackend: Backend
     private lateinit var mockOfflineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var identityManager: IdentityManager
@@ -72,6 +74,9 @@ class IdentityManagerTests {
         }
         mockSubscriberAttributesManager = mockk()
         mockOfferingsCache = mockk<OfferingsCache>().apply {
+            every { clearCache() } just Runs
+        }
+        mockWorkflowsCache = mockk<WorkflowsCache>().apply {
             every { clearCache() } just Runs
         }
 
@@ -245,6 +250,7 @@ class IdentityManagerTests {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
     }
 
     @Test
@@ -399,6 +405,7 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
     }
 
     @Test
@@ -623,6 +630,7 @@ class IdentityManagerTests {
 
         verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
         verify(exactly = 1) {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
         }
@@ -639,6 +647,87 @@ class IdentityManagerTests {
 
         verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
     }
+    // endregion
+
+    // region preview mode
+
+    @Test
+    fun `configure in preview mode uses fixed user ID`() {
+        mockCleanCaches()
+        identityManager = createIdentityManager(uiPreviewMode = true)
+        identityManager.configure(null)
+        assertThat(cachedAppUserIDSlot.isCaptured).isTrue
+        assertThat(cachedAppUserIDSlot.captured).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+    }
+
+    @Test
+    fun `configure in preview mode ignores provided user ID`() {
+        mockCleanCaches()
+        identityManager = createIdentityManager(uiPreviewMode = true)
+        identityManager.configure("real-user")
+        assertThat(cachedAppUserIDSlot.isCaptured).isTrue
+        assertThat(cachedAppUserIDSlot.captured).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+    }
+
+    @Test
+    fun `logIn blocked when current user is preview mode user`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        identityManager = createIdentityManager(uiPreviewMode = true)
+
+        var receivedError: PurchasesError? = null
+        identityManager.logIn(
+            "new-user",
+            onSuccess = { _, _ -> fail("Should not succeed") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
+    fun `logIn blocked when target user ID is preview mode user`() {
+        mockIdentifiedUser("normal-user")
+
+        var receivedError: PurchasesError? = null
+        identityManager.logIn(
+            IdentityManager.UI_PREVIEW_MODE_APP_USER_ID,
+            onSuccess = { _, _ -> fail("Should not succeed") },
+            onError = { receivedError = it },
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
+    fun `logOut blocked when current user is preview mode user`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        identityManager = createIdentityManager(uiPreviewMode = true)
+
+        var receivedError: PurchasesError? = null
+        identityManager.logOut { receivedError = it }
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
+    fun `preview mode user is not considered anonymous`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
+        identityManager = createIdentityManager(uiPreviewMode = true)
+        assertThat(identityManager.currentUserIsAnonymous()).isFalse
+    }
+
+    @Test
+    fun `switchUser blocked when current user is preview mode user`() {
+        every { mockDeviceCache.getCachedAppUserID() } returns IdentityManager.UI_PREVIEW_MODE_APP_USER_ID
+        identityManager = createIdentityManager(uiPreviewMode = true)
+
+        identityManager.switchUser("other-user")
+
+        verify(exactly = 0) { mockDeviceCache.clearCachesForAppUserID(any()) }
+        assertThat(identityManager.currentAppUserID).isEqualTo(IdentityManager.UI_PREVIEW_MODE_APP_USER_ID)
+    }
+
     // endregion
 
     // region aliasCurrentUserIdTo
@@ -673,6 +762,7 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
         verify(exactly = 1) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
@@ -711,6 +801,7 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 0) { mockOfferingsCache.clearCache() }
+        verify(exactly = 0) { mockWorkflowsCache.clearCache() }
         verify(exactly = 0) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 0) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
@@ -804,17 +895,21 @@ class IdentityManagerTests {
         subscriberAttributesCache: SubscriberAttributesCache = mockSubscriberAttributesCache,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
         offeringsCache: OfferingsCache = mockOfferingsCache,
+        workflowsCache: WorkflowsCache = mockWorkflowsCache,
         backend: Backend = mockBackend,
-        offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager
+        offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager,
+        uiPreviewMode: Boolean = false,
     ): IdentityManager {
         return IdentityManager(
             deviceCache,
             subscriberAttributesCache,
             subscriberAttributesManager,
             offeringsCache,
+            workflowsCache,
             backend,
             offlineEntitlementsManager,
-            SyncDispatcher()
+            SyncDispatcher(),
+            uiPreviewMode = uiPreviewMode,
         )
     }
 

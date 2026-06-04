@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.models.StoreTransaction
 
-class InternalDebugRevenueCatScreenViewModelFactory(
+public class InternalDebugRevenueCatScreenViewModelFactory(
     private val onPurchaseCompleted: (StoreTransaction) -> Unit,
     private val onPurchaseErrored: (PurchasesTransactionException) -> Unit,
 ) : ViewModelProvider.NewInstanceFactory() {

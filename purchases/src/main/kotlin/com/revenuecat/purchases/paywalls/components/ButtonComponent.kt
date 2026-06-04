@@ -22,79 +22,87 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 @SerialName("button")
 @Immutable
-class ButtonComponent(
-    @get:JvmSynthetic val action: Action,
-    @get:JvmSynthetic val stack: StackComponent,
-    @get:JvmSynthetic val transition: PaywallTransition? = null,
+public class ButtonComponent(
+    @get:JvmSynthetic public val action: Action,
+    @get:JvmSynthetic public val stack: StackComponent,
+    @get:JvmSynthetic public val transition: PaywallTransition? = null,
+    @get:JvmSynthetic public val name: String? = null,
+    @get:JvmSynthetic public val id: String? = null,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
     @Serializable(with = ActionSerializer::class)
     @Stable
-    sealed interface Action {
+    public sealed interface Action {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
-        object Unknown : Action
+        public object Unknown : Action
 
         @Serializable
-        object RestorePurchases : Action
+        public object RestorePurchases : Action
 
         @Serializable
-        object NavigateBack : Action
+        public object NavigateBack : Action
+
+        @Serializable
+        public object WorkflowTrigger : Action
+
+        @Serializable
+        public object CloseWorkflow : Action
 
         @Serializable
         @Immutable
-        data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
+        public data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
     }
 
     @InternalRevenueCatAPI
     @Serializable
     @Stable
-    sealed interface Destination {
+    public sealed interface Destination {
         // SerialNames are handled by the ActionSerializer.
 
         @Serializable
-        object Unknown : Destination
+        public object Unknown : Destination
 
         @Serializable
-        object CustomerCenter : Destination
+        public object CustomerCenter : Destination
 
         @Serializable
         @Immutable
-        data class PrivacyPolicy(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        public data class PrivacyPolicy(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
         @Immutable
-        data class Terms(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        public data class Terms(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
         @Immutable
-        data class Url(
-            @get:JvmSynthetic val urlLid: LocalizationKey,
-            @get:JvmSynthetic val method: UrlMethod,
+        public data class Url(
+            @get:JvmSynthetic public val urlLid: LocalizationKey,
+            @get:JvmSynthetic public val method: UrlMethod,
         ) : Destination
 
         @Serializable
         @Immutable
-        data class Sheet(
-            @get:JvmSynthetic val id: String,
-            @get:JvmSynthetic val name: String?,
-            @get:JvmSynthetic val stack: StackComponent,
-            @get:JvmSynthetic @SerialName("background_blur") val backgroundBlur: Boolean,
-            @get:JvmSynthetic val size: Size?,
+        public data class Sheet(
+            @get:JvmSynthetic public val id: String,
+            @get:JvmSynthetic public val name: String?,
+            @get:JvmSynthetic public val stack: StackComponent,
+            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean,
+            @get:JvmSynthetic public val size: Size?,
         ) : Destination
     }
 
     @InternalRevenueCatAPI
     @Serializable(with = UrlMethodDeserializer::class)
-    enum class UrlMethod {
+    public enum class UrlMethod {
         // SerialNames are handled by the UrlMethodDeserializer.
 
         IN_APP_BROWSER,
@@ -132,10 +140,10 @@ private object ActionSerializer : KSerializer<Action> {
 @OptIn(InternalRevenueCatAPI::class)
 @Serializable
 private class ActionSurrogate(
-    val type: ActionTypeSurrogate,
-    val destination: DestinationSurrogate? = null,
-    val url: UrlSurrogate? = null,
-    val sheet: Destination.Sheet? = null,
+    public val type: ActionTypeSurrogate,
+    public val destination: DestinationSurrogate? = null,
+    public val url: UrlSurrogate? = null,
+    public val sheet: Destination.Sheet? = null,
 ) {
     constructor(action: Action) : this(
         type = when (action) {
@@ -143,11 +151,15 @@ private class ActionSurrogate(
             is Action.NavigateBack -> ActionTypeSurrogate.navigate_back
             is Action.NavigateTo -> ActionTypeSurrogate.navigate_to
             is Action.RestorePurchases -> ActionTypeSurrogate.restore_purchases
+            is Action.WorkflowTrigger -> ActionTypeSurrogate.workflow
+            is Action.CloseWorkflow -> ActionTypeSurrogate.close_workflow
         },
         destination = when (action) {
             is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
+            is Action.WorkflowTrigger,
+            is Action.CloseWorkflow,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -163,6 +175,8 @@ private class ActionSurrogate(
             is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
+            is Action.WorkflowTrigger,
+            is Action.CloseWorkflow,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -190,6 +204,8 @@ private class ActionSurrogate(
             is Action.Unknown,
             is Action.NavigateBack,
             is Action.RestorePurchases,
+            is Action.WorkflowTrigger,
+            is Action.CloseWorkflow,
             -> null
 
             is Action.NavigateTo -> when (action.destination) {
@@ -204,11 +220,13 @@ private class ActionSurrogate(
         },
     )
 
-    fun toAction(): Action =
+    public fun toAction(): Action =
         when (type) {
             ActionTypeSurrogate.unknown -> Action.Unknown
             ActionTypeSurrogate.restore_purchases -> Action.RestorePurchases
             ActionTypeSurrogate.navigate_back -> Action.NavigateBack
+            ActionTypeSurrogate.workflow -> Action.WorkflowTrigger
+            ActionTypeSurrogate.close_workflow -> Action.CloseWorkflow
             ActionTypeSurrogate.navigate_to -> Action.NavigateTo(
                 destination = when (destination) {
                     DestinationSurrogate.customer_center -> Destination.CustomerCenter
@@ -255,6 +273,8 @@ private enum class ActionTypeSurrogate {
     restore_purchases,
     navigate_back,
     navigate_to,
+    workflow,
+    close_workflow,
     unknown,
 }
 

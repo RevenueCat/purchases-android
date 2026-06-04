@@ -265,6 +265,39 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `does not add UI preview mode header if disabled`() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint.getPath(),
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.headers.names()).doesNotContain("X-UI-Preview-Mode")
+    }
+
+    @Test
+    fun `adds UI preview mode header if enabled`() {
+        client = createClient(appConfig = createAppConfig(uiPreviewMode = true))
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint.getPath(),
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-UI-Preview-Mode")).isEqualTo("true")
+    }
+
+    @Test
     fun addsETagHeadersToRequest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
@@ -1058,7 +1091,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         timeoutManager.recordRequestResult(
             HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
         )
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup successful response
@@ -1083,7 +1116,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // Verify timeout was reset
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
@@ -1102,7 +1135,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Initially timeout should be default
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup fallback server response
@@ -1151,7 +1184,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
             // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
                 .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
             verify(exactly = 1) {
                 timeoutManager.recordRequestResult(
@@ -1174,7 +1207,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Initially timeout should be default
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         enqueue(
@@ -1198,10 +1231,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         }.isInstanceOf(SocketTimeoutException::class.java)
 
-        // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        // Verify HTTPClient recorded OTHER_RESULT (not timeout for fallback endpoint)
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
-        assertThat(timeoutManager.getTimeoutForRequest(Endpoint.GetProductEntitlementMapping, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
@@ -1222,7 +1255,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         timeoutManager.recordRequestResult(
             HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
         )
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup error response (non-timeout error)
@@ -1247,7 +1280,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // Verify HTTPClient recorded OTHER_RESULT and did NOT reset timeout
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_FOUND)
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)

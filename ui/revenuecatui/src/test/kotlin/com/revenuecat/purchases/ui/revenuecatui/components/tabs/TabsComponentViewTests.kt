@@ -22,6 +22,7 @@ import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
 import com.revenuecat.purchases.paywalls.components.TabControlComponent
@@ -143,6 +145,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -321,6 +324,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1156,6 +1160,7 @@ class TabsComponentViewTests {
         localizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     ): PaywallComponentsData =
         PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1267,6 +1272,7 @@ class TabsComponentViewTests {
                 is PurchaseButtonComponent -> queue.add(current.stack)
                 is ButtonComponent -> queue.add(current.stack)
                 is PackageComponent -> queue.add(current.stack)
+                is HeaderComponent -> queue.add(current.stack)
                 is StickyFooterComponent -> queue.add(current.stack)
                 is CarouselComponent -> queue.addAll(current.pages)
                 is TabControlButtonComponent -> queue.add(current.stack)
@@ -1284,6 +1290,7 @@ class TabsComponentViewTests {
                     current.fallback?.let { queue.add(it) }
                 }
 
+                is FallbackHeaderComponent,
                 is TabControlToggleComponent,
                 is TabControlComponent,
                 is TimelineComponent,
@@ -1367,6 +1374,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1466,6 +1474,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(
@@ -1563,6 +1572,7 @@ class TabsComponentViewTests {
         )
 
         val data = PaywallComponentsData(
+            id = "paywall_id",
             templateName = "template",
             assetBaseURL = testAssetBaseURL,
             componentsConfig = ComponentsConfig(

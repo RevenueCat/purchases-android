@@ -10,18 +10,18 @@ import java.security.MessageDigest
  */
 @InternalRevenueCatAPI
 @Serializable
-data class Checksum(
+public data class Checksum(
     /** The algorithm used to generate the checksum */
-    @SerialName("algo") val algorithm: Algorithm,
+    @SerialName("algo") public val algorithm: Algorithm,
 
     /** The checksum hash value */
-    @SerialName("value") val value: String,
+    @SerialName("value") public val value: String,
 ) {
     /**
      * Supported hashing algorithms
      */
     @Serializable
-    enum class Algorithm(val algorithmName: String) {
+    public enum class Algorithm(public val algorithmName: String) {
         @SerialName("sha256")
         SHA256("SHA-256"),
 
@@ -35,8 +35,8 @@ data class Checksum(
         MD5("MD5"),
         ;
 
-        companion object {
-            fun fromString(value: String): Algorithm? = when (value.lowercase()) {
+        public companion object {
+            public fun fromString(value: String): Algorithm? = when (value.lowercase()) {
                 "sha256" -> SHA256
                 "sha384" -> SHA384
                 "sha512" -> SHA512
@@ -46,11 +46,11 @@ data class Checksum(
         }
     }
 
-    companion object {
+    public companion object {
         /**
          * Generate a checksum from data
          */
-        fun generate(data: ByteArray, algorithm: Algorithm): Checksum {
+        public fun generate(data: ByteArray, algorithm: Algorithm): Checksum {
             val digest = MessageDigest.getInstance(algorithm.algorithmName)
             val hash = digest.digest(data)
             return Checksum(algorithm, hash.toHexString())
@@ -68,7 +68,7 @@ data class Checksum(
     /**
      * Exception thrown when checksum validation fails
      */
-    class ChecksumValidationException : Exception()
+    public class ChecksumValidationException : Exception()
 }
 
 internal fun ByteArray.toHexString(): String {

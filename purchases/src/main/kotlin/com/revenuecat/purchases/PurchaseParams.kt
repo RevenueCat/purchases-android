@@ -7,16 +7,24 @@ import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.toGoogleReplacementMode
+import com.revenuecat.purchases.models.toStoreReplacementMode
 import com.revenuecat.purchases.strings.PurchaseStrings
 import dev.drewhamilton.poko.Poko
 
 @Poko
-class PurchaseParams(val builder: Builder) {
+public class PurchaseParams(public val builder: Builder) {
 
-    val isPersonalizedPrice: Boolean?
-    val oldProductId: String?
-    val googleReplacementMode: GoogleReplacementMode
+    public val isPersonalizedPrice: Boolean?
+    public val oldProductId: String?
+
+    @Deprecated("Use replacementMode instead")
+    public val googleReplacementMode: GoogleReplacementMode
+        get() = replacementMode.toGoogleReplacementMode()
+
+    public val replacementMode: StoreReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
@@ -38,7 +46,7 @@ class PurchaseParams(val builder: Builder) {
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
         this.oldProductId = builder.oldProductId
-        this.googleReplacementMode = builder.googleReplacementMode
+        this.replacementMode = builder.replacementMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingContext = builder.presentedOfferingContext
@@ -54,13 +62,14 @@ class PurchaseParams(val builder: Builder) {
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */
-    open class Builder private constructor(
+    @Suppress("TooManyFunctions")
+    public open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal var purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
-        constructor(activity: Activity, packageToPurchase: Package) :
+        public constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
                 packageToPurchase.product.purchasingData,
@@ -68,10 +77,10 @@ class PurchaseParams(val builder: Builder) {
                 packageToPurchase.product,
             )
 
-        constructor(activity: Activity, storeProduct: StoreProduct) :
+        public constructor(activity: Activity, storeProduct: StoreProduct) :
             this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
 
-        constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
+        public constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(
                 activity,
                 subscriptionOption.purchasingData,
@@ -89,14 +98,14 @@ class PurchaseParams(val builder: Builder) {
 
         @set:JvmSynthetic
         @get:JvmSynthetic
-        internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
+        internal var replacementMode: StoreReplacementMode = StoreReplacementMode.WITHOUT_PRORATION
 
         /*
          * Sets the data about the context in which an offering was presented.
          *
          * Default is set from the Package, StoreProduct, or SubscriptionOption used in the constructor.
          */
-        fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext) = apply {
+        public fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): Builder = apply {
             this.presentedOfferingContext = presentedOfferingContext
         }
 
@@ -109,7 +118,7 @@ class PurchaseParams(val builder: Builder) {
          * Default is false.
          * Ignored for Amazon Appstore purchases.
          */
-        fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
+        public fun isPersonalizedPrice(isPersonalizedPrice: Boolean): Builder = apply {
             this.isPersonalizedPrice = isPersonalizedPrice
         }
 
@@ -121,9 +130,10 @@ class PurchaseParams(val builder: Builder) {
          * Note: When using [GoogleReplacementMode.DEFERRED], the product ID is used to match the purchase callback
          * with the transaction returned by Google Play.
          *
-         * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
+         * Product changes are only available in the Play Store and the Galaxy Store.
+         * Ignored for Amazon Appstore purchases.
          */
-        fun oldProductId(oldProductId: String) = apply {
+        public fun oldProductId(oldProductId: String): Builder = apply {
             this.oldProductId = oldProductId
         }
 
@@ -131,10 +141,22 @@ class PurchaseParams(val builder: Builder) {
          * The [GoogleReplacementMode] to use when replacing the given oldProductId. Defaults to
          * [GoogleReplacementMode.WITHOUT_PRORATION].
          *
-         * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
+         * Applied for Play Store and Galaxy Store product changes. Ignored for Amazon Appstore.
          */
-        fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
-            this.googleReplacementMode = googleReplacementMode
+        @Deprecated("Use .replacementMode() instead")
+        public fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode): Builder = apply {
+            this.replacementMode = googleReplacementMode.toStoreReplacementMode()
+        }
+
+        /**
+         * The [StoreReplacementMode] to use when replacing the given oldProductId. Defaults to
+         * [StoreReplacementMode.WITHOUT_PRORATION].
+         *
+         * Refer to the [StoreReplacementMode] docs for a list of
+         * supported replacement modes for each store.
+         */
+        public fun replacementMode(replacementMode: StoreReplacementMode): Builder = apply {
+            this.replacementMode = replacementMode
         }
 
         /*
@@ -152,7 +174,7 @@ class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons packages per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun addOnPackages(addOnPackages: List<Package>) = apply {
+        public fun addOnPackages(addOnPackages: List<Package>): Builder = apply {
             this.addOnStoreProducts(addOnPackages.map { it.product })
         }
 
@@ -171,7 +193,7 @@ class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>) = apply {
+        public fun addOnStoreProducts(addOnStoreProducts: List<StoreProduct>): Builder = apply {
             val compatibleAddOnProducts: List<GooglePurchasingData> = addOnStoreProducts
                 .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
 
@@ -189,14 +211,14 @@ class PurchaseParams(val builder: Builder) {
          * - No more than 49 add-ons products per multi-line purchase are allowed.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>) = apply {
+        public fun addOnSubscriptionOptions(addOnSubscriptionOptions: List<SubscriptionOption>): Builder = apply {
             val compatibleAddOnProducts: List<GooglePurchasingData> = addOnSubscriptionOptions
                 .mapNotNull { it.purchasingData as? GooglePurchasingData.Subscription }
 
             attachSubscriptionAddOns(addOns = compatibleAddOnProducts)
         }
 
-        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+        @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
         private fun attachSubscriptionAddOns(addOns: List<GooglePurchasingData>) = apply {
             if (addOns.isEmpty()) {
                 log(LogIntent.DEBUG) { PurchaseStrings.EMPTY_ADD_ONS_LIST_PASSED }
@@ -221,7 +243,7 @@ class PurchaseParams(val builder: Builder) {
             }
         }
 
-        open fun build(): PurchaseParams {
+        public open fun build(): PurchaseParams {
             return PurchaseParams(this)
         }
     }

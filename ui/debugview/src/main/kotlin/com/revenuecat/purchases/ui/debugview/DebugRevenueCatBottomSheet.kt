@@ -13,7 +13,7 @@ import com.revenuecat.purchases.models.StoreTransaction
  * @param onDismissCallback Callback that will be called when the bottom sheet is dismissed.
  */
 @Composable
-fun DebugRevenueCatBottomSheet(
+public fun DebugRevenueCatBottomSheet(
     onPurchaseCompleted: (StoreTransaction) -> Unit,
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
     isVisible: Boolean = false,

@@ -37,4 +37,6 @@ internal object PaywallValidationErrorStrings {
     const val UNSUPPORTED_BACKGROUND_TYPE = "This SDK version does not support this background type: %s"
     const val ROOT_COMPONENT_UNSUPPORTED_PROPERTIES =
         "This paywall's root component is hidden because it contains unsupported properties: %s"
+    const val WORKFLOW_BUTTON_MISSING_COMPONENT_ID =
+        "Workflow button '%s' has no component id and will not respond to taps."
 }

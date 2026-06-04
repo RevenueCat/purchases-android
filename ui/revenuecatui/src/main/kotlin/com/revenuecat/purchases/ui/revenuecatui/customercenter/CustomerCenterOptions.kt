@@ -2,7 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 
-class CustomerCenterOptions internal constructor(
+public class CustomerCenterOptions internal constructor(
     internal val listener: CustomerCenterListener?,
 ) {
 
@@ -10,15 +10,15 @@ class CustomerCenterOptions internal constructor(
         listener = builder.listener,
     )
 
-    class Builder {
+    public class Builder {
 
         internal var listener: CustomerCenterListener? = null
 
-        fun setListener(listener: CustomerCenterListener?) = apply {
+        public fun setListener(listener: CustomerCenterListener?): Builder = apply {
             this.listener = listener
         }
 
-        fun build(): CustomerCenterOptions {
+        public fun build(): CustomerCenterOptions {
             return CustomerCenterOptions(this)
         }
     }

@@ -23,7 +23,7 @@ class PackageCardAdapter(
     private val packages: List<Package>,
     private val activeSubscriptions: Set<String>,
     private val listener: PackageCardAdapterListener,
-    private val isPlayStore: Boolean,
+    private val store: Store,
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
@@ -40,7 +40,7 @@ class PackageCardAdapter(
     override fun getItemCount(): Int = packages.size
 
     override fun onBindViewHolder(holder: PackageViewHolder, position: Int) {
-        holder.bind(packages[position], isPlayStore, isAddOnMode, selectedPackages.contains(packages[position]))
+        holder.bind(packages[position], store, isAddOnMode, selectedPackages.contains(packages[position]))
     }
 
     fun setAddOnMode(enabled: Boolean) {
@@ -82,7 +82,12 @@ class PackageCardAdapter(
         private val nothingCheckedIndex = -1
 
         @Suppress("CyclomaticComplexMethod", "LongMethod")
-        fun bind(currentPackage: Package, isPlayStore: Boolean, isAddOnMode: Boolean, isSelected: Boolean) {
+        fun bind(currentPackage: Package, store: Store, isAddOnMode: Boolean, isSelected: Boolean) {
+            val isPlayStore = store == Store.GOOGLE
+            val supportsProductChange = when (store) {
+                Store.GOOGLE, Store.GALAXY -> true
+                Store.AMAZON -> false
+            }
             val product = currentPackage.product
             val isSubscription = product.type == ProductType.SUBS
             val isActive = activeSubscriptions.contains(product.id)
@@ -115,7 +120,7 @@ class PackageCardAdapter(
             binding.isUpgradeCheckbox.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
             binding.isPersonalizedCheckbox.visibility = if (isAddOnMode) View.GONE else View.VISIBLE
 
-            binding.isUpgradeCheckbox.isEnabled = isPlayStore
+            binding.isUpgradeCheckbox.isEnabled = supportsProductChange
             binding.isPersonalizedCheckbox.isEnabled = isPlayStore
 
             binding.packageBuyButton.visibility = if (isAddOnMode) View.GONE else View.VISIBLE

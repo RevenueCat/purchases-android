@@ -11,7 +11,8 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -22,24 +23,88 @@ import org.junit.runner.RunWith
 class PackageExtensionsTest {
 
     @Test
-    fun `introEligibility calculation is SINGLE_OFFER_ELIGIBLE if defaultOption only has a free trial`() {
+    fun `introOfferEligibility is IntroOfferSingle if defaultOption only has a free trial`() {
         val rcPackage = createPackage(freeTrial = true)
 
-        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE)
+        assertThat(rcPackage.introOfferEligibility).isEqualTo(OfferEligibility.IntroOfferSingle)
     }
 
     @Test
-    fun `introEligibility calculation is MULTIPLE_OFFERS_ELIGIBLE if defaultOption has trial and discounted price`() {
+    fun `introOfferEligibility is IntroOfferMultiple if defaultOption has trial and discounted price`() {
         val rcPackage = createPackage(freeTrial = true, introOffer = true)
 
-        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE)
+        assertThat(rcPackage.introOfferEligibility).isEqualTo(OfferEligibility.IntroOfferMultiple)
     }
 
     @Test
-    fun `introEligibility calculation is INELIGIBLE if defaultOption is base plan`() {
+    fun `introOfferEligibility is Ineligible if defaultOption is base plan`() {
         val rcPackage = createPackage()
 
-        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.INELIGIBLE)
+        assertThat(rcPackage.introOfferEligibility).isEqualTo(OfferEligibility.Ineligible)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns PromoOfferSingle when promo offer has single phase`() {
+        val promoOption = createSubscriptionOption(freeTrial = true)
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage()
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.PromoOfferSingle)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns PromoOfferMultiple when promo offer has multiple phases`() {
+        val promoOption = createSubscriptionOption(freeTrial = true, introOffer = true)
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage()
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.PromoOfferMultiple)
+    }
+
+    @Test
+    fun `calculateOfferEligibility falls back to intro offer when promo has no discount phases`() {
+        val promoOption = createSubscriptionOption()
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage(freeTrial = true)
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.IntroOfferSingle)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns Ineligible when promo has no phases and package has no intro`() {
+        val promoOption = createSubscriptionOption()
+        val resolvedOffer = ResolvedOffer.ConfiguredOffer(promoOption)
+        val rcPackage = createPackage()
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.Ineligible)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns intro eligibility when no resolved offer`() {
+        val rcPackage = createPackage(freeTrial = true)
+
+        assertThat(calculateOfferEligibility(null, rcPackage)).isEqualTo(OfferEligibility.IntroOfferSingle)
+    }
+
+    @Test
+    fun `calculateOfferEligibility returns intro eligibility for NoConfiguration`() {
+        val option = createSubscriptionOption(freeTrial = true)
+        val resolvedOffer = ResolvedOffer.NoConfiguration(option)
+        val rcPackage = createPackage(introOffer = true)
+
+        assertThat(calculateOfferEligibility(resolvedOffer, rcPackage)).isEqualTo(OfferEligibility.IntroOfferSingle)
+    }
+
+    private fun createSubscriptionOption(freeTrial: Boolean = false, introOffer: Boolean = false): SubscriptionOption {
+        return object : SubscriptionOption {
+            override val id: String = "option-id"
+            override val pricingPhases: List<PricingPhase> = getPricingPhases(freeTrial, introOffer)
+            override val tags: List<String> = emptyList()
+            override val presentedOfferingIdentifier: String? = "offering_id"
+            override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext("offering_id")
+            override val purchasingData: PurchasingData = mockk()
+            override val installmentsInfo: InstallmentsInfo? = null
+        }
     }
 
     private fun createPackage(freeTrial: Boolean = false, introOffer: Boolean = false): Package {

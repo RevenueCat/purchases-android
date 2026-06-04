@@ -1,0 +1,27 @@
+{
+  "api_sources": [
+    {
+      "id": "primary",
+      "url": "https://api.revenuecat.com/",
+      "priority": 0,
+      "weight": 100
+    }
+  ],
+  "blob_sources": [
+    {
+      "id": "cloudfront-primary",
+      "url_format": "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",
+      "priority": 0,
+      "weight": 100
+    }
+  ],
+  "manifest": {
+    "topics": {
+      "product_entitlement_mapping": {
+        "DEFAULT": {
+          "blob_ref": "6a4d0f53d9f6b8e2f4dca0fd1c7c4f5e3e1b1ef0f45d989e2f8f8d0d91ec1b6a"
+        }
+      }
+    }
+  }
+}

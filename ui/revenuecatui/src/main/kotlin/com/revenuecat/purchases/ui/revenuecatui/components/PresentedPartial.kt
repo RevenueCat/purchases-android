@@ -1,13 +1,18 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
 
 /**
  * Partial components transformed and ready for presentation.
@@ -47,13 +52,29 @@ internal class PresentedOverride<T : PresentedPartial<T>>(
 
 /**
  * Converts component overrides to presented overrides.
+ *
+ * @param stripRules If true, all overrides containing rule conditions are discarded, keeping only overrides with
+ * base conditions. This is used when the paywall contains any unsupported condition anywhere in its component tree,
+ * rendering the "default paywall" with only base overrides applied.
  */
 @Suppress("ReturnCount")
 @JvmSynthetic
 internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverride<T>>.toPresentedOverrides(
+    stripRules: Boolean = false,
     transform: (T) -> Result<P, NonEmptyList<PaywallValidationError>>,
 ): Result<List<PresentedOverride<P>>, PaywallValidationError> {
-    return this.map { override ->
+    val overridesToProcess = if (stripRules) {
+        // Also filter out Unsupported conditions explicitly: Unsupported has isRule = false (it's not
+        // a rule, it's an unknown condition type), but overrides containing it should still be discarded
+        // when stripping rules, since Unsupported is what triggered stripRules in the first place.
+        this.filter { override ->
+            override.conditions.none { it.isRule || it is ComponentOverride.Condition.Unsupported }
+        }
+    } else {
+        this
+    }
+
+    return overridesToProcess.map { override ->
         val properties = transform(override.properties)
             .getOrElse { return Result.Error(it.head) }
 
@@ -65,12 +86,20 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 }
 
 /**
- * Builds a presentable partial component based on current view state, screen condition and whether the user
- * is eligible for an intro offer.
+ * Context needed to evaluate conditions on component overrides.
+ */
+internal class ConditionContext(
+    val selectedPackageId: String?,
+    val customVariables: Map<String, CustomVariableValue>,
+)
+
+/**
+ * Builds a presentable partial component based on current view state, screen condition and offer eligibility.
  *
  * @param windowSize Current screen condition (compact / medium / expanded).
- * @param introOfferEligibility Whether the user is eligible for an intro offer.
+ * @param offerEligibility The offer eligibility, encoding both the offer type (intro/promo) and phase count.
  * @param state Current view state (selected / unselected).
+ * @param conditionContext Additional context for evaluating new condition types.
  *
  * @return A presentable partial component, or null if [this] the list of [PresentedOverride] did not contain any
  * available overrides to use.
@@ -78,47 +107,94 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> List<PresentedOverride<T>>.buildPresentedPartial(
     windowSize: ScreenCondition,
-    introOfferEligibility: IntroOfferEligibility,
+    offerEligibility: OfferEligibility,
     state: ComponentViewState,
+    conditionContext: ConditionContext = ConditionContext(null, emptyMap()),
 ): T? {
     var partial: T? = null
     for (override in this) {
-        if (override.shouldApply(windowSize, introOfferEligibility, state)) {
+        if (override.shouldApply(windowSize, offerEligibility, state, conditionContext)) {
             partial = partial.combineOrReplace(override.properties)
         }
     }
     return partial
 }
 
-@Suppress("ReturnCount")
 private fun <T : PresentedPartial<T>> PresentedOverride<T>.shouldApply(
     windowSize: ScreenCondition,
-    introOfferEligibility: IntroOfferEligibility,
+    offerEligibility: OfferEligibility,
     state: ComponentViewState,
-): Boolean {
-    for (condition in conditions) {
-        when (condition) {
-            ComponentOverride.Condition.Compact,
-            ComponentOverride.Condition.Medium,
-            ComponentOverride.Condition.Expanded,
-            -> {
-                if (!windowSize.applicableConditions.contains(condition)) return false
-            }
-            ComponentOverride.Condition.MultipleIntroOffers -> {
-                if (introOfferEligibility != IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE) return false
-            }
-            ComponentOverride.Condition.IntroOffer -> {
-                if (introOfferEligibility == IntroOfferEligibility.INELIGIBLE) return false
-            }
-            ComponentOverride.Condition.Selected -> {
-                if (state != ComponentViewState.SELECTED) return false
-            }
-            ComponentOverride.Condition.Unsupported -> {
-                return false
-            }
-        }
+    conditionContext: ConditionContext,
+): Boolean = conditions.all { condition ->
+    condition.evaluate(windowSize, offerEligibility, state, conditionContext)
+}
+
+private fun ComponentOverride.Condition.evaluate(
+    windowSize: ScreenCondition,
+    offerEligibility: OfferEligibility,
+    state: ComponentViewState,
+    conditionContext: ConditionContext,
+): Boolean = when (this) {
+    ComponentOverride.Condition.Compact,
+    ComponentOverride.Condition.Medium,
+    ComponentOverride.Condition.Expanded,
+    -> windowSize.applicableConditions.contains(this)
+    ComponentOverride.Condition.MultiplePhaseOffers -> offerEligibility.hasMultipleDiscountedPhases
+    ComponentOverride.Condition.IntroOffer -> offerEligibility.isIntroOffer
+    is ComponentOverride.Condition.IntroOfferRule -> evaluate(offerEligibility)
+    ComponentOverride.Condition.Selected -> state == ComponentViewState.SELECTED
+    ComponentOverride.Condition.PromoOffer -> offerEligibility.isPromoOffer
+    is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
+    is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
+    is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
+    ComponentOverride.Condition.Unsupported -> false
+}
+
+private fun ComponentOverride.Condition.IntroOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {
+    val eligibility = offerEligibility.isIntroOffer
+    return when (operator) {
+        ComponentOverride.EqualityOperator.EQUALS -> eligibility == value
+        ComponentOverride.EqualityOperator.NOT_EQUALS -> eligibility != value
     }
-    return true
+}
+
+private fun ComponentOverride.Condition.PromoOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {
+    val eligibility = offerEligibility.isPromoOffer
+    return when (operator) {
+        ComponentOverride.EqualityOperator.EQUALS -> eligibility == value
+        ComponentOverride.EqualityOperator.NOT_EQUALS -> eligibility != value
+    }
+}
+
+private fun ComponentOverride.Condition.SelectedPackage.evaluate(selectedPackageId: String?): Boolean {
+    if (selectedPackageId == null) return false
+    return when (operator) {
+        ComponentOverride.ArrayOperator.IN -> selectedPackageId in packages
+        ComponentOverride.ArrayOperator.NOT_IN -> selectedPackageId !in packages
+    }
+}
+
+private fun ComponentOverride.Condition.Variable.evaluate(
+    customVariables: Map<String, CustomVariableValue>,
+): Boolean {
+    val variableValue = customVariables[variable] ?: return operator == ComponentOverride.EqualityOperator.NOT_EQUALS
+    val matches = matchesValue(variableValue)
+    return when (operator) {
+        ComponentOverride.EqualityOperator.EQUALS -> matches
+        ComponentOverride.EqualityOperator.NOT_EQUALS -> !matches
+    }
+}
+
+private fun ComponentOverride.Condition.Variable.matchesValue(
+    variableValue: CustomVariableValue,
+): Boolean = when {
+    value.isString ->
+        variableValue is CustomVariableValue.String && variableValue.value == value.content
+    value.booleanOrNull != null ->
+        variableValue is CustomVariableValue.Boolean && variableValue.value == value.booleanOrNull
+    value.doubleOrNull != null ->
+        variableValue is CustomVariableValue.Number && variableValue.value == value.doubleOrNull
+    else -> false
 }
 
 private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>

@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 @InternalRevenueCatAPI
-enum class CustomerCenterEventType {
+public enum class CustomerCenterEventType {
     /**
      * The customer center was shown to the user.
      */

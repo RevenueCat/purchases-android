@@ -18,42 +18,42 @@ import kotlinx.serialization.encoding.Encoder
 @InternalRevenueCatAPI
 @Serializable
 @Stable
-sealed interface ColorInfo {
+public sealed interface ColorInfo {
 
     @Poko
     @Immutable
     @Serializable
     @SerialName("hex")
-    class Hex(
+    public class Hex(
         @get:JvmSynthetic
         @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
         @ColorInt
-        val value: Int,
+        public val value: Int,
     ) : ColorInfo
 
     @Poko
     @Immutable
     @Serializable
     @SerialName("alias")
-    class Alias(@get:JvmSynthetic val value: ColorAlias) : ColorInfo
+    public class Alias(@get:JvmSynthetic public val value: ColorAlias) : ColorInfo
 
-    sealed interface Gradient : ColorInfo {
+    public sealed interface Gradient : ColorInfo {
 
         @Poko
         @Immutable
         @Serializable
         @SerialName("linear")
-        class Linear(
-            @get:JvmSynthetic val degrees: Float,
-            @get:JvmSynthetic val points: List<Point>,
+        public class Linear(
+            @get:JvmSynthetic public val degrees: Float,
+            @get:JvmSynthetic public val points: List<Point>,
         ) : Gradient
 
         @Poko
         @Immutable
         @Serializable
         @SerialName("radial")
-        class Radial(
-            @get:JvmSynthetic val points: List<Point>,
+        public class Radial(
+            @get:JvmSynthetic public val points: List<Point>,
         ) : Gradient
 
         /**
@@ -62,14 +62,14 @@ sealed interface ColorInfo {
         @Poko
         @Immutable
         @Serializable
-        class Point(
+        public class Point(
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
             @ColorInt
-            @get:JvmSynthetic val color: Int,
+            @get:JvmSynthetic public val color: Int,
             /**
              * A percentage value in the range 0..100.
              */
-            @get:JvmSynthetic val percent: Float,
+            @get:JvmSynthetic public val percent: Float,
         )
     }
 }
@@ -78,9 +78,9 @@ sealed interface ColorInfo {
 @Poko
 @Immutable
 @Serializable
-class ColorScheme(
-    @get:JvmSynthetic val light: ColorInfo,
-    @get:JvmSynthetic val dark: ColorInfo? = null,
+public class ColorScheme(
+    @get:JvmSynthetic public val light: ColorInfo,
+    @get:JvmSynthetic public val dark: ColorInfo? = null,
 )
 
 /**

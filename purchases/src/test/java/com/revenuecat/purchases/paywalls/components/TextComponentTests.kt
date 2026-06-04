@@ -104,6 +104,7 @@ internal class TextComponentTests {
                             size = Size(height = SizeConstraint.Fill, width = SizeConstraint.Fill),
                             padding = Padding(top = 12.0, bottom = 16.0, leading = 14.0, trailing = 10.0),
                             margin = Padding(top = 4.0, bottom = 8.0, leading = 6.0, trailing = 2.0),
+                            name = "Text",
                         )
                     )
                 ),
@@ -130,6 +131,7 @@ internal class TextComponentTests {
                             color = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xff, green = 0xff, blue = 0xff))
                             ),
+                            name = "Text",
                         )
                     )
                 ),
@@ -160,6 +162,7 @@ internal class TextComponentTests {
                             ),
                             padding = Padding.zero,
                             margin = Padding.zero,
+                            name = "Text",
                         )
                     )
                 ),
@@ -188,6 +191,7 @@ internal class TextComponentTests {
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0, green = 0, blue = 0))
                             ),
                             fontSize = 17,
+                            name = "Text",
                         )
                     )
                 ),

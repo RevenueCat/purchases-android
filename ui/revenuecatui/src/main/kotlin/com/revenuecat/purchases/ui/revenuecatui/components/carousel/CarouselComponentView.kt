@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.carousel
@@ -23,6 +24,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,6 +33,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -61,6 +64,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.CarouselPageChangeInteraction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallCarouselPageChange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
@@ -73,6 +79,7 @@ internal fun CarouselComponentView(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val carouselState = rememberUpdatedCarouselComponentState(
         style = style,
@@ -99,8 +106,54 @@ internal fun CarouselComponentView(
         }
     }
 
+    val skipProgrammaticPageTracking = remember { ProgrammaticPageTrackingFlag() }
+
     carouselState.autoAdvance?.let { autoAdvance ->
-        EnableAutoAdvance(autoAdvance, pagerState, carouselState.loop, pageCount)
+        EnableAutoAdvance(
+            autoAdvance,
+            pagerState,
+            carouselState.loop,
+            pageCount,
+            skipProgrammaticPageTracking,
+        )
+    }
+
+    if (pageCount > 0) {
+        LaunchedEffect(
+            pagerState,
+            pageCount,
+            style.componentName,
+            style.pageContextNames,
+            style.initialPageIndex,
+            componentInteractionTracker,
+        ) {
+            var previousPage = pagerState.currentPage
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                if (page != previousPage) {
+                    if (skipProgrammaticPageTracking.consumeShouldSkipPageChange()) {
+                        // Auto-advance scroll; do not emit component interaction.
+                    } else {
+                        val logicalDestination = page % pageCount
+                        val logicalOrigin = previousPage % pageCount
+                        fun pageName(logical: Int): String? =
+                            style.pageContextNames.getOrNull(logical)?.takeUnless { it.isBlank() }
+                        componentInteractionTracker.track(
+                            paywallCarouselPageChange(
+                                CarouselPageChangeInteraction(
+                                    componentName = style.componentName,
+                                    destinationPageIndex = logicalDestination,
+                                    originPageIndex = logicalOrigin,
+                                    defaultPageIndex = style.initialPageIndex,
+                                    originContextName = pageName(logicalOrigin),
+                                    destinationContextName = pageName(logicalDestination),
+                                ),
+                            ),
+                        )
+                    }
+                    previousPage = page
+                }
+            }
+        }
     }
 
     Column(
@@ -141,6 +194,7 @@ internal fun CarouselComponentView(
                 style = carouselState.pages[page % pageCount],
                 state = state,
                 clickHandler = clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
             )
         }
 
@@ -287,27 +341,73 @@ private fun EnableAutoAdvance(
     pagerState: PagerState,
     shouldLoop: Boolean,
     pageCount: Int,
+    skipProgrammaticPageTracking: ProgrammaticPageTrackingFlag,
 ) {
     LaunchedEffect(Unit) {
         while (true) {
             delay(autoAdvance.msTimePerPage.toLong())
-            if (pagerState.isScrollInProgress) continue
-            val nextPage = if (shouldLoop) {
-                pagerState.currentPage + 1
-            } else {
-                (pagerState.currentPage + 1) % pageCount
-            }
-            try {
-                pagerState.animateScrollToPage(
-                    page = nextPage,
-                    animationSpec = tween(
-                        autoAdvance.msTransitionTime,
-                    ),
+            if (!pagerState.isScrollInProgress) {
+                val nextPage = nextAutoAdvanceTargetPage(
+                    shouldLoop = shouldLoop,
+                    pageCount = pageCount,
+                    currentPage = pagerState.currentPage,
                 )
-            } catch (_: CancellationException) {
-                // Do nothing, so we continue scrolling on the next loop
+                if (nextPage != null) {
+                    skipProgrammaticPageTracking.markProgrammaticScrollStarted()
+                    try {
+                        pagerState.animateScrollToPage(
+                            page = nextPage,
+                            animationSpec = tween(
+                                autoAdvance.msTransitionTime,
+                            ),
+                        )
+                    } catch (_: CancellationException) {
+                        skipProgrammaticPageTracking.clear()
+                        // Do nothing, so we continue scrolling on the next loop
+                    }
+                }
             }
         }
+    }
+}
+
+/**
+ * One-shot flag used to suppress tracking for the next programmatic carousel page change.
+ */
+private class ProgrammaticPageTrackingFlag {
+    private var shouldSkipNextPageChange = false
+
+    fun markProgrammaticScrollStarted() {
+        shouldSkipNextPageChange = true
+    }
+
+    fun consumeShouldSkipPageChange(): Boolean {
+        val shouldSkip = shouldSkipNextPageChange
+        shouldSkipNextPageChange = false
+        return shouldSkip
+    }
+
+    fun clear() {
+        shouldSkipNextPageChange = false
+    }
+}
+
+/**
+ * Next pager index for carousel auto-advance, or `null` when no scroll should run
+ * (empty carousel, or non-loop already on the last page).
+ */
+internal fun nextAutoAdvanceTargetPage(
+    shouldLoop: Boolean,
+    pageCount: Int,
+    currentPage: Int,
+): Int? {
+    if (pageCount <= 0) return null
+    return if (shouldLoop) {
+        currentPage + 1
+    } else if (currentPage >= pageCount - 1) {
+        null
+    } else {
+        currentPage + 1
     }
 }
 
@@ -395,6 +495,7 @@ private fun previewCarouselComponentStyle(
 ): CarouselComponentStyle {
     return CarouselComponentStyle(
         pages = pages,
+        pageContextNames = List(pages.size) { null },
         initialPageIndex = initialPageIndex,
         pageAlignment = alignment,
         visible = visible,

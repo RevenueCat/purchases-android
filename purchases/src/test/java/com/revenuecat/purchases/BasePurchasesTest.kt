@@ -26,6 +26,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -35,6 +36,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.FontLoader
@@ -90,6 +92,7 @@ internal open class BasePurchasesTest {
     internal val mockFontLoader = mockk<FontLoader>()
     internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
     internal val mockPurchaseParamsValidator = mockk<PurchaseParamsValidator>()
+    internal val mockWorkflowManager = mockk<WorkflowManager>(relaxed = true)
     private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -146,6 +149,12 @@ internal open class BasePurchasesTest {
         every {
             mockAdEventsManager.flushEvents(any())
         } just Runs
+        every {
+            mockEventsManager.debugEventListener = any()
+        } just Runs
+        every {
+            mockEventsManager.debugEventListener
+        } returns null
         every {
             mockLifecycleOwner.lifecycle
         } returns mockLifecycle
@@ -230,7 +239,7 @@ internal open class BasePurchasesTest {
             }
 
             every {
-                startConnectionOnMainThread()
+                startConnection()
             } just Runs
         }
     }
@@ -256,6 +265,7 @@ internal open class BasePurchasesTest {
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
+                    sdkOriginated = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -268,11 +278,9 @@ internal open class BasePurchasesTest {
             every {
                 postTokenWithoutConsuming(
                     purchaseToken = any(),
-                    storeUserID = any(),
                     receiptInfo = any(),
                     isRestore = any(),
                     appUserID = any(),
-                    marketplace = any(),
                     initiationSource = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
@@ -425,8 +433,16 @@ internal open class BasePurchasesTest {
         purchaseToken: String,
         productType: ProductType
     ): StoreTransaction {
+        return getMockedStoreTransaction(listOf(productId), purchaseToken, productType)
+    }
+
+    protected fun getMockedStoreTransaction(
+        productIds: List<String>,
+        purchaseToken: String,
+        productType: ProductType
+    ): StoreTransaction {
         val p: Purchase = stubGooglePurchase(
-            productIds = listOf(productId),
+            productIds = productIds,
             purchaseToken = purchaseToken
         )
 
@@ -437,6 +453,7 @@ internal open class BasePurchasesTest {
         anonymous: Boolean,
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
+        uiPreviewMode: Boolean = false,
         showInAppMessagesAutomatically: Boolean = false,
         apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
         enableSimulatedStore: Boolean = false,
@@ -454,6 +471,7 @@ internal open class BasePurchasesTest {
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,
+                uiPreviewMode = uiPreviewMode,
             )
         )
         val postTransactionsHelper = PostTransactionWithProductDetailsHelper(mockBillingAbstract, mockPostReceiptHelper)
@@ -491,6 +509,7 @@ internal open class BasePurchasesTest {
             blockstoreHelper = mockBlockstoreHelper,
             backupManager = mockBackupManager,
             purchaseParamsValidator = mockPurchaseParamsValidator,
+            workflowManager = mockWorkflowManager,
         )
 
         purchases = Purchases(
@@ -534,7 +553,8 @@ internal open class BasePurchasesTest {
         purchaseable: Any,
         oldProductId: String? = null,
         isPersonalizedPrice: Boolean? = null,
-        googleReplacementMode: GoogleReplacementMode? = null
+        googleReplacementMode: GoogleReplacementMode? = null,
+        storeReplacementMode: StoreReplacementMode? = null,
     ): PurchaseParams {
         val builder = when (purchaseable) {
             is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
@@ -553,6 +573,9 @@ internal open class BasePurchasesTest {
 
         googleReplacementMode?.let {
             builder!!.googleReplacementMode(googleReplacementMode)
+        }
+        storeReplacementMode?.let {
+            builder!!.replacementMode(storeReplacementMode)
         }
         return builder!!.build()
     }

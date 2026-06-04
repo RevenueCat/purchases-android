@@ -11,43 +11,43 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable(with = BackgroundDeserializer::class)
-sealed interface Background {
+public sealed interface Background {
     // SerialNames are handled by the BackgroundDeserializer
 
     @Serializable
-    data class Unknown(@get:JvmSynthetic val type: String) : Background
+    public data class Unknown(@get:JvmSynthetic val type: String) : Background
 
     @Serializable
-    data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
+    public data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
 
     @Serializable
-    data class Image(
-        @get:JvmSynthetic val value: ThemeImageUrls,
+    public data class Image(
+        @get:JvmSynthetic public val value: ThemeImageUrls,
         @get:JvmSynthetic
         @SerialName("fit_mode")
-        val fitMode: FitMode = FitMode.FILL,
+        public val fitMode: FitMode = FitMode.FILL,
         @get:JvmSynthetic
         @SerialName("color_overlay")
-        val colorOverlay: ColorScheme? = null,
+        public val colorOverlay: ColorScheme? = null,
     ) : Background
 
     @Serializable
-    data class Video(
-        @get:JvmSynthetic val value: ThemeVideoUrls,
+    public data class Video(
+        @get:JvmSynthetic public val value: ThemeVideoUrls,
         @get:JvmSynthetic
         @SerialName("fallback_image")
-        val fallbackImage: ThemeImageUrls,
+        public val fallbackImage: ThemeImageUrls,
         @get:JvmSynthetic
         val loop: Boolean,
         @get:JvmSynthetic
         @SerialName("mute_audio")
-        val muteAudio: Boolean,
+        public val muteAudio: Boolean,
         @get:JvmSynthetic
         @SerialName("fit_mode")
-        val fitMode: FitMode = FitMode.FILL,
+        public val fitMode: FitMode = FitMode.FILL,
         @get:JvmSynthetic
         @SerialName("color_overlay")
-        val colorOverlay: ColorScheme? = null,
+        public val colorOverlay: ColorScheme? = null,
     ) : Background
 }
 

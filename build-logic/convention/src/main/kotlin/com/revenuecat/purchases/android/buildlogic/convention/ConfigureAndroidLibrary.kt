@@ -48,6 +48,16 @@ internal fun Project.configureAndroidLibrary() {
     }
 
     extensions.configure<KotlinAndroidProjectExtension> {
+        // Apply explicit API mode only to main (non-test) compilations
+        target.compilations.configureEach {
+            if (!name.contains("test", ignoreCase = true)) {
+                compileTaskProvider.configure {
+                    compilerOptions {
+                        freeCompilerArgs.add("-Xexplicit-api=strict")
+                    }
+                }
+            }
+        }
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_1_8)
             val kotlinLanguageVersion = libs.getVersion("kotlinLanguage")

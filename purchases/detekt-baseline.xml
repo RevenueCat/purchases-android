@@ -14,6 +14,7 @@
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
     <ID>TooManyFunctions:BillingWrapper.kt$BillingWrapper : PurchasesUpdatedListenerBillingClientStateListener</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases</ID>
+    <ID>TooManyFunctions:coroutinesExtensions.kt$com.revenuecat.purchases.coroutinesExtensions.kt</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
   </Whitelist>
 </SmellBaseline>

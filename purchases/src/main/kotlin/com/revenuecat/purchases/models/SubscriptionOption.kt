@@ -5,7 +5,7 @@ import com.revenuecat.purchases.PresentedOfferingContext
 /**
  * A purchase-able entity for a subscription product.
  */
-interface SubscriptionOption {
+public interface SubscriptionOption {
     /**
      * For Google subscriptions:
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
@@ -13,18 +13,18 @@ interface SubscriptionOption {
      *
      * Not applicable for Amazon subscriptions.
      */
-    val id: String
+    public val id: String
 
     /**
      * Pricing phases defining a user's payment plan for the product over time.
      */
-    val pricingPhases: List<PricingPhase>
+    public val pricingPhases: List<PricingPhase>
 
     /**
      * Tags defined on the base plan or offer. Keep in mind that offers automatically
      * inherit their base plan's tag. Empty for Amazon.
      */
-    val tags: List<String>
+    public val tags: List<String>
 
     /**
      * The offering ID this `SubscriptionOption` was returned from.
@@ -35,7 +35,7 @@ interface SubscriptionOption {
         "Use presentedOfferingContext instead",
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
-    val presentedOfferingIdentifier: String?
+    public val presentedOfferingIdentifier: String?
 
     /**
      * The context from which this subscription option was obtained.
@@ -43,33 +43,33 @@ interface SubscriptionOption {
      * Null if not using RevenueCat offerings system, if fetched directly via `Purchases.getProducts`,
      * or on restores/syncs.
      */
-    val presentedOfferingContext: PresentedOfferingContext?
+    public val presentedOfferingContext: PresentedOfferingContext?
 
     /**
      * True if this SubscriptionOption represents a Google subscription base plan (rather than an offer).
      * Not applicable for Amazon subscriptions.
      */
-    val isBasePlan: Boolean
+    public val isBasePlan: Boolean
         get() = pricingPhases.size == 1
 
     /**
      * The subscription period of `fullPricePhase` (after free and intro trials).
      */
-    val billingPeriod: Period?
+    public val billingPeriod: Period?
         get() = fullPricePhase?.billingPeriod
 
     /**
      * True if the subscription is pre-paid.
      * Not applicable for Amazon subscriptions.
      */
-    val isPrepaid: Boolean
+    public val isPrepaid: Boolean
         get() = this.fullPricePhase?.recurrenceMode == RecurrenceMode.NON_RECURRING
 
     /**
      * The full price [PricingPhase] of the subscription.
      * Looks for the last price phase of the SubscriptionOption.
      */
-    val fullPricePhase: PricingPhase?
+    public val fullPricePhase: PricingPhase?
         get() = pricingPhases.lastOrNull()
 
     /**
@@ -77,7 +77,7 @@ interface SubscriptionOption {
      * Looks for the first pricing phase of the SubscriptionOption where `amountMicros` is 0.
      * There can be a `freeTrialPhase` and an `introductoryPhase` in the same [SubscriptionOption].
      */
-    val freePhase: PricingPhase?
+    public val freePhase: PricingPhase?
         get() = pricingPhases.dropLast(1).firstOrNull {
             it.price.amountMicros == 0L
         }
@@ -87,17 +87,17 @@ interface SubscriptionOption {
      * Looks for the first pricing phase of the SubscriptionOption where `amountMicros` is greater than 0.
      * There can be a `freeTrialPhase` and an `introductoryPhase` in the same [SubscriptionOption].
      */
-    val introPhase: PricingPhase?
+    public val introPhase: PricingPhase?
         get() = pricingPhases.dropLast(1).firstOrNull {
             it.price.amountMicros > 0L
         }
 
-    val purchasingData: PurchasingData
+    public val purchasingData: PurchasingData
 
     /**
      * For installment subscriptions, the details of the installment plan the customer commits to.
      * Null for non-installment subscriptions.
      * Installment plans are only available for Google Play subscriptions.
      */
-    val installmentsInfo: InstallmentsInfo?
+    public val installmentsInfo: InstallmentsInfo?
 }

@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
@@ -12,14 +14,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.DisableTouchesComposable
@@ -28,10 +35,12 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PlaceholderDefaults
 import com.revenuecat.purchases.ui.revenuecatui.composables.placeholder
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
@@ -181,8 +190,12 @@ private class LoadingViewModel(
 
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
+    override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
+    override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     override fun trackPaywallImpressionIfNeeded() = Unit
+    override fun trackExitOffer(exitOfferType: ExitOfferType, exitOfferingIdentifier: String) = Unit
+    override fun trackComponentInteraction(data: PaywallComponentInteractionData) = Unit
     override fun refreshStateIfLocaleChanged() = Unit
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDarkMode: Boolean) = Unit
 
@@ -192,7 +205,7 @@ private class LoadingViewModel(
         // no-op
     }
 
-    override fun closePaywall() {
+    override fun closePaywall(result: PaywallResult?) {
         // no-op
     }
 
@@ -209,7 +222,7 @@ private class LoadingViewModel(
         // no-op
     }
 
-    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?) {
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
         // no-op
     }
 
@@ -221,7 +234,15 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) = Unit
+
+    override fun handleBackNavigation(): Boolean = false
+
+    override fun onTransitionComplete(transitionId: Int) = Unit
+
     override fun clearActionError() = Unit
+
+    override fun preloadExitOffering() = Unit
 }
 
 @Preview(showBackground = true)

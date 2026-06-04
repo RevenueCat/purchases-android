@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} сынақ нұсқасын бастаңыз, содан кейін {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Шолғыш орнатылмаған. Сілтеме ашылмады.</string>
     <string name="cannot_open_link">Сілтеме жарамсыз. Ашылмады.</string>
+    <string name="revenuecatui_purchase">Сатып алу</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

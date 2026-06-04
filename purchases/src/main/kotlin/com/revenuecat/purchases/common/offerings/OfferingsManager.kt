@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offerings
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -24,7 +26,8 @@ import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
-@Suppress("LongParameterList")
+@OptIn(InternalRevenueCatAPI::class)
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
@@ -32,10 +35,21 @@ internal class OfferingsManager(
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
+    private val uiPreviewMode: Boolean = false,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val workflowManager: WorkflowManager? = null,
 ) {
+
+    private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
+
+    val cachedCurrentOfferingIdentifier: String?
+        get() = offeringsCache.cachedOfferings?.current?.identifier
+
+    val cachedOfferings: Offerings?
+        get() = offeringsCache.cachedOfferings
+
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
@@ -43,67 +57,127 @@ internal class OfferingsManager(
         onSuccess: ((Offerings) -> Unit)? = null,
         fetchCurrent: Boolean = false,
     ) {
+        if (uiPreviewMode) {
+            dispatch { onSuccess?.invoke(emptyOfferings) }
+            return
+        }
         trackGetOfferingsStartedIfNeeded()
         val startTime = dateProvider.now
+        val (onErrorTracked, onSuccessTracked) = createTrackedOfferingsCallbacks(startTime, onError, onSuccess)
+        val cachedOfferings = offeringsCache.cachedOfferings
+
+        when {
+            fetchCurrent -> fetchOfferingsFromNetwork(
+                appUserID,
+                appInBackground,
+                DiagnosticsTracker.CacheStatus.NOT_CHECKED,
+                onErrorTracked,
+                onSuccessTracked,
+            )
+            cachedOfferings == null -> fetchOfferingsFromNetwork(
+                appUserID,
+                appInBackground,
+                DiagnosticsTracker.CacheStatus.NOT_FOUND,
+                onErrorTracked,
+                onSuccessTracked,
+            )
+            else -> vendCachedOfferingsAndMaybeRefresh(
+                appUserID,
+                appInBackground,
+                cachedOfferings,
+                startTime,
+                onSuccess,
+            )
+        }
+    }
+
+    private fun createTrackedOfferingsCallbacks(
+        startTime: Date,
+        onError: ((PurchasesError) -> Unit)?,
+        onSuccess: ((Offerings) -> Unit)?,
+    ): Pair<
+        (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit,
+        (OfferingsResultData, DiagnosticsTracker.CacheStatus) -> Unit,
+        > {
         val onErrorWithTracking: (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit = { error, cacheStatus ->
             trackGetOfferingsResultIfNeeded(startTime, cacheStatus, error, null, null)
             onError?.invoke(error)
         }
-        val onSuccessWithTracking: (OfferingsResultData, DiagnosticsTracker.CacheStatus) -> Unit =
-            { result, cacheStatus ->
-                trackGetOfferingsResultIfNeeded(
-                    startTime,
-                    cacheStatus,
-                    null,
-                    result.requestedProductIds,
-                    result.notFoundProductIds,
-                )
-                onSuccess?.invoke(result.offerings)
-            }
-
-        val cachedOfferings = offeringsCache.cachedOfferings
-        if (fetchCurrent) {
-            log(LogIntent.DEBUG) { OfferingStrings.FORCE_OFFERINGS_FETCHING_NETWORK }
-            fetchAndCacheOfferings(
-                appUserID,
-                appInBackground,
-                { onErrorWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_CHECKED) },
-                { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_CHECKED) },
-            )
-        } else if (cachedOfferings == null) {
-            log(LogIntent.DEBUG) { OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK }
-            fetchAndCacheOfferings(
-                appUserID,
-                appInBackground,
-                { onErrorWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_FOUND) },
-                { onSuccessWithTracking(it, DiagnosticsTracker.CacheStatus.NOT_FOUND) },
-            )
-        } else {
-            log(LogIntent.DEBUG) { OfferingStrings.VENDING_OFFERINGS_CACHE }
-
-            val isCacheStale = offeringsCache.isOfferingsCacheStale(appInBackground)
+        val onSuccessWithTracking: (
+            OfferingsResultData,
+            DiagnosticsTracker.CacheStatus,
+        ) -> Unit = { result, cacheStatus ->
             trackGetOfferingsResultIfNeeded(
                 startTime,
-                if (isCacheStale) DiagnosticsTracker.CacheStatus.STALE else DiagnosticsTracker.CacheStatus.VALID,
+                cacheStatus,
                 null,
-                null,
-                null,
+                result.requestedProductIds,
+                result.notFoundProductIds,
             )
-            dispatch { onSuccess?.invoke(cachedOfferings) }
-            if (isCacheStale) {
-                log(LogIntent.DEBUG) {
-                    if (appInBackground) {
-                        OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                    } else {
-                        OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
-                    }
-                }
-                fetchAndCacheOfferings(appUserID, appInBackground)
+            onSuccess?.invoke(result.offerings)
+        }
+        return Pair(onErrorWithTracking, onSuccessWithTracking)
+    }
+
+    private fun fetchOfferingsFromNetwork(
+        appUserID: String,
+        appInBackground: Boolean,
+        cacheStatus: DiagnosticsTracker.CacheStatus,
+        onErrorTracked: (PurchasesError, DiagnosticsTracker.CacheStatus) -> Unit,
+        onSuccessTracked: (OfferingsResultData, DiagnosticsTracker.CacheStatus) -> Unit,
+    ) {
+        log(LogIntent.DEBUG) {
+            when (cacheStatus) {
+                DiagnosticsTracker.CacheStatus.NOT_CHECKED -> OfferingStrings.FORCE_OFFERINGS_FETCHING_NETWORK
+                DiagnosticsTracker.CacheStatus.NOT_FOUND -> OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK
+                else -> throw IllegalArgumentException("Unexpected cache status for fetch: $cacheStatus")
             }
+        }
+        fetchAndCacheOfferings(
+            appUserID,
+            appInBackground,
+            { onErrorTracked(it, cacheStatus) },
+            { onSuccessTracked(it, cacheStatus) },
+        )
+    }
+
+    private fun vendCachedOfferingsAndMaybeRefresh(
+        appUserID: String,
+        appInBackground: Boolean,
+        cachedOfferings: Offerings,
+        startTime: Date,
+        onSuccess: ((Offerings) -> Unit)?,
+    ) {
+        log(LogIntent.DEBUG) { OfferingStrings.VENDING_OFFERINGS_CACHE }
+        val isCacheStale = offeringsCache.isOfferingsCacheStale(appInBackground)
+        trackGetOfferingsResultIfNeeded(
+            startTime,
+            if (isCacheStale) DiagnosticsTracker.CacheStatus.STALE else DiagnosticsTracker.CacheStatus.VALID,
+            null,
+            null,
+            null,
+        )
+        val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
+        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
+            ?: dispatchSuccess()
+        if (isCacheStale) {
+            log(LogIntent.DEBUG) {
+                if (appInBackground) {
+                    OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
+                } else {
+                    OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                }
+            }
+            fetchAndCacheOfferings(appUserID, appInBackground)
         }
     }
 
+    fun clearInMemoryOfferingsCache() {
+        offeringsCache.clearInMemoryOfferingsCache()
+    }
+
     fun onAppForeground(appUserID: String) {
+        if (uiPreviewMode) return
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND }
             fetchAndCacheOfferings(appUserID, appInBackground = false)
@@ -116,12 +190,18 @@ internal class OfferingsManager(
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
+        if (uiPreviewMode) {
+            dispatch { onSuccess?.invoke(OfferingsResultData(emptyOfferings, emptySet(), emptySet())) }
+            return
+        }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
         backend.getOfferings(
             appUserID,
             appInBackground,
             { body, originalDataSource ->
                 createAndCacheOfferings(
+                    appUserID = appUserID,
+                    appInBackground = appInBackground,
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
@@ -148,6 +228,8 @@ internal class OfferingsManager(
                                 }
                             } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
+                                appUserID = appUserID,
+                                appInBackground = appInBackground,
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
@@ -165,6 +247,8 @@ internal class OfferingsManager(
     }
 
     private fun createAndCacheOfferings(
+        appUserID: String,
+        appInBackground: Boolean,
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
@@ -184,9 +268,12 @@ internal class OfferingsManager(
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                dispatch {
-                    onSuccess?.invoke(offeringsResultData)
+                val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
+                if (!loadedFromDiskCache) {
+                    workflowManager?.forceWorkflowsListCacheStale()
                 }
+                workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
+                    ?: dispatchSuccess()
             },
         )
     }

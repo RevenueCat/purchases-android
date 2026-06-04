@@ -3,7 +3,7 @@
   "method": "POST",
   "headers": {
     "Content-Type": "application\/json",
-    "X-Billing-Client-Sdk-Version": "8.0.0",
+    "X-Billing-Client-Sdk-Version": "8.3.0",
     "X-Client-Bundle-ID": "com.revenuecat.purchases.backend_tests",
     "X-Client-Locale": "en-US",
     "X-Client-Version": "test-version-name",
@@ -15,7 +15,7 @@
     "X-Platform-Brand": "robolectric",
     "X-Platform-Device": "robolectric",
     "X-Platform-Flavor": "test-flavor",
-    "X-Platform-Version": "35",
+    "X-Platform-Version": "36",
     "X-Preferred-Locales": "en_US"
   },
   "body": {
@@ -28,6 +28,7 @@
         "timestamp_ms": 123456789,
         "network_name": "networkName",
         "mediator_name": "mediatorName",
+        "ad_format": "banner",
         "placement": "placement",
         "ad_unit_id": "adUnitId",
         "impression_id": "impressionId",

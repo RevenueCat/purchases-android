@@ -11,8 +11,8 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.platformProductId
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -29,8 +29,11 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
@@ -40,6 +43,7 @@ import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubPricingPhase
+import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
 import io.mockk.Runs
 import io.mockk.every
@@ -114,6 +118,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                sdkOriginated = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -242,7 +247,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `upgrade defaults ReplacementMode to WITHOUT_PRORATION if not passed`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = stubStoreProduct(productId)
+        mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
@@ -260,7 +266,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchaseWith(
             PurchaseParams.Builder(
                 mockActivity,
-                receiptInfo.storeProduct!!,
+                storeProduct,
             ).oldProductId(oldSubId)
                 .build(),
             onError = { _, _ ->
@@ -271,13 +277,13 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION,
+            StoreReplacementMode.WITHOUT_PRORATION,
         )
         verify {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 any(),
-                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
+                storeProduct.defaultOption!!.purchasingData,
                 expectedReplaceProductInfo,
                 any(),
             )
@@ -288,7 +294,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `purchase does not set isPersonalizedPrice`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+        val storeProduct = stubStoreProduct(productId)
+        mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
@@ -306,7 +313,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchaseWith(
             PurchaseParams.Builder(
                 mockActivity,
-                receiptInfo.storeProduct!!,
+                storeProduct,
             ).oldProductId(oldSubId)
                 .build(),
             onError = { _, _ ->
@@ -319,7 +326,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 any(),
-                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
+                storeProduct.defaultOption!!.purchasingData,
                 any(),
                 null,
             )
@@ -381,7 +388,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
+                        replaceProductInfo.replacementMode == StoreReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
@@ -416,7 +423,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
+                        replaceProductInfo.replacementMode == StoreReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
@@ -919,16 +926,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             price = price,
-            currency = currencyCode
+            currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -976,16 +983,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             price = price,
-            currency = currencyCode
+            currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1007,11 +1014,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1054,15 +1059,17 @@ internal class PurchasesTest : BasePurchasesTest() {
             isoCurrencyCode = null
         )
 
-        val productInfo = ReceiptInfo(productIDs = listOf(skuTerm))
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            storeUserID = amazonUserID,
+            marketplace = null,
+        )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1108,16 +1115,16 @@ internal class PurchasesTest : BasePurchasesTest() {
         val productInfo = ReceiptInfo(
             productIDs = listOf(skuTerm),
             currency = null,
-            price = null
+            price = null,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = false,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
@@ -1190,15 +1197,15 @@ internal class PurchasesTest : BasePurchasesTest() {
             productIDs = listOf(skuTerm),
             price = price,
             currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = true,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
@@ -1249,15 +1256,15 @@ internal class PurchasesTest : BasePurchasesTest() {
             productIDs = listOf(skuTerm),
             price = price,
             currency = currencyCode,
+            storeUserID = amazonUserID,
+            marketplace = null,
         )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
-                storeUserID = amazonUserID,
                 receiptInfo = productInfo,
                 isRestore = true,
                 appUserID = appUserId,
-                marketplace = null,
                 initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
@@ -1460,29 +1467,46 @@ internal class PurchasesTest : BasePurchasesTest() {
     // region track events
 
     @Test
-    fun `track impression event caches it`() {
+    fun `track purchase initiated event caches it`() {
         val event = mockk<PaywallEvent>().apply {
-            every { type } returns PaywallEventType.IMPRESSION
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
         }
         every { mockEventsManager.track(event) } just Runs
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
         purchases.track(event)
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
     }
 
     @Test
-    fun `track close event clears cache`() {
+    fun `track purchase error event clears cache`() {
         every { mockEventsManager.track(any<FeatureEvent>()) } just Runs
-        val impressionEvent = mockk<PaywallEvent>().apply {
-            every { type } returns PaywallEventType.IMPRESSION
+        val purchaseInitiatedEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
         }
-        val closeEvent = mockk<PaywallEvent>().apply {
-            every { type } returns PaywallEventType.CLOSE
+        val purchaseErrorEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_ERROR
         }
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
-        purchases.track(impressionEvent)
-        purchases.track(closeEvent)
-        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
+        purchases.track(purchaseInitiatedEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
+        purchases.track(purchaseErrorEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
+    }
+
+    @Test
+    fun `track cancel event clears cache`() {
+        every { mockEventsManager.track(any<FeatureEvent>()) } just Runs
+        val purchaseInitiatedEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
+        }
+        val cancelEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.CANCEL
+        }
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
+        purchases.track(purchaseInitiatedEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isTrue
+        purchases.track(cancelEvent)
+        assertThat(paywallPresentedCache.hasCachedPurchaseInitiatedData()).isFalse
     }
 
     @Test
@@ -1496,7 +1520,201 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) { mockEventsManager.track(event) }
     }
 
+    @Test
+    fun `track notifies listener if set`() {
+        val trackedEvents = mutableListOf<FeatureEvent>()
+        purchases.trackedEventListener = TrackedEventListener {
+            trackedEvents.add(it)
+        }
+        val event = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.PURCHASE_INITIATED
+        }
+        every { mockEventsManager.track(event) } just Runs
+        purchases.track(event)
+
+        assertThat(trackedEvents).containsExactly(event)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `setting debugEventListener on Purchases propagates to EventManager`() {
+        purchases.debugEventListener = DebugEventListener { }
+        verify(exactly = 1) {
+            mockEventsManager.debugEventListener = any()
+        }
+    }
+
     // endregion track events
+
+    // region trackCustomPaywallImpression presented offering context resolution
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression derives context from cached current offering`() {
+        val context = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "home_banner",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 3, ruleId = "rule_abc123"),
+        )
+        val offering = makeOfferingWithContext(identifier = "current_offering", context = context)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = offering,
+            all = mapOf(offering.identifier to offering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(CustomPaywallImpressionParams(paywallId = "pw"))
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("current_offering")
+        assertThat(data.placementIdentifier).isEqualTo("home_banner")
+        assertThat(data.targetingRevision).isEqualTo(3)
+        assertThat(data.targetingRuleId).isEqualTo("rule_abc123")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Suppress("DEPRECATION")
+    @Test
+    fun `trackCustomPaywallImpression derives context from cached offering matching passed id`() {
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "current_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "current_rule"),
+        )
+        val otherContext = PresentedOfferingContext(
+            offeringIdentifier = "other_offering",
+            placementIdentifier = "other_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 5, ruleId = "other_rule"),
+        )
+        val currentOffering = makeOfferingWithContext("current_offering", currentContext)
+        val otherOffering = makeOfferingWithContext("other_offering", otherContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = currentOffering,
+            all = mapOf(
+                currentOffering.identifier to currentOffering,
+                otherOffering.identifier to otherOffering,
+            ),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offeringId = "other_offering"),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("other_offering")
+        assertThat(data.placementIdentifier).isEqualTo("other_placement")
+        assertThat(data.targetingRevision).isEqualTo(5)
+        assertThat(data.targetingRuleId).isEqualTo("other_rule")
+    }
+
+    @Suppress("DEPRECATION")
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression leaves context null when passed id not in cache`() {
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "current_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "current_rule"),
+        )
+        val currentOffering = makeOfferingWithContext("current_offering", currentContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = currentOffering,
+            all = mapOf(currentOffering.identifier to currentOffering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offeringId = "unknown_offering"),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("unknown_offering")
+        assertThat(data.placementIdentifier).isNull()
+        assertThat(data.targetingRevision).isNull()
+        assertThat(data.targetingRuleId).isNull()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression uses passed offering context`() {
+        val cachedContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "cached_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "cached_rule"),
+        )
+        val cachedOffering = makeOfferingWithContext("current_offering", cachedContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = cachedOffering,
+            all = mapOf(cachedOffering.identifier to cachedOffering),
+        )
+
+        val passedContext = PresentedOfferingContext(
+            offeringIdentifier = "passed_offering",
+            placementIdentifier = "passed_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 7, ruleId = "passed_rule"),
+        )
+        val passedOffering = makeOfferingWithContext("passed_offering", passedContext)
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offering = passedOffering),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("passed_offering")
+        assertThat(data.placementIdentifier).isEqualTo("passed_placement")
+        assertThat(data.targetingRevision).isEqualTo(7)
+        assertThat(data.targetingRuleId).isEqualTo("passed_rule")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression leaves context null when cached offering has no context`() {
+        val offering = makeOfferingWithContext(
+            identifier = "current_offering",
+            context = PresentedOfferingContext("current_offering"),
+        )
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = offering,
+            all = mapOf(offering.identifier to offering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(CustomPaywallImpressionParams(paywallId = "pw"))
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("current_offering")
+        assertThat(data.placementIdentifier).isNull()
+        assertThat(data.targetingRevision).isNull()
+        assertThat(data.targetingRuleId).isNull()
+    }
+
+    private fun makeOfferingWithContext(
+        identifier: String,
+        context: PresentedOfferingContext,
+    ): Offering {
+        val storeProduct = stubStoreProduct("monthly_$identifier")
+        val packageObject = Package(
+            identifier = "\$rc_monthly",
+            packageType = PackageType.MONTHLY,
+            product = storeProduct,
+            presentedOfferingContext = context,
+        )
+        return Offering(
+            identifier = identifier,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageObject),
+        )
+    }
+
+    // endregion trackCustomPaywallImpression presented offering context resolution
 
     @Test
     fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
@@ -1887,7 +2105,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedReplaceProductInfo = replaceProductInfoSlot.captured
         assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
         assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
-        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -1954,7 +2172,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedReplaceProductInfo = replaceProductInfoSlot.captured
         assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
         assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
-        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -2086,7 +2304,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             addOn: GooglePurchasingData,
             expectedSubscriptionOption: GoogleSubscriptionOption
         ) {
-            assertThat(addOn.productId).isEqualTo(expectedSubscriptionOption.platformProductId()!!.productId)
+            assertThat(addOn.productId).isEqualTo(expectedSubscriptionOption.productId)
             assertThat((addOn as? GooglePurchasingData.Subscription)!!.optionId).isEqualTo(expectedSubscriptionOption.basePlanId)
             assertThat(addOn.productType).isEqualTo(ProductType.SUBS)
         }
@@ -2320,11 +2538,22 @@ internal class PurchasesTest : BasePurchasesTest() {
     ): ReceiptInfo {
         val productId = storeProduct.purchasingData.productId
 
+        val platformProductIds = listOf(mutableMapOf(
+            "product_id" to productId,
+        ))
+        if (storeProduct.type == ProductType.SUBS && subscriptionOptionId != null) {
+            platformProductIds[0]["base_plan_id"] = subscriptionOptionId
+        }
+
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),
             presentedOfferingContext = presentedOfferingContext,
-            storeProduct = storeProduct,
-            subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null,
+            price = storeProduct.price.amountMicros.div(SharedConstants.MICRO_MULTIPLIER),
+            formattedPrice = storeProduct.price.formatted,
+            currency = storeProduct.price.currencyCode,
+            period = storeProduct.period,
+            pricingPhases = storeProduct.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }?.pricingPhases,
+            platformProductIds = platformProductIds,
         )
 
         every {

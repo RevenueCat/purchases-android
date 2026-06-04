@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -25,7 +27,12 @@ internal sealed interface PaywallAction {
 
         object RestorePurchases : External
         object NavigateBack : External
-        data class PurchasePackage(val rcPackage: Package?) : External
+        object CloseWorkflow : External
+        data class WorkflowTrigger(val componentId: String, val triggerType: WorkflowTriggerType) : External
+        data class PurchasePackage(
+            val rcPackage: Package?,
+            val resolvedOffer: ResolvedOffer? = null,
+        ) : External
         data class LaunchWebCheckout(
             val customUrl: String?,
             val openMethod: ButtonComponent.UrlMethod,

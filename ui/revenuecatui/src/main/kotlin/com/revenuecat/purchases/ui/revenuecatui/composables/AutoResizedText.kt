@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.isUnspecified
  */
 @SuppressWarnings("LongParameterList")
 @Composable
-fun AutoResizedText(
+public fun AutoResizedText(
     text: String,
     modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,

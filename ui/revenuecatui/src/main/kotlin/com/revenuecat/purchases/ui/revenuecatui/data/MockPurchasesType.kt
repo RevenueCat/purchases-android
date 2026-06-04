@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -52,11 +53,14 @@ internal class MockPurchasesType(
     override fun track(event: FeatureEvent) {
         // No-op for mock
     }
-    override fun syncPurchases() {
-        // No-op for mock
+    override suspend fun awaitSyncPurchases(): CustomerInfo {
+        throw NotImplementedError("Mock implementation for previews only")
     }
     override suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
         // No-op for mock - return success to simulate success
         return CreateSupportTicketResult(success = true)
+    }
+    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+        throw NotImplementedError("Mock implementation for previews only")
     }
 }

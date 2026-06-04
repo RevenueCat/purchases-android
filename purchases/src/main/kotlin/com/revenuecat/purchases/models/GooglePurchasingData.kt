@@ -5,19 +5,19 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import dev.drewhamilton.poko.Poko
 
-sealed class GooglePurchasingData : PurchasingData {
+public sealed class GooglePurchasingData : PurchasingData {
     @Poko
-    class InAppProduct(
-        override val productId: String,
-        val productDetails: ProductDetails,
+    public class InAppProduct(
+        public override val productId: String,
+        public val productDetails: ProductDetails,
     ) : GooglePurchasingData()
 
     @Poko
-    class Subscription @ExperimentalPreviewRevenueCatPurchasesAPI constructor(
-        override val productId: String,
-        val optionId: String,
-        val productDetails: ProductDetails,
-        val token: String,
+    public class Subscription @ExperimentalPreviewRevenueCatPurchasesAPI public constructor(
+        public override val productId: String,
+        public val optionId: String,
+        public val productDetails: ProductDetails,
+        public val token: String,
 
         // These two properties are marked with @get:JvmSynthetic because their synthesized
         // getters were not getting the @ExperimentalPreviewRevenueCatPurchasesAPI annotation
@@ -26,17 +26,17 @@ sealed class GooglePurchasingData : PurchasingData {
         // properties.
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
-        val billingPeriod: Period? = null,
+        public val billingPeriod: Period? = null,
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @get:JvmSynthetic
-        val addOnProducts: List<GooglePurchasingData>? = null,
+        public val addOnProducts: List<GooglePurchasingData>? = null,
     ) : GooglePurchasingData() {
 
         // This recreates the constructor without billingPeriod and addOnProducts so that we have a copy
         // that isn't marked with @ExperimentalPreviewRevenueCatPurchasesAPI. It can be removed when
         // @ExperimentalPreviewRevenueCatPurchasesAPI is removed from the primary constructor.
         @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-        constructor(
+        public constructor(
             productId: String,
             optionId: String,
             productDetails: ProductDetails,
@@ -51,7 +51,7 @@ sealed class GooglePurchasingData : PurchasingData {
         )
     }
 
-    override val productType: ProductType
+    public override val productType: ProductType
         get() = when (this) {
             is InAppProduct -> {
                 ProductType.INAPP

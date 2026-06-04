@@ -66,7 +66,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -79,7 +79,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 
@@ -94,7 +94,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -107,7 +107,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 
@@ -134,7 +134,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 0) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 
@@ -161,7 +161,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 0) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 
@@ -177,7 +177,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -209,7 +209,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -242,7 +242,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -257,7 +257,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 
@@ -272,7 +272,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -287,7 +287,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 
@@ -302,7 +302,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -317,7 +317,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 
@@ -334,7 +334,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         )
 
         every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         } just Runs
 
         wrapper.consumeAndSave(
@@ -353,7 +353,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
 
         verify(exactly = 0) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
+            mockDeviceCache.addSuccessfullyPostedToken(token, any())
         }
     }
 

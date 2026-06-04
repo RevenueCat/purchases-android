@@ -2,7 +2,9 @@ package com.revenuecat.purchases.simulatedstore
 
 import android.app.Activity
 import android.os.Handler
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -29,6 +31,7 @@ import org.json.JSONObject
 import java.util.Date
 import java.util.UUID
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
 internal class SimulatedStoreBillingWrapper(
     private val deviceCache: DeviceCache,
@@ -41,13 +44,14 @@ internal class SimulatedStoreBillingWrapper(
     @Volatile
     private var connected = false
 
-    override fun startConnectionOnMainThread(delayMilliseconds: Long) {
+    override fun startConnection(delayMilliseconds: Long) {
         mainHandler.postDelayed({
-            startConnection()
+            performStartConnection()
         }, delayMilliseconds)
     }
 
-    override fun startConnection() {
+    @VisibleForTesting
+    internal fun performStartConnection() {
         debugLog { "SimulatedStoreBillingAbstract: Starting connection" }
         connected = true
         stateListener?.onConnected()
@@ -190,8 +194,8 @@ internal class SimulatedStoreBillingWrapper(
             activity = activity,
             title = "Test Store Purchase",
             message = message,
-            positiveButtonText = "Test valid Purchase",
-            negativeButtonText = "Test failed Purchase",
+            positiveButtonText = "Test valid purchase",
+            negativeButtonText = "Test failed purchase",
             neutralButtonText = "Cancel",
             onPositiveButtonClicked = {
                 debugLog { "[Test store] Performing test purchase. This purchase won't appear in production." }

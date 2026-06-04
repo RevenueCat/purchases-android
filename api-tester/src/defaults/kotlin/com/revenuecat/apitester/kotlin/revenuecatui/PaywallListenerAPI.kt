@@ -19,6 +19,8 @@ private class PaywallListenerAPI {
 
             override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
 
+            override fun onRestoreInitiated(resume: Resumable) {}
+
             override fun onRestoreStarted() {}
 
             override fun onRestoreError(error: PurchasesError) {}
