@@ -271,6 +271,7 @@ internal class WorkflowManager(
                 appInBackground = appInBackground,
                 callbackDispatcher = prefetchDispatcher,
                 persistEnvelopeOnResolve = true,
+                staleWhileRevalidate = false,
                 onSuccess = { continuation.safeResume(Unit) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }

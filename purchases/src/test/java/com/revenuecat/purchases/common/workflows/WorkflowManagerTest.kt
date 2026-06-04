@@ -535,6 +535,50 @@ class WorkflowManagerTest {
         assertThat(erroredWith).isNull()
     }
 
+    @Test
+    fun `getWorkflow with staleWhileRevalidate false blocks on the refetch instead of serving stale`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val refreshedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        // First call at t=0 populates the cache.
+        every { mockDateProvider.now } returns Date(0)
+        coEvery { mockResolver.resolve(response) } returns staleResult
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale call with SWR disabled: must deliver the freshly-fetched value, not the stale one.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        coEvery { mockResolver.resolve(response) } returns refreshedResult
+        var served: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { fail("unexpected error $it") },
+            staleWhileRevalidate = false,
+        )
+
+        assertThat(served).isSameAs(refreshedResult)
+    }
+
     // endregion getWorkflow cache
 
     // region getWorkflowsList
