@@ -45,6 +45,7 @@ internal sealed class PaywallValidationError : Throwable() {
             is InvalidModeForComponentsPaywall -> PaywallValidationErrorStrings.INVALID_MODE_FOR_COMPONENTS_PAYWALL
             is TabsComponentWithoutTabs -> message
             is TabControlNotInTab -> message
+            is InputOptionNotInInputSingleChoice -> message
             is UnsupportedBackgroundType -> message
             is RootComponentUnsupportedProperties -> message
             is WorkflowButtonMissingComponentId -> message
@@ -125,6 +126,9 @@ internal sealed class PaywallValidationError : Throwable() {
     }
     object TabControlNotInTab : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.TAB_CONTROL_NOT_IN_TAB
+    }
+    object InputOptionNotInInputSingleChoice : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.INPUT_OPTION_NOT_IN_INPUT_SINGLE_CHOICE
     }
     data class UnsupportedBackgroundType(
         val background: Background.Unknown,

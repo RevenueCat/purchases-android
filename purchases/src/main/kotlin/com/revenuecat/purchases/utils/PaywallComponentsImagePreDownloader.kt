@@ -14,6 +14,8 @@ import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.InputOptionComponent
+import com.revenuecat.purchases.paywalls.components.InputSingleChoiceComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
@@ -98,6 +100,8 @@ internal class PaywallComponentsImagePreDownloader(
                     is CountdownComponent, // sub-stacks visited by BFS
                     is FallbackHeaderComponent,
                     is HeaderComponent,
+                    is InputOptionComponent, // stacks visited by BFS
+                    is InputSingleChoiceComponent, // stacks visited by BFS
                     is PackageComponent,
                     is PurchaseButtonComponent,
                     is StickyFooterComponent,

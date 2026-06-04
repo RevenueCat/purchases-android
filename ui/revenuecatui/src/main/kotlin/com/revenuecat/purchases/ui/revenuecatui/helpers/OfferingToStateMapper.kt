@@ -13,6 +13,8 @@ import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.InputOptionComponent
+import com.revenuecat.purchases.paywalls.components.InputSingleChoiceComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PaywallComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
@@ -505,6 +507,8 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is TabControlToggleComponent -> false
     is TabControlComponent -> false
     is FallbackHeaderComponent -> false
+    is InputSingleChoiceComponent -> overrides.hasUnsupportedCondition() || stack.containsUnsupportedCondition()
+    is InputOptionComponent -> overrides.hasUnsupportedCondition() || stack.containsUnsupportedCondition()
 }
 
 @JvmSynthetic

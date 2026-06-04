@@ -95,6 +95,9 @@ public enum class PaywallComponentType {
 
     @SerialName("purchase_button")
     PURCHASE_BUTTON,
+
+    @SerialName("input_option")
+    INPUT_OPTION,
 }
 
 /**
