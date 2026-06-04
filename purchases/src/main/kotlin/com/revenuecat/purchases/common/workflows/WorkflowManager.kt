@@ -49,6 +49,7 @@ internal class WorkflowManager(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
         callbackDispatcher: Dispatcher? = null,
+        persistEnvelopeOnResolve: Boolean = false,
     ) {
         val cached = workflowsCache.cachedWorkflow(workflowId)
         if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
@@ -69,6 +70,10 @@ internal class WorkflowManager(
                     return@launch
                 }
                 workflowsCache.cacheWorkflow(workflowId, result)
+                if (persistEnvelopeOnResolve) {
+                    runCatching { workflowsCache.cacheWorkflowDetailEnvelope(workflowId, response) }
+                        .onFailure { errorLog(it) { "Failed to persist workflow detail envelope for $workflowId" } }
+                }
                 scope.launch {
                     runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
                         .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
@@ -182,6 +187,7 @@ internal class WorkflowManager(
                 workflowId = workflowId,
                 appInBackground = appInBackground,
                 callbackDispatcher = prefetchDispatcher,
+                persistEnvelopeOnResolve = true,
                 onSuccess = { continuation.safeResume(Unit) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }

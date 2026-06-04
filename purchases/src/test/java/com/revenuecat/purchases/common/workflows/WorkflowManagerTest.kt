@@ -1068,4 +1068,153 @@ class WorkflowManagerTest {
     }
 
     // endregion onComplete callback
+
+    // region envelope persistence
+
+    @Test
+    fun `prefetch persists the workflow detail envelope`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } returns
+            WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers { detailSuccess.captured(envelope) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // WorkflowsCache.cacheWorkflowDetailEnvelope -> DeviceCache.cacheWorkflowDetailEnvelopes (the mocked layer)
+        verify(exactly = 1) { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
+    @Test
+    fun `on-demand getWorkflow does not persist the envelope`() {
+        val envelope = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        coEvery { mockResolver.resolve(envelope) } returns
+            WorkflowDataResult(workflow = envelope.data!!, enrolledVariants = null)
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(envelope) }
+
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
+    @Test
+    fun `prefetch does not persist the envelope when resolve fails`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } throws IllegalStateException("boom")
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers { detailSuccess.captured(envelope) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
+    @Test
+    fun `prefetch still completes when persisting the envelope throws`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val resolved = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(envelope) } returns resolved
+        // Persisting blows up at the DeviceCache layer.
+        every { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) } throws IOException("disk full")
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers { detailSuccess.captured(envelope) }
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        // Persistence failure must not hang the prefetch: onComplete still fires exactly once...
+        assertThat(completeCount).isEqualTo(1)
+        // ...and the resolved workflow is still cached in memory (cacheWorkflow ran before the failed persist).
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(resolved)
+    }
+
+    // endregion envelope persistence
 }
