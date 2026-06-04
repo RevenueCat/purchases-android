@@ -70,18 +70,6 @@ internal class WorkflowsCache(
         workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
 
     /**
-     * Marks the in-memory list cache stale so the next fetch refreshes it, mirroring
-     * [com.revenuecat.purchases.common.offerings.OfferingsCache.forceCacheStale]. The current list and
-     * offeringId map are kept (so [workflowIdForOfferingId] still resolves during the refetch); only
-     * the freshness timestamp is dropped. Used to keep workflows aligned with offerings when offerings
-     * are refetched off-cycle (forced/locale change), since workflows otherwise track only a time TTL.
-     */
-    @Synchronized
-    fun forceWorkflowsListCacheStale() {
-        workflowsListCachedObject.clearCacheTimestamp()
-    }
-
-    /**
      * Caches the workflows list in memory and persists it to disk, the same way
      * [com.revenuecat.purchases.common.offerings.OfferingsCache.cacheOfferings] caches offerings.
      *
