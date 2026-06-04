@@ -141,6 +141,10 @@ internal class WorkflowsCache(
      * already there. Called only from the prefetch path after a successful resolve, so a persisted
      * envelope is always one we could render offline. Mirrors how [cacheWorkflowsList] writes the
      * list to disk.
+     *
+     * Reads, merges, and rewrites the whole on-disk map; the prefetch set is small so this is cheap.
+     * If the existing payload can't be parsed it is treated as empty, so an unreadable map is
+     * replaced rather than preserved.
      */
     @Synchronized
     fun cacheWorkflowDetailEnvelope(workflowId: String, envelope: WorkflowDetailResponse) {

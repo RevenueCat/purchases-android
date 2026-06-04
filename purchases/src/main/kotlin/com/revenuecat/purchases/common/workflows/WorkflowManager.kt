@@ -214,8 +214,10 @@ internal class WorkflowManager(
 
     /**
      * Re-resolves a persisted [envelope] into the in-memory cache during backend-down recovery. For
-     * USE_CDN this is a local file read (the CDN file is already cached). A failure is logged and
-     * swallowed so one bad envelope doesn't fail its siblings in the surrounding [coroutineScope].
+     * USE_CDN this avoids a backend call: when the CDN file is still cached locally (it was
+     * pre-downloaded during the original prefetch) re-resolution needs no network. If that file was
+     * evicted, resolution may need the CDN and can fail while the backend is down; the failure is
+     * logged and swallowed so one bad envelope doesn't fail its siblings in the surrounding [coroutineScope].
      */
     private suspend fun restoreWorkflowFromEnvelope(workflowId: String, envelope: WorkflowDetailResponse) {
         val result = try {

@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -1106,7 +1107,9 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         // WorkflowsCache.cacheWorkflowDetailEnvelope -> DeviceCache.cacheWorkflowDetailEnvelopes (the mocked layer)
-        verify(exactly = 1) { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) }
+        val persistedSlot = slot<String>()
+        verify(exactly = 1) { mockDeviceCache.cacheWorkflowDetailEnvelopes(capture(persistedSlot)) }
+        assertThat(persistedSlot.captured).contains("wf_1")
     }
 
     @Test
@@ -1282,6 +1285,37 @@ class WorkflowManagerTest {
         assertThat(completeCount).isEqualTo(1)
         assertThat(workflowsCache.cachedWorkflow("wf_ok")).isSameAs(okResult)
         assertThat(workflowsCache.cachedWorkflow("wf_bad")).isNull()
+    }
+
+    @Test
+    fun `list onError completes immediately when no envelopes are persisted`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        assertThat(completeCount).isEqualTo(1)
+        coVerify(exactly = 0) { mockResolver.resolve(any()) }
+    }
+
+    @Test
+    fun `list onError completes once when the persisted envelope payload is corrupt`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns "not valid json"
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        assertThat(completeCount).isEqualTo(1)
     }
 
     // endregion onError envelope restore
