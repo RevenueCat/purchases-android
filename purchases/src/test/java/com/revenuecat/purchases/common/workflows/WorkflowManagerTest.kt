@@ -581,6 +581,8 @@ class WorkflowManagerTest {
         )
 
         assertThat(served).isSameAs(refreshedResult)
+        // The blocking fetch also wrote the refreshed value through to the cache.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(refreshedResult)
     }
 
     // endregion getWorkflow cache
