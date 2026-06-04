@@ -8,6 +8,9 @@ internal object OfferingStrings {
     const val CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR = "Could not find ProductDetails for %s " +
         "\nThere is a problem with your configuration in Play Store Developer Console. " +
         "More info here: https://errors.rev.cat/configuring-products"
+    const val CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR_TEST_STORE = "Could not find ProductDetails for %s " +
+        "\nThere is a problem with your configuration in the RevenueCat dashboard. " +
+        "More info here: https://errors.rev.cat/configuring-products"
     const val FETCHING_OFFERINGS_ERROR = "Error fetching offerings - %s"
     const val FETCHING_PRODUCTS = "Requesting products from the store with identifiers: %s"
     const val FETCHING_PRODUCTS_FINISHED = "Products request finished for %s"
@@ -52,9 +55,16 @@ internal object OfferingStrings {
     const val CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND = "There's a problem with your configuration. " +
         "None of the products registered in the RevenueCat dashboard could be fetched from the Play Store.\n" +
         "More information: https://rev.cat/why-are-offerings-empty"
+    const val CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND_TEST_STORE = "There's a problem with your configuration. " +
+        "None of the products registered in the RevenueCat dashboard could be found.\n" +
+        "More information: https://rev.cat/why-are-offerings-empty"
     const val OFFERING_EMPTY = "There's a problem with your configuration. No packages could be found for offering " +
         "with identifier %s. This could be due to Products not being configured correctly in " +
         "the RevenueCat dashboard or Play Store.\nTo configure products, follow the instructions in " +
+        "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
+    const val OFFERING_EMPTY_TEST_STORE = "There's a problem with your configuration. No packages could be found " +
+        "for offering with identifier %s. This could be due to Products not being configured correctly in " +
+        "the RevenueCat dashboard.\nTo configure products, follow the instructions in " +
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
