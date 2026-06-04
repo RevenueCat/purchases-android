@@ -1217,4 +1217,72 @@ class WorkflowManagerTest {
     }
 
     // endregion envelope persistence
+
+    // region onError envelope restore
+
+    @Test
+    fun `list onError re-resolves persisted envelopes so getWorkflow is a cache hit`() {
+        // The resolver is mocked, so INLINE vs USE_CDN is indistinguishable here — the manager just
+        // hands the envelope to the resolver. This proves restore -> re-resolve -> cache-hit.
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns
+            """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":true}]}"""
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val restored = WorkflowDataResult(workflow = mockk(), enrolledVariants = mapOf("e" to "v"))
+        coEvery {
+            mockResolver.resolve(
+                WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "https://cdn/wf_1.json", hash = "h"),
+            )
+        } returns restored
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+        var result: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { result = it },
+            onError = { fail("expected cache hit, got $it") },
+        )
+        assertThat(result).isSameAs(restored)
+        verify(exactly = 0) { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `list onError completes once and isolates a failing envelope re-resolve`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns
+            """{"workflows":[{"id":"wf_ok","display_name":"OK","offering_id":"a","prefetch":true},{"id":"wf_bad","display_name":"BAD","offering_id":"b","prefetch":true}]}"""
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_ok":{"action":"use_cdn","url":"u_ok","hash":"h"},"wf_bad":{"action":"use_cdn","url":"u_bad","hash":"h"}}"""
+
+        val okResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery {
+            mockResolver.resolve(WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "u_ok", hash = "h"))
+        } returns okResult
+        coEvery {
+            mockResolver.resolve(WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "u_bad", hash = "h"))
+        } throws IllegalStateException("cdn read failed")
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        assertThat(completeCount).isEqualTo(1)
+        assertThat(workflowsCache.cachedWorkflow("wf_ok")).isSameAs(okResult)
+        assertThat(workflowsCache.cachedWorkflow("wf_bad")).isNull()
+    }
+
+    // endregion onError envelope restore
 }

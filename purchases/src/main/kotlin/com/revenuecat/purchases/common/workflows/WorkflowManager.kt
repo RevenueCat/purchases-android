@@ -169,7 +169,22 @@ internal class WorkflowManager(
                         val filtered = response.onlyWorkflowsWithOfferingId()
                         workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
                     }
-                    completePendingCallbacks(appUserID)
+                    val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
+                    if (envelopes.isEmpty()) {
+                        completePendingCallbacks(appUserID)
+                    } else {
+                        scope.launch {
+                            // Re-resolve persisted envelopes into the in-memory cache, mirroring the
+                            // success-path prefetch loop. A failed re-resolve is logged and does not
+                            // fail its siblings. completePendingCallbacks still fires exactly once.
+                            coroutineScope {
+                                envelopes.forEach { (workflowId, envelope) ->
+                                    launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
+                                }
+                            }
+                            completePendingCallbacks(appUserID)
+                        }
+                    }
                 },
             )
         }
@@ -195,6 +210,23 @@ internal class WorkflowManager(
                 },
             )
         }
+    }
+
+    /**
+     * Re-resolves a persisted [envelope] into the in-memory cache during backend-down recovery. For
+     * USE_CDN this is a local file read (the CDN file is already cached). A failure is logged and
+     * swallowed so one bad envelope doesn't fail its siblings in the surrounding [coroutineScope].
+     */
+    private suspend fun restoreWorkflowFromEnvelope(workflowId: String, envelope: WorkflowDetailResponse) {
+        val result = try {
+            workflowDetailResolver.resolve(envelope)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Failed to restore workflow $workflowId from disk cache" }
+            return
+        }
+        workflowsCache.cacheWorkflow(workflowId, result)
     }
 
     fun workflowIdForOfferingId(offeringId: String): String? =
