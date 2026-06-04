@@ -8,6 +8,8 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.errorLog
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 
 /**
  * In-memory cache for all workflow data: the resolved per-workflow [WorkflowDataResult]s and the
@@ -25,7 +27,13 @@ import com.revenuecat.purchases.common.errorLog
  * [com.revenuecat.purchases.common.offerings.OfferingsCache] owns the offerings response on disk:
  * [cacheWorkflowsList] persists it, [cachedWorkflowsListResponseFromDisk] restores it on backend
  * failure, and [clearCache] wipes it on identity transitions.
+ *
+ * It additionally persists per-workflow detail envelopes to disk: [cacheWorkflowDetailEnvelope]
+ * writes a single envelope (merging with any already-stored ones), and
+ * [cachedWorkflowDetailEnvelopesFromDisk] restores the full map after a backend failure.
  */
+// Coherent owner of all workflow cache state; splitting would obscure the single clearCache semantics
+@Suppress("TooManyFunctions")
 @OptIn(InternalRevenueCatAPI::class)
 internal class WorkflowsCache(
     private val deviceCache: DeviceCache,
@@ -119,6 +127,45 @@ internal class WorkflowsCache(
         offeringIdToWorkflowIdMap[offeringId]
 
     // endregion Workflows list cache
+
+    private companion object {
+        private val envelopesSerializer = MapSerializer(String.serializer(), WorkflowDetailResponse.serializer())
+    }
+
+    // region Workflow detail envelopes disk cache
+
+    /**
+     * Persists [envelope] under [workflowId] in the on-disk envelope map, merging with whatever is
+     * already there. Called only from the prefetch path after a successful resolve, so a persisted
+     * envelope is always one we could render offline. Mirrors how [cacheWorkflowsList] writes the
+     * list to disk.
+     */
+    @Synchronized
+    fun cacheWorkflowDetailEnvelope(workflowId: String, envelope: WorkflowDetailResponse) {
+        val current = cachedWorkflowDetailEnvelopesFromDisk().orEmpty().toMutableMap()
+        current[workflowId] = envelope
+        persistWorkflowDetailEnvelopes(current)
+    }
+
+    /**
+     * Reads the persisted envelope map, or null when nothing is cached or the payload can't be
+     * parsed (the parse failure is logged). Used to recover envelopes after a backend failure,
+     * mirroring [cachedWorkflowsListResponseFromDisk].
+     */
+    fun cachedWorkflowDetailEnvelopesFromDisk(): Map<String, WorkflowDetailResponse>? =
+        deviceCache.getWorkflowDetailEnvelopesCache()?.let { cached ->
+            runCatching { WorkflowJsonParser.parseWorkflowDetailEnvelopes(cached) }
+                .onFailure { errorLog(it) { "Failed to restore workflow detail envelopes from disk cache" } }
+                .getOrNull()
+        }
+
+    private fun persistWorkflowDetailEnvelopes(envelopes: Map<String, WorkflowDetailResponse>) {
+        deviceCache.cacheWorkflowDetailEnvelopes(
+            JsonTools.json.encodeToString(envelopesSerializer, envelopes),
+        )
+    }
+
+    // endregion Workflow detail envelopes disk cache
 
     @Synchronized
     fun clearCache() {

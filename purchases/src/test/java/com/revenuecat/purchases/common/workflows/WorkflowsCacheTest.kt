@@ -5,8 +5,11 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.add
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -199,6 +202,83 @@ class WorkflowsCacheTest {
     fun `cachedWorkflowsListResponseFromDisk returns null when the payload is corrupt`() {
         every { deviceCache.getWorkflowsListResponseCache() } returns "not valid json"
         assertThat(workflowsCache.cachedWorkflowsListResponseFromDisk()).isNull()
+    }
+
+    private fun cdnEnvelope(url: String, hash: String = "h"): WorkflowDetailResponse =
+        WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = url,
+            hash = hash,
+            enrolledVariants = mapOf("exp" to "variant_a"),
+        )
+
+    @Test
+    fun `cacheWorkflowDetailEnvelope persists the envelope keyed by workflowId`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns null
+        val payloadSlot = slot<String>()
+        every { deviceCache.cacheWorkflowDetailEnvelopes(capture(payloadSlot)) } just Runs
+
+        workflowsCache.cacheWorkflowDetailEnvelope("wf_1", cdnEnvelope("https://cdn/wf_1.json"))
+
+        assertThat(payloadSlot.captured).contains("wf_1")
+        assertThat(payloadSlot.captured).contains("https://cdn/wf_1.json")
+    }
+
+    @Test
+    fun `cacheWorkflowDetailEnvelope merges into existing persisted envelopes`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_existing":{"action":"use_cdn","url":"u0","hash":"h0"}}"""
+        val payloadSlot = slot<String>()
+        every { deviceCache.cacheWorkflowDetailEnvelopes(capture(payloadSlot)) } just Runs
+
+        workflowsCache.cacheWorkflowDetailEnvelope("wf_new", cdnEnvelope("https://cdn/wf_new.json"))
+
+        val persisted = WorkflowJsonParser.parseWorkflowDetailEnvelopes(payloadSlot.captured)
+        assertThat(persisted.keys).containsExactlyInAnyOrder("wf_existing", "wf_new")
+        assertThat(persisted.getValue("wf_existing").url).isEqualTo("u0")
+        assertThat(persisted.getValue("wf_new").url).isEqualTo("https://cdn/wf_new.json")
+    }
+
+    @Test
+    fun `cachedWorkflowDetailEnvelopesFromDisk parses persisted envelopes`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/x.json","hash":"h","enrolled_variants":{"e":"v"}}}"""
+
+        val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk()
+
+        assertThat(envelopes).containsKey("wf_1")
+        assertThat(envelopes!!.getValue("wf_1").url).isEqualTo("https://cdn/x.json")
+        assertThat(envelopes.getValue("wf_1").enrolledVariants).isEqualTo(mapOf("e" to "v"))
+    }
+
+    @Test
+    fun `cachedWorkflowDetailEnvelopesFromDisk round-trips an INLINE envelope with its workflow data`() {
+        val inlineJson = """
+            {"wf_inline":{"action":"inline","data":{
+              "id":"wf_inline","display_name":"Test","initial_step_id":"step_1",
+              "steps":{"step_1":{"id":"step_1","type":"screen"}},
+              "screens":{},
+              "ui_config":{"app":{"colors":{},"fonts":{}},"localizations":{},"variable_config":{}}
+            }}}
+        """.trimIndent()
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns inlineJson
+
+        val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk()
+
+        assertThat(envelopes!!.getValue("wf_inline").action).isEqualTo(WorkflowResponseAction.INLINE)
+        assertThat(envelopes.getValue("wf_inline").data?.id).isEqualTo("wf_inline")
+    }
+
+    @Test
+    fun `cachedWorkflowDetailEnvelopesFromDisk returns null when nothing is cached`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns null
+        assertThat(workflowsCache.cachedWorkflowDetailEnvelopesFromDisk()).isNull()
+    }
+
+    @Test
+    fun `cachedWorkflowDetailEnvelopesFromDisk returns null when the payload is corrupt`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns "not valid json"
+        assertThat(workflowsCache.cachedWorkflowDetailEnvelopesFromDisk()).isNull()
     }
 
     @Test
