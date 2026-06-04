@@ -163,6 +163,11 @@ internal class PurchasesOrchestrator(
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
+    @Volatile private var currentActivityRef: WeakReference<Activity>? = null
+
+    internal val currentActivity: Activity?
+        get() = currentActivityRef?.get()
+
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
         set(value) {
@@ -347,7 +352,14 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    override fun onActivityResumed(activity: Activity) {
+        currentActivityRef = WeakReference(activity)
+    }
+
     override fun onActivityPaused(activity: Activity) {
+        if (currentActivityRef?.get() === activity) {
+            currentActivityRef = null
+        }
         flushEvents(Delay.NONE)
     }
 

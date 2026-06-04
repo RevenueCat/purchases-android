@@ -68,6 +68,14 @@ public class Purchases internal constructor(
         get() = purchasesOrchestrator.currentConfiguration
 
     /**
+     * The currently resumed Activity, if any. Tracked automatically via ActivityLifecycleCallbacks.
+     * Used internally by RevenueCatUI to present paywalls without requiring an explicit Activity parameter.
+     */
+    @InternalRevenueCatAPI
+    public val currentActivity: Activity?
+        get() = purchasesOrchestrator.currentActivity
+
+    /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
      * outside of the Purchases SDK.
      */
