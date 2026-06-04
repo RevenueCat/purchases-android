@@ -41,6 +41,18 @@ internal class WorkflowManager(
         prefetchDispatcher.close()
     }
 
+    /**
+     * Fetches and resolves a single workflow, serving a fresh in-memory cache hit when one exists
+     * and otherwise fetching from the backend.
+     *
+     * @param persistEnvelopeOnResolve when true, also persists the raw detail envelope to disk after
+     * a successful resolve, so it survives an app restart and can be re-resolved while the backend is
+     * down (see [getWorkflowsList]'s recovery path). Only the prefetch path sets this: prefetched
+     * workflows are the curated, bounded set the backend marked as mattering, so persisting all of
+     * them is safe. On-demand fetches leave it false to avoid unbounded disk growth (a user can open
+     * many distinct paywalls in a session), so persisting those behind an LRU cap is a planned
+     * follow-up rather than part of this path.
+     */
     @Suppress("LongParameterList")
     fun getWorkflow(
         appUserID: String,
