@@ -184,6 +184,12 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `clearCache clears the persisted workflow detail envelopes`() {
+        workflowsCache.clearCache()
+        verify(exactly = 1) { deviceCache.clearWorkflowDetailEnvelopesCache() }
+    }
+
+    @Test
     fun `cachedWorkflowsListResponseFromDisk parses the persisted response`() {
         val cachedJson =
             """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""

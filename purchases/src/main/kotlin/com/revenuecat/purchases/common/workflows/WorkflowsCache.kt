@@ -29,8 +29,9 @@ import kotlinx.serialization.builtins.serializer
  * failure, and [clearCache] wipes it on identity transitions.
  *
  * It additionally persists per-workflow detail envelopes to disk: [cacheWorkflowDetailEnvelope]
- * writes a single envelope (merging with any already-stored ones), and
- * [cachedWorkflowDetailEnvelopesFromDisk] restores the full map after a backend failure.
+ * writes a single envelope (merging with any already-stored ones),
+ * [cachedWorkflowDetailEnvelopesFromDisk] restores the full map after a backend failure, and
+ * [clearCache] wipes the envelope store on identity transitions (alongside the list disk cache).
  */
 // Coherent owner of all workflow cache state; splitting would obscure the single clearCache semantics
 @Suppress("TooManyFunctions")
@@ -190,5 +191,6 @@ internal class WorkflowsCache(
         workflowsListCachedObject.clearCache()
         offeringIdToWorkflowIdMap = emptyMap()
         deviceCache.clearWorkflowsListResponseCache()
+        deviceCache.clearWorkflowDetailEnvelopesCache()
     }
 }
