@@ -19,7 +19,6 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.net.URL
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -29,8 +28,9 @@ class PaywallPreviewPresenterTest {
         id = "abcd",
         templateName = "template1",
         config = TestData.template1Offering.paywall!!.config,
-        localization = TestData.template1Offering.paywall!!.localizedConfiguration,
-        assetBaseURL = URL("https://assets.pawwalls.com"),
+        localization = TestData.template1Offering.paywall!!.localizedConfiguration
+            .let { (locale, config) -> mapOf(locale.toString() to config) },
+        assetBaseURL = TestData.template1Offering.paywall!!.assetBaseURL,
     )
 
     private val offering = Offering(
