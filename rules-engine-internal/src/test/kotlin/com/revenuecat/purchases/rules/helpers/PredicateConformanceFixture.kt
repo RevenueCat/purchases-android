@@ -6,8 +6,7 @@ import org.json.JSONTokener
 import java.io.File
 
 /**
- * In-repo JSON predicate fixtures, mirroring the iOS `RulesEngineInternal`
- * conformance format. Each fixture declares a predicate, the variable scope,
+ * In-repo JSON predicate fixtures. Each fixture declares a predicate, the variable scope,
  * the expected outcome (a boolean or an error), and optionally the warnings
  * the evaluation should emit. A single parameterized test runs them all so
  * adding coverage is a JSON edit, not a new Kotlin test.
@@ -50,8 +49,8 @@ internal object PredicateConformanceFixtureLoader {
     private const val FIXTURES_RESOURCE_DIR = "predicate-fixtures"
 
     /**
-     * All in-repo fixtures, parsed once and reused across the suite (mirrors the
-     * iOS loader). Reading and parsing the files on every call is wasted work.
+     * All in-repo fixtures, parsed once and reused across the suite. Reading and
+     * parsing the files on every call is wasted work.
      */
     val allCases: List<PredicateConformanceFixtureCase> by lazy {
         val directory = fixturesDirectory()
