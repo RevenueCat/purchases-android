@@ -7,13 +7,12 @@ import org.junit.Rule
 import org.junit.Test
 
 /**
- * The cases below are kept as Kotlin tests because they are not covered by
- * the shared JSON predicate fixtures (which evaluate a predicate to a
- * boolean). Either they cannot be expressed as a predicate → boolean — a
- * top-level *array* or *null* scope (`Evaluator.evaluate` always takes a
- * `Map<String, Value>` object scope), or a returned [Value] such as the
- * whole data object that this engine's `==` / `===` cannot distinguish — or
- * they exercise edge cases not present in the iOS conformance corpus.
+ * The cases below are kept as Kotlin tests because they cannot be expressed
+ * as JSON predicate fixtures (which evaluate a predicate to a boolean):
+ *  - they use a top-level *array* scope, while `Evaluator.evaluate` always
+ *    takes a `Map<String, Value>` object scope; or
+ *  - they assert a returned [Value] (the whole data object) that this
+ *    engine's `==` / `===` cannot distinguish.
  *
  * Everything else now lives in `predicate-fixtures/var.json`,
  * `missing.json`, and `missing_some.json`.
@@ -26,50 +25,6 @@ class AccessorOperatorsTest {
     private val warnings: List<String> get() = loggerRule.warnings
 
     // ---- var ----
-
-    @Test
-    fun `var splits dot paths like json-logic-js preserving empty segments`() {
-        // json-logic-js uses `String(path).split(".")`, which keeps empty
-        // segments — e.g. `"a..b"` → `["a", "", "b"]`.
-        val doubleDot = obj("a" to obj("" to obj("b" to s("middle"))))
-        assertThat(AccessorOperators.opVar(s("a..b"), doubleDot)).isEqualTo(s("middle"))
-
-        val leadingDot = obj("" to obj("a" to s("leading")))
-        assertThat(AccessorOperators.opVar(s(".a"), leadingDot)).isEqualTo(s("leading"))
-
-        val trailingDot = obj("a" to obj("" to s("trailing")))
-        assertThat(AccessorOperators.opVar(s("a."), trailingDot)).isEqualTo(s("trailing"))
-
-        val onlyDots = obj("" to obj("" to s("only-dots")))
-        assertThat(AccessorOperators.opVar(s("."), onlyDots)).isEqualTo(s("only-dots"))
-    }
-
-    @Test
-    fun `var default not used when leaf is null`() {
-        // Default applies only when lookup fails. A present key whose value is
-        // Null is returned as-is — json-logic-js distinguishes `undefined`
-        // (missing) from an explicit null leaf.
-        val vars = obj("key" to Value.Null)
-        val out = AccessorOperators.opVar(
-            Value.ArrayValue(listOf(s("key"), s("fallback"))),
-            vars,
-        )
-        assertThat(out).isEqualTo(Value.Null)
-        assertThat(warnings).isEmpty()
-    }
-
-    @Test
-    fun `var default used when mid-path breaks on null`() {
-        // When descent hits a null parent, json-logic-js returns the default
-        // rather than attempting further segments.
-        val vars = obj("a" to Value.Null)
-        val out = AccessorOperators.opVar(
-            Value.ArrayValue(listOf(s("a.b"), s("fallback"))),
-            vars,
-        )
-        assertThat(out).isEqualTo(s("fallback"))
-        assertThat(warnings).isEmpty()
-    }
 
     @Test
     fun `var empty path returns entire data`() {
@@ -118,29 +73,10 @@ class AccessorOperatorsTest {
         assertThat(warnings[0]).contains("1.5")
     }
 
-    // ---- missing_some ----
-
-    @Test
-    fun `missing_some with non-numeric string threshold never satisfies`() {
-        val result = runMissingSome(
-            Value.ArrayValue(
-                listOf(
-                    s("abc"),
-                    Value.ArrayValue(listOf(s("a"), s("b"))),
-                ),
-            ),
-            obj(),
-        )
-        assertThat(result).isEqualTo(Value.ArrayValue(listOf(s("a"), s("b"))))
-    }
-
     // ---- helpers ----
 
     private fun obj(vararg entries: Pair<String, Value>): Value =
         Value.ObjectValue(entries.toMap())
 
     private fun s(literal: String): Value = Value.StringValue(literal)
-
-    private fun runMissingSome(args: Value, vars: Value): Value =
-        AccessorOperators.opMissingSome(args, vars)
 }
