@@ -348,19 +348,24 @@ internal class PurchasesOrchestrator(
     }
 
     override fun onActivityStarted(activity: Activity) {
+        // Track before onResume so that deep links handled in onNewIntent (which fires between
+        // onStart and onResume when the app comes from background) find a non-null currentActivity.
+        currentActivityRef = WeakReference(activity)
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
     }
 
-    override fun onActivityResumed(activity: Activity) {
-        currentActivityRef = WeakReference(activity)
-    }
-
-    override fun onActivityPaused(activity: Activity) {
+    override fun onActivityStopped(activity: Activity) {
+        // Clear only when the activity is fully stopped (not merely paused), so that deep links
+        // delivered while the activity is briefly paused (e.g. a dialog on top) still find a
+        // valid context.
         if (currentActivityRef?.get() === activity) {
             currentActivityRef = null
         }
+    }
+
+    override fun onActivityPaused(activity: Activity) {
         flushEvents(Delay.NONE)
     }
 
