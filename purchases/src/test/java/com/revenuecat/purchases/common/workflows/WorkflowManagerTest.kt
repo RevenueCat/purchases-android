@@ -1219,6 +1219,49 @@ class WorkflowManagerTest {
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(resolved)
     }
 
+    @Test
+    fun `late prefetch completion after clearCache does not persist the workflow detail envelope`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } returns
+            WorkflowDataResult(workflow = mockk(), enrolledVariants = mapOf("exp" to "variant_a"))
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } just Runs
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+        assertThat(completeCount).isEqualTo(0)
+
+        workflowsCache.clearCache()
+        detailSuccess.captured(envelope)
+
+        assertThat(completeCount).isEqualTo(1)
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
     // endregion envelope persistence
 
     // region onError envelope restore
