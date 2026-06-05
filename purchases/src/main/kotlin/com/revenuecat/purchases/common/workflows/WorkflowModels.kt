@@ -21,6 +21,30 @@ import kotlinx.serialization.json.JsonObject
 import java.net.URL
 
 @InternalRevenueCatAPI
+@Serializable(with = WorkflowTypeDeserializer::class)
+public enum class WorkflowType {
+    @SerialName("paywall")
+    PAYWALL,
+
+    @SerialName("web-funnel")
+    WEB_FUNNEL,
+
+    @SerialName("feedback-survey")
+    FEEDBACK_SURVEY,
+    UNKNOWN,
+}
+
+internal object WorkflowTypeDeserializer : EnumDeserializerWithDefault<WorkflowType>(
+    valuesByType = mapOf(
+        "paywall" to WorkflowType.PAYWALL,
+        "web-funnel" to WorkflowType.WEB_FUNNEL,
+        "feedback-survey" to WorkflowType.FEEDBACK_SURVEY,
+        "unknown" to WorkflowType.UNKNOWN,
+    ),
+    defaultValue = WorkflowType.UNKNOWN,
+)
+
+@InternalRevenueCatAPI
 @Serializable(with = WorkflowTriggerTypeDeserializer::class)
 public enum class WorkflowTriggerType {
     @SerialName("on_press")
@@ -105,6 +129,7 @@ public data class PublishedWorkflow(
     val metadata: Map<String, @Contextual Any> = emptyMap(),
     val hash: String? = null,
     @SerialName("single_step_fallback_id") val singleStepFallbackId: String? = null,
+    @SerialName("workflow_type") val workflowType: WorkflowType? = null,
 ) {
     @InternalRevenueCatAPI
     public val dismissExitOffer: WorkflowExitOffer?
