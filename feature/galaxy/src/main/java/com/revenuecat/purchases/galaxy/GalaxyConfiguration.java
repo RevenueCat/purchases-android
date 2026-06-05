@@ -26,6 +26,8 @@ import com.revenuecat.purchases.Store;
  */
 public final class GalaxyConfiguration extends PurchasesConfiguration {
 
+    public void helloWorld() {}
+
     public GalaxyConfiguration(@NonNull Builder builder) {
         super(builder);
     }
