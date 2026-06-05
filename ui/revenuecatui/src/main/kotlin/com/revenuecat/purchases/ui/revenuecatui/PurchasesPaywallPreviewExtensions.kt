@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
 import android.content.Intent
+import androidx.annotation.MainThread
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 
@@ -38,6 +39,7 @@ import com.revenuecat.purchases.Purchases
  * @return `true` if the intent was a valid Preview Paywall link and handling has begun;
  * `false` if the intent is not a valid paywall preview link.
  */
+@MainThread
 @OptIn(InternalRevenueCatAPI::class)
 public fun Purchases.presentPaywall(intent: Intent, activity: Activity? = null): Boolean {
     return PaywallPreviewPresenter().handle(

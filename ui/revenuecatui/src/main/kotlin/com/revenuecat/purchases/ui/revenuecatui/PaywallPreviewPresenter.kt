@@ -58,7 +58,7 @@ internal class PaywallPreviewPresenter(
 
         val queryParamCount = uri.queryParameterNames.size
         if (queryParamCount != 2) {
-            Logger.w("Invalid rc-paywall-preview link. Expected 2 query parameters, but found $queryParamCount")
+            Logger.w("Invalid rc-paywall-preview link. Expected 2 parameters, but found $queryParamCount")
             return false
         }
 

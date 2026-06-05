@@ -157,7 +157,7 @@ class PaywallPreviewPresenterTest {
     }
 
     @Test
-    fun `exception from locateOffering does not launch paywall`() {
+    fun `failing to locate offering does not launch paywall`() {
         var launched = false
 
         presenterFor(launched = { launched = true }).handle(
