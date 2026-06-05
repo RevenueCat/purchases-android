@@ -55,6 +55,9 @@ internal object Operators {
         ">" -> ComparisonOperators.opGt(args, vars)
         ">=" -> ComparisonOperators.opGe(args, vars)
 
+        "some" -> IterationOperators.opSome(args, vars)
+        "all" -> IterationOperators.opAll(args, vars)
+
         else -> throw RuleError.UnsupportedOperator(op)
     }
 
