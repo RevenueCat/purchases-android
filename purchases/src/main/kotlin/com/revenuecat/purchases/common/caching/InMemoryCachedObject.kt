@@ -8,7 +8,7 @@ import java.util.Date
 internal class InMemoryCachedObject<T>
 @OptIn(InternalRevenueCatAPI::class)
 constructor(
-    internal var lastUpdatedAt: Date? = null,
+    @Volatile internal var lastUpdatedAt: Date? = null,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 

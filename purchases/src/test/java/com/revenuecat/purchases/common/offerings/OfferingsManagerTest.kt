@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -20,6 +21,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -45,7 +47,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
-    private lateinit var mockWorkflowPreWarmer: (String, String, Boolean) -> Unit
+    private lateinit var mockWorkflowManager: WorkflowManager
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -61,8 +63,9 @@ class OfferingsManagerTest {
         mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
-        mockWorkflowPreWarmer = mockk<(String, String, Boolean) -> Unit>().apply {
-            every { this@apply(any(), any(), any()) } just Runs
+        mockWorkflowManager = mockk(relaxed = true)
+        every { mockWorkflowManager.getWorkflowsList(any(), any(), any()) } answers {
+            thirdArg<() -> Unit>().invoke()
         }
 
         mockBackendResponseSuccess()
@@ -75,7 +78,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
-            workflowPreWarmer = mockWorkflowPreWarmer,
+            workflowManager = mockWorkflowManager,
         )
     }
 
@@ -115,6 +118,17 @@ class OfferingsManagerTest {
         }
         verify(exactly = 1) {
             cache.isOfferingsCacheStale(appInBackground = false)
+        }
+    }
+
+    @Test
+    fun `onAppForeground triggers getWorkflowsList when offerings are stale`() {
+        mockCacheStale(offeringsStale = true)
+        mockDeviceCache()
+        mockOfferingsFactory()
+        offeringsManager.onAppForeground(appUserID = "user_1")
+        verify(exactly = 1) {
+            mockWorkflowManager.getWorkflowsList("user_1", appInBackground = false, onComplete = any())
         }
     }
 
@@ -425,6 +439,32 @@ class OfferingsManagerTest {
         verify(exactly = 1) { cache.forceCacheStale() }
     }
 
+    @Test
+    fun `getOfferings succeeds without NPE when workflowManager is null`() {
+        val managerWithNoWorkflows = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = null,
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        managerWithNoWorkflows.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected success but got error: $it") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isEqualTo(testOfferings)
+    }
+
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
     // but it's possible something changed in the store. So better to handle it.
     @Test
@@ -524,7 +564,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `getOfferings calls workflowPreWarmer with current offering identifier after offerings are fetched`() {
+    fun `getOfferings calls getWorkflowsList after offerings are fetched`() {
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory()
         mockDeviceCache()
@@ -537,12 +577,36 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowPreWarmer(appUserId, STUB_OFFERING_IDENTIFIER, false)
+            mockWorkflowManager.getWorkflowsList(appUserId, false, onComplete = any())
         }
+        // Offerings came fresh from the network, so the workflows list is realigned by being forced
+        // stale before the fetch, rather than skipped on its own TTL.
+        verify(exactly = 1) { mockWorkflowManager.forceWorkflowsListCacheStale() }
     }
 
     @Test
-    fun `getOfferings calls workflowPreWarmer with appInBackground true when app is in background`() {
+    fun `getOfferings does not force workflows list stale on disk-cache fallback`() {
+        every { cache.cachedOfferings } returns null
+        every { cache.cacheOfferings(any(), any()) } just Runs
+        mockBackendResponseError()
+        every { cache.cachedOfferingsResponse } returns JSONObject(ONE_OFFERINGS_RESPONSE)
+        mockDeviceCache(wasSuccessful = false)
+        mockOfferingsFactory()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Should be success") },
+            onSuccess = {},
+        )
+
+        // Offerings were restored from disk (no real change, backend likely down), so we must not
+        // force a workflows refetch here.
+        verify(exactly = 0) { mockWorkflowManager.forceWorkflowsListCacheStale() }
+    }
+
+    @Test
+    fun `getOfferings calls getWorkflowsList with appInBackground true when app is in background`() {
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory()
         mockDeviceCache()
@@ -555,12 +619,12 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowPreWarmer(appUserId, STUB_OFFERING_IDENTIFIER, true)
+            mockWorkflowManager.getWorkflowsList(appUserId, true, onComplete = any())
         }
     }
 
     @Test
-    fun `getOfferings does not call workflowPreWarmer if current offering is null`() {
+    fun `getOfferings calls getWorkflowsList even when current offering is null`() {
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory(testOfferings.copy(current = null))
         mockDeviceCache()
@@ -572,8 +636,8 @@ class OfferingsManagerTest {
             onSuccess = {},
         )
 
-        verify(exactly = 0) {
-            mockWorkflowPreWarmer(any(), any(), any())
+        verify(exactly = 1) {
+            mockWorkflowManager.getWorkflowsList(appUserId, false, onComplete = any())
         }
     }
 
@@ -988,4 +1052,119 @@ class OfferingsManagerTest {
             current = current,
             all = this.all,
         )
+
+    // region workflowManager onComplete integration
+
+    @Test
+    fun `getOfferings does not call onSuccess until getWorkflowsList completes`() {
+        val mockWorkflowManager = mockk<WorkflowManager>()
+        every { mockWorkflowManager.forceWorkflowsListCacheStale() } just Runs
+        val onCompleteSlot = slot<() -> Unit>()
+        every {
+            mockWorkflowManager.getWorkflowsList(
+                appUserID = appUserId,
+                appInBackground = false,
+                onComplete = capture(onCompleteSlot),
+            )
+        } just Runs
+
+        val managerWithWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        managerWithWorkflow.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNull()
+
+        onCompleteSlot.captured.invoke()
+
+        assertThat(receivedOfferings).isNotNull()
+    }
+
+    @Test
+    fun `getOfferings calls onSuccess immediately when workflowManager is null`() {
+        val managerWithoutWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = null,
+        )
+
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        managerWithoutWorkflow.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNotNull()
+    }
+
+    @Test
+    fun `getOfferings from valid cache does not call onSuccess until getWorkflowsList completes`() {
+        val mockWorkflowManager = mockk<WorkflowManager>()
+        val onCompleteSlot = slot<() -> Unit>()
+        every {
+            mockWorkflowManager.getWorkflowsList(
+                appUserID = appUserId,
+                appInBackground = false,
+                onComplete = capture(onCompleteSlot),
+            )
+        } just Runs
+
+        val managerWithWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        every { cache.cachedOfferings } returns testOfferings
+        mockDeviceCache()
+        mockCacheStale(offeringsStale = false)
+
+        var receivedOfferings: Offerings? = null
+        managerWithWorkflow.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        // Cache hit still waits for the workflows list so the offeringId map is populated on success.
+        assertThat(receivedOfferings).isNull()
+
+        onCompleteSlot.captured.invoke()
+
+        assertThat(receivedOfferings).isNotNull()
+    }
+
+    // endregion workflowManager onComplete integration
 }

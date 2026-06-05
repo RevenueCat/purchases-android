@@ -26,6 +26,7 @@ internal object Operators {
     ): Value = when (op) {
         "var" -> AccessorOperators.opVar(args, vars)
         "missing" -> AccessorOperators.opMissing(args, vars)
+        "missing_some" -> AccessorOperators.opMissingSome(args, vars)
 
         "==" -> EqualityOperators.opLooseEq(args, vars)
         "!=" -> EqualityOperators.opLooseNe(args, vars)
@@ -37,6 +38,22 @@ internal object Operators {
         "and" -> LogicOperators.opAnd(args, vars)
         "or" -> LogicOperators.opOr(args, vars)
         "if" -> LogicOperators.opIf(args, vars)
+
+        "in" -> StringArrayOperators.opIn(args, vars)
+        "cat" -> StringArrayOperators.opCat(args, vars)
+        "substr" -> StringArrayOperators.opSubstr(args, vars)
+        "merge" -> StringArrayOperators.opMerge(args, vars)
+
+        "+" -> ArithmeticOperators.opAdd(args, vars)
+        "-" -> ArithmeticOperators.opSub(args, vars)
+        "*" -> ArithmeticOperators.opMul(args, vars)
+        "/" -> ArithmeticOperators.opDiv(args, vars)
+        "%" -> ArithmeticOperators.opMod(args, vars)
+
+        "<" -> ComparisonOperators.opLt(args, vars)
+        "<=" -> ComparisonOperators.opLe(args, vars)
+        ">" -> ComparisonOperators.opGt(args, vars)
+        ">=" -> ComparisonOperators.opGe(args, vars)
 
         else -> throw RuleError.UnsupportedOperator(op)
     }
@@ -71,5 +88,18 @@ internal object Operators {
         val lhs = evaluated.firstOrNull() ?: Value.Null
         val rhs = if (evaluated.size >= 2) evaluated[1] else Value.Null
         return lhs to rhs
+    }
+
+    /**
+     * Safely truncate a [Double] to [Int] for index / count math.
+     * `NaN` → `0` (matches JS `ToInteger`); `±Infinity` and
+     * out-of-range finite values clamp to [Int.MAX_VALUE] / [Int.MIN_VALUE].
+     */
+    @Suppress("ReturnCount")
+    fun clampedInt(value: Double): Int {
+        if (value.isNaN()) return 0
+        if (value >= Int.MAX_VALUE.toDouble()) return Int.MAX_VALUE
+        if (value <= Int.MIN_VALUE.toDouble()) return Int.MIN_VALUE
+        return value.toInt()
     }
 }

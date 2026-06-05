@@ -459,6 +459,9 @@ class PaywallViewModelWorkflowTest {
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
+            // Run the step-state pre-warm on the test scheduler so advanceUntilIdle() awaits it
+            // instead of it escaping to Dispatchers.Default and resuming after resetMain().
+            backgroundDispatcher = testDispatcher,
         )
     }
 
@@ -589,6 +592,9 @@ class PaywallViewModelWorkflowTest {
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
+            // Run the step-state pre-warm on the test scheduler so advanceUntilIdle() awaits it
+            // instead of it escaping to Dispatchers.Default and resuming after resetMain().
+            backgroundDispatcher = testDispatcher,
         )
         vmWithVars.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 

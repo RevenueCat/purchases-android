@@ -302,6 +302,21 @@ jobs:
       - store_artifacts:
           path: build/reports
 
+  test_detekt_rules:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run detekt-rules Tests
+          command: ./gradlew :detekt-rules:test --parallel --no-daemon
+      - store_test_results:
+          path: detekt-rules/build/test-results/test
+      - store_artifacts:
+          path: build/reports
+
   test-galaxy:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -401,7 +416,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.8.0-SNAPSHOT s3://purchases-docs/android/10.8.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.9.0-SNAPSHOT s3://purchases-docs/android/10.9.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -1072,6 +1087,9 @@ workflows:
           requires:
             - prepare-tests
       - test_dokka_hide_internal:
+          requires:
+            - prepare-tests
+      - test_detekt_rules:
           requires:
             - prepare-tests
       - test-galaxy:

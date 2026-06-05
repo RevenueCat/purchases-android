@@ -68,6 +68,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -163,6 +164,7 @@ internal class PaywallViewModelImpl(
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
     private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
+    private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -1061,7 +1063,7 @@ internal class PaywallViewModelImpl(
         preWarmJob = viewModelScope.launch {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
-                val computed = withContext(Dispatchers.Default) {
+                val computed = withContext(backgroundDispatcher) {
                     computeStateForStep(step, workflow, offerings, presentedOfferingContext)
                 }
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
@@ -1409,7 +1411,7 @@ internal class PaywallViewModelImpl(
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
             paywallIdentifier = paywallId,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -1426,7 +1428,7 @@ internal class PaywallViewModelImpl(
         }
         return PaywallEvent.Data(
             paywallIdentifier = paywallData.data.id,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
@@ -1463,7 +1465,7 @@ internal class PaywallViewModelImpl(
         val locale = localeList.get(0) ?: Locale.getDefault()
         return PaywallPresentationFingerprint(
             paywallIdentifier = paywallId,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = revision,
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
@@ -1478,7 +1480,7 @@ internal class PaywallViewModelImpl(
         val paywallData = offering.paywallComponents ?: return null
         return PaywallPresentationFingerprint(
             paywallIdentifier = paywallData.data.id,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = paywallData.data.revision,
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
@@ -1504,6 +1506,6 @@ internal class PaywallViewModelImpl(
             ?.mapValues { (_, definition) -> CustomVariableValue.from(definition.defaultValue) }
             ?: emptyMap()
 
-    private val Offering.presentedOfferingContext: PresentedOfferingContext
-        get() = availablePackages.firstOrNull()?.presentedOfferingContext ?: PresentedOfferingContext(identifier)
+    private val Offering.presentedOfferingContextOrDefault: PresentedOfferingContext
+        get() = presentedOfferingContext ?: PresentedOfferingContext(identifier)
 }

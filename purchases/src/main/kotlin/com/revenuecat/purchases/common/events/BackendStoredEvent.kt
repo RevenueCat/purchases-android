@@ -338,6 +338,7 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
  * @param appSessionID The session ID of the app session when this event occurred.
  * @return A `BackendStoredEvent.CustomPaywall` containing a `BackendEvent.CustomPaywall`.
  */
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
     appUserID: String,
@@ -353,6 +354,11 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
             timestamp = creationData.date.time,
             paywallID = data.paywallId,
             offeringID = data.offeringId,
+            presentedOfferingContext = BackendEvent.CustomPaywallPresentedOfferingContextData.from(
+                placementIdentifier = data.placementIdentifier,
+                targetingRevision = data.targetingRevision,
+                targetingRuleId = data.targetingRuleId,
+            ),
         ),
     )
 }

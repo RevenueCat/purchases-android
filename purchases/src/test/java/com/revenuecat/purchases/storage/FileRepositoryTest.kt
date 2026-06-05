@@ -11,9 +11,12 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -24,12 +27,19 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.URL
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FileRepositoryTest : CoroutineTest() {
     private companion object {
         const val TEST_URL = "https://www.sample.com"
         const val TEST_URI = "data:sample/some/path"
+        const val CONCURRENCY_LIMIT = 2
+        const val TOTAL_DOWNLOADS = 6
+        const val LATCH_TIMEOUT_SECONDS = 5L
+        const val POLL_INTERVAL_MILLIS = 10L
         val cacheUri = URI(TEST_URI)
         val url: URL = URL(TEST_URL)
         val goodConnection = TestUrlConnection(
@@ -298,6 +308,61 @@ class FileRepositoryTest : CoroutineTest() {
         // Network was only called once
         assertThat(factory.createdConnections.size).isEqualTo(1)
         verify(exactly = 1) { mockCache.saveData(any<InputStream>(), cacheUri, null) }
+    }
+
+    @Test
+    fun `injected concurrency-limited scope caps concurrent downloads`() = runBlocking<Unit> {
+        val active = AtomicInteger(0)
+        val maxConcurrent = AtomicInteger(0)
+        val release = CountDownLatch(1)
+
+        // createConnection runs on the injected dispatcher (downloadFile no longer switches dispatchers),
+        // so blocking here holds a limited slot and makes the in-flight count observable.
+        val factory = TestUrlConnectionFactory(connectionProvider = {
+            maxConcurrent.accumulateAndGet(active.incrementAndGet()) { a, b -> maxOf(a, b) }
+            release.await(LATCH_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            active.decrementAndGet()
+            TestUrlConnection(HttpURLConnection.HTTP_OK, ByteArrayInputStream(ByteArray(0)))
+        })
+
+        // A real fake (not a mock): MockK serializes concurrent invocations, which would mask the
+        // parallelism this test is measuring.
+        val fakeCache = object : LocalFileCache {
+            override fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum?): URI =
+                URI("data:" + remoteURL.file)
+
+            override fun cachedContentExists(uri: URI): Boolean = false
+
+            override fun saveData(inputStream: InputStream, uri: URI, checksum: Checksum?) = Unit
+        }
+
+        val repository = DefaultFileRepository(
+            store = KeyedDeferredValueStore(),
+            fileCacheManager = fakeCache,
+            ioScope = CoroutineScope(Dispatchers.IO.limitedParallelism(CONCURRENCY_LIMIT)),
+            logHandler = mockk<LogHandler>(relaxed = true),
+            urlConnectionFactory = factory,
+        )
+
+        // Distinct URLs so the dedup store doesn't coalesce them into a single download. Dispatched on
+        // Dispatchers.Default so they run on real threads, independent of the polling thread below.
+        val downloads = (0 until TOTAL_DOWNLOADS).map { index ->
+            async(Dispatchers.Default) {
+                repository.generateOrGetCachedFileURL(URL("https://cdn.example.com/file_$index"))
+            }
+        }
+
+        // Let the dispatcher saturate, then release everything.
+        val deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(LATCH_TIMEOUT_SECONDS)
+        while (maxConcurrent.get() < CONCURRENCY_LIMIT && System.currentTimeMillis() < deadline) {
+            Thread.sleep(POLL_INTERVAL_MILLIS)
+        }
+        release.countDown()
+        val results = downloads.awaitAll()
+
+        // Never more than the limit ran at once, and every download still completed.
+        assertThat(maxConcurrent.get()).isEqualTo(CONCURRENCY_LIMIT)
+        assertThat(results).hasSize(TOTAL_DOWNLOADS)
     }
 
     // Checksum validation tests

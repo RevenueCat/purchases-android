@@ -8,6 +8,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -40,6 +41,7 @@ internal abstract class OfferingParser {
         productsById: Map<String, List<StoreProduct>>,
         originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
         loadedFromDiskCache: Boolean = false,
+        configuredStore: Store = Store.PLAY_STORE,
     ): Offerings {
         log(LogIntent.DEBUG) { OfferingStrings.BUILDING_OFFERINGS.format(productsById.size) }
 
@@ -65,7 +67,7 @@ internal abstract class OfferingParser {
                 offerings[it.identifier] = it
 
                 if (it.availablePackages.isEmpty()) {
-                    warnLog { OfferingStrings.OFFERING_EMPTY.format(it.identifier) }
+                    warnLog { offeringEmptyMessage(it.identifier, configuredStore) }
                 }
             }
         }
@@ -103,6 +105,15 @@ internal abstract class OfferingParser {
             originalSource = originalSource,
             loadedFromDiskCache = loadedFromDiskCache,
         )
+    }
+
+    private fun offeringEmptyMessage(offeringIdentifier: String, configuredStore: Store): String {
+        val template = if (configuredStore == Store.TEST_STORE) {
+            OfferingStrings.OFFERING_EMPTY_TEST_STORE
+        } else {
+            OfferingStrings.OFFERING_EMPTY
+        }
+        return template.format(offeringIdentifier)
     }
 
     @OptIn(InternalRevenueCatAPI::class)

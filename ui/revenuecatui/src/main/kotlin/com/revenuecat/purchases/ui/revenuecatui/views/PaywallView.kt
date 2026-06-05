@@ -73,7 +73,7 @@ public class PaywallView : CompatComposeView {
         offering?.let {
             setOfferingId(
                 offeringId = it.identifier,
-                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                presentedOfferingContext = it.presentedOfferingContext,
             )
         }
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
