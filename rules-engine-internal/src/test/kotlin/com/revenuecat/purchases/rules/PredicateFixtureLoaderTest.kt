@@ -12,7 +12,7 @@ internal class PredicateFixtureLoaderTest {
 
     @Test
     fun `fixtures load successfully`() {
-        assertThat(PredicateConformanceFixtureLoader.loadAllCases())
+        assertThat(PredicateConformanceFixtureLoader.allCases)
             .withFailMessage("Expected at least one in-repo predicate fixture")
             .isNotEmpty
     }
@@ -22,6 +22,6 @@ internal class PredicateFixtureLoaderTest {
         // Bump this when adding or removing fixtures. Guards against a fixture
         // file silently failing to load and shrinking the suite.
         val expectedCount = 244
-        assertThat(PredicateConformanceFixtureLoader.loadAllCases()).hasSize(expectedCount)
+        assertThat(PredicateConformanceFixtureLoader.allCases).hasSize(expectedCount)
     }
 }

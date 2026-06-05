@@ -30,6 +30,6 @@ internal class PredicateFixtureTest(
         @JvmStatic
         @Parameterized.Parameters(name = "{0}")
         fun fixtures(): List<PredicateConformanceFixtureCase> =
-            PredicateConformanceFixtureLoader.loadAllCases()
+            PredicateConformanceFixtureLoader.allCases
     }
 }

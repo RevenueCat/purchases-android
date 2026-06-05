@@ -49,12 +49,16 @@ internal object PredicateConformanceFixtureLoader {
 
     private const val FIXTURES_RESOURCE_DIR = "predicate-fixtures"
 
-    fun loadAllCases(): List<PredicateConformanceFixtureCase> {
+    /**
+     * All in-repo fixtures, parsed once and reused across the suite (mirrors the
+     * iOS loader). Reading and parsing the files on every call is wasted work.
+     */
+    val allCases: List<PredicateConformanceFixtureCase> by lazy {
         val directory = fixturesDirectory()
         val files = directory.listFiles { file -> file.extension == "json" }
             ?.sortedBy { it.name }
             .orEmpty()
-        return files.flatMap { loadCases(it) }
+        files.flatMap { loadCases(it) }
     }
 
     private fun fixturesDirectory(): File {
