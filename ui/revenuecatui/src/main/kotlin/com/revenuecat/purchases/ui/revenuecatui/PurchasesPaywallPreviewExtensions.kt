@@ -5,6 +5,7 @@ import android.content.Intent
 import androidx.annotation.MainThread
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.awaitOfferings
 
 /**
  * Attempts to present a paywall from a Preview Paywall deep link intent.

@@ -104,6 +104,7 @@ import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import java.lang.ref.WeakReference
 import java.net.URL
 import java.util.Collections
 import java.util.Date

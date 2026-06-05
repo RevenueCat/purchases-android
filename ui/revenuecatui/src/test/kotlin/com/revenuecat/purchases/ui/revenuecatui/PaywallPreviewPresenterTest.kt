@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -190,6 +191,38 @@ class PaywallPreviewPresenterTest {
             locateOffering = { offering }, // offering has paywall id "abcd"
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=wxyz"),
             activity = mockActivity,
+        )
+
+        assertThat(launched).isFalse()
+    }
+
+    @Test
+    fun `finishing activity does not launch paywall`() {
+        var launched = false
+        val finishingActivity = mockk<Activity>(relaxed = true) {
+            every { isFinishing } returns true
+        }
+
+        presenterFor(launched = { launched = true }).handle(
+            locateOffering = { offering },
+            intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
+            activity = finishingActivity,
+        )
+
+        assertThat(launched).isFalse()
+    }
+
+    @Test
+    fun `destroyed activity does not launch paywall`() {
+        var launched = false
+        val destroyedActivity = mockk<Activity>(relaxed = true) {
+            every { isDestroyed } returns true
+        }
+
+        presenterFor(launched = { launched = true }).handle(
+            locateOffering = { offering },
+            intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
+            activity = destroyedActivity,
         )
 
         assertThat(launched).isFalse()

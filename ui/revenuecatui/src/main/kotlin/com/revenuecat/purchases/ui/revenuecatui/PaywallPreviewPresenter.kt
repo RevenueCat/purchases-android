@@ -12,6 +12,13 @@ import kotlinx.coroutines.launch
 
 internal const val PAYWALL_PREVIEW_HOST = "rc-paywall-preview"
 
+// Holds the validated parameters extracted from a preview paywall deep link.
+private data class PreviewLinkParams(
+    val offeringId: String,
+    val paywallId: String,
+    val activity: Activity,
+)
+
 /**
  * Handles parsing and presenting a Preview Paywall deep link.
  *
@@ -38,9 +45,10 @@ internal class PaywallPreviewPresenter(
     /**
      * Attempts to handle a Preview Paywall deep link.
      *
-     * Parses [intent] synchronously and validates all required parameters. If [activity] is
-     * null (no presentation context), returns `false` immediately — matching the iOS behaviour
-     * where a missing view controller causes an early `return false` before any async work.
+     * Parses [intent] synchronously via [parseLink] and validates all required parameters.
+     * If [activity] is null (no presentation context), returns `false` immediately — matching
+     * the iOS behaviour where a missing view controller causes an early `return false` before
+     * any async work.
      *
      * If all synchronous checks pass, launches a coroutine to fetch the offering (via
      * [locateOffering]) and then calls [launchPaywall] if the offering and paywall IDs match.
@@ -53,38 +61,11 @@ internal class PaywallPreviewPresenter(
         intent: Intent,
         activity: Activity?,
     ): Boolean {
-        val uri = intent.data ?: return false
-        if (uri.host != PAYWALL_PREVIEW_HOST) return false
-
-        val queryParamCount = uri.queryParameterNames.size
-        if (queryParamCount != 2) {
-            Logger.w("Invalid rc-paywall-preview link. Expected 2 parameters, but found $queryParamCount")
-            return false
-        }
-
-        val offeringId = uri.getQueryParameter("offering_id")
-        if (offeringId.isNullOrBlank()) {
-            Logger.w("Invalid rc-paywall-preview link: Bad offering_id parameter")
-            return false
-        }
-
-        val paywallId = uri.getQueryParameter("paywall_id")
-        if (paywallId.isNullOrBlank()) {
-            Logger.w("Invalid rc-paywall-preview link: Bad paywall_id parameter")
-            return false
-        }
-
-        // Check for a presentation context synchronously before launching the coroutine —
-        // a missing context means we return false immediately, just as iOS returns false
-        // when viewController is nil before the Task { } block.
-        if (activity == null) {
-            Logger.w("Unable to locate suitable presentation context for PaywallActivity")
-            return false
-        }
+        val params = parseLink(intent, activity) ?: return false
 
         MainScope().launch {
             val offering = try {
-                locateOffering(offeringId)
+                locateOffering(params.offeringId)
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 Logger.w("Error fetching offerings for paywall preview: ${e.message}")
                 return@launch
@@ -92,7 +73,7 @@ internal class PaywallPreviewPresenter(
 
             if (offering == null) {
                 Logger.w(
-                    "Attempting to show paywall for offering $offeringId, " +
+                    "Attempting to show paywall for offering ${params.offeringId}, " +
                         "but cannot locate a published offering with that id",
                 )
                 return@launch
@@ -101,17 +82,60 @@ internal class PaywallPreviewPresenter(
             // There is a one-to-one relationship between paywalls and offerings.
             // Validate that the paywall_id in the deep link matches the offering's actual paywall.
             val actualPaywallId = offering.paywall?.id
-            if (actualPaywallId != paywallId) {
+            if (actualPaywallId != params.paywallId) {
                 Logger.w(
-                    "Attempting to show paywall $paywallId, " +
-                        "but it does not match the paywall associated with $offeringId",
+                    "Attempting to show paywall ${params.paywallId}, " +
+                        "but it does not match the paywall associated with ${params.offeringId}",
                 )
                 return@launch
             }
 
-            launchPaywall(activity, offeringId)
+            // The activity may have been destroyed, finished, or rotated away while the
+            // offerings fetch was in flight. Guard against calling startActivity on a
+            // stale reference, which would throw IllegalStateException or silently fail.
+            if (params.activity.isFinishing || params.activity.isDestroyed) {
+                Logger.w("Activity is no longer usable; skipping paywall presentation")
+                return@launch
+            }
+
+            launchPaywall(params.activity, params.offeringId)
         }
 
         return true
+    }
+
+    /**
+     * Parses and validates the synchronous preconditions for a preview paywall deep link.
+     * Returns [PreviewLinkParams] on success, or null (after logging a warning) on any failure.
+     */
+    private fun parseLink(intent: Intent, activity: Activity?): PreviewLinkParams? {
+        val uri = intent.data?.takeIf { it.host == PAYWALL_PREVIEW_HOST } ?: return null
+
+        val queryParamCount = uri.queryParameterNames.size
+        val offeringId = uri.getQueryParameter("offering_id")?.takeIf { it.isNotBlank() }
+        val paywallId = uri.getQueryParameter("paywall_id")?.takeIf { it.isNotBlank() }
+
+        return when {
+            queryParamCount != 2 -> {
+                Logger.w("Invalid rc-paywall-preview link. Expected 2 parameters, but found $queryParamCount")
+                null
+            }
+            offeringId == null -> {
+                Logger.w("Invalid rc-paywall-preview link: Bad offering_id parameter")
+                null
+            }
+            paywallId == null -> {
+                Logger.w("Invalid rc-paywall-preview link: Bad paywall_id parameter")
+                null
+            }
+            // Check for a presentation context synchronously before launching the coroutine —
+            // a missing context means we return null immediately, just as iOS returns false
+            // when viewController is nil before the Task { } block.
+            activity == null -> {
+                Logger.w("Unable to locate suitable presentation context for PaywallActivity")
+                null
+            }
+            else -> PreviewLinkParams(offeringId, paywallId, activity)
+        }
     }
 }
