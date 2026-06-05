@@ -1260,6 +1260,28 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `list onError does not restore a persisted envelope for a workflow no longer marked prefetch`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns
+            """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"stale_url","hash":"stale_hash"}}"""
+        coEvery { mockResolver.resolve(any()) } returns
+            WorkflowDataResult(workflow = mockk(), enrolledVariants = mapOf("stale_exp" to "stale_variant"))
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        assertThat(completeCount).isEqualTo(1)
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isNull()
+        coVerify(exactly = 0) { mockResolver.resolve(any()) }
+    }
+
+    @Test
     fun `list onError completes once and isolates a failing envelope re-resolve`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
         val errorSlot = slot<(PurchasesError) -> Unit>()
