@@ -46,6 +46,6 @@ public fun Purchases.presentPaywall(intent: Intent, activity: Activity? = null):
     return PaywallPreviewPresenter().handle(
         locateOffering = { offeringId -> awaitOfferings().getOffering(offeringId) },
         intent = intent,
-        activity = activity ?: currentActivity,
+        activityProvider = { activity ?: currentActivity },
     )
 }

@@ -45,8 +45,6 @@ class PaywallPreviewPresenterTest {
 
     @Before
     fun setUp() {
-        // Makes MainScope().launch run the coroutine body synchronously, so tests
-        // can assert on its effects without runTest or explicit advancement.
         Dispatchers.setMain(UnconfinedTestDispatcher())
     }
 
@@ -71,7 +69,7 @@ class PaywallPreviewPresenterTest {
         val result = presenterFor().handle(
             locateOffering = { null },
             intent = Intent(),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
         assertThat(result).isFalse()
     }
@@ -81,7 +79,7 @@ class PaywallPreviewPresenterTest {
         val result = presenterFor().handle(
             locateOffering = { null },
             intent = intentFor("rc://NOT_THE_RIGHT_HOST?offering_id=1234&paywall_id=abcd"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
         assertThat(result).isFalse()
     }
@@ -91,7 +89,7 @@ class PaywallPreviewPresenterTest {
         val result = presenterFor().handle(
             locateOffering = { null },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
         assertThat(result).isFalse()
     }
@@ -101,7 +99,7 @@ class PaywallPreviewPresenterTest {
         val result = presenterFor().handle(
             locateOffering = { null },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd&extra=0000"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
         assertThat(result).isFalse()
     }
@@ -111,7 +109,7 @@ class PaywallPreviewPresenterTest {
         val result = presenterFor().handle(
             locateOffering = { null },
             intent = intentFor("rc://rc-paywall-preview?offering_id=&paywall_id=abcd"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
         assertThat(result).isFalse()
     }
@@ -121,17 +119,7 @@ class PaywallPreviewPresenterTest {
         val result = presenterFor().handle(
             locateOffering = { null },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id="),
-            activity = mockActivity,
-        )
-        assertThat(result).isFalse()
-    }
-
-    @Test
-    fun `null activity returns false`() {
-        val result = presenterFor().handle(
-            locateOffering = { null },
-            intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
-            activity = null,
+            activityProvider = { mockActivity },
         )
         assertThat(result).isFalse()
     }
@@ -139,6 +127,19 @@ class PaywallPreviewPresenterTest {
     // endregion
 
     // region Async behaviour
+
+    @Test
+    fun `null activity does not launch paywall`() {
+        var launched = false
+
+        presenterFor(launched = { launched = true }).handle(
+            locateOffering = { offering },
+            intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
+            activityProvider = { null },
+        )
+
+        assertThat(launched).isFalse()
+    }
 
     @Test
     fun `valid url returns true and calls locateOffering with correct id`() {
@@ -150,7 +151,7 @@ class PaywallPreviewPresenterTest {
                 null
             },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
 
         assertThat(result).isTrue()
@@ -164,7 +165,7 @@ class PaywallPreviewPresenterTest {
         presenterFor(launched = { launched = true }).handle(
             locateOffering = { throw RuntimeException("network error") },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
 
         assertThat(launched).isFalse()
@@ -177,7 +178,7 @@ class PaywallPreviewPresenterTest {
         presenterFor(launched = { launched = true }).handle(
             locateOffering = { null },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
 
         assertThat(launched).isFalse()
@@ -190,7 +191,7 @@ class PaywallPreviewPresenterTest {
         presenterFor(launched = { launched = true }).handle(
             locateOffering = { offering }, // offering has paywall id "abcd"
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=wxyz"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
 
         assertThat(launched).isFalse()
@@ -206,7 +207,7 @@ class PaywallPreviewPresenterTest {
         presenterFor(launched = { launched = true }).handle(
             locateOffering = { offering },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
-            activity = finishingActivity,
+            activityProvider = { finishingActivity },
         )
 
         assertThat(launched).isFalse()
@@ -222,7 +223,7 @@ class PaywallPreviewPresenterTest {
         presenterFor(launched = { launched = true }).handle(
             locateOffering = { offering },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
-            activity = destroyedActivity,
+            activityProvider = { destroyedActivity },
         )
 
         assertThat(launched).isFalse()
@@ -235,7 +236,7 @@ class PaywallPreviewPresenterTest {
         val result = presenterFor(launched = { launchedOfferingId = it }).handle(
             locateOffering = { offering },
             intent = intentFor("rc://rc-paywall-preview?offering_id=1234&paywall_id=abcd"),
-            activity = mockActivity,
+            activityProvider = { mockActivity },
         )
 
         assertThat(result).isTrue()
