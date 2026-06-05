@@ -164,10 +164,22 @@ internal class PurchasesOrchestrator(
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
-    @Volatile private var currentActivityRef: WeakReference<Activity>? = null
+    // All activities that have started but not yet stopped, in start order. Using a list rather
+    // than a single ref so that stopping a dialog/translucent overlay (which never stops the
+    // host behind it) correctly leaves the host in the set.
+    private val startedActivityRefs = mutableListOf<WeakReference<Activity>>()
+    private val startedActivitiesLock = Any()
 
     internal val currentActivity: Activity?
-        get() = currentActivityRef?.get()
+        get() = synchronized(startedActivitiesLock) {
+            // Walk from the end (most recently started) and return the first live activity.
+            val iterator = startedActivityRefs.listIterator(startedActivityRefs.size)
+            while (iterator.hasPrevious()) {
+                val activity = iterator.previous().get()
+                if (activity == null || activity.isDestroyed) iterator.remove() else return activity
+            }
+            null
+        }
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
@@ -348,20 +360,19 @@ internal class PurchasesOrchestrator(
     }
 
     override fun onActivityStarted(activity: Activity) {
-        // Track before onResume so that deep links handled in onNewIntent (which fires between
-        // onStart and onResume when the app comes from background) find a non-null currentActivity.
-        currentActivityRef = WeakReference(activity)
+        synchronized(startedActivitiesLock) {
+            // Deduplicate: remove any stale or duplicate ref for this instance before adding.
+            startedActivityRefs.removeAll { it.get() === activity || it.get() == null }
+            startedActivityRefs.add(WeakReference(activity))
+        }
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
     }
 
     override fun onActivityStopped(activity: Activity) {
-        // Clear only when the activity is fully stopped (not merely paused), so that deep links
-        // delivered while the activity is briefly paused (e.g. a dialog on top) still find a
-        // valid context.
-        if (currentActivityRef?.get() === activity) {
-            currentActivityRef = null
+        synchronized(startedActivitiesLock) {
+            startedActivityRefs.removeAll { it.get() === activity || it.get() == null }
         }
     }
 
