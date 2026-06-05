@@ -1213,6 +1213,588 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setAdGroup(adGroup: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAdGroup") }
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.AdGroup,
+            adGroup,
+            appUserID,
+        )
+    }
+
+    fun setAd(ad: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAd") }
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Ad,
+            ad,
+            appUserID,
+        )
+    }
+
+    fun setKeyword(keyword: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("seKeyword") }
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Keyword,
+            keyword,
+            appUserID,
+        )
+    }
+
+    fun setCreative(creative: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setCreative") }
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.CampaignParameters.Creative,
+            creative,
+            appUserID,
+        )
+    }
+
+    //endregion
+
+    // region Virtual Currencies
+    fun getVirtualCurrencies(
+        callback: GetVirtualCurrenciesCallback,
+    ) {
+        virtualCurrencyManager.virtualCurrencies(callback = callback)
+    }
+
+    fun invalidateVirtualCurrenciesCache() {
+        virtualCurrencyManager.invalidateVirtualCurrenciesCache()
+    }
+
+    val cachedVirtualCurrencies: VirtualCurrencies?
+        get() = virtualCurrencyManager.cachedVirtualCurrencies()
+
+    //endregion
+
+    // region Custom entitlements computation
+    fun switchUser(newAppUserID: String) {
+        if (identityManager.currentAppUserID == newAppUserID) {
+            warnLog { IdentityStrings.SWITCHING_USER_SAME_APP_USER_ID.format(newAppUserID) }
+            return
+        }
+
+        identityManager.switchUser(newAppUserID)
+
+        offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+    }
+    //endregion
+
+    //endregion
+
+    // region Paywall fonts
+
+    @InternalRevenueCatAPI
+    fun getCachedFontFamilyOrStartDownload(
+        fontInfo: UiConfig.AppConfig.FontsConfig.FontInfo.Name,
+    ): DownloadedFontFamily? {
+        return fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+    }
+
+    // endregion Paywall fonts
+
+    // region Private Methods
+    private fun enqueue(command: () -> Unit) {
+        dispatcher.enqueue({ command() }, Delay.NONE)
+    }
+
+    private fun shouldRefreshCustomerInfo(firstTimeInForeground: Boolean): Boolean {
+        return !appConfig.customEntitlementComputation &&
+            (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false))
+    }
+
+    private fun getProductsOfTypes(
+        productIds: Set<String>,
+        types: Set<ProductType>,
+        collectedStoreProducts: List<StoreProduct>,
+        startTime: Date? = null,
+        callback: GetStoreProductsCallback,
+    ) {
+        val nonNullStartTime = startTime ?: run {
+            trackGetProductsStarted(productIds)
+            dateProvider.now
+        }
+
+        val typesRemaining = types.toMutableSet()
+        val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
+
+        type?.let {
+            billing.queryProductDetailsAsync(
+                productType = it,
+                productIds = productIds,
+                onReceive = { storeProducts ->
+                    dispatch {
+                        getProductsOfTypes(
+                            productIds,
+                            typesRemaining,
+                            collectedStoreProducts + storeProducts,
+                            nonNullStartTime,
+                            callback,
+                        )
+                    }
+                },
+                onError = {
+                    dispatch {
+                        trackGetProductsResult(nonNullStartTime, productIds, productIds, it)
+                        callback.onError(it)
+                    }
+                },
+            )
+        } ?: run {
+            val notFoundProductIds = productIds - collectedStoreProducts.map { it.id }.toSet()
+            trackGetProductsResult(nonNullStartTime, productIds, notFoundProductIds, null)
+            callback.onReceived(collectedStoreProducts)
+        }
+    }
+
+    private fun updateAllCaches(
+        appUserID: String,
+        completion: ReceiveCustomerInfoCallback? = null,
+    ) {
+        state.appInBackground.let { appInBackground ->
+            customerInfoHelper.retrieveCustomerInfo(
+                appUserID,
+                CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground,
+                allowSharingPlayStoreAccount,
+                callback = completion,
+            )
+            offeringsManager.fetchAndCacheOfferings(appUserID, appInBackground)
+        }
+    }
+
+    private fun dispatch(action: () -> Unit) {
+        if (Thread.currentThread() != Looper.getMainLooper().thread) {
+            val handler = mainHandler ?: Handler(Looper.getMainLooper())
+            handler.post(action)
+        } else {
+            action()
+        }
+    }
+
+    private fun getPurchaseCallback(productId: String): PurchaseCallback? {
+        return state.purchaseCallbacksByProductId[productId].also {
+            state = state.copy(
+                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId },
+            )
+        }
+    }
+
+    private fun getAndClearProductChangeCallback(): ProductChangeCallback? {
+        return state.deprecatedProductChangeCallback.also {
+            state = state.copy(deprecatedProductChangeCallback = null)
+        }
+    }
+
+    private fun getPurchasesUpdatedListener(): BillingAbstract.PurchasesUpdatedListener {
+        return object : BillingAbstract.PurchasesUpdatedListener {
+            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
+                val isDeprecatedProductChangeInProgress: Boolean
+                val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
+                val deprecatedProductChangeListener: ProductChangeCallback?
+                val sdkOriginated: Boolean
+
+                synchronized(this@PurchasesOrchestrator) {
+                    sdkOriginated = purchases.all { purchase ->
+                        purchase.productIds.any {
+                            state.purchaseCallbacksByProductId.containsKey(it)
+                        }
+                    }
+                    isDeprecatedProductChangeInProgress = state.deprecatedProductChangeCallback != null
+                    if (isDeprecatedProductChangeInProgress) {
+                        deprecatedProductChangeListener = getAndClearProductChangeCallback()
+                        callbackPair = getProductChangeCompletedCallbacks(deprecatedProductChangeListener)
+                    } else {
+                        deprecatedProductChangeListener = null
+                        callbackPair = getPurchaseCompletedCallbacks()
+                    }
+                }
+
+                postTransactionWithProductDetailsHelper.postTransactions(
+                    purchases,
+                    allowSharingPlayStoreAccount,
+                    appUserID,
+                    PostReceiptInitiationSource.PURCHASE,
+                    sdkOriginated = sdkOriginated,
+                    transactionPostSuccess = callbackPair.first,
+                    transactionPostError = callbackPair.second,
+                )
+
+                // Synchronize paywall events after a new purchase
+                flushEvents(Delay.NONE)
+            }
+
+            override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
+                synchronized(this@PurchasesOrchestrator) {
+                    getAndClearProductChangeCallback()?.dispatch(purchasesError)
+                        ?: getAndClearAllPurchaseCallbacks().forEach { it.dispatch(purchasesError) }
+                }
+            }
+        }
+    }
+
+    private fun getAndClearAllPurchaseCallbacks(): List<PurchaseCallback> {
+        synchronized(this@PurchasesOrchestrator) {
+            state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
+                state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
+                return@getAndClearAllPurchaseCallbacks purchaseCallbacks.values.toList()
+            }
+        }
+    }
+
+    private fun getPurchaseCompletedCallbacks(): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+        val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
+            // This lets the backup manager know a change in data happened that would be good to backup.
+            // In this case, we want to make sure that if there is a purchase, we schedule a backup.
+            backupManager.dataChanged()
+            blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+                blockstoreHelper.storeUserIdIfNeeded(info)
+                getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
+                    dispatch {
+                        purchaseCallback.onCompleted(storeTransaction, info)
+                    }
+                }
+            }
+        }
+        val onError: ErrorPurchaseCallback = { purchase, error ->
+            getPurchaseCallback(purchase.productIds[0])?.dispatch(error)
+        }
+
+        return Pair(onSuccess, onError)
+    }
+
+    private fun getProductChangeCompletedCallbacks(
+        productChangeListener: ProductChangeCallback?,
+    ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
+        val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
+            productChangeListener?.let { productChangeCallback ->
+                dispatch {
+                    productChangeCallback.onCompleted(storeTransaction, info)
+                }
+            }
+        }
+        val onError: ErrorPurchaseCallback = { _, error ->
+            productChangeListener?.dispatch(error)
+        }
+        return Pair(onSuccess, onError)
+    }
+
+    private fun PurchaseErrorCallback.dispatch(error: PurchasesError) {
+        dispatch {
+            onError(
+                error,
+                error.code == PurchasesErrorCode.PurchaseCancelledError,
+            )
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private fun startPurchase(
+        activity: Activity,
+        purchasingData: PurchasingData,
+        presentedOfferingContext: PresentedOfferingContext?,
+        isPersonalizedPrice: Boolean?,
+        listener: PurchaseCallback,
+    ) {
+        log(LogIntent.PURCHASE) {
+            PurchaseStrings.PURCHASE_STARTED.format(
+                " $purchasingData ${
+                    presentedOfferingContext?.offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$it"
+                    }
+                }",
+            )
+        }
+
+        if (
+            purchasingData is GooglePurchasingData.Subscription &&
+            (purchasingData.addOnProducts?.isNotEmpty() == true) &&
+            this.store != Store.PLAY_STORE
+        ) {
+            val error = PurchasesError(
+                code = PurchasesErrorCode.PurchaseInvalidError,
+                underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
+            ).also { errorLog(it) }
+            listener.dispatch(error)
+            return
+        }
+
+        trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
+        val startTime = dateProvider.now
+
+        val listenerWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(listener, purchasingData, startTime)
+
+        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
+        synchronized(this@PurchasesOrchestrator) {
+            if (!appConfig.finishTransactions) {
+                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
+            }
+            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+                val mapOfProductIdToListener = mapOf(purchasingData.productId to listenerWithDiagnostics)
+                state = state.copy(
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
+                )
+                userPurchasing = identityManager.currentAppUserID
+            }
+        }
+
+        userPurchasing?.let { appUserID ->
+            billing.makePurchaseAsync(
+                activity,
+                appUserID,
+                purchasingData,
+                null,
+                presentedOfferingContext,
+                isPersonalizedPrice,
+            )
+        } ?: listenerWithDiagnostics.dispatch(
+            PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            },
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
+    private fun startProductChange(
+        activity: Activity,
+        purchasingData: PurchasingData,
+        presentedOfferingContext: PresentedOfferingContext?,
+        oldProductId: String,
+        replacementMode: StoreReplacementMode,
+        isPersonalizedPrice: Boolean?,
+        purchaseCallback: PurchaseCallback,
+    ) {
+        trackPurchaseStarted(purchasingData.productId, purchasingData.productType)
+        val startTime = dateProvider.now
+
+        val callbackWithDiagnostics = createCallbackWithDiagnosticsIfNeeded(purchaseCallback, purchasingData, startTime)
+
+        if (purchasingData.productType != ProductType.SUBS) {
+            PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE,
+            ).also { errorLog(it) }.also { callbackWithDiagnostics.dispatch(it) }
+            return
+        }
+
+        if (
+            purchasingData is GooglePurchasingData.Subscription &&
+            (purchasingData.addOnProducts?.isNotEmpty() == true) &&
+            this.store != Store.PLAY_STORE
+        ) {
+            PurchasesError(
+                code = PurchasesErrorCode.PurchaseInvalidError,
+                underlyingErrorMessage = PurchaseStrings.PURCHASING_ADD_ONS_ONLY_SUPPORTED_ON_PLAY_STORE,
+            ).also { errorLog(it) }.also { callbackWithDiagnostics.dispatch(it) }
+            return
+        }
+
+        log(LogIntent.PURCHASE) {
+            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+                " $purchasingData ${
+                    presentedOfferingContext?.offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$it"
+                    }
+                } oldProductId: $oldProductId replacementMode $replacementMode",
+            )
+        }
+        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
+        synchronized(this@PurchasesOrchestrator) {
+            if (!appConfig.finishTransactions) {
+                log(LogIntent.WARNING) { PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE }
+            }
+
+            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+                // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
+                // switching from, because the transaction we receive on successful purchase is for the old product.
+                // We also need to normalize oldProductId by stripping any basePlanId suffix
+                // (e.g., "productId:basePlanId" becomes "productId") to ensure the callback key matches the productId
+                // in the transaction returned by Google Play, which only contains the product ID without the base plan.
+                val productId = if (replacementMode == StoreReplacementMode.DEFERRED && store == Store.PLAY_STORE) {
+                    if (oldProductId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+                        warnLog {
+                            PurchaseStrings.DEFERRED_PRODUCT_CHANGE_WITH_BASE_PLAN_ID.format(oldProductId)
+                        }
+                    }
+                    oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+                } else {
+                    purchasingData.productId
+                }
+                val mapOfProductIdToListener = mapOf(productId to callbackWithDiagnostics)
+                state = state.copy(
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
+                )
+                userPurchasing = identityManager.currentAppUserID
+            }
+        }
+        userPurchasing?.let { appUserID ->
+            replaceOldPurchaseWithNewProduct(
+                purchasingData,
+                oldProductId,
+                replacementMode,
+                activity,
+                appUserID,
+                presentedOfferingContext,
+                isPersonalizedPrice,
+                callbackWithDiagnostics,
+            )
+        } ?: run {
+            val operationInProgressError = PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            }
+            getAndClearAllPurchaseCallbacks().forEach { it.dispatch(operationInProgressError) }
+        }
+    }
+
+    private fun replaceOldPurchaseWithNewProduct(
+        purchasingData: PurchasingData,
+        oldProductId: String,
+        replacementMode: StoreReplacementMode?,
+        activity: Activity,
+        appUserID: String,
+        presentedOfferingContext: PresentedOfferingContext?,
+        isPersonalizedPrice: Boolean?,
+        listener: PurchaseErrorCallback,
+    ) {
+        if (purchasingData.productType != ProductType.SUBS) {
+            val invalidProductChangeTypeError = PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE,
+            ).also { errorLog(it) }
+            getAndClearProductChangeCallback()?.dispatch(invalidProductChangeTypeError)
+            getAndClearAllPurchaseCallbacks().forEach { it.dispatch(invalidProductChangeTypeError) }
+            return
+        }
+
+        var previousProductId = oldProductId
+
+        if (oldProductId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+            previousProductId = oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+            warnLog {
+                "Using incorrect oldProductId: $oldProductId. The productId should not contain the basePlanId. " +
+                    "Using productId: $previousProductId."
+            }
+        }
+
+        billing.findPurchaseInPurchaseHistory(
+            appUserID,
+            ProductType.SUBS,
+            previousProductId,
+            onCompletion = { purchaseRecord ->
+                log(LogIntent.PURCHASE) { PurchaseStrings.FOUND_EXISTING_PURCHASE.format(previousProductId) }
+
+                billing.makePurchaseAsync(
+                    activity,
+                    appUserID,
+                    purchasingData,
+                    ReplaceProductInfo(purchaseRecord, replacementMode),
+                    presentedOfferingContext,
+                    isPersonalizedPrice,
+                )
+            },
+            onError = { error ->
+                log(LogIntent.GOOGLE_ERROR) { error.toString() }
+                getAndClearProductChangeCallback()
+                getAndClearAllPurchaseCallbacks()
+                listener.dispatch(error)
+            },
+        )
+    }
+
+    private fun synchronizeSubscriberAttributesIfNeeded() {
+        if (appConfig.uiPreviewMode) return
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
+    }
+
+    private fun flushEvents(delay: Delay) {
+        if (appConfig.uiPreviewMode) return
+        eventsManager.flushEvents(delay)
+        adEventsManager.flushEvents(delay)
+    }
+
+    private fun createCallbackWithDiagnosticsIfNeeded(
+        originalCallback: PurchaseCallback,
+        purchasingData: PurchasingData,
+        startTime: Date,
+    ): PurchaseCallback {
+        return if (diagnosticsTrackerIfEnabled == null) {
+            originalCallback
+        } else {
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error = null,
+                        startTime,
+                        customerInfo.entitlements.verification,
+                    )
+                    originalCallback.onCompleted(storeTransaction, customerInfo)
+                }
+
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                    trackPurchaseResultIfNeeded(
+                        purchasingData,
+                        error,
+                        startTime,
+                        verificationResult = null,
+                    )
+                    originalCallback.onError(error, userCancelled)
+                }
+            }
+        }
+    }
+
+    // region Diagnostics
+
+    private fun trackGetProductsStarted(requestedProductIds: Set<String>) {
+        diagnosticsTrackerIfEnabled?.trackGetProductsStarted(requestedProductIds)
+    }
+
+    private fun trackGetProductsResult(
+        startTime: Date,
+        requestedProductIds: Set<String>,
+        notFoundProductIds: Set<String>,
+        error: PurchasesError?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackGetProductsResult(
+            requestedProductIds = requestedProductIds,
+            notFoundProductIds = notFoundProductIds,
+            errorMessage = error?.message,
+            errorCode = error?.code?.code,
+            responseTime = responseTime,
+        )
+    }
+
+    private fun trackPurchaseStarted(productId: String, productType: ProductType) {
+        diagnosticsTrackerIfEnabled?.trackPurchaseStarted(productId, productType)
+    }
+
+    @Suppress("LongParameterList")
+    private fun trackPurchaseResultIfNeeded(
+        purchasingData: PurchasingData,
+        error: PurchasesError?,
+        startTime: Date,
+        verificationResult: VerificationResult?,
+    ) {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val responseTime = Duration.between(startTime, dateProvider.now)
+        diagnosticsTrackerIfEnabled.trackPurchaseResult(
+            purchasingData.productId,
+            purchasingData.productType,
+            error?.code?.code,
+            error?.message,
+            responseTime,
+            verificationResult,
+        )
+    }
+
+    // endregion Diagnostics
+
+    // endregion Private Methods
+
     // region Static
 
     internal companion object {
