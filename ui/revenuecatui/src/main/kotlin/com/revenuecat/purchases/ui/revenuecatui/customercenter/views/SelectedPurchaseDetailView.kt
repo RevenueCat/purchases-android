@@ -14,7 +14,11 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterConstants
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterUIConstants.ManagementViewHorizontalPadding
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.actions.CustomerCenterAction
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButton
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonConfig
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.composables.SettingsButtonStyle
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterConfigTestData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCenterPreviewTheme
@@ -27,6 +31,7 @@ internal fun SelectedPurchaseDetailView(
     purchaseInformation: PurchaseInformation,
     supportedPaths: List<HelpPath>,
     modifier: Modifier = Modifier,
+    shouldShowPurchaseHistory: Boolean = false,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(
@@ -46,6 +51,22 @@ internal fun SelectedPurchaseDetailView(
             isDetailedView = true,
             onCardClick = null,
         )
+
+        if (shouldShowPurchaseHistory) {
+            SettingsButton(
+                title = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_MANAGEMENT_SEE_ALL_PURCHASES,
+                ),
+                onClick = { onAction(CustomerCenterAction.ShowPurchaseHistory) },
+                config = SettingsButtonConfig(),
+                style = SettingsButtonStyle.OUTLINED,
+                modifier = Modifier.padding(
+                    top = ManagementViewHorizontalPadding,
+                    start = ManagementViewHorizontalPadding,
+                    end = ManagementViewHorizontalPadding,
+                ),
+            )
+        }
 
         ManageSubscriptionsButtonsView(
             associatedPurchaseInformation = purchaseInformation,
