@@ -66,6 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -161,6 +162,7 @@ internal class PaywallViewModelImpl(
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
     private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
+    private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -1015,7 +1017,7 @@ internal class PaywallViewModelImpl(
         preWarmJob = viewModelScope.launch {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
-                val computed = withContext(Dispatchers.Default) {
+                val computed = withContext(backgroundDispatcher) {
                     computeStateForStep(step, workflow, offerings, presentedOfferingContext)
                 }
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
