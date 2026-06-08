@@ -61,6 +61,7 @@ internal object Operators {
 
         // String and array
         "in" -> StringArrayOperators.opIn(args, vars)
+        "contains" -> StringArrayOperators.opContains(args, vars)
         "cat" -> StringArrayOperators.opCat(args, vars)
         "substr" -> StringArrayOperators.opSubstr(args, vars)
         "merge" -> StringArrayOperators.opMerge(args, vars)

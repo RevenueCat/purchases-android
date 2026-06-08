@@ -6,7 +6,7 @@ import com.revenuecat.purchases.rules.jsString
 import com.revenuecat.purchases.rules.strictEq
 
 /**
- * String + array operators: `in`, `cat`, `substr`, `merge`.
+ * String + array operators: `in`, `contains`, `cat`, `substr`, `merge`.
  *
  * Behavior follows the JSON Logic JS reference (`json-logic-js`).
  * `substr` slices by Unicode code points, not UTF-16 code units —
@@ -52,6 +52,39 @@ internal object StringArrayOperators {
                 }
             }
             is Value.ArrayValue -> haystack.items.any { strictEq(needle, it) }
+            else -> false
+        }
+        return Value.BoolValue(result)
+    }
+
+    /**
+     * `{"contains": [haystack, needle]}` — case-insensitive substring
+     * test (khepri-specific, not part of JSON Logic). The haystack must
+     * be a [Value.StringValue]; non-string haystacks return `false`. The
+     * needle is stringified via [jsString] and matched with
+     * locale-independent Unicode lowercasing (`String.lowercase()`).
+     * Unlike `in`, there is no json-logic falsy guard on the haystack —
+     * an empty needle matches any string haystack. Argument order is
+     * reversed from `in`: `function(haystack, needle)`. Extra operands
+     * beyond the second are ignored.
+     */
+    fun opContains(args: Value, vars: Value): Value {
+        val evaluated = Operators.evalArgs(args, vars)
+        val haystack = evaluated.firstOrNull() ?: Value.Null
+        val needle = if (evaluated.size >= BINARY_OPERAND_COUNT) {
+            evaluated[START_OPERAND_INDEX]
+        } else {
+            Value.Null
+        }
+        val result = when (haystack) {
+            is Value.StringValue -> {
+                val needleString = jsString(needle)
+                if (needleString.isEmpty()) {
+                    true
+                } else {
+                    haystack.value.lowercase().contains(needleString.lowercase())
+                }
+            }
             else -> false
         }
         return Value.BoolValue(result)
