@@ -22,8 +22,10 @@ public class DangerousSettings internal constructor(
     internal val uiPreviewMode: Boolean = false,
 
     internal val applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false,
+
+    internal val allowTestStoreInReleaseBuild: Boolean = false,
 ) : Parcelable {
-    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false, false)
+    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false, false, false)
 
     public companion object {
         /**
@@ -38,6 +40,18 @@ public class DangerousSettings internal constructor(
             customEntitlementComputation = false,
             uiPreviewMode = true,
             applyObfuscatedAccountIdToSubscriptionChanges = false,
+        )
+
+        /**
+         * Creates a [DangerousSettings] that allows configuring the SDK with a Test Store API key
+         * in a release (non-debuggable) build, bypassing the safety check that otherwise blocks it.
+         *
+         * For RevenueCat-internal end-to-end testing only. Do not use in production apps.
+         */
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public fun forTestStoreInReleaseBuild(): DangerousSettings = DangerousSettings(
+            allowTestStoreInReleaseBuild = true,
         )
     }
 }

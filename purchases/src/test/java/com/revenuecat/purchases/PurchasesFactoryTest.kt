@@ -165,6 +165,36 @@ class PurchasesFactoryTest {
         verify(exactly = 0) { applicationMock.startActivity(any()) }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `configuring SDK with simulated store api key in release mode and allowTestStoreInReleaseBuild does not show error activity`() {
+        // Arrange
+        purchasesFactory = PurchasesFactory(
+            isDebugBuild = { false },
+            apiKeyValidator = apiKeyValidatorMock,
+        )
+        val applicationContextMock = mockk<Application>()
+        every {
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+        } returns PackageManager.PERMISSION_GRANTED
+        every {
+            applicationMock.applicationContext
+        } returns applicationContextMock
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+
+        // Act
+        purchasesFactory.validateConfiguration(
+            createConfiguration(
+                dangerousSettings = DangerousSettings.forTestStoreInReleaseBuild(),
+            ),
+        )
+
+        // Assert
+        verify(exactly = 0) { applicationMock.startActivity(any()) }
+    }
+
     // region shouldInitializeDiagnostics
 
     @Test
