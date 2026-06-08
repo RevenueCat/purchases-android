@@ -41,6 +41,18 @@ internal class WorkflowManager(
         prefetchDispatcher.close()
     }
 
+    /**
+     * Fetches and resolves a single workflow, serving a fresh in-memory cache hit when one exists
+     * and otherwise fetching from the backend.
+     *
+     * @param persistEnvelopeOnResolve when true, also persists the raw detail envelope to disk after
+     * a successful resolve, so it survives an app restart and can be re-resolved while the backend is
+     * down (see [getWorkflowsList]'s recovery path). Only the prefetch path sets this: prefetched
+     * workflows are the curated, bounded set the backend marked as mattering, so persisting all of
+     * them is safe. On-demand fetches leave it false to avoid unbounded disk growth (a user can open
+     * many distinct paywalls in a session), so persisting those behind an LRU cap is a planned
+     * follow-up rather than part of this path.
+     */
     @Suppress("LongParameterList")
     fun getWorkflow(
         appUserID: String,
@@ -49,6 +61,7 @@ internal class WorkflowManager(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
         callbackDispatcher: Dispatcher? = null,
+        persistEnvelopeOnResolve: Boolean = false,
     ) {
         val cached = workflowsCache.cachedWorkflow(workflowId)
         if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
@@ -69,6 +82,10 @@ internal class WorkflowManager(
                     return@launch
                 }
                 workflowsCache.cacheWorkflow(workflowId, result)
+                if (persistEnvelopeOnResolve) {
+                    runCatching { workflowsCache.cacheWorkflowDetailEnvelope(workflowId, response) }
+                        .onFailure { errorLog(it) { "Failed to persist workflow detail envelope for $workflowId" } }
+                }
                 scope.launch {
                     runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
                         .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
@@ -164,7 +181,22 @@ internal class WorkflowManager(
                         val filtered = response.onlyWorkflowsWithOfferingId()
                         workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
                     }
-                    completePendingCallbacks(appUserID)
+                    val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
+                    if (envelopes.isEmpty()) {
+                        completePendingCallbacks(appUserID)
+                    } else {
+                        scope.launch {
+                            // Re-resolve persisted envelopes into the in-memory cache, mirroring the
+                            // success-path prefetch loop. A failed re-resolve is logged and does not
+                            // fail its siblings. completePendingCallbacks still fires exactly once.
+                            coroutineScope {
+                                envelopes.forEach { (workflowId, envelope) ->
+                                    launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
+                                }
+                            }
+                            completePendingCallbacks(appUserID)
+                        }
+                    }
                 },
             )
         }
@@ -182,6 +214,7 @@ internal class WorkflowManager(
                 workflowId = workflowId,
                 appInBackground = appInBackground,
                 callbackDispatcher = prefetchDispatcher,
+                persistEnvelopeOnResolve = true,
                 onSuccess = { continuation.safeResume(Unit) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }
@@ -189,6 +222,25 @@ internal class WorkflowManager(
                 },
             )
         }
+    }
+
+    /**
+     * Re-resolves a persisted [envelope] into the in-memory cache during backend-down recovery. For
+     * USE_CDN this avoids a backend call: when the CDN file is still cached locally (it was
+     * pre-downloaded during the original prefetch) re-resolution needs no network. If that file was
+     * evicted, resolution may need the CDN and can fail while the backend is down; the failure is
+     * logged and swallowed so one bad envelope doesn't fail its siblings in the surrounding [coroutineScope].
+     */
+    private suspend fun restoreWorkflowFromEnvelope(workflowId: String, envelope: WorkflowDetailResponse) {
+        val result = try {
+            workflowDetailResolver.resolve(envelope)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Failed to restore workflow $workflowId from disk cache" }
+            return
+        }
+        workflowsCache.cacheWorkflow(workflowId, result)
     }
 
     fun workflowIdForOfferingId(offeringId: String): String? =
