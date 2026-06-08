@@ -2,10 +2,6 @@ package com.revenuecat.purchases.rules
 
 /**
  * Logging facade for the rules engine.
- *
- * Messages are emitted without any source tag/prefix; hosts that bridge
- * this into their own logging system prepend their own identifier when
- * they need one.
  */
 public interface RulesEngineLogger {
     /**
