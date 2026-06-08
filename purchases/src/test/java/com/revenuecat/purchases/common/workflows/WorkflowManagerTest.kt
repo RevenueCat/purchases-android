@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import io.mockk.Runs
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -1068,4 +1069,254 @@ class WorkflowManagerTest {
     }
 
     // endregion onComplete callback
+
+    // region envelope persistence
+
+    @Test
+    fun `prefetch persists the workflow detail envelope`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } returns
+            WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers { detailSuccess.captured(envelope) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // WorkflowsCache.cacheWorkflowDetailEnvelope -> DeviceCache.cacheWorkflowDetailEnvelopes (the mocked layer)
+        val persistedSlot = slot<String>()
+        verify(exactly = 1) { mockDeviceCache.cacheWorkflowDetailEnvelopes(capture(persistedSlot)) }
+        assertThat(persistedSlot.captured).contains("wf_1")
+    }
+
+    @Test
+    fun `on-demand getWorkflow does not persist the envelope`() {
+        val envelope = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        coEvery { mockResolver.resolve(envelope) } returns
+            WorkflowDataResult(workflow = envelope.data!!, enrolledVariants = null)
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(envelope) }
+
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
+    @Test
+    fun `prefetch does not persist the envelope when resolve fails`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } throws IllegalStateException("boom")
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers { detailSuccess.captured(envelope) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
+    @Test
+    fun `prefetch still completes when persisting the envelope throws`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val resolved = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(envelope) } returns resolved
+        // Persisting blows up at the DeviceCache layer.
+        every { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) } throws IOException("disk full")
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers { detailSuccess.captured(envelope) }
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        // Persistence failure must not hang the prefetch: onComplete still fires exactly once...
+        assertThat(completeCount).isEqualTo(1)
+        // ...and the resolved workflow is still cached in memory (cacheWorkflow ran before the failed persist).
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(resolved)
+    }
+
+    // endregion envelope persistence
+
+    // region onError envelope restore
+
+    @Test
+    fun `list onError re-resolves persisted envelopes so getWorkflow is a cache hit`() {
+        // The resolver is mocked, so INLINE vs USE_CDN is indistinguishable here — the manager just
+        // hands the envelope to the resolver. This proves restore -> re-resolve -> cache-hit.
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns
+            """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":true}]}"""
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val restored = WorkflowDataResult(workflow = mockk(), enrolledVariants = mapOf("e" to "v"))
+        coEvery {
+            mockResolver.resolve(
+                WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "https://cdn/wf_1.json", hash = "h"),
+            )
+        } returns restored
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+        var result: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { result = it },
+            onError = { fail("expected cache hit, got $it") },
+        )
+        assertThat(result).isSameAs(restored)
+        verify(exactly = 0) { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `list onError completes once and isolates a failing envelope re-resolve`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns
+            """{"workflows":[{"id":"wf_ok","display_name":"OK","offering_id":"a","prefetch":true},{"id":"wf_bad","display_name":"BAD","offering_id":"b","prefetch":true}]}"""
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_ok":{"action":"use_cdn","url":"u_ok","hash":"h"},"wf_bad":{"action":"use_cdn","url":"u_bad","hash":"h"}}"""
+
+        val okResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery {
+            mockResolver.resolve(WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "u_ok", hash = "h"))
+        } returns okResult
+        coEvery {
+            mockResolver.resolve(WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "u_bad", hash = "h"))
+        } throws IllegalStateException("cdn read failed")
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        assertThat(completeCount).isEqualTo(1)
+        assertThat(workflowsCache.cachedWorkflow("wf_ok")).isSameAs(okResult)
+        assertThat(workflowsCache.cachedWorkflow("wf_bad")).isNull()
+    }
+
+    @Test
+    fun `list onError completes immediately when no envelopes are persisted`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        assertThat(completeCount).isEqualTo(1)
+        coVerify(exactly = 0) { mockResolver.resolve(any()) }
+    }
+
+    @Test
+    fun `list onError completes once when the persisted envelope payload is corrupt`() {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error) }
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns "not valid json"
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        assertThat(completeCount).isEqualTo(1)
+    }
+
+    // endregion onError envelope restore
 }
