@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.GetWorkflowsErrorHandlingBehavior
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.toPurchasesError
@@ -246,40 +247,54 @@ internal class WorkflowManager(
                         completePendingCallbacks(appUserID)
                     }
                 },
-                onError = { error, _ ->
+                onError = { error, behavior ->
                     errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
-                    // Restore the in-memory cache from disk without rewriting it — disk already holds
-                    // this payload.
-                    val restoredFromDisk = workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
-                        val filtered = response.onlyWorkflowsWithOfferingId()
-                        workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
-                    } != null
-                    // Mirror OfferingsManager.handleErrorFetchingOfferings: when there is no disk
-                    // cache to fall back on, force the list stale so the next call retries. When a
-                    // disk restore did succeed, cacheWorkflowsListInMemory already stamped a fresh
-                    // timestamp, so we leave it alone — same as offerings leaving the cache fresh
-                    // after createAndCacheOfferings runs on the disk-fallback path.
-                    if (!restoredFromDisk) {
-                        workflowsCache.invalidateWorkflowsListTimestamp()
-                    }
-                    val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
-                    if (envelopes.isEmpty()) {
+                    if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                        // A 4xx means the server intentionally changed/removed these workflows. Don't
+                        // resurrect a stale list from disk; just settle the callbacks so offerings
+                        // delivery isn't stranded. Caches are left as they are (no restore, no purge).
                         completePendingCallbacks(appUserID)
                     } else {
-                        scope.launch {
-                            // Re-resolve persisted envelopes into the in-memory cache, mirroring the
-                            // success-path prefetch loop. A failed re-resolve is logged and does not
-                            // fail its siblings. completePendingCallbacks still fires exactly once.
-                            coroutineScope {
-                                envelopes.forEach { (workflowId, envelope) ->
-                                    launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
-                                }
-                            }
-                            completePendingCallbacks(appUserID)
-                        }
+                        restoreWorkflowsListFromDisk(appUserID)
                     }
                 },
             )
+        }
+    }
+
+    /**
+     * Restores the workflows list and persisted detail envelopes from disk after a fallback-eligible
+     * fetch failure (transport error, 5xx, or malformed body), then settles pending callbacks. The
+     * in-memory cache is rewritten from disk without re-persisting it — disk already holds this payload.
+     * [completePendingCallbacks] always fires exactly once.
+     */
+    private fun restoreWorkflowsListFromDisk(appUserID: String) {
+        val restoredFromDisk = workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
+            val filtered = response.onlyWorkflowsWithOfferingId()
+            workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
+        } != null
+        // Mirror OfferingsManager.handleErrorFetchingOfferings: when there is no disk cache to fall
+        // back on, force the list stale so the next call retries. When a disk restore did succeed,
+        // cacheWorkflowsListInMemory already stamped a fresh timestamp, so we leave it alone — same as
+        // offerings leaving the cache fresh after createAndCacheOfferings runs on the disk-fallback path.
+        if (!restoredFromDisk) {
+            workflowsCache.invalidateWorkflowsListTimestamp()
+        }
+        val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
+        if (envelopes.isEmpty()) {
+            completePendingCallbacks(appUserID)
+        } else {
+            scope.launch {
+                // Re-resolve persisted envelopes into the in-memory cache, mirroring the success-path
+                // prefetch loop. A failed re-resolve is logged and does not fail its siblings.
+                // completePendingCallbacks still fires exactly once.
+                coroutineScope {
+                    envelopes.forEach { (workflowId, envelope) ->
+                        launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
+                    }
+                }
+                completePendingCallbacks(appUserID)
+            }
         }
     }
 

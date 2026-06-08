@@ -730,7 +730,7 @@ class WorkflowManagerTest {
         }
 
         val successSlot = slot<(WorkflowsListResponse) -> Unit>()
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         var listCalls = 0
         every {
             mockBackend.getWorkflows(
@@ -744,7 +744,10 @@ class WorkflowManagerTest {
             listCalls += 1
             when (listCalls) {
                 1 -> successSlot.captured(listResponse)
-                else -> errorSlot.captured(PurchasesError(PurchasesErrorCode.NetworkError, "fail"))
+                else -> errorSlot.captured(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "fail"),
+                    GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                )
             }
         }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns null
@@ -1690,6 +1693,60 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
 
         assertThat(completeCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `getWorkflowsList does not restore from disk on a non-fallback (4xx) error`() {
+        val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
+        val error = PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "forbidden")
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+
+        var completeCount = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount++ }
+
+        // No restore: the offeringId map stays empty, and the disk read is never consulted for restore.
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+        verify(exactly = 0) { mockDeviceCache.getWorkflowsListResponseCache() }
+        verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
+        // Offerings delivery is never stranded.
+        assertThat(completeCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `getWorkflowsList completes all concurrent callers exactly once on a non-fallback (4xx) error`() {
+        val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
+        val error = PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "forbidden")
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } just Runs // hold the request in-flight so the second caller joins before it settles
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+
+        var completeCount1 = 0
+        var completeCount2 = 0
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount1++ }
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completeCount2++ }
+
+        // Both callers are pending; the backend was contacted exactly once (dedup).
+        assertThat(completeCount1).isEqualTo(0)
+        assertThat(completeCount2).isEqualTo(0)
+        verify(exactly = 1) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+
+        // Settle the single in-flight request with a SHOULD_NOT_FALLBACK error.
+        errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
+
+        // Every caller must complete exactly once — neither stranded nor double-fired.
+        assertThat(completeCount1).isEqualTo(1)
+        assertThat(completeCount2).isEqualTo(1)
+        // No disk restore should have been attempted.
+        verify(exactly = 0) { mockDeviceCache.getWorkflowsListResponseCache() }
+        verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
     }
 
     // endregion onError envelope restore
