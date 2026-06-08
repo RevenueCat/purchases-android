@@ -216,7 +216,6 @@ internal class WorkflowManager(
         if (!startFetch) {
             completePendingCallbacks(appUserID)
         } else {
-            if (forceRefresh) workflowsCache.clearWorkflowDetailCaches()
             backend.getWorkflows(
                 appUserID = appUserID,
                 appInBackground = appInBackground,
@@ -225,6 +224,10 @@ internal class WorkflowManager(
                     // Drop workflows without an offeringId: they can't be reached via
                     // workflowIdForOfferingId, so caching or prefetching them is wasted work.
                     val filtered = response.onlyWorkflowsWithOfferingId()
+                    // Clear detail caches after a successful fetch so the prefetch loop below is a
+                    // guaranteed cache miss and always populates fresh data. Cleared here rather than
+                    // before the network call so a failed fetch leaves in-memory details intact.
+                    if (forceRefresh) workflowsCache.clearWorkflowDetailCaches()
                     workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
 
                     val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
