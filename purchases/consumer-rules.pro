@@ -1,4 +1,19 @@
--keep class com.revenuecat.** { *; }
+# Keep public API names stable for consumers; members may still be shrunk/optimized by R8.
+-keepnames class com.revenuecat.purchases.** { *; }
+
+# Keep all @Serializable model classes intact so kotlinx (de)serialization and the SDK's custom
+# KSerializers (polymorphic/sealed hierarchies, surrogates) keep working under minification.
+-keep @kotlinx.serialization.Serializable class com.revenuecat.** { *; }
+
+# EnumDeserializerWithDefault matches JSON against enum CONSTANT NAMES read reflectively via
+# Class.enumConstants (value.name.lowercase()) and silently falls back to a default on mismatch.
+# Keep enum constant names so an obfuscated name can't turn into a silent wrong-value bug.
+-keepclassmembers enum com.revenuecat.** {
+    <fields>;
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
 -keep class androidx.lifecycle.DefaultLifecycleObserver
 -dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue
 -dontwarn com.google.errorprone.annotations.Immutable
@@ -49,6 +64,7 @@
 #    static <1>$$serializer INSTANCE;
 #}
 
+# These rules target kotlinx.serialization 1.5.1 (Kotlin 2.0.21).
 # Adding these because when target Android is 14 but compile version is lower than 14 there are r8 issues
 # https://github.com/RevenueCat/purchases-android/pull/1606
 -keep class kotlinx.serialization.internal.ClassValueParametrizedCache$initClassValue$1 { ** computeValue(java.lang.Class); }
