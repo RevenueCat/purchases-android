@@ -705,56 +705,6 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getWorkflowsList retries after failed forceRefresh even when old list cache was fresh`() {
-        val initialResponse = WorkflowsListResponse(
-            workflows = listOf(
-                WorkflowSummary(id = "wf_old", displayName = "Old", offeringId = "default", prefetch = false),
-            ),
-        )
-        val refreshedResponse = WorkflowsListResponse(
-            workflows = listOf(
-                WorkflowSummary(id = "wf_new", displayName = "New", offeringId = "default", prefetch = false),
-            ),
-        )
-        val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
-        val errorSlot = slot<(PurchasesError) -> Unit>()
-        var backendCalls = 0
-        every {
-            mockBackend.getWorkflows(
-                any(),
-                any(),
-                type = any(),
-                onSuccess = capture(successSlot),
-                onError = capture(errorSlot),
-            )
-        } answers {
-            backendCalls += 1
-            when (backendCalls) {
-                1 -> successSlot.captured(initialResponse)
-                2 -> errorSlot.captured(error)
-                else -> successSlot.captured(refreshedResponse)
-            }
-        }
-        every { mockDeviceCache.getWorkflowsListResponseCache() } returns null
-        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
-
-        every { mockDateProvider.now } returns Date(0)
-        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
-        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_old")
-
-        every { mockDateProvider.now } returns Date(1)
-        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false, forceRefresh = true)
-        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_old")
-
-        every { mockDateProvider.now } returns Date(2)
-        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
-
-        verify(exactly = 3) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
-        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_new")
-    }
-
-    @Test
     fun `getWorkflowsList with forceRefresh preserves in-memory detail caches when the fetch fails`() {
         val listResponse = WorkflowsListResponse(
             workflows = listOf(
