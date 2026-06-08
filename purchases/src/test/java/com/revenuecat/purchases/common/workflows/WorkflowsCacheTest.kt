@@ -114,22 +114,6 @@ class WorkflowsCacheTest {
     }
 
     @Test
-    fun `forceWorkflowsListCacheStale marks the list stale but keeps the offeringId map`() {
-        workflowsCache.cacheWorkflowsList(
-            WorkflowsListResponse(workflows = emptyList()),
-            mapOf("default" to "wf_1"),
-            workflowsCache.currentGeneration(),
-        )
-        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isFalse
-
-        workflowsCache.forceWorkflowsListCacheStale()
-
-        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
-        // The map is kept so workflowIdForOfferingId still resolves while the refetch is in flight.
-        assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
-    }
-
-    @Test
     fun `workflowIdForOfferingId returns mapped id or null`() {
         workflowsCache.cacheWorkflowsList(
             WorkflowsListResponse(workflows = emptyList()),
@@ -421,9 +405,16 @@ class WorkflowsCacheTest {
     }
 
     @Test
-    fun `forceWorkflowsListCacheStale does not bump the generation`() {
+    fun `invalidateWorkflowsListTimestamp does not bump the generation`() {
         val before = workflowsCache.currentGeneration()
-        workflowsCache.forceWorkflowsListCacheStale()
+        workflowsCache.invalidateWorkflowsListTimestamp()
+        assertThat(workflowsCache.currentGeneration()).isEqualTo(before)
+    }
+
+    @Test
+    fun `clearWorkflowDetailCaches does not bump the generation`() {
+        val before = workflowsCache.currentGeneration()
+        workflowsCache.clearWorkflowDetailCaches()
         assertThat(workflowsCache.currentGeneration()).isEqualTo(before)
     }
 }

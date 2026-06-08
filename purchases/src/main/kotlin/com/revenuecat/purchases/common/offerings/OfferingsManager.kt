@@ -277,11 +277,13 @@ internal class OfferingsManager(
                     expectedGeneration,
                 )
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                if (!loadedFromDiskCache) {
-                    workflowManager?.forceWorkflowsListCacheStale()
-                }
-                workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
-                    ?: dispatchSuccess()
+                workflowManager?.getWorkflowsList(
+                    appUserID,
+                    appInBackground,
+                    // Refetch workflows only when these offerings are fresh from the network.
+                    forceRefresh = !loadedFromDiskCache,
+                    onComplete = dispatchSuccess,
+                ) ?: dispatchSuccess()
             },
         )
     }
