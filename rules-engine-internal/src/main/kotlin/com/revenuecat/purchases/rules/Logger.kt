@@ -1,34 +1,32 @@
 package com.revenuecat.purchases.rules
 
-/** Default log tag for [RulesEngineLogger]. */
-public const val RULES_ENGINE_LOG_TAG: String = "[RulesEngine]"
-
 /**
  * Logging facade for the rules engine.
+ *
+ * Messages are emitted without any source tag/prefix; hosts that bridge
+ * this into their own logging system prepend their own identifier when
+ * they need one.
  */
 public interface RulesEngineLogger {
     /**
      * Carries engine diagnostics (missing variables, unsupported
      * operators, type mismatches).
      */
-    public fun warn(message: String, tag: String = RULES_ENGINE_LOG_TAG)
+    public fun warn(message: String)
 
     /**
      * Carries pass-through output from the JSON Logic `log` operator.
-     * Defaults to [warn] for back-compat with loggers that don't override it.
      */
-    public fun log(message: String, tag: String = RULES_ENGINE_LOG_TAG) {
-        warn(message, tag)
-    }
+    public fun log(message: String)
 }
 
 /** Default logger for [RulesEngine.logger]. */
 internal object PrintLogger : RulesEngineLogger {
-    override fun warn(message: String, tag: String) {
-        System.err.println("$tag $message")
+    override fun warn(message: String) {
+        System.err.println(message)
     }
 
-    override fun log(message: String, tag: String) {
-        println("$tag $message")
+    override fun log(message: String) {
+        println(message)
     }
 }

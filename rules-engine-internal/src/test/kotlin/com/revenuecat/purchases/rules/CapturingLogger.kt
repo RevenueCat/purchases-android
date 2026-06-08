@@ -16,12 +16,12 @@ internal class CapturingLogger : RulesEngineLogger {
         @Synchronized get() = capturedLogs.toList()
 
     @Synchronized
-    override fun warn(message: String, tag: String) {
+    override fun warn(message: String) {
         capturedWarnings += message
     }
 
     @Synchronized
-    override fun log(message: String, tag: String) {
+    override fun log(message: String) {
         capturedLogs += message
     }
 }
