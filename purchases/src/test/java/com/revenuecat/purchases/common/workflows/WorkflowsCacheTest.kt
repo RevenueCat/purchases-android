@@ -403,4 +403,27 @@ class WorkflowsCacheTest {
 
         verify(exactly = 0) { deviceCache.cacheWorkflowDetailEnvelopes(any()) }
     }
+
+    @Test
+    fun `cacheWorkflowsListInMemory is a no-op when the generation is stale`() {
+        val staleGeneration = workflowsCache.currentGeneration()
+        workflowsCache.clearCache()
+
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        workflowsCache.cacheWorkflowsListInMemory(response, mapOf("default" to "wf_1"), staleGeneration)
+
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isNull()
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
+    }
+
+    @Test
+    fun `forceWorkflowsListCacheStale does not bump the generation`() {
+        val before = workflowsCache.currentGeneration()
+        workflowsCache.forceWorkflowsListCacheStale()
+        assertThat(workflowsCache.currentGeneration()).isEqualTo(before)
+    }
 }

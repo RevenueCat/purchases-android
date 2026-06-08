@@ -210,6 +210,20 @@ class OfferingsCacheTest {
         verify(exactly = 1) { deviceCache.cacheOfferingsResponse(any()) }
     }
 
+    @Test
+    fun `clearInMemoryOfferingsCache does not bump the generation`() {
+        val before = offeringsCache.currentGeneration()
+        offeringsCache.clearInMemoryOfferingsCache()
+        assertThat(offeringsCache.currentGeneration()).isEqualTo(before)
+    }
+
+    @Test
+    fun `forceCacheStale does not bump the generation`() {
+        val before = offeringsCache.currentGeneration()
+        offeringsCache.forceCacheStale()
+        assertThat(offeringsCache.currentGeneration()).isEqualTo(before)
+    }
+
     // endregion generation guard tests
 
     // region locale cache tests
