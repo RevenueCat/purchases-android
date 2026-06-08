@@ -246,9 +246,17 @@ internal class WorkflowManager(
                     errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
                     // Restore the in-memory cache from disk without rewriting it — disk already holds
                     // this payload.
-                    workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
+                    val restoredFromDisk = workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
                         val filtered = response.onlyWorkflowsWithOfferingId()
                         workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
+                    } != null
+                    // Mirror OfferingsManager.handleErrorFetchingOfferings: when there is no disk
+                    // cache to fall back on, force the list stale so the next call retries. When a
+                    // disk restore did succeed, cacheWorkflowsListInMemory already stamped a fresh
+                    // timestamp, so we leave it alone — same as offerings leaving the cache fresh
+                    // after createAndCacheOfferings runs on the disk-fallback path.
+                    if (!restoredFromDisk) {
+                        workflowsCache.invalidateWorkflowsListTimestamp()
                     }
                     val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
                     if (envelopes.isEmpty()) {

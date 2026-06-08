@@ -69,6 +69,11 @@ internal class WorkflowsCache(
     fun isWorkflowsListCacheStale(appInBackground: Boolean): Boolean =
         workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
 
+    @Synchronized
+    fun invalidateWorkflowsListTimestamp() {
+        workflowsListCachedObject.clearCacheTimestamp()
+    }
+
     /**
      * Caches the workflows list in memory and persists it to disk, the same way
      * [com.revenuecat.purchases.common.offerings.OfferingsCache.cacheOfferings] caches offerings.
