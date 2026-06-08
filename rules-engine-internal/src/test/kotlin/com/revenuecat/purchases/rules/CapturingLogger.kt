@@ -1,19 +1,27 @@
 package com.revenuecat.purchases.rules
 
 /**
- * Test-only logger that captures messages for assertion. Lives in the
- * test source set — no production caller needs it now that the engine
- * routes warnings through [RulesEngine.logger].
+ * Test-only logger that captures warnings and `log`-channel messages
+ * separately for assertion.
  */
 internal class CapturingLogger : RulesEngineLogger {
 
-    private val captured = mutableListOf<String>()
+    private val capturedWarnings = mutableListOf<String>()
+    private val capturedLogs = mutableListOf<String>()
 
     val warnings: List<String>
-        @Synchronized get() = captured.toList()
+        @Synchronized get() = capturedWarnings.toList()
+
+    val logs: List<String>
+        @Synchronized get() = capturedLogs.toList()
 
     @Synchronized
     override fun warn(message: String, tag: String) {
-        captured += message
+        capturedWarnings += message
+    }
+
+    @Synchronized
+    override fun log(message: String, tag: String) {
+        capturedLogs += message
     }
 }

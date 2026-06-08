@@ -29,9 +29,14 @@ internal object PredicateConformanceRunner {
     private fun scope(fixture: PredicateConformanceFixtureCase): Map<String, Value> =
         reservedConstants + fixture.variables
 
-    fun run(fixture: PredicateConformanceFixtureCase, warnings: () -> List<String>) {
+    fun run(
+        fixture: PredicateConformanceFixtureCase,
+        warnings: () -> List<String>,
+        logs: () -> List<String>,
+    ) {
         assertExpectedOutcome(fixture)
         fixture.expectedWarnings?.let { assertWarnings(warnings(), it, fixture.id) }
+        fixture.expectedLogs?.let { assertLogs(logs(), it, fixture.id) }
     }
 
     private fun assertExpectedOutcome(fixture: PredicateConformanceFixtureCase) {
@@ -76,6 +81,20 @@ internal object PredicateConformanceRunner {
         expected.contains.forEach { substring ->
             assertThat(warnings)
                 .withFailMessage("Fixture %s: missing warning containing \"%s\", got %s", id, substring, warnings)
+                .anyMatch { it.contains(substring) }
+        }
+    }
+
+    private fun assertLogs(logs: List<String>, expected: ExpectedLogs, id: String) {
+        if (expected.contains.isEmpty()) {
+            assertThat(logs)
+                .withFailMessage("Fixture %s: expected no log messages, got %s", id, logs)
+                .isEmpty()
+            return
+        }
+        expected.contains.forEach { substring ->
+            assertThat(logs)
+                .withFailMessage("Fixture %s: missing log message containing \"%s\", got %s", id, substring, logs)
                 .anyMatch { it.contains(substring) }
         }
     }

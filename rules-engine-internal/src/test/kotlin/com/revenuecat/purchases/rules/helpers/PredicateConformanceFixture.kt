@@ -50,6 +50,15 @@ internal data class ExpectedWarnings(
 )
 
 @Serializable
+internal data class ExpectedLogs(
+    /**
+     * Substrings that must each appear in some emitted `log`-channel message.
+     * An empty list asserts that no log message is emitted at all.
+     */
+    val contains: List<String> = emptyList(),
+)
+
+@Serializable
 internal data class PredicateConformanceFixtureCase(
     val id: String,
     val description: String? = null,
@@ -57,6 +66,7 @@ internal data class PredicateConformanceFixtureCase(
     val variables: Map<String, @Serializable(with = ValueSerializer::class) Value> = emptyMap(),
     @Serializable(with = ExpectedOutcomeSerializer::class) val expected: ExpectedOutcome,
     val expectedWarnings: ExpectedWarnings? = null,
+    val expectedLogs: ExpectedLogs? = null,
 ) {
     // Drives the parameterized test display name and re-run identity.
     override fun toString(): String = id
