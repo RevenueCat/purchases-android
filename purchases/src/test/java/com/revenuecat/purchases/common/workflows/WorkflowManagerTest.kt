@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.GetWorkflowsErrorHandlingBehavior
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
@@ -922,10 +923,10 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflowsList silently logs error on backend failure`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
 
         // Should not throw
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
@@ -937,10 +938,10 @@ class WorkflowManagerTest {
     fun `getWorkflowsList restores offeringId map from disk cache on backend failure`() {
         val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
@@ -953,10 +954,10 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflowsList silently ignores corrupt disk cache on backend failure`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns "not valid json"
 
         // Should not throw
@@ -1018,10 +1019,10 @@ class WorkflowManagerTest {
     fun `getWorkflowsList after disk-cache restore does not re-fetch before TTL expires`() {
         val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
         // First call fails → restores from disk
@@ -1042,10 +1043,10 @@ class WorkflowManagerTest {
     fun `getWorkflowsList re-fetches after TTL expiry following disk-cache restore`() {
         val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
         // First call at t=0 — fails, restores from disk, stamps in-memory cache at t=0
@@ -1105,10 +1106,10 @@ class WorkflowManagerTest {
             {"id":"wf_last","display_name":"Last","offering_id":"shared","prefetch":false}
         ]}"""
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns cachedJson
 
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
@@ -1315,10 +1316,10 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflowsList calls onComplete after network error`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "fail")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
 
         var completed = false
         workflowManager.getWorkflowsList("user_1", false) { completed = true }
@@ -1601,10 +1602,10 @@ class WorkflowManagerTest {
         // The resolver is mocked, so INLINE vs USE_CDN is indistinguishable here — the manager just
         // hands the envelope to the resolver. This proves restore -> re-resolve -> cache-hit.
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns
             """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":true}]}"""
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
@@ -1635,10 +1636,10 @@ class WorkflowManagerTest {
     @Test
     fun `list onError completes once and isolates a failing envelope re-resolve`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowsListResponseCache() } returns
             """{"workflows":[{"id":"wf_ok","display_name":"OK","offering_id":"a","prefetch":true},{"id":"wf_bad","display_name":"BAD","offering_id":"b","prefetch":true}]}"""
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
@@ -1663,10 +1664,10 @@ class WorkflowManagerTest {
     @Test
     fun `list onError completes immediately when no envelopes are persisted`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
 
         var completeCount = 0
@@ -1679,10 +1680,10 @@ class WorkflowManagerTest {
     @Test
     fun `list onError completes once when the persisted envelope payload is corrupt`() {
         val error = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
-        } answers { errorSlot.captured(error) }
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS) }
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns "not valid json"
 
         var completeCount = 0

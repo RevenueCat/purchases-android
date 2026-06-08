@@ -106,7 +106,10 @@ internal typealias RemoteConfigCallback = Pair<(RemoteConfigResponse) -> Unit, (
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias WorkflowDetailCallback = Pair<(WorkflowDetailResponse) -> Unit, (PurchasesError) -> Unit>
 
-internal typealias WorkflowsListCallback = Pair<(WorkflowsListResponse) -> Unit, (PurchasesError) -> Unit>
+internal typealias WorkflowsListCallback = Pair<
+    (WorkflowsListResponse) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetWorkflowsErrorHandlingBehavior) -> Unit,
+    >
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -116,6 +119,11 @@ internal enum class PostReceiptErrorHandlingBehavior {
 
 internal enum class GetOfferingsErrorHandlingBehavior {
     SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
+    SHOULD_NOT_FALLBACK,
+}
+
+internal enum class GetWorkflowsErrorHandlingBehavior {
+    SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
     SHOULD_NOT_FALLBACK,
 }
 
@@ -1068,7 +1076,7 @@ internal class Backend(
         appInBackground: Boolean,
         type: String? = null,
         onSuccess: (WorkflowsListResponse) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        onError: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetWorkflows(appUserID, type)
         val path = endpoint.getPath()
@@ -1089,7 +1097,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     workflowsListCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    onErrorHandler(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
                 }
             }
 
@@ -1103,12 +1111,23 @@ internal class Backend(
                                 WorkflowJsonParser.parseWorkflowsListResponse(result.payload),
                             )
                         } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
                         } catch (e: IllegalArgumentException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
                         }
                     } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                        val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS
+                        } else {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, errorBehavior)
                     }
                 }
             }

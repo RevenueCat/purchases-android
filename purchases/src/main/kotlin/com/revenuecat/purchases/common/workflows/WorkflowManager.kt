@@ -246,7 +246,7 @@ internal class WorkflowManager(
                         completePendingCallbacks(appUserID)
                     }
                 },
-                onError = { error ->
+                onError = { error, _ ->
                     errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
                     // Restore the in-memory cache from disk without rewriting it — disk already holds
                     // this payload.
