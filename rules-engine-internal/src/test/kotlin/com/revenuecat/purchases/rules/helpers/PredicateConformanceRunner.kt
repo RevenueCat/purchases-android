@@ -85,17 +85,9 @@ internal object PredicateConformanceRunner {
         }
     }
 
-    private fun assertLogs(logs: List<String>, expected: ExpectedLogs, id: String) {
-        if (expected.contains.isEmpty()) {
-            assertThat(logs)
-                .withFailMessage("Fixture %s: expected no log messages, got %s", id, logs)
-                .isEmpty()
-            return
-        }
-        expected.contains.forEach { substring ->
-            assertThat(logs)
-                .withFailMessage("Fixture %s: missing log message containing \"%s\", got %s", id, substring, logs)
-                .anyMatch { it.contains(substring) }
-        }
+    private fun assertLogs(logs: List<String>, expected: List<String>, id: String) {
+        assertThat(logs)
+            .withFailMessage("Fixture %s: expected logs %s, got %s", id, expected, logs)
+            .isEqualTo(expected)
     }
 }
