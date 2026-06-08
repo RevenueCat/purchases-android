@@ -885,8 +885,7 @@ internal class PaywallViewModelImpl(
             offerings = offerings,
             presentedOfferingContext = presentedOfferingContext,
             currentStep = initialStep,
-            shouldTrackStart = true,
-            shouldResetTraceId = true,
+            isNewWorkflowImpression = true,
         )
     }
 
@@ -905,8 +904,7 @@ internal class PaywallViewModelImpl(
             offerings = offerings,
             presentedOfferingContext = currentWorkflowPresentedOfferingContext,
             currentStep = currentStep,
-            shouldTrackStart = false,
-            shouldResetTraceId = false,
+            isNewWorkflowImpression = false,
         )
     }
 
@@ -920,13 +918,12 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         currentStep: WorkflowStep,
-        shouldTrackStart: Boolean,
-        shouldResetTraceId: Boolean,
+        isNewWorkflowImpression: Boolean,
     ) {
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
-        if (shouldResetTraceId) {
+        if (isNewWorkflowImpression) {
             workflowTraceId = UUID.randomUUID().toString()
         }
 
@@ -944,7 +941,7 @@ internal class PaywallViewModelImpl(
         }
 
         buildStateFromStep(currentStep, workflow, offerings, presentedOfferingContext)
-        if (shouldTrackStart && _workflowState.value != null) {
+        if (isNewWorkflowImpression && _workflowState.value != null) {
             trackWorkflowStepStarted(
                 step = currentStep,
                 fromStepId = null,

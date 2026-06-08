@@ -1122,7 +1122,6 @@ class PaywallViewModelWorkflowTest {
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
-        // Clear load events (already tested in Task 7)
         captured.clear()
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
