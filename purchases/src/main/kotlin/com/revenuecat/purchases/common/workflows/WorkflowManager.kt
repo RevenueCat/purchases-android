@@ -137,9 +137,15 @@ internal class WorkflowManager(
                     onError(e.toPurchasesError())
                     return@launch
                 }
-                workflowsCache.cacheWorkflow(workflowId, result)
+                workflowsCache.cacheWorkflow(workflowId, result, workflowsCache.currentGeneration())
                 if (persistEnvelopeOnResolve) {
-                    runCatching { workflowsCache.cacheWorkflowDetailEnvelope(workflowId, response) }
+                    runCatching {
+                        workflowsCache.cacheWorkflowDetailEnvelope(
+                            workflowId,
+                            response,
+                            workflowsCache.currentGeneration(),
+                        )
+                    }
                         .onFailure { errorLog(it) { "Failed to persist workflow detail envelope for $workflowId" } }
                 }
                 scope.launch {
@@ -182,6 +188,7 @@ internal class WorkflowManager(
      * pending callbacks for that user fire together when the in-flight sequence finishes. A call
      * for a different user starts its own fetch rather than joining the in-flight one.
      */
+    @Suppress("LongMethod")
     fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
         // Decide under the lock, act outside it so onComplete never fires while holding it.
         val startFetch = synchronized(callbackLock) {
@@ -211,7 +218,11 @@ internal class WorkflowManager(
                     // Drop workflows without an offeringId: they can't be reached via
                     // workflowIdForOfferingId, so caching or prefetching them is wasted work.
                     val filtered = response.onlyWorkflowsWithOfferingId()
-                    workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
+                    workflowsCache.cacheWorkflowsList(
+                        filtered,
+                        buildOfferingIdMap(filtered.workflows),
+                        workflowsCache.currentGeneration(),
+                    )
 
                     val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
                     scope.launch {
@@ -235,7 +246,11 @@ internal class WorkflowManager(
                     // this payload.
                     workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
                         val filtered = response.onlyWorkflowsWithOfferingId()
-                        workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
+                        workflowsCache.cacheWorkflowsListInMemory(
+                            filtered,
+                            buildOfferingIdMap(filtered.workflows),
+                            workflowsCache.currentGeneration(),
+                        )
                     }
                     val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
                     if (envelopes.isEmpty()) {
@@ -297,7 +312,7 @@ internal class WorkflowManager(
             errorLog(e) { "Failed to restore workflow $workflowId from disk cache" }
             return
         }
-        workflowsCache.cacheWorkflow(workflowId, result)
+        workflowsCache.cacheWorkflow(workflowId, result, workflowsCache.currentGeneration())
     }
 
     fun workflowIdForOfferingId(offeringId: String): String? =

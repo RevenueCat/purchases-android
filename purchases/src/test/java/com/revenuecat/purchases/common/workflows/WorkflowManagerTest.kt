@@ -1275,7 +1275,7 @@ class WorkflowManagerTest {
     fun `prefetch persists the envelope even when the workflow is already cached but stale`() {
         // Seed the detail cache at t=0 so the workflow is present but will be stale at prefetch time.
         every { mockDateProvider.now } returns Date(0)
-        workflowsCache.cacheWorkflow("wf_1", WorkflowDataResult(workflow = mockk(), enrolledVariants = null))
+        workflowsCache.cacheWorkflow("wf_1", WorkflowDataResult(workflow = mockk(), enrolledVariants = null), workflowsCache.currentGeneration())
 
         // Advance past the 5-minute TTL: the prefetch now sees a stale-but-present cache entry.
         // With SWR disabled on the prefetch path it must still do a real fetch and persist, not serve stale.
