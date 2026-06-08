@@ -42,12 +42,6 @@ internal object Operators {
         "or" -> LogicOperators.opOr(args, vars)
         "if" -> LogicOperators.opIf(args, vars)
 
-        // String and array
-        "in" -> StringArrayOperators.opIn(args, vars)
-        "cat" -> StringArrayOperators.opCat(args, vars)
-        "substr" -> StringArrayOperators.opSubstr(args, vars)
-        "merge" -> StringArrayOperators.opMerge(args, vars)
-
         // Arithmetic
         "+" -> ArithmeticOperators.opAdd(args, vars)
         "-" -> ArithmeticOperators.opSub(args, vars)
@@ -60,6 +54,12 @@ internal object Operators {
         "<=" -> ComparisonOperators.opLe(args, vars)
         ">" -> ComparisonOperators.opGt(args, vars)
         ">=" -> ComparisonOperators.opGe(args, vars)
+
+        // String and array
+        "in" -> StringArrayOperators.opIn(args, vars)
+        "cat" -> StringArrayOperators.opCat(args, vars)
+        "substr" -> StringArrayOperators.opSubstr(args, vars)
+        "merge" -> StringArrayOperators.opMerge(args, vars)
 
         // Iteration
         "some" -> IterationOperators.opSome(args, vars)
