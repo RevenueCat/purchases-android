@@ -61,6 +61,17 @@ internal class WorkflowsCache(
         cached.cacheInstance(result)
     }
 
+    /**
+     * Clears all resolved workflow detail values from the in-memory cache. Used when a
+     * force-refresh is triggered (pull-to-refresh via offerings) so the subsequent prefetch is a
+     * guaranteed cache miss and always fetches fresh data from the backend, rather than serving
+     * a still-within-TTL cached value. The offeringId map is unaffected.
+     */
+    @Synchronized
+    fun clearWorkflowDetailCaches() {
+        cachedWorkflows.clear()
+    }
+
     // endregion Workflow detail cache
 
     // region Workflows list cache

@@ -216,6 +216,7 @@ internal class WorkflowManager(
         if (!startFetch) {
             completePendingCallbacks(appUserID)
         } else {
+            if (forceRefresh) workflowsCache.clearWorkflowDetailCaches()
             backend.getWorkflows(
                 appUserID = appUserID,
                 appInBackground = appInBackground,
