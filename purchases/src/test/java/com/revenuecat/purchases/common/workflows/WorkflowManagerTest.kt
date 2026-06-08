@@ -994,6 +994,29 @@ class WorkflowManagerTest {
         }
     }
 
+    @Test
+    fun `getWorkflowsList does not repopulate the cache when cleared mid-fetch`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
+        } just Runs
+
+        // Fetch starts (captures the generation), then an identity transition clears the cache...
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        workflowsCache.clearCache()
+        // ...and only now does the in-flight response land.
+        successSlot.captured(response)
+
+        // The stale write is dropped: the cleared cache stays empty, disk is not rewritten.
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
     // endregion issue fixes
 
     // region onComplete callback
