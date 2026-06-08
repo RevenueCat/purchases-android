@@ -195,6 +195,7 @@ internal class OfferingsManager(
             return
         }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
+        val generation = offeringsCache.currentGeneration()
         backend.getOfferings(
             appUserID,
             appInBackground,
@@ -205,6 +206,7 @@ internal class OfferingsManager(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
+                    expectedGeneration = generation,
                     onError,
                     onSuccess,
                 )
@@ -233,6 +235,7 @@ internal class OfferingsManager(
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
+                                expectedGeneration = generation,
                                 onError,
                                 onSuccess,
                             )
@@ -252,6 +255,7 @@ internal class OfferingsManager(
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
+        expectedGeneration: Int,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
@@ -270,7 +274,7 @@ internal class OfferingsManager(
                 offeringsCache.cacheOfferings(
                     offeringsResultData.offerings,
                     offeringsJSON,
-                    offeringsCache.currentGeneration(),
+                    expectedGeneration,
                 )
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
                 if (!loadedFromDiskCache) {

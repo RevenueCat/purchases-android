@@ -6,8 +6,10 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.FakeLocaleProvider
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -54,6 +56,7 @@ class OfferingsManagerTest {
     @Before
     fun setUp() {
         cache = mockk()
+        every { cache.currentGeneration() } returns 0
         backend = mockk()
         offeringsFactory = mockk()
         offeringImagePreDownloader = mockk<OfferingImagePreDownloader>().apply {
@@ -1167,4 +1170,45 @@ class OfferingsManagerTest {
     }
 
     // endregion workflowManager onComplete integration
+
+    // region cache generation race guard
+
+    @Test
+    fun `fetchAndCacheOfferings does not repopulate the cache when cleared mid-fetch`() {
+        val mockDeviceCache = mockk<DeviceCache>().apply {
+            every { clearOfferingsResponseCache() } just Runs
+            every { cacheOfferingsResponse(any()) } just Runs
+            every { getOfferingsResponseCache() } returns null
+        }
+        val realOfferingsCache = OfferingsCache(
+            deviceCache = mockDeviceCache,
+            localeProvider = FakeLocaleProvider("en-US"),
+        )
+
+        val managerWithRealCache = OfferingsManager(
+            offeringsCache = realOfferingsCache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        val onSuccessSlot = slot<(JSONObject, HTTPResponseOriginalSource) -> Unit>()
+        every {
+            backend.getOfferings(any(), any(), onSuccess = capture(onSuccessSlot), onError = any())
+        } just Runs
+
+        mockOfferingsFactory()
+
+        // Fetch starts (captures the generation), identity transition clears, then the response lands.
+        managerWithRealCache.fetchAndCacheOfferings(appUserID = "user_1", appInBackground = false)
+        realOfferingsCache.clearCache()
+        onSuccessSlot.captured(JSONObject(ONE_OFFERINGS_RESPONSE), HTTPResponseOriginalSource.MAIN)
+
+        assertThat(realOfferingsCache.cachedOfferings).isNull()
+    }
+
+    // endregion cache generation race guard
 }
