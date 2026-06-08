@@ -2,6 +2,7 @@ package com.revenuecat.purchases.rules.helpers
 
 import com.revenuecat.purchases.rules.Evaluator
 import com.revenuecat.purchases.rules.RuleError
+import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 
@@ -13,6 +14,21 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
  */
 internal object PredicateConformanceRunner {
 
+    /**
+     * Test-only numeric constants seeded into every fixture's variable
+     * scope so fixtures can reference values JSON cannot express as a
+     * literal (`±Infinity`). These exist ONLY in the test harness — they
+     * are never part of the production engine or real rule data.
+     */
+    private val reservedConstants: Map<String, Value> = mapOf(
+        "+Infinity" to Value.FloatValue(Double.POSITIVE_INFINITY),
+        "-Infinity" to Value.FloatValue(Double.NEGATIVE_INFINITY),
+    )
+
+    /** Fixture-declared variables take precedence over the reserved constants on a name collision. */
+    private fun scope(fixture: PredicateConformanceFixtureCase): Map<String, Value> =
+        reservedConstants + fixture.variables
+
     fun run(fixture: PredicateConformanceFixtureCase, warnings: () -> List<String>) {
         assertExpectedOutcome(fixture)
         fixture.expectedWarnings?.let { assertWarnings(warnings(), it, fixture.id) }
@@ -21,7 +37,7 @@ internal object PredicateConformanceRunner {
     private fun assertExpectedOutcome(fixture: PredicateConformanceFixtureCase) {
         when (val expected = fixture.expected) {
             is ExpectedOutcome.BooleanOutcome -> {
-                val result = Evaluator.evaluate(fixture.predicate, fixture.variables)
+                val result = Evaluator.evaluate(fixture.predicate, scope(fixture))
                 assertThat(result)
                     .withFailMessage("Fixture %s: expected %s but got %s", fixture.id, expected.value, result)
                     .isEqualTo(expected.value)
@@ -31,7 +47,7 @@ internal object PredicateConformanceRunner {
     }
 
     private fun assertErrorOutcome(fixture: PredicateConformanceFixtureCase, expected: ExpectedError) {
-        assertThatThrownBy { Evaluator.evaluate(fixture.predicate, fixture.variables) }
+        assertThatThrownBy { Evaluator.evaluate(fixture.predicate, scope(fixture)) }
             .withFailMessage("Fixture %s: expected error %s but did not throw", fixture.id, expected.kind)
             .isInstanceOfSatisfying(RuleError::class.java) { error ->
                 assertThat(matchesExpected(error, expected))
