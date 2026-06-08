@@ -861,6 +861,10 @@ internal class PaywallViewModelImpl(
             return
         }
 
+        // Close the lifecycle of any step the user was already on before starting a new presentation.
+        // Uses the old currentWorkflowResult and _workflowState before either is mutated below.
+        trackCurrentWorkflowStepCompleted()
+
         currentWorkflowResult = fetchResult
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext

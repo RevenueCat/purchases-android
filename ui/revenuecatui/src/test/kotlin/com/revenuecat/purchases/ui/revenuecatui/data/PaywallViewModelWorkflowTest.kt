@@ -1323,15 +1323,48 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        val firstImpressionTrace = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct()
-        assertThat(firstImpressionTrace).hasSize(1)
+        val firstImpressionTraceId = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct().single()
 
         captured.clear()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
-        val secondImpressionTrace = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct()
-        assertThat(secondImpressionTrace).hasSize(1)
-        assertThat(secondImpressionTrace.first()).isNotEqualTo(firstImpressionTrace.first())
+        // The abandoned step's StepCompleted carries the old trace ID; the new StepStarted gets a fresh one.
+        val secondImpressionEvents = captured.filterIsInstance<WorkflowEvent>()
+        val abandoned = secondImpressionEvents.filterIsInstance<WorkflowEvent.StepCompleted>().single()
+        assertThat(abandoned.traceId).isEqualTo(firstImpressionTraceId)
+        val newStarted = secondImpressionEvents.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(newStarted.traceId).isNotEqualTo(firstImpressionTraceId)
+    }
+
+    @Test
+    fun `re-presenting workflow while on step-2 fires StepCompleted for the abandoned step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        captured.clear()
+
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>().single()
+        assertThat(completed.stepId).isEqualTo("step-2")
+        assertThat(completed.toStepId).isNull()
+        val started = workflowEvents.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.stepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `first workflow presentation with no prior step does not fire a spurious StepCompleted`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
     }
 
     // endregion
