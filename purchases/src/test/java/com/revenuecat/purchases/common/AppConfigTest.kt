@@ -506,7 +506,8 @@ class AppConfigTest {
                 "autoSyncPurchases=true, " +
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
-                "applyObfuscatedAccountIdToSubscriptionChanges=false), " +
+                "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
+                "allowTestStoreInReleaseBuild=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +
