@@ -378,10 +378,10 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getWorkflow re-fetches when cache is stale`() {
+    fun `getWorkflow refreshes in the background and still re-fetches when cache is stale`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
-        val expectedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
-        coEvery { mockResolver.resolve(response) } returns expectedResult
+        val firstResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val secondResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -396,6 +396,7 @@ class WorkflowManagerTest {
 
         // First call at t=0 populates the cache.
         every { mockDateProvider.now } returns Date(0)
+        coEvery { mockResolver.resolve(response) } returns firstResult
         workflowManager.getWorkflow(
             appUserID = "user_1",
             workflowId = "wf_1",
@@ -404,17 +405,20 @@ class WorkflowManagerTest {
             onError = { fail("unexpected error $it") },
         )
 
-        // Second call past the 5-minute foreground TTL should re-fetch.
-        val sixMinutesMs = 6L * 60 * 1000
-        every { mockDateProvider.now } returns Date(sixMinutesMs)
+        // Second call past the 5-minute foreground TTL serves the stale value and refetches.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        coEvery { mockResolver.resolve(response) } returns secondResult
+        var served: WorkflowDataResult? = null
         workflowManager.getWorkflow(
             appUserID = "user_1",
             workflowId = "wf_1",
             appInBackground = false,
-            onSuccess = {},
+            onSuccess = { served = it },
             onError = { fail("unexpected error $it") },
         )
 
+        // SWR: the caller gets the stale value, and the background refresh still hits the backend.
+        assertThat(served).isSameAs(firstResult)
         verify(exactly = 2) {
             mockBackend.getWorkflow(
                 appUserID = "user_1",
@@ -424,6 +428,161 @@ class WorkflowManagerTest {
                 onError = any(),
             )
         }
+    }
+
+    @Test
+    fun `getWorkflow stale hit serves the cached value and refreshes the cache in the background`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val refreshedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        // First call at t=0 populates the cache with the stale result.
+        every { mockDateProvider.now } returns Date(0)
+        coEvery { mockResolver.resolve(response) } returns staleResult
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Move past the 5-minute foreground TTL and make the next resolve produce a different result.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        coEvery { mockResolver.resolve(response) } returns refreshedResult
+
+        var served: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Caller receives the stale cached value, not the background-refreshed one.
+        assertThat(served).isSameAs(staleResult)
+        // The background refresh ran and updated the cache to the fresh value.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(refreshedResult)
+        verify(exactly = 2) {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getWorkflow stale hit does not surface a failing background refresh to the caller`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(response) } returns staleResult
+
+        // First backend call succeeds (populates the cache); the second fails (background refresh).
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        var call = 0
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            call++
+            if (call == 1) {
+                successSlot.captured(response)
+            } else {
+                errorSlot.captured(PurchasesError(PurchasesErrorCode.NetworkError, "boom"))
+            }
+        }
+
+        // First call at t=0 populates the cache.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale call whose background refresh fails: caller still gets the stale value, no error.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        var served: WorkflowDataResult? = null
+        var erroredWith: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { erroredWith = it },
+        )
+
+        assertThat(served).isSameAs(staleResult)
+        assertThat(erroredWith).isNull()
+    }
+
+    @Test
+    fun `getWorkflow with staleWhileRevalidate false blocks on the refetch instead of serving stale`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val refreshedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        // First call at t=0 populates the cache.
+        every { mockDateProvider.now } returns Date(0)
+        coEvery { mockResolver.resolve(response) } returns staleResult
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale call with SWR disabled: must deliver the freshly-fetched value, not the stale one.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        coEvery { mockResolver.resolve(response) } returns refreshedResult
+        var served: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { fail("unexpected error $it") },
+            staleWhileRevalidate = false,
+        )
+
+        assertThat(served).isSameAs(refreshedResult)
+        // The blocking fetch also wrote the refreshed value through to the cache.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(refreshedResult)
     }
 
     // endregion getWorkflow cache
@@ -1107,6 +1266,65 @@ class WorkflowManagerTest {
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
 
         // WorkflowsCache.cacheWorkflowDetailEnvelope -> DeviceCache.cacheWorkflowDetailEnvelopes (the mocked layer)
+        val persistedSlot = slot<String>()
+        verify(exactly = 1) { mockDeviceCache.cacheWorkflowDetailEnvelopes(capture(persistedSlot)) }
+        assertThat(persistedSlot.captured).contains("wf_1")
+    }
+
+    @Test
+    fun `prefetch persists the envelope even when the workflow is already cached but stale`() {
+        // Seed the detail cache at t=0 so the workflow is present but will be stale at prefetch time.
+        every { mockDateProvider.now } returns Date(0)
+        workflowsCache.cacheWorkflow("wf_1", WorkflowDataResult(workflow = mockk(), enrolledVariants = null))
+
+        // Advance past the 5-minute TTL: the prefetch now sees a stale-but-present cache entry.
+        // With SWR disabled on the prefetch path it must still do a real fetch and persist, not serve stale.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } returns
+            WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "A", offeringId = "default", prefetch = true),
+            ),
+        )
+        val listSuccess = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccess), onError = any())
+        } answers { listSuccess.captured(listResponse) }
+
+        val detailSuccess = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = capture(detailSuccess),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers { detailSuccess.captured(envelope) }
+
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // A real prefetch fetch happened (the prefetch overload with the prefetch dispatcher)...
+        verify(exactly = 1) {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                any(),
+                onSuccess = any(),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        }
+        // ...and the envelope was persisted, proving the stale prefetch took the blocking fetch path.
         val persistedSlot = slot<String>()
         verify(exactly = 1) { mockDeviceCache.cacheWorkflowDetailEnvelopes(capture(persistedSlot)) }
         assertThat(persistedSlot.captured).contains("wf_1")
