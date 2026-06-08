@@ -1,8 +1,23 @@
 package com.revenuecat.purchases.rules.helpers
 
 import com.revenuecat.purchases.rules.Value
-import org.json.JSONObject
-import org.json.JSONTokener
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.longOrNull
 import java.io.File
 
 /**
@@ -13,9 +28,10 @@ import java.io.File
  */
 
 /** Expected `RuleError` for a fixture that should fail to evaluate. */
+@Serializable
 internal data class ExpectedError(
-    val kind: String,
-    val operator: String?,
+    @SerialName("error") val kind: String,
+    val operator: String? = null,
 )
 
 /** A fixture's expected result: either a truthiness boolean or an error. */
@@ -24,34 +40,85 @@ internal sealed class ExpectedOutcome {
     data class ErrorOutcome(val error: ExpectedError) : ExpectedOutcome()
 }
 
+@Serializable
 internal data class ExpectedWarnings(
     /**
      * Substrings that must each appear in some emitted warning. An empty list
      * asserts that no warning is emitted at all.
      */
-    val contains: List<String>,
+    val contains: List<String> = emptyList(),
 )
 
+@Serializable
 internal data class PredicateConformanceFixtureCase(
     val id: String,
-    val description: String?,
-    val predicate: Value,
-    val variables: Map<String, Value>,
-    val expected: ExpectedOutcome,
-    val expectedWarnings: ExpectedWarnings?,
+    val description: String? = null,
+    @Serializable(with = ValueSerializer::class) val predicate: Value,
+    val variables: Map<String, @Serializable(with = ValueSerializer::class) Value> = emptyMap(),
+    @Serializable(with = ExpectedOutcomeSerializer::class) val expected: ExpectedOutcome,
+    val expectedWarnings: ExpectedWarnings? = null,
 ) {
     // Drives the parameterized test display name and re-run identity.
     override fun toString(): String = id
+}
+
+internal object ValueSerializer : KSerializer<Value> {
+    override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor
+
+    override fun deserialize(decoder: Decoder): Value =
+        (decoder as JsonDecoder).decodeJsonElement().toValue()
+
+    override fun serialize(encoder: Encoder, value: Value): Nothing =
+        error("ValueSerializer is decode-only")
+
+    private fun JsonElement.toValue(): Value = when (this) {
+        is JsonNull -> Value.Null
+        is JsonObject -> Value.ObjectValue(mapValues { it.value.toValue() })
+        is JsonArray -> Value.ArrayValue(map { it.toValue() })
+        is JsonPrimitive -> toValue()
+    }
+
+    private fun JsonPrimitive.toValue(): Value = when {
+        isString -> Value.StringValue(content)
+        booleanOrNull != null -> Value.BoolValue(booleanOrNull!!)
+        // An integer literal parses as `Long`; anything with a decimal point
+        // (e.g. `1.0`) does not, so it falls through to `Double`/`FloatValue`.
+        longOrNull != null -> Value.IntValue(longOrNull!!)
+        doubleOrNull != null -> Value.FloatValue(doubleOrNull!!)
+        else -> error("Unsupported JSON primitive: $content")
+    }
+}
+
+/**
+ * Picks the [ExpectedOutcome] shape from the JSON: a bare boolean is a
+ * truthiness expectation, an object is an expected error.
+ */
+internal object ExpectedOutcomeSerializer : KSerializer<ExpectedOutcome> {
+    override val descriptor: SerialDescriptor = JsonElement.serializer().descriptor
+
+    override fun deserialize(decoder: Decoder): ExpectedOutcome {
+        val jsonDecoder = decoder as JsonDecoder
+        return when (val element = jsonDecoder.decodeJsonElement()) {
+            is JsonObject -> ExpectedOutcome.ErrorOutcome(
+                jsonDecoder.json.decodeFromJsonElement(ExpectedError.serializer(), element),
+            )
+            is JsonPrimitive -> ExpectedOutcome.BooleanOutcome(
+                element.booleanOrNull ?: error("Unsupported `expected` shape: $element"),
+            )
+            else -> error("Unsupported `expected` shape: $element")
+        }
+    }
+
+    override fun serialize(encoder: Encoder, value: ExpectedOutcome): Nothing =
+        error("ExpectedOutcomeSerializer is decode-only")
 }
 
 internal object PredicateConformanceFixtureLoader {
 
     private const val FIXTURES_RESOURCE_DIR = "predicate-fixtures"
 
-    /**
-     * All in-repo fixtures, parsed once and reused across the suite. Reading and
-     * parsing the files on every call is wasted work.
-     */
+    private val json = Json { ignoreUnknownKeys = true }
+
     val allCases: List<PredicateConformanceFixtureCase> by lazy {
         val directory = fixturesDirectory()
         val files = directory.listFiles { file -> file.extension == "json" }
@@ -68,49 +135,9 @@ internal object PredicateConformanceFixtureLoader {
         return File(url.toURI())
     }
 
-    private fun loadCases(file: File): List<PredicateConformanceFixtureCase> {
-        val root = JSONTokener(file.readText()).nextValue() as JSONObject
-        val fixtures = root.getJSONArray("fixtures")
-        return (0 until fixtures.length()).map { parseCase(fixtures.getJSONObject(it)) }
-    }
+    private fun loadCases(file: File): List<PredicateConformanceFixtureCase> =
+        json.decodeFromString<Envelope>(file.readText()).fixtures
 
-    private fun parseCase(json: JSONObject): PredicateConformanceFixtureCase =
-        PredicateConformanceFixtureCase(
-            id = json.getString("id"),
-            description = if (json.has("description")) json.getString("description") else null,
-            predicate = ValueJsonHelper.fromParsedJson(json.get("predicate")),
-            variables = parseVariables(json),
-            expected = parseExpected(json.get("expected")),
-            expectedWarnings = parseExpectedWarnings(json),
-        )
-
-    private fun parseVariables(json: JSONObject): Map<String, Value> {
-        val variables = json.optJSONObject("variables") ?: return emptyMap()
-        return when (val value = ValueJsonHelper.fromParsedJson(variables)) {
-            is Value.ObjectValue -> value.entries
-            else -> emptyMap()
-        }
-    }
-
-    private fun parseExpected(raw: Any?): ExpectedOutcome = when (raw) {
-        is Boolean -> ExpectedOutcome.BooleanOutcome(raw)
-        is JSONObject -> ExpectedOutcome.ErrorOutcome(
-            ExpectedError(
-                kind = raw.getString("error"),
-                operator = if (raw.has("operator")) raw.getString("operator") else null,
-            ),
-        )
-        else -> error("Unsupported `expected` shape: $raw")
-    }
-
-    private fun parseExpectedWarnings(json: JSONObject): ExpectedWarnings? {
-        val warnings = json.optJSONObject("expectedWarnings") ?: return null
-        val contains = warnings.optJSONArray("contains")
-        val substrings = if (contains == null) {
-            emptyList()
-        } else {
-            (0 until contains.length()).map { contains.getString(it) }
-        }
-        return ExpectedWarnings(contains = substrings)
-    }
+    @Serializable
+    private data class Envelope(val fixtures: List<PredicateConformanceFixtureCase>)
 }
