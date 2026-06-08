@@ -45,6 +45,14 @@ internal class WorkflowsCache(
     @Volatile
     private var offeringIdToWorkflowIdMap: Map<String, String> = emptyMap()
 
+    // Bumped on every clearCache() (identity transitions). A fetch captures the generation at its
+    // start and passes it back on write; a write whose captured generation no longer matches is
+    // dropped, so a fetch that began before an identity transition can't repopulate the cleared cache.
+    private var cacheGeneration: Int = 0
+
+    @Synchronized
+    fun currentGeneration(): Int = cacheGeneration
+
     // region Workflow detail cache
 
     @Synchronized
@@ -56,7 +64,8 @@ internal class WorkflowsCache(
         cachedWorkflows[workflowId]?.lastUpdatedAt?.isCacheStale(appInBackground, dateProvider) ?: true
 
     @Synchronized
-    fun cacheWorkflow(workflowId: String, result: WorkflowDataResult) {
+    fun cacheWorkflow(workflowId: String, result: WorkflowDataResult, expectedGeneration: Int) {
+        if (expectedGeneration != cacheGeneration) return
         val cached = cachedWorkflows.getOrPut(workflowId) { InMemoryCachedObject(dateProvider = dateProvider) }
         cached.cacheInstance(result)
     }
@@ -89,15 +98,24 @@ internal class WorkflowsCache(
      * Caches the workflows list in memory and persists it to disk, the same way
      * [com.revenuecat.purchases.common.offerings.OfferingsCache.cacheOfferings] caches offerings.
      *
-     * This means workflows share the same accepted appUserID limitation as offerings: a fetch that
-     * is in flight during an identity transition can complete *after* [clearCache] and repopulate
-     * the cleared cache with the previous user's list (last-write-wins). It is not guarded here, so
-     * it self-heals on the next fetch, exactly as the offerings cache does. If we ever decide to
-     * close that window, it should be done consistently for both caches rather than only here.
+     * Guarded by [expectedGeneration]: a fetch captures [currentGeneration] at its start and passes
+     * it back here. If an identity transition called [clearCache] in between (bumping the generation),
+     * the captured value no longer matches and the write is dropped, so an in-flight fetch from the
+     * previous user can't repopulate the cleared cache. The guard and the [clearCache] increment share
+     * this object's intrinsic lock, so the check-then-write is atomic.
+     * [com.revenuecat.purchases.common.offerings.OfferingsCache.cacheOfferings] carries the same guard
+     * so both caches stay consistent across an identity change.
      */
     @Synchronized
-    fun cacheWorkflowsList(response: WorkflowsListResponse, offeringIdMap: Map<String, String>) {
-        cacheWorkflowsListInMemory(response, offeringIdMap)
+    fun cacheWorkflowsList(
+        response: WorkflowsListResponse,
+        offeringIdMap: Map<String, String>,
+        expectedGeneration: Int,
+    ) {
+        if (expectedGeneration != cacheGeneration) return
+        // Re-checked under the same lock by cacheWorkflowsListInMemory; redundant on this path (the
+        // lock is held throughout) but keeps the guard uniform for its direct callers.
+        cacheWorkflowsListInMemory(response, offeringIdMap, expectedGeneration)
         deviceCache.cacheWorkflowsListResponse(
             JsonTools.json.encodeToString(WorkflowsListResponse.serializer(), response),
         )
@@ -110,7 +128,12 @@ internal class WorkflowsCache(
      * holds this exact payload so rewriting it would be wasted work.
      */
     @Synchronized
-    fun cacheWorkflowsListInMemory(response: WorkflowsListResponse, offeringIdMap: Map<String, String>) {
+    fun cacheWorkflowsListInMemory(
+        response: WorkflowsListResponse,
+        offeringIdMap: Map<String, String>,
+        expectedGeneration: Int,
+    ) {
+        if (expectedGeneration != cacheGeneration) return
         workflowsListCachedObject.cacheInstance(response)
         offeringIdToWorkflowIdMap = offeringIdMap
     }
@@ -150,7 +173,8 @@ internal class WorkflowsCache(
      * replaced rather than preserved.
      */
     @Synchronized
-    fun cacheWorkflowDetailEnvelope(workflowId: String, envelope: WorkflowDetailResponse) {
+    fun cacheWorkflowDetailEnvelope(workflowId: String, envelope: WorkflowDetailResponse, expectedGeneration: Int) {
+        if (expectedGeneration != cacheGeneration) return
         val current = cachedWorkflowDetailEnvelopesFromDisk().orEmpty().toMutableMap()
         current[workflowId] = envelope
         persistWorkflowDetailEnvelopes(current)
@@ -194,6 +218,7 @@ internal class WorkflowsCache(
 
     @Synchronized
     fun clearCache() {
+        cacheGeneration++
         cachedWorkflows.clear()
         workflowsListCachedObject.clearCache()
         offeringIdToWorkflowIdMap = emptyMap()

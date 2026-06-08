@@ -51,7 +51,7 @@ class WorkflowsCacheTest {
     @Test
     fun `cachedWorkflow returns cached value after cacheWorkflow`() {
         val result = mockk<WorkflowDataResult>()
-        workflowsCache.cacheWorkflow("wf_1", result)
+        workflowsCache.cacheWorkflow("wf_1", result, workflowsCache.currentGeneration())
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(result)
     }
 
@@ -63,35 +63,35 @@ class WorkflowsCacheTest {
 
     @Test
     fun `isWorkflowCacheStale is false right after caching in foreground`() {
-        workflowsCache.cacheWorkflow("wf_1", mockk())
+        workflowsCache.cacheWorkflow("wf_1", mockk(), workflowsCache.currentGeneration())
         assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isFalse
     }
 
     @Test
     fun `isWorkflowCacheStale is true after foreground TTL expires`() {
-        workflowsCache.cacheWorkflow("wf_1", mockk())
+        workflowsCache.cacheWorkflow("wf_1", mockk(), workflowsCache.currentGeneration())
         currentDate = currentDate.add(6.minutes)
         assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isTrue
     }
 
     @Test
     fun `isWorkflowCacheStale is false after foreground TTL expires when in background`() {
-        workflowsCache.cacheWorkflow("wf_1", mockk())
+        workflowsCache.cacheWorkflow("wf_1", mockk(), workflowsCache.currentGeneration())
         currentDate = currentDate.add(6.minutes)
         assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = true)).isFalse
     }
 
     @Test
     fun `isWorkflowCacheStale is true after background TTL expires`() {
-        workflowsCache.cacheWorkflow("wf_1", mockk())
+        workflowsCache.cacheWorkflow("wf_1", mockk(), workflowsCache.currentGeneration())
         currentDate = currentDate.add(26.hours)
         assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = true)).isTrue
     }
 
     @Test
     fun `clearCache removes all cached workflows`() {
-        workflowsCache.cacheWorkflow("wf_1", mockk())
-        workflowsCache.cacheWorkflow("wf_2", mockk())
+        workflowsCache.cacheWorkflow("wf_1", mockk(), workflowsCache.currentGeneration())
+        workflowsCache.cacheWorkflow("wf_2", mockk(), workflowsCache.currentGeneration())
         workflowsCache.clearCache()
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isNull()
         assertThat(workflowsCache.cachedWorkflow("wf_2")).isNull()
@@ -102,13 +102,13 @@ class WorkflowsCacheTest {
     @Test
     fun `isWorkflowsListCacheStale is true initially and false after caching`() {
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
-        workflowsCache.cacheWorkflowsList(WorkflowsListResponse(workflows = emptyList()), emptyMap())
+        workflowsCache.cacheWorkflowsList(WorkflowsListResponse(workflows = emptyList()), emptyMap(), workflowsCache.currentGeneration())
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isFalse
     }
 
     @Test
     fun `isWorkflowsListCacheStale is true after foreground TTL expires`() {
-        workflowsCache.cacheWorkflowsList(WorkflowsListResponse(workflows = emptyList()), emptyMap())
+        workflowsCache.cacheWorkflowsList(WorkflowsListResponse(workflows = emptyList()), emptyMap(), workflowsCache.currentGeneration())
         currentDate = currentDate.add(6.minutes)
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
     }
@@ -118,6 +118,7 @@ class WorkflowsCacheTest {
         workflowsCache.cacheWorkflowsList(
             WorkflowsListResponse(workflows = emptyList()),
             mapOf("default" to "wf_1"),
+            workflowsCache.currentGeneration(),
         )
         assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
         assertThat(workflowsCache.workflowIdForOfferingId("premium")).isNull()
@@ -128,6 +129,7 @@ class WorkflowsCacheTest {
         workflowsCache.cacheWorkflowsList(
             WorkflowsListResponse(workflows = emptyList()),
             mapOf("default" to "wf_1"),
+            workflowsCache.currentGeneration(),
         )
         workflowsCache.clearCache()
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
@@ -143,6 +145,7 @@ class WorkflowsCacheTest {
                 ),
             ),
             mapOf("default" to "wf_1"),
+            workflowsCache.currentGeneration(),
         )
         verify(exactly = 1) { deviceCache.cacheWorkflowsListResponse(any()) }
     }
@@ -156,6 +159,7 @@ class WorkflowsCacheTest {
                 ),
             ),
             mapOf("default" to "wf_1"),
+            workflowsCache.currentGeneration(),
         )
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isFalse
         assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
@@ -209,7 +213,7 @@ class WorkflowsCacheTest {
         val payloadSlot = slot<String>()
         every { deviceCache.cacheWorkflowDetailEnvelopes(capture(payloadSlot)) } just Runs
 
-        workflowsCache.cacheWorkflowDetailEnvelope("wf_1", cdnEnvelope("https://cdn/wf_1.json"))
+        workflowsCache.cacheWorkflowDetailEnvelope("wf_1", cdnEnvelope("https://cdn/wf_1.json"), workflowsCache.currentGeneration())
 
         assertThat(payloadSlot.captured).contains("wf_1")
         assertThat(payloadSlot.captured).contains("https://cdn/wf_1.json")
@@ -222,7 +226,7 @@ class WorkflowsCacheTest {
         val payloadSlot = slot<String>()
         every { deviceCache.cacheWorkflowDetailEnvelopes(capture(payloadSlot)) } just Runs
 
-        workflowsCache.cacheWorkflowDetailEnvelope("wf_new", cdnEnvelope("https://cdn/wf_new.json"))
+        workflowsCache.cacheWorkflowDetailEnvelope("wf_new", cdnEnvelope("https://cdn/wf_new.json"), workflowsCache.currentGeneration())
 
         val persisted = WorkflowJsonParser.parseWorkflowDetailEnvelopes(payloadSlot.captured)
         assertThat(persisted.keys).containsExactlyInAnyOrder("wf_existing", "wf_new")
@@ -286,6 +290,7 @@ class WorkflowsCacheTest {
                 ),
             ),
             mapOf("default" to "wf_keep"),
+            workflowsCache.currentGeneration(),
         )
 
         assertThat(payloadSlot.captured).contains("wf_keep")
@@ -304,6 +309,7 @@ class WorkflowsCacheTest {
                 ),
             ),
             mapOf("default" to "wf_keep"),
+            workflowsCache.currentGeneration(),
         )
 
         verify(exactly = 0) { deviceCache.cacheWorkflowDetailEnvelopes(any()) }
@@ -313,9 +319,9 @@ class WorkflowsCacheTest {
     fun `different workflowIds are cached independently`() {
         val first = mockk<WorkflowDataResult>()
         val second = mockk<WorkflowDataResult>()
-        workflowsCache.cacheWorkflow("wf_1", first)
+        workflowsCache.cacheWorkflow("wf_1", first, workflowsCache.currentGeneration())
         currentDate = currentDate.add(6.minutes)
-        workflowsCache.cacheWorkflow("wf_2", second)
+        workflowsCache.cacheWorkflow("wf_2", second, workflowsCache.currentGeneration())
 
         // Both values remain retrievable.
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(first)
@@ -324,5 +330,91 @@ class WorkflowsCacheTest {
         // wf_1 was cached 6 minutes ago so it is stale in foreground; wf_2 is fresh.
         assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isTrue
         assertThat(workflowsCache.isWorkflowCacheStale("wf_2", appInBackground = false)).isFalse
+    }
+
+    @Test
+    fun `currentGeneration increments on clearCache`() {
+        val before = workflowsCache.currentGeneration()
+        workflowsCache.clearCache()
+        assertThat(workflowsCache.currentGeneration()).isEqualTo(before + 1)
+    }
+
+    @Test
+    fun `cacheWorkflowsList is a no-op when the generation is stale`() {
+        val staleGeneration = workflowsCache.currentGeneration()
+        workflowsCache.clearCache() // advances the generation past staleGeneration
+
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        workflowsCache.cacheWorkflowsList(response, mapOf("default" to "wf_1"), staleGeneration)
+
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isNull()
+        verify(exactly = 0) { deviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
+    @Test
+    fun `cacheWorkflowsList writes when the generation is current`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        workflowsCache.cacheWorkflowsList(response, mapOf("default" to "wf_1"), workflowsCache.currentGeneration())
+
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+        verify(exactly = 1) { deviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
+    @Test
+    fun `cacheWorkflow is a no-op when the generation is stale`() {
+        val staleGeneration = workflowsCache.currentGeneration()
+        workflowsCache.clearCache()
+
+        workflowsCache.cacheWorkflow("wf_1", mockk(relaxed = true), staleGeneration)
+
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isNull()
+    }
+
+    @Test
+    fun `cacheWorkflowDetailEnvelope is a no-op when the generation is stale`() {
+        val staleGeneration = workflowsCache.currentGeneration()
+        workflowsCache.clearCache()
+
+        workflowsCache.cacheWorkflowDetailEnvelope("wf_1", cdnEnvelope("https://cdn/wf_1.json"), staleGeneration)
+
+        verify(exactly = 0) { deviceCache.cacheWorkflowDetailEnvelopes(any()) }
+    }
+
+    @Test
+    fun `cacheWorkflowsListInMemory is a no-op when the generation is stale`() {
+        val staleGeneration = workflowsCache.currentGeneration()
+        workflowsCache.clearCache()
+
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        workflowsCache.cacheWorkflowsListInMemory(response, mapOf("default" to "wf_1"), staleGeneration)
+
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isNull()
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
+    }
+
+    @Test
+    fun `invalidateWorkflowsListTimestamp does not bump the generation`() {
+        val before = workflowsCache.currentGeneration()
+        workflowsCache.invalidateWorkflowsListTimestamp()
+        assertThat(workflowsCache.currentGeneration()).isEqualTo(before)
+    }
+
+    @Test
+    fun `clearWorkflowDetailCaches does not bump the generation`() {
+        val before = workflowsCache.currentGeneration()
+        workflowsCache.clearWorkflowDetailCaches()
+        assertThat(workflowsCache.currentGeneration()).isEqualTo(before)
     }
 }

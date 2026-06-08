@@ -1149,6 +1149,29 @@ class WorkflowManagerTest {
         }
     }
 
+    @Test
+    fun `getWorkflowsList does not repopulate the cache when cleared mid-fetch`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
+        } just Runs
+
+        // Fetch starts (captures the generation), then an identity transition clears the cache...
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        workflowsCache.clearCache()
+        // ...and only now does the in-flight response land.
+        successSlot.captured(response)
+
+        // The stale write is dropped: the cleared cache stays empty, disk is not rewritten.
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+        verify(exactly = 0) { mockDeviceCache.cacheWorkflowsListResponse(any()) }
+    }
+
     // endregion issue fixes
 
     // region onComplete callback
@@ -1430,7 +1453,7 @@ class WorkflowManagerTest {
     fun `prefetch persists the envelope even when the workflow is already cached but stale`() {
         // Seed the detail cache at t=0 so the workflow is present but will be stale at prefetch time.
         every { mockDateProvider.now } returns Date(0)
-        workflowsCache.cacheWorkflow("wf_1", WorkflowDataResult(workflow = mockk(), enrolledVariants = null))
+        workflowsCache.cacheWorkflow("wf_1", WorkflowDataResult(workflow = mockk(), enrolledVariants = null), workflowsCache.currentGeneration())
 
         // Advance past the 5-minute TTL: the prefetch now sees a stale-but-present cache entry.
         // With SWR disabled on the prefetch path it must still do a real fetch and persist, not serve stale.

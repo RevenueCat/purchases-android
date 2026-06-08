@@ -6,8 +6,10 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.FakeLocaleProvider
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -54,6 +56,7 @@ class OfferingsManagerTest {
     @Before
     fun setUp() {
         cache = mockk()
+        every { cache.currentGeneration() } returns 0
         backend = mockk()
         offeringsFactory = mockk()
         offeringImagePreDownloader = mockk<OfferingImagePreDownloader>().apply {
@@ -194,7 +197,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockDeviceCache()
@@ -213,7 +216,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         }
     }
 
@@ -226,7 +229,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         var receivedOfferings: Offerings? = null
@@ -243,7 +246,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = true, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         }
     }
 
@@ -255,7 +258,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockDeviceCache()
@@ -329,7 +332,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
         mockDeviceCache()
         val (_, offerings) = stubOfferings(productId)
@@ -346,7 +349,7 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isNotNull
         assertThat(receivedOfferings).isEqualTo(offerings)
         verify {
-            cache.cacheOfferings(offerings, any())
+            cache.cacheOfferings(offerings, any(), any())
         }
     }
 
@@ -356,7 +359,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -383,7 +386,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -402,7 +405,7 @@ class OfferingsManagerTest {
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
-        verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse, any()) }
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
@@ -420,7 +423,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
@@ -479,7 +482,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -548,7 +551,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any(), any())
         } just Runs
 
         mockBackendResponseError()
@@ -592,7 +595,7 @@ class OfferingsManagerTest {
     @Test
     fun `getOfferings does not force workflows list refetch on disk-cache fallback`() {
         every { cache.cachedOfferings } returns null
-        every { cache.cacheOfferings(any(), any()) } just Runs
+        every { cache.cacheOfferings(any(), any(), any()) } just Runs
         mockBackendResponseError()
         every { cache.cachedOfferingsResponse } returns JSONObject(ONE_OFFERINGS_RESPONSE)
         mockDeviceCache(wasSuccessful = false)
@@ -1031,7 +1034,7 @@ class OfferingsManagerTest {
 
     private fun mockDeviceCache(wasSuccessful: Boolean = true) {
         if (wasSuccessful) {
-            every { cache.cacheOfferings(any(), any()) } just Runs
+            every { cache.cacheOfferings(any(), any(), any()) } just Runs
         } else {
             every { cache.forceCacheStale() } just Runs
         }
@@ -1175,4 +1178,45 @@ class OfferingsManagerTest {
     }
 
     // endregion workflowManager onComplete integration
+
+    // region cache generation race guard
+
+    @Test
+    fun `fetchAndCacheOfferings does not repopulate the cache when cleared mid-fetch`() {
+        val mockDeviceCache = mockk<DeviceCache>().apply {
+            every { clearOfferingsResponseCache() } just Runs
+            every { cacheOfferingsResponse(any()) } just Runs
+            every { getOfferingsResponseCache() } returns null
+        }
+        val realOfferingsCache = OfferingsCache(
+            deviceCache = mockDeviceCache,
+            localeProvider = FakeLocaleProvider("en-US"),
+        )
+
+        val managerWithRealCache = OfferingsManager(
+            offeringsCache = realOfferingsCache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        val onSuccessSlot = slot<(JSONObject, HTTPResponseOriginalSource) -> Unit>()
+        every {
+            backend.getOfferings(any(), any(), onSuccess = capture(onSuccessSlot), onError = any())
+        } just Runs
+
+        mockOfferingsFactory()
+
+        // Fetch starts (captures the generation), identity transition clears, then the response lands.
+        managerWithRealCache.fetchAndCacheOfferings(appUserID = "user_1", appInBackground = false)
+        realOfferingsCache.clearCache()
+        onSuccessSlot.captured(JSONObject(ONE_OFFERINGS_RESPONSE), HTTPResponseOriginalSource.MAIN)
+
+        assertThat(realOfferingsCache.cachedOfferings).isNull()
+    }
+
+    // endregion cache generation race guard
 }

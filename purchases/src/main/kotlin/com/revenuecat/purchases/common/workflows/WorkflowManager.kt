@@ -71,7 +71,14 @@ internal class WorkflowManager(
         callbackDispatcher: Dispatcher? = null,
         persistEnvelopeOnResolve: Boolean = false,
         staleWhileRevalidate: Boolean = true,
+        expectedGeneration: Int? = null,
     ) {
+        // On-demand callers omit expectedGeneration and capture the current epoch here, at entry;
+        // the prefetch path threads in the list fetch's epoch instead. The default stays a constant
+        // (null) rather than reading the cache here so the synthesized `getWorkflow$default` never
+        // touches `workflowsCache` — that field is null on a mocked WorkflowManager, and an `every {}`
+        // recording that omits this arg would otherwise NPE.
+        val resolvedGeneration = expectedGeneration ?: workflowsCache.currentGeneration()
         val cached = workflowsCache.cachedWorkflow(workflowId)
         when {
             cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground) -> {
@@ -90,6 +97,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    expectedGeneration = resolvedGeneration,
                     onSuccess = {},
                     onError = { error ->
                         errorLog {
@@ -107,6 +115,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    expectedGeneration = resolvedGeneration,
                     onSuccess = onSuccess,
                     onError = onError,
                 )
@@ -121,6 +130,7 @@ internal class WorkflowManager(
         appInBackground: Boolean,
         callbackDispatcher: Dispatcher?,
         persistEnvelopeOnResolve: Boolean,
+        expectedGeneration: Int,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -137,9 +147,15 @@ internal class WorkflowManager(
                     onError(e.toPurchasesError())
                     return@launch
                 }
-                workflowsCache.cacheWorkflow(workflowId, result)
+                workflowsCache.cacheWorkflow(workflowId, result, expectedGeneration)
                 if (persistEnvelopeOnResolve) {
-                    runCatching { workflowsCache.cacheWorkflowDetailEnvelope(workflowId, response) }
+                    runCatching {
+                        workflowsCache.cacheWorkflowDetailEnvelope(
+                            workflowId,
+                            response,
+                            expectedGeneration,
+                        )
+                    }
                         .onFailure { errorLog(it) { "Failed to persist workflow detail envelope for $workflowId" } }
                 }
                 scope.launch {
@@ -189,6 +205,7 @@ internal class WorkflowManager(
      * while a batch is running joins it instead of starting a new fetch. That window self-heals on the
      * next fetch.
      */
+    @Suppress("LongMethod")
     fun getWorkflowsList(
         appUserID: String,
         appInBackground: Boolean,
@@ -216,6 +233,7 @@ internal class WorkflowManager(
         if (!startFetch) {
             completePendingCallbacks(appUserID)
         } else {
+            val generation = workflowsCache.currentGeneration()
             backend.getWorkflows(
                 appUserID = appUserID,
                 appInBackground = appInBackground,
@@ -228,7 +246,11 @@ internal class WorkflowManager(
                     // guaranteed cache miss and always populates fresh data. Cleared here rather than
                     // before the network call so a failed fetch leaves in-memory details intact.
                     if (forceRefresh) workflowsCache.clearWorkflowDetailCaches()
-                    workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
+                    workflowsCache.cacheWorkflowsList(
+                        filtered,
+                        buildOfferingIdMap(filtered.workflows),
+                        generation,
+                    )
 
                     val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
                     scope.launch {
@@ -239,7 +261,7 @@ internal class WorkflowManager(
                         coroutineScope {
                             prefetchWorkflows.forEach { summary ->
                                 launch {
-                                    prefetchWorkflow(appUserID, summary.id, appInBackground)
+                                    prefetchWorkflow(appUserID, summary.id, appInBackground, generation)
                                 }
                             }
                         }
@@ -252,7 +274,11 @@ internal class WorkflowManager(
                     // this payload.
                     val restoredFromDisk = workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
                         val filtered = response.onlyWorkflowsWithOfferingId()
-                        workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
+                        workflowsCache.cacheWorkflowsListInMemory(
+                            filtered,
+                            buildOfferingIdMap(filtered.workflows),
+                            generation,
+                        )
                     } != null
                     // Mirror OfferingsManager.handleErrorFetchingOfferings: when there is no disk
                     // cache to fall back on, force the list stale so the next call retries. When a
@@ -272,7 +298,7 @@ internal class WorkflowManager(
                             // fail its siblings. completePendingCallbacks still fires exactly once.
                             coroutineScope {
                                 envelopes.forEach { (workflowId, envelope) ->
-                                    launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
+                                    launch { restoreWorkflowFromEnvelope(workflowId, envelope, generation) }
                                 }
                             }
                             completePendingCallbacks(appUserID)
@@ -287,8 +313,16 @@ internal class WorkflowManager(
      * Suspends until [getWorkflow] for [workflowId] resolves. Prefetch is best-effort, so a failure
      * is logged and the coroutine resumes normally instead of throwing, keeping one failed prefetch
      * from cancelling its siblings in the surrounding [coroutineScope].
+     *
+     * [expectedGeneration] anchors detail fetches to the list's cache epoch: if the cache was
+     * cleared between the list fetch and the detail write, the write is dropped.
      */
-    private suspend fun prefetchWorkflow(appUserID: String, workflowId: String, appInBackground: Boolean) {
+    private suspend fun prefetchWorkflow(
+        appUserID: String,
+        workflowId: String,
+        appInBackground: Boolean,
+        expectedGeneration: Int,
+    ) {
         suspendCancellableCoroutine { continuation ->
             getWorkflow(
                 appUserID = appUserID,
@@ -297,6 +331,7 @@ internal class WorkflowManager(
                 callbackDispatcher = prefetchDispatcher,
                 persistEnvelopeOnResolve = true,
                 staleWhileRevalidate = false,
+                expectedGeneration = expectedGeneration,
                 onSuccess = { continuation.safeResume(Unit) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }
@@ -312,8 +347,15 @@ internal class WorkflowManager(
      * pre-downloaded during the original prefetch) re-resolution needs no network. If that file was
      * evicted, resolution may need the CDN and can fail while the backend is down; the failure is
      * logged and swallowed so one bad envelope doesn't fail its siblings in the surrounding [coroutineScope].
+     *
+     * [expectedGeneration] is the generation captured when [getWorkflowsList] started its fetch, so
+     * a restore that lands after a cache clear is dropped rather than repopulating the stale cache.
      */
-    private suspend fun restoreWorkflowFromEnvelope(workflowId: String, envelope: WorkflowDetailResponse) {
+    private suspend fun restoreWorkflowFromEnvelope(
+        workflowId: String,
+        envelope: WorkflowDetailResponse,
+        expectedGeneration: Int,
+    ) {
         val result = try {
             workflowDetailResolver.resolve(envelope)
         } catch (e: CancellationException) {
@@ -322,7 +364,7 @@ internal class WorkflowManager(
             errorLog(e) { "Failed to restore workflow $workflowId from disk cache" }
             return
         }
-        workflowsCache.cacheWorkflow(workflowId, result)
+        workflowsCache.cacheWorkflow(workflowId, result, expectedGeneration)
     }
 
     fun workflowIdForOfferingId(offeringId: String): String? =

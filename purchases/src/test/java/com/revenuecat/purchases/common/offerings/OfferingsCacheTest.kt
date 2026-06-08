@@ -55,7 +55,7 @@ class OfferingsCacheTest {
         every { deviceCache.cacheOfferingsResponse(any()) } just Runs
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, offeringsResponse)
+        }, offeringsResponse, offeringsCache.currentGeneration())
         assertThat(offeringsCache.cachedOfferings).isNotNull
         offeringsCache.clearCache()
         assertThat(offeringsCache.cachedOfferings).isNull()
@@ -72,7 +72,7 @@ class OfferingsCacheTest {
         val offeringsResponse = JSONObject()
         every { deviceCache.cacheOfferingsResponse(any()) } just Runs
         assertThat(offeringsCache.cachedOfferings).isNull()
-        offeringsCache.cacheOfferings(offerings, offeringsResponse)
+        offeringsCache.cacheOfferings(offerings, offeringsResponse, offeringsCache.currentGeneration())
         assertThat(offeringsCache.cachedOfferings).isEqualTo(offerings)
         verify(exactly = 1) {
             deviceCache.cacheOfferingsResponse(
@@ -101,7 +101,7 @@ class OfferingsCacheTest {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
     }
 
@@ -110,7 +110,7 @@ class OfferingsCacheTest {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         currentDate = currentDate.add(6.minutes)
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
     }
@@ -120,7 +120,7 @@ class OfferingsCacheTest {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         offeringsCache.forceCacheStale()
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
     }
@@ -130,7 +130,7 @@ class OfferingsCacheTest {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         assertThat(offeringsCache.cachedOfferings).isNotNull
         offeringsCache.clearInMemoryOfferingsCache()
         assertThat(offeringsCache.cachedOfferings).isNull()
@@ -141,7 +141,7 @@ class OfferingsCacheTest {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
         offeringsCache.clearInMemoryOfferingsCache()
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
@@ -153,7 +153,7 @@ class OfferingsCacheTest {
         mockDeviceCacheOfferingResponse()
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         offeringsCache.clearInMemoryOfferingsCache()
         verify(exactly = 0) { deviceCache.clearOfferingsResponseCache() }
     }
@@ -165,7 +165,7 @@ class OfferingsCacheTest {
         every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, offeringsResponse)
+        }, offeringsResponse, offeringsCache.currentGeneration())
 
         offeringsCache.clearInMemoryOfferingsCache()
 
@@ -174,6 +174,57 @@ class OfferingsCacheTest {
     }
 
     // endregion offerings cache
+
+    // region generation guard tests
+
+    @Test
+    fun `currentGeneration increments on clearCache`() {
+        every { deviceCache.clearOfferingsResponseCache() } just Runs
+        val before = offeringsCache.currentGeneration()
+        offeringsCache.clearCache()
+        assertThat(offeringsCache.currentGeneration()).isEqualTo(before + 1)
+    }
+
+    @Test
+    fun `cacheOfferings is a no-op when the generation is stale`() {
+        every { deviceCache.clearOfferingsResponseCache() } just Runs
+        val staleGeneration = offeringsCache.currentGeneration()
+        offeringsCache.clearCache()
+
+        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
+        }, JSONObject(), staleGeneration)
+
+        assertThat(offeringsCache.cachedOfferings).isNull()
+        verify(exactly = 0) { deviceCache.cacheOfferingsResponse(any()) }
+    }
+
+    @Test
+    fun `cacheOfferings writes when the generation is current`() {
+        mockDeviceCacheOfferingResponse()
+        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
+            every { originalSource } returns HTTPResponseOriginalSource.MAIN
+        }, JSONObject(), offeringsCache.currentGeneration())
+
+        assertThat(offeringsCache.cachedOfferings).isNotNull()
+        verify(exactly = 1) { deviceCache.cacheOfferingsResponse(any()) }
+    }
+
+    @Test
+    fun `clearInMemoryOfferingsCache does not bump the generation`() {
+        val before = offeringsCache.currentGeneration()
+        offeringsCache.clearInMemoryOfferingsCache()
+        assertThat(offeringsCache.currentGeneration()).isEqualTo(before)
+    }
+
+    @Test
+    fun `forceCacheStale does not bump the generation`() {
+        val before = offeringsCache.currentGeneration()
+        offeringsCache.forceCacheStale()
+        assertThat(offeringsCache.currentGeneration()).isEqualTo(before)
+    }
+
+    // endregion generation guard tests
 
     // region locale cache tests
 
@@ -187,7 +238,7 @@ class OfferingsCacheTest {
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
 
         // Assert
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
@@ -203,7 +254,7 @@ class OfferingsCacheTest {
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         localeProvider.languageTags = listOf("fr-FR", "de-DE")
 
         // Assert
@@ -221,7 +272,7 @@ class OfferingsCacheTest {
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         localeProvider.languageTags = listOf("fr-FR")
 
         // Assert
@@ -239,7 +290,7 @@ class OfferingsCacheTest {
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         localeProvider.languageTags = listOf("es-ES", "en-US")
 
         // Assert
@@ -258,7 +309,7 @@ class OfferingsCacheTest {
         // Act
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        }, JSONObject(), offeringsCache.currentGeneration())
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isFalse
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isFalse
         offeringsCache.clearCache()
