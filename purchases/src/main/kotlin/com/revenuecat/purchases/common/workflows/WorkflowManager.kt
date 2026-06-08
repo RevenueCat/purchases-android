@@ -71,8 +71,14 @@ internal class WorkflowManager(
         callbackDispatcher: Dispatcher? = null,
         persistEnvelopeOnResolve: Boolean = false,
         staleWhileRevalidate: Boolean = true,
-        expectedGeneration: Int = workflowsCache.currentGeneration(),
+        expectedGeneration: Int? = null,
     ) {
+        // On-demand callers omit expectedGeneration and capture the current epoch here, at entry;
+        // the prefetch path threads in the list fetch's epoch instead. The default stays a constant
+        // (null) rather than reading the cache here so the synthesized `getWorkflow$default` never
+        // touches `workflowsCache` — that field is null on a mocked WorkflowManager, and an `every {}`
+        // recording that omits this arg would otherwise NPE.
+        val resolvedGeneration = expectedGeneration ?: workflowsCache.currentGeneration()
         val cached = workflowsCache.cachedWorkflow(workflowId)
         when {
             cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground) -> {
@@ -91,7 +97,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
-                    expectedGeneration = expectedGeneration,
+                    expectedGeneration = resolvedGeneration,
                     onSuccess = {},
                     onError = { error ->
                         errorLog {
@@ -109,7 +115,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
-                    expectedGeneration = expectedGeneration,
+                    expectedGeneration = resolvedGeneration,
                     onSuccess = onSuccess,
                     onError = onError,
                 )
