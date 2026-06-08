@@ -26,15 +26,26 @@ internal class OfferingsCache(
 
     private var cachedLanguageTags: String? = null
 
+    // See WorkflowsCache: bumped on identity-transition clears so an in-flight fetch can't repopulate
+    // the cleared cache after the user changed. cacheOfferings drops a write whose captured generation
+    // no longer matches; the check and this increment share the intrinsic @Synchronized lock, so the
+    // clear-then-write ordering is atomic.
+    private var cacheGeneration: Int = 0
+
+    @Synchronized
+    fun currentGeneration(): Int = cacheGeneration
+
     @Synchronized
     fun clearCache() {
+        cacheGeneration++
         offeringsCachedObject.clearCache()
         deviceCache.clearOfferingsResponseCache()
         cachedLanguageTags = null
     }
 
     @Synchronized
-    fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
+    fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject, expectedGeneration: Int) {
+        if (expectedGeneration != cacheGeneration) return
         val finalJsonToCache = offeringsResponse.copy(deep = false).apply {
             put(ORIGINAL_SOURCE_KEY, offerings.originalSource)
         }

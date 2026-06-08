@@ -267,7 +267,11 @@ internal class OfferingsManager(
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
+                offeringsCache.cacheOfferings(
+                    offeringsResultData.offerings,
+                    offeringsJSON,
+                    offeringsCache.currentGeneration(),
+                )
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
                 if (!loadedFromDiskCache) {
                     workflowManager?.forceWorkflowsListCacheStale()
