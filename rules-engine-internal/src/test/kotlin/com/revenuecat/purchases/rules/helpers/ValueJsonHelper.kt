@@ -28,15 +28,6 @@ internal object ValueJsonHelper {
         }
     }
 
-    /**
-     * Converts an already-parsed JSON token (a primitive, [JSONObject],
-     * [JSONArray], or [JSONObject.NULL]) into a [Value]. Used by the
-     * predicate fixture loader, which parses a whole fixture file once and
-     * converts each `predicate` / `variables` sub-tree directly, avoiding a
-     * re-serialize round-trip that could alter numeric literals.
-     */
-    fun fromParsedJson(parsed: Any?): Value = convert(parsed)
-
     private fun convert(parsed: Any?): Value = when (parsed) {
         null, JSONObject.NULL -> Value.Null
         is Boolean -> Value.BoolValue(parsed)
