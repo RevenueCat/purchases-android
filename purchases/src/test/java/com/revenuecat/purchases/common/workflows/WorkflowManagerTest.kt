@@ -1232,6 +1232,117 @@ class WorkflowManagerTest {
         assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
     }
 
+    @Test
+    fun `getWorkflowsList serves immediately when stale-but-present and not forced`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        // Populate the cache at t=0 (auto-resolve the first fetch).
+        val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(firstSlot), onError = any())
+        } answers { firstSlot.captured(response) }
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Advance past the TTL: stale-but-present. Capture the background fetch WITHOUT resolving it.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        val pendingSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(pendingSlot), onError = any())
+        } answers { }
+
+        var completed = false
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completed = true }
+
+        // SWR: onComplete fired immediately, before the background refresh resolved...
+        assertThat(completed).isTrue
+        // ...and a background refresh was still issued (2 total: initial populate + SWR refresh).
+        verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+    }
+
+    @Test
+    fun `getWorkflowsList blocks until the fetch settles on a cold cache`() {
+        val response = WorkflowsListResponse(workflows = emptyList())
+        val successSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(successSlot), onError = any())
+        } answers { } // do not resolve yet
+        every { mockDateProvider.now } returns Date(0)
+
+        var completed = false
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { completed = true }
+
+        // Cold miss: nothing cached, so onComplete must wait for the fetch.
+        assertThat(completed).isFalse
+        successSlot.captured(response)
+        assertThat(completed).isTrue
+    }
+
+    @Test
+    fun `getWorkflowsList with forceRefresh blocks even when the cache is stale-but-present`() {
+        val response = WorkflowsListResponse(workflows = emptyList())
+        val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(firstSlot), onError = any())
+        } answers { firstSlot.captured(response) }
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Stale-but-present, but force a refresh and DON'T resolve the backend.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        val pendingSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(pendingSlot), onError = any())
+        } answers { }
+
+        var completed = false
+        workflowManager.getWorkflowsList(
+            appUserID = "user_1", appInBackground = false, forceRefresh = true,
+        ) { completed = true }
+
+        // forceRefresh keeps blocking: onComplete waits for the fetch.
+        assertThat(completed).isFalse
+        pendingSlot.captured(response)
+        assertThat(completed).isTrue
+    }
+
+    @Test
+    fun `concurrent caller during an SWR background refresh joins it and fires once`() {
+        val response = WorkflowsListResponse(workflows = emptyList())
+        val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(firstSlot), onError = any())
+        } answers { firstSlot.captured(response) }
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Stale. Keep the SWR background refresh unresolved so a second caller can arrive mid-flight.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        val pendingSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(pendingSlot), onError = any())
+        } answers { }
+
+        var firstCompleted = false
+        var secondCompleted = false
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { firstCompleted = true }
+        assertThat(firstCompleted).isTrue // vended immediately
+
+        // Second caller while the background refresh is in flight: joins, fires no new fetch.
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { secondCompleted = true }
+        assertThat(secondCompleted).isFalse
+
+        // Settle the background refresh; the joined caller fires exactly once.
+        pendingSlot.captured(response)
+        assertThat(secondCompleted).isTrue
+
+        // Initial populate + one background refresh = 2 fetches; the joined caller added none.
+        verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+    }
+
     // endregion getWorkflowsList
 
     // region workflowIdForOfferingId
