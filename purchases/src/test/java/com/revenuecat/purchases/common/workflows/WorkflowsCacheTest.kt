@@ -374,6 +374,23 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `hasCachedWorkflowsList is false before any list is cached`() {
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isFalse
+    }
+
+    @Test
+    fun `hasCachedWorkflowsList is true after caching a list`() {
+        workflowsCache.cacheWorkflowsList(WorkflowsListResponse(workflows = emptyList()), emptyMap())
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isTrue
+    }
+
+    @Test
+    fun `hasCachedWorkflowsList is true after an in-memory-only restore`() {
+        workflowsCache.cacheWorkflowsListInMemory(WorkflowsListResponse(workflows = emptyList()), emptyMap())
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isTrue
+    }
+
+    @Test
     fun `different workflowIds are cached independently`() {
         val first = mockk<WorkflowDataResult>()
         val second = mockk<WorkflowDataResult>()
