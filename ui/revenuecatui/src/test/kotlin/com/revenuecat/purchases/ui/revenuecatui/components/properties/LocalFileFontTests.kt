@@ -57,6 +57,20 @@ class LocalFileFontTests {
     }
 
     @Test
+    fun `loadBlocking falls back without throwing when the loader returns null`() {
+        val font = localFileFont(
+            file = anyFile,
+            weight = FontWeight(600),
+            style = FontStyle.Normal,
+            fileTypefaceLoader = { null },
+        )
+
+        val result = font.loadBlocking()
+
+        assertThat(result).isNotNull
+    }
+
+    @Test
     @Config(sdk = [24])
     fun `loadBlocking fallback is Typeface DEFAULT below API 28`() {
         val font = localFileFont(

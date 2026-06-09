@@ -69,6 +69,7 @@ private object LocalFileFontTypefaceLoader : AndroidFont.TypefaceLoader {
         }
         return try {
             localFont.fileTypefaceLoader.load(localFont.file)
+                ?: fallbackTypeface(localFont, reason = "loader returned null")
         } catch (e: Throwable) {
             fallbackTypeface(localFont, reason = e.message ?: e.javaClass.simpleName)
         }

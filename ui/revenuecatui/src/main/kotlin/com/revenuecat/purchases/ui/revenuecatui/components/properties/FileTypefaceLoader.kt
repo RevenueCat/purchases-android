@@ -10,5 +10,5 @@ import java.io.File
  * file-based loaders can be substituted in tests.
  */
 internal fun interface FileTypefaceLoader {
-    fun load(file: File): Typeface
+    fun load(file: File): Typeface?
 }
