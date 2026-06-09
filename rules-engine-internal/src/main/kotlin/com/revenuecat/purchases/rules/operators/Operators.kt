@@ -68,6 +68,13 @@ internal object Operators {
         // Iteration
         "some" -> IterationOperators.opSome(args, vars)
         "all" -> IterationOperators.opAll(args, vars)
+        "none" -> IterationOperators.opNone(args, vars)
+        "map" -> IterationOperators.opMap(args, vars)
+        "filter" -> IterationOperators.opFilter(args, vars)
+        "reduce" -> IterationOperators.opReduce(args, vars)
+
+        // Miscellaneous
+        "log" -> MiscOperators.opLog(args, vars)
 
         else -> throw RuleError.UnsupportedOperator(op)
     }
