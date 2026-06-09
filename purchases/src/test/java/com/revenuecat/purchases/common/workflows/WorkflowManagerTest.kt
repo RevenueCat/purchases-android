@@ -1601,6 +1601,98 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `joiner during an SWR background refresh fires exactly once when the refresh fails`() {
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        // Populate the cache at t=0 (auto-resolve the first fetch).
+        val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(firstSlot), onError = any())
+        } answers { firstSlot.captured(response) }
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Advance past the TTL: stale-but-present. Hold the SWR background refresh in flight by
+        // capturing both slots but resolving neither.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        val pendingSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        val pendingErrorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflows(
+                any(),
+                any(),
+                type = any(),
+                onSuccess = capture(pendingSuccessSlot),
+                onError = capture(pendingErrorSlot),
+            )
+        } answers { }
+
+        var firstCompleted = false
+        var secondCompleted = false
+
+        // First caller: SWR → vended immediately from stale cache.
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { firstCompleted = true }
+        assertThat(firstCompleted).isTrue()
+
+        // Second caller arrives while the background refresh is in flight: joins the batch.
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { secondCompleted = true }
+        assertThat(secondCompleted).isFalse()
+
+        // Settle the background refresh with a 4xx SHOULD_NOT_FALLBACK error (synchronous path).
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns null
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+        pendingErrorSlot.captured(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "forbidden"),
+            GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+        )
+
+        // Joiner must fire exactly once even though the refresh failed.
+        assertThat(secondCompleted).isTrue()
+    }
+
+    @Test
+    fun `SWR background refresh updates the cached offeringId map on success`() {
+        // Populate cache at t=0 with wf_old mapped to offeringId "default".
+        val oldResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_old", displayName = "Old", offeringId = "default", prefetch = false),
+            ),
+        )
+        val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(firstSlot), onError = any())
+        } answers { firstSlot.captured(oldResponse) }
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_old")
+
+        // Advance past the TTL. Capture the SWR background fetch without resolving it.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        val pendingSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(pendingSuccessSlot), onError = any())
+        } answers { }
+
+        // Trigger the SWR fetch; stale map still reads wf_old.
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_old")
+
+        // Resolve the background refresh with a new mapping wf_new.
+        val newResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_new", displayName = "New", offeringId = "default", prefetch = false),
+            ),
+        )
+        pendingSuccessSlot.captured(newResponse)
+
+        // The cached map must now reflect the refreshed value.
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_new")
+    }
+
+    @Test
     fun `concurrent caller during an SWR background refresh joins it and fires once`() {
         val response = WorkflowsListResponse(workflows = emptyList())
         val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
