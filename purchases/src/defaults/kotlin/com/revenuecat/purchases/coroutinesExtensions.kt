@@ -212,10 +212,12 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 /**
  * Fetches reward verification status for a single client transaction id.
  *
- * @throws [PurchasesException] with a [PurchasesError] if an error occurs while fetching the status.
+ * @throws [RewardVerificationException] (a [PurchasesException] subtype) with a [PurchasesError] if an error
+ * occurs while fetching the status. Inspect [RewardVerificationException.isServerError] to distinguish transient
+ * HTTP 5xx failures (retryable) from deterministic ones.
  */
 @JvmSynthetic
-@Throws(PurchasesException::class)
+@Throws(RewardVerificationException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitGetRewardVerificationResult(
     clientTransactionId: String,
