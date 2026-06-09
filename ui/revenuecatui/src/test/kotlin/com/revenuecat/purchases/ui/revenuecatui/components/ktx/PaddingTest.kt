@@ -6,8 +6,11 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(InternalRevenueCatAPI::class)
+@RunWith(RobolectricTestRunner::class)
 internal class PaddingTest {
 
     @Test
