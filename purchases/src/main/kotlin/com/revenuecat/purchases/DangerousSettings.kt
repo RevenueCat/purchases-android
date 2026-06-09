@@ -29,7 +29,14 @@ public class DangerousSettings internal constructor(
     @property:InternalRevenueCatAPI
     public val useWorkflows: Boolean = false,
 ) : Parcelable {
-    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false, false)
+    @OptIn(InternalRevenueCatAPI::class)
+    public constructor(autoSyncPurchases: Boolean = true) : this(
+        autoSyncPurchases = autoSyncPurchases,
+        customEntitlementComputation = false,
+        uiPreviewMode = false,
+        applyObfuscatedAccountIdToSubscriptionChanges = false,
+        useWorkflows = false,
+    )
 
     public companion object {
         /**

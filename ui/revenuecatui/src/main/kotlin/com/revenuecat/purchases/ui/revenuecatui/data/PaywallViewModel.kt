@@ -163,6 +163,9 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
+    // Snapshot of dangerousSettings.useWorkflows read once at ViewModel construction (matching the
+    // prior BuildConfig behaviour). A later Purchases.configure() with different settings won't
+    // affect an already-created ViewModel.
     private val useWorkflowsEndpoint: Boolean =
         if (Purchases.isConfigured) {
             Purchases.sharedInstance.currentConfiguration.dangerousSettings.useWorkflows
