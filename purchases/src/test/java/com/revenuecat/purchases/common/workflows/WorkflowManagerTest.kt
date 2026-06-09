@@ -711,6 +711,72 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflow stale hit does not re-pin from disk when the background refresh fails`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(response) } returns staleResult
+
+        // A persisted envelope exists on disk — the SWR background refresh must NOT serve it. The
+        // caller already has the stale value, so re-pinning from disk would only suppress the retry
+        // (and could overwrite a newer in-memory value with an older prefetched one).
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        // First backend call succeeds (populates the cache); the second fails fallback-eligibly.
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        var call = 0
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            call++
+            if (call == 1) {
+                successSlot.captured(response)
+            } else {
+                errorSlot.captured(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "boom"),
+                    GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                )
+            }
+        }
+
+        // Populate at t=0.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale call at t=6min: serves stale, the background refresh fails.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        var served: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Caller got the stale value...
+        assertThat(served).isSameAs(staleResult)
+        // ...the disk envelope was never consulted on the background refresh...
+        verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
+        // ...and the entry stays stale with its original value, not re-pinned fresh from disk.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(staleResult)
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isTrue
+    }
+
+    @Test
     fun `getWorkflow with staleWhileRevalidate false blocks on the refetch instead of serving stale`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
         val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)

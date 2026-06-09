@@ -81,9 +81,15 @@ internal class WorkflowManager(
             cached != null && staleWhileRevalidate -> {
                 // Serve the stale value immediately, then refresh the cache in the background.
                 // The caller already has a usable value, so the refresh delivers no callbacks: a
-                // success only updates the cache, and a failure is logged and swallowed. Mirrors
-                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. Concurrent stale callers can
-                // each fire a refresh; this is not deduplicated, matching the offerings stale path.
+                // success only updates the cache, and a failure is logged and swallowed — the entry
+                // stays stale and the next render retries. Mirrors
+                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. The disk fallback is disabled
+                // here on purpose (allowDiskFallback = false): the caller already has the stale value,
+                // so re-pinning from the persisted envelope would buy nothing and could overwrite a
+                // newer on-demand-fetched in-memory value with an older prefetched one, suppressing the
+                // retry for a full TTL. Disk fallback is only for callers that have nothing to serve
+                // (the foreground miss and the prefetch recovery path below). Concurrent stale callers
+                // can each fire a refresh; this is not deduplicated, matching the offerings stale path.
                 onSuccess(cached)
                 fetchAndCacheWorkflow(
                     appUserID = appUserID,
@@ -91,6 +97,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    allowDiskFallback = false,
                     onSuccess = {},
                     onError = { error ->
                         errorLog {
@@ -101,13 +108,15 @@ internal class WorkflowManager(
                 )
             }
             else -> {
-                // Miss, or stale with SWR disabled (the prefetch path): block on the fetch.
+                // Miss, or stale with SWR disabled (the prefetch path): block on the fetch. These
+                // callers have nothing to serve yet, so the disk fallback applies.
                 fetchAndCacheWorkflow(
                     appUserID = appUserID,
                     workflowId = workflowId,
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    allowDiskFallback = true,
                     onSuccess = onSuccess,
                     onError = onError,
                 )
@@ -122,6 +131,7 @@ internal class WorkflowManager(
         appInBackground: Boolean,
         callbackDispatcher: Dispatcher?,
         persistEnvelopeOnResolve: Boolean,
+        allowDiskFallback: Boolean,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -152,15 +162,21 @@ internal class WorkflowManager(
         }
         val onErrorWithFallback: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit =
             { error, behavior ->
-                if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                when {
+                    // SWR background refresh: the caller already has the stale value. Don't touch the
+                    // cache — leave the entry stale so the next render retries, and don't re-pin from
+                    // disk. (Invalidating would be a no-op here: this path is only reached for an
+                    // already-stale entry.)
+                    !allowDiskFallback -> onError(error)
                     // A 4xx means the server intentionally changed/removed this workflow. Don't serve
                     // the saved copy; invalidate the in-memory entry so the next call retries rather
                     // than serving a still-cached value — mirrors the list's
                     // invalidateWorkflowsListTimestamp and OfferingsManager's forceCacheStale on 4xx.
-                    workflowsCache.invalidateWorkflowTimestamp(workflowId)
-                    onError(error)
-                } else {
-                    scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
+                    behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK -> {
+                        workflowsCache.invalidateWorkflowTimestamp(workflowId)
+                        onError(error)
+                    }
+                    else -> scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
                 }
             }
         if (callbackDispatcher != null) {
