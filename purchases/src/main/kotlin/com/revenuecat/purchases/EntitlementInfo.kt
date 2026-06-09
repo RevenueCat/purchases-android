@@ -289,6 +289,7 @@ public enum class Store {
 }
 
 internal object StoreSerializer : EnumDeserializerWithDefault<Store>(
+    serialName = "com.revenuecat.purchases.Store",
     defaultValue = Store.UNKNOWN_STORE,
     typeForValue = { value -> value.stringValue },
 )
