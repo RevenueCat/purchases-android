@@ -157,7 +157,7 @@ internal class WorkflowManager(
                 appInBackground = appInBackground,
                 callbackDispatcher = callbackDispatcher,
                 onSuccess = onSuccessHandler,
-                onError = onError,
+                onError = { error, _ -> onError(error) },
             )
         } else {
             backend.getWorkflow(
@@ -165,7 +165,7 @@ internal class WorkflowManager(
                 workflowId = workflowId,
                 appInBackground = appInBackground,
                 onSuccess = onSuccessHandler,
-                onError = onError,
+                onError = { error, _ -> onError(error) },
             )
         }
     }

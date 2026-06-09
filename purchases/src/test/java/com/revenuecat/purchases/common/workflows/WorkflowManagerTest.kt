@@ -104,7 +104,7 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow propagates backend errors`() {
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflow(
                 appUserID = "user_1",
@@ -114,7 +114,7 @@ class WorkflowManagerTest {
                 onError = capture(errorSlot),
             )
         } answers {
-            errorSlot.captured(expectedError)
+            errorSlot.captured(expectedError, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
         }
 
         var error: PurchasesError? = null
@@ -495,7 +495,7 @@ class WorkflowManagerTest {
 
         // First backend call succeeds (populates the cache); the second fails (background refresh).
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         var call = 0
         every {
             mockBackend.getWorkflow(
@@ -510,7 +510,10 @@ class WorkflowManagerTest {
             if (call == 1) {
                 successSlot.captured(response)
             } else {
-                errorSlot.captured(PurchasesError(PurchasesErrorCode.NetworkError, "boom"))
+                errorSlot.captured(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "boom"),
+                    GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                )
             }
         }
 
@@ -1270,7 +1273,7 @@ class WorkflowManagerTest {
         } answers { listSuccessSlot.captured(response) }
 
         val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
-        val detailErrorB = slot<(PurchasesError) -> Unit>()
+        val detailErrorB = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any(), any())
         } just Runs
@@ -1287,7 +1290,10 @@ class WorkflowManagerTest {
         detailSuccessA.captured(WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk()))
         assertThat(completed).isFalse()
 
-        detailErrorB.captured(PurchasesError(PurchasesErrorCode.NetworkError, "fail"))
+        detailErrorB.captured(
+            PurchasesError(PurchasesErrorCode.NetworkError, "fail"),
+            GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+        )
         assertThat(completed).isTrue()
     }
 
