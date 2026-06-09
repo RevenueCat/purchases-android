@@ -169,6 +169,13 @@ internal class WorkflowsCache(
         }
 
     /**
+     * Returns the persisted envelope for [workflowId], or null when the key is absent or
+     * the on-disk map can't be read. Convenience wrapper over [cachedWorkflowDetailEnvelopesFromDisk].
+     */
+    fun cachedWorkflowDetailEnvelopeFromDisk(workflowId: String): WorkflowDetailResponse? =
+        cachedWorkflowDetailEnvelopesFromDisk()?.get(workflowId)
+
+    /**
      * Drops persisted envelopes whose workflowId is no longer in the latest list. Because only
      * successfully-prefetched workflows are ever written here (see [cacheWorkflowDetailEnvelope]),
      * this prune removes stale prefetch envelopes for workflows the backend has stopped sending.

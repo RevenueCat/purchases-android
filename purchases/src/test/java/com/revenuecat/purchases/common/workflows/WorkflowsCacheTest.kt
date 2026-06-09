@@ -273,6 +273,25 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `cachedWorkflowDetailEnvelopeFromDisk returns the matching envelope`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/x.json","hash":"h"},"wf_2":{"action":"use_cdn","url":"u2","hash":"h2"}}"""
+
+        val envelope = workflowsCache.cachedWorkflowDetailEnvelopeFromDisk("wf_1")
+
+        assertThat(envelope).isNotNull
+        assertThat(envelope!!.url).isEqualTo("https://cdn/x.json")
+    }
+
+    @Test
+    fun `cachedWorkflowDetailEnvelopeFromDisk returns null for an absent key`() {
+        every { deviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/x.json","hash":"h"}}"""
+
+        assertThat(workflowsCache.cachedWorkflowDetailEnvelopeFromDisk("wf_missing")).isNull()
+    }
+
+    @Test
     fun `cacheWorkflowsList prunes persisted envelopes not in the new list`() {
         every { deviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"wf_old":{"action":"use_cdn","url":"u1","hash":"h1"},"wf_keep":{"action":"use_cdn","url":"u2","hash":"h2"}}"""
