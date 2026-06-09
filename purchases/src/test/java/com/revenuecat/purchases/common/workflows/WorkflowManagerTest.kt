@@ -380,6 +380,7 @@ class WorkflowManagerTest {
 
         assertThat(receivedError).isEqualTo(expectedError)
         coVerify(exactly = 0) { mockResolver.resolve(any()) }
+        verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
     }
 
     @Test
@@ -415,6 +416,49 @@ class WorkflowManagerTest {
         )
 
         assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @Test
+    fun `getWorkflow surfaces original error when fallback resolve throws`() {
+        val originalError = PurchasesError(PurchasesErrorCode.NetworkError, "server error")
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } throws IllegalStateException("cdn unavailable")
+
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(
+                originalError,
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        var successCalled = false
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { successCalled = true },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(originalError)
+        assertThat(successCalled).isFalse()
     }
 
     // endregion detail fetch status-based fallback
