@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.GetWorkflowsErrorHandlingBehavior
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.toPurchasesError
@@ -20,6 +21,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
+@Suppress("TooManyFunctions")
 internal class WorkflowManager(
     private val backend: Backend,
     private val workflowDetailResolver: WorkflowDetailResolver,
@@ -42,9 +44,16 @@ internal class WorkflowManager(
     }
 
     /**
-     * Fetches and resolves a single workflow, serving a fresh in-memory cache hit when one exists
-     * and otherwise fetching from the backend.
+     * Fetches and resolves a single workflow using stale-while-revalidate, mirroring
+     * [com.revenuecat.purchases.common.offerings.OfferingsManager]'s offerings serving:
+     * a fresh cache hit is served directly; a stale-but-present hit is served immediately and the
+     * cache is refreshed in the background (no callbacks, failures logged); a miss fetches from the
+     * backend and delivers the outcome through [onSuccess]/[onError].
      *
+     * @param staleWhileRevalidate when true (the default, used by the on-demand render path), a
+     * stale-but-present cached workflow is served immediately with a background refresh. When false
+     * (the prefetch path), a stale workflow blocks on a full refetch instead — so prefetch keeps
+     * forcing a fresh fetch and persisting its envelope rather than serving a stale value.
      * @param persistEnvelopeOnResolve when true, also persists the raw detail envelope to disk after
      * a successful resolve, so it survives an app restart and can be re-resolved while the backend is
      * down (see [getWorkflowsList]'s recovery path). Only the prefetch path sets this: prefetched
@@ -62,12 +71,60 @@ internal class WorkflowManager(
         onError: (PurchasesError) -> Unit,
         callbackDispatcher: Dispatcher? = null,
         persistEnvelopeOnResolve: Boolean = false,
+        staleWhileRevalidate: Boolean = true,
     ) {
         val cached = workflowsCache.cachedWorkflow(workflowId)
-        if (cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground)) {
-            onSuccess(cached)
-            return
+        when {
+            cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground) -> {
+                onSuccess(cached)
+            }
+            cached != null && staleWhileRevalidate -> {
+                // Serve the stale value immediately, then refresh the cache in the background.
+                // The caller already has a usable value, so the refresh delivers no callbacks: a
+                // success only updates the cache, and a failure is logged and swallowed. Mirrors
+                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. Concurrent stale callers can
+                // each fire a refresh; this is not deduplicated, matching the offerings stale path.
+                onSuccess(cached)
+                fetchAndCacheWorkflow(
+                    appUserID = appUserID,
+                    workflowId = workflowId,
+                    appInBackground = appInBackground,
+                    callbackDispatcher = callbackDispatcher,
+                    persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    onSuccess = {},
+                    onError = { error ->
+                        errorLog {
+                            "Background workflow refresh failed for $workflowId: " +
+                                error.underlyingErrorMessage
+                        }
+                    },
+                )
+            }
+            else -> {
+                // Miss, or stale with SWR disabled (the prefetch path): block on the fetch.
+                fetchAndCacheWorkflow(
+                    appUserID = appUserID,
+                    workflowId = workflowId,
+                    appInBackground = appInBackground,
+                    callbackDispatcher = callbackDispatcher,
+                    persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    onSuccess = onSuccess,
+                    onError = onError,
+                )
+            }
         }
+    }
+
+    @Suppress("LongParameterList")
+    private fun fetchAndCacheWorkflow(
+        appUserID: String,
+        workflowId: String,
+        appInBackground: Boolean,
+        callbackDispatcher: Dispatcher?,
+        persistEnvelopeOnResolve: Boolean,
+        onSuccess: (WorkflowDataResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
         val onSuccessHandler: (WorkflowDetailResponse) -> Unit = { response ->
             scope.launch {
                 // resolve() can fail in several ways (missing inline data, CDN fetch/parse failures,
@@ -116,30 +173,43 @@ internal class WorkflowManager(
     /**
      * Fetches the workflows list, then prefetches all entries marked `prefetch = true`.
      *
+     * [forceRefresh] fetches a fresh list even when the cached one is still within its TTL. It is set
+     * after a fresh offerings network response so the offeringId → workflowId map realigns with the
+     * offerings the caller just received, since the workflows list otherwise tracks only a time TTL.
+     *
      * Offerings delivery is gated on [onComplete] (see
      * [com.revenuecat.purchases.common.offerings.OfferingsManager]): it is invoked once the whole
      * sequence settles — list fetched, every prefetch finished or failed — so it must always fire
      * exactly once, otherwise offerings would never be delivered to the caller.
      *
-     * Concurrent callers for the same [appUserID] while a request is in-flight are deduplicated:
-     * the second call queues its [onComplete] and returns without a new network request, then all
-     * pending callbacks for that user fire together when the in-flight sequence finishes. A call
-     * for a different user starts its own fetch rather than joining the in-flight one.
+     * Concurrent callers for the same [appUserID] while a request is in-flight are deduplicated: the
+     * second call queues its [onComplete] and returns without a new network request, then all pending
+     * callbacks for that user fire together when the in-flight sequence finishes. A call for a
+     * different user starts its own fetch rather than joining the in-flight one. Note this join
+     * ignores [forceRefresh]: an in-flight batch is not interrupted, so a forced refresh that arrives
+     * while a batch is running joins it instead of starting a new fetch. That window self-heals on the
+     * next fetch.
      */
-    fun getWorkflowsList(appUserID: String, appInBackground: Boolean, onComplete: () -> Unit = {}) {
+    fun getWorkflowsList(
+        appUserID: String,
+        appInBackground: Boolean,
+        forceRefresh: Boolean = false,
+        onComplete: () -> Unit = {},
+    ) {
         // Decide under the lock, act outside it so onComplete never fires while holding it.
         val startFetch = synchronized(callbackLock) {
             val inFlight = pendingCompletionCallbacks[appUserID]
             if (inFlight != null) {
-                // Already fetching for this user: queue onto it. Joining ignores cache freshness on
-                // purpose — the list response stamps the cache fresh mid-sequence, before its prefetch
-                // finishes, so a freshness check would let this caller complete early.
+                // Already fetching for this user: queue onto it. Joining ignores cache freshness and
+                // forceRefresh on purpose — the list response stamps the cache fresh mid-sequence,
+                // before its prefetch finishes, so a freshness check would let this caller complete
+                // early, and an in-flight batch is never interrupted.
                 inFlight.add(onComplete)
                 return
             }
-            // Nothing in flight: open a batch and fetch only if the cached list is stale.
+            // Nothing in flight: open a batch and fetch when forced or when the cached list is stale.
             pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
-            workflowsCache.isWorkflowsListCacheStale(appInBackground)
+            forceRefresh || workflowsCache.isWorkflowsListCacheStale(appInBackground)
         }
 
         // Fresh cache and nothing in flight: complete now. Otherwise the request's onSuccess/onError
@@ -155,6 +225,10 @@ internal class WorkflowManager(
                     // Drop workflows without an offeringId: they can't be reached via
                     // workflowIdForOfferingId, so caching or prefetching them is wasted work.
                     val filtered = response.onlyWorkflowsWithOfferingId()
+                    // Clear detail caches after a successful fetch so the prefetch loop below is a
+                    // guaranteed cache miss and always populates fresh data. Cleared here rather than
+                    // before the network call so a failed fetch leaves in-memory details intact.
+                    if (forceRefresh) workflowsCache.clearWorkflowDetailCaches()
                     workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
 
                     val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
@@ -173,32 +247,57 @@ internal class WorkflowManager(
                         completePendingCallbacks(appUserID)
                     }
                 },
-                onError = { error ->
+                onError = { error, behavior ->
                     errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
-                    // Restore the in-memory cache from disk without rewriting it — disk already holds
-                    // this payload.
-                    workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
-                        val filtered = response.onlyWorkflowsWithOfferingId()
-                        workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
-                    }
-                    val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
-                    if (envelopes.isEmpty()) {
+                    if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                        // A 4xx means the server intentionally changed/removed these workflows. Don't
+                        // resurrect a stale list from disk; just settle the callbacks so offerings
+                        // delivery isn't stranded. Invalidate the timestamp so the next non-forced call
+                        // retries rather than serving a still-fresh in-memory list — mirrors
+                        // OfferingsManager.handleErrorFetchingOfferings calling forceCacheStale().
+                        workflowsCache.invalidateWorkflowsListTimestamp()
                         completePendingCallbacks(appUserID)
                     } else {
-                        scope.launch {
-                            // Re-resolve persisted envelopes into the in-memory cache, mirroring the
-                            // success-path prefetch loop. A failed re-resolve is logged and does not
-                            // fail its siblings. completePendingCallbacks still fires exactly once.
-                            coroutineScope {
-                                envelopes.forEach { (workflowId, envelope) ->
-                                    launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
-                                }
-                            }
-                            completePendingCallbacks(appUserID)
-                        }
+                        restoreWorkflowsListFromDisk(appUserID)
                     }
                 },
             )
+        }
+    }
+
+    /**
+     * Restores the workflows list and persisted detail envelopes from disk after a fallback-eligible
+     * fetch failure (transport error, 5xx, or malformed body), then settles pending callbacks. The
+     * in-memory cache is rewritten from disk without re-persisting it — disk already holds this payload.
+     * [completePendingCallbacks] always fires exactly once.
+     */
+    private fun restoreWorkflowsListFromDisk(appUserID: String) {
+        val restoredFromDisk = workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
+            val filtered = response.onlyWorkflowsWithOfferingId()
+            workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
+        } != null
+        // Mirror OfferingsManager.handleErrorFetchingOfferings: when there is no disk cache to fall
+        // back on, force the list stale so the next call retries. When a disk restore did succeed,
+        // cacheWorkflowsListInMemory already stamped a fresh timestamp, so we leave it alone — same as
+        // offerings leaving the cache fresh after createAndCacheOfferings runs on the disk-fallback path.
+        if (!restoredFromDisk) {
+            workflowsCache.invalidateWorkflowsListTimestamp()
+        }
+        val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
+        if (envelopes.isEmpty()) {
+            completePendingCallbacks(appUserID)
+        } else {
+            scope.launch {
+                // Re-resolve persisted envelopes into the in-memory cache, mirroring the success-path
+                // prefetch loop. A failed re-resolve is logged and does not fail its siblings.
+                // completePendingCallbacks still fires exactly once.
+                coroutineScope {
+                    envelopes.forEach { (workflowId, envelope) ->
+                        launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
+                    }
+                }
+                completePendingCallbacks(appUserID)
+            }
         }
     }
 
@@ -215,6 +314,7 @@ internal class WorkflowManager(
                 appInBackground = appInBackground,
                 callbackDispatcher = prefetchDispatcher,
                 persistEnvelopeOnResolve = true,
+                staleWhileRevalidate = false,
                 onSuccess = { continuation.safeResume(Unit) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }
@@ -245,15 +345,6 @@ internal class WorkflowManager(
 
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowsCache.workflowIdForOfferingId(offeringId)
-
-    /**
-     * Marks the workflows list stale so the next [getWorkflowsList] refetches it. Called when
-     * offerings are refetched off their normal TTL (forced/locale change) to keep the workflow map
-     * aligned with the offerings the caller just received.
-     */
-    fun forceWorkflowsListCacheStale() {
-        workflowsCache.forceWorkflowsListCacheStale()
-    }
 
     private fun completePendingCallbacks(appUserID: String) {
         val callbacks = synchronized(callbackLock) {

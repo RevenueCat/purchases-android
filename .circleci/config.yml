@@ -317,38 +317,6 @@ jobs:
       - store_artifacts:
           path: build/reports
 
-  test-galaxy:
-    <<: *android-executor
-    shell: /bin/bash --login -o pipefail
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - android/restore_gradle_cache
-      - run:
-          name: Validate Galaxy API Signature with Metalava
-          command: |
-            ./gradlew :feature:galaxy:metalavaGenerateSignatureBc8Release --no-daemon
-            git diff --exit-code -- feature/galaxy/api.txt
-      - run:
-          name: Compile API Tester with Galaxy Files
-          command: |
-            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
-      - run:
-          name: Run Galaxy Unit Tests
-          command: |
-            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
-      - run:
-          name: Collect JUnit XMLs
-          when: always
-          command: |
-            mkdir -p build/test-results-collected
-            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
-      - store_test_results:
-          path: build/test-results-collected
-      - store_artifacts:
-          path: build/reports
-
   test-rules-engine-internal:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -1092,9 +1060,6 @@ workflows:
       - test_detekt_rules:
           requires:
             - prepare-tests
-      - test-galaxy:
-          requires:
-            - prepare-tests
       - test-rules-engine-internal:
           requires:
             - prepare-tests
@@ -1134,7 +1099,6 @@ workflows:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
-            - test-galaxy
             - test-rules-engine-internal
             - test_cec_debug
             - test_cec_release

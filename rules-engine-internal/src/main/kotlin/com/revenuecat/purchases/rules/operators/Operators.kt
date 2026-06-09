@@ -49,6 +49,10 @@ internal object Operators {
         "/" -> ArithmeticOperators.opDiv(args, vars)
         "%" -> ArithmeticOperators.opMod(args, vars)
 
+        // Min and max
+        "min" -> MinMaxOperators.opMin(args, vars)
+        "max" -> MinMaxOperators.opMax(args, vars)
+
         // Comparison
         "<" -> ComparisonOperators.opLt(args, vars)
         "<=" -> ComparisonOperators.opLe(args, vars)

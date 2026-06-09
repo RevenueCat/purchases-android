@@ -61,6 +61,17 @@ internal class WorkflowsCache(
         cached.cacheInstance(result)
     }
 
+    /**
+     * Clears all resolved workflow detail values from the in-memory cache. Used when a
+     * force-refresh is triggered (pull-to-refresh via offerings) so the subsequent prefetch is a
+     * guaranteed cache miss and always fetches fresh data from the backend, rather than serving
+     * a still-within-TTL cached value. The offeringId map is unaffected.
+     */
+    @Synchronized
+    fun clearWorkflowDetailCaches() {
+        cachedWorkflows.clear()
+    }
+
     // endregion Workflow detail cache
 
     // region Workflows list cache
@@ -69,15 +80,8 @@ internal class WorkflowsCache(
     fun isWorkflowsListCacheStale(appInBackground: Boolean): Boolean =
         workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
 
-    /**
-     * Marks the in-memory list cache stale so the next fetch refreshes it, mirroring
-     * [com.revenuecat.purchases.common.offerings.OfferingsCache.forceCacheStale]. The current list and
-     * offeringId map are kept (so [workflowIdForOfferingId] still resolves during the refetch); only
-     * the freshness timestamp is dropped. Used to keep workflows aligned with offerings when offerings
-     * are refetched off-cycle (forced/locale change), since workflows otherwise track only a time TTL.
-     */
     @Synchronized
-    fun forceWorkflowsListCacheStale() {
+    fun invalidateWorkflowsListTimestamp() {
         workflowsListCachedObject.clearCacheTimestamp()
     }
 
@@ -165,11 +169,11 @@ internal class WorkflowsCache(
         }
 
     /**
-     * Drops persisted envelopes whose workflowId is no longer in the latest list. This is the
-     * keyed-map equivalent of how [com.revenuecat.purchases.common.offerings.OfferingsCache] stays
-     * bounded by wholesale-replacing its single response blob: the persisted set always equals what
-     * the latest backend response says exists, so workflows the backend stopped sending don't
-     * linger on disk.
+     * Drops persisted envelopes whose workflowId is no longer in the latest list. Because only
+     * successfully-prefetched workflows are ever written here (see [cacheWorkflowDetailEnvelope]),
+     * this prune removes stale prefetch envelopes for workflows the backend has stopped sending.
+     * It is the keyed-map equivalent of how [com.revenuecat.purchases.common.offerings.OfferingsCache]
+     * stays bounded by wholesale-replacing its single response blob.
      */
     @Synchronized
     private fun pruneWorkflowDetailEnvelopesToList(workflowIds: Set<String>) {
