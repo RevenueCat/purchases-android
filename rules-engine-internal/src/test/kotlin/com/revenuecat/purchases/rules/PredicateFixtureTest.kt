@@ -23,7 +23,7 @@ internal class PredicateFixtureTest(
 
     @Test
     fun evaluatesPredicateFixture() {
-        PredicateConformanceRunner.run(fixture) { loggerRule.warnings }
+        PredicateConformanceRunner.run(fixture, { loggerRule.warnings }, { loggerRule.logs })
     }
 
     companion object {
