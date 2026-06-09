@@ -1718,6 +1718,31 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflowsList invalidates list timestamp on a non-fallback (4xx) error`() {
+        // Stamp the in-memory cache as fresh so the cache does not look stale before the 4xx.
+        val recentDate = Date(1_000_000)
+        every { mockDateProvider.now } returns recentDate
+        workflowsCache.cacheWorkflowsListInMemory(
+            WorkflowsListResponse(workflows = emptyList()),
+            emptyMap(),
+        )
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isFalse()
+
+        val error = PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "forbidden")
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers { errorSlot.captured(error, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) }
+
+        // forceRefresh bypasses the freshness check, matching the real caller (createAndCacheOfferings).
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false, forceRefresh = true) {}
+
+        // Timestamp must be cleared so a subsequent non-forced call retries rather than serving a
+        // still-fresh in-memory list — mirrors OfferingsManager.handleErrorFetchingOfferings.
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue()
+    }
+
+    @Test
     fun `getWorkflowsList completes all concurrent callers exactly once on a non-fallback (4xx) error`() {
         val cachedJson = """{"workflows":[{"id":"wf_1","display_name":"Flow","offering_id":"default","prefetch":false}]}"""
         val error = PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "forbidden")

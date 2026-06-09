@@ -252,7 +252,10 @@ internal class WorkflowManager(
                     if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
                         // A 4xx means the server intentionally changed/removed these workflows. Don't
                         // resurrect a stale list from disk; just settle the callbacks so offerings
-                        // delivery isn't stranded. Caches are left as they are (no restore, no purge).
+                        // delivery isn't stranded. Invalidate the timestamp so the next non-forced call
+                        // retries rather than serving a still-fresh in-memory list — mirrors
+                        // OfferingsManager.handleErrorFetchingOfferings calling forceCacheStale().
+                        workflowsCache.invalidateWorkflowsListTimestamp()
                         completePendingCallbacks(appUserID)
                     } else {
                         restoreWorkflowsListFromDisk(appUserID)
