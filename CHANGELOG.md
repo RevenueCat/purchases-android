@@ -3,7 +3,6 @@
 ### ✨ New Features
 * Add presented offering context to custom paywall events (#3424) via Rick (@rickvdl)
 
-## RevenueCatUI SDK
 ### 🔄 Other Changes
 * Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
 * Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
@@ -24,7 +23,6 @@
 #### ✨ New Features
 * [Galaxy Store]: Upgrade Samsung IAP SDK to version 6.5.2 + use Maven distribution (#3492) via Will Taylor (@fire-at-will)
 
-## RevenueCatUI SDK
 ### 🔄 Other Changes
 * Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
 * Remove `workflow_trigger` interaction event (#3467) via Cesar de la Vega (@vegaro)
@@ -37,7 +35,6 @@
 ### 🐞 Bugfixes
 * Fix RTL layout issues in paywall components (#3493) via Tarek M. Ben Lechhab (@bilqisium)
 
-## RevenueCatUI SDK
 ### 🔄 Other Changes
 * Rebuild workflow step states on color scheme change (#3419) via Cesar de la Vega (@vegaro)
 * Update baseline profiles (#3490) via RevenueCat Git Bot (@RCGitBot)
@@ -128,7 +125,6 @@
 ### 🐞 Bugfixes
 * Fix null Placements when offering_ids_by_placement is absent (#3254) via Dan Pannasch (@dpannasch)
 
-## RevenueCatUI SDK
 ### 🔄 Other Changes
 * Wire multipage workflow navigation into PaywallViewModel (#3381) via Cesar de la Vega (@vegaro)
 * Add `triggerType` to `WorkflowTrigger` (#3393) via Cesar de la Vega (@vegaro)
@@ -152,7 +148,6 @@
 * fix: move Google BillingClient connection off the main thread (#3369) via Toni Rico (@tonidero)
 * [EXTERNAL] fix(google): guard showInAppMessages against BillingClient runtime crashes (#3367) by @matteinn (#3368) via Monika Mateska (@MonikaMateska)
 
-## RevenueCatUI SDK
 ### 🔄 Other Changes
 * Add Workflows network layer (#3300) via Cesar de la Vega (@vegaro)
 * Fix `revenuecat.useWorkflowsEndpoint` compiler flag (#3374) via Cesar de la Vega (@vegaro)
