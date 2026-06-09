@@ -1172,6 +1172,61 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `prefetch detail fetch falling back on 5xx re-pins the stale disk envelope as fresh`() {
+        // A list with one prefetch=true workflow. The list fetch succeeds; the per-workflow detail
+        // fetch then 5xxs while a previously-persisted envelope for it still sits on disk.
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "W", offeringId = "off_1", prefetch = true),
+            ),
+        )
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(listResponse) }
+
+        // The persisted (old) envelope on disk and the value it resolves to.
+        val diskEnvelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val diskResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(diskEnvelope) } returns diskResult
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        // The prefetch detail fetch fails fallback-eligible (5xx) on the prefetch dispatcher.
+        val detailErrorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(detailErrorSlot),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers {
+            detailErrorSlot.captured(
+                PurchasesError(PurchasesErrorCode.NetworkError, "server boom"),
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // The prefetch, whose job is to refresh, instead re-resolved the OLD disk envelope and cached
+        // it. The detail backend was hit exactly once (no successful refresh).
+        coVerify(exactly = 1) { mockResolver.resolve(diskEnvelope) }
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(diskResult)
+        // And cacheWorkflow re-stamped it fresh, so the on-demand render path will serve this disk
+        // value without re-hitting the backend until the entry goes stale again.
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isFalse()
+    }
+
+    @Test
     fun `on-demand getWorkflow runs on the default dispatcher, not the prefetch one`() {
         every { mockBackend.getWorkflow(any(), any(), any(), any(), any(), any()) } answers { }
 
