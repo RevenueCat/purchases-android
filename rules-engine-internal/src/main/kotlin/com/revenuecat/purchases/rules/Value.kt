@@ -1,3 +1,5 @@
+@file:Suppress("ForbiddenPublicSealedClass", "ForbiddenPublicDataClass")
+
 package com.revenuecat.purchases.rules
 
 /**
@@ -6,15 +8,15 @@ package com.revenuecat.purchases.rules
  * Numbers are split into [IntValue] and [FloatValue] to preserve type intent.
  * Cross-type numeric comparisons still work — see [looseEq] and [strictEq].
  */
-internal sealed class Value {
+public sealed class Value {
 
-    object Null : Value()
-    data class BoolValue(val value: Boolean) : Value()
-    data class IntValue(val value: Long) : Value()
-    data class FloatValue(val value: Double) : Value()
-    data class StringValue(val value: String) : Value()
-    data class ArrayValue(val items: List<Value>) : Value()
-    data class ObjectValue(val entries: Map<String, Value>) : Value()
+    public object Null : Value()
+    public data class BoolValue(val value: Boolean) : Value()
+    public data class IntValue(val value: Long) : Value()
+    public data class FloatValue(val value: Double) : Value()
+    public data class StringValue(val value: String) : Value()
+    public data class ArrayValue(val items: List<Value>) : Value()
+    public data class ObjectValue(val entries: Map<String, Value>) : Value()
 
     /**
      * JSON Logic truthiness rules:
@@ -22,7 +24,7 @@ internal sealed class Value {
      * - `ObjectValue(_)` → always truthy
      * - everything else → truthy
      */
-    val isTruthy: Boolean
+    internal val isTruthy: Boolean
         get() = when (this) {
             Null -> false
             is BoolValue -> value
@@ -48,7 +50,7 @@ internal sealed class Value {
      * callers wrap with `?: Double.NaN` to get the JS arithmetic
      * propagation.
      */
-    fun toNumberOrNull(): Double? = when (this) {
+    internal fun toNumberOrNull(): Double? = when (this) {
         Null -> 0.0
         is BoolValue -> if (value) 1.0 else 0.0
         is IntValue -> value.toDouble()
