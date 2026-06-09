@@ -25,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Before
@@ -1724,6 +1725,41 @@ class WorkflowManagerTest {
 
         // Initial populate + one background refresh = 2 fetches; the joined caller added none.
         verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+    }
+
+    @Test
+    fun `SWR background refresh still starts when the vended onComplete throws`() {
+        val response = WorkflowsListResponse(workflows = emptyList())
+        val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(firstSlot), onError = any())
+        } answers { firstSlot.captured(response) }
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // Stale-but-present. Keep the SWR background refresh unresolved.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        val pendingSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(pendingSlot), onError = any())
+        } answers { }
+
+        // The vended callback throws (e.g. a listener dispatched synchronously on the main thread).
+        // The exception propagates to the caller, but the refresh must still start: otherwise the
+        // batch registered for the refresh is never settled and every later caller hangs on it.
+        assertThatThrownBy {
+            workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) {
+                throw IllegalStateException("listener failure")
+            }
+        }.isInstanceOf(IllegalStateException::class.java)
+        verify(exactly = 2) { mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any()) }
+
+        // The batch was not leaked: a joiner still completes when the refresh settles.
+        var joinerCompleted = false
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { joinerCompleted = true }
+        assertThat(joinerCompleted).isFalse
+        pendingSlot.captured(response)
+        assertThat(joinerCompleted).isTrue
     }
 
     // endregion getWorkflowsList

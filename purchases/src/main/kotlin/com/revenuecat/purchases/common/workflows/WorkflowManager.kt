@@ -354,8 +354,14 @@ internal class WorkflowManager(
             // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. The background fetch's onSuccess/onError
             // fires any callers that joined the batch.
             ListFetchAction.STALE_WHILE_REVALIDATE -> {
-                onComplete()
-                fetchWorkflowsList(appUserID, appInBackground, forceRefresh = false)
+                try {
+                    onComplete()
+                } finally {
+                    // The refresh must start even if onComplete throws (it can run developer code
+                    // synchronously): the batch registered above is only ever settled by the fetch,
+                    // so skipping it would strand every later caller for this user on a dead batch.
+                    fetchWorkflowsList(appUserID, appInBackground, forceRefresh = false)
+                }
             }
             // Miss or forced: the request's onSuccess/onError fires the queued callbacks when it settles.
             ListFetchAction.BLOCKING_FETCH -> fetchWorkflowsList(appUserID, appInBackground, forceRefresh)
