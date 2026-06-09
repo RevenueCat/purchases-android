@@ -274,52 +274,66 @@ internal class WorkflowManager(
         if (!startFetch) {
             completePendingCallbacks(appUserID)
         } else {
-            backend.getWorkflows(
-                appUserID = appUserID,
-                appInBackground = appInBackground,
-                type = "paywall",
-                onSuccess = { response ->
-                    // Drop workflows without an offeringId: they can't be reached via
-                    // workflowIdForOfferingId, so caching or prefetching them is wasted work.
-                    val filtered = response.onlyWorkflowsWithOfferingId()
-                    // Clear detail caches after a successful fetch so the prefetch loop below is a
-                    // guaranteed cache miss and always populates fresh data. Cleared here rather than
-                    // before the network call so a failed fetch leaves in-memory details intact.
-                    if (forceRefresh) workflowsCache.clearWorkflowDetailCaches()
-                    workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
+            fetchWorkflowsList(appUserID, appInBackground, forceRefresh)
+        }
+    }
 
-                    val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
-                    scope.launch {
-                        // Wait for all prefetches before completing so onComplete fires once the whole
-                        // sequence settles. A failed prefetch is logged and does not fail the others.
-                        // Concurrency is bounded downstream, not here: detail fetches by prefetchDispatcher's
-                        // thread pool, CDN downloads by the workflows FileRepository's limited scope.
-                        coroutineScope {
-                            prefetchWorkflows.forEach { summary ->
-                                launch {
-                                    prefetchWorkflow(appUserID, summary.id, appInBackground)
-                                }
+    /**
+     * Fetches the workflows list from the backend, then prefetches all `prefetch = true` entries and
+     * settles pending callbacks. On a fallback-eligible failure (transport/5xx/malformed) it restores
+     * from disk; on a 4xx it invalidates the timestamp and settles without restoring. Shared by the
+     * blocking and stale-while-revalidate paths of [getWorkflowsList].
+     *
+     * [forceRefresh] only controls whether the in-memory detail caches are cleared before the prefetch
+     * loop, so a forced refresh re-fetches every detail from the backend rather than serving still-fresh
+     * cached values.
+     */
+    private fun fetchWorkflowsList(appUserID: String, appInBackground: Boolean, forceRefresh: Boolean) {
+        backend.getWorkflows(
+            appUserID = appUserID,
+            appInBackground = appInBackground,
+            type = "paywall",
+            onSuccess = { response ->
+                // Drop workflows without an offeringId: they can't be reached via
+                // workflowIdForOfferingId, so caching or prefetching them is wasted work.
+                val filtered = response.onlyWorkflowsWithOfferingId()
+                // Clear detail caches after a successful fetch so the prefetch loop below is a
+                // guaranteed cache miss and always populates fresh data. Cleared here rather than
+                // before the network call so a failed fetch leaves in-memory details intact.
+                if (forceRefresh) workflowsCache.clearWorkflowDetailCaches()
+                workflowsCache.cacheWorkflowsList(filtered, buildOfferingIdMap(filtered.workflows))
+
+                val prefetchWorkflows = filtered.workflows.filter { it.prefetch }
+                scope.launch {
+                    // Wait for all prefetches before completing so onComplete fires once the whole
+                    // sequence settles. A failed prefetch is logged and does not fail the others.
+                    // Concurrency is bounded downstream, not here: detail fetches by prefetchDispatcher's
+                    // thread pool, CDN downloads by the workflows FileRepository's limited scope.
+                    coroutineScope {
+                        prefetchWorkflows.forEach { summary ->
+                            launch {
+                                prefetchWorkflow(appUserID, summary.id, appInBackground)
                             }
                         }
-                        completePendingCallbacks(appUserID)
                     }
-                },
-                onError = { error, behavior ->
-                    errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
-                    if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
-                        // A 4xx means the server intentionally changed/removed these workflows. Don't
-                        // resurrect a stale list from disk; just settle the callbacks so offerings
-                        // delivery isn't stranded. Invalidate the timestamp so the next non-forced call
-                        // retries rather than serving a still-fresh in-memory list — mirrors
-                        // OfferingsManager.handleErrorFetchingOfferings calling forceCacheStale().
-                        workflowsCache.invalidateWorkflowsListTimestamp()
-                        completePendingCallbacks(appUserID)
-                    } else {
-                        restoreWorkflowsListFromDisk(appUserID)
-                    }
-                },
-            )
-        }
+                    completePendingCallbacks(appUserID)
+                }
+            },
+            onError = { error, behavior ->
+                errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
+                if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                    // A 4xx means the server intentionally changed/removed these workflows. Don't
+                    // resurrect a stale list from disk; just settle the callbacks so offerings
+                    // delivery isn't stranded. Invalidate the timestamp so the next non-forced call
+                    // retries rather than serving a still-fresh in-memory list — mirrors
+                    // OfferingsManager.handleErrorFetchingOfferings calling forceCacheStale().
+                    workflowsCache.invalidateWorkflowsListTimestamp()
+                    completePendingCallbacks(appUserID)
+                } else {
+                    restoreWorkflowsListFromDisk(appUserID)
+                }
+            },
+        )
     }
 
     /**
