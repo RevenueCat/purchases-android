@@ -2,14 +2,11 @@
 ## RevenueCat SDK
 ### ✨ New Features
 * Add presented offering context to custom paywall events (#3424) via Rick (@rickvdl)
-* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
 
 ## RevenueCatUI SDK
-### Paywalls_v2
-#### 🐞 Bugfixes
-* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
+* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
 * refactor: extract Offering.presentedOfferingContext() helper and apply across SDK (#3513) via Rick (@rickvdl)
 * Add JSON Logic string + array operators (#3485) via Antonio Pallares (@ajpallares)
 * Add ForbiddenPublicSealedClass detekt rule (#3503) via Toni Rico (@tonidero)
@@ -23,17 +20,14 @@
 
 ## 10.7.0
 ## RevenueCat SDK
-### 🐞 Bugfixes
-* Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
 ### Galaxy Store
 #### ✨ New Features
 * [Galaxy Store]: Upgrade Samsung IAP SDK to version 6.5.2 + use Maven distribution (#3492) via Will Taylor (@fire-at-will)
 
 ## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Remove `workflow_trigger` interaction event (#3467) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
+* Remove `workflow_trigger` interaction event (#3467) via Cesar de la Vega (@vegaro)
 * build(deps): bump fastlane from 2.234.0 to 2.235.0 (#3506) via dependabot[bot] (@dependabot[bot])
 * [Galaxy Store]: Remove @Experimental annotations from Galaxy Module (#3494) via Will Taylor (@fire-at-will)
 * Update baseline profiles (#3504) via RevenueCat Git Bot (@RCGitBot)
@@ -44,11 +38,8 @@
 * Fix RTL layout issues in paywall components (#3493) via Tarek M. Ben Lechhab (@bilqisium)
 
 ## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Rebuild workflow step states on color scheme change (#3419) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Rebuild workflow step states on color scheme change (#3419) via Cesar de la Vega (@vegaro)
 * Update baseline profiles (#3490) via RevenueCat Git Bot (@RCGitBot)
 * [AUTOMATIC] Update golden test files for backend integration tests (#3491) via RevenueCat Git Bot (@RCGitBot)
 * [AUTOMATIC] Update golden test files for backend integration tests (#3479) via RevenueCat Git Bot (@RCGitBot)
@@ -59,15 +50,13 @@
 * [RENOVATE] Update dependency gradle to v8.14.5 (#3459) via RevenueCat Git Bot (@RCGitBot)
 
 ## RevenueCatUI SDK
-### ✨ New Features
-* Pre-warm image cache for workflow step states (#3447) via Cesar de la Vega (@vegaro)
 ### Paywallv2
-#### ✨ New Features
-* Add `close_workflow` button action (#3453) via Cesar de la Vega (@vegaro)
 #### 🐞 Bugfixes
 * Fix preload VideoComponent fallback override images (#3449) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
+* Add `close_workflow` button action (#3453) via Cesar de la Vega (@vegaro)
+* Pre-warm image cache for workflow step states (#3447) via Cesar de la Vega (@vegaro)
 * Select blob source by priority and weighted random (#3458) via Toni Rico (@tonidero)
 * [AUTOMATIC] Update golden test files for backend integration tests (#3473) via RevenueCat Git Bot (@RCGitBot)
 * Clean up unreferenced topic files after successful remote-config refresh (#3439) via Toni Rico (@tonidero)
@@ -88,12 +77,12 @@
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes
 * Fix: dismiss was called before onPurchaseComplete callback invocation (#3353) via Jacob Rakidzich (@JZDesign)
-* Propagate default package across workflow steps (#3431) via Cesar de la Vega (@vegaro)
 ### Paywallv2
 #### ✨ New Features
 * feat: Allow disabling of automatic font scaling (#3438) via Jacob Rakidzich (@JZDesign)
 
 ### 🔄 Other Changes
+* Propagate default package across workflow steps (#3431) via Cesar de la Vega (@vegaro)
 * Extract `PaywallComponentsImagePreDownloader` (#3448) via Cesar de la Vega (@vegaro)
 * Simplify `WorkflowTransitionState` with explicit from/to step fields (#3441) via Cesar de la Vega (@vegaro)
 
@@ -104,14 +93,13 @@
 
 ## RevenueCatUI SDK
 ### Paywallv2
-#### ✨ New Features
-* Add slide transition to workflow paywalls (#3418) via Cesar de la Vega (@vegaro)
-* Workflow state & ViewModel infrastructure (#3416) via Cesar de la Vega (@vegaro)
 #### 🐞 Bugfixes
 * Fix paywall layout direction for RTL locale overrides (PWENG-39) (#3425) via Monika Mateska (@MonikaMateska)
 * Apply ripple shape clip on a sibling Box to avoid clipping content (#3395) via Toni Rico (@tonidero)
 
 ### 🔄 Other Changes
+* Add slide transition to workflow paywalls (#3418) via Cesar de la Vega (@vegaro)
+* Workflow state & ViewModel infrastructure (#3416) via Cesar de la Vega (@vegaro)
 * build(deps): bump fastlane-plugin-revenuecat_internal from `21e02ec` to `af7bb5c` (#3442) via dependabot[bot] (@dependabot[bot])
 * Abstract workflow page transition animation behind sealed class  (#3430) via Cesar de la Vega (@vegaro)
 * Add `single_step_fallback_id` field to `PublishedWorkflow` (#3436) via Cesar de la Vega (@vegaro)
@@ -141,11 +129,8 @@
 * Fix null Placements when offering_ids_by_placement is absent (#3254) via Dan Pannasch (@dpannasch)
 
 ## RevenueCatUI SDK
-### Paywallv2
-#### ✨ New Features
-* Wire multipage workflow navigation into PaywallViewModel (#3381) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Wire multipage workflow navigation into PaywallViewModel (#3381) via Cesar de la Vega (@vegaro)
 * Add `triggerType` to `WorkflowTrigger` (#3393) via Cesar de la Vega (@vegaro)
 * Extract private function `NavigateTo.toPaywallAction` (#3392) via Cesar de la Vega (@vegaro)
 * Bump revenucatui-tests gradle cache key (#3391) via Toni Rico (@tonidero)
@@ -168,11 +153,8 @@
 * [EXTERNAL] fix(google): guard showInAppMessages against BillingClient runtime crashes (#3367) by @matteinn (#3368) via Monika Mateska (@MonikaMateska)
 
 ## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Add Workflows network layer (#3300) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Add Workflows network layer (#3300) via Cesar de la Vega (@vegaro)
 * Fix `revenuecat.useWorkflowsEndpoint` compiler flag (#3374) via Cesar de la Vega (@vegaro)
 * Create paywall from workflow response. Add `USE_WORKFLOWS_ENDPOINT` BuildConfig (#3350) via Cesar de la Vega (@vegaro)
 * Refactor: Remove unnecessary lint suppressions (#3373) via cursor[bot] (@cursor[bot])
