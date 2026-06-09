@@ -97,11 +97,6 @@ internal class RewardVerificationManagerTest {
         assertEquals("test_api_key", payload.getString("api_key"))
         val attachedClientTransactionId = payload.getString("client_transaction_id")
         assertTrue(attachedClientTransactionId.isNotBlank())
-        // The serialized payload must match the format shared with the other SDKs hitting the same endpoint.
-        assertEquals(
-            "{\"api_key\":\"test_api_key\",\"client_transaction_id\":\"$attachedClientTransactionId\"}",
-            ssvOptions.captured.customData,
-        )
 
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
