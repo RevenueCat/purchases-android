@@ -24,36 +24,57 @@ internal object Operators {
         args: Value,
         vars: Value,
     ): Value = when (op) {
+        // Accessors
         "var" -> AccessorOperators.opVar(args, vars)
         "missing" -> AccessorOperators.opMissing(args, vars)
         "missing_some" -> AccessorOperators.opMissingSome(args, vars)
 
+        // Equality
         "==" -> EqualityOperators.opLooseEq(args, vars)
         "!=" -> EqualityOperators.opLooseNe(args, vars)
         "===" -> EqualityOperators.opStrictEq(args, vars)
         "!==" -> EqualityOperators.opStrictNe(args, vars)
 
+        // Logic
         "!" -> LogicOperators.opNot(args, vars)
         "!!" -> LogicOperators.opNotNot(args, vars)
         "and" -> LogicOperators.opAnd(args, vars)
         "or" -> LogicOperators.opOr(args, vars)
         "if" -> LogicOperators.opIf(args, vars)
 
-        "in" -> StringArrayOperators.opIn(args, vars)
-        "cat" -> StringArrayOperators.opCat(args, vars)
-        "substr" -> StringArrayOperators.opSubstr(args, vars)
-        "merge" -> StringArrayOperators.opMerge(args, vars)
-
+        // Arithmetic
         "+" -> ArithmeticOperators.opAdd(args, vars)
         "-" -> ArithmeticOperators.opSub(args, vars)
         "*" -> ArithmeticOperators.opMul(args, vars)
         "/" -> ArithmeticOperators.opDiv(args, vars)
         "%" -> ArithmeticOperators.opMod(args, vars)
 
+        // Min and max
+        "min" -> MinMaxOperators.opMin(args, vars)
+        "max" -> MinMaxOperators.opMax(args, vars)
+
+        // Comparison
         "<" -> ComparisonOperators.opLt(args, vars)
         "<=" -> ComparisonOperators.opLe(args, vars)
         ">" -> ComparisonOperators.opGt(args, vars)
         ">=" -> ComparisonOperators.opGe(args, vars)
+
+        // String and array
+        "in" -> StringArrayOperators.opIn(args, vars)
+        "cat" -> StringArrayOperators.opCat(args, vars)
+        "substr" -> StringArrayOperators.opSubstr(args, vars)
+        "merge" -> StringArrayOperators.opMerge(args, vars)
+
+        // Iteration
+        "some" -> IterationOperators.opSome(args, vars)
+        "all" -> IterationOperators.opAll(args, vars)
+        "none" -> IterationOperators.opNone(args, vars)
+        "map" -> IterationOperators.opMap(args, vars)
+        "filter" -> IterationOperators.opFilter(args, vars)
+        "reduce" -> IterationOperators.opReduce(args, vars)
+
+        // Miscellaneous
+        "log" -> MiscOperators.opLog(args, vars)
 
         else -> throw RuleError.UnsupportedOperator(op)
     }
