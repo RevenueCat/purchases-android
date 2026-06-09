@@ -64,8 +64,8 @@ class OfferingsManagerTest {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
         mockWorkflowManager = mockk(relaxed = true)
-        every { mockWorkflowManager.getWorkflowsList(any(), any(), any()) } answers {
-            thirdArg<() -> Unit>().invoke()
+        every { mockWorkflowManager.getWorkflowsList(any(), any(), any(), any()) } answers {
+            lastArg<() -> Unit>().invoke()
         }
 
         mockBackendResponseSuccess()
@@ -127,8 +127,14 @@ class OfferingsManagerTest {
         mockDeviceCache()
         mockOfferingsFactory()
         offeringsManager.onAppForeground(appUserID = "user_1")
+        // Foreground refresh is a network fetch, so it forces the workflows list to refetch.
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList("user_1", appInBackground = false, onComplete = any())
+            mockWorkflowManager.getWorkflowsList(
+                "user_1",
+                appInBackground = false,
+                forceRefresh = true,
+                onComplete = any(),
+            )
         }
     }
 
@@ -576,16 +582,15 @@ class OfferingsManagerTest {
             onSuccess = {},
         )
 
+        // Offerings came fresh from the network, so the workflows list is forced to refetch (realigned)
+        // rather than skipped on its own TTL.
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList(appUserId, false, onComplete = any())
+            mockWorkflowManager.getWorkflowsList(appUserId, false, forceRefresh = true, onComplete = any())
         }
-        // Offerings came fresh from the network, so the workflows list is realigned by being forced
-        // stale before the fetch, rather than skipped on its own TTL.
-        verify(exactly = 1) { mockWorkflowManager.forceWorkflowsListCacheStale() }
     }
 
     @Test
-    fun `getOfferings does not force workflows list stale on disk-cache fallback`() {
+    fun `getOfferings does not force workflows list refetch on disk-cache fallback`() {
         every { cache.cachedOfferings } returns null
         every { cache.cacheOfferings(any(), any()) } just Runs
         mockBackendResponseError()
@@ -600,9 +605,11 @@ class OfferingsManagerTest {
             onSuccess = {},
         )
 
-        // Offerings were restored from disk (no real change, backend likely down), so we must not
-        // force a workflows refetch here.
-        verify(exactly = 0) { mockWorkflowManager.forceWorkflowsListCacheStale() }
+        // Offerings were restored from disk (no real change, backend likely down), so the workflows
+        // list is not forced to refetch — it follows its own TTL.
+        verify(exactly = 1) {
+            mockWorkflowManager.getWorkflowsList(appUserId, false, forceRefresh = false, onComplete = any())
+        }
     }
 
     @Test
@@ -619,7 +626,7 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList(appUserId, true, onComplete = any())
+            mockWorkflowManager.getWorkflowsList(appUserId, true, forceRefresh = true, onComplete = any())
         }
     }
 
@@ -637,7 +644,7 @@ class OfferingsManagerTest {
         )
 
         verify(exactly = 1) {
-            mockWorkflowManager.getWorkflowsList(appUserId, false, onComplete = any())
+            mockWorkflowManager.getWorkflowsList(appUserId, false, forceRefresh = true, onComplete = any())
         }
     }
 
@@ -1058,12 +1065,12 @@ class OfferingsManagerTest {
     @Test
     fun `getOfferings does not call onSuccess until getWorkflowsList completes`() {
         val mockWorkflowManager = mockk<WorkflowManager>()
-        every { mockWorkflowManager.forceWorkflowsListCacheStale() } just Runs
         val onCompleteSlot = slot<() -> Unit>()
         every {
             mockWorkflowManager.getWorkflowsList(
                 appUserID = appUserId,
                 appInBackground = false,
+                forceRefresh = any(),
                 onComplete = capture(onCompleteSlot),
             )
         } just Runs
@@ -1132,6 +1139,7 @@ class OfferingsManagerTest {
             mockWorkflowManager.getWorkflowsList(
                 appUserID = appUserId,
                 appInBackground = false,
+                forceRefresh = any(),
                 onComplete = capture(onCompleteSlot),
             )
         } just Runs

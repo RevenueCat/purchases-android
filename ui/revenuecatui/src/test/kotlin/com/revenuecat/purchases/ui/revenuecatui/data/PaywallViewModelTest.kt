@@ -969,6 +969,31 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handlePackagePurchase success does not track CLOSE event`(): Unit = runBlocking {
+        // A successful purchase dismisses the paywall but must not be counted as a
+        // user-initiated close. Regression test: the dismiss path must not emit CLOSE.
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+        model.trackPaywallImpressionIfNeeded()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(mockk<StoreTransaction>(), customerInfo)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        assertThat(dismissInvoked).isTrue
+        verifyNoEventsOfTypeTracked(PaywallEventType.CLOSE)
+    }
+
+    @Test
     fun `handlePackagePurchase purchases provided package`(): Unit = runBlocking {
         // Arrange
         val offering = Offering(
@@ -1182,6 +1207,32 @@ class PaywallViewModelTest {
 
         // Assert
         assertThat(dismissInvoked).isTrue()
+    }
+
+    @Test
+    fun `handleRestorePurchases dismiss does not change paywall_close behavior`(): Unit = runBlocking {
+        // The workflow wiring must not alter paywall_close. On the REVENUECAT path, a restore that
+        // dismisses the paywall did not emit a close event before workflows, and must not now.
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(
+            offering = offering,
+            shouldDisplayBlock = { false },
+        )
+        model.trackPaywallImpressionIfNeeded()
+        coEvery {
+            purchases.awaitRestore()
+        } returns customerInfo
+
+        model.handleRestorePurchases()
+
+        assertThat(dismissInvoked).isTrue
+        verifyNoEventsOfTypeTracked(PaywallEventType.CLOSE)
     }
 
     @Test
