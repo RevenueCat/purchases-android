@@ -113,6 +113,16 @@ internal sealed class Endpoint(
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
+    data class GetRewardVerification(
+        val userId: String,
+        val clientTransactionId: String,
+    ) : Endpoint(
+        pathTemplate = "/v1/subscribers/%s/ads/reward_verifications/%s",
+        name = "get_reward_verification",
+    ) {
+        override fun getPath(useFallback: Boolean) =
+            pathTemplate.format(Uri.encode(userId), Uri.encode(clientTransactionId))
+    }
     data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
         pathTemplate = "/rcbilling/v1/subscribers/%s/products?id=%s",
         name = "web_billing_get_products",
@@ -133,6 +143,7 @@ internal sealed class Endpoint(
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            is GetRewardVerification,
             ->
                 true
             is GetAmazonReceipt,
@@ -156,6 +167,7 @@ internal sealed class Endpoint(
             PostReceipt,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            is GetRewardVerification,
             ->
                 true
             is GetAmazonReceipt,
