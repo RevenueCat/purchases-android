@@ -77,6 +77,9 @@ internal class WorkflowsCache(
     // region Workflows list cache
 
     @Synchronized
+    fun hasCachedWorkflowsList(): Boolean = workflowsListCachedObject.cachedInstance != null
+
+    @Synchronized
     fun isWorkflowsListCacheStale(appInBackground: Boolean): Boolean =
         workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
 
