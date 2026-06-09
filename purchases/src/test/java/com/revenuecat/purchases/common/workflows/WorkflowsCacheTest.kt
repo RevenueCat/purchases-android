@@ -89,6 +89,24 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `invalidateWorkflowTimestamp makes a fresh entry stale`() {
+        workflowsCache.cacheWorkflow("wf_1", mockk())
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isFalse
+
+        workflowsCache.invalidateWorkflowTimestamp("wf_1")
+
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isTrue
+        // The value itself is retained; only its freshness is cleared.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isNotNull
+    }
+
+    @Test
+    fun `invalidateWorkflowTimestamp is a no-op when nothing is cached`() {
+        workflowsCache.invalidateWorkflowTimestamp("wf_missing")
+        assertThat(workflowsCache.cachedWorkflow("wf_missing")).isNull()
+    }
+
+    @Test
     fun `clearCache removes all cached workflows`() {
         workflowsCache.cacheWorkflow("wf_1", mockk())
         workflowsCache.cacheWorkflow("wf_2", mockk())

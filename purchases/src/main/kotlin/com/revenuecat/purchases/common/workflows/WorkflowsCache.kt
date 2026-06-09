@@ -72,6 +72,19 @@ internal class WorkflowsCache(
         cachedWorkflows.clear()
     }
 
+    /**
+     * Clears the cached timestamp for [workflowId]'s in-memory detail entry, forcing the next
+     * [isWorkflowCacheStale] check to report it stale so a subsequent fetch retries rather than
+     * serving the still-cached value. The per-workflow analogue of [invalidateWorkflowsListTimestamp]
+     * (and of [com.revenuecat.purchases.common.offerings.OfferingsCache.forceCacheStale]); the detail
+     * fetch calls it on a terminal error that produced no fresh value, matching how the list and
+     * offerings invalidate their cache on the same failures. No-op when nothing is cached.
+     */
+    @Synchronized
+    fun invalidateWorkflowTimestamp(workflowId: String) {
+        cachedWorkflows[workflowId]?.clearCacheTimestamp()
+    }
+
     // endregion Workflow detail cache
 
     // region Workflows list cache

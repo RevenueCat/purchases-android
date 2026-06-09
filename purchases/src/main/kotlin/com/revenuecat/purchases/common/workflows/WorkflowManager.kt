@@ -153,6 +153,11 @@ internal class WorkflowManager(
         val onErrorWithFallback: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit =
             { error, behavior ->
                 if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                    // A 4xx means the server intentionally changed/removed this workflow. Don't serve
+                    // the saved copy; invalidate the in-memory entry so the next call retries rather
+                    // than serving a still-cached value — mirrors the list's
+                    // invalidateWorkflowsListTimestamp and OfferingsManager's forceCacheStale on 4xx.
+                    workflowsCache.invalidateWorkflowTimestamp(workflowId)
                     onError(error)
                 } else {
                     scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
@@ -181,8 +186,11 @@ internal class WorkflowManager(
     /**
      * Attempts to re-resolve the persisted disk envelope for [workflowId] after a
      * fallback-eligible backend error. If no envelope is present, or if re-resolution fails,
-     * the original [networkError] is forwarded through [onError] so the caller is never left
-     * without a response. On success the result is cached in memory and delivered via [onSuccess].
+     * the in-memory entry is invalidated and the original [networkError] is forwarded through
+     * [onError] so the caller is never left without a response and the next call retries instead of
+     * serving a stale value — mirroring how the list and offerings invalidate when a fallback
+     * yields nothing fresh. On success the result is cached in memory (which re-stamps it fresh) and
+     * delivered via [onSuccess].
      */
     private suspend fun resolveDiskFallback(
         workflowId: String,
@@ -192,6 +200,7 @@ internal class WorkflowManager(
     ) {
         val envelope = workflowsCache.cachedWorkflowDetailEnvelopeFromDisk(workflowId)
         if (envelope == null) {
+            workflowsCache.invalidateWorkflowTimestamp(workflowId)
             onError(networkError)
             return
         }
@@ -201,6 +210,7 @@ internal class WorkflowManager(
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             errorLog(e) { "Failed to re-resolve disk envelope for $workflowId during fallback" }
+            workflowsCache.invalidateWorkflowTimestamp(workflowId)
             onError(networkError)
             return
         }

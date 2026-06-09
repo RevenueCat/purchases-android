@@ -18,6 +18,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -48,7 +49,7 @@ class WorkflowManagerTest {
         originalLogHandler = currentLogHandler
         currentLogHandler = NoOpLogHandler
         every { mockDateProvider.now } returns Date(0) // ensures cache is always stale by default
-        workflowsCache = WorkflowsCache(deviceCache = mockDeviceCache, dateProvider = mockDateProvider)
+        workflowsCache = spyk(WorkflowsCache(deviceCache = mockDeviceCache, dateProvider = mockDateProvider))
         workflowManager = WorkflowManager(
             backend = mockBackend,
             workflowDetailResolver = mockResolver,
@@ -381,6 +382,9 @@ class WorkflowManagerTest {
         assertThat(receivedError).isEqualTo(expectedError)
         coVerify(exactly = 0) { mockResolver.resolve(any()) }
         verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
+        // Invalidate the in-memory entry so the next call retries rather than serving a cached value,
+        // mirroring the list/offerings 4xx policy.
+        verify { workflowsCache.invalidateWorkflowTimestamp("wf_1") }
     }
 
     @Test
