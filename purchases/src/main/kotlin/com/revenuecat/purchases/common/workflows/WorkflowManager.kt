@@ -234,8 +234,11 @@ internal class WorkflowManager(
         when (action) {
             ListFetchAction.COMPLETE_NOW -> completePendingCallbacks(appUserID)
             ListFetchAction.STALE_WHILE_REVALIDATE -> {
-                onComplete()
-                fetchWorkflowsList(appUserID, appInBackground, forceRefresh = false)
+                try {
+                    onComplete()
+                } finally {
+                    fetchWorkflowsList(appUserID, appInBackground, forceRefresh = false)
+                }
             }
             ListFetchAction.BLOCKING_FETCH -> fetchWorkflowsList(appUserID, appInBackground, forceRefresh)
         }

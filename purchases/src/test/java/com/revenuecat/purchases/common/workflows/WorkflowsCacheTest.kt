@@ -117,6 +117,13 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `hasCachedWorkflowsList is false after clearCache`() {
+        workflowsCache.cacheWorkflowsList(WorkflowsListResponse(workflows = emptyList()), emptyMap())
+        workflowsCache.clearCache()
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isFalse
+    }
+
+    @Test
     fun `isWorkflowsListCacheStale is true initially and false after caching`() {
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
         workflowsCache.cacheWorkflowsList(WorkflowsListResponse(workflows = emptyList()), emptyMap())
