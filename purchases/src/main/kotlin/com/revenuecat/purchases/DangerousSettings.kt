@@ -22,6 +22,12 @@ public class DangerousSettings internal constructor(
     internal val uiPreviewMode: Boolean = false,
 
     internal val applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false,
+
+    /**
+     * Enables RevenueCat Workflows (multipage paywalls). Internal RevenueCat use only.
+     */
+    @property:InternalRevenueCatAPI
+    public val useWorkflows: Boolean = false,
 ) : Parcelable {
     public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false, false)
 
@@ -38,6 +44,20 @@ public class DangerousSettings internal constructor(
             customEntitlementComputation = false,
             uiPreviewMode = true,
             applyObfuscatedAccountIdToSubscriptionChanges = false,
+        )
+
+        /**
+         * Creates a [DangerousSettings] with RevenueCat Workflows (multipage paywalls) enabled.
+         * Internal RevenueCat use only; behavior may change without warning.
+         */
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public fun forWorkflows(autoSyncPurchases: Boolean = true): DangerousSettings = DangerousSettings(
+            autoSyncPurchases = autoSyncPurchases,
+            customEntitlementComputation = false,
+            uiPreviewMode = false,
+            applyObfuscatedAccountIdToSubscriptionChanges = false,
+            useWorkflows = true,
         )
     }
 }
