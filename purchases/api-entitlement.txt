@@ -198,6 +198,7 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.Throws(exceptionClasses=NoSuchElementException::class) public com.revenuecat.purchases.Package getPackage(String identifier) throws java.util.NoSuchElementException;
     method public com.revenuecat.purchases.paywalls.PaywallData? getPaywall();
     method public com.revenuecat.purchases.Offering.PaywallComponents? getPaywallComponents();
+    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
     method public String getServerDescription();
     method public com.revenuecat.purchases.Package? getSixMonth();
     method public com.revenuecat.purchases.Package? getThreeMonth();
@@ -462,7 +463,7 @@ package com.revenuecat.purchases {
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder dangerousSettings(com.revenuecat.purchases.DangerousSettings dangerousSettings);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder diagnosticsEnabled(boolean diagnosticsEnabled);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder entitlementVerificationMode(com.revenuecat.purchases.EntitlementVerificationMode verificationMode);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final com.revenuecat.purchases.PurchasesConfiguration.Builder galaxyBillingMode(com.revenuecat.purchases.galaxy.GalaxyBillingMode galaxyBillingMode);
+    method public final com.revenuecat.purchases.PurchasesConfiguration.Builder galaxyBillingMode(com.revenuecat.purchases.galaxy.GalaxyBillingMode galaxyBillingMode);
     method @Deprecated @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.PurchasesConfiguration.Builder informationalVerificationModeAndDiagnosticsEnabled(boolean enabled);
     method @Deprecated public final com.revenuecat.purchases.PurchasesConfiguration.Builder observerMode(boolean observerMode);
     method public final com.revenuecat.purchases.PurchasesConfiguration.Builder pendingTransactionsForPrepaidPlansEnabled(boolean pendingTransactionsForPrepaidPlansEnabled);
@@ -925,10 +926,16 @@ package com.revenuecat.purchases.customercenter {
 
 package com.revenuecat.purchases.galaxy {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public enum GalaxyBillingMode {
-    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
-    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode PRODUCTION;
-    enum_constant public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;
+  public abstract class GalaxyBillingMode {
+    method public final String getName();
+    property public final String name;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode ALWAYS_FAIL;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode.Companion Companion;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode PRODUCTION;
+    field public static final com.revenuecat.purchases.galaxy.GalaxyBillingMode TEST;
+  }
+
+  public static final class GalaxyBillingMode.Companion {
   }
 
 }
@@ -1506,12 +1513,16 @@ package com.revenuecat.purchases.paywalls.events {
 
   @dev.drewhamilton.poko.Poko public final class CustomPaywallImpressionParams {
     ctor public CustomPaywallImpressionParams();
+    ctor public CustomPaywallImpressionParams(com.revenuecat.purchases.Offering offering);
     ctor public CustomPaywallImpressionParams(optional String? paywallId);
-    ctor public CustomPaywallImpressionParams(optional String? paywallId, optional String? offeringId);
+    ctor public CustomPaywallImpressionParams(optional String? paywallId, com.revenuecat.purchases.Offering offering);
+    ctor @Deprecated public CustomPaywallImpressionParams(optional String? paywallId, String? offeringId);
     method public String? getOfferingId();
     method public String? getPaywallId();
+    method public com.revenuecat.purchases.PresentedOfferingContext? getPresentedOfferingContext();
     property public final String? offeringId;
     property public final String? paywallId;
+    property public final com.revenuecat.purchases.PresentedOfferingContext? presentedOfferingContext;
   }
 
 }

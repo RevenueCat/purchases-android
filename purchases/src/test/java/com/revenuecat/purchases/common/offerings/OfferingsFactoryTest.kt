@@ -391,6 +391,30 @@ class OfferingsFactoryTest {
     }
 
     @Test
+    fun `Test Store cannot-find-product string references the RevenueCat dashboard, not the Play Store`() {
+        assertThat(OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR_TEST_STORE)
+            .contains("RevenueCat dashboard")
+            .doesNotContain("Play Store")
+    }
+
+    @Test
+    fun `Play Store cannot-find-product string references the Play Store`() {
+        assertThat(OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR).contains("Play Store")
+    }
+
+    @Test
+    fun `Test Store offering-empty string references the RevenueCat dashboard, not the Play Store`() {
+        assertThat(OfferingStrings.OFFERING_EMPTY_TEST_STORE)
+            .contains("RevenueCat dashboard")
+            .doesNotContain("Play Store")
+    }
+
+    @Test
+    fun `Play Store offering-empty string references the Play Store`() {
+        assertThat(OfferingStrings.OFFERING_EMPTY).contains("Play Store")
+    }
+
+    @Test
     fun `createOfferings returns error if json with wrong format`() {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
@@ -421,9 +445,33 @@ class OfferingsFactoryTest {
 
         assertThat(purchasesError).isNotNull
         assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(purchasesError!!.underlyingErrorMessage).contains(
-            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+        assertThat(purchasesError!!.underlyingErrorMessage)
+            .isEqualTo(OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND)
+    }
+
+    @Test
+    fun `configuration error when products are not set up uses Test Store wording for Test Store`() {
+        every { appConfig.apiKeyValidationResult } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+        every { appConfig.store } returns Store.TEST_STORE
+
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, listOf(), ProductType.SUBS)
+        mockStoreProduct(productIds, listOf(), ProductType.INAPP)
+
+        var purchasesError: PurchasesError? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingResponse,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
         )
+
+        assertThat(purchasesError).isNotNull
+        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(purchasesError!!.underlyingErrorMessage)
+            .isEqualTo(OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND_TEST_STORE)
+        assertThat(purchasesError!!.underlyingErrorMessage).doesNotContain("Play Store")
     }
 
     @Test

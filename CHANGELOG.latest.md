@@ -1,25 +1,21 @@
 ## RevenueCat SDK
-### 📦 Dependency Updates
-* [RENOVATE] Update dependency gradle to v8.14.5 (#3459) via RevenueCat Git Bot (@RCGitBot)
+### ✨ New Features
+* Add presented offering context to custom paywall events (#3424) via Rick (@rickvdl)
+* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
 
 ## RevenueCatUI SDK
-### ✨ New Features
-* Pre-warm image cache for workflow step states (#3447) via Cesar de la Vega (@vegaro)
-### Paywallv2
-#### ✨ New Features
-* Add `close_workflow` button action (#3453) via Cesar de la Vega (@vegaro)
+### Paywalls_v2
 #### 🐞 Bugfixes
-* Fix preload VideoComponent fallback override images (#3449) via Cesar de la Vega (@vegaro)
+* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
-* Select blob source by priority and weighted random (#3458) via Toni Rico (@tonidero)
-* [AUTOMATIC] Update golden test files for backend integration tests (#3473) via RevenueCat Git Bot (@RCGitBot)
-* Clean up unreferenced topic files after successful remote-config refresh (#3439) via Toni Rico (@tonidero)
-* Cache remote config response in memory with TTL and persist to disk (#3457) via Toni Rico (@tonidero)
-* build(deps): bump fastlane from 2.233.1 to 2.234.0 (#3463) via dependabot[bot] (@dependabot[bot])
-* Update codelabs links (#3460) via Jaewoong Eum (@skydoves)
-* Add RemoteConfigManager and TopicFetcher (#3437) via Toni Rico (@tonidero)
-* Add exit offers support to workflows (#3452) via Cesar de la Vega (@vegaro)
-* Update baseline profiles (#3461) via RevenueCat Git Bot (@RCGitBot)
-* Add network scaffolding for remote config endpoint (#3435) via Toni Rico (@tonidero)
-* test: cover singleStepFallbackId == initialStepId edge case (#3445) via Facundo Menzella (@facumenzella)
+* refactor: extract Offering.presentedOfferingContext() helper and apply across SDK (#3513) via Rick (@rickvdl)
+* Add JSON Logic string + array operators (#3485) via Antonio Pallares (@ajpallares)
+* Add ForbiddenPublicSealedClass detekt rule (#3503) via Toni Rico (@tonidero)
+* Update baseline profiles (#3519) via RevenueCat Git Bot (@RCGitBot)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `af7bb5c` to `ce6a7ef` (#3515) via dependabot[bot] (@dependabot[bot])
+* Add JSON Logic comparison operators (<, <=, >, >=) (#3484) via Antonio Pallares (@ajpallares)
+* Add JSON Logic arithmetic operators (+, -, *, /, %) (#3483) via Antonio Pallares (@ajpallares)
+* Add WorkflowEvent model and backend serialization (#3486) via Cesar de la Vega (@vegaro)
+* RulesEngine: add JSON Logic predicate evaluator (#3482) via Antonio Pallares (@ajpallares)
+* Add :rules-engine-internal skeleton module (#3478) via Antonio Pallares (@ajpallares)

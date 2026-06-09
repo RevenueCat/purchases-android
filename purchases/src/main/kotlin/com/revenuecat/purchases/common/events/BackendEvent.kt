@@ -189,6 +189,8 @@ internal sealed class BackendEvent : Event {
      * @property appSessionID The session ID of the app session when this event occurred.
      * @property timestamp Unix timestamp representing when the event occurred.
      * @property paywallID The identifier of the custom paywall.
+     * @property offeringID The offering ID related to this custom paywall event.
+     * @property presentedOfferingContext The placement and targeting context for the offering, if any.
      */
     @Serializable
     @SerialName("custom_paywall_event")
@@ -205,7 +207,87 @@ internal sealed class BackendEvent : Event {
         val paywallID: String? = null,
         @SerialName("offering_id")
         val offeringID: String? = null,
+        @SerialName("presented_offering_context")
+        val presentedOfferingContext: CustomPaywallPresentedOfferingContextData? = null,
     ) : BackendEvent()
+
+    /**
+     * Wire shape for workflow lifecycle events. Matches khepri's WorkflowsEvent schema.
+     */
+    @Serializable
+    @SerialName("workflows")
+    data class Workflows(
+        val id: String,
+        val version: Int,
+        val type: String,
+        @SerialName("event_name")
+        val eventName: String,
+        @SerialName("timestamp_ms")
+        val timestampMs: Long,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        val context: Context = Context(),
+        val properties: Properties,
+    ) : BackendEvent() {
+
+        @Serializable
+        data class Context(
+            val locale: String? = null,
+        )
+
+        @Serializable
+        data class Properties(
+            @SerialName("workflow_id")
+            val workflowId: String,
+            @SerialName("step_id")
+            val stepId: String,
+            @SerialName("trace_id")
+            val traceId: String? = null,
+            @SerialName("from_step_id")
+            val fromStepId: String? = null,
+            @SerialName("to_step_id")
+            val toStepId: String? = null,
+            @SerialName("entry_reason")
+            val entryReason: String? = null,
+            @SerialName("is_first_step")
+            val isFirstStep: Boolean? = null,
+            @SerialName("is_last_step")
+            val isLastStep: Boolean? = null,
+            @SerialName("experiment_id")
+            val experimentId: String? = null,
+            @SerialName("experiment_variant")
+            val experimentVariant: String? = null,
+            @SerialName("is_last_variant_step")
+            val isLastVariantStep: Boolean? = null,
+        )
+    }
+
+    @Serializable
+    data class CustomPaywallPresentedOfferingContextData(
+        @SerialName("placement_identifier")
+        val placementIdentifier: String? = null,
+        @SerialName("targeting_revision")
+        val targetingRevision: Int? = null,
+        @SerialName("targeting_rule_id")
+        val targetingRuleId: String? = null,
+    ) {
+        companion object {
+            fun from(
+                placementIdentifier: String?,
+                targetingRevision: Int?,
+                targetingRuleId: String?,
+            ): CustomPaywallPresentedOfferingContextData? {
+                if (placementIdentifier == null && targetingRevision == null && targetingRuleId == null) {
+                    return null
+                }
+                return CustomPaywallPresentedOfferingContextData(
+                    placementIdentifier = placementIdentifier,
+                    targetingRevision = targetingRevision,
+                    targetingRuleId = targetingRuleId,
+                )
+            }
+        }
+    }
 
     @Serializable
     @SerialName("ad")
@@ -265,5 +347,15 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the custom paywall event schema.
          */
         const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the workflow event schema.
+         */
+        const val WORKFLOW_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the type identifier for workflow events.
+         */
+        const val WORKFLOW_EVENT_TYPE = "workflows"
     }
 }

@@ -11,6 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
@@ -42,6 +43,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -2814,6 +2816,66 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         purchases.close()
         verifyClose()
+    }
+
+    // endregion
+
+    // region getWorkflow
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow delivers the manager success result to the caller`() {
+        val expected = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        val successSlot = slot<(WorkflowDataResult) -> Unit>()
+        every {
+            mockWorkflowManager.getWorkflow(
+                appUserID = appUserId,
+                workflowId = "wf_1",
+                appInBackground = any(),
+                onSuccess = capture(successSlot),
+                onError = any(),
+                callbackDispatcher = any(),
+            )
+        } answers { successSlot.captured(expected) }
+
+        var received: WorkflowDataResult? = null
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.getWorkflow(
+            workflowId = "wf_1",
+            onSuccess = { received = it },
+            onError = { receivedError = it },
+        )
+
+        assertThat(received).isEqualTo(expected)
+        assertThat(receivedError).isNull()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow delivers the manager error to the caller`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockWorkflowManager.getWorkflow(
+                appUserID = appUserId,
+                workflowId = "wf_1",
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = capture(errorSlot),
+                callbackDispatcher = any(),
+            )
+        } answers { errorSlot.captured(expectedError) }
+
+        var received: WorkflowDataResult? = null
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.getWorkflow(
+            workflowId = "wf_1",
+            onSuccess = { received = it },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+        assertThat(received).isNull()
     }
 
     // endregion

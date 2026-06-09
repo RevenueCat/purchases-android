@@ -7,114 +7,211 @@ import org.junit.Test
 
 internal class LoadedWorkflowPaywallHeaderSelectionTest {
 
+    private fun info(hasHeroImage: Boolean, hasHeader: Boolean) =
+        WorkflowHeaderStepInfo(hasHeroImage = hasHeroImage, hasHeader = hasHeader)
+
+    private fun transition(direction: NavigationDirection) =
+        WorkflowPendingTransition("from", direction, 1)
+
+    // --- present <-> absent: the cases the fade is for ---
+
     @Test
-    fun `hero to non-hero keeps outgoing hero header while animating`() {
-        val selected = selectWorkflowHeaderStepId(
+    fun `header to no-header fades the outgoing header out`() {
+        val presentation = selectWorkflowHeaderPresentation(
             currentStepId = "target",
             stepInfoByStepId = mapOf(
-                "from" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
+                "from" to info(hasHeroImage = false, hasHeader = true),
+                "target" to info(hasHeroImage = false, hasHeader = false),
             ),
-            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
+            pendingTransition = transition(NavigationDirection.FORWARD),
         )
 
-        assertThat(selected).isEqualTo("from")
+        assertThat(presentation.headerStepId).isEqualTo("from")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.LEAVING)
     }
 
     @Test
-    fun `hero to non-hero switches to target header after animation`() {
-        val selected = selectWorkflowHeaderStepId(
+    fun `header to hero-without-header still fades the outgoing header out`() {
+        // Behavior change: previously this dropped the header (hero rule). Now it fades.
+        val presentation = selectWorkflowHeaderPresentation(
             currentStepId = "target",
             stepInfoByStepId = mapOf(
-                "from" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
+                "from" to info(hasHeroImage = false, hasHeader = true),
+                "target" to info(hasHeroImage = true, hasHeader = false),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("from")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.LEAVING)
+    }
+
+    @Test
+    fun `no-header to header fades the incoming header in`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = false, hasHeader = false),
+                "target" to info(hasHeroImage = false, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.ENTERING)
+    }
+
+    @Test
+    fun `missing outgoing hero header falls back to incoming header entering`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = true, hasHeader = false),
+                "target" to info(hasHeroImage = false, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.ENTERING)
+    }
+
+    // --- both present: existing selection preserved, no fade ---
+
+    @Test
+    fun `hero to non-hero both-header keeps outgoing header stable`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = true, hasHeader = true),
+                "target" to info(hasHeroImage = false, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("from")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    @Test
+    fun `non-hero to hero both-header forward uses incoming header stable`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = false, hasHeader = true),
+                "target" to info(hasHeroImage = true, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    @Test
+    fun `non-hero to hero both-header backward uses incoming header stable`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = false, hasHeader = true),
+                "target" to info(hasHeroImage = true, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.BACKWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    @Test
+    fun `non-hero to non-hero both-header backward keeps outgoing header stable`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = false, hasHeader = true),
+                "target" to info(hasHeroImage = false, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.BACKWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("from")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    @Test
+    fun `non-hero to non-hero both-header forward uses incoming header stable`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = false, hasHeader = true),
+                "target" to info(hasHeroImage = false, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    // --- degenerate cases ---
+
+    @Test
+    fun `no-header to no-header renders current step stable`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "from" to info(hasHeroImage = false, hasHeader = false),
+                "target" to info(hasHeroImage = false, hasHeader = false),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    @Test
+    fun `pending transition with unknown from step renders current step`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                // "from" is intentionally absent from the map
+                "target" to info(hasHeroImage = false, hasHeader = false),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
+    }
+
+    @Test
+    fun `unknown current step treated as no header so outgoing header leaves`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                // "target" (the current step) is intentionally absent from the map, so it is
+                // treated as having no header: the outgoing "from" header fades out (LEAVING).
+                "from" to info(hasHeroImage = false, hasHeader = true),
+            ),
+            pendingTransition = transition(NavigationDirection.FORWARD),
+        )
+
+        assertThat(presentation.headerStepId).isEqualTo("from")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.LEAVING)
+    }
+
+    @Test
+    fun `idle state uses current step header stable`() {
+        val presentation = selectWorkflowHeaderPresentation(
+            currentStepId = "target",
+            stepInfoByStepId = mapOf(
+                "target" to info(hasHeroImage = false, hasHeader = true),
             ),
             pendingTransition = null,
         )
 
-        assertThat(selected).isEqualTo("target")
-    }
-
-    @Test
-    fun `non-hero to hero uses incoming header immediately`() {
-        val selected = selectWorkflowHeaderStepId(
-            currentStepId = "target",
-            stepInfoByStepId = mapOf(
-                "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
-            ),
-            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
-        )
-
-        assertThat(selected).isEqualTo("target")
-    }
-
-    @Test
-    fun `non-hero to hero backward transition uses incoming header while animating`() {
-        val selected = selectWorkflowHeaderStepId(
-            currentStepId = "target",
-            stepInfoByStepId = mapOf(
-                "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = true),
-            ),
-            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.BACKWARD, 1),
-        )
-
-        assertThat(selected).isEqualTo("target")
-    }
-
-    @Test
-    fun `non-hero to non-hero backward transition keeps outgoing header while animating`() {
-        val selected = selectWorkflowHeaderStepId(
-            currentStepId = "target",
-            stepInfoByStepId = mapOf(
-                "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-            ),
-            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.BACKWARD, 1),
-        )
-
-        assertThat(selected).isEqualTo("from")
-    }
-
-    @Test
-    fun `non-hero to non-hero forward transition uses incoming header while animating`() {
-        val selected = selectWorkflowHeaderStepId(
-            currentStepId = "target",
-            stepInfoByStepId = mapOf(
-                "from" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-            ),
-            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
-        )
-
-        assertThat(selected).isEqualTo("target")
-    }
-
-    @Test
-    fun `missing outgoing hero header falls back to target header`() {
-        val selected = selectWorkflowHeaderStepId(
-            currentStepId = "target",
-            stepInfoByStepId = mapOf(
-                "from" to WorkflowHeaderStepInfo(hasHeroImage = true, hasHeader = false),
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-            ),
-            pendingTransition = WorkflowPendingTransition("from", NavigationDirection.FORWARD, 1),
-        )
-
-        assertThat(selected).isEqualTo("target")
-    }
-
-    @Test
-    fun `idle state always uses current step header`() {
-        val selected = selectWorkflowHeaderStepId(
-            currentStepId = "target",
-            stepInfoByStepId = mapOf(
-                "target" to WorkflowHeaderStepInfo(hasHeroImage = false, hasHeader = true),
-            ),
-            pendingTransition = null,
-        )
-
-        assertThat(selected).isEqualTo("target")
+        assertThat(presentation.headerStepId).isEqualTo("target")
+        assertThat(presentation.role).isEqualTo(WorkflowHeaderTransitionRole.STABLE)
     }
 }

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy.handler
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -36,7 +35,7 @@ internal class ChangeSubscriptionPlanHandler(
         val onError: (PurchasesError) -> Unit,
     )
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Suppress("ReturnCount", "LongMethod")
     @GalaxySerialOperation
     override fun changeSubscriptionPlan(
