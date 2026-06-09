@@ -711,14 +711,23 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getWorkflow stale hit does not re-pin from disk when the background refresh fails`() {
-        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
-        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
-        coEvery { mockResolver.resolve(response) } returns staleResult
+    fun `getWorkflow stale hit re-pins from the persisted envelope when the background refresh fails`() {
+        // Matches OfferingsManager: a fallback-eligible background-refresh failure recovers the
+        // persisted envelope and re-stamps the cache fresh. Known gap vs offerings (re-pinning an
+        // older prefetched envelope over a newer on-demand value) is bounded and self-healing, closed
+        // by the on-demand envelope persistence + LRU follow-up.
+        val inlineResponse = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = inlineResponse.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(inlineResponse) } returns staleResult
 
-        // A persisted envelope exists on disk — the SWR background refresh must NOT serve it. The
-        // caller already has the stale value, so re-pinning from disk would only suppress the retry
-        // (and could overwrite a newer in-memory value with an older prefetched one).
+        // A distinct value persisted on disk, which the failed refresh should recover and re-pin.
+        val diskEnvelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val diskResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(diskEnvelope) } returns diskResult
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
 
@@ -737,7 +746,7 @@ class WorkflowManagerTest {
         } answers {
             call++
             if (call == 1) {
-                successSlot.captured(response)
+                successSlot.captured(inlineResponse)
             } else {
                 errorSlot.captured(
                     PurchasesError(PurchasesErrorCode.NetworkError, "boom"),
@@ -746,7 +755,7 @@ class WorkflowManagerTest {
             }
         }
 
-        // Populate at t=0.
+        // Populate at t=0 with the in-memory (INLINE) value.
         every { mockDateProvider.now } returns Date(0)
         workflowManager.getWorkflow(
             appUserID = "user_1",
@@ -756,7 +765,7 @@ class WorkflowManagerTest {
             onError = { fail("unexpected error $it") },
         )
 
-        // Stale call at t=6min: serves stale, the background refresh fails.
+        // Stale call at t=6min: serves stale immediately, the background refresh then fails.
         every { mockDateProvider.now } returns Date(6L * 60 * 1000)
         var served: WorkflowDataResult? = null
         workflowManager.getWorkflow(
@@ -767,13 +776,31 @@ class WorkflowManagerTest {
             onError = { fail("unexpected error $it") },
         )
 
-        // Caller got the stale value...
+        // Caller got the stale in-memory value immediately...
         assertThat(served).isSameAs(staleResult)
-        // ...the disk envelope was never consulted on the background refresh...
-        verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
-        // ...and the entry stays stale with its original value, not re-pinned fresh from disk.
-        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(staleResult)
-        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isTrue
+        // ...and the failed refresh recovered the disk envelope, re-pinned it, and re-stamped fresh.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(diskResult)
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isFalse
+
+        // Consequence: the next render serves the recovered disk value with no further backend call.
+        var servedAgain: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { servedAgain = it },
+            onError = { fail("unexpected error $it") },
+        )
+        assertThat(servedAgain).isSameAs(diskResult)
+        verify(exactly = 2) {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any(),
+            )
+        }
     }
 
     @Test
@@ -1833,6 +1860,61 @@ class WorkflowManagerTest {
         assertThat(completeCount).isEqualTo(1)
         // ...and the resolved workflow is still cached in memory (cacheWorkflow ran before the failed persist).
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(resolved)
+    }
+
+    @Test
+    fun `prefetch detail fetch falls back to the persisted envelope on a fallback-eligible error`() {
+        // The disk fallback applies to every caller, including prefetch: this is the intended
+        // backend-down recovery (consistent with restoreWorkflowFromEnvelope). The persisted envelope
+        // is re-resolved, cached, and re-stamped fresh.
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "W", offeringId = "off_1", prefetch = true),
+            ),
+        )
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(listResponse) }
+
+        // The persisted envelope on disk and the value it resolves to.
+        val diskEnvelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val diskResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(diskEnvelope) } returns diskResult
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        // The prefetch detail fetch fails fallback-eligibly (5xx) on the prefetch dispatcher.
+        val detailErrorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(detailErrorSlot),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers {
+            detailErrorSlot.captured(
+                PurchasesError(PurchasesErrorCode.NetworkError, "server boom"),
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // The prefetch recovered the persisted envelope and cached it in memory.
+        coVerify(exactly = 1) { mockResolver.resolve(diskEnvelope) }
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(diskResult)
+        // cacheWorkflow re-stamped it fresh, so an on-demand render serves this recovered value
+        // without re-hitting the backend until it goes stale again.
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isFalse
     }
 
     // endregion envelope persistence

@@ -81,16 +81,15 @@ internal class WorkflowManager(
             cached != null && staleWhileRevalidate -> {
                 // Serve the stale value immediately, then refresh the cache in the background.
                 // The caller already has a usable value, so the refresh delivers no callbacks: a
-                // success only updates the cache, and a failure is logged and swallowed — the entry
-                // stays stale and the next render retries. Mirrors
-                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. We pass
-                // alreadyServedStaleValue = true so a failed refresh skips disk recovery: the caller
-                // already has the stale value, so re-pinning from the persisted envelope would buy
-                // nothing and could overwrite a newer on-demand-fetched in-memory value with an older
-                // prefetched one, suppressing the retry for a full TTL. Disk recovery is only for
-                // callers that have nothing to serve (the foreground miss and the prefetch recovery
-                // path below). Concurrent stale callers can each fire a refresh; this is not
-                // deduplicated, matching the offerings stale path.
+                // success updates the cache, and a failure goes through the same disk fallback as any
+                // other fetch (see fetchAndCacheWorkflow) — on a backend-down error with a persisted
+                // envelope it re-pins from disk and re-stamps fresh, matching OfferingsManager.
+                // Known gap vs offerings: offerings persists every fetch, so its disk copy is always
+                // the latest; the detail path persists prefetched workflows only, so a background
+                // refresh can re-pin an older prefetched envelope over a newer on-demand value and
+                // suppress the retry for a TTL. Bounded and self-healing; the on-demand envelope
+                // persistence + LRU follow-up closes it. Concurrent stale callers can each fire a
+                // refresh; this is not deduplicated, matching the offerings stale path.
                 onSuccess(cached)
                 fetchAndCacheWorkflow(
                     appUserID = appUserID,
@@ -98,7 +97,6 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
-                    alreadyServedStaleValue = true,
                     onSuccess = {},
                     onError = { error ->
                         errorLog {
@@ -109,15 +107,13 @@ internal class WorkflowManager(
                 )
             }
             else -> {
-                // Miss, or stale with SWR disabled (the prefetch path): block on the fetch. These
-                // callers have nothing to serve yet, so disk recovery applies on a fallback-eligible error.
+                // Miss, or stale with SWR disabled (the prefetch path): block on the fetch.
                 fetchAndCacheWorkflow(
                     appUserID = appUserID,
                     workflowId = workflowId,
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
-                    alreadyServedStaleValue = false,
                     onSuccess = onSuccess,
                     onError = onError,
                 )
@@ -132,10 +128,6 @@ internal class WorkflowManager(
         appInBackground: Boolean,
         callbackDispatcher: Dispatcher?,
         persistEnvelopeOnResolve: Boolean,
-        // True only for the SWR background refresh, whose caller already received the stale value.
-        // Such a refresh skips disk recovery on error (see onErrorWithFallback): there is nothing to
-        // recover for, so it stays stale and retries next render rather than re-pinning from disk.
-        alreadyServedStaleValue: Boolean,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -166,25 +158,18 @@ internal class WorkflowManager(
         }
         val onErrorWithFallback: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit =
             { error, behavior ->
-                // Two independent axes decide the error handling: whether the caller already has a
-                // value (alreadyServedStaleValue), and what the backend said (behavior).
-                when {
-                    // Caller already served the stale value (SWR background refresh): nothing to
-                    // recover, regardless of the backend status. Leave the entry stale so the next
-                    // render retries; don't read disk or touch the cache. (Invalidating would be a
-                    // no-op anyway — this path is only reached for an already-stale entry.)
-                    alreadyServedStaleValue -> onError(error)
+                if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
                     // 4xx: the server intentionally changed/removed this workflow, so don't serve the
                     // saved copy. Invalidate the in-memory entry so the next call retries rather than
                     // serving a still-cached value — mirrors the list's invalidateWorkflowsListTimestamp
                     // and OfferingsManager's forceCacheStale on 4xx.
-                    behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK -> {
-                        workflowsCache.invalidateWorkflowTimestamp(workflowId)
-                        onError(error)
-                    }
+                    workflowsCache.invalidateWorkflowTimestamp(workflowId)
+                    onError(error)
+                } else {
                     // Transport error / 5xx / malformed body: the backend is unavailable, not refusing.
-                    // Recover from the persisted envelope if we have one.
-                    else -> scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
+                    // Recover from the persisted envelope if we have one, matching OfferingsManager's
+                    // disk fallback. Applies to every caller, including the SWR background refresh.
+                    scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
                 }
             }
         if (callbackDispatcher != null) {
