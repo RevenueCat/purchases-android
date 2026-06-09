@@ -18,6 +18,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -35,7 +36,6 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -163,7 +163,12 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
-    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
+    private val useWorkflowsEndpoint: Boolean =
+        if (Purchases.isConfigured) {
+            Purchases.sharedInstance.currentConfiguration.dangerousSettings.useWorkflows
+        } else {
+            false
+        },
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
