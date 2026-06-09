@@ -170,6 +170,8 @@ internal class WorkflowManager(
         }
     }
 
+    private enum class ListFetchAction { COMPLETE_NOW, STALE_WHILE_REVALIDATE, BLOCKING_FETCH }
+
     /**
      * Fetches the workflows list, then prefetches all entries marked `prefetch = true`.
      *
@@ -189,6 +191,12 @@ internal class WorkflowManager(
      * ignores [forceRefresh]: an in-flight batch is not interrupted, so a forced refresh that arrives
      * while a batch is running joins it instead of starting a new fetch. That window self-heals on the
      * next fetch.
+     *
+     * When the cached list is stale but present and the call is not forced, it is served
+     * stale-while-revalidate: [onComplete] fires immediately with the cached offeringId → workflowId
+     * map and the list is refreshed in the background, mirroring
+     * [com.revenuecat.purchases.common.offerings.OfferingsManager.vendCachedOfferingsAndMaybeRefresh].
+     * A forced refresh or a cold miss still blocks until the fetch settles.
      */
     fun getWorkflowsList(
         appUserID: String,
@@ -197,27 +205,39 @@ internal class WorkflowManager(
         onComplete: () -> Unit = {},
     ) {
         // Decide under the lock, act outside it so onComplete never fires while holding it.
-        val startFetch = synchronized(callbackLock) {
+        val action = synchronized(callbackLock) {
             val inFlight = pendingCompletionCallbacks[appUserID]
             if (inFlight != null) {
-                // Already fetching for this user: queue onto it. Joining ignores cache freshness and
-                // forceRefresh on purpose — the list response stamps the cache fresh mid-sequence,
-                // before its prefetch finishes, so a freshness check would let this caller complete
-                // early, and an in-flight batch is never interrupted.
                 inFlight.add(onComplete)
                 return
             }
-            // Nothing in flight: open a batch and fetch when forced or when the cached list is stale.
-            pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
-            forceRefresh || workflowsCache.isWorkflowsListCacheStale(appInBackground)
+            val stale = workflowsCache.isWorkflowsListCacheStale(appInBackground)
+            when {
+                // Fresh, nothing in flight: complete now.
+                !forceRefresh && !stale -> {
+                    pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
+                    ListFetchAction.COMPLETE_NOW
+                }
+                // Stale-but-present, not forced: serve the cached map now and refresh in the background.
+                !forceRefresh && workflowsCache.hasCachedWorkflowsList() -> {
+                    pendingCompletionCallbacks[appUserID] = mutableListOf()
+                    ListFetchAction.STALE_WHILE_REVALIDATE
+                }
+                // Forced, or cold miss: fetch and block.
+                else -> {
+                    pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
+                    ListFetchAction.BLOCKING_FETCH
+                }
+            }
         }
 
-        // Fresh cache and nothing in flight: complete now. Otherwise the request's onSuccess/onError
-        // fire the queued callbacks when it settles.
-        if (!startFetch) {
-            completePendingCallbacks(appUserID)
-        } else {
-            fetchWorkflowsList(appUserID, appInBackground, forceRefresh)
+        when (action) {
+            ListFetchAction.COMPLETE_NOW -> completePendingCallbacks(appUserID)
+            ListFetchAction.STALE_WHILE_REVALIDATE -> {
+                onComplete()
+                fetchWorkflowsList(appUserID, appInBackground, forceRefresh = false)
+            }
+            ListFetchAction.BLOCKING_FETCH -> fetchWorkflowsList(appUserID, appInBackground, forceRefresh)
         }
     }
 
