@@ -148,24 +148,32 @@ internal object PredicateConformanceFixtureLoader {
         files.flatMap { loadCases(it) }
     }
 
-    /** True when the downloaded conformance envelope is available (env override or bundled resource). */
-    fun conformanceFixtureExists(): Boolean =
-        conformanceFixtureFile()?.isFile == true || conformanceResourceText() != null
-
-    /** Parses the downloaded conformance envelope into fixture cases. Throws if it is absent. */
-    fun conformanceCases(): List<PredicateConformanceFixtureCase> {
+    /**
+     * The downloaded conformance envelope's cases, or null when the envelope is
+     * absent (neither the env override nor the bundled resource resolves). Read
+     * and decoded once. The download runs before the test JVM starts, so the
+     * envelope is already present when this is first touched.
+     */
+    private val conformanceCasesOrNull: List<PredicateConformanceFixtureCase>? by lazy {
         val text = conformanceFixtureFile()?.takeIf { it.isFile }?.readText()
             ?: conformanceResourceText()
-            ?: error(
-                "Predicate conformance fixtures not found. Run " +
-                    "scripts/rules_engine/download_predicate_conformance_fixtures.sh first.",
-            )
-        return json.decodeFromString<Envelope>(text).fixtures
+            ?: return@lazy null
+        json.decodeFromString<Envelope>(text).fixtures
     }
+
+    /** True when the downloaded conformance envelope is available (env override or bundled resource). */
+    fun conformanceFixtureExists(): Boolean = conformanceCasesOrNull != null
+
+    /** Parses the downloaded conformance envelope into fixture cases. Throws if it is absent. */
+    fun conformanceCases(): List<PredicateConformanceFixtureCase> =
+        conformanceCasesOrNull ?: error(
+            "Predicate conformance fixtures not found. Run " +
+                "scripts/rules_engine/download_predicate_conformance_fixtures.sh first.",
+        )
 
     /** Like [conformanceCases] but yields an empty list when the envelope is absent, so the suite skips cleanly. */
     fun conformanceCasesOrEmpty(): List<PredicateConformanceFixtureCase> =
-        if (conformanceFixtureExists()) conformanceCases() else emptyList()
+        conformanceCasesOrNull.orEmpty()
 
     private fun conformanceFixtureFile(): File? =
         System.getenv(CONFORMANCE_FIXTURE_PATH_ENV)
