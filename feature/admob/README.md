@@ -191,7 +191,7 @@ rewardedAd?.show(
     rewardVerificationStarted = {
         // Called when reward callback is received and verification polling begins.
     },
-    rewardVerificationResult = { result ->
+    rewardVerificationCompleted = { result ->
         rewardedAd = null
         if (result.verifiedReward != null) {
             // Verified reward.
@@ -285,7 +285,7 @@ rewardedInterstitialAd?.show(
     rewardVerificationStarted = {
         // Verification has started.
     },
-    rewardVerificationResult = { result ->
+    rewardVerificationCompleted = { result ->
         rewardedInterstitialAd = null
         if (result.verifiedReward != null) {
             // Verified reward.
@@ -296,7 +296,7 @@ rewardedInterstitialAd?.show(
 )
 ```
 
-When `rewardVerificationResult` returns a `verifiedReward` of type `VerifiedReward.VirtualCurrency`, the adapter
+When `rewardVerificationCompleted` returns a `verifiedReward` of type `VerifiedReward.VirtualCurrency`, the adapter
 automatically calls `Purchases.sharedInstance.invalidateVirtualCurrenciesCache()` (if Purchases is configured) before
 delivering the callback. You only need to refetch balances (`Purchases.sharedInstance.getVirtualCurrencies(...)`) when
 your UI needs fresh values.
