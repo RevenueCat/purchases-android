@@ -83,13 +83,14 @@ internal class WorkflowManager(
                 // The caller already has a usable value, so the refresh delivers no callbacks: a
                 // success only updates the cache, and a failure is logged and swallowed — the entry
                 // stays stale and the next render retries. Mirrors
-                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. The disk fallback is disabled
-                // here on purpose (allowDiskFallback = false): the caller already has the stale value,
-                // so re-pinning from the persisted envelope would buy nothing and could overwrite a
-                // newer on-demand-fetched in-memory value with an older prefetched one, suppressing the
-                // retry for a full TTL. Disk fallback is only for callers that have nothing to serve
-                // (the foreground miss and the prefetch recovery path below). Concurrent stale callers
-                // can each fire a refresh; this is not deduplicated, matching the offerings stale path.
+                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. We pass
+                // alreadyServedStaleValue = true so a failed refresh skips disk recovery: the caller
+                // already has the stale value, so re-pinning from the persisted envelope would buy
+                // nothing and could overwrite a newer on-demand-fetched in-memory value with an older
+                // prefetched one, suppressing the retry for a full TTL. Disk recovery is only for
+                // callers that have nothing to serve (the foreground miss and the prefetch recovery
+                // path below). Concurrent stale callers can each fire a refresh; this is not
+                // deduplicated, matching the offerings stale path.
                 onSuccess(cached)
                 fetchAndCacheWorkflow(
                     appUserID = appUserID,
@@ -97,7 +98,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
-                    allowDiskFallback = false,
+                    alreadyServedStaleValue = true,
                     onSuccess = {},
                     onError = { error ->
                         errorLog {
@@ -109,14 +110,14 @@ internal class WorkflowManager(
             }
             else -> {
                 // Miss, or stale with SWR disabled (the prefetch path): block on the fetch. These
-                // callers have nothing to serve yet, so the disk fallback applies.
+                // callers have nothing to serve yet, so disk recovery applies on a fallback-eligible error.
                 fetchAndCacheWorkflow(
                     appUserID = appUserID,
                     workflowId = workflowId,
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
-                    allowDiskFallback = true,
+                    alreadyServedStaleValue = false,
                     onSuccess = onSuccess,
                     onError = onError,
                 )
@@ -131,7 +132,10 @@ internal class WorkflowManager(
         appInBackground: Boolean,
         callbackDispatcher: Dispatcher?,
         persistEnvelopeOnResolve: Boolean,
-        allowDiskFallback: Boolean,
+        // True only for the SWR background refresh, whose caller already received the stale value.
+        // Such a refresh skips disk recovery on error (see onErrorWithFallback): there is nothing to
+        // recover for, so it stays stale and retries next render rather than re-pinning from disk.
+        alreadyServedStaleValue: Boolean,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -162,20 +166,24 @@ internal class WorkflowManager(
         }
         val onErrorWithFallback: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit =
             { error, behavior ->
+                // Two independent axes decide the error handling: whether the caller already has a
+                // value (alreadyServedStaleValue), and what the backend said (behavior).
                 when {
-                    // SWR background refresh: the caller already has the stale value. Don't touch the
-                    // cache — leave the entry stale so the next render retries, and don't re-pin from
-                    // disk. (Invalidating would be a no-op here: this path is only reached for an
-                    // already-stale entry.)
-                    !allowDiskFallback -> onError(error)
-                    // A 4xx means the server intentionally changed/removed this workflow. Don't serve
-                    // the saved copy; invalidate the in-memory entry so the next call retries rather
-                    // than serving a still-cached value — mirrors the list's
-                    // invalidateWorkflowsListTimestamp and OfferingsManager's forceCacheStale on 4xx.
+                    // Caller already served the stale value (SWR background refresh): nothing to
+                    // recover, regardless of the backend status. Leave the entry stale so the next
+                    // render retries; don't read disk or touch the cache. (Invalidating would be a
+                    // no-op anyway — this path is only reached for an already-stale entry.)
+                    alreadyServedStaleValue -> onError(error)
+                    // 4xx: the server intentionally changed/removed this workflow, so don't serve the
+                    // saved copy. Invalidate the in-memory entry so the next call retries rather than
+                    // serving a still-cached value — mirrors the list's invalidateWorkflowsListTimestamp
+                    // and OfferingsManager's forceCacheStale on 4xx.
                     behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK -> {
                         workflowsCache.invalidateWorkflowTimestamp(workflowId)
                         onError(error)
                     }
+                    // Transport error / 5xx / malformed body: the backend is unavailable, not refusing.
+                    // Recover from the persisted envelope if we have one.
                     else -> scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
                 }
             }
