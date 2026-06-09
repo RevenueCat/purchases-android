@@ -29,6 +29,7 @@ public enum class WorkflowTriggerType {
 }
 
 internal object WorkflowTriggerTypeDeserializer : EnumDeserializerWithDefault<WorkflowTriggerType>(
+    serialName = "com.revenuecat.purchases.common.workflows.WorkflowTriggerType",
     defaultValue = WorkflowTriggerType.UNKNOWN,
 )
 

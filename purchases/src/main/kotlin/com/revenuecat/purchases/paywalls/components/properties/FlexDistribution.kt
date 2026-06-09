@@ -19,5 +19,6 @@ public enum class FlexDistribution {
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object FlexDistributionDeserializer : EnumDeserializerWithDefault<FlexDistribution>(
+    serialName = "com.revenuecat.purchases.paywalls.components.properties.FlexDistribution",
     defaultValue = FlexDistribution.START,
 )
