@@ -150,6 +150,14 @@ internal class WorkflowManager(
                 onSuccess(result)
             }
         }
+        val onErrorWithFallback: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit =
+            { error, behavior ->
+                if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                    onError(error)
+                } else {
+                    scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
+                }
+            }
         if (callbackDispatcher != null) {
             backend.getWorkflow(
                 appUserID = appUserID,
@@ -157,7 +165,7 @@ internal class WorkflowManager(
                 appInBackground = appInBackground,
                 callbackDispatcher = callbackDispatcher,
                 onSuccess = onSuccessHandler,
-                onError = { error, _ -> onError(error) },
+                onError = onErrorWithFallback,
             )
         } else {
             backend.getWorkflow(
@@ -165,9 +173,39 @@ internal class WorkflowManager(
                 workflowId = workflowId,
                 appInBackground = appInBackground,
                 onSuccess = onSuccessHandler,
-                onError = { error, _ -> onError(error) },
+                onError = onErrorWithFallback,
             )
         }
+    }
+
+    /**
+     * Attempts to re-resolve the persisted disk envelope for [workflowId] after a
+     * fallback-eligible backend error. If no envelope is present, or if re-resolution fails,
+     * the original [networkError] is forwarded through [onError] so the caller is never left
+     * without a response. On success the result is cached in memory and delivered via [onSuccess].
+     */
+    private suspend fun resolveDiskFallback(
+        workflowId: String,
+        networkError: PurchasesError,
+        onSuccess: (WorkflowDataResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val envelope = workflowsCache.cachedWorkflowDetailEnvelopeFromDisk(workflowId)
+        if (envelope == null) {
+            onError(networkError)
+            return
+        }
+        val result = try {
+            workflowDetailResolver.resolve(envelope)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Failed to re-resolve disk envelope for $workflowId during fallback" }
+            onError(networkError)
+            return
+        }
+        workflowsCache.cacheWorkflow(workflowId, result)
+        onSuccess(result)
     }
 
     /**

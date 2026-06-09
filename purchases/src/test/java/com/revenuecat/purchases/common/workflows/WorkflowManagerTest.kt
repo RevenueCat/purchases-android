@@ -300,6 +300,125 @@ class WorkflowManagerTest {
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
 
+    // region detail fetch status-based fallback
+
+    @Test
+    fun `getWorkflow falls back to disk envelope on 5xx and delivers success`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val expectedResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(envelope) } returns expectedResult
+
+        // Disk holds one envelope for wf_1
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(
+                PurchasesError(PurchasesErrorCode.NetworkError, "server error"),
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        var successResult: WorkflowDataResult? = null
+        var errorCalled = false
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { successResult = it },
+            onError = { errorCalled = true },
+        )
+
+        assertThat(successResult).isEqualTo(expectedResult)
+        assertThat(errorCalled).isFalse()
+        // Result was cached in memory after re-resolution
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `getWorkflow does not fall back to disk envelope on 4xx`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "not found")
+
+        // Disk holds an envelope, but we must not serve it on 4xx
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(expectedError, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
+        }
+
+        var receivedError: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("unexpected success") },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+        coVerify(exactly = 0) { mockResolver.resolve(any()) }
+    }
+
+    @Test
+    fun `getWorkflow surfaces error when fallback eligible but no envelope on disk`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError, "transport error")
+
+        // No envelope on disk
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(
+                expectedError,
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("unexpected success") },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    // endregion detail fetch status-based fallback
+
     // region getWorkflow cache
 
     @Test
