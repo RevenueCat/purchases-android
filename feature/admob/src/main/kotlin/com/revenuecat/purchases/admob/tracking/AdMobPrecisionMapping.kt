@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.admob.tracking
 
 import com.google.android.gms.ads.AdValue
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
