@@ -205,6 +205,8 @@ internal class WorkflowManager(
         }
     }
 
+    private enum class ListFetchAction { COMPLETE_NOW, STALE_WHILE_REVALIDATE, BLOCKING_FETCH }
+
     /**
      * Caches [result] under the resolved workflow's own ID — the canonical key every later lookup
      * uses. On the lazy-conversion path the backend is called with an offering ID, so recording the
@@ -291,6 +293,12 @@ internal class WorkflowManager(
      * sequence settles — list fetched, every prefetch finished or failed — so it must always fire
      * exactly once, otherwise offerings would never be delivered to the caller.
      *
+     * When the cached list is stale but present and the call is not forced, it is served
+     * stale-while-revalidate: [onComplete] fires immediately with the cached offeringId → workflowId
+     * map and the list is refreshed in the background, mirroring
+     * [com.revenuecat.purchases.common.offerings.OfferingsManager.vendCachedOfferingsAndMaybeRefresh].
+     * A forced refresh or a cold miss still blocks until the fetch settles.
+     *
      * Concurrent callers for the same [appUserID] while a request is in-flight are deduplicated: the
      * second call queues its [onComplete] and returns without a new network request, then all pending
      * callbacks for that user fire together when the in-flight sequence finishes. A call for a
@@ -306,27 +314,51 @@ internal class WorkflowManager(
         onComplete: () -> Unit = {},
     ) {
         // Decide under the lock, act outside it so onComplete never fires while holding it.
-        val startFetch = synchronized(callbackLock) {
+        val action = synchronized(callbackLock) {
             val inFlight = pendingCompletionCallbacks[appUserID]
             if (inFlight != null) {
                 // Already fetching for this user: queue onto it. Joining ignores cache freshness and
-                // forceRefresh on purpose — the list response stamps the cache fresh mid-sequence,
-                // before its prefetch finishes, so a freshness check would let this caller complete
-                // early, and an in-flight batch is never interrupted.
+                // forceRefresh on purpose — the list response stamps the cache fresh mid-sequence, before
+                // its prefetch finishes, and an in-flight batch is never interrupted.
                 inFlight.add(onComplete)
                 return
             }
-            // Nothing in flight: open a batch and fetch when forced or when the cached list is stale.
-            pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
-            forceRefresh || workflowsCache.isWorkflowsListCacheStale(appInBackground)
+            val stale = workflowsCache.isWorkflowsListCacheStale(appInBackground)
+            when {
+                // Fresh, nothing in flight: complete now.
+                !forceRefresh && !stale -> {
+                    pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
+                    ListFetchAction.COMPLETE_NOW
+                }
+                // Stale-but-present, not forced: serve the cached map now and refresh in the background.
+                // Register an EMPTY batch so a concurrent caller joins this refresh instead of starting
+                // another (the list keeps the dedup offerings doesn't need, because the refresh fires a
+                // prefetch loop). onComplete is fired outside the lock, so it isn't in the batch and won't
+                // be double-fired when the refresh settles.
+                !forceRefresh && workflowsCache.hasCachedWorkflowsList() -> {
+                    pendingCompletionCallbacks[appUserID] = mutableListOf()
+                    ListFetchAction.STALE_WHILE_REVALIDATE
+                }
+                // Forced, or cold miss (no cached list): fetch and block.
+                else -> {
+                    pendingCompletionCallbacks[appUserID] = mutableListOf(onComplete)
+                    ListFetchAction.BLOCKING_FETCH
+                }
+            }
         }
 
-        // Fresh cache and nothing in flight: complete now. Otherwise the request's onSuccess/onError
-        // fire the queued callbacks when it settles.
-        if (!startFetch) {
-            completePendingCallbacks(appUserID)
-        } else {
-            fetchWorkflowsList(appUserID, appInBackground, forceRefresh)
+        when (action) {
+            // Fresh cache and nothing in flight: complete now.
+            ListFetchAction.COMPLETE_NOW -> completePendingCallbacks(appUserID)
+            // Vend the cached map immediately, then refresh in the background, mirroring
+            // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. The background fetch's onSuccess/onError
+            // fires any callers that joined the batch.
+            ListFetchAction.STALE_WHILE_REVALIDATE -> {
+                onComplete()
+                fetchWorkflowsList(appUserID, appInBackground, forceRefresh = false)
+            }
+            // Miss or forced: the request's onSuccess/onError fires the queued callbacks when it settles.
+            ListFetchAction.BLOCKING_FETCH -> fetchWorkflowsList(appUserID, appInBackground, forceRefresh)
         }
     }
 
@@ -336,9 +368,10 @@ internal class WorkflowManager(
      * from disk; on a 4xx it invalidates the timestamp and settles without restoring. Shared by the
      * blocking and stale-while-revalidate paths of [getWorkflowsList].
      *
-     * [forceRefresh] only controls whether the in-memory detail caches are cleared before the prefetch
-     * loop, so a forced refresh re-fetches every detail from the backend rather than serving still-fresh
-     * cached values.
+     * [forceRefresh] only controls whether the in-memory detail caches are cleared on a *successful*
+     * fetch (inside [onSuccess], not before the network call, so a failed fetch leaves cached details
+     * intact). A forced refresh then re-fetches every detail from the backend rather than serving
+     * still-fresh cached values.
      */
     private fun fetchWorkflowsList(appUserID: String, appInBackground: Boolean, forceRefresh: Boolean) {
         backend.getWorkflows(
