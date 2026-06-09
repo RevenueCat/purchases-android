@@ -47,7 +47,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests, run_rules_engine_conformance_tests]
     default: default
   paywall_tester_track:
     type: enum
@@ -339,6 +339,39 @@ jobs:
           path: build/test-results-collected
       - store_artifacts:
           path: build/reports
+
+  run-rules-engine-conformance-tests:
+    description: "On-demand: download khepri predicate conformance fixtures and run the conformance suite"
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - revenuecat/setup-git-credentials
+      - revenuecat/trust-github-key
+      - install-sdkman
+      - android/accept_licenses
+      - android/restore_gradle_cache
+      - run:
+          name: Download khepri predicate conformance fixtures
+          command: ./scripts/rules_engine/download_predicate_conformance_fixtures.sh
+      - run:
+          name: Run Rules Engine Internal predicate conformance tests
+          command: |
+            ./gradlew :rules-engine-internal:testDefaultsDebugUnitTest \
+              -PrunRulesEngineConformanceTests \
+              --tests "com.revenuecat.purchases.rules.PredicateConformance*" \
+              --no-daemon
+      - android/save_gradle_cache
+      - run:
+          name: Collect JUnit XMLs
+          when: always
+          command: |
+            mkdir -p build/test-results-collected
+            find . -path "*/build/test-results-collected" -prune -o -path "*/build/test-results/*/TEST-*.xml" -print0 | xargs -0 -I{} cp --parents {} build/test-results-collected/
+      - store_test_results:
+          path: build/test-results-collected
+      - store_artifacts:
+          path: rules-engine-internal/build/reports
 
   detekt:
     <<: *android-executor
@@ -1203,6 +1236,12 @@ workflows:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump
+
+  manual-run-rules-engine-conformance-tests:
+    when:
+      equal: [ run_rules_engine_conformance_tests, << pipeline.parameters.action >> ]
+    jobs:
+      - run-rules-engine-conformance-tests
 
   manual-paywall-tester-release:
     when:

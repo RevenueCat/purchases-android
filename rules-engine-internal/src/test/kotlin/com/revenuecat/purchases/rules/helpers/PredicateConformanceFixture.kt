@@ -123,6 +123,21 @@ internal object PredicateConformanceFixtureLoader {
 
     private const val FIXTURES_RESOURCE_DIR = "predicate-fixtures"
 
+    /**
+     * Resource path of the khepri-generated conformance envelope, downloaded on
+     * demand by `scripts/rules_engine/download_predicate_conformance_fixtures.sh`
+     * into `src/test/resources/predicate-conformance/`. Git-ignored and absent
+     * by default, so the conformance suite is skipped unless it has been fetched.
+     */
+    private const val CONFORMANCE_RESOURCE_PATH = "predicate-conformance/predicate_conformance_v1.json"
+
+    /**
+     * Filesystem path override for the downloaded conformance envelope. When set
+     * (and non-empty), it takes precedence over [CONFORMANCE_RESOURCE_PATH].
+     * Mirrors the env var the download script honors.
+     */
+    const val CONFORMANCE_FIXTURE_PATH_ENV = "KHEPRI_PREDICATE_CONFORMANCE_FIXTURE_PATH"
+
     private val json = Json { ignoreUnknownKeys = true }
 
     val allCases: List<PredicateConformanceFixtureCase> by lazy {
@@ -132,6 +147,33 @@ internal object PredicateConformanceFixtureLoader {
             .orEmpty()
         files.flatMap { loadCases(it) }
     }
+
+    /** True when the downloaded conformance envelope is available (env override or bundled resource). */
+    fun conformanceFixtureExists(): Boolean =
+        conformanceFixtureFile()?.isFile == true || conformanceResourceText() != null
+
+    /** Parses the downloaded conformance envelope into fixture cases. Throws if it is absent. */
+    fun conformanceCases(): List<PredicateConformanceFixtureCase> {
+        val text = conformanceFixtureFile()?.takeIf { it.isFile }?.readText()
+            ?: conformanceResourceText()
+            ?: error(
+                "Predicate conformance fixtures not found. Run " +
+                    "scripts/rules_engine/download_predicate_conformance_fixtures.sh first.",
+            )
+        return json.decodeFromString<Envelope>(text).fixtures
+    }
+
+    /** Like [conformanceCases] but yields an empty list when the envelope is absent, so the suite skips cleanly. */
+    fun conformanceCasesOrEmpty(): List<PredicateConformanceFixtureCase> =
+        if (conformanceFixtureExists()) conformanceCases() else emptyList()
+
+    private fun conformanceFixtureFile(): File? =
+        System.getenv(CONFORMANCE_FIXTURE_PATH_ENV)
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { File(it) }
+
+    private fun conformanceResourceText(): String? =
+        javaClass.classLoader?.getResource(CONFORMANCE_RESOURCE_PATH)?.readText()
 
     private fun fixturesDirectory(): File {
         val loader = javaClass.classLoader
