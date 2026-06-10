@@ -17,8 +17,14 @@ public sealed interface RewardVerificationResult {
 
     /**
      * Verification reached a terminal failure state.
+     *
+     * @param failureReason Machine-readable reason code from the backend, when provided.
+     * @param message Human-readable, actionable explanation from the backend, when provided.
      */
-    public object FAILED : RewardVerificationResult
+    public data class Failed(
+        val failureReason: String? = null,
+        val message: String? = null,
+    ) : RewardVerificationResult
 
     /**
      * The backend returned a status value that is not recognized by this SDK version.

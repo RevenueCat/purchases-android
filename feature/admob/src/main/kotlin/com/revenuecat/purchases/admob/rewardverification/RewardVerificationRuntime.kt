@@ -8,6 +8,7 @@ import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.VerifiedReward
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -73,6 +74,11 @@ internal class RewardVerificationRuntime(
         verificationTask.invokeOnCompletion { cause ->
             removeClientTransactionId(adResponseId)
             if (cause != null) {
+                // poll() swallows every non-cancellation failure into a failed result, so a non-null cause
+                // here is the verification scope being cancelled (caller teardown / Purchases.close()).
+                if (cause is CancellationException) {
+                    Logger.w(RewardVerificationStrings.CANCELLED)
+                }
                 deliverOnce(RewardVerificationResult.failed)
             }
         }
