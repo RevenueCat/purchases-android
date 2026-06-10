@@ -86,6 +86,7 @@ public class PaywallOptions internal constructor(
         result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
         result = hashMultiplier * result + mode.hashCode()
         result = hashMultiplier * result + customVariables.hashCode()
+        result = hashMultiplier * result + injectedWorkflow.hashCode()
         return result
     }
 
@@ -207,6 +208,10 @@ public class PaywallOptions internal constructor(
         /**
          * Injects a pre-built workflow (multipage paywall) to render locally without fetching
          * it from the backend. Internal RevenueCat use only (e.g. dashboard preview).
+         *
+         * The workflow is rendered against the [Offering] supplied via [setOffering]; its screens
+         * resolve packages from that single offering. Use [setOffering] (not the offering-id
+         * variants) when injecting a workflow, and prefer single-offering workflows in preview.
          */
         @InternalRevenueCatAPI
         public fun injectedWorkflow(workflow: WorkflowDataResult?): Builder = apply {
