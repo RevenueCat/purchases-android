@@ -577,6 +577,17 @@ internal class PurchasesOrchestrator(
         // back synchronously on the caller's thread while a miss resolves on its IO scope, and the
         // prefetch path routes detail callbacks onto a dedicated dispatcher — so normalizing here, at
         // the consumer boundary, is what gives callers (including awaitGetWorkflow) a stable thread.
+        if (appConfig.uiPreviewMode) {
+            dispatch {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ConfigurationError,
+                        "Workflows cannot be fetched in UI preview mode.",
+                    ),
+                )
+            }
+            return
+        }
         if (workflowManager == null) {
             dispatch {
                 onError(
