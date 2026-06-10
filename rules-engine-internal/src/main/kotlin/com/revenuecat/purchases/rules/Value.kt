@@ -1,5 +1,3 @@
-@file:Suppress("ForbiddenPublicSealedClass", "ForbiddenPublicDataClass")
-
 package com.revenuecat.purchases.rules
 
 /**
@@ -10,12 +8,25 @@ package com.revenuecat.purchases.rules
  */
 public sealed class Value {
 
+    /** JSON `null`. */
     public object Null : Value()
+
+    /** A JSON boolean. */
     public data class BoolValue(val value: Boolean) : Value()
+
+    /** A JSON integer-valued number. */
     public data class IntValue(val value: Long) : Value()
+
+    /** A JSON fractional (non-integer) number. */
     public data class FloatValue(val value: Double) : Value()
+
+    /** A JSON string. */
     public data class StringValue(val value: String) : Value()
+
+    /** A JSON array. */
     public data class ArrayValue(val items: List<Value>) : Value()
+
+    /** A JSON object. */
     public data class ObjectValue(val entries: Map<String, Value>) : Value()
 
     /**
