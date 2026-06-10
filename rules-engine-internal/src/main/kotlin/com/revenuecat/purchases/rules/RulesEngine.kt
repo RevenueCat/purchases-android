@@ -35,8 +35,7 @@ public object RulesEngine {
 
         /**
          * The predicate references a JSON Logic operator the engine does not
-         * implement. Carries the operator name so callers can decide policy
-         * (default-deny, log, etc.).
+         * implement. Carries the operator name.
          */
         public data class UnsupportedOperator(val name: String) : EvaluationError("unsupported operator: $name")
 
