@@ -18,7 +18,7 @@ import java.util.Locale
 internal interface ResourceProvider {
     companion object {
         // Directories within the app's assets where embedded fonts may be bundled, searched in order.
-        // "public/assets" is where Capacitor apps that use our paywalls SDK place their fonts.
+        // "public/assets" is a likely location for Capacitor apps that use our paywalls SDK to place their fonts.
         val ASSETS_FONTS_DIRS = listOf("fonts", "public/assets")
     }
 

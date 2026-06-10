@@ -19,7 +19,7 @@ internal class OfferingFontPreDownloader(
 ) {
 
     // Directories within the app's assets where embedded fonts may be bundled, searched in order.
-    // "public/assets" is where Capacitor apps that use our paywalls SDK place their fonts.
+    // "public/assets" is a likely location for Capacitor apps that use our paywalls SDK to place their fonts.
     private val assetsFontsDirs = listOf("fonts", "public/assets")
 
     // GenericFontFamily names as defined by Compose. Restated here because we don't include any Compose dependencies.
