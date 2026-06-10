@@ -29,9 +29,14 @@ internal object PredicateConformanceRunner {
     private fun scope(fixture: PredicateConformanceFixtureCase): Map<String, Value> =
         reservedConstants + fixture.variables
 
-    fun run(fixture: PredicateConformanceFixtureCase, warnings: () -> List<String>) {
+    fun run(
+        fixture: PredicateConformanceFixtureCase,
+        warnings: () -> List<String>,
+        logs: () -> List<String>,
+    ) {
         assertExpectedOutcome(fixture)
         fixture.expectedWarnings?.let { assertWarnings(warnings(), it, fixture.id) }
+        fixture.expectedLogs?.let { assertLogs(logs(), it, fixture.id) }
     }
 
     private fun assertExpectedOutcome(fixture: PredicateConformanceFixtureCase) {
@@ -78,5 +83,11 @@ internal object PredicateConformanceRunner {
                 .withFailMessage("Fixture %s: missing warning containing \"%s\", got %s", id, substring, warnings)
                 .anyMatch { it.contains(substring) }
         }
+    }
+
+    private fun assertLogs(logs: List<String>, expected: List<String>, id: String) {
+        assertThat(logs)
+            .withFailMessage("Fixture %s: expected logs %s, got %s", id, expected, logs)
+            .isEqualTo(expected)
     }
 }

@@ -73,6 +73,9 @@ internal object Operators {
         "filter" -> IterationOperators.opFilter(args, vars)
         "reduce" -> IterationOperators.opReduce(args, vars)
 
+        // Miscellaneous
+        "log" -> MiscOperators.opLog(args, vars)
+
         else -> throw RuleError.UnsupportedOperator(op)
     }
 
