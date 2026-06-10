@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.rules
 
-import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -31,13 +31,13 @@ class RulesEngineEvaluateTest {
     fun `malformed JSON yields parse failure`() {
         val result = RulesEngine.evaluate("{not json", emptyMap())
         assertThat(result.isFailure).isTrue()
-        assertThat(result.exceptionOrNull()).isInstanceOf(EvaluationError.Parse::class.java)
+        assertThat(result.exceptionOrNull()).isInstanceOf(EvaluationException.Parse::class.java)
     }
 
     @Test
     fun `unsupported operator yields failure`() {
         val result = RulesEngine.evaluate("""{"nope":[]}""", emptyMap())
         assertThat(result.isFailure).isTrue()
-        assertThat(result.exceptionOrNull()).isInstanceOf(EvaluationError.UnsupportedOperator::class.java)
+        assertThat(result.exceptionOrNull()).isInstanceOf(EvaluationException.UnsupportedOperator::class.java)
     }
 }

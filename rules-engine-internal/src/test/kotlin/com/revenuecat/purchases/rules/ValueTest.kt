@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.rules
 
-import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
 import com.revenuecat.purchases.rules.helpers.ValueJsonHelper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -40,7 +40,7 @@ class ValueTest {
         assertThat(obj.entries["b"]).isEqualTo(Value.StringValue("two"))
     }
 
-    @Test(expected = EvaluationError.Parse::class)
+    @Test(expected = EvaluationException.Parse::class)
     fun `parse error for malformed JSON`() {
         parse("{not json")
     }

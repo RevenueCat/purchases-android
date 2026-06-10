@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.rules.helpers
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -54,16 +54,16 @@ internal object PredicateConformanceRunner {
     private fun assertErrorOutcome(fixture: PredicateConformanceFixtureCase, expected: ExpectedError) {
         assertThatThrownBy { Evaluator.evaluate(fixture.predicate, scope(fixture)) }
             .withFailMessage("Fixture %s: expected error %s but did not throw", fixture.id, expected.kind)
-            .isInstanceOfSatisfying(EvaluationError::class.java) { error ->
+            .isInstanceOfSatisfying(EvaluationException::class.java) { error ->
                 assertThat(matchesExpected(error, expected))
                     .withFailMessage("Fixture %s: threw %s, expected %s", fixture.id, error, describe(expected))
                     .isTrue()
             }
     }
 
-    private fun matchesExpected(error: EvaluationError, expected: ExpectedError): Boolean = when (expected.kind) {
-        "typeMismatch" -> error is EvaluationError.TypeMismatch
-        "unsupportedOperator" -> error is EvaluationError.UnsupportedOperator &&
+    private fun matchesExpected(error: EvaluationException, expected: ExpectedError): Boolean = when (expected.kind) {
+        "typeMismatch" -> error is EvaluationException.TypeMismatch
+        "unsupportedOperator" -> error is EvaluationException.UnsupportedOperator &&
             (expected.operator == null || error.name == expected.operator)
         else -> false
     }

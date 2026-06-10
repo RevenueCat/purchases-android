@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -15,7 +15,7 @@ internal object Operators {
 
     /**
      * Dispatch a JSON Logic operator. Throws
-     * [EvaluationError.UnsupportedOperator] when the operator name isn't
+     * [EvaluationException.UnsupportedOperator] when the operator name isn't
      * implemented in this slice.
      */
     @Suppress("ComplexMethod", "ReturnCount")
@@ -76,7 +76,7 @@ internal object Operators {
         // Miscellaneous
         "log" -> MiscOperators.opLog(args, vars)
 
-        else -> throw EvaluationError.UnsupportedOperator(op)
+        else -> throw EvaluationException.UnsupportedOperator(op)
     }
 
     /**

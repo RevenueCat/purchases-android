@@ -27,7 +27,7 @@ import java.io.File
  * adding coverage is a JSON edit, not a new Kotlin test.
  */
 
-/** Expected `EvaluationError` for a fixture that should fail to evaluate. */
+/** Expected `EvaluationException` for a fixture that should fail to evaluate. */
 @Serializable
 internal data class ExpectedError(
     @SerialName("error") val kind: String,

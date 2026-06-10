@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
-import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsParseFloat
 
@@ -39,13 +39,13 @@ internal object ArithmeticOperators {
      * `{"*": [a, b, ...]}` — variadic product, no seed (matches
      * `Array.prototype.reduce` without an initial value). The 1-arg form
      * returns the operand unchanged (no `parseFloat` coercion). 0
-     * arguments is a [EvaluationError.TypeMismatch] to mirror `[].reduce(fn)`
+     * arguments is a [EvaluationException.TypeMismatch] to mirror `[].reduce(fn)`
      * throwing.
      */
     fun opMul(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val head = evaluated.firstOrNull()
-            ?: throw EvaluationError.TypeMismatch("operator '*' requires at least 1 argument")
+            ?: throw EvaluationException.TypeMismatch("operator '*' requires at least 1 argument")
         if (evaluated.size <= 1) return head
         val product = evaluated.drop(1).fold(jsParseFloat(head)) { acc, value ->
             acc * jsParseFloat(value)

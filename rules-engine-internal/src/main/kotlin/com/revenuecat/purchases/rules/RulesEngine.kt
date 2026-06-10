@@ -20,25 +20,25 @@ public object RulesEngine {
      * for them — per the JSON Logic spec, they resolve to `null` and a warning
      * is logged instead.
      */
-    public sealed class EvaluationError(message: String) : RuntimeException(message) {
+    public sealed class EvaluationException(message: String) : Exception(message) {
 
         /** The predicate JSON could not be parsed. */
-        public data class Parse(val reason: String) : EvaluationError("failed to parse predicate JSON: $reason")
+        public data class Parse(val reason: String) : EvaluationException("failed to parse predicate JSON: $reason")
 
         /**
          * An operator was given arguments of the wrong shape (e.g. wrong arity)
          * or types that cannot be reconciled.
          */
-        public data class TypeMismatch(val detail: String) : EvaluationError("type mismatch: $detail")
+        public data class TypeMismatch(val detail: String) : EvaluationException("type mismatch: $detail")
 
         /**
          * The predicate references a JSON Logic operator the engine does not
          * implement. Carries the operator name.
          */
-        public data class UnsupportedOperator(val name: String) : EvaluationError("unsupported operator: $name")
+        public data class UnsupportedOperator(val name: String) : EvaluationException("unsupported operator: $name")
 
         /** An unexpected error that is not one of the structured cases above. */
-        public data class Unknown(val reason: String) : EvaluationError("unknown error: $reason")
+        public data class Unknown(val reason: String) : EvaluationException("unknown error: $reason")
     }
 
     /**
@@ -47,7 +47,7 @@ public object RulesEngine {
      * @param predicate The rule predicate as a JSON string.
      * @param variables The resolved variable scope.
      * @return [Result.success] with `true` when the predicate is truthy,
-     *  `false` otherwise, or [Result.failure] carrying an [EvaluationError]
+     *  `false` otherwise, or [Result.failure] carrying an [EvaluationException]
      *  when parsing or evaluation fails.
      */
     public fun evaluate(
@@ -55,9 +55,9 @@ public object RulesEngine {
         variables: Map<String, Value>,
     ): Result<Boolean> = try {
         Result.success(Evaluator.evaluate(ValueJson.parse(predicate), variables))
-    } catch (error: EvaluationError) {
+    } catch (error: EvaluationException) {
         Result.failure(error)
     } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
-        Result.failure(EvaluationError.Unknown(error.message ?: "unknown error"))
+        Result.failure(EvaluationException.Unknown(error.message ?: "unknown error"))
     }
 }
