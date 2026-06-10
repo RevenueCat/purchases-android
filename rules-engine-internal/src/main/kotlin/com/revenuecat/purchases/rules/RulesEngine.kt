@@ -18,10 +18,9 @@ public object RulesEngine {
     /**
      * Errors surfaced by the rules engine.
      *
-     * Note on missing variables: the v1 evaluator does **not** raise an error
+     * Note on missing variables: the evaluator does **not** raise an error
      * for them — per the JSON Logic spec, they resolve to `null` and a warning
-     * is logged instead. If a strict mode is ever needed, we'd add a
-     * `MissingVariable` subclass.
+     * is logged instead.
      */
     public sealed class EvaluationError(message: String) : RuntimeException(message) {
 
