@@ -258,4 +258,43 @@ class OfferingFontPreDownloaderTest {
             fontLoader.getCachedFontFamilyOrStartDownload(downloadableFont.android as FontInfo.Name)
         }
     }
-} 
+
+    @Test
+    fun `preDownloadOfferingFontsIfNeeded skips fonts bundled in public assets dir`() {
+        every { context.resources.assets.list("fonts") } returns emptyArray()
+        every { context.resources.assets.list("public/assets") } returns arrayOf("capacitorFont.ttf")
+
+        val capacitorFont = FontsConfig(
+            android = FontInfo.Name(
+                value = "capacitorFont",
+                family = "test-family",
+                weight = 400,
+                style = FontStyle.NORMAL,
+                url = "https://example.com/shouldnotdownloadfont.ttf",
+                hash = "hash123",
+            ),
+        )
+
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywallComponents = Offering.PaywallComponents(
+                uiConfig = UiConfig(
+                    app = AppConfig(
+                        fonts = mapOf(
+                            FontAlias("capacitorFont") to capacitorFont,
+                        )
+                    )
+                ),
+                data = mockk(),
+            ),
+        )
+        preDownloader.preDownloadOfferingFontsIfNeeded(Offerings(null, mapOf("offering" to offering)))
+
+        verify(exactly = 0) {
+            fontLoader.getCachedFontFamilyOrStartDownload(any())
+        }
+    }
+}
