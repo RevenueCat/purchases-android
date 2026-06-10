@@ -26,7 +26,7 @@ public class DangerousSettings internal constructor(
     /**
      * Enables RevenueCat Workflows (multipage paywalls). Internal RevenueCat use only.
      */
-    @property:InternalRevenueCatAPI
+    @InternalRevenueCatAPI
     public val useWorkflows: Boolean = false,
 ) : Parcelable {
     @OptIn(InternalRevenueCatAPI::class)
