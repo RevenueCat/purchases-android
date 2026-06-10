@@ -61,7 +61,7 @@ private object LocalFileFontTypefaceLoader : AndroidFont.TypefaceLoader {
     @Suppress("TooGenericExceptionCaught")
     override fun loadBlocking(context: Context, font: AndroidFont): Typeface {
         val localFont = (font as? LocalFileFont) ?: run {
-            Logger.w(
+            Logger.e(
                 "Expected font to be LocalFileFont, but was ${font::class.java.simpleName}. " +
                     "Falling back to default typeface.",
             )
@@ -76,7 +76,7 @@ private object LocalFileFontTypefaceLoader : AndroidFont.TypefaceLoader {
     }
 
     private fun fallbackTypeface(font: LocalFileFont, reason: String): Typeface {
-        Logger.w(
+        Logger.e(
             "Failed to load downloaded font from ${font.file.path} ($reason). " +
                 "Falling back to default typeface.",
         )
