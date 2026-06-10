@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.remoteconfig
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -23,7 +22,10 @@ import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.io.IOException
+import java.net.ConnectException
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.security.MessageDigest
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,14 +72,14 @@ class TopicFetcherTest {
         target.parentFile?.mkdirs()
         target.writeBytes(payload)
 
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNull()
+        assertThat(result).isEqualTo(TopicFetchResult.Success)
         verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
     }
 
@@ -87,14 +89,14 @@ class TopicFetcherTest {
         val blobRef = sha256Hex(payload)
         mockSuccessfulDownload("https://assets.example/$blobRef", payload)
 
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNull()
+        assertThat(result).isEqualTo(TopicFetchResult.Success)
         val target = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobRef)
         assertThat(target).exists()
         assertThat(target.readBytes()).isEqualTo(payload)
@@ -108,19 +110,19 @@ class TopicFetcherTest {
         val expectedUrl = "https://cdn.example/topics/$blobRef"
         mockSuccessfulDownload(expectedUrl, payload)
 
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://cdn.example/topics/{blob_ref}"),
         )
 
-        if (error != null) fail<Unit>("Expected success, got error: $error")
+        if (result !is TopicFetchResult.Success) fail<Unit>("Expected success, got: $result")
         verify(exactly = 1) { urlConnectionFactory.createConnection(expectedUrl, any()) }
     }
 
     @Test
-    fun `surfaces error and writes no target file when HTTP response is non-200`() = runTest {
+    fun `HTTP non-200 is classified as InvalidatingFailure`() = runTest {
         val payload = """{}""".toByteArray()
         val blobRef = sha256Hex(payload)
         val url = "https://assets.example/$blobRef"
@@ -129,20 +131,20 @@ class TopicFetcherTest {
         }
         every { urlConnectionFactory.createConnection(url, any()) } returns connection
 
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
         assertThat(topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobRef)).doesNotExist()
         verify { connection.disconnect() }
     }
 
     @Test
-    fun `surfaces error and leaves no temp files when reading the input stream throws`() = runTest {
+    fun `generic IOException while reading the input stream is InvalidatingFailure`() = runTest {
         val payload = """{}""".toByteArray()
         val blobRef = sha256Hex(payload)
         val url = "https://assets.example/$blobRef"
@@ -155,35 +157,81 @@ class TopicFetcherTest {
         }
         every { urlConnectionFactory.createConnection(url, any()) } returns connection
 
-        val error: PurchasesError? = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(blobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
         val target = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobRef)
         assertThat(target).doesNotExist()
         assertThat(leftoverTempFiles(target.parentFile)).isEmpty()
     }
 
     @Test
-    fun `surfaces error when downloaded bytes don't match the expected SHA-256`() = runTest {
+    fun `UnknownHostException is classified as TransientFailure`() = runTest {
+        val blobRef = "a".repeat(64)
+        every { urlConnectionFactory.createConnection(any(), any()) } throws UnknownHostException("no dns")
+
+        val result = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(blobRef),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(result).isInstanceOf(TopicFetchResult.TransientFailure::class.java)
+    }
+
+    @Test
+    fun `SocketTimeoutException is classified as TransientFailure`() = runTest {
+        val blobRef = "a".repeat(64)
+        every { urlConnectionFactory.createConnection(any(), any()) } throws SocketTimeoutException("timeout")
+
+        val result = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(blobRef),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(result).isInstanceOf(TopicFetchResult.TransientFailure::class.java)
+    }
+
+    @Test
+    fun `ConnectException is classified as TransientFailure`() = runTest {
+        val blobRef = "a".repeat(64)
+        every { urlConnectionFactory.createConnection(any(), any()) } throws ConnectException("refused")
+
+        val result = fetcher().fetchTopicIfNeeded(
+            topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
+            entryId = "default",
+            topicEntry = topicEntry(blobRef),
+            source = source("https://assets.example/{blob_ref}"),
+        )
+
+        assertThat(result).isInstanceOf(TopicFetchResult.TransientFailure::class.java)
+    }
+
+    @Test
+    fun `checksum mismatch is classified as InvalidatingFailure`() = runTest {
         val payload = """{"actual":"contents"}""".toByteArray()
         val wrongBlobRef = "0".repeat(64)
         val url = "https://assets.example/$wrongBlobRef"
         mockSuccessfulDownload(url, payload)
 
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(wrongBlobRef),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
+        val failure = result as TopicFetchResult.InvalidatingFailure
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.NetworkError)
         val target = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, wrongBlobRef)
         assertThat(target).doesNotExist()
         assertThat(leftoverTempFiles(target.parentFile)).isEmpty()
@@ -198,20 +246,20 @@ class TopicFetcherTest {
         mockSuccessfulDownload("https://assets.example/$blobRefA", payloadA)
         mockSuccessfulDownload("https://assets.example/$blobRefB", payloadB)
 
-        val errorA = fetcher().fetchTopicIfNeeded(
+        val resultA = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(blobRefA),
             source = source("https://assets.example/{blob_ref}"),
         )
-        if (errorA != null) fail<Unit>("Expected success, got error: $errorA")
-        val errorB = fetcher().fetchTopicIfNeeded(
+        if (resultA !is TopicFetchResult.Success) fail<Unit>("Expected success, got: $resultA")
+        val resultB = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "EXPERIMENT_A",
             topicEntry = topicEntry(blobRefB),
             source = source("https://assets.example/{blob_ref}"),
         )
-        if (errorB != null) fail<Unit>("Expected success, got error: $errorB")
+        if (resultB !is TopicFetchResult.Success) fail<Unit>("Expected success, got: $resultB")
 
         val targetA = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobRefA)
         val targetB = topicFile(Topic.PRODUCT_ENTITLEMENT_MAPPING, blobRefB)
@@ -224,15 +272,16 @@ class TopicFetcherTest {
 
     @Test
     fun `rejects malformed blobRef before any IO`() = runTest {
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry("not-hex"),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
+        val failure = result as TopicFetchResult.InvalidatingFailure
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
         verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
         val topicDir = File(File(rootDir, "RevenueCat/topics"), Topic.PRODUCT_ENTITLEMENT_MAPPING.key)
         assertThat(topicDir.exists() && topicDir.listFiles()?.isNotEmpty() == true).isFalse
@@ -241,15 +290,16 @@ class TopicFetcherTest {
     @Test
     fun `rejects blobRef containing path separators`() = runTest {
         val malicious = "../../escape"
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(malicious),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
+        val failure = result as TopicFetchResult.InvalidatingFailure
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
         verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
         val outsideTarget = File(rootDir.parentFile, "escape")
         assertThat(outsideTarget).doesNotExist()
@@ -257,45 +307,48 @@ class TopicFetcherTest {
 
     @Test
     fun `rejects blobRef shorter than 64 hex chars`() = runTest {
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry("abc123"),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
+        val failure = result as TopicFetchResult.InvalidatingFailure
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
         verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
     }
 
     @Test
     fun `rejects blobRef longer than 64 hex chars`() = runTest {
         val tooLong = "a".repeat(65)
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(tooLong),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
+        val failure = result as TopicFetchResult.InvalidatingFailure
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
         verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
     }
 
     @Test
     fun `rejects 64-char blobRef containing non-hex letters`() = runTest {
         val nonHex = "g".repeat(64)
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(nonHex),
             source = source("https://assets.example/{blob_ref}"),
         )
 
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
+        val failure = result as TopicFetchResult.InvalidatingFailure
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
         verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
     }
 
@@ -305,7 +358,7 @@ class TopicFetcherTest {
         val url = "https://assets.example/$mixedCaseHex"
         mockSuccessfulDownload(url, "ignored".toByteArray())
 
-        val error = fetcher().fetchTopicIfNeeded(
+        val result = fetcher().fetchTopicIfNeeded(
             topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
             entryId = "default",
             topicEntry = topicEntry(mixedCaseHex),
@@ -314,8 +367,9 @@ class TopicFetcherTest {
 
         // Validation passes; download is attempted (checksum fails because mixedCaseHex is not the real SHA-256
         // of "ignored", which is expected — the point is that the request was made).
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        assertThat(result).isInstanceOf(TopicFetchResult.InvalidatingFailure::class.java)
+        val failure = result as TopicFetchResult.InvalidatingFailure
+        assertThat(failure.error.code).isEqualTo(PurchasesErrorCode.NetworkError)
         verify(exactly = 1) { urlConnectionFactory.createConnection(url, any()) }
     }
 
