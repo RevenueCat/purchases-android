@@ -1,5 +1,3 @@
-@file:Suppress("ForbiddenPublicSealedClass", "ForbiddenPublicDataClass")
-
 package com.revenuecat.purchases.rules
 
 /** Namespace for the RevenueCat rules engine. */
