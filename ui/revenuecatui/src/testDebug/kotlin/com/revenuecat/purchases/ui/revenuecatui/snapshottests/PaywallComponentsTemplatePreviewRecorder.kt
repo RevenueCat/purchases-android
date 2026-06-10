@@ -1,6 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
 import app.cash.paparazzi.DeviceConfig
+import com.android.resources.Density
+import com.android.resources.ScreenOrientation
+import com.android.resources.ScreenRatio
+import com.android.resources.ScreenSize
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallComponentsTemplate_Preview
@@ -31,8 +35,21 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
     private val paywall: PaywallResources,
 ) : BasePaparazziTest(
     testConfig = TestConfig(
-        name = "pixel6",
-        deviceConfig = DeviceConfig.PIXEL_6,
+        name = "validation",
+        // Renders on a 450 x 1000 dp canvas at 3x density (480 dpi) to match the iOS paywall
+        // validation screenshots, which lay out at 450 x 1000 pt and capture at 3x. Paparazzi
+        // downscales the longest side to 1000px, so the output PNG ends up 450 x 1000 px on both
+        // platforms, keeping the layout canvas and supersampling density consistent.
+        deviceConfig = DeviceConfig(
+            screenWidth = 1350,
+            screenHeight = 3000,
+            xdpi = 480,
+            ydpi = 480,
+            orientation = ScreenOrientation.PORTRAIT,
+            density = Density.create(480),
+            ratio = ScreenRatio.LONG,
+            size = ScreenSize.NORMAL,
+        ),
     ),
 ) {
 
