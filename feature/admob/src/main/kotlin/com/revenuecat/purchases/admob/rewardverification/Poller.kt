@@ -59,7 +59,7 @@ internal object Poller {
             maxAttempts = maxAttempts,
         )
         if (outcome is Outcome.Failed) {
-            logFailure(outcome.logMessage, outcome.isError)
+            logFailure(outcome.logMessage, outcome.isUnexpected)
         }
         return outcome.toResult()
     }

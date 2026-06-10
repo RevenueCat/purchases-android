@@ -13,35 +13,34 @@ internal sealed interface Outcome {
     sealed interface Failed : Outcome {
         val logMessage: String
 
-        // True when [logMessage] should be logged at error level rather than warning.
-        val isError: Boolean
+        val isUnexpected: Boolean
 
         // Logs the backend-provided message verbatim.
         class BackendRejected(private val backendMessage: String?) : Failed {
             override val logMessage: String
                 get() = backendMessage?.takeIf { it.isNotBlank() }
                     ?: RewardVerificationStrings.BACKEND_REJECTED_WITHOUT_MESSAGE
-            override val isError: Boolean get() = false
+            override val isUnexpected: Boolean get() = false
         }
 
         object ExhaustedWhilePending : Failed {
             override val logMessage: String get() = RewardVerificationStrings.EXHAUSTED_WHILE_PENDING
-            override val isError: Boolean get() = false
+            override val isUnexpected: Boolean get() = false
         }
 
         object ExhaustedWhileTransientErroring : Failed {
             override val logMessage: String get() = RewardVerificationStrings.EXHAUSTED_WHILE_TRANSIENT_ERRORING
-            override val isError: Boolean get() = false
+            override val isUnexpected: Boolean get() = false
         }
 
         object UnexpectedResponse : Failed {
             override val logMessage: String get() = RewardVerificationStrings.UNEXPECTED_RESPONSE
-            override val isError: Boolean get() = true
+            override val isUnexpected: Boolean get() = true
         }
 
         class TerminalError(private val error: String) : Failed {
             override val logMessage: String get() = RewardVerificationStrings.terminalError(error)
-            override val isError: Boolean get() = true
+            override val isUnexpected: Boolean get() = true
         }
     }
 }
