@@ -36,17 +36,13 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
 ) : BasePaparazziTest(
     testConfig = TestConfig(
         name = "validation",
-        // Renders on a 450 x 1000 dp canvas at 3x density (480 dpi) to match the iOS paywall
-        // validation screenshots, which lay out at 450 x 1000 pt and capture at 3x. Paparazzi
-        // downscales the longest side to 1000px, so the output PNG ends up 450 x 1000 px on both
-        // platforms, keeping the layout canvas and supersampling density consistent.
         deviceConfig = DeviceConfig(
             screenWidth = 1350,
             screenHeight = 3000,
             xdpi = 480,
             ydpi = 480,
             orientation = ScreenOrientation.PORTRAIT,
-            density = Density.create(480),
+            density = Density.create(SCALE * DENSITY_BASE),
             ratio = ScreenRatio.LONG,
             size = ScreenSize.NORMAL,
         ),
@@ -54,6 +50,12 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
 ) {
 
     companion object {
+        // px = dp * (dpi / 160)
+        const val DENSITY_BASE = 160
+
+        // same scale as iOS uses
+        const val SCALE = 3
+
         @JvmStatic
         // Placing the offering ID between triple underscores so we can easily parse it later.
         @Parameters(name = "___{0}___")
