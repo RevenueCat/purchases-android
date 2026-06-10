@@ -3,8 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
@@ -57,6 +59,7 @@ public class PaywallOptions internal constructor(
      * `{{ $custom.key }}` placeholders in the paywall configuration.
      */
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    internal val injectedWorkflow: WorkflowDataResult? = null,
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -72,6 +75,7 @@ public class PaywallOptions internal constructor(
         dismissRequest = builder.dismissRequest,
         dismissRequestWithExitOffering = builder.dismissRequestWithExitOffering,
         customVariables = builder.customVariables,
+        injectedWorkflow = builder.injectedWorkflow,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -97,6 +101,7 @@ public class PaywallOptions internal constructor(
             this.purchaseLogic != other.purchaseLogic -> false
             this.mode != other.mode -> false
             this.customVariables != other.customVariables -> false
+            this.injectedWorkflow != other.injectedWorkflow -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -111,6 +116,7 @@ public class PaywallOptions internal constructor(
         dismissRequest: () -> Unit = this.dismissRequest,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
+        injectedWorkflow: WorkflowDataResult? = this.injectedWorkflow,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -121,6 +127,7 @@ public class PaywallOptions internal constructor(
         dismissRequest = dismissRequest,
         dismissRequestWithExitOffering = dismissRequestWithExitOffering,
         customVariables = customVariables,
+        injectedWorkflow = injectedWorkflow,
     )
 
     @Suppress("TooManyFunctions")
@@ -135,6 +142,7 @@ public class PaywallOptions internal constructor(
         internal var mode: PaywallMode = PaywallMode.default
         internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
+        internal var injectedWorkflow: WorkflowDataResult? = null
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -194,6 +202,15 @@ public class PaywallOptions internal constructor(
          */
         public fun setCustomVariables(variables: Map<String, CustomVariableValue>): Builder = apply {
             this.customVariables = CustomVariableKeyValidator.validateAndFilter(variables)
+        }
+
+        /**
+         * Injects a pre-built workflow (multipage paywall) to render locally without fetching
+         * it from the backend. Internal RevenueCat use only (e.g. dashboard preview).
+         */
+        @InternalRevenueCatAPI
+        public fun injectedWorkflow(workflow: WorkflowDataResult?): Builder = apply {
+            this.injectedWorkflow = workflow
         }
 
         public fun build(): PaywallOptions {
