@@ -382,9 +382,79 @@ class WorkflowManagerTest {
         assertThat(receivedError).isEqualTo(expectedError)
         coVerify(exactly = 0) { mockResolver.resolve(any()) }
         verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
-        // Invalidate the in-memory entry so the next call retries rather than serving a cached value,
+        // Evict the in-memory entry so the next call retries rather than serving a cached value,
         // mirroring the list/offerings 4xx policy.
-        verify { workflowsCache.invalidateWorkflowTimestamp("wf_1") }
+        verify { workflowsCache.clearWorkflow("wf_1") }
+    }
+
+    @Test
+    fun `getWorkflow 4xx on the background refresh evicts the workflow so it is not served again`() {
+        // A workflow is cached, then the server removes it (4xx). SWR serves the stale value on the
+        // render that triggers the refresh (unavoidable), but the retracted workflow must not be
+        // served on any subsequent render. A 4xx therefore has to evict the cached value entirely,
+        // not just clear its timestamp (which would leave it as a stale-but-present SWR hit).
+        val inlineResponse = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = inlineResponse.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(inlineResponse) } returns staleResult
+
+        val notFound = PurchasesError(PurchasesErrorCode.UnknownBackendError, "not found")
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        var call = 0
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            call++
+            if (call == 1) {
+                successSlot.captured(inlineResponse)
+            } else {
+                errorSlot.captured(notFound, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
+            }
+        }
+
+        // Populate at t=0.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale render at t=6min: serves the stale value, the background refresh then 4xxes.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        var served: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { fail("unexpected error $it") },
+        )
+        assertThat(served).isSameAs(staleResult)
+
+        // The 4xx must have evicted the cached value entirely, not just cleared its timestamp.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isNull()
+
+        // Consequence: the next render does not re-serve the retracted workflow; it surfaces the error.
+        var servedAgain: WorkflowDataResult? = null
+        var errorAgain: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { servedAgain = it },
+            onError = { errorAgain = it },
+        )
+        assertThat(servedAgain).isNull()
+        assertThat(errorAgain).isEqualTo(notFound)
     }
 
     @Test
