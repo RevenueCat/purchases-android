@@ -5,6 +5,9 @@ internal object RewardVerificationStrings {
     const val BACKEND_REJECTED_WITHOUT_MESSAGE: String =
         "Reward verification was rejected by AdMob server-side verification."
 
+    fun backendRejectedWithReason(reason: String): String =
+        "Reward verification was rejected by AdMob server-side verification (reason: $reason)."
+
     const val EXHAUSTED_WHILE_PENDING: String =
         "Reward verification timed out: the AdMob server-side verification (SSV) callback was not " +
             "received in time. Possible causes: SSV is not enabled/configured for this ad unit in the " +

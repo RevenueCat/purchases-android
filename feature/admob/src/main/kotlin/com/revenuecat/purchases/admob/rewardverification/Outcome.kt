@@ -15,10 +15,16 @@ internal sealed interface Outcome {
 
         val isUnexpected: Boolean
 
-        // Logs the backend-provided message verbatim.
-        class BackendRejected(private val backendMessage: String?) : Failed {
+        // Logs the backend-provided message verbatim, falling back to the machine-readable failure
+        // reason when no message is present so the actionable signal isn't lost.
+        class BackendRejected(
+            private val backendMessage: String?,
+            private val failureReason: String? = null,
+        ) : Failed {
             override val logMessage: String
                 get() = backendMessage?.takeIf { it.isNotBlank() }
+                    ?: failureReason?.takeIf { it.isNotBlank() }
+                        ?.let { RewardVerificationStrings.backendRejectedWithReason(it) }
                     ?: RewardVerificationStrings.BACKEND_REJECTED_WITHOUT_MESSAGE
             override val isUnexpected: Boolean get() = false
         }

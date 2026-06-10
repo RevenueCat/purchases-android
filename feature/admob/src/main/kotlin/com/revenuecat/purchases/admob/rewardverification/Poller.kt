@@ -135,7 +135,7 @@ internal object Poller {
                 is CoreRewardVerificationResult.Verified ->
                     Step.Terminal(Outcome.Verified(result.reward.toAdMobReward()))
                 is CoreRewardVerificationResult.Failed ->
-                    Step.Terminal(Outcome.Failed.BackendRejected(result.message))
+                    Step.Terminal(Outcome.Failed.BackendRejected(result.message, result.failureReason))
                 CoreRewardVerificationResult.PENDING -> Step.RetryPending
                 CoreRewardVerificationResult.UNKNOWN -> Step.RetryUnknown
             }

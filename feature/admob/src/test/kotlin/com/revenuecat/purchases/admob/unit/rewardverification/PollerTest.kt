@@ -116,6 +116,29 @@ class PollerTest {
     }
 
     @Test
+    fun `poll falls back to the failure reason when the backend rejects without a message`() = runBlocking {
+        val result = Poller.poll(
+            clientTransactionId = "ct_1",
+            fetcher = { CoreRewardVerificationResult.Failed(failureReason = "no_reward_rule") },
+            sleepSeconds = noSleep,
+            jitterSeconds = fixedJitter,
+            logFailure = captureFailure,
+        )
+
+        assertTrue(result.failed)
+        // No human-readable message, but the machine-readable reason is still surfaced in the log.
+        assertEquals(
+            listOf(
+                RecordedFailure(
+                    RewardVerificationStrings.backendRejectedWithReason("no_reward_rule"),
+                    isError = false,
+                ),
+            ),
+            recordedFailures,
+        )
+    }
+
+    @Test
     fun `poll retries on pending until a terminal verified status is reached`() = runBlocking {
         var attempts = 0
 
