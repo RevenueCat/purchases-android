@@ -74,17 +74,17 @@ internal object Poller {
         Logger.d("Reward verification poll start transactionId=$clientTransactionId maxAttempts=$maxAttempts")
         var sawUnknownStatus = false
         var lastRetryWasTransientError = false
-        var terminal: Outcome? = null
+        var finalOutcome: Outcome? = null
         var attempt = 0
-        while (terminal == null && attempt < maxAttempts) {
+        while (finalOutcome == null && attempt < maxAttempts) {
             Logger.v(
                 "Reward verification poll attempt ${attempt + 1}/$maxAttempts transactionId=$clientTransactionId",
             )
             if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds, clientTransactionId)) {
-                terminal = Outcome.Failed.TerminalError(BACKOFF_SCHEDULING_FAILED_DESCRIPTION)
+                finalOutcome = Outcome.Failed.TerminalError(BACKOFF_SCHEDULING_FAILED_DESCRIPTION)
             } else {
                 when (val step = fetchStep(clientTransactionId, fetcher)) {
-                    is Step.Terminal -> terminal = step.outcome
+                    is Step.Terminal -> finalOutcome = step.outcome
                     Step.RetryPending -> lastRetryWasTransientError = false
                     Step.RetryTransientError -> lastRetryWasTransientError = true
                     Step.RetryUnknown -> {
@@ -95,8 +95,8 @@ internal object Poller {
             }
             attempt++
         }
-        if (terminal != null) {
-            return terminal
+        if (finalOutcome != null) {
+            return finalOutcome
         }
         // Exhausted without a terminal status. An unknown status seen along the way is the most
         // actionable signal (likely version skew), so it takes precedence over the timeout buckets.
