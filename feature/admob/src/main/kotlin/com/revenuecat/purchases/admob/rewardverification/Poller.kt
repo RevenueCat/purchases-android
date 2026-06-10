@@ -80,7 +80,7 @@ internal object Poller {
             Logger.v(
                 "Reward verification poll attempt ${attempt + 1}/$maxAttempts transactionId=$clientTransactionId",
             )
-            if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds, clientTransactionId)) {
+            if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds)) {
                 finalOutcome = Outcome.Failed.TerminalError(BACKOFF_SCHEDULING_FAILED_DESCRIPTION)
             } else {
                 when (val step = fetchStep(clientTransactionId, fetcher)) {
@@ -111,7 +111,6 @@ internal object Poller {
     private suspend fun awaitBackoff(
         sleepSeconds: suspend (Double) -> Unit,
         jitterSeconds: () -> Double,
-        clientTransactionId: String,
     ): Boolean {
         return try {
             sleepSeconds(jitterSeconds())
