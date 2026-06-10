@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.rules
 
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
 import com.revenuecat.purchases.rules.helpers.ValueJsonHelper
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
@@ -16,6 +17,6 @@ class EvaluatorTest {
     fun `malformed JSON surfaces parse error`() {
         assertThatThrownBy {
             ValueJsonHelper.fromJsonString("{not json")
-        }.isInstanceOf(RuleError.Parse::class.java)
+        }.isInstanceOf(EvaluationError.Parse::class.java)
     }
 }

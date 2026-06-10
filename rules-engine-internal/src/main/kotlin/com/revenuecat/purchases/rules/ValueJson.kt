@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.rules
 
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -9,7 +10,7 @@ import java.math.BigDecimal
 /**
  * Production JSON → [Value] parser. Converts the predicate JSON extracted
  * from the SDK artifact into the engine's typed [Value] tree. Used by
- * [RulesEngine.evaluate]; failures surface as [RuleError.Parse].
+ * [RulesEngine.evaluate]; failures surface as [EvaluationError.Parse].
  */
 internal object ValueJson {
 
@@ -17,7 +18,7 @@ internal object ValueJson {
         return try {
             convert(JSONTokener(input).nextValue())
         } catch (@Suppress("SwallowedException") e: JSONException) {
-            throw RuleError.Parse(e.message ?: "unknown JSON error")
+            throw EvaluationError.Parse(e.message ?: "unknown JSON error")
         }
     }
 
@@ -69,7 +70,7 @@ internal object ValueJson {
         // `JSONTokener` outputs (`Date`, custom `JSONString` impls, …)
         // to [Value.Null] — that would produce phantom `null` operands
         // mid-test and mask real parser misconfiguration.
-        else -> throw RuleError.Parse(
+        else -> throw EvaluationError.Parse(
             "unexpected JSONTokener output of type ${parsed::class.qualifiedName}",
         )
     }

@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
-import com.revenuecat.purchases.rules.RuleError
 import com.revenuecat.purchases.rules.RulesEngine
+import com.revenuecat.purchases.rules.RulesEngine.EvaluationError
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
 import com.revenuecat.purchases.rules.jsToNumber
@@ -88,13 +88,13 @@ internal object AccessorOperators {
     fun opMissingSome(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
         if (evaluated.size != 2) {
-            throw RuleError.TypeMismatch(
+            throw EvaluationError.TypeMismatch(
                 "operator 'missing_some' expects 2 arguments, got ${evaluated.size}",
             )
         }
         val needCountValue = evaluated[0]
         val options = evaluated[1] as? Value.ArrayValue
-            ?: throw RuleError.TypeMismatch(
+            ?: throw EvaluationError.TypeMismatch(
                 "operator 'missing_some': second argument must be an array of paths, " +
                     "got ${evaluated[1]}",
             )
