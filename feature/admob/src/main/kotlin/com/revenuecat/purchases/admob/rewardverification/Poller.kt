@@ -100,8 +100,6 @@ internal object Poller {
         }
         // Exhausted without a terminal status. An unknown status seen along the way is the most
         // actionable signal (likely version skew), so it takes precedence over the timeout buckets.
-        // Diagnostic only; the user-facing exhaustion message is logged once by poll().
-        Logger.v("Reward verification poll exhausted $maxAttempts attempts transactionId=$clientTransactionId")
         return when {
             sawUnknownStatus -> Outcome.Failed.UnexpectedResponse
             lastRetryWasTransientError -> Outcome.Failed.ExhaustedWhileTransientErroring
@@ -121,8 +119,6 @@ internal object Poller {
         } catch (e: CancellationException) {
             throw e
         } catch (_: Exception) {
-            // Diagnostic only; the user-facing terminal-error message is logged once by poll().
-            Logger.v("Reward verification poll backoff scheduling failed transactionId=$clientTransactionId")
             false
         }
     }
@@ -154,11 +150,9 @@ internal object Poller {
                 )
                 Step.RetryTransientError
             } else {
-                Logger.v("Reward verification poll terminal error: ${e.code} transactionId=$clientTransactionId")
                 Step.Terminal(Outcome.Failed.TerminalError(e.describeForLog()))
             }
         } catch (e: Exception) {
-            Logger.v("Reward verification poll unexpected error transactionId=$clientTransactionId")
             Step.Terminal(Outcome.Failed.TerminalError(e.describeForLog()))
         }
     }
