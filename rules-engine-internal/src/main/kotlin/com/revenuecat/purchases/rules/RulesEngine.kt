@@ -40,22 +40,28 @@ public object RulesEngine {
          * (default-deny, log, etc.).
          */
         public data class UnsupportedOperator(val name: String) : EvaluationError("unsupported operator: $name")
+
+        /** An unexpected error that is not one of the structured cases above. */
+        public data class Unknown(val reason: String) : EvaluationError("unknown error: $reason")
     }
 
     /**
      * Evaluates a JSON Logic predicate against a native variable scope.
      *
-     * @param predicate The rule predicate as a JSON string, extracted from
-     *  the SDK artifact.
-     * @param variables The resolved variable scope, built natively by the SDK.
+     * @param predicate The rule predicate as a JSON string.
+     * @param variables The resolved variable scope.
      * @return [Result.success] with `true` when the predicate is truthy,
-     *  `false` otherwise, or [Result.failure] carrying a [EvaluationError] when
-     *  parsing or evaluation fails.
+     *  `false` otherwise, or [Result.failure] carrying an [EvaluationError]
+     *  when parsing or evaluation fails.
      */
     public fun evaluate(
         predicate: String,
         variables: Map<String, Value>,
-    ): Result<Boolean> = runCatching {
-        Evaluator.evaluate(ValueJson.parse(predicate), variables)
+    ): Result<Boolean> = try {
+        Result.success(Evaluator.evaluate(ValueJson.parse(predicate), variables))
+    } catch (error: EvaluationError) {
+        Result.failure(error)
+    } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
+        Result.failure(EvaluationError.Unknown(error.message ?: "unknown error"))
     }
 }
