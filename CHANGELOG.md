@@ -2,7 +2,6 @@
 ## RevenueCat SDK
 ### ✨ New Features
 * Log reward verification failure reason (#3535) via Pol Miro (@polmiro)
-* Wire workflows fetching and add cache persistence (#3508) via Cesar de la Vega (@vegaro)
 ### 🐞 Bugfixes
 * fix(test-store): don’t mention Play Store in error logs when the Test Store is used (#3538) via Rick (@rickvdl)
 ### Galaxy Store
@@ -13,11 +12,10 @@
 ### 🐞 Bugfixes
 * Fix paywall crash when a downloaded font file fails to load (#3568) via Toni Rico (@tonidero)
 * Look for embedded paywall fonts in public/assets (#3571) via Toni Rico (@tonidero)
-### Paywalls_v2
-#### ✨ New Features
-* Fade the multipage paywall header during page transitions (#3525) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
+* Fade the multipage paywall header during page transitions (#3525) via Cesar de la Vega (@vegaro)
+* Wire workflows fetching and add cache persistence (#3508) via Cesar de la Vega (@vegaro)
 * Remove workflow details fallback on 4xx errors (#3567) via Cesar de la Vega (@vegaro)
 * Align paywall-rendering-validation density with iOS (#3577) via JayShortway (@JayShortway)
 * Exclude rules-engine-internal from public sealed/data class detekt rules (#3581) via Antonio Pallares (@ajpallares)
