@@ -66,10 +66,6 @@ internal object ValueJson {
             }
             Value.ObjectValue(entries)
         }
-        // Better to fail loudly than to silently coerce unknown
-        // `JSONTokener` outputs (`Date`, custom `JSONString` impls, …)
-        // to [Value.Null] — that would produce phantom `null` operands
-        // mid-test and mask real parser misconfiguration.
         else -> throw EvaluationError.Parse(
             "unexpected JSONTokener output of type ${parsed::class.qualifiedName}",
         )
