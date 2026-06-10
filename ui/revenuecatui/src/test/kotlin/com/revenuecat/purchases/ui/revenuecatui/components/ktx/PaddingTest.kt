@@ -45,4 +45,15 @@ internal class PaddingTest {
             PaddingValues(start = 0.dp, top = 0.dp, end = 40.dp, bottom = 20.dp),
         )
     }
+
+    @Test
+    fun `negative values are still clamped when warnIfNegative is enabled`() {
+        val padding = Padding(top = -10.0, bottom = -20.0, leading = -30.0, trailing = -40.0)
+
+        val actual = padding.toPaddingValues(warnIfNegative = true)
+
+        assertThat(actual).isEqualTo(
+            PaddingValues(start = 0.dp, top = 0.dp, end = 0.dp, bottom = 0.dp),
+        )
+    }
 }
