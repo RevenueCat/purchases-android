@@ -18,6 +18,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -48,7 +49,7 @@ class WorkflowManagerTest {
         originalLogHandler = currentLogHandler
         currentLogHandler = NoOpLogHandler
         every { mockDateProvider.now } returns Date(0) // ensures cache is always stale by default
-        workflowsCache = WorkflowsCache(deviceCache = mockDeviceCache, dateProvider = mockDateProvider)
+        workflowsCache = spyk(WorkflowsCache(deviceCache = mockDeviceCache, dateProvider = mockDateProvider))
         workflowManager = WorkflowManager(
             backend = mockBackend,
             workflowDetailResolver = mockResolver,
@@ -104,7 +105,7 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow propagates backend errors`() {
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError, "network error")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflow(
                 appUserID = "user_1",
@@ -114,7 +115,7 @@ class WorkflowManagerTest {
                 onError = capture(errorSlot),
             )
         } answers {
-            errorSlot.captured(expectedError)
+            errorSlot.captured(expectedError, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
         }
 
         var error: PurchasesError? = null
@@ -299,6 +300,172 @@ class WorkflowManagerTest {
         assertThat(error).isNotNull
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
+
+    // region detail fetch status-based fallback
+
+    @Test
+    fun `getWorkflow falls back to disk envelope on 5xx and delivers success`() {
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val expectedResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(envelope) } returns expectedResult
+
+        // Disk holds one envelope for wf_1
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(
+                PurchasesError(PurchasesErrorCode.NetworkError, "server error"),
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        var successResult: WorkflowDataResult? = null
+        var errorCalled = false
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { successResult = it },
+            onError = { errorCalled = true },
+        )
+
+        assertThat(successResult).isEqualTo(expectedResult)
+        assertThat(errorCalled).isFalse()
+        // Result was cached in memory after re-resolution
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `getWorkflow does not fall back to disk envelope on 4xx`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "not found")
+
+        // Disk holds an envelope, but we must not serve it on 4xx
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(expectedError, GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
+        }
+
+        var receivedError: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("unexpected success") },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+        coVerify(exactly = 0) { mockResolver.resolve(any()) }
+        verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
+        // Invalidate the in-memory entry so the next call retries rather than serving a cached value,
+        // mirroring the list/offerings 4xx policy.
+        verify { workflowsCache.invalidateWorkflowTimestamp("wf_1") }
+    }
+
+    @Test
+    fun `getWorkflow surfaces error when fallback eligible but no envelope on disk`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError, "transport error")
+
+        // No envelope on disk
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(
+                expectedError,
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("unexpected success") },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @Test
+    fun `getWorkflow surfaces original error when fallback resolve throws`() {
+        val originalError = PurchasesError(PurchasesErrorCode.NetworkError, "server error")
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        coEvery { mockResolver.resolve(envelope) } throws IllegalStateException("cdn unavailable")
+
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(
+                originalError,
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        var successCalled = false
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { successCalled = true },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(originalError)
+        assertThat(successCalled).isFalse()
+    }
+
+    // endregion detail fetch status-based fallback
 
     // region getWorkflow cache
 
@@ -495,7 +662,7 @@ class WorkflowManagerTest {
 
         // First backend call succeeds (populates the cache); the second fails (background refresh).
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
-        val errorSlot = slot<(PurchasesError) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         var call = 0
         every {
             mockBackend.getWorkflow(
@@ -510,7 +677,10 @@ class WorkflowManagerTest {
             if (call == 1) {
                 successSlot.captured(response)
             } else {
-                errorSlot.captured(PurchasesError(PurchasesErrorCode.NetworkError, "boom"))
+                errorSlot.captured(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "boom"),
+                    GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                )
             }
         }
 
@@ -538,6 +708,99 @@ class WorkflowManagerTest {
 
         assertThat(served).isSameAs(staleResult)
         assertThat(erroredWith).isNull()
+    }
+
+    @Test
+    fun `getWorkflow stale hit re-pins from the persisted envelope when the background refresh fails`() {
+        // Matches OfferingsManager: a fallback-eligible background-refresh failure recovers the
+        // persisted envelope and re-stamps the cache fresh. Known gap vs offerings (re-pinning an
+        // older prefetched envelope over a newer on-demand value) is bounded and self-healing, closed
+        // by the on-demand envelope persistence + LRU follow-up.
+        val inlineResponse = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk())
+        val staleResult = WorkflowDataResult(workflow = inlineResponse.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(inlineResponse) } returns staleResult
+
+        // A distinct value persisted on disk, which the failed refresh should recover and re-pin.
+        val diskEnvelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val diskResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(diskEnvelope) } returns diskResult
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        // First backend call succeeds (populates the cache); the second fails fallback-eligibly.
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        var call = 0
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            call++
+            if (call == 1) {
+                successSlot.captured(inlineResponse)
+            } else {
+                errorSlot.captured(
+                    PurchasesError(PurchasesErrorCode.NetworkError, "boom"),
+                    GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                )
+            }
+        }
+
+        // Populate at t=0 with the in-memory (INLINE) value.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale call at t=6min: serves stale immediately, the background refresh then fails.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        var served: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Caller got the stale in-memory value immediately...
+        assertThat(served).isSameAs(staleResult)
+        // ...and the failed refresh recovered the disk envelope, re-pinned it, and re-stamped fresh.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(diskResult)
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isFalse
+
+        // Consequence: the next render serves the recovered disk value with no further backend call.
+        var servedAgain: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { servedAgain = it },
+            onError = { fail("unexpected error $it") },
+        )
+        assertThat(servedAgain).isSameAs(diskResult)
+        verify(exactly = 2) {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any(),
+            )
+        }
     }
 
     @Test
@@ -1270,7 +1533,7 @@ class WorkflowManagerTest {
         } answers { listSuccessSlot.captured(response) }
 
         val detailSuccessA = slot<(WorkflowDetailResponse) -> Unit>()
-        val detailErrorB = slot<(PurchasesError) -> Unit>()
+        val detailErrorB = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
         every {
             mockBackend.getWorkflow("user_1", "wf_a", false, capture(detailSuccessA), any(), any())
         } just Runs
@@ -1287,7 +1550,10 @@ class WorkflowManagerTest {
         detailSuccessA.captured(WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk()))
         assertThat(completed).isFalse()
 
-        detailErrorB.captured(PurchasesError(PurchasesErrorCode.NetworkError, "fail"))
+        detailErrorB.captured(
+            PurchasesError(PurchasesErrorCode.NetworkError, "fail"),
+            GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+        )
         assertThat(completed).isTrue()
     }
 
@@ -1594,6 +1860,61 @@ class WorkflowManagerTest {
         assertThat(completeCount).isEqualTo(1)
         // ...and the resolved workflow is still cached in memory (cacheWorkflow ran before the failed persist).
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(resolved)
+    }
+
+    @Test
+    fun `prefetch detail fetch falls back to the persisted envelope on a fallback-eligible error`() {
+        // The disk fallback applies to every caller, including prefetch: this is the intended
+        // backend-down recovery (consistent with restoreWorkflowFromEnvelope). The persisted envelope
+        // is re-resolved, cached, and re-stamped fresh.
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "W", offeringId = "off_1", prefetch = true),
+            ),
+        )
+        val listSuccessSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(listSuccessSlot), onError = any())
+        } answers { listSuccessSlot.captured(listResponse) }
+
+        // The persisted envelope on disk and the value it resolves to.
+        val diskEnvelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf_1.json",
+            hash = "h",
+        )
+        val diskResult = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        coEvery { mockResolver.resolve(diskEnvelope) } returns diskResult
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
+
+        // The prefetch detail fetch fails fallback-eligibly (5xx) on the prefetch dispatcher.
+        val detailErrorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(detailErrorSlot),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers {
+            detailErrorSlot.captured(
+                PurchasesError(PurchasesErrorCode.NetworkError, "server boom"),
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+
+        // The prefetch recovered the persisted envelope and cached it in memory.
+        coVerify(exactly = 1) { mockResolver.resolve(diskEnvelope) }
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(diskResult)
+        // cacheWorkflow re-stamped it fresh, so an on-demand render serves this recovered value
+        // without re-hitting the backend until it goes stale again.
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isFalse
     }
 
     // endregion envelope persistence
