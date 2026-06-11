@@ -57,7 +57,12 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
         const val SCALE = 3
 
         @JvmStatic
-        // Placing the offering ID between triple underscores so we can easily parse it later.
+        // We hex-encode the offering ID and place it between triple underscores so we can easily and unambiguously
+        // parse it later. We can't use the raw offering ID, because Paparazzi rewrites characters that are not safe in
+        // file names (e.g. spaces become underscores) when generating the snapshot file name. Since some offering IDs
+        // contain real underscores (e.g. "wide_badge_style"), we can't reliably reverse that sanitization. Hex encoding
+        // only produces characters that Paparazzi leaves untouched, so the screenshot upload lane can recover the exact
+        // offering ID by hex-decoding it.
         @Parameters(name = "___{0}___")
         fun data(): List<Array<Any>> {
             // The PaywallResourcesProvider uses an OfferingParser under the hood, which logs.
@@ -66,9 +71,14 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
             Purchases.logHandler = PrintLnLogHandler
             return PaywallResourcesProvider()
                 .values
-                .map { paywall -> arrayOf(paywall.offering.identifier, paywall) }
+                .map { paywall -> arrayOf(paywall.offering.identifier.encodeToHexString(), paywall) }
                 .toList()
         }
+
+        private fun String.encodeToHexString(): String =
+            toByteArray(Charsets.UTF_8).joinToString(separator = "") { byte ->
+                "%02x".format(byte.toUByte().toInt())
+            }
 
         @JvmStatic
         @BeforeClass
