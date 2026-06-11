@@ -91,9 +91,11 @@ fun AppInfoScreen(
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         val currentActiveEntitlements by remember { derivedStateOf { state.activeEntitlements } }
         Spacer(modifier = Modifier.weight(1f))
+        val useWorkflows by remember { derivedStateOf { state.useWorkflows } }
         Text(text = "Current user ID: $currentUserID")
         Text(text = "Current active entitlements: $currentActiveEntitlements")
         Text(text = "Current API key: $currentApiKeyDescription")
+        Text(text = "Workflows: ${if (useWorkflows) "enabled" else "disabled"}")
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
         }
@@ -102,6 +104,9 @@ fun AppInfoScreen(
         }
         Button(onClick = { showApiKeyDialog = true }) {
             Text(text = "Switch API key")
+        }
+        Button(onClick = { viewModel.toggleUseWorkflows() }) {
+            Text(text = if (useWorkflows) "Disable workflows" else "Enable workflows")
         }
         Button(
             enabled = !isClearingFileCache,
@@ -343,12 +348,14 @@ fun AppInfoScreenPreview() {
                         appUserID = "test-user-id",
                         apiKeyDescription = "test-api-key",
                         activeEntitlements = listOf("pro", "premium"),
+                        useWorkflows = false,
                     ),
                 )
 
             override fun logIn(newAppUserId: String) {}
             override fun logOut() {}
             override fun switchApiKey(newApiKey: String) {}
+            override fun toggleUseWorkflows() {}
             override fun refresh() {}
         },
         tappedOnCustomerCenter = {},

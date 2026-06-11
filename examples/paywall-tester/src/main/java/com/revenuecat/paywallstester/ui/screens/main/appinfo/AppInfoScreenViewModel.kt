@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.revenuecat.paywallstester.BuildConfig
 import com.revenuecat.paywallstester.ConfigurePurchasesUseCase
 import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.data.ApiKeyStore
@@ -25,12 +26,14 @@ interface AppInfoScreenViewModel {
         val appUserID: String,
         val apiKeyDescription: String,
         val activeEntitlements: List<String>,
+        val useWorkflows: Boolean,
     ) {
         companion object {
             val Empty = UiState(
                 appUserID = "",
                 apiKeyDescription = "",
                 activeEntitlements = emptyList(),
+                useWorkflows = false,
             )
         }
     }
@@ -40,6 +43,7 @@ interface AppInfoScreenViewModel {
     fun logIn(newAppUserId: String)
     fun logOut()
     fun switchApiKey(newApiKey: String)
+    fun toggleUseWorkflows()
     fun refresh()
 }
 
@@ -68,6 +72,7 @@ internal class AppInfoScreenViewModelImpl(
     init {
         updateAppUserID()
         updateApiKeyDescription()
+        updateUseWorkflows()
         viewModelScope.launch {
             updateActiveEntitlements()
         }
@@ -97,8 +102,15 @@ internal class AppInfoScreenViewModelImpl(
 
     override fun switchApiKey(newApiKey: String) {
         apiKeyStore.setLastUsedApiKey(newApiKey)
-        configurePurchases(newApiKey)
+        configurePurchases(newApiKey, apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT))
         updateApiKeyDescription()
+    }
+
+    override fun toggleUseWorkflows() {
+        val newValue = !apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT)
+        apiKeyStore.setUseWorkflows(newValue)
+        configurePurchases(Purchases.sharedInstance.currentConfiguration.apiKey, newValue)
+        updateUseWorkflows()
     }
 
     override fun refresh() {
@@ -121,6 +133,12 @@ internal class AppInfoScreenViewModelImpl(
                     else -> "Custom: $apiKey"
                 },
             )
+        }
+    }
+
+    private fun updateUseWorkflows() {
+        _state.update {
+            it.copy(useWorkflows = apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT))
         }
     }
 

@@ -22,9 +22,11 @@ class MainApplication : Application() {
 
         Purchases.logLevel = LogLevel.VERBOSE
 
-        val apiKey = ApiKeyStore(this).getLastUsedApiKey()
+        val apiKeyStore = ApiKeyStore(this)
+        val apiKey = apiKeyStore.getLastUsedApiKey()
+        val useWorkflows = apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT)
         val configurePurchases = ConfigurePurchasesUseCase(this)
-        configurePurchases(apiKey)
+        configurePurchases(apiKey, useWorkflows)
         Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
             Log.d(TAG, "DebugEvent: ${event.name} ${event.properties}")
         }
