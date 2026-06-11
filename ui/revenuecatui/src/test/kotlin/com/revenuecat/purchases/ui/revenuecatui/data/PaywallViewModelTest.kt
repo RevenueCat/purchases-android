@@ -3074,8 +3074,7 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .setOffering(defaultOffering)
-                .injectedWorkflow(WorkflowDataResult(workflow, null))
+                .injectedWorkflow(WorkflowDataResult(workflow, null), defaultOffering)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,

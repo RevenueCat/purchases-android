@@ -207,15 +207,19 @@ public class PaywallOptions internal constructor(
 
         /**
          * Injects a pre-built workflow (multipage paywall) to render locally without fetching
-         * it from the backend. Internal RevenueCat use only (e.g. dashboard preview).
+         * it from the backend, together with the [Offering] it renders against. Internal
+         * RevenueCat use only (e.g. mobile app preview).
          *
-         * The workflow is rendered against the [Offering] supplied via [setOffering]; its screens
-         * resolve packages from that single offering. Use [setOffering] (not the offering-id
-         * variants) when injecting a workflow, and prefer single-offering workflows in preview.
+         * The workflow's screens resolve their packages from [offering]; pass the single
+         * offering the workflow references (prefer single-offering workflows in preview), or
+         * null for workflows without an associated offering. This sets the offering for you,
+         * so there's no need to also call [setOffering].
          */
         @InternalRevenueCatAPI
-        public fun injectedWorkflow(workflow: WorkflowDataResult?): Builder = apply {
+        public fun injectedWorkflow(workflow: WorkflowDataResult, offering: Offering?): Builder = apply {
             this.injectedWorkflow = workflow
+            this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
+                ?: OfferingSelection.None
         }
 
         public fun build(): PaywallOptions {

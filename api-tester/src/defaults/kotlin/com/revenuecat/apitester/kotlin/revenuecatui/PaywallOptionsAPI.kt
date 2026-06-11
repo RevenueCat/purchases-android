@@ -35,8 +35,11 @@ private class PaywallOptionsAPI {
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    private fun checkInjectedWorkflow(builder: PaywallOptions.Builder, workflow: WorkflowDataResult) {
-        val configured: PaywallOptions.Builder = builder.injectedWorkflow(workflow)
-        val cleared: PaywallOptions.Builder = builder.injectedWorkflow(null)
+    private fun checkInjectedWorkflow(
+        builder: PaywallOptions.Builder,
+        workflow: WorkflowDataResult,
+        offering: Offering?,
+    ) {
+        val configured: PaywallOptions.Builder = builder.injectedWorkflow(workflow, offering)
     }
 }

@@ -752,7 +752,7 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun startWorkflowPresentationIfNeeded(offeringSelection: OfferingSelection): Boolean {
-        // Injected workflow (e.g. dashboard preview): render locally, no /workflows fetch.
+        // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
         val injectedWorkflow = options.injectedWorkflow
         if (injectedWorkflow != null) {
             val offering = offeringSelection.offering
