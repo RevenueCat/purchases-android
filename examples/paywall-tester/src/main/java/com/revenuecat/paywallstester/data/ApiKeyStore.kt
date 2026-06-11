@@ -30,6 +30,6 @@ internal class ApiKeyStore(
         }
     }
 
-    fun getUseWorkflows(default: Boolean = false): Boolean =
+    fun getUseWorkflows(default: Boolean = true): Boolean =
         sharedPreferences.getBoolean(KEY_USE_WORKFLOWS, default)
 }

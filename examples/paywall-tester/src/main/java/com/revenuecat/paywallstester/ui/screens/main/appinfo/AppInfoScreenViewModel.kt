@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.revenuecat.paywallstester.BuildConfig
 import com.revenuecat.paywallstester.ConfigurePurchasesUseCase
 import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.data.ApiKeyStore
@@ -102,12 +101,12 @@ internal class AppInfoScreenViewModelImpl(
 
     override fun switchApiKey(newApiKey: String) {
         apiKeyStore.setLastUsedApiKey(newApiKey)
-        configurePurchases(newApiKey, apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT))
+        configurePurchases(newApiKey, apiKeyStore.getUseWorkflows(default = true))
         updateApiKeyDescription()
     }
 
     override fun toggleUseWorkflows() {
-        val newValue = !apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT)
+        val newValue = !apiKeyStore.getUseWorkflows(default = true)
         apiKeyStore.setUseWorkflows(newValue)
         configurePurchases(Purchases.sharedInstance.currentConfiguration.apiKey, newValue)
         updateUseWorkflows()
@@ -138,7 +137,7 @@ internal class AppInfoScreenViewModelImpl(
 
     private fun updateUseWorkflows() {
         _state.update {
-            it.copy(useWorkflows = apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT))
+            it.copy(useWorkflows = apiKeyStore.getUseWorkflows(default = true))
         }
     }
 

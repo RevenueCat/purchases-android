@@ -24,7 +24,7 @@ class MainApplication : Application() {
 
         val apiKeyStore = ApiKeyStore(this)
         val apiKey = apiKeyStore.getLastUsedApiKey()
-        val useWorkflows = apiKeyStore.getUseWorkflows(default = BuildConfig.USE_WORKFLOWS_ENDPOINT)
+        val useWorkflows = apiKeyStore.getUseWorkflows()
         val configurePurchases = ConfigurePurchasesUseCase(this)
         configurePurchases(apiKey, useWorkflows)
         Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
