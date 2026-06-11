@@ -10,7 +10,6 @@
 #     https://docs.fastlane.tools/plugins/available-plugins
 #
 
-# Used to percent-decode offering IDs parsed from Paparazzi snapshot file names.
 require "cgi"
 
 # Uncomment the line if you want fastlane to automatically update itself
