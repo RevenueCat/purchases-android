@@ -229,3 +229,35 @@ When creating a pull request, **always add one of these labels** to categorize t
 - **Never commit Claude-related files** — do not stage or commit `.claude/` directory, `settings.local.json`, or any AI tool configuration files
 - **Never commit API keys or secrets** — do not stage or commit API keys, tokens, credentials, or any sensitive data
 - **Avoid new CompositionLocals for non-UI dependencies** — for analytics, business logic, and event tracking dependencies, prefer explicit parameters/callback injection over implicit ambient state
+
+## Cursor Cloud specific instructions
+
+### Environment
+
+- **JDK 21** is required (specified in `.sdkmanrc`). The VM ships with
+  OpenJDK 21.
+- **Android SDK** must be installed at `$HOME/android-sdk` with
+  `platforms;android-36`, `build-tools;36.0.0`, and `platform-tools`. The update
+  script handles this automatically.
+- `local.properties` must contain `sdk.dir=/home/ubuntu/android-sdk` — the
+  update script creates this if missing.
+
+### Running commands
+
+- All commands reference `AGENTS.md` "Common Development Commands" section above.
+- `./gradlew detektAll` — static analysis (fast, ~3 min).
+- `./gradlew :purchases:testDefaultsBc8DebugUnitTest` — core module unit tests
+  (~9 min, 3000+ tests).
+- `./gradlew :purchases:lintDefaultsBc8Debug` — Android lint (~1 min).
+
+### Gotchas
+
+- Two HTTPClient timeout tests (`HTTPClientTest`) may fail in containerized
+  environments due to `SocketException: Connection reset` vs expected
+  `SocketTimeoutException`. This is a known environment-specific flake, not a
+  code issue.
+- Backend integration tests self-skip without API keys in `local.properties`.
+  This is expected in Cloud Agent environments.
+- Instrumentation tests (`connectedAndroidTest`) require a device/emulator and
+  cannot run in headless Cloud Agent VMs.
+- The Gradle wrapper auto-downloads Gradle 8.14.5 on first run (~30s).
