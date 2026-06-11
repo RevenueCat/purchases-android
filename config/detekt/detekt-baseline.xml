@@ -42,8 +42,31 @@
     <ID>Filename:subscriberAttributesFactories.kt$com.revenuecat.purchases.subscriberattributes.subscriberAttributesFactories.kt</ID>
     <ID>Filename:subscriptionOptionConversions.kt$com.revenuecat.purchases.google.subscriptionOptionConversions.kt</ID>
     <ID>Filename:utils.kt$com.revenuecat.purchases.common.utils.kt</ID>
+    <ID>ForbiddenPublicEnum:AmazonLWAConsentStatus.kt$AmazonLWAConsentStatus</ID>
+    <ID>ForbiddenPublicEnum:BillingFeature.kt$BillingFeature</ID>
+    <ID>ForbiddenPublicEnum:CacheFetchPolicy.kt$CacheFetchPolicy</ID>
+    <ID>ForbiddenPublicEnum:Constants.kt$Constants$BackendEnvironment</ID>
+    <ID>ForbiddenPublicEnum:EntitlementInfo.kt$OwnershipType</ID>
+    <ID>ForbiddenPublicEnum:EntitlementInfo.kt$PeriodType</ID>
+    <ID>ForbiddenPublicEnum:EntitlementInfo.kt$Store</ID>
+    <ID>ForbiddenPublicEnum:EntitlementVerificationMode.kt$EntitlementVerificationMode</ID>
+    <ID>ForbiddenPublicEnum:GoogleReplacementMode.kt$GoogleReplacementMode : ReplacementMode</ID>
+    <ID>ForbiddenPublicEnum:InAppMessageType.kt$InAppMessageType</ID>
+    <ID>ForbiddenPublicEnum:LogLevel.kt$LogLevel</ID>
+    <ID>ForbiddenPublicEnum:NamingStyle.kt$NamingStyle</ID>
+    <ID>ForbiddenPublicEnum:OfferPaymentMode.kt$OfferPaymentMode</ID>
+    <ID>ForbiddenPublicEnum:OfflineMode.kt$OfflineMode</ID>
+    <ID>ForbiddenPublicEnum:Package.kt$PackageType</ID>
+    <ID>ForbiddenPublicEnum:Period.kt$Period$Unit</ID>
+    <ID>ForbiddenPublicEnum:ProductType.kt$ProductType</ID>
+    <ID>ForbiddenPublicEnum:PurchaseState.kt$PurchaseState</ID>
+    <ID>ForbiddenPublicEnum:PurchasesAreCompletedBy.kt$PurchasesAreCompletedBy</ID>
+    <ID>ForbiddenPublicEnum:RecurrenceMode.kt$RecurrenceMode</ID>
+    <ID>ForbiddenPublicEnum:StoreTransaction.kt$PurchaseType</ID>
+    <ID>ForbiddenPublicEnum:TypographyType.kt$TypographyType</ID>
+    <ID>ForbiddenPublicEnum:VerificationResult.kt$VerificationResult</ID>
+    <ID>ForbiddenPublicEnum:errors.kt$PurchasesErrorCode</ID>
     <ID>ForbiddenPublicSealedClass:AmazonPurchasingData.kt$AmazonPurchasingData : PurchasingData</ID>
-    <ID>ForbiddenPublicSealedClass:GalaxyPurchasingData.kt$GalaxyPurchasingData : PurchasingData</ID>
     <ID>ForbiddenPublicSealedClass:GooglePurchasingData.kt$GooglePurchasingData : PurchasingData</ID>
     <ID>ForbiddenPublicSealedClass:PaywallFont.kt$PaywallFont : Parcelable</ID>
     <ID>ForbiddenPublicSealedClass:PaywallResult.kt$PaywallResult : Parcelable</ID>
