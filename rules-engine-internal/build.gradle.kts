@@ -1,3 +1,6 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.MavenPublishBaseExtension
+
 plugins {
     alias(libs.plugins.revenuecat.public.library)
     alias(libs.plugins.kotlin.serialization)
@@ -5,6 +8,12 @@ plugins {
 
 android {
     namespace = "com.revenuecat.purchases.rules"
+}
+
+plugins.withId("com.vanniktech.maven.publish") {
+    extensions.configure<MavenPublishBaseExtension> {
+        configure(AndroidSingleVariantLibrary("defaultsRelease", sourcesJar = true, publishJavadocJar = true))
+    }
 }
 
 dependencies {
