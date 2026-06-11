@@ -178,6 +178,38 @@ class SharedPreferencesManagerTest {
     }
 
     @Test
+    fun `getSharedPreferences removes migrated RevenueCat keys from legacy preferences but leaves others`() {
+        every { mockLegacyPrefs.all } returns mapOf(
+            REVENUECAT_KEY_1 to "value1",
+            REVENUECAT_KEY_2 to "value2",
+            NON_REVENUECAT_KEY to "should_stay",
+        )
+
+        val manager = SharedPreferencesManager(mockContext)
+        manager.getSharedPreferences()
+
+        // Migrated RevenueCat-prefixed keys are removed from the legacy (default) store so their potentially
+        // large values are no longer inflated on every launch...
+        verify(exactly = 1) { mockLegacyEditor.remove(REVENUECAT_KEY_1) }
+        verify(exactly = 1) { mockLegacyEditor.remove(REVENUECAT_KEY_2) }
+        // ...but the host app's own keys are never touched.
+        verify(exactly = 0) { mockLegacyEditor.remove(NON_REVENUECAT_KEY) }
+        verify(exactly = 1) { mockLegacyEditor.apply() }
+    }
+
+    @Test
+    fun `getSharedPreferences does not touch legacy preferences when nothing to migrate`() {
+        every { mockLegacyPrefs.all } returns mapOf(NON_REVENUECAT_KEY to "value")
+
+        val manager = SharedPreferencesManager(mockContext)
+        manager.getSharedPreferences()
+
+        // No RevenueCat keys to migrate, so the legacy store is not edited at all.
+        verify(exactly = 0) { mockLegacyEditor.remove(any()) }
+        verify(exactly = 0) { mockLegacyEditor.apply() }
+    }
+
+    @Test
     fun `getSharedPreferences handles migration failure gracefully`() {
         every { mockLegacyPrefs.all } returns mapOf(REVENUECAT_KEY_1 to "value1")
 

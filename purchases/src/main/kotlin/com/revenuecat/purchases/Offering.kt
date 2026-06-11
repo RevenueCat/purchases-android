@@ -51,11 +51,40 @@ constructor(
     )
 
     @InternalRevenueCatAPI
-    @Poko
-    public class PaywallComponents(
+    public class PaywallComponents private constructor(
         public val uiConfig: UiConfig,
-        public val data: PaywallComponentsData,
-    )
+        dataProvider: Lazy<PaywallComponentsData>,
+    ) {
+        /**
+         * Constructor for callers that already hold decoded [PaywallComponentsData] (e.g. previews, tests,
+         * hybrid SDKs).
+         */
+        public constructor(uiConfig: UiConfig, data: PaywallComponentsData) : this(uiConfig, lazyOf(data))
+
+        /**
+         * Constructor used by the offerings parser. The (potentially large) component tree referenced by
+         * [dataProvider] is only deserialized the first time [data] is accessed — i.e. when the paywall is
+         * actually displayed — rather than eagerly for every cached offering at load time.
+         */
+        internal constructor(
+            uiConfig: UiConfig,
+            dataProvider: () -> PaywallComponentsData,
+        ) : this(uiConfig, lazy(LazyThreadSafetyMode.SYNCHRONIZED, dataProvider))
+
+        public val data: PaywallComponentsData by dataProvider
+
+        // Hand-written instead of @Poko because `data` is lazily evaluated; equality/hash force the decode.
+        override fun equals(other: Any?): Boolean =
+            this === other || (
+                other is PaywallComponents &&
+                    uiConfig == other.uiConfig &&
+                    data == other.data
+                )
+
+        override fun hashCode(): Int = 31 * uiConfig.hashCode() + data.hashCode()
+
+        override fun toString(): String = "PaywallComponents(uiConfig=$uiConfig, data=$data)"
+    }
 
     /**
      * Whether the offering contains a paywall.
