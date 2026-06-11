@@ -1,21 +1,41 @@
 ## RevenueCat SDK
 ### ✨ New Features
-* Add presented offering context to custom paywall events (#3424) via Rick (@rickvdl)
-* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
+* Log reward verification failure reason (#3535) via Pol Miro (@polmiro)
+### 🐞 Bugfixes
+* fix(test-store): don’t mention Play Store in error logs when the Test Store is used (#3538) via Rick (@rickvdl)
+### Galaxy Store
+#### ✨ New Features
+* [Galaxy]: Add Samsung IAP billing permission to Galaxy manifest (#3539) via Will Taylor (@fire-at-will)
 
 ## RevenueCatUI SDK
-### Paywalls_v2
-#### 🐞 Bugfixes
-* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* Fix paywall crash when a downloaded font file fails to load (#3568) via Toni Rico (@tonidero)
+* Look for embedded paywall fonts in public/assets (#3571) via Toni Rico (@tonidero)
 
 ### 🔄 Other Changes
-* refactor: extract Offering.presentedOfferingContext() helper and apply across SDK (#3513) via Rick (@rickvdl)
-* Add JSON Logic string + array operators (#3485) via Antonio Pallares (@ajpallares)
-* Add ForbiddenPublicSealedClass detekt rule (#3503) via Toni Rico (@tonidero)
-* Update baseline profiles (#3519) via RevenueCat Git Bot (@RCGitBot)
-* build(deps): bump fastlane-plugin-revenuecat_internal from `af7bb5c` to `ce6a7ef` (#3515) via dependabot[bot] (@dependabot[bot])
-* Add JSON Logic comparison operators (<, <=, >, >=) (#3484) via Antonio Pallares (@ajpallares)
-* Add JSON Logic arithmetic operators (+, -, *, /, %) (#3483) via Antonio Pallares (@ajpallares)
-* Add WorkflowEvent model and backend serialization (#3486) via Cesar de la Vega (@vegaro)
-* RulesEngine: add JSON Logic predicate evaluator (#3482) via Antonio Pallares (@ajpallares)
-* Add :rules-engine-internal skeleton module (#3478) via Antonio Pallares (@ajpallares)
+* Fade the multipage paywall header during page transitions (#3525) via Cesar de la Vega (@vegaro)
+* Wire workflows fetching and add cache persistence (#3508) via Cesar de la Vega (@vegaro)
+* Remove workflow details fallback on 4xx errors (#3567) via Cesar de la Vega (@vegaro)
+* Align paywall-rendering-validation density with iOS (#3577) via JayShortway (@JayShortway)
+* Exclude rules-engine-internal from public sealed/data class detekt rules (#3581) via Antonio Pallares (@ajpallares)
+* Add Danger check to discourage large PRs (#3543) via Toni Rico (@tonidero)
+* Use the `log` operator to strengthen rules-engine fixtures (#3564) via Antonio Pallares (@ajpallares)
+* build(deps): bump fastlane from 2.235.0 to 2.236.0 (#3570) via dependabot[bot] (@dependabot[bot])
+* Add JSON Logic `log` operator (#3561) via Antonio Pallares (@ajpallares)
+* Add JSON Logic iteration operators (`none`, `map`, `filter`, `reduce`) (#3553) via Antonio Pallares (@ajpallares)
+* AdMob reward verification doc & test fixes (#3565) via Pol Miro (@polmiro)
+* Clean up changelogs from workflows PRs (#3566) via Cesar de la Vega (@vegaro)
+* AdMob reward verification (#3465) via Pol Miro (@polmiro)
+* Remove workflows fallback on 4xx errors (#3562) via Cesar de la Vega (@vegaro)
+* Wire workflow step lifecycle events in PaywallViewModel (#3487) via Cesar de la Vega (@vegaro)
+* Replace workflows `forceStale` flag with a `forceRefresh` param (#3541) via Cesar de la Vega (@vegaro)
+* Stale-while-revalidate for the workflow detail fetch (#3540) via Cesar de la Vega (@vegaro)
+* Represent ±Infinity in test fixtures via test-only variables (#3556) via Antonio Pallares (@ajpallares)
+* Fix `X ms is denormalized` crash in AmazonBillingTest (#3558) via Cesar de la Vega (@vegaro)
+* Add JSON Logic min and max operators (#3552) via Antonio Pallares (@ajpallares)
+* Remove test-galaxy CI job (#3549) via Will Taylor (@fire-at-will)
+* Persist workflow detail envelopes for recovery when backend is down (#3537) via Cesar de la Vega (@vegaro)
+* Add JSON Logic iteration operators (`some`, `all`) (#3551) via Antonio Pallares (@ajpallares)
+* Migrate base RulesEngineInternal operator unit tests to JSON predicate fixtures (#3545) via Antonio Pallares (@ajpallares)
+* Remove Samsung IAP SDK version warning log (#3546) via Will Taylor (@fire-at-will)
+* Make PaywallViewModel dispatcher injectable to fix flaky tests (#3544) via Cesar de la Vega (@vegaro)

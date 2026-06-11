@@ -21,6 +21,7 @@ import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -555,8 +556,13 @@ public class Purchases internal constructor(
      * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
         backingFieldSharedInstance = null
+    }
+
+    private fun notifyLifecycleClosed() {
+        serviceDispatcher.close(this)
     }
 
     /**
@@ -739,6 +745,17 @@ public class Purchases internal constructor(
         onError: (PurchasesError) -> Unit,
     ) {
         purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    internal fun getRewardVerificationResult(
+        clientTransactionId: String,
+        callback: GetRewardVerificationResultCallback,
+    ) {
+        purchasesOrchestrator.getRewardVerificationResult(
+            clientTransactionId = clientTransactionId,
+            callback = callback,
+        )
     }
 
     // region Subscriber Attributes
@@ -1198,6 +1215,8 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 
         @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
@@ -1347,6 +1366,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                serviceDispatcher.initialize(it)
             }
         }
 

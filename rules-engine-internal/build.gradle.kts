@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.revenuecat.public.library)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -12,5 +13,6 @@ dependencies {
     // local JVM test classpath. Used exclusively by the test-only
     // `ValueJsonHelper` to express predicates as JSON literals.
     testImplementation(libs.json)
+    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.bundles.test)
 }
