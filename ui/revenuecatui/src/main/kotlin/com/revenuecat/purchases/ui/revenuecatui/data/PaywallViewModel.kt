@@ -729,7 +729,7 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        if (startWorkflowPresentationFromEndpointIfNeeded(offeringSelection)) {
+        if (startWorkflowPresentationIfNeeded(offeringSelection)) {
             return
         }
 
@@ -751,7 +751,25 @@ internal class PaywallViewModelImpl(
         updatePaywallState(currentOffering)
     }
 
-    private suspend fun startWorkflowPresentationFromEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
+    private suspend fun startWorkflowPresentationIfNeeded(offeringSelection: OfferingSelection): Boolean {
+        // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
+        val injectedWorkflow = options.injectedWorkflow
+        if (injectedWorkflow != null) {
+            val offering = offeringSelection.offering
+            if (offering == null) {
+                Logger.w(
+                    "Paywalls: injectedWorkflow set without a concrete Offering (use setOffering); " +
+                        "workflow screens may fail to resolve their packages.",
+                )
+            }
+            val offerings = Offerings(
+                current = offering,
+                all = offering?.let { mapOf(it.identifier to it) } ?: emptyMap(),
+            )
+            startWorkflowPresentation(injectedWorkflow, offerings, offering?.presentedOfferingContext)
+            return true
+        }
+
         var updatedFromWorkflow = false
         if (useWorkflowsEndpoint) {
             val workflowParams = when (offeringSelection) {
