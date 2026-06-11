@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
+import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -38,7 +39,7 @@ class RCContainerTest {
 
         assertThat(container.contentElements).hasSize(1)
         assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
-        assertThat(container.elements[sha256(element).toHex()]!!.data.readBytes()).isEqualTo(element)
+        assertThat(container.elements[refOf(element)]!!.data.readBytes()).isEqualTo(element)
     }
 
     @Test
@@ -56,7 +57,7 @@ class RCContainerTest {
         assertThat(container.contentElements).hasSize(elements.size)
         elements.forEachIndexed { index, expected ->
             assertThat(container.contentElements[index].data.readBytes()).isEqualTo(expected)
-            assertThat(container.elements[sha256(expected).toHex()]!!.data.readBytes()).isEqualTo(expected)
+            assertThat(container.elements[refOf(expected)]!!.data.readBytes()).isEqualTo(expected)
         }
     }
 
@@ -67,9 +68,11 @@ class RCContainerTest {
 
         val container = RCContainer.parse(bytes)
 
-        val hex = sha256(element).toHex()
-        assertThat(container.elements).containsKey(hex)
-        assertThat(container.elements[hex]!!.data.readBytes()).isEqualTo(element)
+        val ref = refOf(element)
+        assertThat(ref).hasSize(32)
+        assertThat(ref).doesNotContain("=")
+        assertThat(container.elements).containsKey(ref)
+        assertThat(container.elements[ref]!!.data.readBytes()).isEqualTo(element)
     }
 
     @Test
@@ -136,7 +139,7 @@ class RCContainerTest {
         // Store a checksum that does not match the element bytes.
         val bytes = buildContainer(
             elements = listOf(element),
-            checksumOverride = { _, _ -> ByteArray(32) { 0 } },
+            checksumOverride = { _, _ -> ByteArray(24) { 0 } },
         )
 
         val container = RCContainer.parse(bytes)
@@ -147,9 +150,9 @@ class RCContainerTest {
     @Test
     fun `config data is a zero-copy view over the source buffer`() {
         val config = "ABCD".toByteArray()
-        // Element 0 (config) body begins at offset 8 (header) + 40 (checksum + size + reserved) = 48.
+        // Element 0 (config) body begins at offset 8 (header) + 32 (checksum + size + reserved) = 40.
         val bytes = buildContainer(config = config)
-        val configOffset = 8 + 32 + 4 + 4
+        val configOffset = 8 + 24 + 4 + 4
 
         val container = RCContainer.parse(bytes)
         val data = container.config.data
@@ -205,8 +208,8 @@ class RCContainerTest {
     fun `throws on truncated element header`() {
         val bytes = buildContainer(config = ByteArray(0), elements = listOf("hi".toByteArray()))
         // Drop trailing bytes so the second (content) element header is incomplete.
-        // Config occupies header(8) + element header(40) + body(0) = 48; cut partway into the next header.
-        val truncated = bytes.copyOf(48 + 10)
+        // Config occupies header(8) + element header(32) + body(0) = 40; cut partway into the next header.
+        val truncated = bytes.copyOf(40 + 10)
         assertThatThrownBy { RCContainer.parse(truncated) }
             .isInstanceOf(RCContainerFormatException::class.java)
     }
@@ -214,9 +217,9 @@ class RCContainerTest {
     @Test
     fun `throws when element size exceeds buffer`() {
         val bytes = buildContainer(config = ByteArray(0), elements = listOf("hi".toByteArray()))
-        // Config's element_size is the 4 bytes after the 32-byte checksum: offset 8 + 32 = 40.
+        // Config's element_size is the 4 bytes after the 24-byte checksum: offset 8 + 24 = 32.
         // Set its most-significant little-endian byte high to declare a huge size past EOF.
-        bytes[43] = 0x7F
+        bytes[35] = 0x7F
         assertThatThrownBy { RCContainer.parse(bytes) }
             .isInstanceOf(RCContainerFormatException::class.java)
     }
@@ -228,7 +231,9 @@ class RCContainerTest {
         return out
     }
 
-    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
+    /** Content-addressed ref: SHA-256 truncated to 24 bytes, URL-safe base64 (no padding). */
+    private fun refOf(element: ByteArray): String =
+        Base64.encodeToString(sha256(element), Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
 
     @Suppress("MagicNumber")
     private fun buildContainer(
@@ -271,6 +276,7 @@ class RCContainerTest {
         }
     }
 
+    /** SHA-256 truncated to the format's 24-byte (192-bit) checksum. */
     private fun sha256(data: ByteArray): ByteArray =
-        MessageDigest.getInstance("SHA-256").digest(data)
+        MessageDigest.getInstance("SHA-256").digest(data).copyOf(24)
 }

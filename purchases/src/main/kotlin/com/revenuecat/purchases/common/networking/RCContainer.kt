@@ -9,7 +9,7 @@ import java.nio.ByteOrder
  * Layout (all multi-byte integers little-endian):
  * ```
  * Header (8 bytes): magic byte[2]="RC" | version u8 | flags u8 | reserved byte[4]
- * Element:          checksum byte[32]  | element_size u32 | reserved u32 | element[element_size] | pad→8
+ * Element:          checksum byte[24]  | element_size u32 | reserved u32 | element[element_size] | pad→8
  * ```
  * Elements repeat until the backing buffer is exhausted (the format stores no count). Element 0 is
  * always the [config]; the remaining elements are content-addressed by checksum.
@@ -29,11 +29,12 @@ internal class RCContainer private constructor(
     val contentElements: List<RCElement>,
 ) {
     /**
-     * The non-config elements addressed by their lowercase hex checksum (matching the backend's
-     * `checksum.hex()`). Built lazily from [contentElements]; identical payloads collapse to one
-     * entry (last wins). Element bodies remain the same zero-copy views as in [contentElements].
+     * The non-config elements addressed by their URL-safe base64 checksum (matching the backend's
+     * ref encoding in the config JSON / URLs). Built lazily from [contentElements]; identical
+     * payloads collapse to one entry (last wins). Element bodies remain the same zero-copy views as
+     * in [contentElements].
      */
-    val elements: Map<String, RCElement> by lazy { contentElements.associateBy { it.checksumHex() } }
+    val elements: Map<String, RCElement> by lazy { contentElements.associateBy { it.checksumBase64() } }
 
     companion object {
         private const val MAGIC_R = 'R'.code.toByte()
@@ -42,7 +43,7 @@ internal class RCContainer private constructor(
         private const val HEADER_RESERVED_SIZE = 4
         private const val HEADER_FIXED_SIZE = 8
         private const val ALIGNMENT = 8
-        private const val CHECKSUM_SIZE = 32
+        private const val CHECKSUM_SIZE = 24
         private const val UINT32_SIZE = 4
         private const val ELEM_RESERVED_SIZE = 4
         private const val ELEMENT_HEADER_SIZE = CHECKSUM_SIZE + UINT32_SIZE + ELEM_RESERVED_SIZE
