@@ -35,7 +35,6 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -163,7 +162,7 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
-    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
+    private val useWorkflowsEndpoint: Boolean = purchases.useWorkflows,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
@@ -730,7 +729,7 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        if (startWorkflowPresentationFromEndpointIfNeeded(offeringSelection)) {
+        if (startWorkflowPresentationIfNeeded(offeringSelection)) {
             return
         }
 
@@ -752,7 +751,25 @@ internal class PaywallViewModelImpl(
         updatePaywallState(currentOffering)
     }
 
-    private suspend fun startWorkflowPresentationFromEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
+    private suspend fun startWorkflowPresentationIfNeeded(offeringSelection: OfferingSelection): Boolean {
+        // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
+        val injectedWorkflow = options.injectedWorkflow
+        if (injectedWorkflow != null) {
+            val offering = offeringSelection.offering
+            if (offering == null) {
+                Logger.w(
+                    "Paywalls: injectedWorkflow set without a concrete Offering (use setOffering); " +
+                        "workflow screens may fail to resolve their packages.",
+                )
+            }
+            val offerings = Offerings(
+                current = offering,
+                all = offering?.let { mapOf(it.identifier to it) } ?: emptyMap(),
+            )
+            startWorkflowPresentation(injectedWorkflow, offerings, offering?.presentedOfferingContext)
+            return true
+        }
+
         var updatedFromWorkflow = false
         if (useWorkflowsEndpoint) {
             val workflowParams = when (offeringSelection) {

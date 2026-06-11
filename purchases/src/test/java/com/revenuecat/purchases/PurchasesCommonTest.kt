@@ -2878,6 +2878,27 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(received).isNull()
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+
+        var received: WorkflowDataResult? = null
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.getWorkflow(
+            workflowId = "wf_1",
+            onSuccess = { received = it },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(received).isNull()
+        verify(exactly = 0) {
+            mockWorkflowManager.getWorkflow(any(), any(), any(), any(), any(), any())
+        }
+    }
+
     // endregion
 
     // region queryPurchases
