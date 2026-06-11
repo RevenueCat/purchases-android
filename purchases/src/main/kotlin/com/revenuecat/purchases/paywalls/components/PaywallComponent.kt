@@ -11,6 +11,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -36,29 +37,31 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("Can only deserialize PaywallComponent from JSON, got: ${decoder::class}")
         val json = jsonDecoder.decodeJsonElement().jsonObject
+        // Decode the already-parsed JsonElement directly instead of re-serializing it back to a String and
+        // re-parsing (`decodeFromString(json.toString())`). The latter made deserialization ~quadratic in tree
+        // depth, since every nested PaywallComponent re-stringified its whole subtree at each level.
         return when (val type = json["type"]?.jsonPrimitive?.content) {
-            "button" -> jsonDecoder.json.decodeFromString<ButtonComponent>(json.toString())
-            "image" -> jsonDecoder.json.decodeFromString<ImageComponent>(json.toString())
-            "package" -> jsonDecoder.json.decodeFromString<PackageComponent>(json.toString())
-            "purchase_button" -> jsonDecoder.json.decodeFromString<PurchaseButtonComponent>(json.toString())
-            "stack" -> jsonDecoder.json.decodeFromString<StackComponent>(json.toString())
-            "header" -> jsonDecoder.json.decodeFromString<HeaderComponent>(json.toString())
-            "sticky_footer" -> jsonDecoder.json.decodeFromString<StickyFooterComponent>(json.toString())
-            "text" -> jsonDecoder.json.decodeFromString<TextComponent>(json.toString())
-            "icon" -> jsonDecoder.json.decodeFromString<IconComponent>(json.toString())
-            "timeline" -> jsonDecoder.json.decodeFromString<TimelineComponent>(json.toString())
-            "carousel" -> jsonDecoder.json.decodeFromString<CarouselComponent>(json.toString())
-            "tab_control_button" -> jsonDecoder.json.decodeFromString<TabControlButtonComponent>(json.toString())
-            "tab_control_toggle" -> jsonDecoder.json.decodeFromString<TabControlToggleComponent>(json.toString())
-            "tab_control" -> jsonDecoder.json.decodeFromString<TabControlComponent>(json.toString())
-            "tabs" -> jsonDecoder.json.decodeFromString<TabsComponent>(json.toString())
-            "video" -> jsonDecoder.json.decodeFromString<VideoComponent>(json.toString())
-            "countdown" -> jsonDecoder.json.decodeFromString<CountdownComponent>(json.toString())
+            "button" -> jsonDecoder.json.decodeFromJsonElement<ButtonComponent>(json)
+            "image" -> jsonDecoder.json.decodeFromJsonElement<ImageComponent>(json)
+            "package" -> jsonDecoder.json.decodeFromJsonElement<PackageComponent>(json)
+            "purchase_button" -> jsonDecoder.json.decodeFromJsonElement<PurchaseButtonComponent>(json)
+            "stack" -> jsonDecoder.json.decodeFromJsonElement<StackComponent>(json)
+            "header" -> jsonDecoder.json.decodeFromJsonElement<HeaderComponent>(json)
+            "sticky_footer" -> jsonDecoder.json.decodeFromJsonElement<StickyFooterComponent>(json)
+            "text" -> jsonDecoder.json.decodeFromJsonElement<TextComponent>(json)
+            "icon" -> jsonDecoder.json.decodeFromJsonElement<IconComponent>(json)
+            "timeline" -> jsonDecoder.json.decodeFromJsonElement<TimelineComponent>(json)
+            "carousel" -> jsonDecoder.json.decodeFromJsonElement<CarouselComponent>(json)
+            "tab_control_button" -> jsonDecoder.json.decodeFromJsonElement<TabControlButtonComponent>(json)
+            "tab_control_toggle" -> jsonDecoder.json.decodeFromJsonElement<TabControlToggleComponent>(json)
+            "tab_control" -> jsonDecoder.json.decodeFromJsonElement<TabControlComponent>(json)
+            "tabs" -> jsonDecoder.json.decodeFromJsonElement<TabsComponent>(json)
+            "video" -> jsonDecoder.json.decodeFromJsonElement<VideoComponent>(json)
+            "countdown" -> jsonDecoder.json.decodeFromJsonElement<CountdownComponent>(json)
             "fallback_header" -> FallbackHeaderComponent
             else -> json["fallback"]
                 ?.let { it as? JsonObject }
-                ?.toString()
-                ?.let { jsonDecoder.json.decodeFromString<PaywallComponent>(it) }
+                ?.let { jsonDecoder.json.decodeFromJsonElement<PaywallComponent>(it) }
                 ?: throw SerializationException("No fallback provided for unknown type: $type")
         }
     }
