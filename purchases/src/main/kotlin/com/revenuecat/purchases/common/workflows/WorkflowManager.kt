@@ -81,9 +81,15 @@ internal class WorkflowManager(
             cached != null && staleWhileRevalidate -> {
                 // Serve the stale value immediately, then refresh the cache in the background.
                 // The caller already has a usable value, so the refresh delivers no callbacks: a
-                // success only updates the cache, and a failure is logged and swallowed. Mirrors
-                // OfferingsManager.vendCachedOfferingsAndMaybeRefresh. Concurrent stale callers can
-                // each fire a refresh; this is not deduplicated, matching the offerings stale path.
+                // success updates the cache, and a failure goes through the same disk fallback as any
+                // other fetch (see fetchAndCacheWorkflow) — on a backend-down error with a persisted
+                // envelope it re-pins from disk and re-stamps fresh, matching OfferingsManager.
+                // Known gap vs offerings: offerings persists every fetch, so its disk copy is always
+                // the latest; the detail path persists prefetched workflows only, so a background
+                // refresh can re-pin an older prefetched envelope over a newer on-demand value and
+                // suppress the retry for a TTL. Bounded and self-healing; the on-demand envelope
+                // persistence + LRU follow-up closes it. Concurrent stale callers can each fire a
+                // refresh; this is not deduplicated, matching the offerings stale path.
                 onSuccess(cached)
                 fetchAndCacheWorkflow(
                     appUserID = appUserID,
@@ -150,6 +156,22 @@ internal class WorkflowManager(
                 onSuccess(result)
             }
         }
+        val onErrorWithFallback: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit =
+            { error, behavior ->
+                if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                    // 4xx: the server intentionally changed/removed this workflow, so don't serve the
+                    // saved copy. Invalidate the in-memory entry so the next call retries rather than
+                    // serving a still-cached value — mirrors the list's invalidateWorkflowsListTimestamp
+                    // and OfferingsManager's forceCacheStale on 4xx.
+                    workflowsCache.invalidateWorkflowTimestamp(workflowId)
+                    onError(error)
+                } else {
+                    // Transport error / 5xx / malformed body: the backend is unavailable, not refusing.
+                    // Recover from the persisted envelope if we have one, matching OfferingsManager's
+                    // disk fallback. Applies to every caller, including the SWR background refresh.
+                    scope.launch { resolveDiskFallback(workflowId, error, onSuccess, onError) }
+                }
+            }
         if (callbackDispatcher != null) {
             backend.getWorkflow(
                 appUserID = appUserID,
@@ -157,7 +179,7 @@ internal class WorkflowManager(
                 appInBackground = appInBackground,
                 callbackDispatcher = callbackDispatcher,
                 onSuccess = onSuccessHandler,
-                onError = onError,
+                onError = onErrorWithFallback,
             )
         } else {
             backend.getWorkflow(
@@ -165,9 +187,44 @@ internal class WorkflowManager(
                 workflowId = workflowId,
                 appInBackground = appInBackground,
                 onSuccess = onSuccessHandler,
-                onError = onError,
+                onError = onErrorWithFallback,
             )
         }
+    }
+
+    /**
+     * Attempts to re-resolve the persisted disk envelope for [workflowId] after a
+     * fallback-eligible backend error. If no envelope is present, or if re-resolution fails,
+     * the in-memory entry is invalidated and the original [networkError] is forwarded through
+     * [onError] so the caller is never left without a response and the next call retries instead of
+     * serving a stale value — mirroring how the list and offerings invalidate when a fallback
+     * yields nothing fresh. On success the result is cached in memory (which re-stamps it fresh) and
+     * delivered via [onSuccess].
+     */
+    private suspend fun resolveDiskFallback(
+        workflowId: String,
+        networkError: PurchasesError,
+        onSuccess: (WorkflowDataResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val envelope = workflowsCache.cachedWorkflowDetailEnvelopeFromDisk(workflowId)
+        if (envelope == null) {
+            workflowsCache.invalidateWorkflowTimestamp(workflowId)
+            onError(networkError)
+            return
+        }
+        val result = try {
+            workflowDetailResolver.resolve(envelope)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Failed to re-resolve disk envelope for $workflowId during fallback" }
+            workflowsCache.invalidateWorkflowTimestamp(workflowId)
+            onError(networkError)
+            return
+        }
+        workflowsCache.cacheWorkflow(workflowId, result)
+        onSuccess(result)
     }
 
     /**

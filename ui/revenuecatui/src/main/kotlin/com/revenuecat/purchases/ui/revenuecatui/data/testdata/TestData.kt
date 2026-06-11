@@ -497,7 +497,7 @@ internal class MockResourceProvider(
     override fun getAssetFontPaths(names: List<String>): Map<String, String>? {
         val foundPaths = names.associateWith { name ->
             val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
-            "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
+            "fonts/$nameWithExtension"
         }
 
         return foundPaths.filter { assetPaths.contains(it.value) }

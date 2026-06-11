@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.RewardVerificationResult
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.common.warnLog
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -16,13 +17,15 @@ import kotlinx.serialization.json.jsonPrimitive
 internal data class RewardVerificationResponse(
     val status: String,
     val reward: JsonElement? = null,
+    @SerialName("failure_reason") val failureReason: String? = null,
+    val message: String? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
     fun toRewardVerificationResult(): RewardVerificationResult {
         return when (status.lowercase()) {
             "pending" -> RewardVerificationResult.PENDING
             "verified" -> RewardVerificationResult.Verified(reward = reward.toVerifiedReward())
-            "failed" -> RewardVerificationResult.FAILED
+            "failed" -> RewardVerificationResult.Failed(failureReason = failureReason, message = message)
             else -> {
                 warnLog { "Unknown reward verification status: $status" }
                 RewardVerificationResult.UNKNOWN
