@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
+import com.revenuecat.purchases.models.toHexString
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
@@ -15,6 +16,8 @@ internal class RCElement(
     val checksum: ByteBuffer,
     /** A read-only, zero-copy view over this element's bytes. */
     val data: ByteBuffer,
+    /** The element header's reserved u32 (currently always 0; reserved for content-types). */
+    val reserved: Int = 0,
 ) {
     /**
      * Computes the SHA-256 of [data] and compares it against the stored [checksum].
@@ -30,6 +33,14 @@ internal class RCElement(
         val expected = checksum.duplicate()
         if (expected.remaining() != computed.size) return false
         return computed.all { it == expected.get() }
+    }
+
+    /** The stored [checksum] as a lowercase hex string, matching the backend's `checksum.hex()`. */
+    fun checksumHex(): String {
+        val view = checksum.duplicate()
+        val bytes = ByteArray(view.remaining())
+        view.get(bytes)
+        return bytes.toHexString()
     }
 
     private companion object {

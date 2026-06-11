@@ -23,23 +23,26 @@ class RCContainerTest {
 
         assertThat(container.version).isEqualTo(1)
         assertThat(container.flags).isEqualTo(0x07)
-        assertThat(container.config.readBytes()).isEqualTo(config)
+        assertThat(container.config.data.readBytes()).isEqualTo(config)
+        assertThat(container.config.isChecksumValid()).isTrue()
+        assertThat(container.contentElements).isEmpty()
         assertThat(container.elements).isEmpty()
     }
 
     @Test
-    fun `parses a single element`() {
+    fun `parses a single content element`() {
         val element = "payload-bytes".toByteArray()
         val bytes = buildContainer(config = "cfg".toByteArray(), elements = listOf(element))
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.elements).hasSize(1)
-        assertThat(container.elements[0].data.readBytes()).isEqualTo(element)
+        assertThat(container.contentElements).hasSize(1)
+        assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
+        assertThat(container.elements[sha256(element).toHex()]!!.data.readBytes()).isEqualTo(element)
     }
 
     @Test
-    fun `parses multiple elements of differing sizes`() {
+    fun `parses multiple content elements of differing sizes`() {
         val elements = listOf(
             "a".toByteArray(),
             "bb".toByteArray(),
@@ -50,22 +53,47 @@ class RCContainerTest {
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.elements).hasSize(elements.size)
+        assertThat(container.contentElements).hasSize(elements.size)
         elements.forEachIndexed { index, expected ->
-            assertThat(container.elements[index].data.readBytes()).isEqualTo(expected)
+            assertThat(container.contentElements[index].data.readBytes()).isEqualTo(expected)
+            assertThat(container.elements[sha256(expected).toHex()]!!.data.readBytes()).isEqualTo(expected)
         }
     }
 
     @Test
+    fun `looks up content elements by hex checksum`() {
+        val element = "find-me".toByteArray()
+        val bytes = buildContainer(elements = listOf(element))
+
+        val container = RCContainer.parse(bytes)
+
+        val hex = sha256(element).toHex()
+        assertThat(container.elements).containsKey(hex)
+        assertThat(container.elements[hex]!!.data.readBytes()).isEqualTo(element)
+    }
+
+    @Test
+    fun `identical content elements collapse to one map entry`() {
+        val element = "duplicate".toByteArray()
+        val bytes = buildContainer(elements = listOf(element, element.copyOf()))
+
+        val container = RCContainer.parse(bytes)
+
+        // Both are present in the ordered list, but content-addressing collapses them in the map.
+        assertThat(container.contentElements).hasSize(2)
+        assertThat(container.elements).hasSize(1)
+    }
+
+    @Test
     fun `skips config padding when config size is not a multiple of 8`() {
-        // 3-byte config forces 5 bytes of padding before the first element.
+        // 3-byte config forces 5 bytes of content padding before the first content element.
         val element = "element".toByteArray()
         val bytes = buildContainer(config = "abc".toByteArray(), elements = listOf(element))
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.config.readBytes()).isEqualTo("abc".toByteArray())
-        assertThat(container.elements[0].data.readBytes()).isEqualTo(element)
+        assertThat(container.config.data.readBytes()).isEqualTo("abc".toByteArray())
+        assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
     }
 
     @Test
@@ -75,21 +103,21 @@ class RCContainerTest {
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.config.remaining()).isEqualTo(0)
-        assertThat(container.elements[0].data.readBytes()).isEqualTo(element)
+        assertThat(container.config.data.remaining()).isEqualTo(0)
+        assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
     }
 
     @Test
-    fun `reads big-endian sizes`() {
-        // 256-byte config encodes as 0x00,0x00,0x01,0x00 big-endian. A little-endian misread would
-        // be 0x00010000 (65536) and overflow the buffer, so a successful parse proves big-endian.
-        val config = ByteArray(256) { it.toByte() }
-        val bytes = buildContainer(config = config)
+    fun `reads little-endian sizes`() {
+        // 256-byte element encodes as 0x00,0x01,0x00,0x00 little-endian. A big-endian misread would
+        // be 0x00010000 (65536) and overflow the buffer, so a successful parse proves little-endian.
+        val element = ByteArray(256) { it.toByte() }
+        val bytes = buildContainer(config = ByteArray(0), elements = listOf(element))
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.config.remaining()).isEqualTo(256)
-        assertThat(container.config.readBytes()).isEqualTo(config)
+        assertThat(container.contentElements[0].data.remaining()).isEqualTo(256)
+        assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
     }
 
     @Test
@@ -99,7 +127,7 @@ class RCContainerTest {
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.elements[0].isChecksumValid()).isTrue()
+        assertThat(container.contentElements[0].isChecksumValid()).isTrue()
     }
 
     @Test
@@ -113,23 +141,23 @@ class RCContainerTest {
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.elements[0].isChecksumValid()).isFalse()
+        assertThat(container.contentElements[0].isChecksumValid()).isFalse()
     }
 
     @Test
-    fun `element data is a zero-copy view over the source buffer`() {
-        val element = "ABCD".toByteArray()
-        // Empty config: element bytes begin at offset 8 (header) + 36 (checksum + size) = 44.
-        val bytes = buildContainer(config = ByteArray(0), elements = listOf(element))
-        val elementOffset = 8 + 32 + 4
+    fun `config data is a zero-copy view over the source buffer`() {
+        val config = "ABCD".toByteArray()
+        // Element 0 (config) body begins at offset 8 (header) + 40 (checksum + size + reserved) = 48.
+        val bytes = buildContainer(config = config)
+        val configOffset = 8 + 32 + 4 + 4
 
         val container = RCContainer.parse(bytes)
-        val data = container.elements[0].data
+        val data = container.config.data
 
         assertThat(data.get(0)).isEqualTo('A'.code.toByte())
 
-        // Mutating the backing array is reflected in the view: no copy was made.
-        bytes[elementOffset] = 'Z'.code.toByte()
+        // Mutating the backing array is reflected in the view: no copy was made during parse.
+        bytes[configOffset] = 'Z'.code.toByte()
         assertThat(data.get(0)).isEqualTo('Z'.code.toByte())
     }
 
@@ -166,19 +194,19 @@ class RCContainerTest {
     }
 
     @Test
-    fun `throws when config size exceeds buffer`() {
-        val bytes = buildContainer(config = "abc".toByteArray())
-        // Overwrite config_size (offset 4, big-endian) with a value far past the end.
-        bytes[4] = 0x7F
-        assertThatThrownBy { RCContainer.parse(bytes) }
+    fun `throws when there is no config element`() {
+        // Header only, no elements.
+        val header = buildContainer(config = ByteArray(0)).copyOf(8)
+        assertThatThrownBy { RCContainer.parse(header) }
             .isInstanceOf(RCContainerFormatException::class.java)
     }
 
     @Test
     fun `throws on truncated element header`() {
         val bytes = buildContainer(config = ByteArray(0), elements = listOf("hi".toByteArray()))
-        // Drop the trailing bytes so an element is declared but its header is incomplete.
-        val truncated = bytes.copyOf(8 + 10)
+        // Drop trailing bytes so the second (content) element header is incomplete.
+        // Config occupies header(8) + element header(40) + body(0) = 48; cut partway into the next header.
+        val truncated = bytes.copyOf(48 + 10)
         assertThatThrownBy { RCContainer.parse(truncated) }
             .isInstanceOf(RCContainerFormatException::class.java)
     }
@@ -186,8 +214,9 @@ class RCContainerTest {
     @Test
     fun `throws when element size exceeds buffer`() {
         val bytes = buildContainer(config = ByteArray(0), elements = listOf("hi".toByteArray()))
-        // element_size is the 4 bytes after the 32-byte checksum: offset 8 + 32 = 40.
-        bytes[40] = 0x7F
+        // Config's element_size is the 4 bytes after the 32-byte checksum: offset 8 + 32 = 40.
+        // Set its most-significant little-endian byte high to declare a huge size past EOF.
+        bytes[43] = 0x7F
         assertThatThrownBy { RCContainer.parse(bytes) }
             .isInstanceOf(RCContainerFormatException::class.java)
     }
@@ -198,6 +227,8 @@ class RCContainerTest {
         copy.get(out)
         return out
     }
+
+    private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
     @Suppress("MagicNumber")
     private fun buildContainer(
@@ -212,14 +243,15 @@ class RCContainerTest {
         out.write('C'.code)
         out.write(version and 0xFF)
         out.write(flags and 0xFF)
-        out.writeUInt32(config.size)
-        out.write(config)
-        out.padTo8()
+        repeat(4) { out.write(0) } // header reserved
 
-        elements.forEachIndexed { index, element ->
+        // Element 0 is always the config, followed by the content elements.
+        val allElements = listOf(config) + elements
+        allElements.forEachIndexed { index, element ->
             val checksum = checksumOverride?.invoke(index, element) ?: sha256(element)
             out.write(checksum)
             out.writeUInt32(element.size)
+            out.writeUInt32(0) // element reserved
             out.write(element)
             out.padTo8()
         }
@@ -227,10 +259,10 @@ class RCContainerTest {
     }
 
     private fun ByteArrayOutputStream.writeUInt32(value: Int) {
-        write((value ushr 24) and 0xFF)
-        write((value ushr 16) and 0xFF)
-        write((value ushr 8) and 0xFF)
         write(value and 0xFF)
+        write((value ushr 8) and 0xFF)
+        write((value ushr 16) and 0xFF)
+        write((value ushr 24) and 0xFF)
     }
 
     private fun ByteArrayOutputStream.padTo8() {
