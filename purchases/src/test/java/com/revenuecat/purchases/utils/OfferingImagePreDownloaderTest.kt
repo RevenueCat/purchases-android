@@ -38,7 +38,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import io.mockk.Runs
-import io.mockk.capture
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
