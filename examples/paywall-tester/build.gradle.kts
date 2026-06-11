@@ -71,11 +71,6 @@ android {
             "PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID",
             "\"${resolveProperty("PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID")}\"",
         )
-        buildConfigField(
-            "boolean",
-            "USE_WORKFLOWS_ENDPOINT",
-            (resolveProperty("revenuecat.useWorkflowsEndpoint") == "true").toString(),
-        )
     }
 
     signingConfigs {

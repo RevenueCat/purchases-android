@@ -398,9 +398,8 @@ platform :android do
   end
 
   desc "Build paywall tester app bundle"
-  lane :build_paywall_tester_bundle do |options|
+  lane :build_paywall_tester_bundle do
     api_key_a = ENV['PAYWALL_TESTER_OVERRIDE_API_KEY'].to_s.empty? ? (ENV['PAYWALLS_V2_ALPHA_API_KEY'] || '') : ENV['PAYWALL_TESTER_OVERRIDE_API_KEY']
-    use_workflows_endpoint = options[:use_workflows_endpoint].to_s == "true"
     build_bundle(
       build_task: 'examples:paywall-tester:bundleBc8',
       env_prefix: 'PAYWALL_TESTER',
@@ -410,7 +409,6 @@ platform :android do
         "PAYWALL_TESTER_API_KEY_B" => ENV['PAYWALLS_V2_TEMPLATE_REPO_API_KEY'] || '',
         "PAYWALL_TESTER_API_KEY_A_LABEL" => "Paywalls V2 Alpha",
         "PAYWALL_TESTER_API_KEY_B_LABEL" => "Official Paywalls V2 Template Repo",
-        "revenuecat.useWorkflowsEndpoint" => use_workflows_endpoint.to_s,
       }
     )
   end

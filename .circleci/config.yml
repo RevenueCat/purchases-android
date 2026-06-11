@@ -56,9 +56,6 @@ parameters:
   paywall_tester_api_key:
     type: string
     default: ""
-  paywall_tester_use_workflows_endpoint:
-    type: boolean
-    default: false
 
 commands:
   install-sdkman:
@@ -104,9 +101,6 @@ commands:
       api_key:
         type: string
         default: ""
-      use_workflows_endpoint:
-        type: boolean
-        default: false
     steps:
       - android/accept_licenses
       - android/restore_gradle_cache
@@ -120,7 +114,7 @@ commands:
           environment:
             PAYWALL_TESTER_OVERRIDE_API_KEY: << parameters.api_key >>
           command: |
-            bundle exec fastlane android build_paywall_tester_bundle use_workflows_endpoint:'<< parameters.use_workflows_endpoint >>'
+            bundle exec fastlane android build_paywall_tester_bundle
       - store_artifacts:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
       - android/save_gradle_cache
@@ -531,9 +525,6 @@ jobs:
       api_key:
         type: string
         default: ""
-      use_workflows_endpoint:
-        type: boolean
-        default: false
     steps:
       - checkout
       - install-sdkman
@@ -541,7 +532,6 @@ jobs:
           cache-version: v1
       - build-paywall-tester:
           api_key: << parameters.api_key >>
-          use_workflows_endpoint: << parameters.use_workflows_endpoint >>
       - run:
           name: Publish aab
           command: |
@@ -1235,7 +1225,6 @@ workflows:
         - publish-paywall-tester-release:
             track: << pipeline.parameters.paywall_tester_track >>
             api_key: << pipeline.parameters.paywall_tester_api_key >>
-            use_workflows_endpoint: << pipeline.parameters.paywall_tester_use_workflows_endpoint >>
 
   manual-rct-tester-release:
     when:
