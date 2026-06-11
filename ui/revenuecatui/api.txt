@@ -87,6 +87,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public default void onRestoreError(com.revenuecat.purchases.PurchasesError error);
     method public default void onRestoreInitiated(com.revenuecat.purchases.ui.revenuecatui.utils.Resumable resume);
     method public default void onRestoreStarted();
+    method public default void onWebCheckoutOpened();
   }
 
   @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko public final class PaywallOptions {
@@ -269,6 +270,10 @@ package com.revenuecat.purchases.ui.revenuecatui.activity {
     ctor public PaywallResult.Restored(com.revenuecat.purchases.CustomerInfo customerInfo);
     method public com.revenuecat.purchases.CustomerInfo getCustomerInfo();
     property public final com.revenuecat.purchases.CustomerInfo customerInfo;
+  }
+
+  @kotlinx.parcelize.Parcelize public static final class PaywallResult.WebCheckoutOpened extends com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult implements android.os.Parcelable {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult.WebCheckoutOpened INSTANCE;
   }
 
   public interface PaywallResultHandler extends androidx.activity.result.ActivityResultCallback<com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult> {
