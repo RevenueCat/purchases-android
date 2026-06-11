@@ -45,12 +45,13 @@ internal class SharedPreferencesManager(
     private fun ensureMigrated() {
         val alreadyHasVersion = hasRevenueCatVersion()
         if (!alreadyHasVersion) {
-            if (legacySharedPreferences.value.all.keys.any {
-                        key ->
-                    key.startsWith(SHARED_PREFERENCES_PREFIX)
-                }
-            ) {
-                performMigration()
+            // Read the legacy preferences only once. `.all` forces a full synchronous load of the backing XML
+            // file, which is expensive when it holds a large value (e.g. the cached offerings response), so we
+            // avoid touching it more than necessary on this (typically main-thread) startup path.
+            val legacyValues = legacySharedPreferences.value.all
+            val revenueCatKeys = legacyValues.keys.filter { it.startsWith(SHARED_PREFERENCES_PREFIX) }
+            if (revenueCatKeys.isNotEmpty()) {
+                performMigration(legacyValues, revenueCatKeys)
             }
             updateSharedPreferencesVersion()
         }
@@ -59,18 +60,25 @@ internal class SharedPreferencesManager(
     /**
      * Performs the migration from legacy shared preferences to RevenueCat-specific ones
      */
-    private fun performMigration() {
+    private fun performMigration(legacyValues: Map<String, *>, revenueCatKeys: List<String>) {
         log(
             LogIntent.DEBUG,
         ) { "Starting shared preferences migration from legacy to RevenueCat-specific preferences" }
+        log(LogIntent.DEBUG) { "Found ${revenueCatKeys.size} RevenueCat keys to migrate: $revenueCatKeys" }
 
-        val revenueCatKeys = getRevenueCatKeysToMigrate()
-
-        val legacyPrefs by legacySharedPreferences
         val revenueCatPrefs = revenueCatSharedPreferences
         revenueCatPrefs.edit {
             for (key in revenueCatKeys) {
-                migratePreferenceValue(legacyPrefs, this, key)
+                migratePreferenceValue(legacyValues[key], this, key)
+            }
+        }
+
+        // Remove the migrated keys from the legacy (default) preferences so their potentially large values are no
+        // longer inflated from that file on every launch. Only our own `com.revenuecat.purchases.*`-prefixed keys
+        // are removed; the host app's keys in the shared default store are left untouched.
+        legacySharedPreferences.value.edit {
+            for (key in revenueCatKeys) {
+                remove(key)
             }
         }
 
@@ -79,23 +87,12 @@ internal class SharedPreferencesManager(
         ) { "Finished shared preferences migration from legacy to RevenueCat-specific preferences" }
     }
 
-    private fun getRevenueCatKeysToMigrate(): List<String> {
-        val legacyPrefs by legacySharedPreferences
-        val revenueCatKeys = legacyPrefs.all.keys.filter { key ->
-            key.startsWith(SHARED_PREFERENCES_PREFIX)
-        }
-
-        log(LogIntent.DEBUG) { "Found ${revenueCatKeys.size} RevenueCat keys to migrate: $revenueCatKeys" }
-        return revenueCatKeys
-    }
-
     private fun migratePreferenceValue(
-        legacyPrefs: SharedPreferences,
+        value: Any?,
         editor: SharedPreferences.Editor,
         key: String,
     ): Boolean {
         return try {
-            val value = legacyPrefs.all[key]
             when (value) {
                 is String -> {
                     editor.putString(key, value)
