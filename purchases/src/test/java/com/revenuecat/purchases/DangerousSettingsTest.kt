@@ -40,4 +40,22 @@ class DangerousSettingsTest {
         assertThat(dangerousSettings.customEntitlementComputation).isFalse
         assertThat(dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges).isFalse
     }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `default useWorkflows is false`() {
+        val dangerousSettings = DangerousSettings()
+        assertThat(dangerousSettings.useWorkflows).isFalse
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `forWorkflows sets useWorkflows to true and leaves other settings at defaults`() {
+        val dangerousSettings = DangerousSettings.forWorkflows()
+        assertThat(dangerousSettings.useWorkflows).isTrue
+        assertThat(dangerousSettings.autoSyncPurchases).isTrue
+        assertThat(dangerousSettings.customEntitlementComputation).isFalse
+        assertThat(dangerousSettings.uiPreviewMode).isFalse
+        assertThat(dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges).isFalse
+    }
 }

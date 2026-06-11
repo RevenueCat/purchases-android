@@ -22,6 +22,7 @@ internal class MockPurchasesType(
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,
     override val customerCenterListener: CustomerCenterListener? = null,
+    override val useWorkflows: Boolean = false,
 ) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         throw NotImplementedError("Mock implementation")
