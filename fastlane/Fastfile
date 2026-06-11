@@ -902,9 +902,6 @@ DESC
       record_paparazzi_screenshots(gradle_module: ":ui:revenuecatui", tests: "PaywallComponentsTemplatePreviewRecorder", output_dir: tmp_dir)
       # Loop over all PNG files in the tmp_dir, parse the offering ID from the file names, and move them into the target repository.
       sh("find #{tmp_dir} -name '*.png'").split("\n").each do |file_path|
-        # The recorder percent-encodes the offering ID and places it between triple underscores in the snapshot file
-        # name. We percent-decode it to recover the exact offering ID, including any characters Paparazzi would
-        # otherwise rewrite in the file name (e.g. spaces). See PaywallComponentsTemplatePreviewRecorder.
         if file_path =~ /___([0-9A-Za-z%.-]+)___/
           offering_id = CGI.unescape($1).force_encoding("UTF-8")
           target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"

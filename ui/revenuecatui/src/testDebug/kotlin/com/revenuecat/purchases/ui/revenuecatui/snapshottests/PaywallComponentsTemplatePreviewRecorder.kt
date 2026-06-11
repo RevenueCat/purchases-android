@@ -57,14 +57,7 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
         const val SCALE = 3
 
         @JvmStatic
-        // We percent-encode the offering ID and place it between triple underscores so we can easily and unambiguously
-        // parse it later. We can't use the raw offering ID, because Paparazzi rewrites characters that are not safe in
-        // file names (e.g. spaces become underscores) when generating the snapshot file name. Since some offering IDs
-        // contain real underscores (e.g. "wide_badge_style"), we can't reliably reverse that sanitization. Our
-        // percent-encoding only emits characters that Paparazzi leaves untouched, and never emits an underscore, so the
-        // triple-underscore delimiters stay unambiguous and the screenshot upload lane can recover the exact offering ID
-        // by percent-decoding it. We use percent-encoding rather than e.g. hex to keep these names (which also show up
-        // on Emerge) somewhat human-readable.
+        // Placing the offering ID between triple underscores and percent-encoding it so we can easily parse it later.
         @Parameters(name = "___{0}___")
         fun data(): List<Array<Any>> {
             // The PaywallResourcesProvider uses an OfferingParser under the hood, which logs.
@@ -73,14 +66,13 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
             Purchases.logHandler = PrintLnLogHandler
             return PaywallResourcesProvider()
                 .values
-                .map { paywall -> arrayOf(paywall.offering.identifier.percentEncodeForSnapshotName(), paywall) }
+                .map { paywall -> arrayOf(paywall.offering.identifier.percentEncoded(), paywall) }
                 .toList()
         }
 
-        // Percent-encodes the receiver, keeping only ASCII letters, digits, '.' and '-' literal (all of which Paparazzi
-        // preserves in snapshot file names). Every other byte - including spaces and underscores - becomes %XX, so the
-        // result stays readable yet never collides with the triple-underscore delimiters nor Paparazzi's sanitization.
-        private fun String.percentEncodeForSnapshotName(): String {
+        // Percent-encodes this String, keeping only ASCII letters, digits, '.' and '-' literal (all of which Paparazzi
+        // preserves in snapshot file names).
+        private fun String.percentEncoded(): String {
             val unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-"
             return toByteArray(Charsets.UTF_8).joinToString(separator = "") { byte ->
                 val code = byte.toUByte().toInt()
