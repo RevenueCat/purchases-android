@@ -295,14 +295,6 @@ Records Paywall template screenshots and pushes them to the repository at target
 
 Records Paparazzi screenshots for a given gradle_module
 
-### android generate_baseline_profiles
-
-```sh
-[bundle exec] fastlane android generate_baseline_profiles
-```
-
-Generate baseline profiles using Gradle Managed Devices and create a PR with the updated profiles
-
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
