@@ -729,13 +729,25 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        if (startWorkflowPresentationIfNeeded(offeringSelection)) {
+        // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
+        if (presentInjectedWorkflowIfNeeded(offeringSelection)) {
             return
         }
 
         val resolvedOfferingSelection = resolveOfferingSelection(offeringSelection)
-        val currentOffering = resolvedOfferingSelection.selectedOffering
-        val exitOfferingId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
+        val selectedOffering = resolvedOfferingSelection.selectedOffering
+
+        // When workflows are enabled, every non-legacy paywall is served through the /workflows
+        // endpoint. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
+        // paywall: a legacy v1 paywall always carries `offering.paywall`, and that field stays
+        // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
+        // deliberately do NOT gate on `paywallComponents`, which is going away.
+        if (useWorkflowsEndpoint && selectedOffering != null && selectedOffering.paywall == null) {
+            presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
+            return
+        }
+
+        val exitOfferingId = selectedOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
 
         val offerings = resolvedOfferingSelection.offeringsForExitOfferLookup
         updateExitOfferData(
@@ -748,52 +760,40 @@ internal class PaywallViewModelImpl(
                 ExitOfferData.Unavailable()
             },
         )
-        updatePaywallState(currentOffering)
+        updatePaywallState(selectedOffering)
     }
 
-    private suspend fun startWorkflowPresentationIfNeeded(offeringSelection: OfferingSelection): Boolean {
-        // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
-        val injectedWorkflow = options.injectedWorkflow
-        if (injectedWorkflow != null) {
-            val offering = offeringSelection.offering
-            if (offering == null) {
-                Logger.w(
-                    "Paywalls: injectedWorkflow set without a concrete Offering (use setOffering); " +
-                        "workflow screens may fail to resolve their packages.",
-                )
-            }
-            val offerings = Offerings(
-                current = offering,
-                all = offering?.let { mapOf(it.identifier to it) } ?: emptyMap(),
+    private fun presentInjectedWorkflowIfNeeded(offeringSelection: OfferingSelection): Boolean {
+        val injectedWorkflow = options.injectedWorkflow ?: return false
+        val offering = offeringSelection.offering
+        if (offering == null) {
+            Logger.w(
+                "Paywalls: injectedWorkflow set without a concrete Offering (use setOffering); " +
+                    "workflow screens may fail to resolve their packages.",
             )
-            startWorkflowPresentation(injectedWorkflow, offerings, offering?.presentedOfferingContext)
-            return true
         }
+        val offerings = Offerings(
+            current = offering,
+            all = offering?.let { mapOf(it.identifier to it) } ?: emptyMap(),
+        )
+        startWorkflowPresentation(injectedWorkflow, offerings, offering?.presentedOfferingContext)
+        return true
+    }
 
-        var updatedFromWorkflow = false
-        if (useWorkflowsEndpoint) {
-            val workflowParams = when (offeringSelection) {
-                is OfferingSelection.IdAndPresentedOfferingContext ->
-                    offeringSelection.offeringId to offeringSelection.presentedOfferingContext
-                is OfferingSelection.OfferingType ->
-                    offeringSelection.offeringType.identifier to offeringSelection.offeringType.presentedOfferingContext
-                is OfferingSelection.None -> null
-            }
-            if (workflowParams != null) {
-                val (offeringId, presentedOfferingContext) = workflowParams
-                coroutineScope {
-                    val fetchResultDeferred = async { purchases.awaitGetWorkflow(offeringId) }
-                    val offeringsDeferred = async { purchases.awaitOfferings() }
-                    startWorkflowPresentation(
-                        fetchResultDeferred.await(),
-                        offeringsDeferred.await(),
-                        presentedOfferingContext,
-                    )
-                }
-                updatedFromWorkflow = true
-            }
+    private suspend fun presentWorkflow(offering: Offering, preloadedOfferings: Offerings?) {
+        // Prefer the configured workflow id, which aligns with the prefetch cache key. Fall back to
+        // the offering id, which the backend lazily converts into a workflow for paywalls not yet
+        // converted to a workflow.
+        val workflowIdentifier = purchases.workflowIdForOfferingId(offering.identifier) ?: offering.identifier
+        coroutineScope {
+            val fetchResultDeferred = async { purchases.awaitGetWorkflow(workflowIdentifier) }
+            val offeringsDeferred = async { preloadedOfferings ?: purchases.awaitOfferings() }
+            startWorkflowPresentation(
+                fetchResultDeferred.await(),
+                offeringsDeferred.await(),
+                offering.presentedOfferingContext,
+            )
         }
-        return updatedFromWorkflow
     }
 
     private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): ResolvedOfferingSelection =
