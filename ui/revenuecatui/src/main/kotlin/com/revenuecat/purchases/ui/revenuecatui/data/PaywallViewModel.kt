@@ -781,16 +781,24 @@ internal class PaywallViewModelImpl(
             }
             if (workflowParams != null) {
                 val (offeringId, presentedOfferingContext) = workflowParams
-                coroutineScope {
-                    val fetchResultDeferred = async { purchases.awaitGetWorkflow(offeringId) }
-                    val offeringsDeferred = async { purchases.awaitOfferings() }
-                    startWorkflowPresentation(
-                        fetchResultDeferred.await(),
-                        offeringsDeferred.await(),
-                        presentedOfferingContext,
+                val workflowId = purchases.workflowIdForOfferingId(offeringId)
+                if (workflowId == null) {
+                    Logger.w(
+                        "Paywalls: no workflow mapped for offering '$offeringId'; " +
+                            "rendering legacy paywall. Was getOfferings called first?",
                     )
+                } else {
+                    coroutineScope {
+                        val fetchResultDeferred = async { purchases.awaitGetWorkflow(workflowId) }
+                        val offeringsDeferred = async { purchases.awaitOfferings() }
+                        startWorkflowPresentation(
+                            fetchResultDeferred.await(),
+                            offeringsDeferred.await(),
+                            presentedOfferingContext,
+                        )
+                    }
+                    updatedFromWorkflow = true
                 }
-                updatedFromWorkflow = true
             }
         }
         return updatedFromWorkflow
