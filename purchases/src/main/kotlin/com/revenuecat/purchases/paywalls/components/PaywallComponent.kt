@@ -37,9 +37,8 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("Can only deserialize PaywallComponent from JSON, got: ${decoder::class}")
         val json = jsonDecoder.decodeJsonElement().jsonObject
-        // Decode the already-parsed JsonElement directly instead of re-serializing it back to a String and
-        // re-parsing (`decodeFromString(json.toString())`). The latter made deserialization ~quadratic in tree
-        // depth, since every nested PaywallComponent re-stringified its whole subtree at each level.
+        // Decode the JsonElement directly; re-stringifying (decodeFromString(json.toString())) is ~quadratic in
+        // tree depth, as every nested PaywallComponent would re-stringify its whole subtree.
         return when (val type = json["type"]?.jsonPrimitive?.content) {
             "button" -> jsonDecoder.json.decodeFromJsonElement<ButtonComponent>(json)
             "image" -> jsonDecoder.json.decodeFromJsonElement<ImageComponent>(json)

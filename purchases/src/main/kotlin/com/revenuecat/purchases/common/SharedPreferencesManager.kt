@@ -73,15 +73,6 @@ internal class SharedPreferencesManager(
             }
         }
 
-        // Remove the migrated keys from the legacy (default) preferences so their potentially large values are no
-        // longer inflated from that file on every launch. Only our own `com.revenuecat.purchases.*`-prefixed keys
-        // are removed; the host app's keys in the shared default store are left untouched.
-        legacySharedPreferences.value.edit {
-            for (key in revenueCatKeys) {
-                remove(key)
-            }
-        }
-
         log(
             LogIntent.DEBUG,
         ) { "Finished shared preferences migration from legacy to RevenueCat-specific preferences" }

@@ -41,6 +41,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.serialization.SerializationException
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -117,6 +118,24 @@ class OfferingImagePreDownloaderTest {
     @Test
     fun `paywalls V2 - if no images, it does not download anything`() {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
+
+        verify(exactly = 0) {
+            coilImageDownloader.downloadImage(any())
+        }
+    }
+
+    @Test
+    fun `paywalls V2 - if the component tree fails to decode, it does not throw and downloads nothing`() {
+        val offering = mockk<Offering>().apply {
+            every { paywall } returns null
+            every { paywallComponents } returns Offering.PaywallComponents(uiConfig = mockk()) {
+                throw SerializationException("Malformed component tree")
+            }
+        }
+
+        // Pre-downloading is best-effort: a lazy-decode failure must be swallowed so it can't abort the
+        // offerings success/caching path that invokes this.
+        preDownloader.preDownloadOfferingImages(offering)
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
