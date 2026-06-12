@@ -11,6 +11,7 @@ import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -66,6 +67,9 @@ class PaywallDialogTests {
         every { mockPurchases.storefrontCountryCode } returns "US"
         every { mockPurchases.preferredUILocaleOverride } returns null
         every { mockPurchases.track(any()) } just Runs
+        every { mockPurchases.currentConfiguration } returns mockk {
+            every { dangerousSettings } returns DangerousSettings()
+        }
     }
 
     @After
