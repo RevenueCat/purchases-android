@@ -93,6 +93,15 @@ internal class WorkflowsCache(
     fun isWorkflowsListCacheStale(appInBackground: Boolean): Boolean =
         workflowsListCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
 
+    /**
+     * Whether a workflows list is currently held in memory. Distinct from [isWorkflowsListCacheStale],
+     * which returns true both when the list is stale and when it has never been cached (null timestamp);
+     * this tells the stale-but-present case apart from a cold miss so the SWR path in
+     * [com.revenuecat.purchases.common.workflows.WorkflowManager.getWorkflowsList] can vend a stale list.
+     */
+    @Synchronized
+    fun hasCachedWorkflowsList(): Boolean = workflowsListCachedObject.cachedInstance != null
+
     @Synchronized
     fun invalidateWorkflowsListTimestamp() {
         workflowsListCachedObject.clearCacheTimestamp()
