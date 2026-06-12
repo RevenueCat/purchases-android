@@ -2,7 +2,7 @@ package com.revenuecat.paywallstester.ui.screens.paywall
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.AlertDialog
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
@@ -82,7 +82,7 @@ private fun PurchaseAlertDialog(
         onDismissRequest = {
             viewModel.onDialogDismissed()
         },
-        buttons = {
+        confirmButton = {
             TextButton(
                 onClick = {
                     viewModel.onDialogDismissed()

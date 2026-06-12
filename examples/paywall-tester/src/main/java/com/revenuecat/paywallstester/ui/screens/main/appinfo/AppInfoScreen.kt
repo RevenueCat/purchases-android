@@ -91,9 +91,11 @@ fun AppInfoScreen(
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
         val currentActiveEntitlements by remember { derivedStateOf { state.activeEntitlements } }
         Spacer(modifier = Modifier.weight(1f))
+        val useWorkflows by remember { derivedStateOf { state.useWorkflows } }
         Text(text = "Current user ID: $currentUserID")
         Text(text = "Current active entitlements: $currentActiveEntitlements")
         Text(text = "Current API key: $currentApiKeyDescription")
+        Text(text = "Workflows: ${if (useWorkflows) "enabled" else "disabled"}")
         Button(onClick = { showLogInDialog = true }) {
             Text(text = "Log in")
         }
@@ -102,6 +104,9 @@ fun AppInfoScreen(
         }
         Button(onClick = { showApiKeyDialog = true }) {
             Text(text = "Switch API key")
+        }
+        Button(onClick = { viewModel.toggleUseWorkflows() }) {
+            Text(text = if (useWorkflows) "Disable workflows" else "Enable workflows")
         }
         Button(
             enabled = !isClearingFileCache,
@@ -231,6 +236,7 @@ private fun LoginDialog(viewModel: AppInfoScreenViewModel, onDismissed: () -> Un
 
 @Composable
 private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Unit) {
+    var customApiKey by remember { mutableStateOf("") }
     Dialog(onDismissRequest = { onDismissed() }) {
         Surface(shape = MaterialTheme.shapes.medium) {
             Column(Modifier.padding(all = 16.dp)) {
@@ -246,6 +252,19 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                     onClick = onApiKeyClick,
                 )
 
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    text = "Custom API key",
+                    style = MaterialTheme.typography.labelSmall,
+                )
+                OutlinedTextField(
+                    value = customApiKey,
+                    onValueChange = { customApiKey = it },
+                    label = { Text("Paste your API key") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
                 Spacer(Modifier.size(4.dp))
                 Row(
                     Modifier
@@ -255,6 +274,12 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                 ) {
                     TextButton(onClick = { onDismissed() }) {
                         Text("CANCEL")
+                    }
+                    TextButton(
+                        enabled = customApiKey.isNotBlank(),
+                        onClick = { onApiKeyClick(customApiKey.trim()) },
+                    ) {
+                        Text("USE CUSTOM")
                     }
                 }
             }
@@ -323,12 +348,14 @@ fun AppInfoScreenPreview() {
                         appUserID = "test-user-id",
                         apiKeyDescription = "test-api-key",
                         activeEntitlements = listOf("pro", "premium"),
+                        useWorkflows = false,
                     ),
                 )
 
             override fun logIn(newAppUserId: String) {}
             override fun logOut() {}
             override fun switchApiKey(newApiKey: String) {}
+            override fun toggleUseWorkflows() {}
             override fun refresh() {}
         },
         tappedOnCustomerCenter = {},

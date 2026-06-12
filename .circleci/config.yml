@@ -53,6 +53,9 @@ parameters:
     type: enum
     enum: [internal, alpha, beta, production]
     default: alpha
+  paywall_tester_api_key:
+    type: string
+    default: ""
 
 commands:
   install-sdkman:
@@ -94,6 +97,10 @@ commands:
             --export-secret-keys > /home/circleci/.gnupg/secring.gpg
 
   build-paywall-tester:
+    parameters:
+      api_key:
+        type: string
+        default: ""
     steps:
       - android/accept_licenses
       - android/restore_gradle_cache
@@ -104,6 +111,8 @@ commands:
           command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
       - run:
           name: Create app bundle
+          environment:
+            PAYWALL_TESTER_OVERRIDE_API_KEY: << parameters.api_key >>
           command: |
             bundle exec fastlane android build_paywall_tester_bundle
       - store_artifacts:
@@ -499,6 +508,7 @@ jobs:
             bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab'
 
   assemble-paywall-tester-release:
+    # Used in the regular CI pipeline — always uses env-var defaults, not the manual ad-hoc params.
     <<: *android-executor
     steps:
       - checkout
@@ -512,12 +522,16 @@ jobs:
     parameters:
       track:
         type: string
+      api_key:
+        type: string
+        default: ""
     steps:
       - checkout
       - install-sdkman
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
-      - build-paywall-tester
+      - build-paywall-tester:
+          api_key: << parameters.api_key >>
       - run:
           name: Publish aab
           command: |
@@ -1210,6 +1224,7 @@ workflows:
     jobs:
         - publish-paywall-tester-release:
             track: << pipeline.parameters.paywall_tester_track >>
+            api_key: << pipeline.parameters.paywall_tester_api_key >>
 
   manual-rct-tester-release:
     when:

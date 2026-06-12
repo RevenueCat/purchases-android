@@ -5,6 +5,7 @@ package com.revenuecat.paywallstester
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -56,8 +57,8 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     }
 
     override fun onActivityResult(result: PaywallResult) {
-        // TODO-PAYWALLS: Handle result
         Log.e(TAG, "LAUNCH PAYWALL RESULT: $result")
+        toast("Paywall result: ${result::class.simpleName}")
     }
 
     @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
@@ -70,38 +71,50 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         paywallActivityLauncher.launchWithOptions(options)
     }
 
+    private fun toast(message: String) {
+        Toast.makeText(applicationContext, message, Toast.LENGTH_SHORT).show()
+    }
+
     private val paywallListener = object : PaywallListener {
         override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
             Log.d(TAG, "onPurchasePackageInitiated: ${rcPackage.identifier}")
             resume()
+            toast("onPurchasePackageInitiated: ${rcPackage.identifier}")
         }
 
         override fun onPurchaseStarted(rcPackage: Package) {
             Log.d(TAG, "onPurchaseStarted: ${rcPackage.identifier}")
+            toast("onPurchaseStarted: ${rcPackage.identifier}")
         }
 
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
             Log.d(TAG, "onPurchaseCompleted: ${storeTransaction.orderId}")
+            toast("onPurchaseCompleted: ${storeTransaction.orderId}")
         }
 
         override fun onPurchaseError(error: PurchasesError) {
             Log.d(TAG, "onPurchaseError: ${error.message}")
+            toast("onPurchaseError: ${error.message}")
         }
 
         override fun onPurchaseCancelled() {
             Log.d(TAG, "onPurchaseCancelled")
+            toast("onPurchaseCancelled")
         }
 
         override fun onRestoreStarted() {
             Log.d(TAG, "onRestoreStarted")
+            toast("onRestoreStarted")
         }
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
             Log.d(TAG, "onRestoreCompleted")
+            toast("onRestoreCompleted")
         }
 
         override fun onRestoreError(error: PurchasesError) {
             Log.d(TAG, "onRestoreError: ${error.message}")
+            toast("onRestoreError: ${error.message}")
         }
     }
 
