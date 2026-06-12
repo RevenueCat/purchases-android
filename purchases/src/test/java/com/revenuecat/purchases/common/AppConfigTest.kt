@@ -508,7 +508,8 @@ class AppConfigTest {
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
                 "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
-                "useWorkflows=false), " +
+                "useWorkflows=false, " +
+                "allowTestStoreInReleaseBuild=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +

@@ -28,6 +28,8 @@ public class DangerousSettings internal constructor(
      */
     @InternalRevenueCatAPI
     public val useWorkflows: Boolean = false,
+
+    internal val allowTestStoreInReleaseBuild: Boolean = false,
 ) : Parcelable {
     @OptIn(InternalRevenueCatAPI::class)
     public constructor(autoSyncPurchases: Boolean = true) : this(
@@ -36,6 +38,7 @@ public class DangerousSettings internal constructor(
         uiPreviewMode = false,
         applyObfuscatedAccountIdToSubscriptionChanges = false,
         useWorkflows = false,
+        allowTestStoreInReleaseBuild = false,
     )
 
     public companion object {
@@ -65,6 +68,12 @@ public class DangerousSettings internal constructor(
             uiPreviewMode = false,
             applyObfuscatedAccountIdToSubscriptionChanges = false,
             useWorkflows = true,
+        )
+
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public fun forTestStoreInReleaseBuild(): DangerousSettings = DangerousSettings(
+            allowTestStoreInReleaseBuild = true,
         )
     }
 }
