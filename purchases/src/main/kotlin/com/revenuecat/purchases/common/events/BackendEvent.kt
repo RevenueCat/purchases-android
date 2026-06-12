@@ -100,6 +100,8 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
         @SerialName("presented_offering_context")
         val presentedOfferingContext: PresentedOfferingContextData? = null,
         @SerialName("exit_offer_type")
@@ -162,18 +164,27 @@ internal sealed class BackendEvent : Event {
         val targetingRevision: Int? = null,
         @SerialName("targeting_rule_id")
         val targetingRuleId: String? = null,
+        @SerialName("paywall_id")
+        val paywallID: String? = null,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
     ) {
         companion object {
             fun fromContext(
                 context: PresentedOfferingContext,
+                paywallId: String? = null,
+                workflowId: String? = null,
             ): PresentedOfferingContextData? {
-                if (context.placementIdentifier == null && context.targetingContext == null) {
+                val hasPlacement = context.placementIdentifier != null || context.targetingContext != null
+                if (!hasPlacement && paywallId == null && workflowId == null) {
                     return null
                 }
                 return PresentedOfferingContextData(
                     placementIdentifier = context.placementIdentifier,
                     targetingRevision = context.targetingContext?.revision,
                     targetingRuleId = context.targetingContext?.ruleId,
+                    paywallID = paywallId,
+                    workflowID = workflowId,
                 )
             }
         }

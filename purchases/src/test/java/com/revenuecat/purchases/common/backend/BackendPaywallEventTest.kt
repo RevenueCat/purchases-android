@@ -89,6 +89,33 @@ class BackendPaywallEventTest {
         )
     ).map { it.toBackendEvent() })
 
+    private val workflowEventRequest = EventsRequest(listOf(
+        BackendStoredEvent.Paywalls(
+            BackendEvent.Paywalls(
+                id = "workflow-event-id",
+                version = 1,
+                type = PaywallEventType.IMPRESSION.value,
+                appUserID = "appUserID",
+                sessionID = "sessionID",
+                offeringID = "offeringID",
+                paywallID = "paywallID",
+                paywallRevision = 5,
+                timestamp = 123456789,
+                displayMode = "full_screen",
+                darkMode = true,
+                localeIdentifier = "en_US",
+                workflowID = "workflow-abc",
+                presentedOfferingContext = BackendEvent.PresentedOfferingContextData(
+                    placementIdentifier = null,
+                    targetingRevision = null,
+                    targetingRuleId = null,
+                    paywallID = "paywallID",
+                    workflowID = "workflow-abc",
+                ),
+            )
+        )
+    ).map { it.toBackendEvent() })
+
     private val exitOfferEventRequest = EventsRequest(listOf(
         BackendStoredEvent.Paywalls(
             BackendEvent.Paywalls(
@@ -246,6 +273,44 @@ class BackendPaywallEventTest {
                         "\"locale\":\"en_US\"," +
                         "\"exit_offer_type\":\"dismiss\"," +
                         "\"exit_offering_id\":\"exit-offering-id\"" +
+                    "}" +
+                "]" +
+            "}"
+        )
+    }
+
+    @Test
+    fun `postPaywallEvents posts workflow fields correctly`() {
+        mockHttpResult()
+        backend.postEvents(
+            workflowEventRequest,
+            baseURL = AppConfig.paywallEventsURL,
+            delay = Delay.DEFAULT,
+            onSuccessHandler = {},
+            onErrorHandler = { _, _ -> },
+        )
+        verifyCallWithBody(
+            "{" +
+                "\"events\":[" +
+                    "{" +
+                        "\"discriminator\":\"paywalls\"," +
+                        "\"id\":\"workflow-event-id\"," +
+                        "\"version\":1," +
+                        "\"type\":\"paywall_impression\"," +
+                        "\"app_user_id\":\"appUserID\"," +
+                        "\"session_id\":\"sessionID\"," +
+                        "\"offering_id\":\"offeringID\"," +
+                        "\"paywall_id\":\"paywallID\"," +
+                        "\"paywall_revision\":5," +
+                        "\"timestamp\":123456789," +
+                        "\"display_mode\":\"full_screen\"," +
+                        "\"dark_mode\":true," +
+                        "\"locale\":\"en_US\"," +
+                        "\"workflow_id\":\"workflow-abc\"," +
+                        "\"presented_offering_context\":{" +
+                            "\"paywall_id\":\"paywallID\"," +
+                            "\"workflow_id\":\"workflow-abc\"" +
+                        "}" +
                     "}" +
                 "]" +
             "}"

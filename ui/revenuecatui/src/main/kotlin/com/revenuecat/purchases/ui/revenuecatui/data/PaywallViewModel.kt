@@ -1405,11 +1405,12 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private fun createEventData(): PaywallEvent.Data? =
-        when (val currentState = state.value) {
-            is PaywallState.Loaded.Legacy -> currentState.createEventData()
+    private fun createEventData(): PaywallEvent.Data? {
+        val workflowId = currentWorkflowResult?.workflow?.id
+        return when (val currentState = state.value) {
+            is PaywallState.Loaded.Legacy -> currentState.createEventData(workflowId)
 
-            is PaywallState.Loaded.Components -> currentState.createEventData()
+            is PaywallState.Loaded.Components -> currentState.createEventData(workflowId)
 
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -1418,8 +1419,9 @@ internal class PaywallViewModelImpl(
                 null
             }
         }
+    }
 
-    private fun PaywallState.Loaded.Legacy.createEventData(): PaywallEvent.Data? {
+    private fun PaywallState.Loaded.Legacy.createEventData(workflowId: String?): PaywallEvent.Data? {
         val offering = offering
         val revision = this.offering.paywall?.revision ?: this.offering.paywallComponents?.data?.revision ?: run {
             Logger.e("Null paywall revision trying to create event data")
@@ -1435,10 +1437,11 @@ internal class PaywallViewModelImpl(
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
             darkMode = isDarkMode,
+            workflowId = workflowId,
         )
     }
 
-    private fun PaywallState.Loaded.Components.createEventData(): PaywallEvent.Data? {
+    private fun PaywallState.Loaded.Components.createEventData(workflowId: String?): PaywallEvent.Data? {
         val offering = offering
         val paywallData = this.offering.paywallComponents ?: run {
             Logger.e("Null paywall revision trying to create event data")
@@ -1452,6 +1455,7 @@ internal class PaywallViewModelImpl(
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
             darkMode = isDarkMode,
+            workflowId = workflowId,
         )
     }
 

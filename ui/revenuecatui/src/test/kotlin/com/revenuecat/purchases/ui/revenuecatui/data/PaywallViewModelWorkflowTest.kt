@@ -26,6 +26,8 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -1366,6 +1368,21 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
         assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+    }
+
+    @Test
+    fun `workflow impression event carries workflowId from loaded workflow`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+        assertThat(impressions.first().data.workflowId).isEqualTo(fetchResult.workflow.id)
     }
 
     // endregion
