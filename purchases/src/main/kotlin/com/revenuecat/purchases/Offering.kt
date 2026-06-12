@@ -51,14 +51,41 @@ constructor(
     )
 
     @InternalRevenueCatAPI
-    @Poko
-    public class PaywallComponents(
+    public class PaywallComponents private constructor(
         public val uiConfig: UiConfig,
-        public val data: PaywallComponentsData,
-    )
+        dataProvider: Lazy<PaywallComponentsData>,
+    ) {
+        /**
+         * Constructor for callers that already hold decoded [PaywallComponentsData] (e.g. previews, tests,
+         * hybrid SDKs).
+         */
+        public constructor(uiConfig: UiConfig, data: PaywallComponentsData) : this(uiConfig, lazyOf(data))
+
+        // Used by the parser: the component tree is decoded lazily on first [data] access, not at load time.
+        internal constructor(
+            uiConfig: UiConfig,
+            dataProvider: () -> PaywallComponentsData,
+        ) : this(uiConfig, lazy(LazyThreadSafetyMode.SYNCHRONIZED, dataProvider))
+
+        public val data: PaywallComponentsData by dataProvider
+
+        // Hand-written instead of @Poko because `data` is lazily evaluated; equality/hash force the decode.
+        override fun equals(other: Any?): Boolean =
+            this === other || (
+                other is PaywallComponents &&
+                    uiConfig == other.uiConfig &&
+                    data == other.data
+                )
+
+        override fun hashCode(): Int = 31 * uiConfig.hashCode() + data.hashCode()
+
+        override fun toString(): String = "PaywallComponents(uiConfig=$uiConfig, data=$data)"
+    }
 
     /**
-     * Whether the offering contains a paywall.
+     * Whether the offering has a paywall configured. This reflects the *presence* of paywall data, not its
+     * validity: a components paywall is reported here as soon as it's present, and its component tree is only
+     * fully validated when the paywall is displayed (falling back to a default paywall if validation fails).
      */
     @OptIn(InternalRevenueCatAPI::class)
     @get:JvmName("hasPaywall")
