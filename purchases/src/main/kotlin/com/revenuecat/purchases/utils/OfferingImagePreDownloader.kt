@@ -16,8 +16,9 @@ internal class OfferingImagePreDownloader(
      */
     private val shouldPredownloadImages: Boolean = canUsePaywallUI,
     private val coilImageDownloader: CoilImageDownloader,
+    private val webViewPreDownloader: WebViewPreDownloader = NoOpWebViewPreDownloader,
     private val paywallComponentsImagePreDownloader: PaywallComponentsImagePreDownloader =
-        PaywallComponentsImagePreDownloader(shouldPredownloadImages, coilImageDownloader),
+        PaywallComponentsImagePreDownloader(shouldPredownloadImages, coilImageDownloader, webViewPreDownloader),
 ) {
     fun preDownloadOfferingImages(offering: Offering) {
         if (!shouldPredownloadImages) {

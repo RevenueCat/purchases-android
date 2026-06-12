@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -41,6 +43,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,6 +54,8 @@ class OfferingImagePreDownloaderTest {
 
     private lateinit var coilImageDownloader: CoilImageDownloader
 
+    private lateinit var webViewPreDownloader: WebViewPreDownloader
+
     private lateinit var preDownloader: OfferingImagePreDownloader
 
     private val zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH")
@@ -60,8 +65,15 @@ class OfferingImagePreDownloaderTest {
         coilImageDownloader = mockk<CoilImageDownloader>().apply {
             every { downloadImage(any()) } just Runs
         }
+        webViewPreDownloader = mockk<WebViewPreDownloader>().apply {
+            every { preDownloadWebView(any()) } just Runs
+        }
 
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = true, coilImageDownloader)
+        preDownloader = OfferingImagePreDownloader(
+            shouldPredownloadImages = true,
+            coilImageDownloader = coilImageDownloader,
+            webViewPreDownloader = webViewPreDownloader,
+        )
     }
 
     @Test
@@ -75,16 +87,22 @@ class OfferingImagePreDownloaderTest {
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
     @Test
     fun `if disabled, it does not download anything`() {
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = false, coilImageDownloader)
+        preDownloader = OfferingImagePreDownloader(
+            shouldPredownloadImages = false,
+            coilImageDownloader = coilImageDownloader,
+            webViewPreDownloader = webViewPreDownloader,
+        )
         preDownloader.preDownloadOfferingImages(createOfferings())
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
@@ -107,6 +125,7 @@ class OfferingImagePreDownloaderTest {
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
@@ -120,6 +139,7 @@ class OfferingImagePreDownloaderTest {
 
         verify(exactly = 0) {
             coilImageDownloader.downloadImage(any())
+            webViewPreDownloader.preDownloadWebView(any())
         }
     }
 
@@ -374,6 +394,118 @@ class OfferingImagePreDownloaderTest {
             expectedImageDownloads.forEach { url ->
                 coilImageDownloader.downloadImage(Uri.parse(url))
             }
+        }
+    }
+
+    @Test
+    fun `paywalls V2 - if web views, it pre-downloads all of them`() {
+        val rootUrl = URL("https://paywalls.com/root.html")
+        val nestedUrl = URL("https://paywalls.com/nested.html")
+        val sheetUrl = URL("https://paywalls.com/sheet.html")
+        val headerUrl = URL("https://paywalls.com/header.html")
+        val stickyFooterUrl = URL("https://paywalls.com/sticky-footer.html")
+
+        preDownloader.preDownloadOfferingImages(
+            createOfferingWithV2Paywall(
+                paywallComponentsConfig = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            WebViewComponent(url = rootUrl.toString()),
+                            StackComponent(
+                                components = listOf(
+                                    WebViewComponent(url = nestedUrl.toString()),
+                                ),
+                            ),
+                            ButtonComponent(
+                                action = ButtonComponent.Action.NavigateTo(
+                                    ButtonComponent.Destination.Sheet(
+                                        id = "sheet-id",
+                                        name = null,
+                                        stack = StackComponent(
+                                            components = listOf(WebViewComponent(url = sheetUrl.toString())),
+                                        ),
+                                        backgroundBlur = false,
+                                        size = null,
+                                    ),
+                                ),
+                                stack = StackComponent(components = emptyList()),
+                            ),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+                    header = HeaderComponent(
+                        stack = StackComponent(
+                            components = listOf(WebViewComponent(url = headerUrl.toString())),
+                        ),
+                    ),
+                    stickyFooter = StickyFooterComponent(
+                        stack = StackComponent(
+                            components = listOf(WebViewComponent(url = stickyFooterUrl.toString())),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        verifyAll {
+            webViewPreDownloader.preDownloadWebView(rootUrl.toString())
+            webViewPreDownloader.preDownloadWebView(nestedUrl.toString())
+            webViewPreDownloader.preDownloadWebView(sheetUrl.toString())
+            webViewPreDownloader.preDownloadWebView(headerUrl.toString())
+            webViewPreDownloader.preDownloadWebView(stickyFooterUrl.toString())
+        }
+    }
+
+    @Test
+    fun `paywalls V2 - deduplicates web view URLs by string without URL equality`() {
+        val localhostUrl = "https://localhost/web-view.html"
+        val loopbackUrl = "https://127.0.0.1/web-view.html"
+        val downloadedUrls = mutableListOf<String>()
+
+        preDownloader.preDownloadOfferingImages(
+            createOfferingWithV2Paywall(
+                paywallComponentsConfig = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            WebViewComponent(url = localhostUrl),
+                            WebViewComponent(url = localhostUrl),
+                            WebViewComponent(url = loopbackUrl),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+                ),
+            ),
+        )
+
+        verify(exactly = 2) {
+            webViewPreDownloader.preDownloadWebView(capture(downloadedUrls))
+        }
+        assertThat(downloadedUrls).containsExactly(localhostUrl, loopbackUrl)
+    }
+
+    @Test
+    fun `paywalls V2 - skips templated malformed and non-https web view URLs`() {
+        val staticUrl = URL("https://paywalls.com/static.html")
+
+        preDownloader.preDownloadOfferingImages(
+            createOfferingWithV2Paywall(
+                paywallComponentsConfig = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            WebViewComponent(url = staticUrl.toString()),
+                            WebViewComponent(url = "https://paywalls.com/{{ custom.animal }}.html"),
+                            WebViewComponent(url = "not a url"),
+                            WebViewComponent(url = "https:///missing-host"),
+                            WebViewComponent(url = "http://paywalls.com/insecure.html"),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+                ),
+            ),
+        )
+
+        verifyAll {
+            webViewPreDownloader.preDownloadWebView(staticUrl.toString())
         }
     }
 

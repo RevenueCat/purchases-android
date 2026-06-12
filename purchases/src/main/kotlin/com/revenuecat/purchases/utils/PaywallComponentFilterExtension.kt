@@ -20,6 +20,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 
 /**
  * Returns all PaywallComponent that satisfy the predicate.
@@ -43,7 +44,12 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
         when (current) {
             is StackComponent -> queue.addAll(current.components)
             is PurchaseButtonComponent -> queue.add(current.stack)
-            is ButtonComponent -> queue.add(current.stack)
+            is ButtonComponent -> {
+                queue.add(current.stack)
+                val sheet = (current.action as? ButtonComponent.Action.NavigateTo)
+                    ?.destination as? ButtonComponent.Destination.Sheet
+                sheet?.stack?.let { queue.add(it) }
+            }
             is PackageComponent -> queue.add(current.stack)
             is HeaderComponent -> queue.add(current.stack)
             is StickyFooterComponent -> queue.add(current.stack)
@@ -74,6 +80,7 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
             is ImageComponent,
             is IconComponent,
             is TextComponent,
+            is WebViewComponent,
             -> {
                 // These don't have child components.
             }

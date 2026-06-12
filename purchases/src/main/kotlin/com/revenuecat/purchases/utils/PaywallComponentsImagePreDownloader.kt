@@ -26,10 +26,12 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import java.net.URL
 
 internal class PaywallComponentsImagePreDownloader(
     /**
@@ -38,6 +40,7 @@ internal class PaywallComponentsImagePreDownloader(
      */
     private val shouldPredownloadImages: Boolean = canUsePaywallUI,
     private val coilImageDownloader: CoilImageDownloader,
+    private val webViewPreDownloader: WebViewPreDownloader = NoOpWebViewPreDownloader,
 ) {
 
     fun preDownloadImages(paywallComponentsConfig: PaywallComponentsConfig) {
@@ -50,6 +53,12 @@ internal class PaywallComponentsImagePreDownloader(
         imageUrls.forEach {
             debugLog { "Pre-downloading Paywall V2 image: $it" }
             coilImageDownloader.downloadImage(it)
+        }
+
+        val webViewUrlStrings = findWebViewUrlStringsToDownload(paywallComponentsConfig)
+        webViewUrlStrings.forEach {
+            debugLog { "Pre-downloading Paywall V2 web view: $it" }
+            webViewPreDownloader.preDownloadWebView(it)
         }
     }
 
@@ -106,9 +115,54 @@ internal class PaywallComponentsImagePreDownloader(
                     is TabControlToggleComponent,
                     is TextComponent,
                     is TimelineComponent,
+                    is WebViewComponent,
                     -> emptySet()
                 }
             }
+    }
+
+    private fun findWebViewUrlStringsToDownload(paywallComponentsConfig: PaywallComponentsConfig): Set<String> {
+        return paywallComponentsConfig.stack.findWebViewUrlStringsToDownload() +
+            (paywallComponentsConfig.header?.stack?.findWebViewUrlStringsToDownload().orEmpty()) +
+            (paywallComponentsConfig.stickyFooter?.stack?.findWebViewUrlStringsToDownload().orEmpty())
+    }
+
+    @Suppress("CyclomaticComplexMethod")
+    private fun StackComponent.findWebViewUrlStringsToDownload(): Set<String> {
+        return filter { true }
+            .flatMapTo(mutableSetOf()) { component ->
+                when (component) {
+                    is WebViewComponent -> component.url.toStaticWebViewUrlStringOrNull()?.let(::setOf).orEmpty()
+                    is ButtonComponent,
+                    is CarouselComponent,
+                    is CountdownComponent,
+                    is FallbackHeaderComponent,
+                    is HeaderComponent,
+                    is IconComponent,
+                    is ImageComponent,
+                    is PackageComponent,
+                    is PurchaseButtonComponent,
+                    is StackComponent,
+                    is StickyFooterComponent,
+                    is TabControlButtonComponent,
+                    is TabControlComponent,
+                    is TabControlToggleComponent,
+                    is TabsComponent,
+                    is TextComponent,
+                    is TimelineComponent,
+                    is VideoComponent,
+                    -> emptySet()
+                }
+            }
+    }
+
+    private fun String.toStaticWebViewUrlStringOrNull(): String? {
+        if (contains(TEMPLATE_VARIABLE_START)) return null
+
+        return runCatching { URL(this) }
+            .getOrNull()
+            ?.takeIf { it.protocol == HTTPS_SCHEME && it.host.isNotBlank() }
+            ?.toString()
     }
 
     private fun <T : PartialComponent> List<ComponentOverride<T>>?.imageUrisToDownload(
@@ -137,5 +191,10 @@ internal class PaywallComponentsImagePreDownloader(
             light.webpLowRes.toString().let { Uri.parse(it) },
             dark?.webpLowRes?.toString()?.let { Uri.parse(it) },
         )
+    }
+
+    private companion object {
+        private const val HTTPS_SCHEME = "https"
+        private const val TEMPLATE_VARIABLE_START = "{{"
     }
 }

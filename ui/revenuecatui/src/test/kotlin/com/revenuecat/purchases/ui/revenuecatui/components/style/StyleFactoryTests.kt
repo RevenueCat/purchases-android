@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -116,6 +117,24 @@ class StyleFactoryTests {
             .isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
         val colorStyle = style.color.light as ColorStyle.Solid
         assertThat(colorStyle.color).isEqualTo(expectedColor)
+    }
+
+    @Test
+    fun `Should create a WebViewComponentStyle for a WebViewComponent`() {
+        val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit)
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+            visible = false,
+            size = size,
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.urlTemplate).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
+        assertThat(style.visible).isFalse()
+        assertThat(style.size).isEqualTo(size)
     }
 
     @Test

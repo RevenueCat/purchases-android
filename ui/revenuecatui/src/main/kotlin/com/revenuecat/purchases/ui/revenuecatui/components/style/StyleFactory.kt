@@ -27,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -572,12 +573,22 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
+            is WebViewComponent -> createWebViewComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
         }
     }
+
+    private fun createWebViewComponentStyle(component: WebViewComponent): Result<WebViewComponentStyle, Nothing> =
+        Result.Success(
+            WebViewComponentStyle(
+                urlTemplate = component.url,
+                visible = component.visible ?: DEFAULT_VISIBILITY,
+                size = component.size,
+            ),
+        )
 
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,

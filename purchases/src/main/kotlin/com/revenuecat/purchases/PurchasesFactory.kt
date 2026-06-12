@@ -56,6 +56,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
+import com.revenuecat.purchases.utils.DefaultWebViewPreDownloader
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -214,9 +215,11 @@ internal class PurchasesFactory(
                 backendHelper,
             )
             val coilImageDownloader = CoilImageDownloader(application)
+            val webViewPreDownloader = DefaultWebViewPreDownloader(application)
             val fileRepository = DefaultFileRepository(application)
             val paywallComponentsImagePreDownloader = PaywallComponentsImagePreDownloader(
                 coilImageDownloader = coilImageDownloader,
+                webViewPreDownloader = webViewPreDownloader,
             )
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
@@ -400,6 +403,7 @@ internal class PurchasesFactory(
                 OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
                 OfferingImagePreDownloader(
                     coilImageDownloader = coilImageDownloader,
+                    webViewPreDownloader = webViewPreDownloader,
                     paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
                 ),
                 diagnosticsTracker,

@@ -30,12 +30,14 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlButtonView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabControlToggleView
 import com.revenuecat.purchases.ui.revenuecatui.components.tabs.TabsComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.timeline.TimelineComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.video.VideoComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.webview.WebViewComponentView
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
@@ -73,6 +75,7 @@ internal fun ComponentView(
             modifier = modifier,
         )
     }
+    is WebViewComponentStyle -> WebViewComponentView(style = style, state = state, modifier = modifier)
     is ButtonComponentStyle -> ButtonComponentView(
         style = style,
         state = state,
