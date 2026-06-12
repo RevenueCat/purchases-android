@@ -14,6 +14,9 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -37,11 +40,13 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -52,6 +57,9 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -450,9 +458,11 @@ class PaywallViewModelWorkflowTest {
 
     private fun createVm(
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        listener: PaywallListener? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = {})
         dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
+        listener?.let { builder.setListener(it) }
         return PaywallViewModelImpl(
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
@@ -464,6 +474,24 @@ class PaywallViewModelWorkflowTest {
             // instead of it escaping to Dispatchers.Default and resuming after resetMain().
             backgroundDispatcher = testDispatcher,
         )
+    }
+
+    private fun makeListener(): PaywallListener = mockk {
+        every { onPurchasePackageInitiated(any(), any()) } answers {
+            val resume = secondArg<Resumable>()
+            resume(true)
+        }
+        every { onRestoreInitiated(any()) } answers {
+            val resume = firstArg<Resumable>()
+            resume(true)
+        }
+        every { onPurchaseStarted(any()) } just runs
+        every { onPurchaseCompleted(any(), any()) } just runs
+        every { onPurchaseCancelled() } just runs
+        every { onPurchaseError(any()) } just runs
+        every { onRestoreStarted() } just runs
+        every { onRestoreCompleted(any()) } just runs
+        every { onRestoreError(any()) } just runs
     }
 
     // region forward navigation
@@ -1369,4 +1397,119 @@ class PaywallViewModelWorkflowTest {
     }
 
     // endregion
+
+    // region purchase/restore callbacks
+
+    @Test
+    fun `onPurchaseStarted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(transaction, mockk(relaxed = true))
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verify { listener.onPurchaseStarted(TestData.Packages.monthly) }
+    }
+
+    @Test
+    fun `onPurchaseCompleted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val transaction = mockk<StoreTransaction>()
+        val customerInfo = mockk<CustomerInfo>(relaxed = true)
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(transaction, customerInfo)
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verifyOrder {
+            listener.onPurchaseStarted(TestData.Packages.monthly)
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+    }
+
+    @Test
+    fun `onPurchaseCancelled fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val cancelError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(cancelError)
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verify { listener.onPurchaseCancelled() }
+        verify(exactly = 0) { listener.onPurchaseError(any()) }
+    }
+
+    @Test
+    fun `onPurchaseError fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val purchaseError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(purchaseError)
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verify { listener.onPurchaseError(purchaseError) }
+        verify(exactly = 0) { listener.onPurchaseCancelled() }
+    }
+
+    @Test
+    fun `onRestoreStarted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        coEvery { purchases.awaitRestore() } returns mockk(relaxed = true)
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        verify { listener.onRestoreStarted() }
+    }
+
+    @Test
+    fun `onRestoreCompleted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val customerInfo = mockk<CustomerInfo>(relaxed = true)
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreCompleted(customerInfo)
+        }
+    }
+
+    @Test
+    fun `onRestoreError fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val restoreError = PurchasesError(PurchasesErrorCode.NetworkError)
+        coEvery { purchases.awaitRestore() } throws PurchasesException(restoreError)
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        verify { listener.onRestoreError(restoreError) }
+        verify(exactly = 0) { listener.onRestoreCompleted(any()) }
+    }
+
+    // endregion purchase/restore callbacks
 }
