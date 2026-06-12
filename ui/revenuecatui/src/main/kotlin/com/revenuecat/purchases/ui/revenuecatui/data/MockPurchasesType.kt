@@ -64,4 +64,6 @@ internal class MockPurchasesType(
     override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
         throw NotImplementedError("Mock implementation for previews only")
     }
+
+    override fun workflowIdForOfferingId(offeringId: String): String? = null
 }
