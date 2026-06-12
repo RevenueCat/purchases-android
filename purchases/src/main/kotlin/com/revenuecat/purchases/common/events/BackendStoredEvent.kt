@@ -116,7 +116,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
             workflowID = data.workflowId,
             presentedOfferingContext = BackendEvent.PresentedOfferingContextData.fromContext(
                 context = data.presentedOfferingContext,
-                paywallId = if (data.workflowId != null) data.paywallIdentifier else null,
+                paywallId = data.paywallIdentifier,
                 workflowId = data.workflowId,
             ),
             exitOfferType = data.exitOfferType?.value,

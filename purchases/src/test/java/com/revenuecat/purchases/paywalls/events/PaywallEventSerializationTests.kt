@@ -172,12 +172,13 @@ class PaywallEventSerializationTests {
                 placementIdentifier = "placementID",
                 targetingRevision = 5,
                 targetingRuleId = "ruleID",
+                paywallID = "paywallID",
             )
         )
     }
 
     @Test
-    fun `round trip serialization without placement produces null backend context`() {
+    fun `round trip serialization without placement includes only paywall_id in backend context`() {
         val eventWithoutPlacement = PaywallStoredEvent(
             event = PaywallEvent(
                 creationData = PaywallEvent.CreationData(
@@ -191,7 +192,7 @@ class PaywallEventSerializationTests {
                     sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
                     displayMode = "footer",
                     localeIdentifier = "es_ES",
-                    darkMode = true
+                    darkMode = true,
                 ),
                 type = PaywallEventType.IMPRESSION,
             ),
@@ -201,7 +202,11 @@ class PaywallEventSerializationTests {
         val decodedEvent = PaywallStoredEvent.fromString(eventString)
         val backendEvent = decodedEvent.toBackendEvent()
 
-        assertThat(backendEvent.presentedOfferingContext).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+            )
+        )
     }
 
     @Test
@@ -339,6 +344,7 @@ class PaywallEventSerializationTests {
         assertThat(backendEvent.presentedOfferingContext).isEqualTo(
             BackendEvent.PresentedOfferingContextData(
                 placementIdentifier = "placementID",
+                paywallID = "paywallID",
             )
         )
     }
@@ -379,6 +385,7 @@ class PaywallEventSerializationTests {
             BackendEvent.PresentedOfferingContextData(
                 targetingRevision = 7,
                 targetingRuleId = "targetingRuleID",
+                paywallID = "paywallID",
             )
         )
     }
@@ -592,9 +599,13 @@ class PaywallEventSerializationTests {
     }
 
     @Test
-    fun `toBackendEvent without workflowId produces null presented_offering_context when no placement`() {
+    fun `toBackendEvent without workflowId still includes paywallId in presented_offering_context`() {
         val backendEvent = exitOfferEvent.toBackendEvent()
         assertThat(backendEvent.workflowID).isNull()
-        assertThat(backendEvent.presentedOfferingContext).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+            )
+        )
     }
 }

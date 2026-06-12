@@ -39,7 +39,7 @@ internal data class PaywallStoredEvent(
             workflowID = event.data.workflowId,
             presentedOfferingContext = BackendEvent.PresentedOfferingContextData.fromContext(
                 context = event.data.presentedOfferingContext,
-                paywallId = if (event.data.workflowId != null) event.data.paywallIdentifier else null,
+                paywallId = event.data.paywallIdentifier,
                 workflowId = event.data.workflowId,
             ),
             exitOfferType = event.data.exitOfferType?.value,
