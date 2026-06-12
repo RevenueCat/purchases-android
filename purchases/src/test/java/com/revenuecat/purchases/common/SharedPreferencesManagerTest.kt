@@ -178,7 +178,7 @@ class SharedPreferencesManagerTest {
     }
 
     @Test
-    fun `getSharedPreferences removes migrated RevenueCat keys from legacy preferences but leaves others`() {
+    fun `getSharedPreferences copies RevenueCat keys without modifying the legacy preferences`() {
         every { mockLegacyPrefs.all } returns mapOf(
             REVENUECAT_KEY_1 to "value1",
             REVENUECAT_KEY_2 to "value2",
@@ -188,13 +188,13 @@ class SharedPreferencesManagerTest {
         val manager = SharedPreferencesManager(mockContext)
         manager.getSharedPreferences()
 
-        // Migrated RevenueCat-prefixed keys are removed from the legacy (default) store so their potentially
-        // large values are no longer inflated on every launch...
-        verify(exactly = 1) { mockLegacyEditor.remove(REVENUECAT_KEY_1) }
-        verify(exactly = 1) { mockLegacyEditor.remove(REVENUECAT_KEY_2) }
-        // ...but the host app's own keys are never touched.
-        verify(exactly = 0) { mockLegacyEditor.remove(NON_REVENUECAT_KEY) }
-        verify(exactly = 1) { mockLegacyEditor.apply() }
+        // RevenueCat-prefixed keys are copied into the dedicated store...
+        verify { mockRevenueCatEditor.putString(REVENUECAT_KEY_1, "value1") }
+        verify { mockRevenueCatEditor.putString(REVENUECAT_KEY_2, "value2") }
+        // ...but the legacy (default) store is never edited, preserving the host app's data even if a value
+        // failed to migrate (the version flag prevents retry).
+        verify(exactly = 0) { mockLegacyEditor.remove(any()) }
+        verify(exactly = 0) { mockLegacyEditor.apply() }
     }
 
     @Test

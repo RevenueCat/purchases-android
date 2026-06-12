@@ -61,11 +61,7 @@ constructor(
          */
         public constructor(uiConfig: UiConfig, data: PaywallComponentsData) : this(uiConfig, lazyOf(data))
 
-        /**
-         * Constructor used by the offerings parser. The (potentially large) component tree referenced by
-         * [dataProvider] is only deserialized the first time [data] is accessed — i.e. when the paywall is
-         * actually displayed — rather than eagerly for every cached offering at load time.
-         */
+        // Used by the parser: the component tree is decoded lazily on first [data] access, not at load time.
         internal constructor(
             uiConfig: UiConfig,
             dataProvider: () -> PaywallComponentsData,
@@ -87,7 +83,9 @@ constructor(
     }
 
     /**
-     * Whether the offering contains a paywall.
+     * Whether the offering has a paywall configured. This reflects the *presence* of paywall data, not its
+     * validity: a components paywall is reported here as soon as it's present, and its component tree is only
+     * fully validated when the paywall is displayed (falling back to a default paywall if validation fails).
      */
     @OptIn(InternalRevenueCatAPI::class)
     @get:JvmName("hasPaywall")
