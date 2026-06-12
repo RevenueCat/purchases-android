@@ -577,4 +577,24 @@ class PaywallEventSerializationTests {
         val decoded = PaywallStoredEvent.fromString(legacyJson)
         assertThat(decoded.event.data.workflowId).isNull()
     }
+
+    @Test
+    fun `toBackendEvent includes workflowId in presented_offering_context and at top level`() {
+        val backendEvent = workflowImpressionEvent.toBackendEvent()
+
+        assertThat(backendEvent.workflowID).isEqualTo("workflow-xyz")
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+                workflowID = "workflow-xyz",
+            )
+        )
+    }
+
+    @Test
+    fun `toBackendEvent without workflowId produces null presented_offering_context when no placement`() {
+        val backendEvent = exitOfferEvent.toBackendEvent()
+        assertThat(backendEvent.workflowID).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isNull()
+    }
 }
