@@ -1237,6 +1237,7 @@ workflows:
       - revenuecat/update-error-codes:
           platform: android
           output: purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt
+          commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defaults-bc7.txt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
             tag: 2025.04.1
