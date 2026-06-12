@@ -27,5 +27,6 @@ dependencies {
         api(project(":feature:galaxy"))
         api(project(":feature:admob"))
         api(project(":codegen"))
+        api(project(":rules-engine"))
     }
 }
