@@ -73,16 +73,28 @@ internal class WorkflowsCache(
     }
 
     /**
-     * Clears the cached timestamp for [workflowId]'s in-memory detail entry, forcing the next
-     * [isWorkflowCacheStale] check to report it stale so a subsequent fetch retries rather than
-     * serving the still-cached value. The per-workflow analogue of [invalidateWorkflowsListTimestamp]
-     * (and of [com.revenuecat.purchases.common.offerings.OfferingsCache.forceCacheStale]); the detail
-     * fetch calls it on a terminal error that produced no fresh value, matching how the list and
-     * offerings invalidate their cache on the same failures. No-op when nothing is cached.
+     * Clears the cached timestamp for [workflowId]'s in-memory detail entry while keeping the
+     * resolved value, forcing the next [isWorkflowCacheStale] check to report it stale so a
+     * subsequent fetch retries. The value is intentionally retained: this is used on transient
+     * failures (transport / 5xx with no disk envelope to recover), where stale-while-revalidate
+     * should keep serving the saved copy and just retry in the background. For a 4xx, where the
+     * saved copy must no longer be served, use [clearWorkflow] instead. No-op when nothing is cached.
      */
     @Synchronized
     fun invalidateWorkflowTimestamp(workflowId: String) {
         cachedWorkflows[workflowId]?.clearCacheTimestamp()
+    }
+
+    /**
+     * Removes [workflowId]'s in-memory detail entry entirely (value and timestamp), so it is neither
+     * served as a fresh hit nor as a stale-but-present stale-while-revalidate hit. Used on a 4xx,
+     * where the server has authoritatively removed or refused the workflow and the saved copy must
+     * not be shown again. Contrast with [invalidateWorkflowTimestamp], which keeps the value so it
+     * can keep being served while a transient failure is retried. No-op when nothing is cached.
+     */
+    @Synchronized
+    fun clearWorkflow(workflowId: String) {
+        cachedWorkflows.remove(workflowId)
     }
 
     // endregion Workflow detail cache
