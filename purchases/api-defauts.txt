@@ -385,6 +385,7 @@ package com.revenuecat.purchases {
     method public void getAmazonLWAConsentStatus(com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback callback);
     method @kotlin.jvm.Synchronized public String getAppUserID();
     method public com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? getCachedVirtualCurrencies();
+    method public android.app.Activity? getCurrentActivity();
     method public com.revenuecat.purchases.PurchasesConfiguration getCurrentConfiguration();
     method public com.revenuecat.purchases.customercenter.CustomerCenterListener? getCustomerCenterListener();
     method public void getCustomerInfo(com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);

@@ -105,6 +105,7 @@ import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import java.lang.ref.WeakReference
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -163,6 +164,23 @@ internal class PurchasesOrchestrator(
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
+
+    // All activities that have started but not yet stopped, in start order. Using a list rather
+    // than a single ref so that stopping a dialog/translucent overlay (which never stops the
+    // host behind it) correctly leaves the host in the set.
+    private val startedActivityRefs = mutableListOf<WeakReference<Activity>>()
+    private val startedActivitiesLock = Any()
+
+    internal val currentActivity: Activity?
+        get() = synchronized(startedActivitiesLock) {
+            // Walk from the end (most recently started) and return the first live activity.
+            val iterator = startedActivityRefs.listIterator(startedActivityRefs.size)
+            while (iterator.hasPrevious()) {
+                val activity = iterator.previous().get()
+                if (activity == null || activity.isDestroyed) iterator.remove() else return activity
+            }
+            null
+        }
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
@@ -346,8 +364,19 @@ internal class PurchasesOrchestrator(
     }
 
     override fun onActivityStarted(activity: Activity) {
+        synchronized(startedActivitiesLock) {
+            // Deduplicate: remove any stale or duplicate ref for this instance before adding.
+            startedActivityRefs.removeAll { it.get() === activity || it.get() == null }
+            startedActivityRefs.add(WeakReference(activity))
+        }
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
+        }
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+        synchronized(startedActivitiesLock) {
+            startedActivityRefs.removeAll { it.get() === activity || it.get() == null }
         }
     }
 
