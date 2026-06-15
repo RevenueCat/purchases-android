@@ -510,6 +510,7 @@ class BackendPaywallEventTest {
                 placementIdentifier = "home_banner",
                 targetingRevision = 3,
                 targetingRuleId = "rule_abc123",
+                paywallID = "paywallID",
             )
         )
     }
