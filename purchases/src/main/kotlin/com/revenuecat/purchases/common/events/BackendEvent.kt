@@ -2,10 +2,13 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.utils.Event
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -227,6 +230,7 @@ internal sealed class BackendEvent : Event {
      */
     @Serializable
     @SerialName("workflows")
+    @OptIn(ExperimentalSerializationApi::class)
     data class Workflows(
         val id: String,
         val version: Int,
@@ -237,14 +241,25 @@ internal sealed class BackendEvent : Event {
         val timestampMs: Long,
         @SerialName("app_user_id")
         val appUserID: String,
+        @EncodeDefault(EncodeDefault.Mode.ALWAYS)
         val context: Context = Context(),
         val properties: Properties,
     ) : BackendEvent() {
 
         @Serializable
+        @OptIn(ExperimentalSerializationApi::class, InternalRevenueCatAPI::class)
         data class Context(
+            @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+            val platform: String = WORKFLOW_CONTEXT_PLATFORM,
+            @SerialName("sdk_version")
+            @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+            val sdkVersion: String = Config.frameworkVersion,
             val locale: String? = null,
-        )
+        ) {
+            private companion object {
+                const val WORKFLOW_CONTEXT_PLATFORM = "android"
+            }
+        }
 
         @Serializable
         data class Properties(
