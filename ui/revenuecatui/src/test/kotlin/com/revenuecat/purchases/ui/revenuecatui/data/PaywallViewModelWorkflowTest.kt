@@ -1386,7 +1386,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `packageless workflow steps close active paywall without emitting their own paywall events`() {
+    fun `packageless workflow steps do not emit paywall events`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val (result, offerings) = makeContextPackageWorkflow()
@@ -1413,14 +1413,14 @@ class PaywallViewModelWorkflowTest {
 
         val paywallEvents = captured.filterIsInstance<PaywallEvent>()
         assertThat(paywallEvents.filter { it.type == PaywallEventType.IMPRESSION }).hasSize(1)
-        assertThat(paywallEvents.filter { it.type == PaywallEventType.CLOSE }).hasSize(1)
+        assertThat(paywallEvents.filter { it.type == PaywallEventType.CLOSE }).isEmpty()
 
         vm.closePaywall(result = null)
 
         assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.IMPRESSION })
             .hasSize(1)
         assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.CLOSE })
-            .hasSize(1)
+            .isEmpty()
     }
 
     // endregion
