@@ -144,10 +144,20 @@ internal class WorkflowManager(
                     onError(e.toPurchasesError())
                     return@launch
                 }
-                workflowsCache.cacheWorkflow(workflowId, result)
+                // Cache under the resolved workflow's own ID, which is the key every later lookup
+                // uses. On the lazy-conversion path the backend is called with an offering ID, so the
+                // requesting [workflowId] differs from the resolved one; recording the discovered
+                // offeringId → workflowId mapping makes the next workflowIdForOfferingId lookup resolve
+                // to this same cache entry instead of missing. Falls back to [workflowId] only if the
+                // backend returns an empty id, so we never lose the entry to a malformed response.
+                val cacheKey = result.workflow.id.ifEmpty { workflowId }
+                workflowsCache.cacheWorkflow(cacheKey, result)
+                if (cacheKey != workflowId) {
+                    workflowsCache.recordWorkflowIdForOfferingId(offeringId = workflowId, workflowId = cacheKey)
+                }
                 if (persistEnvelopeOnResolve) {
-                    runCatching { workflowsCache.cacheWorkflowDetailEnvelope(workflowId, response) }
-                        .onFailure { errorLog(it) { "Failed to persist workflow detail envelope for $workflowId" } }
+                    runCatching { workflowsCache.cacheWorkflowDetailEnvelope(cacheKey, response) }
+                        .onFailure { errorLog(it) { "Failed to persist workflow detail envelope for $cacheKey" } }
                 }
                 scope.launch {
                     runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
