@@ -81,6 +81,13 @@ class EndpointTest {
     @Test
     fun `GetWorkflows fallback path is correct`() {
         val endpoint = Endpoint.GetWorkflows("test user-id", type = "paywall")
+        val expectedPath = "/workflows/v1/workflows?type=paywall"
+        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetWorkflows fallback path without type is correct`() {
+        val endpoint = Endpoint.GetWorkflows("test user-id")
         val expectedPath = "/workflows/v1/workflows"
         assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
     }

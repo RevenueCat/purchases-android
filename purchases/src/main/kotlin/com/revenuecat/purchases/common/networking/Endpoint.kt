@@ -47,8 +47,11 @@ internal sealed class Endpoint(
         fallbackPath = "/workflows/v1/workflows",
     ) {
         override fun getPath(useFallback: Boolean): String {
-            if (useFallback && fallbackPath != null) return fallbackPath
-            val base = pathTemplate.format(Uri.encode(userId))
+            val base = if (useFallback && fallbackPath != null) {
+                fallbackPath
+            } else {
+                pathTemplate.format(Uri.encode(userId))
+            }
             return if (type != null) "$base?type=${Uri.encode(type)}" else base
         }
     }
