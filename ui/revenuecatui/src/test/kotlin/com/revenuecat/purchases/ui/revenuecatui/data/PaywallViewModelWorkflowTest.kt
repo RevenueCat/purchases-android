@@ -1193,6 +1193,61 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `closePaywall clears workflowState`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        assertThat(vm.workflowState.value).isNotNull()
+
+        vm.closePaywall(result = null)
+
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `impression after closePaywall reuse does not carry stale workflowId`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        vm.closePaywall(result = null)
+        captured.clear()
+
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+        assertThat(impressions.first().data.workflowId).isNull()
+    }
+
+    @Test
+    fun `impression after closePaywall from non-paywall step is not suppressed`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        // step-1 is a context (non-paywall) step, so currentWorkflowStepTracksPaywallEvents = false
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        vm.closePaywall(result = null)
+        captured.clear()
+
+        // After close, simulate the VM being reused: navigate to step-2 (paywall step) via a new
+        // workflow presentation and verify impression is tracked normally (not suppressed by stale state).
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+    }
+
+    @Test
     fun `RevenueCat purchase completion during workflow fires StepCompleted with null toStepId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }

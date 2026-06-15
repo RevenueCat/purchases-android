@@ -328,6 +328,7 @@ internal class PaywallViewModelImpl(
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
         paywallPresentationData = null
+        clearWorkflowState()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
             dismissWithExitOffering(exitOffering, result)
@@ -344,6 +345,18 @@ internal class PaywallViewModelImpl(
         updateStateJob?.cancel()
         // Exit offer data is intentionally preserved here: locale/color/options refreshes should
         // not discard resolution that already ran. The async update sets new data via updateExitOfferData.
+    }
+
+    private fun clearWorkflowState() {
+        preWarmJob?.cancel()
+        preWarmJob = null
+        workflowNavigator = null
+        currentWorkflowResult = null
+        currentWorkflowOfferings = null
+        currentWorkflowPresentedOfferingContext = null
+        currentWorkflowStepTracksPaywallEvents = true
+        workflowStepStateCache.clear()
+        _workflowState.value = null
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
