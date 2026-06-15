@@ -14,6 +14,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
 import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -109,7 +110,8 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationResult) -> Unit, (RewardVerificationError) -> Unit>
 
-internal typealias RemoteConfigCallback = Pair<(RCContainer?) -> Unit, (PurchasesError) -> Unit>
+internal typealias RemoteConfigCallback =
+    Pair<(RCContainer?, VerificationResult) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias WorkflowDetailCallback = Pair<
@@ -1306,7 +1308,7 @@ internal class Backend(
 
     fun getRemoteConfig(
         appInBackground: Boolean,
-        onSuccess: (RCContainer?) -> Unit,
+        onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig
@@ -1346,7 +1348,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
                             // 204: nothing changed, no container to parse.
-                            onSuccessHandler(null)
+                            onSuccessHandler(null, result.verificationResult)
                             return@forEach
                         }
                         val payload = result.payload
@@ -1360,7 +1362,7 @@ internal class Backend(
                             return@forEach
                         }
                         try {
-                            onSuccessHandler(RCContainer.parse(payload.bytes))
+                            onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
                         } catch (e: RCContainerFormatException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         }

@@ -12,12 +12,15 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
+import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.ByteArrayOutputStream
+import java.security.MessageDigest
 import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
@@ -194,7 +197,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 urlPath = endpoint.getPath(),
                 "test-signature",
                 "test-nonce",
-                "{\"test-key\":\"test-value\"}",
+                match<ByteArray> { it.contentEquals("{\"test-key\":\"test-value\"}".toByteArray()) },
                 "1234567890",
                 "test-etag",
                 postFieldsToSignHeader = null
@@ -400,6 +403,110 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
+    // region RC Container Format verification
+
+    @Test
+    fun `performRequest verifies an RC Container Format response over the config checksum`() {
+        val endpoint = Endpoint.GetRemoteConfig
+        val configBytes = "{\"config\":true}".toByteArray()
+        val container = buildContainer(configBytes)
+        val expectedChecksum = sha256Truncated(configBytes)
+
+        mockSigningResult(VerificationResult.VERIFIED)
+        enqueueRCFormat(container)
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(result.payload).isInstanceOf(HTTPResult.Payload.RCFormat::class.java)
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = endpoint.getPath(),
+                "test-signature",
+                null,
+                match<ByteArray> { it.contentEquals(expectedChecksum) },
+                "1234567890",
+                "test-etag",
+                postFieldsToSignHeader = null
+            )
+        }
+    }
+
+    @Test
+    fun `performRequest fails RC Format verification when the config data does not match its checksum`() {
+        val endpoint = Endpoint.GetRemoteConfig
+        val configBytes = "{\"config\":true}".toByteArray()
+        // Store a checksum that does not match the config data.
+        val container = buildContainer(configBytes, configChecksum = ByteArray(24) { 0x7F })
+
+        mockSigningResult(VerificationResult.VERIFIED)
+        enqueueRCFormat(container)
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `performRequest fails RC Format verification when the response is not a valid RC Container`() {
+        val endpoint = Endpoint.GetRemoteConfig
+
+        mockSigningResult(VerificationResult.VERIFIED)
+        enqueueRCFormat(byteArrayOf(1, 2, 3, 4))
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `performRequest on enforced client throws when RC Format verification fails`() {
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
+        val endpoint = Endpoint.GetRemoteConfig
+        val container = buildContainer("{\"config\":true}".toByteArray())
+
+        mockSigningResult(VerificationResult.FAILED)
+        enqueueRCFormat(container)
+
+        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = emptyMap()
+            )
+        }
+    }
+
+    // endregion
+
     private fun mockSigningResult(result: VerificationResult) {
         every {
             mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
@@ -411,4 +518,48 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         }
     }
+
+    private fun enqueueRCFormat(body: ByteArray) {
+        server.enqueue(
+            MockResponse()
+                .setBody(Buffer().write(body))
+                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+                .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
+                .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L)
+                .setHeader(HTTPResult.ETAG_HEADER_NAME, "test-etag")
+        )
+    }
+
+    @Suppress("MagicNumber")
+    private fun buildContainer(
+        config: ByteArray,
+        configChecksum: ByteArray = sha256Truncated(config),
+    ): ByteArray {
+        val out = ByteArrayOutputStream()
+        out.write('R'.code)
+        out.write('C'.code)
+        out.write(1) // version
+        out.write(0) // flags
+        repeat(4) { out.write(0) } // header reserved
+        out.write(configChecksum)
+        out.writeUInt32LE(config.size)
+        out.writeUInt32LE(0) // element reserved
+        out.write(config)
+        while (out.size() % 8 != 0) {
+            out.write(0)
+        }
+        return out.toByteArray()
+    }
+
+    @Suppress("MagicNumber")
+    private fun ByteArrayOutputStream.writeUInt32LE(value: Int) {
+        write(value and 0xFF)
+        write((value ushr 8) and 0xFF)
+        write((value ushr 16) and 0xFF)
+        write((value ushr 24) and 0xFF)
+    }
+
+    @Suppress("MagicNumber")
+    private fun sha256Truncated(data: ByteArray): ByteArray =
+        MessageDigest.getInstance("SHA-256").digest(data).copyOf(24)
 }
