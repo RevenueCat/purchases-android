@@ -408,6 +408,9 @@ internal class PaywallViewModelImpl(
     override fun trackPaywallImpressionIfNeeded() {
         val isWorkflowPresentation = currentWorkflowResult != null
         if (isWorkflowPresentation && !currentWorkflowStepTracksPaywallEvents) {
+            if (paywallPresentationData != null) {
+                track(PaywallEventType.CLOSE)
+            }
             paywallPresentationData = null
             return
         }
@@ -418,9 +421,7 @@ internal class PaywallViewModelImpl(
         if (existing?.presentationFingerprint() == targetFingerprint) return
 
         if (existing != null) {
-            if (!isWorkflowPresentation) {
-                track(PaywallEventType.CLOSE)
-            }
+            track(PaywallEventType.CLOSE)
             paywallPresentationData = null
         }
 
