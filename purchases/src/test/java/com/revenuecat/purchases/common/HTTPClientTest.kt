@@ -25,6 +25,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.json.JSONException
@@ -93,6 +94,38 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
+    @Test
+    fun `GetRemoteConfig sends the RC format Accept header, skips ETags, and exposes a binary payload`() {
+        val endpoint = Endpoint.GetRemoteConfig
+        val containerBytes = byteArrayOf('R'.code.toByte(), 'C'.code.toByte(), 1, 0, 0, 0, 0, 0)
+        server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(containerBytes)))
+
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+        assertThat(request.getHeader("Accept")).isEqualTo("application/x-rc-format")
+        // Binary endpoints are not ETag-cached: no If-None-Match is sent and the cache is bypassed.
+        assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isNull()
+        verify(exactly = 0) {
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
+        assertThat(result.payload).isInstanceOf(HTTPResult.Payload.Binary::class.java)
+        assertThat((result.payload as HTTPResult.Payload.Binary).bytes).isEqualTo(containerBytes)
+    }
+
+    @Test
+    fun `non-binary endpoints do not send the RC format Accept header`() {
+        enqueue(
+            Endpoint.LogIn.getPath(),
+            expectedResult = HTTPResult.createResult(),
+        )
+
+        client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+        assertThat(request.getHeader("Accept")).isNotEqualTo("application/x-rc-format")
+    }
+
     // region forceServerErrors
 
     @Test
@@ -124,7 +157,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
 
         assertThat(result.responseCode).isEqualTo(502)
-        assertThat(result.payload).isEqualTo("Some error xml")
+        assertThat(result.payloadText).isEqualTo("Some error xml")
     }
 
     @Test
@@ -152,7 +185,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}v1/subscribers/identify")
 
         assertThat(result.responseCode).isEqualTo(223)
-        assertThat(result.payload).isEqualTo("{'response': 'OK'}")
+        assertThat(result.payloadText).isEqualTo("{'response': 'OK'}")
     }
 
     // endregion forceServerErrors
@@ -453,7 +486,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             MockResponse()
                 .setHeader(HTTPResult.ETAG_HEADER_NAME, "anotheretag")
                 .setResponseCode(expectedResult.responseCode)
-                .setBody(expectedResult.payload)
+                .setBody(expectedResult.payloadText)
 
         server.enqueue(response)
         server.enqueue(secondResponse)
@@ -478,7 +511,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
-                payload = expectedResult.payload,
+                payload = expectedResult.payloadText,
                 eTagHeader = any(),
                 urlString = urlString,
                 refreshETag = true,
@@ -500,7 +533,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         verify(exactly = 1) {
             mockETagManager.getETagHeaders(any(), any(), refreshETag = true)
         }
-        assertThat(result.payload).isEqualTo(expectedResult.payload)
+        assertThat(result.payloadText).isEqualTo(expectedResult.payloadText)
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)
     }
 
@@ -569,7 +602,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         server.takeRequest()
 
-        assertThat(result.payload).isEqualTo("{}\n")
+        assertThat(result.payloadText).isEqualTo("{}\n")
     }
 
     // region trackHttpRequestPerformed
@@ -720,7 +753,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             MockResponse()
                 .setHeader(HTTPResult.ETAG_HEADER_NAME, "anotheretag")
                 .setResponseCode(expectedResult.responseCode)
-                .setBody(expectedResult.payload)
+                .setBody(expectedResult.payloadText)
 
         server.enqueue(response)
         server.enqueue(secondResponse)
@@ -745,7 +778,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
-                payload = expectedResult.payload,
+                payload = expectedResult.payloadText,
                 eTagHeader = any(),
                 urlString = urlString,
                 refreshETag = true,
@@ -1378,7 +1411,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
             assertThat(server.requestCount).isEqualTo(1)
             assertThat(fallbackServer.requestCount).isEqualTo(1)
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.payloadText).isEqualTo(validJsonPayload)
             assertThat(result.body.has("offerings")).isTrue
         } finally {
             fallbackServer.shutdown()
@@ -1466,7 +1499,7 @@ internal class ParameterizedConnectionFailureFallbackTest(
             // Assert
             assertThat(fallbackServer.requestCount).isEqualTo(1)
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.payloadText).isEqualTo(validJsonPayload)
             assertThat(result.body.has("offerings")).isTrue
         } finally {
             fallbackServer.shutdown()

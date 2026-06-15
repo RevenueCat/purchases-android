@@ -20,13 +20,57 @@ private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 @InternalRevenueCatAPI
 public data class HTTPResult(
     val responseCode: Int,
-    val payload: String,
+    val payload: Payload,
     val origin: Origin,
     val requestDate: Date?,
     val verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
 ) {
+    /**
+     * Convenience constructor for textual (JSON) responses, which keeps the common call sites and the
+     * ETag cache deserialization ergonomic. Wraps [payload] in [Payload.Text].
+     */
+    public constructor(
+        responseCode: Int,
+        payload: String,
+        origin: Origin,
+        requestDate: Date?,
+        verificationResult: VerificationResult,
+        isLoadShedderResponse: Boolean,
+        isFallbackURL: Boolean,
+    ) : this(
+        responseCode,
+        Payload.Text(payload),
+        origin,
+        requestDate,
+        verificationResult,
+        isLoadShedderResponse,
+        isFallbackURL,
+    )
+
+    /**
+     * The response body, which is either textual (JSON, the common case) or raw [Binary] bytes (e.g.
+     * the RC Container Format returned for `Accept: application/x-rc-format` requests).
+     */
+    public sealed interface Payload {
+        public data class Text(val value: String) : Payload
+
+        public class Binary(public val bytes: ByteArray) : Payload {
+            override fun equals(other: Any?): Boolean =
+                this === other || (other is Binary && bytes.contentEquals(other.bytes))
+
+            override fun hashCode(): Int = bytes.contentHashCode()
+        }
+    }
+
+    /** The textual payload, or an empty string for a [Payload.Binary] body. */
+    val payloadText: String
+        get() = when (val payload = payload) {
+            is Payload.Text -> payload.value
+            is Payload.Binary -> ""
+        }
+
     internal companion object {
         internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
         internal const val SIGNATURE_HEADER_NAME = "X-Signature"
@@ -78,7 +122,7 @@ public data class HTTPResult(
         BACKEND, CACHE
     }
 
-    val body: JSONObject = payload
+    val body: JSONObject = payloadText
         .takeIf { it.isNotBlank() }
         ?.let {
             try {
@@ -102,7 +146,8 @@ public data class HTTPResult(
     internal fun serialize(): String {
         val jsonObject = JSONObject().apply {
             put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
-            put(SERIALIZATION_NAME_PAYLOAD, payload)
+            // Only text payloads are ever cached; binary (RC Container) responses bypass the ETag cache.
+            put(SERIALIZATION_NAME_PAYLOAD, payloadText)
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
             put(SERIALIZATION_NAME_REQUEST_DATE, requestDate?.time)
             put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)

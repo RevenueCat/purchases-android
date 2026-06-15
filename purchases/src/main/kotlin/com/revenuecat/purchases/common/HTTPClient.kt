@@ -29,11 +29,9 @@ import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
-import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.IOException
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -81,22 +79,29 @@ internal class HTTPClient(
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
+
+        // Accept header value requesting the RC Container Format (binary) response.
+        const val RC_FORMAT_CONTENT_TYPE = "application/x-rc-format"
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
-
-    private fun buffer(inputStream: InputStream): BufferedReader {
-        return BufferedReader(InputStreamReader(inputStream))
-    }
 
     private fun buffer(outputStream: OutputStream): BufferedWriter {
         return BufferedWriter(OutputStreamWriter(outputStream))
     }
 
     @Throws(IOException::class)
-    private fun readFully(inputStream: InputStream): String {
-        return buffer(inputStream).readText()
+    private fun readBytesFully(inputStream: InputStream): ByteArray {
+        return inputStream.readBytes()
     }
+
+    /** A human-readable rendering of a response body for logging: byte size for binary, text otherwise. */
+    private fun ByteArray.describeForLogging(endpoint: Endpoint, responseCode: Int): String =
+        if (endpoint.expectsBinaryResponse && RCHTTPStatusCodes.isSuccessful(responseCode)) {
+            "<binary: $size bytes>"
+        } else {
+            String(this, Charsets.UTF_8)
+        }
 
     @Suppress("TooGenericExceptionCaught")
     private fun getInputStream(connection: HttpURLConnection): InputStream? {
@@ -285,6 +290,7 @@ internal class HTTPClient(
                 nonce,
                 shouldSignResponse,
                 postFieldsToSignHeader,
+                endpoint,
             )
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
@@ -305,14 +311,17 @@ internal class HTTPClient(
 
         val inputStream = getInputStream(connection)
 
-        val payload: String?
+        val payloadBytes: ByteArray?
         val responseCode: Int
         try {
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
-            payload = inputStream?.let { readFully(it) }
+            payloadBytes = inputStream?.let { readBytesFully(it) }
             if (enableExtraRequestLogging) {
-                debugLog { "HTTP response:\\n  status code: $responseCode \\n  body: $payload" }
+                debugLog {
+                    "HTTP response:\\n  status code: $responseCode \\n  " +
+                        "body: ${payloadBytes?.describeForLogging(endpoint, responseCode)}"
+                }
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             if (enableExtraRequestLogging) {
@@ -325,9 +334,20 @@ internal class HTTPClient(
         }
 
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
-        if (payload == null) {
+        if (payloadBytes == null) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
+
+        // Binary endpoints expose successful responses as raw bytes; everything else (including error
+        // responses, which are still JSON) is decoded as UTF-8 text.
+        val payload: HTTPResult.Payload = if (
+            endpoint.expectsBinaryResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
+        ) {
+            HTTPResult.Payload.Binary(payloadBytes)
+        } else {
+            HTTPResult.Payload.Text(String(payloadBytes, Charsets.UTF_8))
+        }
+        val payloadText = (payload as? HTTPResult.Payload.Text)?.value
 
         // Notify listener if present
         if (appConfig.runningTests) {
@@ -352,11 +372,12 @@ internal class HTTPClient(
                             nonce,
                             shouldSignResponse,
                             postFieldsToSignHeader,
+                            endpoint,
                         ),
                         requestBody = jsonBody?.toString(),
                         responseCode = responseCode,
                         responseHeaders = responseHeaders,
-                        responseBody = payload,
+                        responseBody = payloadText.orEmpty(),
                     )
                 } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                     // Don't let listener errors break the request
@@ -368,7 +389,7 @@ internal class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, connection, payload, nonce, postFieldsToSignHeader)
+            verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -380,17 +401,30 @@ internal class HTTPClient(
         }
 
         val isLoadShedderResponse = getLoadShedderHeader(connection)
-        return eTagManager.getHTTPResultFromCacheOrBackend(
-            responseCode,
-            payload,
-            getETagHeader(connection),
-            fullURL.toString(),
-            refreshETag,
-            getRequestDateHeader(connection),
-            verificationResult,
-            isLoadShedderResponse,
-            isFallbackURL,
-        )
+        // Binary (RC Container) endpoints are not ETag-cached: build the result directly and skip the cache.
+        return if (endpoint.expectsBinaryResponse) {
+            HTTPResult(
+                responseCode,
+                payload,
+                HTTPResult.Origin.BACKEND,
+                getRequestDateHeader(connection),
+                verificationResult,
+                isLoadShedderResponse,
+                isFallbackURL,
+            )
+        } else {
+            eTagManager.getHTTPResultFromCacheOrBackend(
+                responseCode,
+                payloadText.orEmpty(),
+                getETagHeader(connection),
+                fullURL.toString(),
+                refreshETag,
+                getRequestDateHeader(connection),
+                verificationResult,
+                isLoadShedderResponse,
+                isFallbackURL,
+            )
+        }
     }
 
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
@@ -466,9 +500,11 @@ internal class HTTPClient(
         nonce: String?,
         shouldSignResponse: Boolean,
         postFieldsToSignHeader: String?,
+        endpoint: Endpoint,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
+            "Accept" to if (endpoint.expectsBinaryResponse) RC_FORMAT_CONTENT_TYPE else null,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
@@ -492,7 +528,14 @@ internal class HTTPClient(
             "X-Billing-Client-Sdk-Version" to BuildConfig.BILLING_CLIENT_VERSION,
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
+            // Binary (RC Container) endpoints are not ETag-cached, so they send no If-None-Match header.
+            .plus(
+                if (endpoint.expectsBinaryResponse) {
+                    emptyMap()
+                } else {
+                    eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag)
+                },
+            )
             .filterNotNullValues()
     }
 
