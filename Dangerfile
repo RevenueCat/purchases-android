@@ -56,3 +56,5 @@ if total_changed > PROD_LINES_LIMIT
          "the `#{SKIP_SIZE_LABEL}` label to bypass.")
   end
 end
+
+fail_on_generated_edits(["purchases/src/main/kotlin/generated/"])
