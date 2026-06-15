@@ -23,8 +23,6 @@ internal data class PaywallPostReceiptData(
     val localeIdentifier: String,
     @SerialName("offering_id")
     val offeringId: String,
-    @SerialName("workflow_id")
-    val workflowId: String? = null,
 ) {
     companion object {
         val json = Json.Default

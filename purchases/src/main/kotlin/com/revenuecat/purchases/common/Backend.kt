@@ -330,8 +330,6 @@ internal class Backend(
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
-            "presented_paywall_id" to paywallPostReceiptData?.paywallID,
-            "presented_workflow_id" to paywallPostReceiptData?.workflowId,
             "observer_mode" to !finishTransactions,
             "purchase_completed_by" to purchasesAreCompletedBy.name.lowercase(),
             "price" to receiptInfo.price,

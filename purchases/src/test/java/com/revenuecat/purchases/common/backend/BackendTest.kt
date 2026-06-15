@@ -1459,64 +1459,6 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes presented_paywall_id and presented_workflow_id from paywallPostReceiptData`() {
-        val receiptInfo = createReceiptInfoFromProduct(
-            productIDs = productIDs,
-            storeProduct = storeProduct,
-            storeUserID = "user-id",
-        )
-
-        mockPostReceiptResponseAndPost(
-            backend,
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            finishTransactions = false,
-            receiptInfo = receiptInfo,
-            initiationSource = initiationSource,
-            paywallPostReceiptData = PaywallPostReceiptData(
-                paywallID = "paywall-id-abc",
-                sessionID = "session-123",
-                revision = 1,
-                displayMode = "full_screen",
-                darkMode = false,
-                localeIdentifier = "en_US",
-                offeringId = "offering-x",
-                workflowId = "workflow-id-xyz",
-            ),
-        )
-
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured["presented_paywall_id"]).isEqualTo("paywall-id-abc")
-        assertThat(requestBodySlot.captured["presented_workflow_id"]).isEqualTo("workflow-id-xyz")
-    }
-
-    @Test
-    fun `postReceipt omits presented_paywall_id and presented_workflow_id when no paywallPostReceiptData`() {
-        val receiptInfo = createReceiptInfoFromProduct(
-            productIDs = productIDs,
-            storeProduct = storeProduct,
-            storeUserID = "user-id",
-        )
-
-        mockPostReceiptResponseAndPost(
-            backend,
-            responseCode = 200,
-            isRestore = false,
-            clientException = null,
-            resultBody = null,
-            finishTransactions = false,
-            receiptInfo = receiptInfo,
-            initiationSource = initiationSource,
-        )
-
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_paywall_id")
-        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_workflow_id")
-    }
-
-    @Test
     fun `postReceipt passes presented_placement_identifier in body`() {
         val expectedStoreUserId = "id"
 
@@ -3188,8 +3130,6 @@ class BackendTest {
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to receiptInfo.storeUserID,
             "paywall" to paywallPostReceiptData?.toMap(),
-            "presented_paywall_id" to paywallPostReceiptData?.paywallID,
-            "presented_workflow_id" to paywallPostReceiptData?.workflowId,
         ).filterNotNullValues()
 
         return mockResponse(

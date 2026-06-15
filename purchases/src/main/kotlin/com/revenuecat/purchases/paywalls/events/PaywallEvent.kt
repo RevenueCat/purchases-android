@@ -186,7 +186,6 @@ public data class PaywallEvent(
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
             offeringId = data.presentedOfferingContext.offeringIdentifier,
-            workflowId = data.workflowId,
         )
     }
 }
