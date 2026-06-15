@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.containsPaywallEventComponent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
@@ -205,6 +206,7 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowResult: WorkflowDataResult? = null
     private var currentWorkflowOfferings: Offerings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
+    private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
@@ -404,13 +406,21 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     override fun trackPaywallImpressionIfNeeded() {
+        val isWorkflowPresentation = currentWorkflowResult != null
+        if (isWorkflowPresentation && !currentWorkflowStepTracksPaywallEvents) {
+            paywallPresentationData = null
+            return
+        }
+
         val targetFingerprint = computePresentationFingerprint() ?: return
         val existing = paywallPresentationData
 
         if (existing?.presentationFingerprint() == targetFingerprint) return
 
         if (existing != null) {
-            track(PaywallEventType.CLOSE)
+            if (!isWorkflowPresentation) {
+                track(PaywallEventType.CLOSE)
+            }
             paywallPresentationData = null
         }
 
@@ -440,6 +450,7 @@ internal class PaywallViewModelImpl(
     override fun trackComponentInteraction(data: PaywallComponentInteractionData) {
         val eventData = paywallPresentationData
         if (eventData == null) {
+            if (currentWorkflowResult != null && !currentWorkflowStepTracksPaywallEvents) return
             Logger.e("Paywall event data is null, not tracking paywall component interaction")
             return
         }
@@ -997,6 +1008,8 @@ internal class PaywallViewModelImpl(
             }
         }
         if (!shouldApplyState) return
+        currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
+            step.tracksPaywallEvents(workflow)
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,
@@ -1254,6 +1267,11 @@ internal class PaywallViewModelImpl(
         offerings[offeringId]
             ?: return "Offering '$offeringId' not found for screen '$screenId'"
         return null
+    }
+
+    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean {
+        val screenId = screenId ?: return false
+        return workflow.screens[screenId]?.componentsConfig?.base?.containsPaywallEventComponent() == true
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {

@@ -1385,5 +1385,37 @@ class PaywallViewModelWorkflowTest {
         assertThat(impressions.first().data.workflowId).isEqualTo(fetchResult.workflow.id)
     }
 
+    @Test
+    fun `packageless workflow steps do not emit paywall events`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        val closes = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.CLOSE }
+        assertThat(impressions).hasSize(1)
+        assertThat(closes).isEmpty()
+
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleBackNavigation()
+        vm.trackPaywallImpressionIfNeeded()
+        vm.closePaywall(result = null)
+
+        val paywallEvents = captured.filterIsInstance<PaywallEvent>()
+        assertThat(paywallEvents.filter { it.type == PaywallEventType.IMPRESSION }).hasSize(1)
+        assertThat(paywallEvents.filter { it.type == PaywallEventType.CLOSE }).isEmpty()
+    }
+
     // endregion
 }
