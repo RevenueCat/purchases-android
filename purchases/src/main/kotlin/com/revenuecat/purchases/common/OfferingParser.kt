@@ -158,7 +158,9 @@ internal abstract class OfferingParser {
             // accessed/displayed. Capturing the raw JSON string here is cheap; without this we would eagerly
             // deserialize every cached offering's component tree at load, even those that are never shown.
             val rawPaywallComponents = paywallComponentsJson.toString()
-            Offering.PaywallComponents(uiConfig) {
+            // A content hash of the raw JSON serves as the equality key, so comparing offerings (e.g. cached vs
+            // network) never forces the lazy decode.
+            Offering.PaywallComponents(uiConfig, componentsHash = rawPaywallComponents.sha256()) {
                 json.decodeFromString<PaywallComponentsData>(rawPaywallComponents)
             }
         } else {

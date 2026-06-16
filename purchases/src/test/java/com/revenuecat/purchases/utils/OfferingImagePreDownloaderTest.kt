@@ -128,7 +128,10 @@ class OfferingImagePreDownloaderTest {
     fun `paywalls V2 - if the component tree fails to decode, it does not throw and downloads nothing`() {
         val offering = mockk<Offering>().apply {
             every { paywall } returns null
-            every { paywallComponents } returns Offering.PaywallComponents(uiConfig = mockk()) {
+            every { paywallComponents } returns Offering.PaywallComponents(
+                uiConfig = mockk(),
+                componentsHash = "hash",
+            ) {
                 throw SerializationException("Malformed component tree")
             }
         }

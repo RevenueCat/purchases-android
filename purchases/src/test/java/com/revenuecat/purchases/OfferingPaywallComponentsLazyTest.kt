@@ -21,7 +21,7 @@ internal class OfferingPaywallComponentsLazyTest {
     @Test
     fun `data is not decoded on construction and is decoded once on first access`() {
         var decodeCount = 0
-        val components = Offering.PaywallComponents(uiConfig = mockk()) {
+        val components = Offering.PaywallComponents(uiConfig = mockk(), componentsHash = "hash") {
             decodeCount++
             mockk<PaywallComponentsData>()
         }
@@ -37,7 +37,7 @@ internal class OfferingPaywallComponentsLazyTest {
 
     @Test
     fun `hasPaywall is true without forcing the component tree decode`() {
-        val components = Offering.PaywallComponents(uiConfig = mockk()) {
+        val components = Offering.PaywallComponents(uiConfig = mockk(), componentsHash = "hash") {
             error("paywall component tree must not be decoded just to answer hasPaywall")
         }
         val offering = offeringWith(components)
@@ -47,57 +47,100 @@ internal class OfferingPaywallComponentsLazyTest {
     }
 
     @Test
-    fun `equals is true for same uiConfig and data, and forces the decode of both`() {
-        val uiConfig = mockk<com.revenuecat.purchases.UiConfig>()
-        val data = mockk<PaywallComponentsData>()
+    fun `equals is true for same uiConfig and componentsHash, without forcing the decode`() {
+        val uiConfig = mockk<UiConfig>()
         var decodeCount = 0
-        val first = Offering.PaywallComponents(uiConfig = uiConfig) { decodeCount++; data }
-        val second = Offering.PaywallComponents(uiConfig = uiConfig) { decodeCount++; data }
+        val first = Offering.PaywallComponents(uiConfig = uiConfig, componentsHash = "hash") {
+            decodeCount++
+            mockk<PaywallComponentsData>()
+        }
+        val second = Offering.PaywallComponents(uiConfig = uiConfig, componentsHash = "hash") {
+            decodeCount++
+            mockk<PaywallComponentsData>()
+        }
 
         assertThat(first == second).isTrue()
-        // Equality compares the decoded `data`, so accessing it forces the decode of both sides.
-        assertThat(decodeCount).isEqualTo(2)
+        // Equality compares the cheap content hash, never the lazily-decoded data.
+        assertThat(decodeCount).isEqualTo(0)
     }
 
     @Test
-    fun `equals is false when the decoded data differs`() {
-        val uiConfig = mockk<com.revenuecat.purchases.UiConfig>()
-        val first = Offering.PaywallComponents(uiConfig = uiConfig, data = mockk())
-        val second = Offering.PaywallComponents(uiConfig = uiConfig, data = mockk())
+    fun `equals is false when componentsHash differs, without forcing the decode`() {
+        val uiConfig = mockk<UiConfig>()
+        var decodeCount = 0
+        val first = Offering.PaywallComponents(uiConfig = uiConfig, componentsHash = "hash-a") {
+            decodeCount++
+            mockk<PaywallComponentsData>()
+        }
+        val second = Offering.PaywallComponents(uiConfig = uiConfig, componentsHash = "hash-b") {
+            decodeCount++
+            mockk<PaywallComponentsData>()
+        }
 
         assertThat(first == second).isFalse()
+        assertThat(decodeCount).isEqualTo(0)
     }
 
     @Test
     fun `equals is reflexive without forcing the decode`() {
         var decodeCount = 0
-        val components = Offering.PaywallComponents(uiConfig = mockk()) {
+        val components = Offering.PaywallComponents(uiConfig = mockk(), componentsHash = "hash") {
             decodeCount++
             mockk<PaywallComponentsData>()
         }
 
-        // `this === other` short-circuits before touching the lazy `data`.
+        // `this === other` short-circuits before touching the lazy data.
         assertThat(components.equals(components)).isTrue()
         assertThat(decodeCount).isEqualTo(0)
     }
 
     @Test
-    fun `hashCode is equal for equal instances`() {
-        val uiConfig = mockk<com.revenuecat.purchases.UiConfig>()
+    fun `hashCode is equal for instances with the same uiConfig and componentsHash, without forcing the decode`() {
+        val uiConfig = mockk<UiConfig>()
+        var decodeCount = 0
+        val first = Offering.PaywallComponents(uiConfig = uiConfig, componentsHash = "hash") {
+            decodeCount++
+            mockk<PaywallComponentsData>()
+        }
+        val second = Offering.PaywallComponents(uiConfig = uiConfig, componentsHash = "hash") {
+            decodeCount++
+            mockk<PaywallComponentsData>()
+        }
+
+        assertThat(first.hashCode()).isEqualTo(second.hashCode())
+        assertThat(decodeCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `toString does not include or force the decode of the component tree`() {
+        var decodeCount = 0
+        val components = Offering.PaywallComponents(uiConfig = mockk(), componentsHash = "hash") {
+            decodeCount++
+            mockk<PaywallComponentsData>()
+        }
+
+        assertThat(components.toString()).contains("PaywallComponents(")
+        assertThat(decodeCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `equals compares decoded data for instances built from already-decoded data`() {
+        val uiConfig = mockk<UiConfig>()
         val data = mockk<PaywallComponentsData>()
         val first = Offering.PaywallComponents(uiConfig = uiConfig, data = data)
         val second = Offering.PaywallComponents(uiConfig = uiConfig, data = data)
 
+        // The data-based constructor holds already-decoded data, so comparing it is free (nothing to decode).
+        assertThat(first == second).isTrue()
         assertThat(first.hashCode()).isEqualTo(second.hashCode())
     }
 
     @Test
-    fun `toString includes the decoded data`() {
-        val data = mockk<PaywallComponentsData>()
-        val components = Offering.PaywallComponents(uiConfig = mockk(), data = data)
+    fun `equals is false when the decoded data differs`() {
+        val uiConfig = mockk<UiConfig>()
+        val first = Offering.PaywallComponents(uiConfig = uiConfig, data = mockk())
+        val second = Offering.PaywallComponents(uiConfig = uiConfig, data = mockk())
 
-        assertThat(components.toString())
-            .contains("PaywallComponents(")
-            .contains(data.toString())
+        assertThat(first == second).isFalse()
     }
 }
