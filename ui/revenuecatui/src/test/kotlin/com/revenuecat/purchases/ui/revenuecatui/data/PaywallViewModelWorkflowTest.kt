@@ -29,6 +29,8 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -241,6 +243,7 @@ class PaywallViewModelWorkflowTest {
         screens = mapOf(screenId1 to makeScreen(screenId1), screenId2 to makeScreen(screenId2)),
         uiConfig = UiConfig(),
         metadata = emptyMap(),
+        singleStepFallbackId = "step-1",
     )
     private val fetchResult = WorkflowDataResult(workflow = workflow, enrolledVariants = null)
 
@@ -1219,6 +1222,61 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `closePaywall clears workflowState`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        assertThat(vm.workflowState.value).isNotNull()
+
+        vm.closePaywall(result = null)
+
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `impression after closePaywall reuse does not carry stale workflowId`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        vm.closePaywall(result = null)
+        captured.clear()
+
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+        assertThat(impressions.first().data.workflowId).isNull()
+    }
+
+    @Test
+    fun `impression after closePaywall from non-paywall step is not suppressed`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        // step-1 is a context (non-paywall) step, so currentWorkflowStepTracksPaywallEvents = false
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        vm.closePaywall(result = null)
+        captured.clear()
+
+        // After close, simulate the VM being reused: navigate to step-2 (paywall step) via a new
+        // workflow presentation and verify impression is tracked normally (not suppressed by stale state).
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+    }
+
+    @Test
     fun `RevenueCat purchase completion during workflow fires StepCompleted with null toStepId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
@@ -1394,6 +1452,59 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
         assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+    }
+
+    @Test
+    fun `workflow impression event carries workflowId from loaded workflow`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+        assertThat(impressions.first().data.workflowId).isEqualTo(fetchResult.workflow.id)
+    }
+
+    @Test
+    fun `packageless workflow steps do not emit paywall events`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        val closes = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.CLOSE }
+        assertThat(impressions).hasSize(1)
+        assertThat(closes).isEmpty()
+
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleBackNavigation()
+        vm.trackPaywallImpressionIfNeeded()
+
+        val paywallEvents = captured.filterIsInstance<PaywallEvent>()
+        assertThat(paywallEvents.filter { it.type == PaywallEventType.IMPRESSION }).hasSize(1)
+        assertThat(paywallEvents.filter { it.type == PaywallEventType.CLOSE }).isEmpty()
+
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.IMPRESSION })
+            .hasSize(1)
+        assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.CLOSE })
+            .isEmpty()
     }
 
     // endregion
