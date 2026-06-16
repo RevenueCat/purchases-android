@@ -1,6 +1,6 @@
 @file:OptIn(
     ExperimentalPreviewRevenueCatPurchasesAPI::class,
-    com.revenuecat.purchases.InternalRevenueCatAPI::class,
+    InternalRevenueCatAPI::class,
 )
 
 package com.revenuecat.purchases.admob.tracking
@@ -10,6 +10,7 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.setTrackingFullScreenContentCallback
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
