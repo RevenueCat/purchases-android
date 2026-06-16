@@ -608,6 +608,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun workflowIdForOfferingId(offeringId: String): String? =
+        workflowManager?.workflowIdForOfferingId(offeringId)
+
     fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
