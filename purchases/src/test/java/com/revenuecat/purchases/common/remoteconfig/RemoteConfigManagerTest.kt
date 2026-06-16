@@ -28,6 +28,7 @@ class RemoteConfigManagerTest {
 
     private lateinit var backend: Backend
     private lateinit var diskCache: RemoteConfigDiskCache
+    private lateinit var blobStore: RemoteConfigBlobStore
     private lateinit var manager: RemoteConfigManager
 
     private var capturedAppUserID: String? = null
@@ -41,7 +42,8 @@ class RemoteConfigManagerTest {
     fun setup() {
         backend = mockk()
         diskCache = mockk(relaxed = true)
-        manager = RemoteConfigManager(backend, diskCache, dateProvider = FixedDateProvider)
+        blobStore = mockk(relaxed = true)
+        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider)
 
         every {
             backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
@@ -75,6 +77,20 @@ class RemoteConfigManagerTest {
 
         assertThat(capturedDomain).isEqualTo("app")
         assertThat(capturedManifest).isEqualTo("v1.123.sources:etag1")
+    }
+
+    @Test
+    fun `reports only the prefetch blobs actually held on the request`() {
+        every { diskCache.read() } returns persisted(
+            manifest = "v1.1.sources:etag1",
+            prefetchBlobs = listOf(REF_VALID, REF_TAMPERED),
+        )
+        every { blobStore.contains(REF_VALID) } returns true
+        every { blobStore.contains(REF_TAMPERED) } returns false
+
+        manager.refreshRemoteConfig(appInBackground = false)
+
+        assertThat(capturedPrefetchedBlobs).containsExactly(REF_VALID)
     }
 
     @Test
@@ -131,14 +147,70 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `a 200 response persists an empty blob ref list for inline-only topics`() {
+    fun `a 200 response caches valid inline blobs and skips tampered ones`() {
         every { diskCache.read() } returns null
         val response = """
             {
               "domain": "app",
               "manifest": "v1.200.sources:etag2",
               "active_topics": ["sources"],
-              "topics": { "sources": { "api": { "url": "https://api.revenuecat.com", "priority": 100 } } }
+              "prefetch_blobs": ["$REF_VALID", "$REF_TAMPERED"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        val validData = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+
+        manager.refreshRemoteConfig(appInBackground = false)
+        onSuccess.invoke(
+            containerWithConfig(
+                response,
+                elements = mapOf(
+                    REF_VALID to inlineElement(validData, checksumValid = true),
+                    REF_TAMPERED to inlineElement(ByteBuffer.wrap(byteArrayOf(9)), checksumValid = false),
+                ),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        verify(exactly = 1) { blobStore.write(REF_VALID, validData) }
+        verify(exactly = 0) { blobStore.write(REF_TAMPERED, any()) }
+    }
+
+    @Test
+    fun `a 200 response evicts blobs no longer referenced by the config`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_TAMPERED" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        val retained = slot<Set<String>>()
+        verify(exactly = 1) { blobStore.retainOnly(capture(retained)) }
+        // Prefetch blobs plus topic blob refs are retained; everything else is evicted.
+        assertThat(retained.captured).containsExactlyInAnyOrder(REF_VALID, REF_TAMPERED)
+    }
+
+    @Test
+    fun `a 200 response records no blob refs for an inline-only topic and does no blob work`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": {
+                "sources": {
+                  "api": { "id": "primary", "url": "https://api.revenuecat.com", "priority": 100, "weight": 100 }
+                }
+              }
             }
         """.trimIndent()
 
@@ -147,17 +219,21 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
+        // An inline-only topic references no blobs, so it persists an empty list and triggers no blob write.
         assertThat(written.captured.topicBlobRefs).containsExactlyEntriesOf(mapOf("sources" to emptyList()))
+        verify(exactly = 0) { blobStore.write(any(), any()) }
     }
 
     @Test
-    fun `a 204 response leaves the cache untouched`() {
+    fun `a 204 response leaves the cache untouched and does no blob work`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(null, VerificationResult.VERIFIED)
 
         verify(exactly = 0) { diskCache.write(any()) }
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
     }
 
     @Test
@@ -216,24 +292,38 @@ class RemoteConfigManagerTest {
     private fun persisted(
         manifest: String,
         domain: String = "app",
+        activeTopics: List<String> = emptyList(),
+        prefetchBlobs: List<String> = emptyList(),
         topicBlobRefs: Map<String, List<String>> = emptyMap(),
     ) = PersistedRemoteConfigurationState(
         domain = domain,
         manifest = manifest,
+        activeTopics = activeTopics,
+        prefetchBlobs = prefetchBlobs,
         topicBlobRefs = topicBlobRefs,
     )
 
-    private fun containerWithConfig(json: String): RCContainer {
+    private fun inlineElement(data: ByteBuffer, checksumValid: Boolean): RCElement {
+        val element = mockk<RCElement>()
+        every { element.data } returns data
+        every { element.isChecksumValid() } returns checksumValid
+        return element
+    }
+
+    private fun containerWithConfig(json: String, elements: Map<String, RCElement> = emptyMap()): RCContainer {
         val element = mockk<RCElement>()
         every { element.data } returns ByteBuffer.wrap(json.toByteArray())
         val container = mockk<RCContainer>()
         every { container.config } returns element
+        every { container.elements } returns elements
         return container
     }
 
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"
         private const val FIXED_MILLIS = 1_710_000_000_000L
+        private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
+        private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private val FixedDateProvider = object : DateProvider {
             override val now: Date get() = Date(FIXED_MILLIS)
         }
