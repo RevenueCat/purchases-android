@@ -22,8 +22,12 @@ public class AdTracker internal constructor(
      * Tracks an ad displayed event.
      *
      * @param data The ad display event data.
+     * @param captureMethod The mechanism that emitted the event. Defaults to [AdCaptureMethod.MANUAL].
      */
-    public fun trackAdDisplayed(data: AdDisplayedData) {
+    public fun trackAdDisplayed(
+        data: AdDisplayedData,
+        captureMethod: AdCaptureMethod = AdCaptureMethod.MANUAL,
+    ) {
         eventsManager.track(
             event = AdEvent.Displayed(
                 networkName = data.networkName,
@@ -32,6 +36,7 @@ public class AdTracker internal constructor(
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
+                captureMethod = captureMethod,
             ),
         )
     }
@@ -40,8 +45,12 @@ public class AdTracker internal constructor(
      * Tracks an ad opened event.
      *
      * @param data The ad open event data.
+     * @param captureMethod The mechanism that emitted the event. Defaults to [AdCaptureMethod.MANUAL].
      */
-    public fun trackAdOpened(data: AdOpenedData) {
+    public fun trackAdOpened(
+        data: AdOpenedData,
+        captureMethod: AdCaptureMethod = AdCaptureMethod.MANUAL,
+    ) {
         eventsManager.track(
             event = AdEvent.Open(
                 networkName = data.networkName,
@@ -50,6 +59,7 @@ public class AdTracker internal constructor(
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
+                captureMethod = captureMethod,
             ),
         )
     }
@@ -58,8 +68,12 @@ public class AdTracker internal constructor(
      * Tracks an ad revenue event.
      *
      * @param data The ad revenue event data.
+     * @param captureMethod The mechanism that emitted the event. Defaults to [AdCaptureMethod.MANUAL].
      */
-    public fun trackAdRevenue(data: AdRevenueData) {
+    public fun trackAdRevenue(
+        data: AdRevenueData,
+        captureMethod: AdCaptureMethod = AdCaptureMethod.MANUAL,
+    ) {
         eventsManager.track(
             event = AdEvent.Revenue(
                 networkName = data.networkName,
@@ -68,6 +82,7 @@ public class AdTracker internal constructor(
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
+                captureMethod = captureMethod,
                 revenueMicros = data.revenueMicros,
                 currency = data.currency,
                 precision = data.precision,
@@ -79,8 +94,12 @@ public class AdTracker internal constructor(
      * Tracks an ad loaded event.
      *
      * @param data The ad loaded event data.
+     * @param captureMethod The mechanism that emitted the event. Defaults to [AdCaptureMethod.MANUAL].
      */
-    public fun trackAdLoaded(data: AdLoadedData) {
+    public fun trackAdLoaded(
+        data: AdLoadedData,
+        captureMethod: AdCaptureMethod = AdCaptureMethod.MANUAL,
+    ) {
         eventsManager.track(
             event = AdEvent.Loaded(
                 networkName = data.networkName,
@@ -89,6 +108,7 @@ public class AdTracker internal constructor(
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = data.impressionId,
+                captureMethod = captureMethod,
             ),
         )
     }
@@ -97,8 +117,12 @@ public class AdTracker internal constructor(
      * Tracks an ad failed to load event.
      *
      * @param data The ad failed to load event data.
+     * @param captureMethod The mechanism that emitted the event. Defaults to [AdCaptureMethod.MANUAL].
      */
-    public fun trackAdFailedToLoad(data: AdFailedToLoadData) {
+    public fun trackAdFailedToLoad(
+        data: AdFailedToLoadData,
+        captureMethod: AdCaptureMethod = AdCaptureMethod.MANUAL,
+    ) {
         eventsManager.track(
             event = AdEvent.FailedToLoad(
                 mediatorName = data.mediatorName,
@@ -106,6 +130,7 @@ public class AdTracker internal constructor(
                 placement = data.placement,
                 adUnitId = data.adUnitId,
                 impressionId = null,
+                captureMethod = captureMethod,
                 mediatorErrorCode = data.mediatorErrorCode,
             ),
         )

@@ -636,11 +636,11 @@ package com.revenuecat.purchases {
 package com.revenuecat.purchases.ads.events {
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class AdTracker {
-    method public void trackAdDisplayed(com.revenuecat.purchases.ads.events.types.AdDisplayedData data);
-    method public void trackAdFailedToLoad(com.revenuecat.purchases.ads.events.types.AdFailedToLoadData data);
-    method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
-    method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data);
-    method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data);
+    method public void trackAdDisplayed(com.revenuecat.purchases.ads.events.types.AdDisplayedData data, optional com.revenuecat.purchases.ads.events.AdCaptureMethod captureMethod);
+    method public void trackAdFailedToLoad(com.revenuecat.purchases.ads.events.types.AdFailedToLoadData data, optional com.revenuecat.purchases.ads.events.AdCaptureMethod captureMethod);
+    method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data, optional com.revenuecat.purchases.ads.events.AdCaptureMethod captureMethod);
+    method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data, optional com.revenuecat.purchases.ads.events.AdCaptureMethod captureMethod);
+    method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data, optional com.revenuecat.purchases.ads.events.AdCaptureMethod captureMethod);
   }
 
 }
