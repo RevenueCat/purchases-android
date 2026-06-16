@@ -341,6 +341,8 @@ internal class Backend(
             "proration_mode" to receiptInfo.replacementMode?.backendName(store = appConfig.store),
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "presented_workflow_id" to paywallPostReceiptData?.workflowId,
+            "presented_step_id" to paywallPostReceiptData?.stepId,
             "sdk_originated" to receiptInfo.sdkOriginated,
             "payload_version" to POST_RECEIPT_PAYLOAD_VERSION,
         ).filterNotNullValues()

@@ -4,6 +4,7 @@ import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 
@@ -23,6 +24,14 @@ internal data class PaywallPostReceiptData(
     val localeIdentifier: String,
     @SerialName("offering_id")
     val offeringId: String,
+    // Sent at the top level of the post-receipt body as `presented_workflow_id`, not inside
+    // the nested `paywall` object, so it is excluded from the serialized map via @Transient.
+    @Transient
+    val workflowId: String? = null,
+    // Sent at the top level of the post-receipt body as `presented_step_id`, not inside the
+    // nested `paywall` object, so it is excluded from the serialized map via @Transient.
+    @Transient
+    val stepId: String? = null,
 ) {
     companion object {
         val json = Json.Default

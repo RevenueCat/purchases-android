@@ -1435,10 +1435,11 @@ internal class PaywallViewModelImpl(
     @Suppress("ReturnCount")
     private fun createEventData(): PaywallEvent.Data? {
         val workflowId = currentWorkflowResult?.workflow?.id
+        val stepId = _workflowState.value?.currentStepId
         return when (val currentState = state.value) {
-            is PaywallState.Loaded.Legacy -> currentState.createEventData(workflowId)
+            is PaywallState.Loaded.Legacy -> currentState.createEventData(workflowId, stepId)
 
-            is PaywallState.Loaded.Components -> currentState.createEventData(workflowId)
+            is PaywallState.Loaded.Components -> currentState.createEventData(workflowId, stepId)
 
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -1449,7 +1450,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private fun PaywallState.Loaded.Legacy.createEventData(workflowId: String?): PaywallEvent.Data? {
+    private fun PaywallState.Loaded.Legacy.createEventData(workflowId: String?, stepId: String?): PaywallEvent.Data? {
         val offering = offering
         val revision = this.offering.paywall?.revision ?: this.offering.paywallComponents?.data?.revision ?: run {
             Logger.e("Null paywall revision trying to create event data")
@@ -1466,10 +1467,14 @@ internal class PaywallViewModelImpl(
             localeIdentifier = locale.toString(),
             darkMode = isDarkMode,
             workflowId = workflowId,
+            stepId = stepId,
         )
     }
 
-    private fun PaywallState.Loaded.Components.createEventData(workflowId: String?): PaywallEvent.Data? {
+    private fun PaywallState.Loaded.Components.createEventData(
+        workflowId: String?,
+        stepId: String?,
+    ): PaywallEvent.Data? {
         val offering = offering
         val paywallData = this.offering.paywallComponents ?: run {
             Logger.e("Null paywall revision trying to create event data")
@@ -1484,6 +1489,7 @@ internal class PaywallViewModelImpl(
             localeIdentifier = locale.toString(),
             darkMode = isDarkMode,
             workflowId = workflowId,
+            stepId = stepId,
         )
     }
 
