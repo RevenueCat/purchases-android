@@ -148,20 +148,25 @@ internal abstract class OfferingParser {
             }
         }
 
-        @Suppress("TooGenericExceptionCaught")
-        val paywallComponentsData: PaywallComponentsData? =
-            offeringJson.optJSONObject("paywall_components")?.let {
-                try {
-                    json.decodeFromString<PaywallComponentsData>(it.toString())
-                } catch (e: Throwable) {
-                    errorLog(e) { "Error deserializing paywall components data" }
-                    null
-                }
+        val paywallComponentsJson = offeringJson.optJSONObject("paywall_components")
+        val paywallComponents = if (
+            paywallComponentsJson != null &&
+            uiConfig != null &&
+            paywallComponentsJson.hasPaywallComponentsShape()
+        ) {
+            // Defer the (potentially expensive) component-tree deserialization until the paywall is actually
+            // accessed/displayed. Capturing the raw JSON string here is cheap; without this we would eagerly
+            // deserialize every cached offering's component tree at load, even those that are never shown.
+            val rawPaywallComponents = paywallComponentsJson.toString()
+            // A content hash of the raw JSON serves as the equality key, so comparing offerings (e.g. cached vs
+            // network) never forces the lazy decode.
+            Offering.PaywallComponents(uiConfig, componentsHash = rawPaywallComponents.sha256()) {
+                json.decodeFromString<PaywallComponentsData>(rawPaywallComponents)
             }
-
-        val paywallComponents = if (paywallComponentsData != null && uiConfig != null) {
-            Offering.PaywallComponents(uiConfig, paywallComponentsData)
         } else {
+            if (paywallComponentsJson != null && uiConfig != null) {
+                warnLog { "Skipping paywall components data with unexpected shape for offering" }
+            }
             null
         }
 
@@ -220,3 +225,16 @@ private fun JSONObject.getWebCheckoutURL(): URL? =
 private fun String.toPackageType(): PackageType =
     PackageType.values().firstOrNull { it.identifier == this }
         ?: if (this.startsWith("\$rc_")) PackageType.UNKNOWN else PackageType.CUSTOM
+
+/**
+ * Cheap structural check that a `paywall_components` object has the required top-level keys, without
+ * deserializing the (potentially large) component tree. Mirrors the required fields of `PaywallComponentsData`,
+ * so an obviously-malformed object is treated as "no paywall" at parse time (as before). Deeper structural
+ * problems surface when the tree is lazily decoded and are handled by the paywall presentation layer.
+ */
+private fun JSONObject.hasPaywallComponentsShape(): Boolean =
+    has("template_name") &&
+        has("asset_base_url") &&
+        has("components_config") &&
+        has("components_localizations") &&
+        has("default_locale")
