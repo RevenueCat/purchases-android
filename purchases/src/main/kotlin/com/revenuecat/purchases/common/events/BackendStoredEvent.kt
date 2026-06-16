@@ -113,8 +113,11 @@ internal fun PaywallEvent.toBackendStoredEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+            workflowID = data.workflowId,
             presentedOfferingContext = BackendEvent.PresentedOfferingContextData.fromContext(
-                data.presentedOfferingContext,
+                context = data.presentedOfferingContext,
+                paywallId = data.paywallIdentifier,
+                workflowId = data.workflowId,
             ),
             exitOfferType = data.exitOfferType?.value,
             exitOfferingID = data.exitOfferingIdentifier,

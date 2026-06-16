@@ -2,10 +2,13 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.utils.Event
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -100,6 +103,8 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
         @SerialName("presented_offering_context")
         val presentedOfferingContext: PresentedOfferingContextData? = null,
         @SerialName("exit_offer_type")
@@ -162,18 +167,27 @@ internal sealed class BackendEvent : Event {
         val targetingRevision: Int? = null,
         @SerialName("targeting_rule_id")
         val targetingRuleId: String? = null,
+        @SerialName("paywall_id")
+        val paywallID: String? = null,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
     ) {
         companion object {
             fun fromContext(
                 context: PresentedOfferingContext,
+                paywallId: String? = null,
+                workflowId: String? = null,
             ): PresentedOfferingContextData? {
-                if (context.placementIdentifier == null && context.targetingContext == null) {
+                val hasPlacement = context.placementIdentifier != null || context.targetingContext != null
+                if (!hasPlacement && paywallId == null && workflowId == null) {
                     return null
                 }
                 return PresentedOfferingContextData(
                     placementIdentifier = context.placementIdentifier,
                     targetingRevision = context.targetingContext?.revision,
                     targetingRuleId = context.targetingContext?.ruleId,
+                    paywallID = paywallId,
+                    workflowID = workflowId,
                 )
             }
         }
@@ -216,6 +230,7 @@ internal sealed class BackendEvent : Event {
      */
     @Serializable
     @SerialName("workflows")
+    @OptIn(ExperimentalSerializationApi::class)
     data class Workflows(
         val id: String,
         val version: Int,
@@ -226,14 +241,25 @@ internal sealed class BackendEvent : Event {
         val timestampMs: Long,
         @SerialName("app_user_id")
         val appUserID: String,
+        @EncodeDefault(EncodeDefault.Mode.ALWAYS)
         val context: Context = Context(),
         val properties: Properties,
     ) : BackendEvent() {
 
         @Serializable
+        @OptIn(ExperimentalSerializationApi::class, InternalRevenueCatAPI::class)
         data class Context(
+            @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+            val platform: String = WORKFLOW_CONTEXT_PLATFORM,
+            @SerialName("sdk_version")
+            @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+            val sdkVersion: String = Config.frameworkVersion,
             val locale: String? = null,
-        )
+        ) {
+            private companion object {
+                const val WORKFLOW_CONTEXT_PLATFORM = "android"
+            }
+        }
 
         @Serializable
         data class Properties(
