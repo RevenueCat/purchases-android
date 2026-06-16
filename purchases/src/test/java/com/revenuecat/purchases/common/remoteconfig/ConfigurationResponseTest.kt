@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.common.remoteconfig
 
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -116,14 +118,14 @@ class ConfigurationResponseTest {
     }
 
     @Test
-    fun `ignores unknown item metadata keys`() {
+    fun `preserves arbitrary item content alongside the reserved keys`() {
         val payload = """
             {
               "domain": "app",
               "manifest": { "domain": "app", "topics": { "sources": "etag1" } },
               "topics": {
                 "sources": {
-                  "blob": { "blob_ref": "sourcesBlob", "prefetch": true, "future_field": "ignored" }
+                  "blob": { "blob_ref": "sourcesBlob", "prefetch": true, "future_field": "kept" }
                 }
               }
             }
@@ -134,6 +136,36 @@ class ConfigurationResponseTest {
         val item = response.topics.getValue("sources").getValue("blob")
         assertThat(item.blobRef).isEqualTo("sourcesBlob")
         assertThat(item.prefetch).isTrue
+        // Non-reserved keys are kept in content (not dropped).
+        assertThat(item.content["future_field"]?.jsonPrimitive?.content).isEqualTo("kept")
+        // Reserved keys are not duplicated into content.
+        assertThat(item.content).doesNotContainKey("blob_ref")
+        assertThat(item.content).doesNotContainKey("prefetch")
+    }
+
+    @Test
+    fun `preserves a fully inline item with no blob ref`() {
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": { "domain": "app", "topics": { "sources": "etag1" } },
+              "topics": {
+                "sources": {
+                  "api": { "id": "primary", "url": "https://api.revenuecat.com", "priority": 100, "weight": 100 }
+                }
+              }
+            }
+        """.trimIndent()
+
+        val response = ConfigurationResponse.parse(payload.toByteArray())
+
+        val item = response.topics.getValue("sources").getValue("api")
+        assertThat(item.blobRef).isNull()
+        assertThat(item.prefetch).isFalse
+        assertThat(item.content["id"]?.jsonPrimitive?.content).isEqualTo("primary")
+        assertThat(item.content["url"]?.jsonPrimitive?.content).isEqualTo("https://api.revenuecat.com")
+        assertThat(item.content["priority"]?.jsonPrimitive?.int).isEqualTo(100)
+        assertThat(item.content["weight"]?.jsonPrimitive?.int).isEqualTo(100)
     }
 
     @Test
