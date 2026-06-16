@@ -917,7 +917,6 @@ DESC
         end
       end
 
-      # Remove Android screenshots for paywalls we no longer render, so stale or renamed entries don't linger.
       remove_stale_android_template_screenshots(
         target_repository_path: target_repository_path,
         produced_offering_ids: produced_offering_ids
@@ -939,14 +938,12 @@ DESC
     end
   end
 
-  # Removes android.png screenshots (and now-empty directories) for paywalls that were not rendered in this run, so
-  # stale or renamed entries don't linger in the target repository. Only touches android.png, so it never deletes
-  # screenshots owned by other platforms (e.g. ios.png, mac-*.png).
+  # Removes android.png screenshots (and now-empty directories) for paywalls that were not rendered in this run, Only
+  # touches android.png, so it never deletes screenshots owned by other platforms (e.g. ios.png, mac-*.png).
   private_lane :remove_stale_android_template_screenshots do |options|
     target_repository_path = options[:target_repository_path] || UI.user_error!("No target_repository_path provided")
     produced_offering_ids = options[:produced_offering_ids] || UI.user_error!("No produced_offering_ids provided")
 
-    # Safety: never prune if we produced nothing (e.g. a failed render), to avoid wiping all screenshots.
     UI.user_error!("No Android screenshots were produced; refusing to prune stale screenshots.") if produced_offering_ids.empty?
 
     templates_dir = "#{target_repository_path}/screenshots/templates"
@@ -957,7 +954,7 @@ DESC
       File.delete(existing)
     end
 
-    # Remove any template directories that no longer contain any files (e.g. once every platform dropped a paywall).
+    # Remove any empty directories.
     Dir.glob("#{templates_dir}/*").each do |dir|
       next unless File.directory?(dir)
       Dir.rmdir(dir) if Dir.empty?(dir)
