@@ -14,6 +14,11 @@ internal object BillingStrings {
         "account configured in Play Store. Reopen the Play Store or clean its caches if this keeps happening. " +
         "Original error message: %s"
     const val BILLING_WRAPPER_PURCHASES_ERROR = "BillingWrapper purchases failed to update: %s"
+    const val BILLING_WRAPPER_DEFERRED_REPLACEMENT_PENDING = "This product change failed because the subscription " +
+        "being replaced already has a pending deferred replacement (for example, a previously scheduled downgrade " +
+        "that has not taken effect yet). Google Play does not allow queuing another replacement on a subscription " +
+        "that already has a deferred change pending. The previous change will take effect at the end of the current " +
+        "billing period. Wait until then before attempting another product change for this subscription."
     const val BILLING_WRAPPER_PURCHASES_UPDATED = "BillingWrapper purchases updated: %s"
     const val BILLING_PURCHASE_HISTORY_RECORD_MORE_THAN_ONE_SKU = "There's more than one sku in the " +
         "PurchaseHistoryRecord, but only one will be used."

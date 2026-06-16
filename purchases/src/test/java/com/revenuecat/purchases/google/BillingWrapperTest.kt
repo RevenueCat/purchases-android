@@ -1269,6 +1269,45 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `purchaseUpdate failure includes a helpful hint when there is a pending deferred replacement`() {
+        val slot = slot<PurchasesError>()
+        every {
+            mockPurchasesListener.onPurchasesFailedToUpdate(capture(slot))
+        } just Runs
+
+        val billingResult = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
+            .setDebugMessage("There is an existing deferred replacement for the old product")
+            .build()
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingResult, null)
+
+        assertThat(slot.isCaptured).isTrue
+        assertThat(slot.captured.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+        assertThat(slot.captured.underlyingErrorMessage)
+            .contains(BillingStrings.BILLING_WRAPPER_DEFERRED_REPLACEMENT_PENDING)
+    }
+
+    @Test
+    fun `purchaseUpdate failure does not add deferred replacement hint for unrelated developer errors`() {
+        val slot = slot<PurchasesError>()
+        every {
+            mockPurchasesListener.onPurchasesFailedToUpdate(capture(slot))
+        } just Runs
+
+        val billingResult = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
+            .setDebugMessage("Some unrelated developer error")
+            .build()
+
+        purchasesUpdatedListener!!.onPurchasesUpdated(billingResult, null)
+
+        assertThat(slot.isCaptured).isTrue
+        assertThat(slot.captured.underlyingErrorMessage)
+            .doesNotContain(BillingStrings.BILLING_WRAPPER_DEFERRED_REPLACEMENT_PENDING)
+    }
+
+    @Test
     fun `calling billing close() sets purchasesUpdatedListener to null and disconnects from BillingClient`() {
         every {
             mockClient.endConnection()

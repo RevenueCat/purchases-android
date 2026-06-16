@@ -113,6 +113,13 @@ internal class BillingWrapper(
          * The maximum number of pending requests we report to diagnostics.
          */
         private const val MAX_PENDING_REQUEST_COUNT_REPORTED = 100
+
+        /**
+         * Fragment of the Google Play Billing debug message returned (alongside a DEVELOPER_ERROR response code)
+         * when attempting a product change on a subscription that already has a pending deferred replacement.
+         * The full message is "There is an existing deferred replacement for the old product".
+         */
+        private const val DEFERRED_REPLACEMENT_DEBUG_MESSAGE_FRAGMENT = "deferred replacement"
     }
 
     @get:Synchronized
@@ -655,6 +662,15 @@ internal class BillingWrapper(
                 // we get the transaction for the previous product.
                 message = "Error: onPurchasesUpdated received an OK BillingResult with a Null purchases list."
                 responseCode = BillingClient.BillingResponseCode.ERROR
+            }
+
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.DEVELOPER_ERROR &&
+                billingResult.debugMessage.contains(DEFERRED_REPLACEMENT_DEBUG_MESSAGE_FRAGMENT, ignoreCase = true)
+            ) {
+                // Google rejects a product change when the subscription being replaced already has a pending
+                // deferred replacement queued. Append an actionable explanation since the raw DEVELOPER_ERROR
+                // ("There is an existing deferred replacement for the old product") is not self-explanatory.
+                message += " ${BillingStrings.BILLING_WRAPPER_DEFERRED_REPLACEMENT_PENDING}"
             }
 
             val purchasesError = responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
