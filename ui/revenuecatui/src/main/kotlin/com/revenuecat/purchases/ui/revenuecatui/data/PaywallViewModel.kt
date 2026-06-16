@@ -54,7 +54,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.containsPaywallEventComponent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.helpers.fallbackPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
@@ -1282,10 +1281,8 @@ internal class PaywallViewModelImpl(
         return null
     }
 
-    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean {
-        val screenId = screenId ?: return false
-        return workflow.screens[screenId]?.componentsConfig?.base?.containsPaywallEventComponent() == true
-    }
+    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean =
+        id == workflow.singleStepFallbackId
 
     private fun getCurrentLocaleList(): LocaleListCompat {
         val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()

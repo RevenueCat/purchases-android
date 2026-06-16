@@ -235,6 +235,7 @@ class PaywallViewModelWorkflowTest {
         screens = mapOf(screenId1 to makeScreen(screenId1), screenId2 to makeScreen(screenId2)),
         uiConfig = UiConfig(),
         metadata = emptyMap(),
+        singleStepFallbackId = "step-1",
     )
     private val fetchResult = WorkflowDataResult(workflow = workflow, enrolledVariants = null)
 
