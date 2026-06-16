@@ -54,18 +54,19 @@ constructor(
     public class PaywallComponents private constructor(
         public val uiConfig: UiConfig,
         // Cheap, stable equality key that never touches the lazily-decoded [data]. For parser-built instances
-        // this is a hash of the raw component-tree JSON; for instances built from already-decoded data it is
-        // the data itself (where comparing it is free, since there is nothing to decode). This keeps
+        // this is a SHA-256 of the raw component-tree JSON; for instances built from already-decoded data it is
+        // that data's structural hash (cheap — there is nothing to decode). This keeps
         // Offering.equals/hashCode/toString — which are @Poko-generated over `paywallComponents` — from forcing
         // a decode of every offering's component tree (e.g. when the cache compares cached vs network offerings).
-        private val identity: Any,
+        private val componentsHash: String,
         dataProvider: Lazy<PaywallComponentsData>,
     ) {
         /**
          * Constructor for callers that already hold decoded [PaywallComponentsData] (e.g. previews, tests,
          * hybrid SDKs).
          */
-        public constructor(uiConfig: UiConfig, data: PaywallComponentsData) : this(uiConfig, data, lazyOf(data))
+        public constructor(uiConfig: UiConfig, data: PaywallComponentsData) :
+            this(uiConfig, data.hashCode().toString(), lazyOf(data))
 
         // Used by the parser: the component tree is decoded lazily on first [data] access, not at load time.
         // [componentsHash] is a cheap content hash of the raw JSON, used for equality so comparisons never decode.
@@ -77,17 +78,15 @@ constructor(
 
         public val data: PaywallComponentsData by dataProvider
 
-        // Hand-written instead of @Poko so equality/hash/toString compare [identity], never the lazy [data].
-        // Parser-built and data-built instances use different identity kinds and so are never equal — acceptable,
-        // as they never meet in the cache comparison path (both sides there are parser-built).
+        // Hand-written instead of @Poko so equality/hash/toString compare [componentsHash], never the lazy [data].
         override fun equals(other: Any?): Boolean =
             this === other || (
                 other is PaywallComponents &&
                     uiConfig == other.uiConfig &&
-                    identity == other.identity
+                    componentsHash == other.componentsHash
                 )
 
-        override fun hashCode(): Int = 31 * uiConfig.hashCode() + identity.hashCode()
+        override fun hashCode(): Int = 31 * uiConfig.hashCode() + componentsHash.hashCode()
 
         override fun toString(): String = "PaywallComponents(uiConfig=$uiConfig)"
     }

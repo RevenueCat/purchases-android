@@ -130,7 +130,8 @@ internal class OfferingPaywallComponentsLazyTest {
         val first = Offering.PaywallComponents(uiConfig = uiConfig, data = data)
         val second = Offering.PaywallComponents(uiConfig = uiConfig, data = data)
 
-        // The data-based constructor holds already-decoded data, so comparing it is free (nothing to decode).
+        // The data-based constructor derives its key from the already-decoded data's structural hash, so
+        // comparing it is free (nothing to decode).
         assertThat(first == second).isTrue()
         assertThat(first.hashCode()).isEqualTo(second.hashCode())
     }
