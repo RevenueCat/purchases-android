@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
 import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
@@ -1308,6 +1309,7 @@ internal class Backend(
 
     fun getRemoteConfig(
         appInBackground: Boolean,
+        manifest: RemoteConfiguration.Manifest,
         onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -1320,13 +1322,25 @@ internal class Backend(
             ?.let { runCatching { URL(it) }.getOrNull() }
         val baseURL = overrideURL ?: appConfig.baseURL
         val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+        val manifestMap = JsonProvider.defaultJson
+            .encodeToJsonElement(RemoteConfiguration.Manifest.serializer(), manifest).asMap()
+        if (manifestMap == null) {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    "Error encoding remote config manifest.",
+                ).also { errorLog(it) },
+            )
+            return
+        }
+        val body = mapOf("manifest" to manifestMap)
 
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     baseURL,
                     endpoint,
-                    body = null,
+                    body = body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = fallbackBaseURLs,
