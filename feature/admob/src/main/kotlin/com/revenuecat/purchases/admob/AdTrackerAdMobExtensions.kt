@@ -22,6 +22,7 @@ import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoa
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import com.revenuecat.purchases.admob.tracking.setUpPaidEventTracking
+import com.revenuecat.purchases.admob.tracking.trackFromAdapter
 import com.revenuecat.purchases.admob.tracking.trackIfConfigured
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -66,7 +67,7 @@ public fun AdTracker.loadAndTrackInterstitialAd(
             override fun onAdLoaded(ad: InterstitialAd) {
                 val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
-                    adTracker.trackAdLoaded(
+                    adTracker.trackFromAdapter(
                         AdLoadedData(
                             networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
@@ -98,7 +99,7 @@ public fun AdTracker.loadAndTrackInterstitialAd(
 
             override fun onAdFailedToLoad(error: LoadAdError) {
                 trackIfConfigured {
-                    adTracker.trackAdFailedToLoad(
+                    adTracker.trackFromAdapter(
                         AdFailedToLoadData(
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.INTERSTITIAL,
@@ -147,7 +148,7 @@ public fun AdTracker.loadAndTrackAppOpenAd(
             override fun onAdLoaded(ad: AppOpenAd) {
                 val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
-                    adTracker.trackAdLoaded(
+                    adTracker.trackFromAdapter(
                         AdLoadedData(
                             networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
@@ -179,7 +180,7 @@ public fun AdTracker.loadAndTrackAppOpenAd(
 
             override fun onAdFailedToLoad(error: LoadAdError) {
                 trackIfConfigured {
-                    adTracker.trackAdFailedToLoad(
+                    adTracker.trackFromAdapter(
                         AdFailedToLoadData(
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.APP_OPEN,
@@ -228,7 +229,7 @@ public fun AdTracker.loadAndTrackRewardedAd(
             override fun onAdLoaded(ad: RewardedAd) {
                 val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
-                    adTracker.trackAdLoaded(
+                    adTracker.trackFromAdapter(
                         AdLoadedData(
                             networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
@@ -260,7 +261,7 @@ public fun AdTracker.loadAndTrackRewardedAd(
 
             override fun onAdFailedToLoad(error: LoadAdError) {
                 trackIfConfigured {
-                    adTracker.trackAdFailedToLoad(
+                    adTracker.trackFromAdapter(
                         AdFailedToLoadData(
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.REWARDED,
@@ -309,7 +310,7 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
             override fun onAdLoaded(ad: RewardedInterstitialAd) {
                 val loadedResponseInfo = ad.responseInfo
                 trackIfConfigured {
-                    adTracker.trackAdLoaded(
+                    adTracker.trackFromAdapter(
                         AdLoadedData(
                             networkName = loadedResponseInfo.mediationAdapterClassName,
                             mediatorName = AdMediatorName.AD_MOB,
@@ -341,7 +342,7 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
 
             override fun onAdFailedToLoad(error: LoadAdError) {
                 trackIfConfigured {
-                    adTracker.trackAdFailedToLoad(
+                    adTracker.trackFromAdapter(
                         AdFailedToLoadData(
                             mediatorName = AdMediatorName.AD_MOB,
                             adFormat = AdFormat.REWARDED_INTERSTITIAL,

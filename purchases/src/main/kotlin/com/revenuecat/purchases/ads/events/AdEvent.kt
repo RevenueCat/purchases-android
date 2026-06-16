@@ -31,6 +31,7 @@ internal sealed interface AdEvent : FeatureEvent {
     val placement: String?
     val adUnitId: String
     val impressionId: String?
+    val captureMethod: AdCaptureMethod
 
     class Displayed(
         override val id: String = UUID.randomUUID().toString(),
@@ -43,6 +44,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
     ) : AdEvent
 
     class Open(
@@ -56,6 +58,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
     ) : AdEvent
 
     class Revenue(
@@ -69,6 +72,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
         val revenueMicros: Long,
         val currency: String,
         val precision: AdRevenuePrecision,
@@ -85,6 +89,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
     ) : AdEvent
 
     class FailedToLoad(
@@ -97,6 +102,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String? = null,
+        override val captureMethod: AdCaptureMethod,
         val mediatorErrorCode: Int?,
     ) : AdEvent {
         override val networkName: String? = null
