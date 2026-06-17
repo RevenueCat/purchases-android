@@ -175,6 +175,39 @@ class RCContainerTest {
     }
 
     @Test
+    fun `parses from the buffer's current position`() {
+        val container = buildContainer(config = "cfg".toByteArray(), elements = listOf("e".toByteArray()))
+        val prefix = ByteArray(8) { 0xAB.toByte() } // unrelated, 8-aligned bytes before the container
+        val combined = prefix + container
+
+        val buffer = ByteBuffer.wrap(combined)
+        buffer.position(prefix.size) // start parsing after the prefix
+
+        val parsed = RCContainer.parse(buffer)
+
+        assertThat(parsed.config.data.readBytes()).isEqualTo("cfg".toByteArray())
+        assertThat(parsed.contentElements[0].data.readBytes()).isEqualTo("e".toByteArray())
+        // The overload must not consume the caller's position.
+        assertThat(buffer.position()).isEqualTo(prefix.size)
+    }
+
+    @Test
+    fun `parses from a non-8-aligned position`() {
+        val container = buildContainer(config = "abc".toByteArray(), elements = listOf("element".toByteArray()))
+        val prefix = ByteArray(3) { 0xAB.toByte() } // NOT a multiple of 8
+        val combined = prefix + container
+
+        val buffer = ByteBuffer.wrap(combined)
+        buffer.position(prefix.size)
+
+        val parsed = RCContainer.parse(buffer)
+
+        assertThat(parsed.config.data.readBytes()).isEqualTo("abc".toByteArray())
+        assertThat(parsed.contentElements[0].data.readBytes()).isEqualTo("element".toByteArray())
+        assertThat(buffer.position()).isEqualTo(prefix.size)
+    }
+
+    @Test
     fun `throws on buffer too small for header`() {
         assertThatThrownBy { RCContainer.parse(byteArrayOf(0x52, 0x43, 1, 0)) }
             .isInstanceOf(RCContainerFormatException::class.java)

@@ -17,7 +17,7 @@ internal class RCElement(
     /** A read-only, zero-copy view over this element's bytes. */
     val data: ByteBuffer,
     /** The element header's reserved u32 (currently always 0; reserved for content-types). */
-    val reserved: Int = 0,
+    val reserved: Long = 0,
 ) {
     /**
      * Computes the SHA-256 of [data], truncates it to the stored [checksum]'s length, and compares.
@@ -29,12 +29,12 @@ internal class RCElement(
      */
     fun isChecksumValid(): Boolean {
         val digest = MessageDigest.getInstance(SHA_256_ALGORITHM)
-        digest.update(data.duplicate())
+        // rewind so we hash the full element even if a caller has already read from the shared view.
+        digest.update(data.duplicate().apply { rewind() })
         val computed = digest.digest()
 
-        val expected = checksum.duplicate()
+        val expected = checksum.duplicate().apply { rewind() }
         val length = expected.remaining()
-        if (length > computed.size) return false
         return (0 until length).all { computed[it] == expected.get() }
     }
 
@@ -43,7 +43,7 @@ internal class RCElement(
      * encoding in the config JSON / URLs (24 bytes -> 32 chars).
      */
     fun checksumBase64(): String {
-        val view = checksum.duplicate()
+        val view = checksum.duplicate().apply { rewind() }
         val bytes = ByteArray(view.remaining())
         view.get(bytes)
         return Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)

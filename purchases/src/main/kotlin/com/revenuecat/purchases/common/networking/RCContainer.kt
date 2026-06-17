@@ -59,7 +59,11 @@ internal class RCContainer private constructor(
          * @throws RCContainerFormatException if the bytes are not a valid RC Container Format v1 payload.
          */
         fun parse(buffer: ByteBuffer): RCContainer {
-            val source = buffer.duplicate().asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN)
+            // slice() (not duplicate()) so the working buffer's position 0 coincides with the
+            // container start. Alignment padding is relative to the container start, so parsing from
+            // a non-8-aligned caller position must not leak the caller's absolute offset into the
+            // position()-based padding math. slice() is a view, so the caller's position is untouched.
+            val source = buffer.slice().asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN)
             source.require(HEADER_FIXED_SIZE) {
                 "Buffer too small for header: need at least $HEADER_FIXED_SIZE bytes, " +
                     "got ${source.remaining()}."
@@ -75,7 +79,7 @@ internal class RCContainer private constructor(
                 }
                 val checksum = source.sliceBytes(CHECKSUM_SIZE.toLong(), "checksum")
                 val size = source.readUnsignedInt()
-                val reserved = source.int
+                val reserved = source.readUnsignedInt()
                 val data = source.sliceBytes(size, "element")
                 source.alignTo(ALIGNMENT)
                 parsed.add(RCElement(checksum = checksum, data = data, reserved = reserved))
@@ -89,6 +93,7 @@ internal class RCContainer private constructor(
                 version = version,
                 flags = flags,
                 config = parsed.first(),
+                // element 0 is the config; content elements are 1..n
                 contentElements = parsed.drop(1),
             )
         }
@@ -142,7 +147,8 @@ internal class RCContainer private constructor(
             if (remainder == 0) return
             val padding = alignment - remainder
             if (padding > remaining()) {
-                // Trailing alignment padding past the end of the buffer; nothing more to read.
+                // The final element may carry no trailing padding, so running out of bytes while
+                // skipping alignment padding is a valid end-of-buffer, not a truncation error.
                 position(limit())
             } else {
                 position(position() + padding)
