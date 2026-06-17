@@ -15,7 +15,7 @@ import java.nio.ByteOrder
  * always the [config]; the remaining elements are content-addressed by checksum.
  *
  * [config] and each [RCElement] expose read-only views that share the backing buffer, so parsing
- * copies no field bytes. The content-addressed [elements] map is built lazily: only its hex keys
+ * copies no field bytes. The content-addressed [elements] map is built lazily: only its base64 keys
  * allocate, and only on first access. Element bodies are always zero-copy views.
  */
 internal class RCContainer private constructor(
