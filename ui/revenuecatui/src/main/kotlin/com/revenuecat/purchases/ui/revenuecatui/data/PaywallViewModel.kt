@@ -24,6 +24,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
@@ -1021,7 +1022,7 @@ internal class PaywallViewModelImpl(
         }
         if (!shouldApplyState) return
         currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
-            step.tracksPaywallEvents(workflow)
+            step.tracksPaywallEvents()
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,
@@ -1281,8 +1282,22 @@ internal class PaywallViewModelImpl(
         return null
     }
 
-    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean =
-        id == workflow.singleStepFallbackId
+    /**
+     * Whether this workflow step reports paywall events (`paywall_impression` / `paywall_close`),
+     * driven by the backend `screen_type` tag (khepri #21429), matching purchases-ios #7021:
+     * - tagged with `paywall` → reports;
+     * - tagged without `paywall` (including an empty list) → suppressed;
+     * - untagged (null `screen_type`, e.g. a pre-rollout/legacy payload) → reports, preserving the
+     *   prior always-report behavior rather than muting events during rollout.
+     *
+     * This replaces the previous structural inference (`id == singleStepFallbackId`); the backend tags
+     * exactly the fallback step as `["paywall"]`, so the tagged behavior is equivalent while the
+     * explicit signal lets the backend classify steps independently of `single_step_fallback_id`.
+     */
+    private fun WorkflowStep.tracksPaywallEvents(): Boolean {
+        val screenType = stepScreenType ?: return true
+        return screenType.contains(WorkflowScreenType.PAYWALL)
+    }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
         val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()

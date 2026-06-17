@@ -16,8 +16,10 @@ import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.net.URL
 
 @InternalRevenueCatAPI
@@ -59,6 +61,22 @@ public data class WorkflowTrigger(
     @SerialName("component_id") val componentId: String,
 )
 
+/**
+ * Step `screen_type` classification values and the metadata key they are returned under.
+ *
+ * The backend tags each step with its screen classification inside `metadata` (`metadata.screen_type`),
+ * e.g. `["paywall"]`. The SDK uses this to decide which workflow steps report paywall events.
+ */
+@InternalRevenueCatAPI
+public object WorkflowScreenType {
+
+    /** The key the classification list is stored under inside a step's `metadata`. */
+    public const val METADATA_KEY: String = "screen_type"
+
+    /** A step whose screen is a paywall; it should report paywall impression/close events. */
+    public const val PAYWALL: String = "paywall"
+}
+
 @InternalRevenueCatAPI
 @Serializable
 public data class WorkflowStep(
@@ -70,7 +88,30 @@ public data class WorkflowStep(
     val outputs: Map<String, JsonElement> = emptyMap(),
     @SerialName("trigger_actions") val triggerActions: Map<String, WorkflowTriggerAction> = emptyMap(),
     val metadata: JsonElement? = null,
-)
+) {
+    /**
+     * The step's screen classification, as reported by the backend under `metadata.screen_type`.
+     *
+     * Returns `null` when the step was not tagged (older workflows, or workflows served before the
+     * screen-analytics rollout) and an empty list when it was tagged with no known type. The
+     * null-vs-empty distinction matters for paywall-event gating: an untagged step preserves the prior
+     * always-report behavior, while a step explicitly tagged without `paywall` suppresses paywall
+     * events. See `tracksPaywallEvents` in the UI layer.
+     */
+    @InternalRevenueCatAPI
+    public val stepScreenType: List<String>?
+        get() {
+            // A present-but-non-array `screen_type` (null, scalar, object) is treated the same as an
+            // absent key: untagged (returns null), so events keep reporting. This matches the iOS
+            // contract and is the conservative default; the backend only ever ships `screen_type` as a
+            // JSON array, so suppressing on a malformed shape would risk muting real events.
+            val metadataObject = metadata as? JsonObject ?: return null
+            val screenType = metadataObject[WorkflowScreenType.METADATA_KEY] as? JsonArray ?: return null
+            return screenType.mapNotNull { element ->
+                (element as? JsonPrimitive)?.takeIf { it.isString }?.content
+            }
+        }
+}
 
 @InternalRevenueCatAPI
 @Serializable
