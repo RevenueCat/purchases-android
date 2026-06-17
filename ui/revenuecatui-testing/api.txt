@@ -1,0 +1,60 @@
+// Signature format: 4.0
+package com.revenuecat.purchases.ui.revenuecatui.testing {
+
+  public final class PaywallFixtureOffering {
+    method public com.revenuecat.purchases.Offering getOffering();
+    method public java.util.List<java.lang.String> validate(android.content.Context context);
+    property public final com.revenuecat.purchases.Offering offering;
+  }
+
+  public final class PaywallFixtureViewKt {
+    method @androidx.compose.runtime.Composable public static void PaywallFixtureView(com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureOffering fixtureOffering, optional androidx.compose.ui.Modifier modifier, optional com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureViewOptions options);
+  }
+
+  public final class PaywallFixtureViewOptions {
+    ctor public PaywallFixtureViewOptions();
+    ctor public PaywallFixtureViewOptions(optional String? storefrontCountryCode);
+    ctor public PaywallFixtureViewOptions(optional String? storefrontCountryCode, optional java.util.Date date);
+    ctor public PaywallFixtureViewOptions(optional String? storefrontCountryCode, optional java.util.Date date, optional com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureViewOptions.ValidationErrorStrategy validationErrorStrategy);
+    method public java.util.Date getDate();
+    method public String? getStorefrontCountryCode();
+    method public com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureViewOptions.ValidationErrorStrategy getValidationErrorStrategy();
+    property public final java.util.Date date;
+    property public final String? storefrontCountryCode;
+    property public final com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureViewOptions.ValidationErrorStrategy validationErrorStrategy;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureViewOptions.Companion Companion;
+    field public static final long DEFAULT_FIXTURE_DATE_MILLIS = 1745366400000L; // 0x1965ff1bc00L
+  }
+
+  public static final class PaywallFixtureViewOptions.Companion {
+  }
+
+  public enum PaywallFixtureViewOptions.ValidationErrorStrategy {
+    enum_constant public static final com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureViewOptions.ValidationErrorStrategy RENDER;
+    enum_constant public static final com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureViewOptions.ValidationErrorStrategy THROW;
+  }
+
+  public final class PaywallFixtures {
+    method public java.util.List<java.lang.String> getOfferingIds();
+    method public static com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtures load();
+    method public static com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtures load(optional String resourcesRoot);
+    method public com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureOffering offering();
+    method public com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureOffering offering(optional String? offeringId);
+    method public com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtureOffering offering(optional String? offeringId, optional java.util.List<com.revenuecat.purchases.models.TestStoreProduct> products);
+    property public final java.util.List<java.lang.String> offeringIds;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtures.Companion Companion;
+    field public static final String DEFAULT_RESOURCES_ROOT = "revenuecat-paywall-fixtures";
+  }
+
+  public static final class PaywallFixtures.Companion {
+    method public com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtures load();
+    method public com.revenuecat.purchases.ui.revenuecatui.testing.PaywallFixtures load(optional String resourcesRoot);
+  }
+
+  public final class PaywallFixturesTestRule implements org.junit.rules.TestRule {
+    ctor public PaywallFixturesTestRule();
+    method public org.junit.runners.model.Statement apply(org.junit.runners.model.Statement base, org.junit.runner.Description description);
+  }
+
+}
+

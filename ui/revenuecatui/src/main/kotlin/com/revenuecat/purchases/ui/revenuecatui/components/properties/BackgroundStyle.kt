@@ -40,7 +40,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getPreviewPlaceholderBlocking
-import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
@@ -180,8 +179,7 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val context = LocalContext.current
     val previewImageLoader = LocalPreviewImageLoader.current
-    val isInPreviewMode = isInPreviewMode()
-    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(context) {
+    val imageLoader = previewImageLoader ?: remember(context) {
         Purchases.getImageLoaderTyped(context.applicationContext)
     }
     val imageRequest = remember(context, imageUrls.webp, cachePolicy) {
@@ -190,7 +188,9 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     return rememberAsyncImagePainter(
         model = imageRequest,
         imageLoader = imageLoader,
-        placeholder = if (isInPreviewMode && previewImageLoader != null) {
+        // When an image loader is injected (previews and offline tests), load the image eagerly and
+        // blocking so single-frame rendering captures it.
+        placeholder = if (previewImageLoader != null) {
             imageLoader.getPreviewPlaceholderBlocking(imageRequest)
         } else {
             rememberAsyncImagePainter(

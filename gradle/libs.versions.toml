@@ -157,6 +157,7 @@ emerge-snapshots-runtime = { module = "com.emergetools.snapshots:snapshots-runti
 google-blockstore = { module = "com.google.android.gms:play-services-auth-blockstore", version.ref = "googleBlockstore" }
 google-mobile-ads = { module = "com.google.android.gms:play-services-ads", version.ref = "googleMobileAds" }
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
+junit4 = { module = "junit:junit", version = "4.13.2" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
