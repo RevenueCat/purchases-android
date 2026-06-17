@@ -2381,7 +2381,7 @@ class PostReceiptHelperTest {
         assertThat(errorCallCount).isEqualTo(1)
         verify(exactly = 0) {
             backend.postReceiptData(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
             )
         }
     }

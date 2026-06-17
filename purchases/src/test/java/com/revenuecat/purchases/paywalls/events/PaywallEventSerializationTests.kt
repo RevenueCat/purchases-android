@@ -582,16 +582,19 @@ class PaywallEventSerializationTests {
     }
 
     @Test
-    fun `toPaywallPostReceiptData carries workflowId and stepId without leaking them into the paywall map`() {
+    fun `toPaywallPostReceiptData does not include workflowId or stepId`() {
         val paywallPostReceiptData = workflowImpressionEvent.event.toPaywallPostReceiptData()
 
         assertThat(paywallPostReceiptData.paywallID).isEqualTo("paywallID")
-        assertThat(paywallPostReceiptData.workflowId).isEqualTo("workflow-xyz")
-        assertThat(paywallPostReceiptData.stepId).isEqualTo("step-xyz")
-        // workflow_id and step_id are sent at the top level of the post-receipt body, not inside the
-        // nested `paywall` object, so they must not appear in the serialized map.
         assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("workflow_id")
         assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("step_id")
+    }
+
+    @Test
+    fun `workflowId and stepId on PaywallEvent Data are available for WorkflowMetadata construction`() {
+        val data = workflowImpressionEvent.event.data
+        assertThat(data.workflowId).isEqualTo("workflow-xyz")
+        assertThat(data.stepId).isEqualTo("step-xyz")
     }
 
     @Test

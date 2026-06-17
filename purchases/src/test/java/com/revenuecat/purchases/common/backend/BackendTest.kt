@@ -45,6 +45,7 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
+import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -1483,6 +1484,8 @@ class BackendTest {
                 darkMode = false,
                 localeIdentifier = "en_US",
                 offeringId = "offering-id",
+            ),
+            workflowMetadata = WorkflowMetadata(
                 workflowId = "workflow-id-xyz",
                 stepId = "step-id-123",
             ),
@@ -3146,6 +3149,7 @@ class BackendTest {
         initiationSource: PostReceiptInitiationSource,
         delayed: Boolean = false,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
+        workflowMetadata: WorkflowMetadata? = null,
         purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         onSuccess: (PostReceiptResponse) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
@@ -3158,6 +3162,7 @@ class BackendTest {
             finishTransactions = finishTransactions,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallPostReceiptData,
+            workflowMetadata = workflowMetadata,
             delayed = delayed
         )
 
@@ -3171,6 +3176,7 @@ class BackendTest {
             receiptInfo = receiptInfo,
             initiationSource = initiationSource,
             paywallPostReceiptData = paywallPostReceiptData,
+            workflowMetadata = workflowMetadata,
             onSuccess = onSuccess,
             onError = onError
         )
@@ -3188,6 +3194,7 @@ class BackendTest {
         finishTransactions: Boolean,
         receiptInfo: ReceiptInfo,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
+        workflowMetadata: WorkflowMetadata? = null,
     ): CustomerInfo {
         val body = mapOf(
             "fetch_token" to token,
@@ -3202,8 +3209,8 @@ class BackendTest {
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to receiptInfo.storeUserID,
             "paywall" to paywallPostReceiptData?.toMap(),
-            "presented_workflow_id" to paywallPostReceiptData?.workflowId,
-            "presented_step_id" to paywallPostReceiptData?.stepId,
+            "presented_workflow_id" to workflowMetadata?.workflowId,
+            "presented_step_id" to workflowMetadata?.stepId,
         ).filterNotNullValues()
 
         return mockResponse(
