@@ -148,3 +148,11 @@ libs/samsung-iap-*.aar
 
 # Claude Code
 .claude/
+
+# paywall-tester: commit only the rendered snapshot result images (src/test/snapshots/images),
+# not the recorded fixture image assets downloaded by recordPaywallFixtures.
+examples/paywall-tester/src/test/resources/revenuecat-paywall-fixtures/**/*.webp
+examples/paywall-tester/src/test/resources/revenuecat-paywall-fixtures/**/*.png
+examples/paywall-tester/src/test/resources/revenuecat-paywall-fixtures/**/*.heic
+examples/paywall-tester/src/test/resources/revenuecat-paywall-fixtures/**/*.svg
+examples/paywall-tester/src/test/resources/revenuecat-paywall-fixtures/**/*.jpg
