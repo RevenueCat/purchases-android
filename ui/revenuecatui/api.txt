@@ -181,7 +181,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
   }
 
   public final class PurchasesPaywallPreviewExtensionsKt {
-    method @MainThread public static boolean presentPaywall(com.revenuecat.purchases.Purchases, android.content.Intent intent, optional android.app.Activity? activity);
+    method @MainThread public static boolean presentPaywall(com.revenuecat.purchases.Purchases, android.content.Intent intent, android.app.Activity activity);
   }
 
 }
