@@ -8,29 +8,10 @@ import java.util.Properties
 /**
  * Gradle plugin for offline paywall snapshot testing with the `purchases-ui-testing` artifact.
  *
- * It always registers the `recordPaywallFixtures` task. By default it is "lean": it does NOT bring its
- * own Paparazzi, so applying it alone never forces a Paparazzi version onto your buildscript classpath.
- *
- * To opt in to the snapshot-testing setup, apply Paparazzi yourself (one line, your chosen version) —
- * the plugin reacts to it and wires up the rest:
- *
- * ```kotlin
- * plugins {
- *     id("com.android.application")
- *     id("org.jetbrains.kotlin.plugin.compose")     // paywall snapshots render @Composable content
- *     alias(libs.plugins.paparazzi)                  // opt in to snapshot testing (your version)
- *     id("com.revenuecat.purchases.paywallfixtures")
- * }
- * // REVENUECAT_API_KEY=<public sdk key> ./gradlew recordPaywallFixtures
- * ```
- *
- * When Paparazzi is applied, the plugin adds the `purchases-ui-testing` test dependency (version matched
- * to this plugin) and enables `testOptions.unitTests.isIncludeAndroidResources`. Without Paparazzi (e.g.
- * if you use Roborazzi instead, or only want to record fixtures), none of that happens — you stay lean
- * and fully control your screenshot tooling.
- *
- * The auto-wiring can be disabled even when Paparazzi is present with
- * `revenuecat.paywallFixtures.snapshotTesting=false` in `gradle.properties`.
+ * Always registers `recordPaywallFixtures`. It does not bring Paparazzi itself; when the consumer
+ * applies Paparazzi it adds the `purchases-ui-testing` test dependency and enables
+ * `testOptions.unitTests.isIncludeAndroidResources`. Disable that auto-wiring with
+ * `paywallFixtures { setupSnapshotTesting = false }` or `-Prevenuecat.paywallFixtures.snapshotTesting=false`.
  */
 public class PaywallFixturesPlugin : Plugin<Project> {
 
@@ -58,11 +39,8 @@ public class PaywallFixturesPlugin : Plugin<Project> {
             task.outputDirectory.set(extension.outputDirectory)
         }
 
-        // React to the consumer's own Paparazzi instead of applying our own, so we never couple them to a
-        // Paparazzi version. Applying Paparazzi is the consumer's one-line opt-in. The wiring is deferred
-        // to afterEvaluate so the `paywallFixtures { }` DSL flag (evaluated after the plugins block) can
-        // be read — which is only possible because we add a dependency / set options rather than apply a
-        // plugin (plugin application would be too late in afterEvaluate).
+        // Wire the kit + testOptions only when the consumer applies Paparazzi; deferred to afterEvaluate
+        // so the setupSnapshotTesting DSL flag (set after the plugins block) is readable.
         project.pluginManager.withPlugin(PAPARAZZI_PLUGIN_ID) {
             project.afterEvaluate {
                 if (snapshotTestingEnabled(it, extension)) {
@@ -74,10 +52,6 @@ public class PaywallFixturesPlugin : Plugin<Project> {
         }
     }
 
-    /**
-     * The Gradle property overrides the DSL flag when present (handy for CI), otherwise the
-     * `paywallFixtures { setupSnapshotTesting = ... }` value is used (default true).
-     */
     private fun snapshotTestingEnabled(project: Project, extension: PaywallFixturesExtension): Boolean {
         val propertyOverride = (project.findProperty(SNAPSHOT_TESTING_PROPERTY) as? String)?.toBooleanStrictOrNull()
         return propertyOverride ?: extension.setupSnapshotTesting.get()
@@ -90,11 +64,7 @@ public class PaywallFixturesPlugin : Plugin<Project> {
         return "com.revenuecat.purchases:purchases-ui-testing:$version"
     }
 
-    /**
-     * Enables `android.testOptions.unitTests.isIncludeAndroidResources`, which Paparazzi/Robolectric need
-     * to read resources in unit tests. Done reflectively to avoid a hard dependency on a specific AGP
-     * version's DSL types.
-     */
+    // Set reflectively to avoid a hard dependency on a specific AGP DSL version.
     private fun enableAndroidResourcesInUnitTests(project: Project) {
         val android = project.extensions.findByName("android") ?: return
         runCatching {
@@ -104,21 +74,15 @@ public class PaywallFixturesPlugin : Plugin<Project> {
                 .getMethod("setIncludeAndroidResources", Boolean::class.javaPrimitiveType)
                 .invoke(unitTests, true)
         }.onFailure {
-            project.logger.warn(
-                "paywallFixtures: couldn't enable testOptions.unitTests.isIncludeAndroidResources " +
-                    "automatically. Set it manually for paywall snapshot tests.",
-                it,
-            )
+            project.logger.warn("paywallFixtures: couldn't enable testOptions.unitTests.isIncludeAndroidResources.", it)
         }
     }
 
-    // Called from within afterEvaluate, so check directly rather than registering another afterEvaluate.
     private fun warnIfComposeMissing(project: Project) {
         if (!project.pluginManager.hasPlugin(COMPOSE_COMPILER_PLUGIN_ID)) {
             project.logger.warn(
-                "paywallFixtures: the Compose compiler plugin ($COMPOSE_COMPILER_PLUGIN_ID) is not " +
-                    "applied. Paywall snapshot tests render @Composable content, so the test module " +
-                    "needs it (and buildFeatures.compose = true).",
+                "paywallFixtures: the Compose compiler plugin is not applied; paywall snapshot tests " +
+                    "render @Composable content and need it (plus buildFeatures.compose = true).",
             )
         }
     }

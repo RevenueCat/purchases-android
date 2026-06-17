@@ -4,13 +4,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Collects all downloadable asset URLs referenced by a paywall, by walking the offerings JSON:
- * - Any string value that is an http(s) URL with an image extension (e.g. the `original`, `webp` and
- *   `webp_low_res` variants of image components and backgrounds).
- * - Icon components, which reference their assets as `base_url` + `formats.webp`. The `base_url` and
- *   `formats` may live on the same object (a top-level icon) or on different levels (an icon override /
- *   state variant carries only `formats`, inheriting `base_url` from its enclosing icon component), so
- *   the nearest `base_url` in scope is inherited down the tree.
+ * Collects downloadable asset URLs from the offerings JSON: image-extension URL strings, and icon
+ * components (`base_url` + `formats.webp`). An icon's `base_url` may sit on a parent (overrides carry only
+ * `formats`), so the nearest `base_url` in scope is inherited down the tree.
  */
 internal object AssetUrlCollector {
 

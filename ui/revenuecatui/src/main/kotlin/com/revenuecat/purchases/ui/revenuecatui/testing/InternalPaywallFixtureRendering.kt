@@ -30,12 +30,8 @@ import java.io.InputStream
 import java.util.Date
 
 /**
- * Validates the components paywall of this [Offering] without rendering it, returning the list of
- * validation error messages. An empty list means the paywall is valid. This allows test frameworks to
- * provide assertion-style validation without going through composition.
- *
- * Note that an [Offering] without a components paywall (e.g. a legacy paywall-only Offering) is reported
- * as a validation error.
+ * Validates [offering]'s components paywall without rendering, returning validation error messages (empty
+ * = valid). An [Offering] without a components paywall is reported as an error.
  */
 @InternalRevenueCatAPI
 public fun validateComponentsPaywallForTesting(offering: Offering, context: Context): List<String> {
@@ -48,22 +44,12 @@ public fun validateComponentsPaywallForTesting(offering: Offering, context: Cont
 }
 
 /**
- * Renders the components paywall of [offering] in a deterministic, offline manner, for use in JVM
- * screenshot tests (e.g. Paparazzi or Roborazzi). This is the rendering backbone of the
- * `purchases-ui-testing` artifact and is not intended to be called directly by SDK consumers.
+ * Renders [offering]'s components paywall deterministically and fully offline (no Purchases, network, or
+ * Billing) for JVM screenshot tests. Images resolve via [imageResolver] (null fails with a descriptive
+ * error); [date] fixes "now" for reproducibility; click handlers are no-ops. Backbone of the
+ * `purchases-ui-testing` artifact — not for direct SDK-consumer use.
  *
- * No [com.revenuecat.purchases.Purchases] instance, network access, or Google Play Billing is required:
- * - [offering] is expected to be built offline, e.g. via
- *   [com.revenuecat.purchases.utils.FixtureOfferingsFactory].
- * - Remote images are resolved through [imageResolver], which maps an image URL to a local [InputStream]
- *   (typically a fixture file recorded by the `recordPaywallFixtures` Gradle task). Returning null fails
- *   the render with a descriptive error.
- * - [date] fixes "current time" so that date-dependent output (e.g. countdowns) is reproducible.
- *
- * Click handlers are no-ops: purchase and navigation flows are out of scope for snapshot tests.
- *
- * @param renderValidationErrors When true, validation errors are rendered as text (mirroring preview
- * behavior) instead of throwing [PaywallComponentsValidationException].
+ * @param renderValidationErrors render validation errors as text instead of throwing.
  */
 @InternalRevenueCatAPI
 @Composable
@@ -130,10 +116,8 @@ private fun Context.toFixtureResourceProvider(): ResourceProvider =
     FontFallbackResourceProvider(toResourceProvider())
 
 /**
- * Wraps a [ResourceProvider] so that all fonts resolve to a system/generic fallback. Snapshot tests run
- * in the consumer's module, which generally does not bundle the dashboard's custom fonts as `res/font`
- * resources; attempting to resolve them is non-deterministic and crashes under layoutlib (Paparazzi).
- * Forcing the fallback keeps offline rendering deterministic and independent of the consumer's resources.
+ * Forces all fonts to a system fallback. The consumer's module rarely bundles the dashboard's fonts as
+ * `res/font`, and resolving them is non-deterministic and crashes under layoutlib (Paparazzi).
  */
 internal class FontFallbackResourceProvider(
     private val delegate: ResourceProvider,

@@ -70,9 +70,7 @@ internal class PaywallResourceProvider(
         } catch (_: Resources.NotFoundException) {
             return null
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            // Some rendering environments (e.g. Paparazzi/layoutlib in offline screenshot tests) throw
-            // unexpected errors instead of NotFoundException when a font resource can't be resolved.
-            // Degrade gracefully to a system/fallback font instead of crashing.
+            // layoutlib (Paparazzi) can throw instead of returning null for an unresolvable font.
             Logger.e("Error loading XML font family for resource ID $resourceId. Falling back.", e)
             return null
         } ?: return null // layoutlib (Paparazzi) returns null instead of throwing NotFoundException.

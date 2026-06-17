@@ -188,8 +188,7 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     return rememberAsyncImagePainter(
         model = imageRequest,
         imageLoader = imageLoader,
-        // When an image loader is injected (previews and offline tests), load the image eagerly and
-        // blocking so single-frame rendering captures it.
+        // An injected loader (previews/offline tests) loads eagerly+blocking so single-frame render captures it.
         placeholder = if (previewImageLoader != null) {
             imageLoader.getPreviewPlaceholderBlocking(imageRequest)
         } else {
