@@ -4,7 +4,31 @@ plugins {
     alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.baselineprofile)
+    // Offline paywall snapshot tests (see src/test/.../PaywallSnapshotTest.kt).
+    alias(libs.plugins.paparazzi)
 }
+
+// Paywall snapshot fixtures are recorded with the paywall-fixtures recorder plugin and committed under
+// src/test/resources/revenuecat-paywall-fixtures. The recorder is NOT applied here so that a clean/CI
+// build doesn't depend on the plugin being available in a repository (it resolves an external
+// purchases-ui-testing coordinate that isn't in this build's dependency repos). External SDK consumers
+// instead apply the published plugin, which auto-applies Paparazzi + the kit + testOptions in one step.
+// To re-record after the dashboard changes, temporarily add the recorder and run recordPaywallFixtures:
+//
+//   buildscript {
+//     repositories { mavenLocal(); mavenCentral() }
+//     dependencies { classpath("com.revenuecat.purchases:purchases-paywall-fixtures-plugin:<version>") }
+//   }
+//   apply(plugin = "com.revenuecat.purchases.paywallfixtures")
+//   extensions.configure<com.revenuecat.purchases.paywallfixtures.PaywallFixturesExtension>("paywallFixtures") {
+//     offerings.set(setOf("alpha", "charlie", "delta", "echo", "foxtrot", "golf", "hotel"))
+//   }
+//
+// This module already wires Paparazzi + the kit manually, so disable the plugin's auto-setup when
+// recording (it would otherwise add an external purchases-ui-testing dependency not in this build's repos):
+//
+//   REVENUECAT_API_KEY=<public sdk key> ./gradlew :examples:paywall-tester:recordPaywallFixtures \
+//       -Prevenuecat.paywallFixtures.snapshotTesting=false
 
 val localProperties = Properties().apply {
     val localPropsFile = rootProject.file("local.properties")
@@ -126,6 +150,12 @@ android {
             excludes += setOf("/META-INF/{AL2.0,LGPL2.1}")
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -168,6 +198,13 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
     debugImplementation(libs.leakcanary.android)
+
+    // Offline paywall snapshot testing (Paparazzi) via the testing kit, exercised exactly as an SDK
+    // consumer would. Fixtures are recorded with the recordPaywallFixtures task above.
+    testImplementation(project(":ui:revenuecatui-testing"))
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui)
+    testImplementation(libs.assertJ)
 
     baselineProfile(project(":baselineprofile")) {
         attributes {

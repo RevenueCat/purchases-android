@@ -28,6 +28,8 @@ internal class FixtureRecorder(
     private companion object {
         private const val CONNECTION_TIMEOUT_MS = 30_000
         private const val HTTP_OK = 200
+        private const val HTTP_BAD_REQUEST = 400
+        private const val HTTP_SERVER_ERROR = 500
         private const val MANIFEST_FILE_NAME = "fixture-manifest.json"
     }
 
@@ -104,6 +106,7 @@ internal class FixtureRecorder(
      * the same layout `PaywallFixtures` resolves images from. Existing files are skipped unless
      * [refresh] is set. Returns true if the asset was downloaded.
      */
+    @Suppress("ReturnCount")
     private fun downloadAsset(url: String): Boolean {
         val target = File(outputDirectory, url.toMirrorPath())
         if (target.exists() && !refresh) return false
@@ -114,6 +117,13 @@ internal class FixtureRecorder(
             connection.connectTimeout = CONNECTION_TIMEOUT_MS
             connection.readTimeout = CONNECTION_TIMEOUT_MS
             val responseCode = connection.responseCode
+            if (responseCode in HTTP_BAD_REQUEST until HTTP_SERVER_ERROR) {
+                // A derived asset URL (e.g. an icon variant with an inherited base_url) may not exist;
+                // skip it rather than failing the whole recording. If a paywall genuinely needs the
+                // image, rendering will surface a clear "fixture image missing" error.
+                log("Skipping asset (HTTP $responseCode): $url")
+                return false
+            }
             if (responseCode != HTTP_OK) {
                 throw IOException("Downloading asset $url failed with HTTP $responseCode.")
             }

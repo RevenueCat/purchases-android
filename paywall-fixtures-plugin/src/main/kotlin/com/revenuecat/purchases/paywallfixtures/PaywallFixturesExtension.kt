@@ -37,4 +37,15 @@ public abstract class PaywallFixturesExtension {
      * which is where `PaywallFixtures.load()` looks by default.
      */
     public abstract val outputDirectory: DirectoryProperty
+
+    /**
+     * When true (the default) and Paparazzi is also applied, the plugin auto-adds the
+     * `purchases-ui-testing` test dependency and enables `testOptions.unitTests.isIncludeAndroidResources`.
+     * Set to false to keep only the `recordPaywallFixtures` task and wire those up yourself (e.g. to use
+     * Roborazzi, or to control the dependency).
+     *
+     * The Gradle property `revenuecat.paywallFixtures.snapshotTesting`, if set, overrides this — handy
+     * for toggling on CI without editing the build script.
+     */
+    public abstract val setupSnapshotTesting: Property<Boolean>
 }

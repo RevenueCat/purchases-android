@@ -7,8 +7,10 @@ import org.json.JSONObject
  * Collects all downloadable asset URLs referenced by a paywall, by walking the offerings JSON:
  * - Any string value that is an http(s) URL with an image extension (e.g. the `original`, `webp` and
  *   `webp_low_res` variants of image components and backgrounds).
- * - Icon components, which reference their assets indirectly as `base_url` + `formats`: the rendered
- *   variant (`webp`) is collected.
+ * - Icon components, which reference their assets as `base_url` + `formats.webp`. The `base_url` and
+ *   `formats` may live on the same object (a top-level icon) or on different levels (an icon override /
+ *   state variant carries only `formats`, inheriting `base_url` from its enclosing icon component), so
+ *   the nearest `base_url` in scope is inherited down the tree.
  */
 internal object AssetUrlCollector {
 
@@ -16,20 +18,22 @@ internal object AssetUrlCollector {
 
     internal fun collect(json: JSONObject): Set<String> {
         val urls = mutableSetOf<String>()
-        walk(json, urls)
+        walk(json, inheritedBaseUrl = null, urls = urls)
         return urls
     }
 
-    private fun walk(value: Any?, urls: MutableSet<String>) {
+    private fun walk(value: Any?, inheritedBaseUrl: String?, urls: MutableSet<String>) {
         when (value) {
             is JSONObject -> {
-                collectIconUrl(value, urls)
-                value.keys().forEach { key -> walk(value.opt(key), urls) }
+                // An object may introduce a base_url that its descendants (e.g. icon overrides) inherit.
+                val baseUrl = value.optString("base_url").takeIf { it.startsWith("http") } ?: inheritedBaseUrl
+                collectIconUrl(value, baseUrl, urls)
+                value.keys().forEach { key -> walk(value.opt(key), baseUrl, urls) }
             }
 
             is JSONArray -> {
                 for (i in 0 until value.length()) {
-                    walk(value.opt(i), urls)
+                    walk(value.opt(i), inheritedBaseUrl, urls)
                 }
             }
 
@@ -41,10 +45,9 @@ internal object AssetUrlCollector {
         }
     }
 
-    private fun collectIconUrl(json: JSONObject, urls: MutableSet<String>) {
-        val baseUrl = json.optString("base_url")
+    private fun collectIconUrl(json: JSONObject, baseUrl: String?, urls: MutableSet<String>) {
         val webpName = json.optJSONObject("formats")?.optString("webp").orEmpty()
-        if (baseUrl.startsWith("http") && webpName.isNotEmpty()) {
+        if (baseUrl != null && webpName.isNotEmpty()) {
             urls.add("${baseUrl.removeSuffix("/")}/$webpName")
         }
     }
