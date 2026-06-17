@@ -1697,12 +1697,13 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `untagged step reports impression to preserve behavior`() = runTest {
+    fun `untagged fallback step reports impression to preserve behavior`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
         val vm = createVm()
-        // No metadata → stepScreenType is null (untagged / pre-rollout) → reports.
+        // No metadata → stepScreenType is null (untagged / pre-rollout) → falls back to the structural
+        // inference `id == singleStepFallbackId`. Here the only step is the fallback, so it reports.
         vm.startWorkflowPresentationFromResult(
             singleStepScreenTypeWorkflow(metadata = null),
             testOfferings,
@@ -1714,11 +1715,11 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `untagged multi-step workflow reports from a non-fallback step`() = runTest {
-        // Deliberate, owner-approved divergence from the prior singleStepFallbackId-only behavior:
-        // when no step carries screen_type (pre-rollout / legacy backend), every workflow step reports
-        // paywall events, not just the fallback step. step1 (initial) is NOT the fallback here, yet it
-        // reports. This pins the untagged=report semantics ported from purchases-ios #7021.
+    fun `untagged non-fallback step suppresses impression matching pre-rollout behavior`() = runTest {
+        // When no step carries screen_type (pre-rollout / legacy backend), gating falls back to the
+        // prior structural inference: only the singleStepFallbackId step reports. step-1 (initial) is
+        // NOT the fallback here (step-2 is), so it suppresses — matching the behavior on main before the
+        // screen_type rollout, rather than over-reporting on every step.
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
@@ -1732,7 +1733,7 @@ class PaywallViewModelWorkflowTest {
         vm.startWorkflowPresentationFromResult(untaggedMultiStep, testOfferings, null)
         vm.trackPaywallImpressionIfNeeded()
 
-        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).hasSize(1)
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).isEmpty()
     }
 
     // endregion

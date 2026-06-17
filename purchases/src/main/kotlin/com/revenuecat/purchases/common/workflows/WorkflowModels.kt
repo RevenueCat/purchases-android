@@ -94,9 +94,9 @@ public data class WorkflowStep(
      *
      * Returns `null` when the step was not tagged (older workflows, or workflows served before the
      * screen-analytics rollout) and an empty list when it was tagged with no known type. The
-     * null-vs-empty distinction matters for paywall-event gating: an untagged step preserves the prior
-     * always-report behavior, while a step explicitly tagged without `paywall` suppresses paywall
-     * events. See `tracksPaywallEvents` in the UI layer.
+     * null-vs-empty distinction matters for paywall-event gating: an untagged step falls back to the
+     * prior structural inference (`id == singleStepFallbackId`), while a step explicitly tagged without
+     * `paywall` suppresses paywall events. See `tracksPaywallEvents` in the UI layer.
      */
     @InternalRevenueCatAPI
     public val stepScreenType: List<String>?

@@ -1022,7 +1022,7 @@ internal class PaywallViewModelImpl(
         }
         if (!shouldApplyState) return
         currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
-            step.tracksPaywallEvents()
+            step.tracksPaywallEvents(workflow)
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,
@@ -1284,18 +1284,20 @@ internal class PaywallViewModelImpl(
 
     /**
      * Whether this workflow step reports paywall events (`paywall_impression` / `paywall_close`),
-     * driven by the backend `screen_type` tag (khepri #21429), matching purchases-ios #7021:
+     * driven by the backend `screen_type` tag (khepri #21429):
      * - tagged with `paywall` → reports;
      * - tagged without `paywall` (including an empty list) → suppressed;
-     * - untagged (null `screen_type`, e.g. a pre-rollout/legacy payload) → reports, preserving the
-     *   prior always-report behavior rather than muting events during rollout.
+     * - untagged (null `screen_type`, e.g. a pre-rollout/legacy payload) → falls back to the prior
+     *   structural inference `id == singleStepFallbackId`, so untagged workflows behave exactly as
+     *   before the `screen_type` rollout (only the fallback step reports) rather than over-reporting
+     *   on every step.
      *
-     * This replaces the previous structural inference (`id == singleStepFallbackId`); the backend tags
-     * exactly the fallback step as `["paywall"]`, so the tagged behavior is equivalent while the
-     * explicit signal lets the backend classify steps independently of `single_step_fallback_id`.
+     * Once the backend republishes a workflow it tags exactly the fallback step as `["paywall"]`, so
+     * tagged behavior is equivalent to the fallback while the explicit signal lets the backend classify
+     * steps independently of `single_step_fallback_id`.
      */
-    private fun WorkflowStep.tracksPaywallEvents(): Boolean {
-        val screenType = stepScreenType ?: return true
+    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean {
+        val screenType = stepScreenType ?: return id == workflow.singleStepFallbackId
         return screenType.contains(WorkflowScreenType.PAYWALL)
     }
 
