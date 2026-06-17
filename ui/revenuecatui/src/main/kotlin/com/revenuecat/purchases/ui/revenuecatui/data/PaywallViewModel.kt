@@ -318,6 +318,9 @@ internal class PaywallViewModelImpl(
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
         trackCurrentWorkflowStepCompleted()
+        if (!_purchaseCompleted.value) {
+            trackCurrentWorkflowAbandoned()
+        }
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
@@ -1267,6 +1270,29 @@ internal class PaywallViewModelImpl(
         currentWorkflowStep?.let { step ->
             trackWorkflowStepCompleted(step = step, toStepId = null)
         }
+    }
+
+    /**
+     * Fires [WorkflowEvent.Close] for the step the user is currently on, if any. No-op for
+     * non-workflow paywalls. This is the workflow-level abandonment signal: unlike paywall_close it is
+     * not gated by [WorkflowStep.tracksPaywallEvents], so abandonment that happens on a non-paywall step
+     * (e.g. before the offer is shown) is still captured. Only fired from [closePaywall] when the
+     * workflow was not completed (no purchase).
+     */
+    private fun trackCurrentWorkflowAbandoned() {
+        val workflowResult = currentWorkflowResult ?: return
+        val step = currentWorkflowStep ?: return
+        val workflow = workflowResult.workflow
+        purchases.track(
+            WorkflowEvent.Close(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = step.id,
+                traceId = workflowTraceId,
+                isFirstStep = step.id == workflow.initialStepId,
+                isLastStep = isTerminalStep(workflow, step.id),
+            ),
+        )
     }
 
     @Suppress("ReturnCount")

@@ -379,6 +379,7 @@ internal fun WorkflowEvent.toBackendStoredEvent(
     val eventName = when (this) {
         is WorkflowEvent.StepStarted -> "workflows_step_started"
         is WorkflowEvent.StepCompleted -> "workflows_step_completed"
+        is WorkflowEvent.Close -> "workflows_close"
     }
     val properties = when (this) {
         is WorkflowEvent.StepStarted -> BackendEvent.Workflows.Properties(
@@ -395,6 +396,13 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             stepId = stepId,
             traceId = traceId,
             toStepId = toStepId,
+            isFirstStep = isFirstStep,
+            isLastStep = isLastStep,
+        )
+        is WorkflowEvent.Close -> BackendEvent.Workflows.Properties(
+            workflowId = workflowId,
+            stepId = stepId,
+            traceId = traceId,
             isFirstStep = isFirstStep,
             isLastStep = isLastStep,
         )

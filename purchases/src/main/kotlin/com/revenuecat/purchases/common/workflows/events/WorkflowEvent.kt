@@ -53,4 +53,20 @@ public sealed class WorkflowEvent : FeatureEvent {
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,
     ) : WorkflowEvent()
+
+    /**
+     * The user abandoned the workflow before completing it (e.g. dismissed it without purchasing).
+     * Distinct from a paywall close: it is a workflow-level signal that fires on any step, including
+     * non-paywall ones, so abandonment that happens before the paywall step is still captured.
+     */
+    @Serializable
+    @SerialName("workflow_close")
+    public data class Close(
+        override val creationData: CreationData,
+        override val workflowId: String,
+        override val stepId: String,
+        override val traceId: String,
+        public val isFirstStep: Boolean? = null,
+        public val isLastStep: Boolean? = null,
+    ) : WorkflowEvent()
 }

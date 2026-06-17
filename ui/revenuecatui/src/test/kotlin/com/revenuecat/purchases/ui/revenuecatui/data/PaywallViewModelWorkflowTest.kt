@@ -1225,11 +1225,46 @@ class PaywallViewModelWorkflowTest {
 
         vm.closePaywall(result = null)
 
-        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
-        assertThat(workflowEvents).hasSize(1)
-        val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
+        val completed = captured.filterIsInstance<WorkflowEvent.StepCompleted>().single()
         assertThat(completed.stepId).isEqualTo("step-1")
         assertThat(completed.toStepId).isNull()
+    }
+
+    @Test
+    fun `closePaywall without a purchase fires workflows Close for the current step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        captured.clear() // clear load event
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.workflowId).isEqualTo(workflow.id)
+        assertThat(close.stepId).isEqualTo("step-1")
+        assertThat(close.isFirstStep).isTrue
+    }
+
+    @Test
+    fun `closePaywall fires Close even on a non-paywall step that suppresses paywall events`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        // step-1 is a context (non-paywall) step: paywall_close is suppressed, but workflows_close
+        // is a workflow-level abandonment signal and must still fire.
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.CLOSE })
+            .isEmpty()
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.stepId).isEqualTo("step-1")
     }
 
     @Test
@@ -1308,6 +1343,27 @@ class PaywallViewModelWorkflowTest {
         assertThat(completed).hasSize(1)
         assertThat(completed[0].stepId).isEqualTo("step-1")
         assertThat(completed[0].toStepId).isNull()
+    }
+
+    @Test
+    fun `closePaywall after a completed purchase does not fire workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        captured.clear()
+
+        // A close after the purchase completed is not an abandonment, so no workflows_close.
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
     }
 
     @Test
