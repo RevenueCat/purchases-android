@@ -114,7 +114,7 @@ internal class RCContainer private constructor(
             if (remaining() < needed) throw RCContainerFormatException(message())
         }
 
-        /** Reads a big-endian unsigned 32-bit integer as a [Long]. */
+        /** Reads a little-endian unsigned 32-bit integer as a [Long]. */
         private fun ByteBuffer.readUnsignedInt(): Long = int.toLong() and UINT32_MASK
 
         /**
