@@ -9,6 +9,7 @@ import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.MaskShape
+import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
@@ -154,6 +155,44 @@ internal class ImageComponentTests {
                         )
                     ),
                 ),
+                arrayOf(
+                    "explicit zero padding and margin",
+                    Args(
+                        json = """
+                        {
+                          "id": "P0Tzh3p6d3",
+                          "name": "",
+                          "source": {
+                            "light": {
+                              "heic": "https://assets.pawwalls.com/1151049_1732039548.heic",
+                              "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
+                              "original": "https://assets.pawwalls.com/1151049_1732039548.png",
+                              "webp": "https://assets.pawwalls.com/1151049_1732039548.webp",
+                              "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp",
+                              "height": 200,
+                              "width": 400
+                            }
+                          },
+                          "type": "image",
+                          "padding": { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 },
+                          "margin": { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 }
+                        }
+                        """.trimIndent(),
+                        expected = ImageComponent(
+                            source = ThemeImageUrls(
+                                light = ImageUrls(
+                                    original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                                    webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                                    webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                                    height = 200.toUInt(),
+                                    width = 400.toUInt(),
+                                )
+                            ),
+                            padding = Padding.zero,
+                            margin = Padding.zero,
+                        )
+                    ),
+                ),
             )
         }
 
@@ -173,6 +212,57 @@ internal class ImageComponentTests {
 
             // Assert
             assert(actual == args.expected)
+        }
+    }
+
+    class MissingVsExplicitZeroPaddingMarginTests {
+
+        private val sourceJson = """
+            "source": {
+              "light": {
+                "heic": "https://assets.pawwalls.com/1151049_1732039548.heic",
+                "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
+                "original": "https://assets.pawwalls.com/1151049_1732039548.png",
+                "webp": "https://assets.pawwalls.com/1151049_1732039548.webp",
+                "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp",
+                "height": 200,
+                "width": 400
+              }
+            }
+        """.trimIndent()
+
+        @Test
+        fun `Missing padding and margin fields decode identically to explicit zero values`() {
+            val missingFields = JsonTools.json.decodeFromString<ImageComponent>(
+                """{ "type": "image", $sourceJson }"""
+            )
+            val explicitZeros = JsonTools.json.decodeFromString<ImageComponent>(
+                """{
+                  "type": "image",
+                  $sourceJson,
+                  "padding": { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 },
+                  "margin":  { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 }
+                }"""
+            )
+
+            assert(missingFields == explicitZeros) {
+                "Expected missing padding/margin to produce the same model as explicit zeros.\n" +
+                "  missing: padding=${missingFields.padding}, margin=${missingFields.margin}\n" +
+                "  zeros:   padding=${explicitZeros.padding}, margin=${explicitZeros.margin}"
+            }
+        }
+
+        @Test
+        fun `Missing padding decodes to Padding zero`() {
+            val component = JsonTools.json.decodeFromString<ImageComponent>(
+                """{ "type": "image", $sourceJson }"""
+            )
+            assert(component.padding == Padding.zero) {
+                "Expected padding to be Padding.zero when key is absent, got ${component.padding}"
+            }
+            assert(component.margin == Padding.zero) {
+                "Expected margin to be Padding.zero when key is absent, got ${component.margin}"
+            }
         }
     }
 

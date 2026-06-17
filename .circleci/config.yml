@@ -41,13 +41,13 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.20.0
+  revenuecat: revenuecat/sdks-common-config@3.21.1
   codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests, update_error_codes]
     default: default
   paywall_tester_track:
     type: enum
@@ -384,7 +384,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.9.0-SNAPSHOT s3://purchases-docs/android/10.9.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.11.0-SNAPSHOT s3://purchases-docs/android/10.11.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -1229,3 +1229,30 @@ workflows:
       equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
     jobs:
       - update-golden-requests-backend-integration-tests
+
+  update-error-codes:
+    when:
+      equal: [ update_error_codes, << pipeline.parameters.action >> ]
+    jobs:
+      - revenuecat/update-error-codes:
+          platform: android
+          output: purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt
+          commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defaults-bc7.txt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
+          executor:
+            name: android/android_docker
+            tag: 2025.04.1
+            resource_class: xlarge
+          update_api_steps:
+            - run:
+                name: Set Gradle env
+                command: |
+                  echo 'export JVM_OPTS=-Xmx6g' >> "$BASH_ENV"
+                  echo 'export GRADLE_OPTS=-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2' >> "$BASH_ENV"
+            - install-sdkman
+            - revenuecat/install-gem-unix-dependencies:
+                cache-version: v1
+            - android/restore_gradle_cache
+            - run:
+                name: Update API
+                command: ./scripts/api-dump.sh
+            - android/save_gradle_cache

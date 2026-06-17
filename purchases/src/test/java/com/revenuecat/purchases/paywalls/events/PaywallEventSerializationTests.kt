@@ -42,6 +42,27 @@ class PaywallEventSerializationTests {
         userID = "testAppUserId",
     )
 
+    private val workflowImpressionEvent = PaywallStoredEvent(
+        event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("111207f4-87af-4b57-a581-eb27bcc6e001"),
+                date = Date(1699270688884)
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywallID",
+                presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                paywallRevision = 5,
+                sessionIdentifier = UUID.fromString("222107f4-98bf-4b68-a582-eb27bcb6e002"),
+                displayMode = "footer",
+                localeIdentifier = "en_US",
+                darkMode = false,
+                workflowId = "workflow-xyz",
+            ),
+            type = PaywallEventType.IMPRESSION,
+        ),
+        userID = "testAppUserId",
+    )
+
     private val exitOfferEvent = PaywallStoredEvent(
         event = PaywallEvent(
             creationData = PaywallEvent.CreationData(
@@ -151,12 +172,13 @@ class PaywallEventSerializationTests {
                 placementIdentifier = "placementID",
                 targetingRevision = 5,
                 targetingRuleId = "ruleID",
+                paywallID = "paywallID",
             )
         )
     }
 
     @Test
-    fun `round trip serialization without placement produces null backend context`() {
+    fun `round trip serialization without placement includes only paywall_id in backend context`() {
         val eventWithoutPlacement = PaywallStoredEvent(
             event = PaywallEvent(
                 creationData = PaywallEvent.CreationData(
@@ -170,7 +192,7 @@ class PaywallEventSerializationTests {
                     sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
                     displayMode = "footer",
                     localeIdentifier = "es_ES",
-                    darkMode = true
+                    darkMode = true,
                 ),
                 type = PaywallEventType.IMPRESSION,
             ),
@@ -180,7 +202,11 @@ class PaywallEventSerializationTests {
         val decodedEvent = PaywallStoredEvent.fromString(eventString)
         val backendEvent = decodedEvent.toBackendEvent()
 
-        assertThat(backendEvent.presentedOfferingContext).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+            )
+        )
     }
 
     @Test
@@ -318,6 +344,7 @@ class PaywallEventSerializationTests {
         assertThat(backendEvent.presentedOfferingContext).isEqualTo(
             BackendEvent.PresentedOfferingContextData(
                 placementIdentifier = "placementID",
+                paywallID = "paywallID",
             )
         )
     }
@@ -358,6 +385,7 @@ class PaywallEventSerializationTests {
             BackendEvent.PresentedOfferingContextData(
                 targetingRevision = 7,
                 targetingRuleId = "targetingRuleID",
+                paywallID = "paywallID",
             )
         )
     }
@@ -535,5 +563,49 @@ class PaywallEventSerializationTests {
         assertThat(backend.resultingPackageIdentifier).isEqualTo("annual")
         assertThat(backend.currentProductIdentifier).isEqualTo("com.monthly")
         assertThat(backend.resultingProductIdentifier).isEqualTo("com.annual")
+    }
+
+    @Test
+    fun `can encode paywall event with workflowId correctly`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
+        assertThat(eventString).contains("\"workflowId\":\"workflow-xyz\"")
+    }
+
+    @Test
+    fun `can round-trip encode and decode event with workflowId`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(eventString)
+        assertThat(decoded.event.data.workflowId).isEqualTo("workflow-xyz")
+    }
+
+    @Test
+    fun `can decode legacy event without workflowId field`() {
+        val legacyJson = """{"event":{"creationData":{"id":"111207f4-87af-4b57-a581-eb27bcc6e001","date":1699270688884},"data":{"paywallIdentifier":"paywallID","presentedOfferingContext":{"offeringIdentifier":"offeringID","placementIdentifier":null,"targetingContext":null},"paywallRevision":5,"sessionIdentifier":"222107f4-98bf-4b68-a582-eb27bcb6e002","displayMode":"footer","localeIdentifier":"en_US","darkMode":false},"type":"IMPRESSION"},"userID":"testAppUserId"}"""
+        val decoded = PaywallStoredEvent.fromString(legacyJson)
+        assertThat(decoded.event.data.workflowId).isNull()
+    }
+
+    @Test
+    fun `toBackendEvent includes workflowId in presented_offering_context and at top level`() {
+        val backendEvent = workflowImpressionEvent.toBackendEvent()
+
+        assertThat(backendEvent.workflowID).isEqualTo("workflow-xyz")
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+                workflowID = "workflow-xyz",
+            )
+        )
+    }
+
+    @Test
+    fun `toBackendEvent without workflowId still includes paywallId in presented_offering_context`() {
+        val backendEvent = exitOfferEvent.toBackendEvent()
+        assertThat(backendEvent.workflowID).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+            )
+        )
     }
 }

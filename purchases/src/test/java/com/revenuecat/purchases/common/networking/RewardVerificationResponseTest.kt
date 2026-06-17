@@ -35,12 +35,32 @@ class RewardVerificationResponseTest {
     }
 
     @Test
-    fun `maps failed status`() {
+    fun `maps failed status without reason or message`() {
         val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
             """{"status":"failed"}""",
         )
 
-        assertThat(response.toRewardVerificationResult()).isEqualTo(RewardVerificationResult.FAILED)
+        assertThat(response.toRewardVerificationResult()).isEqualTo(RewardVerificationResult.Failed())
+    }
+
+    @Test
+    fun `maps failed status with failure reason and message`() {
+        val response = JsonProvider.defaultJson.decodeFromString<RewardVerificationResponse>(
+            """
+            {
+              "status":"failed",
+              "failure_reason":"ssv_not_enabled",
+              "message":"AdMob server-side reward verification is not enabled for this app."
+            }
+            """.trimIndent(),
+        )
+
+        assertThat(response.toRewardVerificationResult()).isEqualTo(
+            RewardVerificationResult.Failed(
+                failureReason = "ssv_not_enabled",
+                message = "AdMob server-side reward verification is not enabled for this app.",
+            ),
+        )
     }
 
     @Test

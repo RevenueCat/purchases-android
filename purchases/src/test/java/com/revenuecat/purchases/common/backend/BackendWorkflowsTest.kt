@@ -128,7 +128,7 @@ class BackendWorkflowsTest {
                 assertThat(response.enrolledVariants).isNull()
                 success = true
             },
-            onError = { fail("unexpected error $it") },
+            onError = { e, _ -> fail("unexpected error $e") },
         )
         assertThat(success).isTrue()
     }
@@ -167,7 +167,7 @@ class BackendWorkflowsTest {
                 assertThat(response.data).isNull()
                 success = true
             },
-            onError = { fail("unexpected error $it") },
+            onError = { e, _ -> fail("unexpected error $e") },
         )
         assertThat(success).isTrue()
     }
@@ -191,9 +191,105 @@ class BackendWorkflowsTest {
             workflowId = "wf_missing",
             appInBackground = false,
             onSuccess = { fail("expected error") },
-            onError = { errorCode = it.code },
+            onError = { error, _ -> errorCode = error.code },
         )
         assertThat(errorCode).isNotNull
+    }
+
+    @Test
+    fun `getWorkflow passes SHOULD_NOT_FALLBACK on 4xx`() {
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflow(appUserId, "wf_1"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } returns httpResult(RCHTTPStatusCodes.NOT_FOUND, """{"error":"not found"}""")
+
+        var behavior: GetWorkflowsErrorHandlingBehavior? = null
+        backend.getWorkflow(
+            appUserID = appUserId,
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("expected error") },
+            onError = { _, b -> behavior = b },
+        )
+        assertThat(behavior).isEqualTo(GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK)
+    }
+
+    @Test
+    fun `getWorkflow passes SHOULD_FALLBACK_TO_CACHED_WORKFLOWS on 5xx`() {
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflow(appUserId, "wf_1"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } returns httpResult(RCHTTPStatusCodes.ERROR, """{"error":"server error"}""")
+
+        var behavior: GetWorkflowsErrorHandlingBehavior? = null
+        backend.getWorkflow(
+            appUserID = appUserId,
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("expected error") },
+            onError = { _, b -> behavior = b },
+        )
+        assertThat(behavior).isEqualTo(GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
+    }
+
+    @Test
+    fun `getWorkflow passes SHOULD_FALLBACK_TO_CACHED_WORKFLOWS on transport error`() {
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflow(appUserId, "wf_1"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } throws IOException("network failure")
+
+        var behavior: GetWorkflowsErrorHandlingBehavior? = null
+        backend.getWorkflow(
+            appUserID = appUserId,
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("expected error") },
+            onError = { _, b -> behavior = b },
+        )
+        assertThat(behavior).isEqualTo(GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
+    }
+
+    @Test
+    fun `getWorkflow passes SHOULD_FALLBACK_TO_CACHED_WORKFLOWS on malformed 2xx body`() {
+        every {
+            mockClient.performRequest(
+                baseURL = mockBaseURL,
+                endpoint = Endpoint.GetWorkflow(appUserId, "wf_1"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = defaultAuthHeaders,
+                fallbackBaseURLs = emptyList(),
+            )
+        } returns httpResult(RCHTTPStatusCodes.SUCCESS, """not valid json""")
+
+        var behavior: GetWorkflowsErrorHandlingBehavior? = null
+        backend.getWorkflow(
+            appUserID = appUserId,
+            workflowId = "wf_1",
+            appInBackground = false,
+            onSuccess = { fail("expected error") },
+            onError = { _, b -> behavior = b },
+        )
+        assertThat(behavior).isEqualTo(GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
     }
 
     @Test
@@ -363,7 +459,7 @@ class BackendWorkflowsTest {
             workflowId = "wf_1",
             appInBackground = false,
             onSuccess = {},
-            onError = {},
+            onError = { _, _ -> },
             callbackDispatcher = overrideDispatcher,
         )
 
@@ -398,7 +494,7 @@ class BackendWorkflowsTest {
             workflowId = "wf_1",
             appInBackground = false,
             onSuccess = {},
-            onError = {},
+            onError = { _, _ -> },
         )
 
         assertThat(mainDispatcher.enqueueCount).isEqualTo(1)

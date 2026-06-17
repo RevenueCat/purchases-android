@@ -69,6 +69,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
@@ -981,6 +982,56 @@ private fun StackComponentView_Preview_Vertical() {
                 ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
+                shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+                border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
+                shadow = ShadowStyles(
+                    colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                    radius = 10.dp,
+                    x = 0.dp,
+                    y = 3.dp,
+                ),
+                badge = null,
+                scrollOrientation = null,
+                rcPackage = null,
+                tabIndex = null,
+                countdownDate = null,
+                countFrom = CountdownComponent.CountFrom.DAYS,
+                overrides = emptyList(),
+            ),
+            state = previewEmptyState(),
+            clickHandler = {},
+        )
+    }
+}
+
+@Suppress("MagicNumber")
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
+@Composable
+private fun StackComponentView_Preview_NegativePaddingAndMarginClamped() {
+    // Negative padding/margin is not supported on Android. The dashboard can still send it, so it
+    // should be clamped to 0 rather than rendering incorrectly. This preview should look identical
+    // to one with zero padding and margin.
+    Box(
+        modifier = Modifier.padding(all = 32.dp),
+    ) {
+        StackComponentView(
+            style = StackComponentStyle(
+                children = previewChildren(),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.CENTER,
+                    distribution = FlexDistribution.START,
+                ),
+                visible = true,
+                size = Size(width = Fit, height = Fit),
+                spacing = 16.dp,
+                background = BackgroundStyles.Color(
+                    ColorStyles(
+                        light = ColorStyle.Solid(Color.Red),
+                        dark = ColorStyle.Solid(Color.Yellow),
+                    ),
+                ),
+                padding = Padding(top = -16.0, bottom = -16.0, leading = -16.0, trailing = -16.0).toPaddingValues(),
+                margin = Padding(top = -16.0, bottom = -16.0, leading = -16.0, trailing = -16.0).toPaddingValues(),
                 shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
                 border = BorderStyles(width = 2.dp, colors = ColorStyles(light = ColorStyle.Solid(Color.Blue))),
                 shadow = ShadowStyles(

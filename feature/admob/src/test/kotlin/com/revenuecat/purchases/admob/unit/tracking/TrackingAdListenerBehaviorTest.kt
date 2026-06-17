@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(
+    ExperimentalPreviewRevenueCatPurchasesAPI::class,
+    InternalRevenueCatAPI::class,
+)
 
 package com.revenuecat.purchases.admob.tracking
 
@@ -6,7 +9,9 @@ import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.ResponseInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -102,7 +107,7 @@ class TrackingAdListenerBehaviorTest {
         subject.onAdLoaded()
 
         val slot = slot<AdLoadedData>()
-        verify(exactly = 1) { mockAdTracker.trackAdLoaded(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdLoaded(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdLoadedData(
                 networkName = "com.google.ads.mediation.admob.AdMobAdapter",
@@ -131,7 +136,7 @@ class TrackingAdListenerBehaviorTest {
 
         subject.onAdLoaded()
 
-        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any(), any()) }
         assertEquals(1, delegate.onAdLoadedCalls)
     }
 
@@ -157,7 +162,7 @@ class TrackingAdListenerBehaviorTest {
         subject.onAdImpression()
 
         val slot = slot<AdDisplayedData>()
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdDisplayedData(
                 networkName = "TestNetwork",
@@ -194,7 +199,7 @@ class TrackingAdListenerBehaviorTest {
         subject.onAdClicked()
 
         val slot = slot<AdOpenedData>()
-        verify(exactly = 1) { mockAdTracker.trackAdOpened(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdOpened(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdOpenedData(
                 networkName = "ClickNetwork",
@@ -230,7 +235,7 @@ class TrackingAdListenerBehaviorTest {
         subject.onAdFailedToLoad(error)
 
         val slot = slot<AdFailedToLoadData>()
-        verify(exactly = 1) { mockAdTracker.trackAdFailedToLoad(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdFailedToLoad(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdFailedToLoadData(
                 mediatorName = AdMediatorName.AD_MOB,
@@ -260,7 +265,7 @@ class TrackingAdListenerBehaviorTest {
 
         subject.onAdLoaded()
 
-        verify(exactly = 1) { mockAdTracker.trackAdLoaded(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdLoaded(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test
@@ -275,7 +280,7 @@ class TrackingAdListenerBehaviorTest {
 
         subject.onAdImpression()
 
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test
@@ -290,7 +295,7 @@ class TrackingAdListenerBehaviorTest {
 
         subject.onAdClicked()
 
-        verify(exactly = 1) { mockAdTracker.trackAdOpened(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdOpened(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test
@@ -308,7 +313,7 @@ class TrackingAdListenerBehaviorTest {
 
         subject.onAdFailedToLoad(error)
 
-        verify(exactly = 1) { mockAdTracker.trackAdFailedToLoad(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdFailedToLoad(any(), AdCaptureMethod.ADAPTER) }
     }
 
     // endregion
@@ -327,11 +332,11 @@ class TrackingAdListenerBehaviorTest {
 
         subject.onAdClosed()
 
-        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdOpened(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdOpened(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any(), any()) }
     }
 
     @Test
@@ -346,11 +351,11 @@ class TrackingAdListenerBehaviorTest {
 
         subject.onAdOpened()
 
-        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdOpened(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdOpened(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any(), any()) }
     }
 
     // endregion

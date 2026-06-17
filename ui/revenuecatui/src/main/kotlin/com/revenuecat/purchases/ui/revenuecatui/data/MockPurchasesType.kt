@@ -24,6 +24,7 @@ internal class MockPurchasesType(
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,
     override val customerCenterListener: CustomerCenterListener? = null,
+    override val useWorkflows: Boolean = false,
 ) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         throw NotImplementedError("Mock implementation for previews only")
@@ -63,4 +64,6 @@ internal class MockPurchasesType(
     override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
         throw NotImplementedError("Mock implementation for previews only")
     }
+
+    override fun workflowIdForOfferingId(offeringId: String): String? = null
 }

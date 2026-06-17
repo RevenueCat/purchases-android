@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(
+    ExperimentalPreviewRevenueCatPurchasesAPI::class,
+    InternalRevenueCatAPI::class,
+)
 
 package com.revenuecat.purchases.admob.tracking
 
@@ -7,8 +10,10 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.setTrackingFullScreenContentCallback
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -102,7 +107,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
         subject.onAdShowedFullScreenContent()
 
         val slot = slot<AdDisplayedData>()
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdDisplayedData(
                 networkName = "com.google.ads.mediation.admob.AdMobAdapter",
@@ -135,7 +140,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
         subject.onAdClicked()
 
         val slot = slot<AdOpenedData>()
-        verify(exactly = 1) { mockAdTracker.trackAdOpened(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdOpened(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdOpenedData(
                 networkName = "TestNetwork",
@@ -164,7 +169,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         subject.onAdShowedFullScreenContent()
 
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test
@@ -181,7 +186,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         subject.onAdClicked()
 
-        verify(exactly = 1) { mockAdTracker.trackAdOpened(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdOpened(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test
@@ -196,11 +201,11 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         subject.onAdDismissedFullScreenContent()
 
-        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdOpened(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdOpened(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any(), any()) }
     }
 
     @Test
@@ -215,11 +220,11 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         subject.onAdFailedToShowFullScreenContent(AdError(3, "domain", "message"))
 
-        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdOpened(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any()) }
-        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdDisplayed(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdOpened(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdRevenue(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdLoaded(any(), any()) }
+        verify(exactly = 0) { mockAdTracker.trackAdFailedToLoad(any(), any()) }
     }
 
     // endregion
@@ -239,7 +244,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
         wrapper.onAdShowedFullScreenContent()
 
         assertEquals(1, newCallback.onAdShowedCalls)
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test
@@ -253,7 +258,7 @@ class TrackingFullScreenContentCallbackBehaviorTest {
 
         wrapper.onAdShowedFullScreenContent()
 
-        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdDisplayed(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test

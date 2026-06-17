@@ -31,16 +31,27 @@ internal sealed class Endpoint(
     data class GetWorkflow(val userId: String, val workflowId: String) : Endpoint(
         "/v1/subscribers/%s/workflows/%s",
         "get_workflow",
+        fallbackPath = "/workflows/v1/workflows/%s",
     ) {
-        override fun getPath(useFallback: Boolean) =
-            pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
+        override fun getPath(useFallback: Boolean): String {
+            return if (useFallback && fallbackPath != null) {
+                fallbackPath.format(Uri.encode(workflowId))
+            } else {
+                pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
+            }
+        }
     }
     data class GetWorkflows(val userId: String, val type: String? = null) : Endpoint(
         "/v1/subscribers/%s/workflows",
         "get_workflows",
+        fallbackPath = "/workflows/v1/workflows",
     ) {
         override fun getPath(useFallback: Boolean): String {
-            val base = pathTemplate.format(Uri.encode(userId))
+            val base = if (useFallback && fallbackPath != null) {
+                fallbackPath
+            } else {
+                pathTemplate.format(Uri.encode(userId))
+            }
             return if (type != null) "$base?type=${Uri.encode(type)}" else base
         }
     }
