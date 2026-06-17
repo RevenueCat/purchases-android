@@ -70,12 +70,6 @@ android {
             value = "\"${(localProperties["REMOTE_CONFIG_BASE_URL"] as? String) ?: ""}\"",
         )
 
-        buildConfigField(
-            type = "String",
-            name = "SAMSUNG_IAP_SDK_VERSION",
-            value = "\"${libs.versions.samsungIap.get()}\"",
-        )
-
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )

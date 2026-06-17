@@ -1,7 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.FileInputStream
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.revenuecat.public.library)
@@ -11,10 +9,6 @@ plugins {
     alias(libs.plugins.paparazzi)
     alias(libs.plugins.poko)
 }
-
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
 
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
@@ -48,15 +42,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        // Tester-only toggle: when true, ID-based paywall selections resolve via
-        // GET /workflows/{id} instead of the offerings cache. Enable with
-        // `-Prevenuecat.useWorkflowsEndpoint=true` when building the SDK locally.
-        buildConfigField(
-            type = "boolean",
-            name = "USE_WORKFLOWS_ENDPOINT",
-            value = (localProperties["revenuecat.useWorkflowsEndpoint"] == "true").toString(),
-        )
     }
 
     buildFeatures {

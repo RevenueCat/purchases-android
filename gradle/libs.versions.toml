@@ -46,7 +46,7 @@ kotlin = "2.0.21"
 kotlinLanguage = "1.8"
 # Can't update until we use more recent kotlin. 1.6.0 uses Kotlin 1.9.0
 kotlinxSerializationJSON = "1.5.1"
-samsungIap = "6.5.0"
+samsungIap = "6.5.2"
 kover = "0.7.0"
 legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
@@ -111,6 +111,7 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLib
 
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 amazon-appstore-sdk = { module = "com.amazon.device:amazon-appstore-sdk", version.ref = "amazon" }
+samsung-iap = { module = "com.samsung.developer:iap", version.ref = "samsungIap" }
 billing-bc8 = { module = "com.android.billingclient:billing", version.ref = "bc8" }
 billing-bc7 = { module = "com.android.billingclient:billing", version.ref = "bc7" }
 
@@ -139,9 +140,11 @@ compose-annotations = { module = "androidx.compose.runtime:runtime-annotation", 
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
+detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
 detekt-compose = { module = "io.nlopez.compose.rules:detekt", version.ref = "detektRulesCompose" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 detekt-libraries = { module = "io.gitlab.arturbosch.detekt:detekt-rules-libraries", version.ref = "detekt"}
+detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 
 dokka-base = { module = "org.jetbrains.dokka:dokka-base", version.ref = "dokka" }
 dokka-baseTestUtils = { module = "org.jetbrains.dokka:dokka-base-test-utils", version.ref = "dokka" }

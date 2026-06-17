@@ -29,7 +29,7 @@ complexity:
 libraries:
   active: true
   ForbiddenPublicDataClass:
-    excludes: [ '**/examples/**' ]
+    excludes: [ '**/examples/**', '**/rules-engine-internal/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
   LibraryEntitiesShouldNotBePublic:
     active: false
@@ -39,3 +39,9 @@ libraries:
 Compose:
   CompositionLocalAllowlist:
     allowedCompositionLocals: LocalPreviewImageLoader
+revenuecat:
+  active: true
+  ForbiddenPublicSealedClass:
+    active: true
+    excludes: [ '**/examples/**', '**/rules-engine-internal/**' ]
+    ignoreAnnotated: [ 'InternalRevenueCatAPI' ]

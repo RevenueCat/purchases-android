@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
@@ -67,6 +68,10 @@ internal interface PurchasesType {
 
     @Throws(PurchasesException::class)
     suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult
+
+    fun workflowIdForOfferingId(offeringId: String): String?
+
+    val useWorkflows: Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -140,4 +145,12 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
         return purchases.awaitGetWorkflow(workflowId)
     }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun workflowIdForOfferingId(offeringId: String): String? =
+        purchases.workflowIdForOfferingId(offeringId)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override val useWorkflows: Boolean
+        get() = purchases.currentConfiguration.dangerousSettings.useWorkflows
 }

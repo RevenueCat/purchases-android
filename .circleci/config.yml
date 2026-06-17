@@ -41,13 +41,13 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.20.0
+  revenuecat: revenuecat/sdks-common-config@3.21.2
   codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests, update_error_codes]
     default: default
   paywall_tester_track:
     type: enum
@@ -302,7 +302,22 @@ jobs:
       - store_artifacts:
           path: build/reports
 
-  test-galaxy:
+  test_detekt_rules:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - android/restore_gradle_cache
+      - run:
+          name: Run detekt-rules Tests
+          command: ./gradlew :detekt-rules:test --parallel --no-daemon
+      - store_test_results:
+          path: detekt-rules/build/test-results/test
+      - store_artifacts:
+          path: build/reports
+
+  test-rules-engine-internal:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -311,22 +326,9 @@ jobs:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Download Samsung IAP SDK AAR
+          name: Run Rules Engine Internal Unit Tests
           command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
-      - run:
-          name: Validate Galaxy API Signature with Metalava
-          command: |
-            ./gradlew :feature:galaxy:metalavaGenerateSignatureBc8Release --no-daemon
-            git diff --exit-code -- feature/galaxy/api.txt
-      - run:
-          name: Compile API Tester with Galaxy Files
-          command: |
-            ./gradlew :api-tester:compileDefaultsDebugKotlin --no-daemon
-      - run:
-          name: Run Galaxy Unit Tests
-          command: |
-            ./gradlew testDefaultsBc8DebugUnitTest --parallel --no-daemon
+            ./gradlew :rules-engine-internal:testDefaultsDebugUnitTest --no-daemon
       - run:
           name: Collect JUnit XMLs
           when: always
@@ -382,7 +384,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.7.0-SNAPSHOT s3://purchases-docs/android/10.7.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.11.0-SNAPSHOT s3://purchases-docs/android/10.11.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -402,10 +404,6 @@ jobs:
       - prepare-signing-key
       - android/restore_gradle_cache
       - android/restore_build_cache
-      - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -438,10 +436,6 @@ jobs:
       - android/restore_build_cache:
           cache_prefix: v1a
       - prepare-signing-key
-      - run:
-          name: Download Samsung IAP SDK AAR
-          command: |
-            ./gradlew downloadSamsungIapAar --no-daemon
       - run:
           name: Deployment
           command: |
@@ -1063,7 +1057,10 @@ workflows:
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
-      - test-galaxy:
+      - test_detekt_rules:
+          requires:
+            - prepare-tests
+      - test-rules-engine-internal:
           requires:
             - prepare-tests
       - run-backend-integration-tests:
@@ -1102,7 +1099,7 @@ workflows:
             - test_defaults_bc8_debug
             - test_defaults_bc8_release
             - test_defaults_bc7_release
-            - test-galaxy
+            - test-rules-engine-internal
             - test_cec_debug
             - test_cec_release
             - assemble-purchase-tester
@@ -1232,3 +1229,30 @@ workflows:
       equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
     jobs:
       - update-golden-requests-backend-integration-tests
+
+  update-error-codes:
+    when:
+      equal: [ update_error_codes, << pipeline.parameters.action >> ]
+    jobs:
+      - revenuecat/update-error-codes:
+          platform: android
+          output: purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt
+          commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defaults-bc7.txt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
+          executor:
+            name: android/android_docker
+            tag: 2025.04.1
+            resource_class: xlarge
+          update_api_steps:
+            - run:
+                name: Set Gradle env
+                command: |
+                  echo 'export JVM_OPTS=-Xmx6g' >> "$BASH_ENV"
+                  echo 'export GRADLE_OPTS=-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2' >> "$BASH_ENV"
+            - install-sdkman
+            - revenuecat/install-gem-unix-dependencies:
+                cache-version: v1
+            - android/restore_gradle_cache
+            - run:
+                name: Update API
+                command: ./scripts/api-dump.sh
+            - android/save_gradle_cache

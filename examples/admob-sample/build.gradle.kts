@@ -25,6 +25,21 @@ android {
             "\"${localProperties.getProperty("REVENUECAT_API_KEY", "")}\"",
         )
 
+        // AdMob IDs fall back to Google's test IDs (see Constants.AdMob.TestAdUnits). Override any
+        // via local.properties (gitignored) to use units you own, e.g. for Server-Side Verification.
+        fun adUnitOverride(key: String) =
+            buildConfigField("String", key, "\"${localProperties.getProperty(key, "")}\"")
+
+        manifestPlaceholders["admobApplicationId"] =
+            localProperties.getProperty("ADMOB_APP_ID", "ca-app-pub-3940256099942544~3347511713")
+        adUnitOverride("ADMOB_BANNER_AD_UNIT_ID")
+        adUnitOverride("ADMOB_INTERSTITIAL_AD_UNIT_ID")
+        adUnitOverride("ADMOB_APP_OPEN_AD_UNIT_ID")
+        adUnitOverride("ADMOB_NATIVE_AD_UNIT_ID")
+        adUnitOverride("ADMOB_NATIVE_VIDEO_AD_UNIT_ID")
+        adUnitOverride("ADMOB_REWARDED_AD_UNIT_ID")
+        adUnitOverride("ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID")
+
         // Library modules have dimensions used to separate different APIs and billing client versions.
         // Applications don't need these, so we default to the "defaults" and "bc8" flavors.
         missingDimensionStrategy("apis", "defaults")

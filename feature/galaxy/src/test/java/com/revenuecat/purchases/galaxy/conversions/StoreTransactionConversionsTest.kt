@@ -20,8 +20,8 @@ import java.util.TimeZone
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
-@RunWith(AndroidJUnit4::class)
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@RunWith(AndroidJUnit4::class)
 class StoreTransactionConversionsTest {
 
     private val purchaseDateString = "2024-01-15 13:45:20"

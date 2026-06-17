@@ -50,7 +50,7 @@ public class PaywallActivityLaunchOptions private constructor(
             )
             offering != null -> OfferingSelection.IdAndPresentedOfferingContext(
                 offeringId = offering.identifier,
-                presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+                presentedOfferingContext = offering.presentedOfferingContext,
             )
             else -> null
         }
@@ -231,7 +231,7 @@ public class PaywallActivityLaunchIfNeededOptions private constructor(
             )
             offering != null -> OfferingSelection.IdAndPresentedOfferingContext(
                 offeringId = offering.identifier,
-                presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+                presentedOfferingContext = offering.presentedOfferingContext,
             )
             else -> null
         }

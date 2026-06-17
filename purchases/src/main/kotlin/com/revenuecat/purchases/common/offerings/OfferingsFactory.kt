@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
@@ -57,9 +58,13 @@ internal class OfferingsFactory(
                             notFoundProductIds
                                 .takeIf { it.isNotEmpty() }
                                 ?.let { missingProducts ->
+                                    val isTestStore = appConfig.store == Store.TEST_STORE
                                     log(LogIntent.GOOGLE_WARNING) {
-                                        OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
-                                            .format(missingProducts.joinToString(", "))
+                                        if (isTestStore) {
+                                            OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR_TEST_STORE
+                                        } else {
+                                            OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
+                                        }.format(missingProducts.joinToString(", "))
                                     }
                                 }
 
@@ -68,12 +73,17 @@ internal class OfferingsFactory(
                                 productsById,
                                 originalDataSource,
                                 loadedFromDiskCache,
+                                appConfig.store,
                             )
                             if (offerings.all.isEmpty()) {
                                 onError(
                                     PurchasesError(
                                         PurchasesErrorCode.ConfigurationError,
-                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND,
+                                        if (appConfig.store == Store.TEST_STORE) {
+                                            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND_TEST_STORE
+                                        } else {
+                                            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
+                                        },
                                     ),
                                 )
                             } else {

@@ -1,25 +1,21 @@
-## RevenueCat SDK
-### 📦 Dependency Updates
-* [RENOVATE] Update dependency gradle to v8.14.5 (#3459) via RevenueCat Git Bot (@RCGitBot)
-
 ## RevenueCatUI SDK
 ### ✨ New Features
-* Pre-warm image cache for workflow step states (#3447) via Cesar de la Vega (@vegaro)
-### Paywallv2
-#### ✨ New Features
-* Add `close_workflow` button action (#3453) via Cesar de la Vega (@vegaro)
-#### 🐞 Bugfixes
-* Fix preload VideoComponent fallback override images (#3449) via Cesar de la Vega (@vegaro)
+* Add Slovenian support for paywalls (#3605) via Monika Mateska (@MonikaMateska)
+### 🐞 Bugfixes
+* Lazy-load paywall components and optimize parsing (#3589) via Alexander Repty (@alexrepty)
 
 ### 🔄 Other Changes
-* Select blob source by priority and weighted random (#3458) via Toni Rico (@tonidero)
-* [AUTOMATIC] Update golden test files for backend integration tests (#3473) via RevenueCat Git Bot (@RCGitBot)
-* Clean up unreferenced topic files after successful remote-config refresh (#3439) via Toni Rico (@tonidero)
-* Cache remote config response in memory with TTL and persist to disk (#3457) via Toni Rico (@tonidero)
-* build(deps): bump fastlane from 2.233.1 to 2.234.0 (#3463) via dependabot[bot] (@dependabot[bot])
-* Update codelabs links (#3460) via Jaewoong Eum (@skydoves)
-* Add RemoteConfigManager and TopicFetcher (#3437) via Toni Rico (@tonidero)
-* Add exit offers support to workflows (#3452) via Cesar de la Vega (@vegaro)
-* Update baseline profiles (#3461) via RevenueCat Git Bot (@RCGitBot)
-* Add network scaffolding for remote config endpoint (#3435) via Toni Rico (@tonidero)
-* test: cover singleStepFallbackId == initialStepId edge case (#3445) via Facundo Menzella (@facumenzella)
+* chore: Add 3-day Dependabot cooldown, excluding fastlane plugin (#3609) via Toni Rico (@tonidero)
+* Adds Cursor Cloud Agent environment (#3606) via JayShortway (@JayShortway)
+* Add `paywall_id` and `workflow_id` to paywall events and other fixes (#3596) via Cesar de la Vega (@vegaro)
+* WFL-303 | Add fallback URL for workflows (#3608) via Rosie Watson (@RosieWatson)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `d911a06` to `70bf5c7` (#3602) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update generated error codes (#3600) via RevenueCat Git Bot (@RCGitBot)
+* Fix legacy paywalls when workflows are enabled (#3598) via Cesar de la Vega (@vegaro)
+* Tests for verifing paywall callbacks fire from any workflow step (#3512) via Cesar de la Vega (@vegaro)
+* Danger: block manual edits to generated error codes (#3599) via Álvaro Brey (@AlvaroBrey)
+* Update baseline profiles (#3554) via RevenueCat Git Bot (@RCGitBot)
+* Add update-error-codes workflow (#3591) via Álvaro Brey (@AlvaroBrey)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3597) via RevenueCat Git Bot (@RCGitBot)
+* URL-encode offering IDs in `PaywallComponentsTemplatePreviewRecorder` (#3586) via JayShortway (@JayShortway)
+* test(workflow): add test for trigger type mismatch in WorkflowNavigator (#3387) via Facundo Menzella (@facumenzella)
