@@ -14,7 +14,7 @@ internal sealed class Endpoint(
      * `true`, the request advertises `Accept: application/x-rc-format` and the response body is exposed
      * as [HTTPResult.Payload.Binary] instead of being decoded as text.
      */
-    open val expectsBinaryResponse: Boolean = false
+    open val expectsRCFormatResponse: Boolean = false
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
@@ -112,7 +112,7 @@ internal sealed class Endpoint(
         name = "get_remote_config",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate
-        override val expectsBinaryResponse: Boolean = true
+        override val expectsRCFormatResponse: Boolean = true
     }
     object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",

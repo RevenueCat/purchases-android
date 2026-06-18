@@ -97,7 +97,7 @@ internal class HTTPClient(
 
     /** A human-readable rendering of a response body for logging: byte size for binary, text otherwise. */
     private fun ByteArray.describeForLogging(endpoint: Endpoint, responseCode: Int): String =
-        if (endpoint.expectsBinaryResponse && RCHTTPStatusCodes.isSuccessful(responseCode)) {
+        if (endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)) {
             "<binary: $size bytes>"
         } else {
             String(this, Charsets.UTF_8)
@@ -341,7 +341,7 @@ internal class HTTPClient(
         // Binary endpoints expose successful responses as raw bytes; everything else (including error
         // responses, which are still JSON) is decoded as UTF-8 text.
         val payload: HTTPResult.Payload = if (
-            endpoint.expectsBinaryResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
+            endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
             HTTPResult.Payload.Binary(payloadBytes)
         } else {
@@ -402,7 +402,7 @@ internal class HTTPClient(
 
         val isLoadShedderResponse = getLoadShedderHeader(connection)
         // Binary (RC Container) endpoints are not ETag-cached: build the result directly and skip the cache.
-        return if (endpoint.expectsBinaryResponse) {
+        return if (endpoint.expectsRCFormatResponse) {
             HTTPResult(
                 responseCode,
                 payload,
@@ -504,7 +504,7 @@ internal class HTTPClient(
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
-            "Accept" to if (endpoint.expectsBinaryResponse) RC_FORMAT_ACCEPT else null,
+            "Accept" to if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT else null,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
@@ -530,7 +530,7 @@ internal class HTTPClient(
             .plus(authenticationHeaders)
             // Binary (RC Container) endpoints are not ETag-cached, so they send no If-None-Match header.
             .plus(
-                if (endpoint.expectsBinaryResponse) {
+                if (endpoint.expectsRCFormatResponse) {
                     emptyMap()
                 } else {
                     eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag)
