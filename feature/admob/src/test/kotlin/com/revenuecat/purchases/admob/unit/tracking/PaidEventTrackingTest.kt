@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(
+    ExperimentalPreviewRevenueCatPurchasesAPI::class,
+    InternalRevenueCatAPI::class,
+)
 
 package com.revenuecat.purchases.admob.tracking
 
@@ -6,7 +9,9 @@ import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -76,7 +81,7 @@ class PaidEventTrackingTest {
         listener.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify(exactly = 1) { mockAdTracker.trackAdRevenue(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdRevenueData(
                 networkName = "com.google.ads.mediation.admob.AdMobAdapter",
@@ -132,7 +137,7 @@ class PaidEventTrackingTest {
 
         listener.onPaidEvent(adValue)
 
-        verify(exactly = 1) { mockAdTracker.trackAdRevenue(any()) }
+        verify(exactly = 1) { mockAdTracker.trackAdRevenue(any(), AdCaptureMethod.ADAPTER) }
     }
 
     @Test
@@ -157,7 +162,7 @@ class PaidEventTrackingTest {
         listener.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify { mockAdTracker.trackAdRevenue(capture(slot)) }
+        verify { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals("", slot.captured.impressionId)
         assertEquals(null, slot.captured.networkName)
         assertEquals(null, slot.captured.placement)
@@ -188,7 +193,7 @@ class PaidEventTrackingTest {
         captured!!.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify(exactly = 1) { mockAdTracker.trackAdRevenue(capture(slot)) }
+        verify(exactly = 1) { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals(
             AdRevenueData(
                 networkName = "TestNetwork",
@@ -255,7 +260,7 @@ class PaidEventTrackingTest {
         captured!!.onPaidEvent(adValue)
 
         val slot = slot<AdRevenueData>()
-        verify { mockAdTracker.trackAdRevenue(capture(slot)) }
+        verify { mockAdTracker.trackAdRevenue(capture(slot), AdCaptureMethod.ADAPTER) }
         assertEquals("show_time", slot.captured.placement)
     }
 

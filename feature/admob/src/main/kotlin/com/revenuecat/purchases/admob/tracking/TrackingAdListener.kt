@@ -38,7 +38,7 @@ internal class TrackingAdListener(
         if (trackAdLoaded) {
             val responseInfo = responseInfoProvider()
             trackIfConfigured {
-                adTracker.trackAdLoaded(
+                adTracker.trackFromAdapter(
                     AdLoadedData(
                         networkName = responseInfo?.mediationAdapterClassName,
                         mediatorName = AdMediatorName.AD_MOB,
@@ -56,7 +56,7 @@ internal class TrackingAdListener(
     override fun onAdImpression() {
         val responseInfo = responseInfoProvider()
         trackIfConfigured {
-            adTracker.trackAdDisplayed(
+            adTracker.trackFromAdapter(
                 AdDisplayedData(
                     networkName = responseInfo?.mediationAdapterClassName,
                     mediatorName = AdMediatorName.AD_MOB,
@@ -73,7 +73,7 @@ internal class TrackingAdListener(
     override fun onAdClicked() {
         val responseInfo = responseInfoProvider()
         trackIfConfigured {
-            adTracker.trackAdOpened(
+            adTracker.trackFromAdapter(
                 AdOpenedData(
                     networkName = responseInfo?.mediationAdapterClassName,
                     mediatorName = AdMediatorName.AD_MOB,
@@ -89,7 +89,7 @@ internal class TrackingAdListener(
 
     override fun onAdFailedToLoad(error: LoadAdError) {
         trackIfConfigured {
-            adTracker.trackAdFailedToLoad(
+            adTracker.trackFromAdapter(
                 AdFailedToLoadData(
                     mediatorName = AdMediatorName.AD_MOB,
                     adFormat = adFormat,

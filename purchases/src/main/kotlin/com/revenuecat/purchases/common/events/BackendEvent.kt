@@ -338,6 +338,8 @@ internal sealed class BackendEvent : Event {
         val appUserID: String,
         @SerialName("app_session_id")
         val appSessionID: String,
+        @SerialName("capture_method")
+        val captureMethod: String? = null,
 
         // Revenue event only fields
         @SerialName("revenue_micros")
