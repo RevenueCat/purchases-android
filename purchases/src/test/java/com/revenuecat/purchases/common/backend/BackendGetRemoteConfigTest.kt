@@ -94,6 +94,23 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
+    fun `getRemoteConfig surfaces a 204 No Content response as a null container`() {
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.NO_CONTENT,
+            payload = HTTPResult.Payload.RCFormat(ByteArray(0)),
+        )
+        var callbackCount = 0
+        var container: RCContainer? = mockk()
+        backend.getRemoteConfig(
+            appInBackground = false,
+            onSuccess = { callbackCount++; container = it },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+        assertThat(callbackCount).isEqualTo(1)
+        assertThat(container).isNull()
+    }
+
+    @Test
     fun `getRemoteConfig surfaces malformed RC Format payload as PurchasesError`() {
         mockHttpResult(payload = HTTPResult.Payload.RCFormat("not a container".toByteArray()))
 

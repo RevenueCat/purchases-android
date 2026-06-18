@@ -109,7 +109,7 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationResult) -> Unit, (RewardVerificationError) -> Unit>
 
-internal typealias RemoteConfigCallback = Pair<(RCContainer) -> Unit, (PurchasesError) -> Unit>
+internal typealias RemoteConfigCallback = Pair<(RCContainer?) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias WorkflowDetailCallback = Pair<
@@ -1306,7 +1306,7 @@ internal class Backend(
 
     fun getRemoteConfig(
         appInBackground: Boolean,
-        onSuccess: (RCContainer) -> Unit,
+        onSuccess: (RCContainer?) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig
@@ -1344,6 +1344,11 @@ internal class Backend(
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
+                        if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
+                            // 204: nothing changed, no container to parse.
+                            onSuccessHandler(null)
+                            return@forEach
+                        }
                         val payload = result.payload
                         if (payload !is HTTPResult.Payload.RCFormat) {
                             onErrorHandler(
