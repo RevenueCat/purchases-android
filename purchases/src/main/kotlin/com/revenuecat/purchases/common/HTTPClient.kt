@@ -336,7 +336,8 @@ internal class HTTPClient(
 
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         if (payloadBytes == null &&
-            (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)) {
+            (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)
+        ) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
         // A 204 No Content response legitimately has no body, so a missing payload is treated as empty bytes.
