@@ -62,14 +62,16 @@ public data class HTTPResult(
 
             override fun hashCode(): Int = bytes.contentHashCode()
         }
+
+        /** The textual payload, or an empty string for a [Payload.Binary] body. */
+        public val text: String
+            get() = when (this) {
+                is Text -> value
+                is Binary -> ""
+            }
     }
 
-    /** The textual payload, or an empty string for a [Payload.Binary] body. */
-    val payloadText: String
-        get() = when (val payload = payload) {
-            is Payload.Text -> payload.value
-            is Payload.Binary -> ""
-        }
+    val payloadText: String = payload.text
 
     internal companion object {
         internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"

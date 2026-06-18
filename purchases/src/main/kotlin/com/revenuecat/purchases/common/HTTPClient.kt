@@ -81,7 +81,7 @@ internal class HTTPClient(
         const val NO_STATUS_CODE = -1
 
         // Accept header value requesting the RC Container Format (binary) response.
-        const val RC_FORMAT_CONTENT_TYPE = "application/x-rc-format"
+        const val RC_FORMAT_ACCEPT = "application/x-rc-format"
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
@@ -347,7 +347,7 @@ internal class HTTPClient(
         } else {
             HTTPResult.Payload.Text(String(payloadBytes, Charsets.UTF_8))
         }
-        val payloadText = (payload as? HTTPResult.Payload.Text)?.value
+        val payloadText = payload.text
 
         // Notify listener if present
         if (appConfig.runningTests) {
@@ -504,7 +504,7 @@ internal class HTTPClient(
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
-            "Accept" to if (endpoint.expectsBinaryResponse) RC_FORMAT_CONTENT_TYPE else null,
+            "Accept" to if (endpoint.expectsBinaryResponse) RC_FORMAT_ACCEPT else null,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
