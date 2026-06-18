@@ -427,7 +427,12 @@ internal class PaywallViewModelImpl(
         val targetFingerprint = computePresentationFingerprint() ?: return
         val existing = paywallPresentationData
 
-        if (existing?.presentationFingerprint() == targetFingerprint) return
+        if (existing?.presentationFingerprint() == targetFingerprint) {
+            // Impressions are de-duped by visual presentation, but workflow attribution
+            // is contextual and can change while the presentation stays the same.
+            paywallPresentationData = existing.withCurrentWorkflowMetadata()
+            return
+        }
 
         if (existing != null) {
             if (!isWorkflowPresentation) {
@@ -1553,6 +1558,16 @@ internal class PaywallViewModelImpl(
             localeIdentifier = localeIdentifier,
             darkMode = darkMode,
         )
+
+    private fun PaywallEvent.Data.withCurrentWorkflowMetadata(): PaywallEvent.Data {
+        val workflowId = currentWorkflowResult?.workflow?.id
+        val stepId = _workflowState.value?.currentStepId
+        return if (this.workflowId == workflowId && this.stepId == stepId) {
+            this
+        } else {
+            copy(workflowId = workflowId, stepId = stepId)
+        }
+    }
 
     /**
      * Extracts default custom variable values from the offering's UiConfig.

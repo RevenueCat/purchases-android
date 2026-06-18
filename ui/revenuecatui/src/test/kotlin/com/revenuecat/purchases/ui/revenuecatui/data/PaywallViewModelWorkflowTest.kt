@@ -1470,6 +1470,39 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `purchase initiated after same paywall workflow re-presentation carries current step metadata`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk(relaxed = true),
+        )
+        val vm = createVm()
+        val step1Result = WorkflowDataResult(
+            workflow = workflow.copy(initialStepId = "step-1", singleStepFallbackId = "step-1"),
+            enrolledVariants = null,
+        )
+        val step2Result = WorkflowDataResult(
+            workflow = workflow.copy(initialStepId = "step-2", singleStepFallbackId = "step-2"),
+            enrolledVariants = null,
+        )
+
+        vm.startWorkflowPresentationFromResult(step1Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        captured.clear()
+
+        vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        val purchaseInitiated = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.PURCHASE_INITIATED }
+        assertThat(purchaseInitiated.data.workflowId).isEqualTo(step2Result.workflow.id)
+        assertThat(purchaseInitiated.data.stepId).isEqualTo("step-2")
+    }
+
+    @Test
     fun `packageless workflow steps do not emit paywall events`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
