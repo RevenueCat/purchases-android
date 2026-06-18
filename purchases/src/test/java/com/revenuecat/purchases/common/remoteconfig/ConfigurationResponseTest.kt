@@ -9,6 +9,7 @@ class ConfigurationResponseTest {
 
     @Test
     fun `parses a full first response`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
@@ -27,9 +28,9 @@ class ConfigurationResponseTest {
               },
               "state_hash": "x3R7YvQw2NfM"
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.domain).isEqualTo("app")
         assertThat(response.subdomains).containsExactly("app_workflows")
@@ -51,6 +52,7 @@ class ConfigurationResponseTest {
 
     @Test
     fun `parses a changed-topics-only response`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
@@ -62,9 +64,9 @@ class ConfigurationResponseTest {
                 "sources": { "blob": { "blob_ref": "sourcesBlob" } }
               }
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         // manifest lists every topic; topics carries only the changed one.
         assertThat(response.manifest.topics.keys)
@@ -75,6 +77,7 @@ class ConfigurationResponseTest {
 
     @Test
     fun `parses a no-changed-topics response (204-equivalent body)`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
@@ -85,9 +88,9 @@ class ConfigurationResponseTest {
               },
               "topics": {}
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.topics).isEmpty()
         assertThat(response.manifest.topics).containsExactlyEntriesOf(mapOf("sources" to "etag1"))
@@ -96,6 +99,7 @@ class ConfigurationResponseTest {
 
     @Test
     fun `keeps unknown topic names so the SDK stays forward-compatible`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
@@ -107,9 +111,9 @@ class ConfigurationResponseTest {
                 "future_topic": { "default": { "blob_ref": "futureBlob" } }
               }
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.manifest.topics).containsKey("future_topic")
         assertThat(response.topics).containsKey("future_topic")
@@ -119,6 +123,7 @@ class ConfigurationResponseTest {
 
     @Test
     fun `preserves arbitrary item content alongside the reserved keys`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
@@ -129,9 +134,9 @@ class ConfigurationResponseTest {
                 }
               }
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         val item = response.topics.getValue("sources").getValue("blob")
         assertThat(item.blobRef).isEqualTo("sourcesBlob")
@@ -145,6 +150,7 @@ class ConfigurationResponseTest {
 
     @Test
     fun `preserves a fully inline item with no blob ref`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
@@ -155,9 +161,9 @@ class ConfigurationResponseTest {
                 }
               }
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         val item = response.topics.getValue("sources").getValue("api")
         assertThat(item.blobRef).isNull()
@@ -170,14 +176,15 @@ class ConfigurationResponseTest {
 
     @Test
     fun `applies defaults when optional fields are absent`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
               "manifest": { "domain": "app" }
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.subdomains).isEmpty()
         assertThat(response.appUuid).isNull()
@@ -191,15 +198,16 @@ class ConfigurationResponseTest {
 
     @Test
     fun `item without blob_ref parses with null ref and prefetch false`() {
+        // language=json
         val payload = """
             {
               "domain": "app",
               "manifest": { "domain": "app", "topics": { "sources": "etag1" } },
               "topics": { "sources": { "api": {} } }
             }
-        """.trimIndent()
+        """
 
-        val response = ConfigurationResponse.parse(payload.toByteArray())
+        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
 
         val item = response.topics.getValue("sources").getValue("api")
         assertThat(item.blobRef).isNull()
