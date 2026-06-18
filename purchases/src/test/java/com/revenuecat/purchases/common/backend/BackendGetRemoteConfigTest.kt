@@ -74,10 +74,10 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig parses successful binary response into an RCContainer`() {
+    fun `getRemoteConfig parses successful RC Format response into an RCContainer`() {
         val config = "{\"hello\":\"world\"}".toByteArray()
         val element = "blob-bytes".toByteArray()
-        mockHttpResult(payload = HTTPResult.Payload.Binary(buildContainer(config = config, elements = listOf(element))))
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))))
 
         var container: RCContainer? = null
         backend.getRemoteConfig(
@@ -94,8 +94,8 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig surfaces malformed binary payload as PurchasesError`() {
-        mockHttpResult(payload = HTTPResult.Payload.Binary("not a container".toByteArray()))
+    fun `getRemoteConfig surfaces malformed RC Format payload as PurchasesError`() {
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat("not a container".toByteArray()))
 
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
@@ -107,7 +107,7 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig surfaces a non-binary payload as PurchasesError`() {
+    fun `getRemoteConfig surfaces a non-RC-Format payload as PurchasesError`() {
         mockHttpResult(payload = HTTPResult.Payload.Text("{}"))
 
         var obtainedError: PurchasesError? = null
@@ -136,7 +136,7 @@ class BackendGetRemoteConfigTest {
 
     @Test
     fun `getRemoteConfig dedups concurrent calls`() {
-        mockHttpResult(payload = HTTPResult.Payload.Binary(buildContainer()), delayMs = 200)
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer()), delayMs = 200)
         val lock = CountDownLatch(2)
         asyncBackend.getRemoteConfig(
             appInBackground = false,

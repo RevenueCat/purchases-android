@@ -80,7 +80,7 @@ internal class HTTPClient(
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
 
-        // Accept header value requesting the RC Container Format (binary) response.
+        // Accept header value requesting the RC Container Format response.
         const val RC_FORMAT_ACCEPT = "application/x-rc-format"
     }
 
@@ -95,10 +95,10 @@ internal class HTTPClient(
         return inputStream.readBytes()
     }
 
-    /** A human-readable rendering of a response body for logging: byte size for binary, text otherwise. */
+    /** A human-readable rendering of a response body for logging: byte size for RC Format, text otherwise. */
     private fun ByteArray.describeForLogging(endpoint: Endpoint, responseCode: Int): String =
         if (endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)) {
-            "<binary: $size bytes>"
+            "<rc-format: $size bytes>"
         } else {
             String(this, Charsets.UTF_8)
         }
@@ -338,12 +338,12 @@ internal class HTTPClient(
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
 
-        // Binary endpoints expose successful responses as raw bytes; everything else (including error
+        // RC Format endpoints expose successful responses as raw bytes; everything else (including error
         // responses, which are still JSON) is decoded as UTF-8 text.
         val payload: HTTPResult.Payload = if (
             endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            HTTPResult.Payload.Binary(payloadBytes)
+            HTTPResult.Payload.RCFormat(payloadBytes)
         } else {
             HTTPResult.Payload.Text(String(payloadBytes, Charsets.UTF_8))
         }
@@ -401,7 +401,7 @@ internal class HTTPClient(
         }
 
         val isLoadShedderResponse = getLoadShedderHeader(connection)
-        // Binary (RC Container) endpoints are not ETag-cached: build the result directly and skip the cache.
+        // RC Container Format endpoints are not ETag-cached: build the result directly and skip the cache.
         return if (endpoint.expectsRCFormatResponse) {
             HTTPResult(
                 responseCode,
@@ -528,7 +528,7 @@ internal class HTTPClient(
             "X-Billing-Client-Sdk-Version" to BuildConfig.BILLING_CLIENT_VERSION,
         )
             .plus(authenticationHeaders)
-            // Binary (RC Container) endpoints are not ETag-cached, so they send no If-None-Match header.
+            // RC Container Format endpoints are not ETag-cached, so they send no If-None-Match header.
             .plus(
                 if (endpoint.expectsRCFormatResponse) {
                     emptyMap()

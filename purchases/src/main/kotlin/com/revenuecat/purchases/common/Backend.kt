@@ -1345,11 +1345,11 @@ internal class Backend(
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         val payload = result.payload
-                        if (payload !is HTTPResult.Payload.Binary) {
+                        if (payload !is HTTPResult.Payload.RCFormat) {
                             onErrorHandler(
                                 PurchasesError(
                                     PurchasesErrorCode.UnknownError,
-                                    "Expected a binary RC Container Format payload for remote config.",
+                                    "Expected an RC Container Format payload for remote config.",
                                 ).also { errorLog(it) },
                             )
                             return@forEach

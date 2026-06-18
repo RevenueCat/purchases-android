@@ -50,24 +50,24 @@ public data class HTTPResult(
     )
 
     /**
-     * The response body, which is either textual (JSON, the common case) or raw [Binary] bytes (e.g.
+     * The response body, which is either textual (JSON, the common case) or raw [RCFormat] bytes (e.g.
      * the RC Container Format returned for `Accept: application/x-rc-format` requests).
      */
     public sealed interface Payload {
         public data class Text(val value: String) : Payload
 
-        public class Binary(public val bytes: ByteArray) : Payload {
+        public class RCFormat(public val bytes: ByteArray) : Payload {
             override fun equals(other: Any?): Boolean =
-                this === other || (other is Binary && bytes.contentEquals(other.bytes))
+                this === other || (other is RCFormat && bytes.contentEquals(other.bytes))
 
             override fun hashCode(): Int = bytes.contentHashCode()
         }
 
-        /** The textual payload, or an empty string for a [Payload.Binary] body. */
+        /** The textual payload, or an empty string for a [Payload.RCFormat] body. */
         public val text: String
             get() = when (this) {
                 is Text -> value
-                is Binary -> ""
+                is RCFormat -> ""
             }
     }
 
@@ -148,7 +148,7 @@ public data class HTTPResult(
     internal fun serialize(): String {
         val jsonObject = JSONObject().apply {
             put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
-            // Only text payloads are ever cached; binary (RC Container) responses bypass the ETag cache.
+            // Only text payloads are ever cached; RC Container Format responses bypass the ETag cache.
             put(SERIALIZATION_NAME_PAYLOAD, payloadText)
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
             put(SERIALIZATION_NAME_REQUEST_DATE, requestDate?.time)

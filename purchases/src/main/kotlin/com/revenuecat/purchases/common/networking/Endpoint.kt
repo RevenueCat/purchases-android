@@ -10,9 +10,9 @@ internal sealed class Endpoint(
     abstract fun getPath(useFallback: Boolean = false): String
 
     /**
-     * Whether this endpoint returns a binary (RC Container Format) response rather than JSON. When
+     * Whether this endpoint returns an RC Container Format response rather than JSON. When
      * `true`, the request advertises `Accept: application/x-rc-format` and the response body is exposed
-     * as [HTTPResult.Payload.Binary] instead of being decoded as text.
+     * as [HTTPResult.Payload.RCFormat] instead of being decoded as text.
      */
     open val expectsRCFormatResponse: Boolean = false
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {

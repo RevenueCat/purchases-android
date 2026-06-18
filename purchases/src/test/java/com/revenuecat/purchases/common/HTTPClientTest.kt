@@ -95,7 +95,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `GetRemoteConfig sends the RC format Accept header, skips ETags, and exposes a binary payload`() {
+    fun `GetRemoteConfig sends the RC format Accept header, skips ETags, and exposes an RC Format payload`() {
         val endpoint = Endpoint.GetRemoteConfig
         val containerBytes = byteArrayOf('R'.code.toByte(), 'C'.code.toByte(), 1, 0, 0, 0, 0, 0)
         server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(containerBytes)))
@@ -104,17 +104,17 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val request = server.takeRequest()
         assertThat(request.getHeader("Accept")).isEqualTo("application/x-rc-format")
-        // Binary endpoints are not ETag-cached: no If-None-Match is sent and the cache is bypassed.
+        // RC Format endpoints are not ETag-cached: no If-None-Match is sent and the cache is bypassed.
         assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isNull()
         verify(exactly = 0) {
             mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
-        assertThat(result.payload).isInstanceOf(HTTPResult.Payload.Binary::class.java)
-        assertThat((result.payload as HTTPResult.Payload.Binary).bytes).isEqualTo(containerBytes)
+        assertThat(result.payload).isInstanceOf(HTTPResult.Payload.RCFormat::class.java)
+        assertThat((result.payload as HTTPResult.Payload.RCFormat).bytes).isEqualTo(containerBytes)
     }
 
     @Test
-    fun `non-binary endpoints do not send the RC format Accept header`() {
+    fun `non-RC-Format endpoints do not send the RC format Accept header`() {
         enqueue(
             Endpoint.LogIn.getPath(),
             expectedResult = HTTPResult.createResult(),
