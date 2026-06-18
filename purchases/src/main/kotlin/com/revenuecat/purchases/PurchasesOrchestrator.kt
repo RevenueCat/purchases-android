@@ -60,6 +60,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -576,6 +577,17 @@ internal class PurchasesOrchestrator(
         // back synchronously on the caller's thread while a miss resolves on its IO scope, and the
         // prefetch path routes detail callbacks onto a dedicated dispatcher — so normalizing here, at
         // the consumer boundary, is what gives callers (including awaitGetWorkflow) a stable thread.
+        if (appConfig.uiPreviewMode) {
+            dispatch {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ConfigurationError,
+                        "Workflows cannot be fetched in UI preview mode.",
+                    ),
+                )
+            }
+            return
+        }
         if (workflowManager == null) {
             dispatch {
                 onError(
@@ -595,6 +607,9 @@ internal class PurchasesOrchestrator(
             onError = { dispatch { onError(it) } },
         )
     }
+
+    fun workflowIdForOfferingId(offeringId: String): String? =
+        workflowManager?.workflowIdForOfferingId(offeringId)
 
     fun getProducts(
         productIds: List<String>,
@@ -925,6 +940,19 @@ internal class PurchasesOrchestrator(
             description,
             onSuccessHandler = onSuccess,
             onErrorHandler = onError,
+        )
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    fun getRewardVerificationResult(
+        clientTransactionId: String,
+        callback: GetRewardVerificationResultCallback,
+    ) {
+        backend.getRewardVerificationResult(
+            appUserID = identityManager.currentAppUserID,
+            clientTransactionId = clientTransactionId,
+            onSuccess = { callback.onReceived(it) },
+            onError = { callback.onError(it) },
         )
     }
 

@@ -1,21 +1,21 @@
-## RevenueCat SDK
-### ✨ New Features
-* Add presented offering context to custom paywall events (#3424) via Rick (@rickvdl)
-* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
-
 ## RevenueCatUI SDK
-### Paywalls_v2
-#### 🐞 Bugfixes
-* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
+### ✨ New Features
+* Add Slovenian support for paywalls (#3605) via Monika Mateska (@MonikaMateska)
+### 🐞 Bugfixes
+* Lazy-load paywall components and optimize parsing (#3589) via Alexander Repty (@alexrepty)
 
 ### 🔄 Other Changes
-* refactor: extract Offering.presentedOfferingContext() helper and apply across SDK (#3513) via Rick (@rickvdl)
-* Add JSON Logic string + array operators (#3485) via Antonio Pallares (@ajpallares)
-* Add ForbiddenPublicSealedClass detekt rule (#3503) via Toni Rico (@tonidero)
-* Update baseline profiles (#3519) via RevenueCat Git Bot (@RCGitBot)
-* build(deps): bump fastlane-plugin-revenuecat_internal from `af7bb5c` to `ce6a7ef` (#3515) via dependabot[bot] (@dependabot[bot])
-* Add JSON Logic comparison operators (<, <=, >, >=) (#3484) via Antonio Pallares (@ajpallares)
-* Add JSON Logic arithmetic operators (+, -, *, /, %) (#3483) via Antonio Pallares (@ajpallares)
-* Add WorkflowEvent model and backend serialization (#3486) via Cesar de la Vega (@vegaro)
-* RulesEngine: add JSON Logic predicate evaluator (#3482) via Antonio Pallares (@ajpallares)
-* Add :rules-engine-internal skeleton module (#3478) via Antonio Pallares (@ajpallares)
+* chore: Add 3-day Dependabot cooldown, excluding fastlane plugin (#3609) via Toni Rico (@tonidero)
+* Adds Cursor Cloud Agent environment (#3606) via JayShortway (@JayShortway)
+* Add `paywall_id` and `workflow_id` to paywall events and other fixes (#3596) via Cesar de la Vega (@vegaro)
+* WFL-303 | Add fallback URL for workflows (#3608) via Rosie Watson (@RosieWatson)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `d911a06` to `70bf5c7` (#3602) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update generated error codes (#3600) via RevenueCat Git Bot (@RCGitBot)
+* Fix legacy paywalls when workflows are enabled (#3598) via Cesar de la Vega (@vegaro)
+* Tests for verifing paywall callbacks fire from any workflow step (#3512) via Cesar de la Vega (@vegaro)
+* Danger: block manual edits to generated error codes (#3599) via Álvaro Brey (@AlvaroBrey)
+* Update baseline profiles (#3554) via RevenueCat Git Bot (@RCGitBot)
+* Add update-error-codes workflow (#3591) via Álvaro Brey (@AlvaroBrey)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3597) via RevenueCat Git Bot (@RCGitBot)
+* URL-encode offering IDs in `PaywallComponentsTemplatePreviewRecorder` (#3586) via JayShortway (@JayShortway)
+* test(workflow): add test for trigger type mismatch in WorkflowNavigator (#3387) via Facundo Menzella (@facumenzella)

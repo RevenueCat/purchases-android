@@ -1,6 +1,8 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -30,5 +32,14 @@ private class PaywallOptionsAPI {
         val dismissRequest: () -> Unit = options.dismissRequest
         val purchaseLogic2: PaywallPurchaseLogic? = options.purchaseLogic
         val customVariables2: Map<String, CustomVariableValue> = options.customVariables
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun checkInjectedWorkflow(
+        builder: PaywallOptions.Builder,
+        workflow: WorkflowDataResult,
+        offering: Offering?,
+    ) {
+        val configured: PaywallOptions.Builder = builder.injectedWorkflow(workflow, offering)
     }
 }

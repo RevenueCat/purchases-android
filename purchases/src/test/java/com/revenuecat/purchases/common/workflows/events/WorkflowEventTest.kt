@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.common.workflows.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
@@ -126,6 +127,10 @@ class WorkflowEventTest {
                 eventName = "workflows_step_started",
                 timestampMs = 1L,
                 appUserID = "u",
+                context = BackendEvent.Workflows.Context(
+                    platform = "android",
+                    sdkVersion = Config.frameworkVersion,
+                ),
                 properties = BackendEvent.Workflows.Properties(
                     workflowId = "wfl",
                     stepId = "s1",

@@ -18,6 +18,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -52,6 +53,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Assert.fail
@@ -1878,6 +1880,117 @@ internal class PurchasesTest : BasePurchasesTest() {
         })
 
         assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getRewardVerificationResult returns result from backend on success`() {
+        val expectedResult = RewardVerificationResult.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10))
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationResult) -> Unit>().captured.invoke(expectedResult)
+        }
+
+        var receivedResult: RewardVerificationResult? = null
+        purchases.getRewardVerificationResult(
+            clientTransactionId = "ct_1",
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationResult) {
+                    receivedResult = result
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    fail("should be success")
+                }
+            },
+        )
+
+        assertThat(receivedResult).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getRewardVerificationResult returns error from backend on error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        purchases.getRewardVerificationResult(
+            clientTransactionId = "ct_1",
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationResult) {
+                    fail("should be error")
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    receivedError = error.error
+                }
+            },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetRewardVerificationResult returns backend result`() = runTest {
+        val expectedResult = RewardVerificationResult.PENDING
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationResult) -> Unit>().captured.invoke(expectedResult)
+        }
+
+        val result = purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")
+
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetRewardVerificationResult throws backend error`() = runTest {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
+            )
+        }
+
+        val thrown = runCatching {
+            purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")
+        }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
     }
 
     // region parseAsWebPurchaseRedemption

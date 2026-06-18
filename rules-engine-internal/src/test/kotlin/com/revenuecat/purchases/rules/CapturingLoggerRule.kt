@@ -16,6 +16,7 @@ internal class CapturingLoggerRule : TestRule {
 
     val capturing: CapturingLogger = CapturingLogger()
     val warnings: List<String> get() = capturing.warnings
+    val logs: List<String> get() = capturing.logs
 
     override fun apply(base: Statement, description: Description): Statement {
         return object : Statement() {

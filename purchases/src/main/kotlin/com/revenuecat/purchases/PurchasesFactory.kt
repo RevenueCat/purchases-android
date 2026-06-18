@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -272,7 +271,7 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            val workflowsCache = if (BuildConfig.USE_WORKFLOWS_ENDPOINT) WorkflowsCache(deviceCache = cache) else null
+            val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
             val identityManager = IdentityManager(
                 cache,
