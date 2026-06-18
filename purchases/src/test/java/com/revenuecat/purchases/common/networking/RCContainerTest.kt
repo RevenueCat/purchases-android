@@ -1,15 +1,12 @@
 package com.revenuecat.purchases.common.networking
 
-import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -264,52 +261,13 @@ class RCContainerTest {
         return out
     }
 
-    /** Content-addressed ref: SHA-256 truncated to 24 bytes, URL-safe base64 (no padding). */
-    private fun refOf(element: ByteArray): String =
-        Base64.encodeToString(sha256(element), Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+    private fun refOf(element: ByteArray): String = RCContainerTestData.refOf(element)
 
-    @Suppress("MagicNumber")
     private fun buildContainer(
         version: Int = 1,
         flags: Int = 0,
         config: ByteArray = ByteArray(0),
         elements: List<ByteArray> = emptyList(),
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
-    ): ByteArray {
-        val out = ByteArrayOutputStream()
-        out.write('R'.code)
-        out.write('C'.code)
-        out.write(version and 0xFF)
-        out.write(flags and 0xFF)
-        repeat(4) { out.write(0) } // header reserved
-
-        // Element 0 is always the config, followed by the content elements.
-        val allElements = listOf(config) + elements
-        allElements.forEachIndexed { index, element ->
-            val checksum = checksumOverride?.invoke(index, element) ?: sha256(element)
-            out.write(checksum)
-            out.writeUInt32(element.size)
-            out.writeUInt32(0) // element reserved
-            out.write(element)
-            out.padTo8()
-        }
-        return out.toByteArray()
-    }
-
-    private fun ByteArrayOutputStream.writeUInt32(value: Int) {
-        write(value and 0xFF)
-        write((value ushr 8) and 0xFF)
-        write((value ushr 16) and 0xFF)
-        write((value ushr 24) and 0xFF)
-    }
-
-    private fun ByteArrayOutputStream.padTo8() {
-        while (size() % 8 != 0) {
-            write(0)
-        }
-    }
-
-    /** SHA-256 truncated to the format's 24-byte (192-bit) checksum. */
-    private fun sha256(data: ByteArray): ByteArray =
-        MessageDigest.getInstance("SHA-256").digest(data).copyOf(24)
+    ): ByteArray = RCContainerTestData.buildContainer(version, flags, config, elements, checksumOverride)
 }
