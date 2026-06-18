@@ -160,7 +160,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 responseCode,
-                expectedResult.payload,
+                expectedResult.payloadText,
                 eTagHeader = any(),
                 urlString = urlString,
                 refreshETag = false,
@@ -171,7 +171,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             )
         } returns expectedResult
         val response = MockResponse()
-            .setBody(expectedResult.payload)
+            .setBody(expectedResult.payloadText)
             .setResponseCode(responseCode)
             .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
             .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L)

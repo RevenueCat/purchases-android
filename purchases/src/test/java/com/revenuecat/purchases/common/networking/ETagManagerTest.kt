@@ -435,7 +435,7 @@ class ETagManagerTest {
 
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_MODIFIED)
-        assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.payloadText).isEqualTo(responsePayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
         assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
@@ -461,7 +461,7 @@ class ETagManagerTest {
 
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.payloadText).isEqualTo(responsePayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
         assertStoredResponse(urlString, eTagInResponse, testDate, responsePayload)
@@ -487,7 +487,7 @@ class ETagManagerTest {
 
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.payloadText).isEqualTo(responsePayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
         assertStoredResponse(urlString, eTagInResponse, testDate, responsePayload)
@@ -635,6 +635,6 @@ class ETagManagerTest {
         assertThat(deserializedResult.eTagData.eTag).isEqualTo(eTagInResponse)
         assertThat(deserializedResult.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
         assertThat(deserializedResult.httpResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(deserializedResult.httpResult.payload).isEqualTo(responsePayload)
+        assertThat(deserializedResult.httpResult.payloadText).isEqualTo(responsePayload)
     }
 }
