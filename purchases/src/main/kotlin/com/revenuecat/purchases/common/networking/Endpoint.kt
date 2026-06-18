@@ -105,11 +105,9 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
 
-    // WIP: Change to final endpoint
-    // WIP: Verify if this will have a different fallback path.
     object GetRemoteConfig : Endpoint(
         pathTemplate = "/v2/config",
-        name = "get_remote_config",
+        name = "remote_config",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate
         override val expectsRCFormatResponse: Boolean = true
