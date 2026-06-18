@@ -104,7 +104,8 @@ internal class HTTPClient(
         }
 
     @Suppress("TooGenericExceptionCaught")
-    private fun getInputStream(connection: HttpURLConnection): InputStream? {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getInputStream(connection: HttpURLConnection): InputStream? {
         return try {
             connection.inputStream
         } catch (e: Exception) {
@@ -334,18 +335,20 @@ internal class HTTPClient(
         }
 
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
-        if (payloadBytes == null) {
+        if (payloadBytes == null && responseCode != RCHTTPStatusCodes.NO_CONTENT) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
+        // A 204 No Content response legitimately has no body, so a missing payload is treated as empty bytes.
+        val bodyBytes = payloadBytes ?: ByteArray(0)
 
         // RC Format endpoints expose successful responses as raw bytes; everything else (including error
         // responses, which are still JSON) is decoded as UTF-8 text.
         val payload: HTTPResult.Payload = if (
             endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            HTTPResult.Payload.RCFormat(payloadBytes)
+            HTTPResult.Payload.RCFormat(bodyBytes)
         } else {
-            HTTPResult.Payload.Text(String(payloadBytes, Charsets.UTF_8))
+            HTTPResult.Payload.Text(String(bodyBytes, Charsets.UTF_8))
         }
         val payloadText = payload.text
 

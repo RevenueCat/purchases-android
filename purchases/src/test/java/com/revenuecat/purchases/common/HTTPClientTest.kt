@@ -33,6 +33,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
+import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.Date
@@ -111,6 +112,42 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
         assertThat(result.payload).isInstanceOf(HTTPResult.Payload.RCFormat::class.java)
         assertThat((result.payload as HTTPResult.Payload.RCFormat).bytes).isEqualTo(containerBytes)
+    }
+
+    @Test
+    fun `GetRemoteConfig with a 204 and a missing body stream returns an empty payload instead of throwing`() {
+        // On some Android devices a 204 yields no readable body stream (getInputStream returns null).
+        // This must surface as a 204 with an empty payload, not as a network IOException.
+        val spyClient = spyk(client)
+        every { spyClient.getInputStream(any()) } returns null
+        server.enqueue(MockResponse().setResponseCode(RCHTTPStatusCodes.NO_CONTENT))
+
+        val result = spyClient.performRequest(
+            baseURL,
+            Endpoint.GetRemoteConfig,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NO_CONTENT)
+        assertThat(result.payload).isInstanceOf(HTTPResult.Payload.RCFormat::class.java)
+        assertThat((result.payload as HTTPResult.Payload.RCFormat).bytes).isEmpty()
+    }
+
+    @Test(expected = IOException::class)
+    fun `a non-204 response with a missing body stream still throws`() {
+        val spyClient = spyk(client)
+        every { spyClient.getInputStream(any()) } returns null
+        server.enqueue(MockResponse().setResponseCode(200))
+
+        spyClient.performRequest(
+            baseURL,
+            Endpoint.GetRemoteConfig,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
     }
 
     @Test
