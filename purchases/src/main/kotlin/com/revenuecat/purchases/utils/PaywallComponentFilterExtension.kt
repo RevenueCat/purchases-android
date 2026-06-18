@@ -73,6 +73,10 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
                 current.fallback?.let { queue.add(it) }
             }
 
+            is WebViewComponent -> {
+                current.fallback?.let { queue.add(it) }
+            }
+
             is FallbackHeaderComponent,
             is VideoComponent,
             is TabControlToggleComponent,
@@ -80,7 +84,6 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
             is ImageComponent,
             is IconComponent,
             is TextComponent,
-            is WebViewComponent,
             -> {
                 // These don't have child components.
             }

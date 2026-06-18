@@ -97,6 +97,20 @@ class WebViewUrlResolverTest {
         assertThat(result).isNull()
     }
 
+    @Test
+    fun `returns null for file url`() {
+        val result = resolve("file:///android_asset/index.html")
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `returns null for custom scheme url`() {
+        val result = resolve("myapp://paywalls.revenuecat.com/index.html")
+
+        assertThat(result).isNull()
+    }
+
     private fun resolve(
         template: String,
         customVariables: Map<String, CustomVariableValue> = emptyMap(),

@@ -75,7 +75,13 @@ internal fun ComponentView(
             modifier = modifier,
         )
     }
-    is WebViewComponentStyle -> WebViewComponentView(style = style, state = state, modifier = modifier)
+    is WebViewComponentStyle -> WebViewComponentView(
+        style = style,
+        state = state,
+        onClick = onClick,
+        componentInteractionTracker = componentInteractionTracker,
+        modifier = modifier,
+    )
     is ButtonComponentStyle -> ButtonComponentView(
         style = style,
         state = state,

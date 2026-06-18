@@ -135,6 +135,31 @@ class StyleFactoryTests {
         assertThat(style.urlTemplate).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
         assertThat(style.visible).isFalse()
         assertThat(style.size).isEqualTo(size)
+        assertThat(style.fallbackStackComponentStyle).isNull()
+    }
+
+    @Test
+    fun `Should create a WebViewComponentStyle with a fallback stack for a WebViewComponent with fallback`() {
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/index.html",
+            fallback = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = LOCALIZATION_KEY_TEXT_1,
+                        color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
+                    ),
+                ),
+            ),
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        val fallback = style.fallbackStackComponentStyle
+        assertThat(fallback).isNotNull
+        assertThat(fallback!!.children).hasSize(1)
+        assertThat(fallback.children[0]).isInstanceOf(TextComponentStyle::class.java)
     }
 
     @Test

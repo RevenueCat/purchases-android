@@ -479,6 +479,37 @@ class OfferingImagePreDownloaderTest {
     }
 
     @Test
+    fun `paywalls V2 - pre-downloads web views nested inside a web view fallback stack`() {
+        val rootUrl = URL("https://paywalls.com/root.html")
+        val fallbackUrl = URL("https://paywalls.com/fallback.html")
+
+        preDownloader.preDownloadOfferingImages(
+            createOfferingWithV2Paywall(
+                paywallComponentsConfig = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        components = listOf(
+                            WebViewComponent(
+                                url = rootUrl.toString(),
+                                fallback = StackComponent(
+                                    components = listOf(
+                                        WebViewComponent(url = fallbackUrl.toString()),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+                ),
+            ),
+        )
+
+        verifyAll {
+            webViewPreDownloader.preDownloadWebView(rootUrl.toString())
+            webViewPreDownloader.preDownloadWebView(fallbackUrl.toString())
+        }
+    }
+
+    @Test
     fun `paywalls V2 - deduplicates web view URLs by string without URL equality`() {
         val localhostUrl = "https://localhost/web-view.html"
         val loopbackUrl = "https://127.0.0.1/web-view.html"

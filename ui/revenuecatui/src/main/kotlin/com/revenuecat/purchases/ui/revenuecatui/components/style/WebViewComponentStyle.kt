@@ -10,4 +10,5 @@ internal data class WebViewComponentStyle(
     val urlTemplate: String,
     override val visible: Boolean,
     override val size: Size,
+    val fallbackStackComponentStyle: StackComponentStyle? = null,
 ) : ComponentStyle
