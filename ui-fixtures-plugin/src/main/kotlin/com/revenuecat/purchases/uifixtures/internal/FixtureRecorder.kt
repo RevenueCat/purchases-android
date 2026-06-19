@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywallfixtures.internal
+package com.revenuecat.purchases.uifixtures.internal
 
 import org.json.JSONArray
 import org.json.JSONObject

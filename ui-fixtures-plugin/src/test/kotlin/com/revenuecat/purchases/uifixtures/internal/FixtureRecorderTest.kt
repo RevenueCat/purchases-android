@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywallfixtures.internal
+package com.revenuecat.purchases.uifixtures.internal
 
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse

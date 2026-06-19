@@ -1,6 +1,6 @@
-package com.revenuecat.purchases.paywallfixtures
+package com.revenuecat.purchases.uifixtures
 
-import com.revenuecat.purchases.paywallfixtures.tasks.RecordPaywallFixturesTask
+import com.revenuecat.purchases.uifixtures.tasks.RecordPaywallFixturesTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import java.util.Properties
@@ -11,18 +11,18 @@ import java.util.Properties
  * Always registers `recordPaywallFixtures`. It does not bring Paparazzi itself; when the consumer
  * applies Paparazzi it adds the `purchases-ui-testing` test dependency and enables
  * `testOptions.unitTests.isIncludeAndroidResources`. Disable that auto-wiring with
- * `paywallFixtures { setupSnapshotTesting = false }` or `-Prevenuecat.paywallFixtures.snapshotTesting=false`.
+ * `uiFixtures { setupSnapshotTesting = false }` or `-Prevenuecat.uiFixtures.snapshotTesting=false`.
  */
-public class PaywallFixturesPlugin : Plugin<Project> {
+public class UiFixturesPlugin : Plugin<Project> {
 
     private companion object {
         const val PAPARAZZI_PLUGIN_ID = "app.cash.paparazzi"
         const val COMPOSE_COMPILER_PLUGIN_ID = "org.jetbrains.kotlin.plugin.compose"
-        const val SNAPSHOT_TESTING_PROPERTY = "revenuecat.paywallFixtures.snapshotTesting"
+        const val SNAPSHOT_TESTING_PROPERTY = "revenuecat.uiFixtures.snapshotTesting"
     }
 
     override fun apply(project: Project) {
-        val extension = project.extensions.create("paywallFixtures", PaywallFixturesExtension::class.java)
+        val extension = project.extensions.create("uiFixtures", UiFixturesExtension::class.java)
         extension.apiKey.convention(project.providers.environmentVariable("REVENUECAT_API_KEY"))
         extension.appUserId.convention("paywall-fixture-recorder")
         extension.baseUrl.convention("https://api.revenuecat.com")
@@ -52,15 +52,15 @@ public class PaywallFixturesPlugin : Plugin<Project> {
         }
     }
 
-    private fun snapshotTestingEnabled(project: Project, extension: PaywallFixturesExtension): Boolean {
+    private fun snapshotTestingEnabled(project: Project, extension: UiFixturesExtension): Boolean {
         val propertyOverride = (project.findProperty(SNAPSHOT_TESTING_PROPERTY) as? String)?.toBooleanStrictOrNull()
         return propertyOverride ?: extension.setupSnapshotTesting.get()
     }
 
     private fun uiTestingDependency(): String {
-        val version = javaClass.getResourceAsStream("/com/revenuecat/purchases/paywallfixtures/version.properties")
+        val version = javaClass.getResourceAsStream("/com/revenuecat/purchases/uifixtures/version.properties")
             ?.use { Properties().apply { load(it) }.getProperty("version") }
-            ?: error("paywall-fixtures-plugin version resource is missing; this is a packaging bug.")
+            ?: error("ui-fixtures-plugin version resource is missing; this is a packaging bug.")
         return "com.revenuecat.purchases:purchases-ui-testing:$version"
     }
 
@@ -74,14 +74,14 @@ public class PaywallFixturesPlugin : Plugin<Project> {
                 .getMethod("setIncludeAndroidResources", Boolean::class.javaPrimitiveType)
                 .invoke(unitTests, true)
         }.onFailure {
-            project.logger.warn("paywallFixtures: couldn't enable testOptions.unitTests.isIncludeAndroidResources.", it)
+            project.logger.warn("uiFixtures: couldn't enable testOptions.unitTests.isIncludeAndroidResources.", it)
         }
     }
 
     private fun warnIfComposeMissing(project: Project) {
         if (!project.pluginManager.hasPlugin(COMPOSE_COMPILER_PLUGIN_ID)) {
             project.logger.warn(
-                "paywallFixtures: the Compose compiler plugin is not applied; paywall snapshot tests " +
+                "uiFixtures: the Compose compiler plugin is not applied; paywall snapshot tests " +
                     "render @Composable content and need it (plus buildFeatures.compose = true).",
             )
         }

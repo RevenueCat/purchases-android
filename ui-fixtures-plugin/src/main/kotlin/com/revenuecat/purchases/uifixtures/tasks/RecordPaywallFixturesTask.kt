@@ -1,6 +1,6 @@
-package com.revenuecat.purchases.paywallfixtures.tasks
+package com.revenuecat.purchases.uifixtures.tasks
 
-import com.revenuecat.purchases.paywallfixtures.internal.FixtureRecorder
+import com.revenuecat.purchases.uifixtures.internal.FixtureRecorder
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.DirectoryProperty
@@ -55,7 +55,7 @@ public abstract class RecordPaywallFixturesTask : DefaultTask() {
         val key = apiKey.orNull?.takeIf { it.isNotBlank() }
             ?: throw GradleException(
                 "A RevenueCat API key is required to record paywall fixtures. Set the REVENUECAT_API_KEY " +
-                    "environment variable, or configure paywallFixtures { apiKey.set(...) } in your " +
+                    "environment variable, or configure uiFixtures { apiKey.set(...) } in your " +
                     "build script.",
             )
 

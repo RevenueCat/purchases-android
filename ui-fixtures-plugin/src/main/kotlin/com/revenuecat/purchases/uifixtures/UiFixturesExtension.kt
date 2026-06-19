@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywallfixtures
+package com.revenuecat.purchases.uifixtures
 
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
@@ -7,7 +7,7 @@ import org.gradle.api.provider.SetProperty
 /**
  * Configuration for the `recordPaywallFixtures` task.
  */
-public abstract class PaywallFixturesExtension {
+public abstract class UiFixturesExtension {
 
     /**
      * The public SDK API key of your RevenueCat app (the same key you pass to `Purchases.configure`).
@@ -44,7 +44,7 @@ public abstract class PaywallFixturesExtension {
      * Set to false to keep only the `recordPaywallFixtures` task and wire those up yourself (e.g. to use
      * Roborazzi, or to control the dependency).
      *
-     * The Gradle property `revenuecat.paywallFixtures.snapshotTesting`, if set, overrides this — handy
+     * The Gradle property `revenuecat.uiFixtures.snapshotTesting`, if set, overrides this — handy
      * for toggling on CI without editing the build script.
      */
     public abstract val setupSnapshotTesting: Property<Boolean>

@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywallfixtures
+package com.revenuecat.purchases.uifixtures
 
 import org.gradle.testkit.runner.GradleRunner
 import java.io.File
@@ -9,10 +9,10 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 /**
- * Gradle TestKit functional tests for PaywallFixturesPlugin. The end-to-end recording flow is covered by
+ * Gradle TestKit functional tests for UiFixturesPlugin. The end-to-end recording flow is covered by
  * FixtureRecorderTest; these tests cover plugin wiring and configuration errors.
  */
-class PaywallFixturesPluginFunctionalTest {
+class UiFixturesPluginFunctionalTest {
 
     private lateinit var projectDir: File
 
@@ -32,7 +32,7 @@ class PaywallFixturesPluginFunctionalTest {
         File(projectDir, "build.gradle.kts").writeText(
             """
             plugins {
-                id("com.revenuecat.purchases.paywallfixtures")
+                id("com.revenuecat.purchases.uifixtures")
             }
             """.trimIndent(),
         )
@@ -45,7 +45,7 @@ class PaywallFixturesPluginFunctionalTest {
             .buildAndFail()
 
         assertTrue("REVENUECAT_API_KEY" in result.output)
-        assertTrue("paywallFixtures" in result.output)
+        assertTrue("uiFixtures" in result.output)
     }
 
     @Test
@@ -53,7 +53,7 @@ class PaywallFixturesPluginFunctionalTest {
         File(projectDir, "build.gradle.kts").writeText(
             """
             plugins {
-                id("com.revenuecat.purchases.paywallfixtures")
+                id("com.revenuecat.purchases.uifixtures")
             }
             """.trimIndent(),
         )

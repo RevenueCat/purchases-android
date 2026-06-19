@@ -27,12 +27,12 @@ dependencies {
 // matches the released plugin/SDK version, instead of a hardcoded string that goes stale on version bumps.
 val sdkVersion = providers.gradleProperty("VERSION_NAME").orElse(provider { project.version.toString() })
 val generateVersionResource = tasks.register("generatePaywallFixturesVersionResource") {
-    val outputDir = layout.buildDirectory.dir("generated/paywallFixturesVersion")
+    val outputDir = layout.buildDirectory.dir("generated/uiFixturesVersion")
     outputs.dir(outputDir)
     val versionValue = sdkVersion
     doLast {
         val file = outputDir.get()
-            .file("com/revenuecat/purchases/paywallfixtures/version.properties").asFile
+            .file("com/revenuecat/purchases/uifixtures/version.properties").asFile
         file.parentFile.mkdirs()
         file.writeText("version=${versionValue.get()}\n")
     }
@@ -43,9 +43,9 @@ sourceSets.named("main") {
 
 gradlePlugin {
     plugins {
-        create("revenuecatPaywallFixtures") {
-            id = "com.revenuecat.purchases.paywallfixtures"
-            implementationClass = "com.revenuecat.purchases.paywallfixtures.PaywallFixturesPlugin"
+        create("revenuecatUiFixtures") {
+            id = "com.revenuecat.purchases.uifixtures"
+            implementationClass = "com.revenuecat.purchases.uifixtures.UiFixturesPlugin"
         }
     }
 }
