@@ -97,6 +97,7 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     api(project(":purchases"))
+    implementation(project(":rules-engine-internal"))
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
