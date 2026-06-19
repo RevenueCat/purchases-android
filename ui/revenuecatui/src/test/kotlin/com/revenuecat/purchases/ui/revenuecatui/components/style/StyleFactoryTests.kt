@@ -124,6 +124,7 @@ class StyleFactoryTests {
         val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit)
         val component = WebViewComponent(
             url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+            id = "promo_web_view",
             visible = false,
             size = size,
         )
@@ -135,6 +136,7 @@ class StyleFactoryTests {
         assertThat(style.urlTemplate).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
         assertThat(style.visible).isFalse()
         assertThat(style.size).isEqualTo(size)
+        assertThat(style.componentId).isEqualTo("promo_web_view")
         assertThat(style.fallbackStackComponentStyle).isNull()
     }
 

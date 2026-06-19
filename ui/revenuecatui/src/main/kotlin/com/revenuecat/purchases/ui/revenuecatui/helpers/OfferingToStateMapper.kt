@@ -36,6 +36,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
@@ -367,6 +368,7 @@ internal fun Offering.toComponentsPaywallState(
     purchases: PurchasesType,
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+    webViewMessageHandler: PaywallWebViewMessageHandler? = null,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -387,6 +389,7 @@ internal fun Offering.toComponentsPaywallState(
         packages = validationResult.packages,
         customVariables = customVariables,
         defaultCustomVariables = defaultCustomVariables,
+        webViewMessageHandler = webViewMessageHandler,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,

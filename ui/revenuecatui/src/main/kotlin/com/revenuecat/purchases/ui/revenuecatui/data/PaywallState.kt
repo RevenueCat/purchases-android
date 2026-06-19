@@ -17,6 +17,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
@@ -116,6 +117,11 @@ internal sealed interface PaywallState {
              * Default custom variables from the dashboard configuration.
              */
             val defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+            /**
+             * Optional handler for messages sent by `web_view` components, set via
+             * [com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder.setWebViewMessageHandler].
+             */
+            val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),

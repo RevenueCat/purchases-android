@@ -1346,6 +1346,7 @@ internal class PaywallViewModelImpl(
                 purchases = purchases,
                 customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
+                webViewMessageHandler = options.webViewMessageHandler,
             )
         }
     }

@@ -590,6 +590,7 @@ internal class StyleFactory(
                     urlTemplate = component.url,
                     visible = component.visible ?: DEFAULT_VISIBILITY,
                     size = component.size,
+                    componentId = component.id,
                     fallbackStackComponentStyle = fallbackStyle,
                 )
             }
