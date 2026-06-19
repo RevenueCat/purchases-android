@@ -266,7 +266,8 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": { "domain": "app", "topics": { "sources": "etag1" } }
+              "manifest": "v1.1710001000.sources:etag1",
+              "active_topics": ["sources"]
             }
         """.trimIndent()
         val buffer = ByteBuffer.wrap(payload.toByteArray())
@@ -274,7 +275,8 @@ class RemoteConfigurationTest {
         val response = RemoteConfiguration.parse(buffer)
 
         assertThat(response.domain).isEqualTo("app")
-        assertThat(response.manifest.topics).containsExactlyEntriesOf(mapOf("sources" to "etag1"))
+        assertThat(response.manifest).isEqualTo("v1.1710001000.sources:etag1")
+        assertThat(response.activeTopics).containsExactly("sources")
         // The overload duplicates the buffer, so the caller's position is untouched.
         assertThat(buffer.position()).isEqualTo(0)
     }

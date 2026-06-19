@@ -28,7 +28,6 @@ import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
 import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
@@ -1307,9 +1306,12 @@ internal class Backend(
         }
     }
 
+    @Suppress("LongParameterList")
     fun getRemoteConfig(
         appInBackground: Boolean,
-        manifest: RemoteConfiguration.Manifest,
+        domain: String,
+        manifest: String?,
+        prefetchedBlobs: List<String>,
         onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -1322,18 +1324,12 @@ internal class Backend(
             ?.let { runCatching { URL(it) }.getOrNull() }
         val baseURL = overrideURL ?: appConfig.baseURL
         val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
-        val manifestMap = JsonProvider.defaultJson
-            .encodeToJsonElement(RemoteConfiguration.Manifest.serializer(), manifest).asMap()
-        if (manifestMap == null) {
-            onError(
-                PurchasesError(
-                    PurchasesErrorCode.UnknownError,
-                    "Error encoding remote config manifest.",
-                ).also { errorLog(it) },
-            )
-            return
+        // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
+        val body = buildMap<String, Any?> {
+            put("domain", domain)
+            manifest?.let { put("manifest", it) }
+            put("prefetched_blobs", prefetchedBlobs)
         }
-        val body = mapOf("manifest" to manifestMap)
 
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {

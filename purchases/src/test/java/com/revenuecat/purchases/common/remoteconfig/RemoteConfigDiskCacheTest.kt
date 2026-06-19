@@ -4,10 +4,6 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.int
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -50,64 +46,64 @@ class RemoteConfigDiskCacheTest {
     }
 
     @Test
-    fun `write then read round-trips the manifest and resolved topics`() {
-        val manifest = RemoteConfiguration.Manifest(
+    fun `write then read round-trips the full persisted config`() {
+        val config = PersistedRemoteConfig(
             domain = "app",
-            topics = mapOf("sources" to "etag1", "product_entitlement_mapping" to "etag2"),
+            manifest = "v1.1710000100.sources:etag1,product_entitlement_mapping:etag2",
+            activeTopics = listOf("sources", "product_entitlement_mapping"),
             prefetchBlobs = listOf("blobRefA"),
-            prefetchedBlobs = listOf("blobRefA"),
+            topicBlobRefs = mapOf(
+                "sources" to listOf("blobRefA"),
+                "product_entitlement_mapping" to listOf("pemBlob"),
+            ),
             lastRefreshAt = 1710000100L,
         )
-        val topics = mapOf(
-            "sources" to mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "blobRefA", prefetch = true)),
-        )
 
-        diskCache.write(manifest, topics)
+        diskCache.write(config)
         val read = diskCache.read()
 
-        assertThat(read).isNotNull
-        assertThat(read?.manifest).isEqualTo(manifest)
-        assertThat(read?.topics).isEqualTo(topics)
+        assertThat(read).isEqualTo(config)
     }
 
     @Test
-    fun `write then read round-trips inline item content`() {
-        val manifest = RemoteConfiguration.Manifest(domain = "app", topics = mapOf("sources" to "etag1"))
-        val inlineItem = RemoteConfiguration.ConfigItem(
-            content = buildJsonObject {
-                put("id", "primary")
-                put("url", "https://api.revenuecat.com")
-                put("priority", 100)
-                put("weight", 100)
-            },
+    fun `inline-only topics persist with an empty blob ref list`() {
+        val config = PersistedRemoteConfig(
+            domain = "app",
+            manifest = "v1.1.sources:etag1",
+            activeTopics = listOf("sources"),
+            topicBlobRefs = mapOf("sources" to emptyList()),
         )
-        val topics = mapOf("sources" to mapOf("api" to inlineItem))
 
-        diskCache.write(manifest, topics)
-        val read = diskCache.read()
+        diskCache.write(config)
 
-        val readItem = read?.topics?.getValue("sources")?.getValue("api")
-        assertThat(readItem).isEqualTo(inlineItem)
-        assertThat(readItem?.blobRef).isNull()
-        assertThat(readItem?.content?.get("id")?.jsonPrimitive?.content).isEqualTo("primary")
-        assertThat(readItem?.content?.get("priority")?.jsonPrimitive?.int).isEqualTo(100)
+        assertThat(diskCache.read()?.topicBlobRefs).isEqualTo(mapOf("sources" to emptyList<String>()))
+    }
+
+    @Test
+    fun `read returns null for an incompatible old-format file`() {
+        // The previous format stored "manifest" as an object; it is now an opaque string. An old file no longer
+        // deserializes, so read returns null gracefully and the next sync rebuilds from scratch.
+        val parent = File(testFolder, "RevenueCat").apply { mkdirs() }
+        File(parent, "remote_config.json").writeText(
+            """{"manifest":{"domain":"app","topics":{"sources":"etag1"}},"topicBlobRefs":{}}""",
+        )
+
+        assertThat(diskCache.read()).isNull()
     }
 
     @Test
     fun `write creates the RevenueCat directory when absent`() {
-        val manifest = RemoteConfiguration.Manifest(domain = "app")
-
-        diskCache.write(manifest, emptyMap())
+        diskCache.write(PersistedRemoteConfig(domain = "app", manifest = "v1.0."))
 
         assertThat(File(File(testFolder, "RevenueCat"), "remote_config.json").exists()).isTrue
     }
 
     @Test
     fun `write overwrites a previous snapshot`() {
-        diskCache.write(RemoteConfiguration.Manifest(domain = "app", topics = mapOf("sources" to "old")), emptyMap())
-        diskCache.write(RemoteConfiguration.Manifest(domain = "app", topics = mapOf("sources" to "new")), emptyMap())
+        diskCache.write(PersistedRemoteConfig(domain = "app", manifest = "v1.1.sources:old"))
+        diskCache.write(PersistedRemoteConfig(domain = "app", manifest = "v1.2.sources:new"))
 
-        assertThat(diskCache.read()?.manifest?.topics).containsExactlyEntriesOf(mapOf("sources" to "new"))
+        assertThat(diskCache.read()?.manifest).isEqualTo("v1.2.sources:new")
     }
 
     @Test
