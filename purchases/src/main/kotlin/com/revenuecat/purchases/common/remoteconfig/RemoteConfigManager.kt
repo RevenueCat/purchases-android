@@ -5,8 +5,8 @@ import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.SerializationException
 
 /**
- * Orchestrates a single `/v2/config` sync: replays the persisted [RemoteConfiguration.Manifest], then on `204` keeps the
- * cache untouched and on `200` persists the fresh server manifest plus the resolved topic bodies.
+ * Orchestrates a single `/v2/config` sync: replays the persisted [RemoteConfiguration.Manifest], then on `204`
+ * keeps the cache untouched and on `200` persists the fresh server manifest plus the resolved topic bodies.
  *
  * Blob extraction (Phase 3), topic-handler dispatch (Phase 4) and lifecycle wiring (Phase 7) are not done here
  * yet; this manager currently only owns manifest replay and persistence.
