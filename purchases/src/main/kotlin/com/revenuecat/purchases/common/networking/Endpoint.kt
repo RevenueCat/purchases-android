@@ -8,6 +8,13 @@ internal sealed class Endpoint(
     val fallbackPath: String? = null,
 ) {
     abstract fun getPath(useFallback: Boolean = false): String
+
+    /**
+     * Whether this endpoint returns an RC Container Format response rather than JSON. When
+     * `true`, the request advertises `Accept: application/x-rc-format` and the response body is exposed
+     * as [HTTPResult.Payload.RCFormat] instead of being decoded as text.
+     */
+    open val expectsRCFormatResponse: Boolean = false
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
@@ -98,13 +105,12 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
 
-    // WIP: Change to final endpoint
-    // WIP: Verify if this will have a different fallback path.
     object GetRemoteConfig : Endpoint(
         pathTemplate = "/v2/config",
-        name = "get_remote_config",
+        name = "remote_config",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate
+        override val expectsRCFormatResponse: Boolean = true
     }
     object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",
@@ -155,6 +161,7 @@ internal sealed class Endpoint(
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
             is GetRewardVerification,
+            GetRemoteConfig,
             ->
                 true
             is GetAmazonReceipt,
@@ -165,8 +172,6 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
-            // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
-            GetRemoteConfig,
             ->
                 false
         }
