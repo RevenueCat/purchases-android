@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.common.networking
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.utils.toMap
 import org.json.JSONObject
 
+@OptIn(InternalRevenueCatAPI::class)
 internal fun buildPostReceiptResponse(result: HTTPResult) = PostReceiptResponse(
     customerInfo = CustomerInfoFactory.buildCustomerInfo(result),
     productInfoByProductId = result.body.optJSONObject("purchased_products")?.let {

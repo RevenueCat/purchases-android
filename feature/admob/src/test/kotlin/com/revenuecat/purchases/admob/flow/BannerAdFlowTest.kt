@@ -8,6 +8,8 @@ import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.OnPaidEventListener
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.admob.tracking.TrackingAdListener
+import com.revenuecat.purchases.admob.tracking.TrackingOnPaidEventListener
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -85,6 +87,59 @@ class BannerAdFlowTest {
             explicitPaidListener,
             (paidSlot.captured as TrackingOnPaidEventListener).delegate,
         )
+    }
+
+    @Test
+    fun `explicit adListener takes precedence over pre-existing listener`() {
+        val adView = mockk<AdView>(relaxed = true)
+        val adRequest = mockk<AdRequest>()
+        val preExistingAdListener = RecordingAdListener()
+        val explicitAdListener = RecordingAdListener()
+
+        every { adView.adUnitId } returns "banner-unit"
+        every { adView.adListener } returns preExistingAdListener
+        val adListenerSlot = slot<AdListener>()
+        every { adView.adListener = capture(adListenerSlot) } answers {}
+        every { adView.onPaidEventListener = any() } answers {}
+
+        loadAndTrackBannerAdInternal(
+            adView = adView,
+            adRequest = adRequest,
+            placement = "home_banner",
+            adListener = explicitAdListener,
+        )
+
+        assertTrue(
+            "Installed listener should be a TrackingAdListener",
+            adListenerSlot.captured is TrackingAdListener,
+        )
+        assertSame(
+            "Delegate should be the explicit parameter, not the pre-existing listener",
+            explicitAdListener,
+            (adListenerSlot.captured as TrackingAdListener).delegate,
+        )
+    }
+
+    @Test
+    fun `empty adUnitId is handled gracefully`() {
+        val adView = mockk<AdView>(relaxed = true)
+        val adRequest = mockk<AdRequest>()
+
+        every { adView.adUnitId } returns ""
+        every { adView.adListener } returns RecordingAdListener()
+
+        val adListenerSlot = slot<AdListener>()
+        every { adView.adListener = capture(adListenerSlot) } answers {}
+        every { adView.onPaidEventListener = any() } answers {}
+
+        loadAndTrackBannerAdInternal(
+            adView = adView,
+            adRequest = adRequest,
+            placement = "home_banner",
+        )
+
+        assertTrue(adListenerSlot.captured is TrackingAdListener)
+        verify { adView.loadAd(adRequest) }
     }
 
     @Test

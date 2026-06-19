@@ -3,6 +3,7 @@ package com.revenuecat.purchases.google.usecase
 
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -22,7 +23,9 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal data class QueryPurchaseHistoryUseCaseParams(
+internal data class QueryPurchaseHistoryUseCaseParams
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     @BillingClient.ProductType val productType: String,
@@ -35,6 +38,7 @@ internal data class QueryPurchaseHistoryUseCaseParams(
  * since we support older versions of the billing client in the bc7 flavor, and we need to ensure that the same name
  * is used.
  */
+@OptIn(InternalRevenueCatAPI::class)
 internal class QueryPurchaseHistoryUseCase(
     private val useCaseParams: QueryPurchaseHistoryUseCaseParams,
     val onReceive: (List<StoreTransaction>) -> Unit,

@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -990,6 +989,36 @@ class EntitlementInfosTests {
         )
 
         verifyStore(Store.PADDLE)
+
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "lifetime")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            nonSubscriptions = JSONObject().apply {
+                put("lifetime", JSONArray().apply {
+                    put(JSONObject().apply {
+                        put("id", "5b9ba226bc")
+                        put("is_sandbox", false)
+                        put("original_purchase_date", "2019-07-26T22:10:27Z")
+                        put("purchase_date", "2019-07-26T22:10:27Z")
+                        put("store", "app_store")
+                    })
+                    put(JSONObject().apply {
+                        put("id", "ea820afcc4")
+                        put("is_sandbox", false)
+                        put("original_purchase_date", "2019-07-26T23:45:40Z")
+                        put("purchase_date", "2019-07-26T23:45:40Z")
+                        put("store", "galaxy")
+                    })
+                })
+            }
+        )
+
+        verifyStore(Store.GALAXY)
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.infoLog
@@ -129,6 +130,7 @@ internal class SubscriberAttributesManager(
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     @Synchronized
     fun markAsSynced(
         appUserID: String,

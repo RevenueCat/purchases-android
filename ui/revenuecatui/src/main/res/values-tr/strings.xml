@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} denemenizi başlatın, ardından {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Yüklü bir tarayıcı yok. Bağlantı açılamadı.</string>
     <string name="cannot_open_link">Geçersiz bağlantı. Açılamadı.</string>
+    <string name="revenuecatui_purchase">Satın al</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

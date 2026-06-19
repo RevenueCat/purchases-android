@@ -388,7 +388,10 @@ private fun ColumnScope.SelectPackageButton(
             .semantics {
                 selected = isSelected
             },
-        onClick = { viewModel.selectPackage(packageInfo) },
+        onClick = {
+            viewModel.trackTemplatePackageRowSelectionIfChanged(state, packageInfo)
+            viewModel.selectPackage(packageInfo)
+        },
         colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
         contentPadding = PaddingValues(

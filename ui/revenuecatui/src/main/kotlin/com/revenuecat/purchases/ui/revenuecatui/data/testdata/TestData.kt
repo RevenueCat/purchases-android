@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.app.Activity
@@ -9,12 +11,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -23,6 +27,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -31,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -42,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
@@ -490,7 +497,7 @@ internal class MockResourceProvider(
     override fun getAssetFontPaths(names: List<String>): Map<String, String>? {
         val foundPaths = names.associateWith { name ->
             val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
-            "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
+            "fonts/$nameWithExtension"
         }
 
         return foundPaths.filter { assetPaths.contains(it.value) }
@@ -511,6 +518,7 @@ internal class MockResourceProvider(
 internal class MockViewModel(
     mode: PaywallMode = PaywallMode.default,
     offering: Offering,
+    validationWarning: PaywallWarning? = null,
     private val allowsPurchases: Boolean = false,
     private val shouldErrorOnUnsupportedMethods: Boolean = true,
 ) : ViewModel(), PaywallViewModel {
@@ -523,7 +531,7 @@ internal class MockViewModel(
     override val actionError: State<PurchasesError?>
         get() = _actionError
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
-    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
+    override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
         return state.value.loadedLegacy()
@@ -538,6 +546,7 @@ internal class MockViewModel(
                 template = validated.template,
                 shouldDisplayDismissButton = false,
                 storefrontCountryCode = "US",
+                validationWarning = validationWarning,
             )
             is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
                 validationResult = validated,
@@ -566,6 +575,15 @@ internal class MockViewModel(
         trackExitOfferParams.add(Pair(exitOfferType, exitOfferingIdentifier))
     }
 
+    var trackComponentInteractionCallCount = 0
+        private set
+    val trackComponentInteractionParams = mutableListOf<PaywallComponentInteractionData>()
+
+    override fun trackComponentInteraction(data: PaywallComponentInteractionData) {
+        trackComponentInteractionCallCount++
+        trackComponentInteractionParams.add(data)
+    }
+
     var refreshStateIfLocaleChangedCallCount = 0
         private set
     override fun refreshStateIfLocaleChanged() {
@@ -585,7 +603,7 @@ internal class MockViewModel(
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         selectPackageCallCount++
         selectPackageCallParams.add(packageToSelect)
-        unsupportedMethod()
+        loadedLegacyState()?.selectPackage(packageToSelect) ?: unsupportedMethod()
     }
 
     var closePaywallCallCount = 0
@@ -614,9 +632,12 @@ internal class MockViewModel(
         private set
     var purchaseSelectedPackageParams = mutableListOf<Activity?>()
         private set
+    var purchaseSelectedPackageIdentifiers = mutableListOf<String?>()
+        private set
     override fun purchaseSelectedPackage(activity: Activity?) {
         purchaseSelectedPackageCallCount++
         purchaseSelectedPackageParams.add(activity)
+        purchaseSelectedPackageIdentifiers.add(loadedLegacyState()?.selectedPackage?.value?.rcPackage?.identifier)
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {
@@ -658,6 +679,29 @@ internal class MockViewModel(
         } else {
             unsupportedMethod("Can't restore purchases")
         }
+    }
+
+    var handleWorkflowActionCallCount = 0
+        private set
+    var handleWorkflowActionParams = mutableListOf<Pair<String, WorkflowTriggerType>>()
+        private set
+    override fun handleWorkflowAction(componentId: String, triggerType: WorkflowTriggerType) {
+        handleWorkflowActionCallCount++
+        handleWorkflowActionParams.add(componentId to triggerType)
+    }
+
+    var handleBackNavigationCallCount = 0
+        private set
+    var handleBackNavigationResult = false
+    override fun handleBackNavigation(): Boolean {
+        handleBackNavigationCallCount++
+        return handleBackNavigationResult
+    }
+
+    var onTransitionCompleteCallCount = 0
+        private set
+    override fun onTransitionComplete(transitionId: Int) {
+        onTransitionCompleteCallCount++
     }
 
     var clearActionErrorCallCount = 0

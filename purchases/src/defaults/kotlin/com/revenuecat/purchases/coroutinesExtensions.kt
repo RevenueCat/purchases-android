@@ -1,14 +1,15 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Get latest available customer info.
@@ -25,11 +26,11 @@ import kotlin.coroutines.suspendCoroutine
 public suspend fun Purchases.awaitCustomerInfo(
     fetchPolicy: CacheFetchPolicy = CacheFetchPolicy.default(),
 ): CustomerInfo {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getCustomerInfoWith(
             fetchPolicy,
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -47,13 +48,13 @@ public suspend fun Purchases.awaitCustomerInfo(
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
 public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         logInWith(
             appUserID,
             onSuccess = { customerInfo, created ->
-                continuation.resume(LogInResult(customerInfo, created))
+                continuation.safeResume(LogInResult(customerInfo, created))
             },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -70,10 +71,10 @@ public suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
 public suspend fun Purchases.awaitLogOut(): CustomerInfo {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         logOutWith(
-            onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -91,10 +92,10 @@ public suspend fun Purchases.awaitLogOut(): CustomerInfo {
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         syncPurchasesWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -118,10 +119,10 @@ public suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -147,12 +148,12 @@ public suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offering
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String, String>): Offerings {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         setAppstackAttributionParams(
             data,
             syncAttributesAndOfferingsListener(
-                onSuccess = continuation::resume,
-                onError = { continuation.resumeWithException(PurchasesException(it)) },
+                onSuccess = { continuation.safeResume(it) },
+                onError = { continuation.safeResumeWithException(PurchasesException(it)) },
             ),
         )
     }
@@ -176,10 +177,10 @@ public suspend fun Purchases.awaitSetAppstackAttributionParams(data: Map<String,
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getAmazonLWAConsentStatusWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -195,16 +196,45 @@ public suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
             override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
-                continuation.resume(customerCenterConfig)
+                continuation.safeResume(customerCenterConfig)
             }
 
             override fun onError(error: PurchasesError) {
-                continuation.resumeWithException(PurchasesException(error))
+                continuation.safeResumeWithException(PurchasesException(error))
             }
         })
+    }
+}
+
+/**
+ * Fetches reward verification status for a single client transaction id.
+ *
+ * @throws [RewardVerificationException] (a [PurchasesException] subtype) with a [PurchasesError] if an error
+ * occurs while fetching the status. Inspect [RewardVerificationException.isServerError] to distinguish transient
+ * HTTP 5xx failures (retryable) from deterministic ones.
+ */
+@JvmSynthetic
+@Throws(RewardVerificationException::class)
+@InternalRevenueCatAPI
+public suspend fun Purchases.awaitGetRewardVerificationResult(
+    clientTransactionId: String,
+): RewardVerificationResult {
+    return suspendCancellableCoroutine { continuation ->
+        getRewardVerificationResult(
+            clientTransactionId = clientTransactionId,
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationResult) {
+                    continuation.safeResume(result)
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    continuation.safeResumeWithException(RewardVerificationException(error.error, error.isServerError))
+                }
+            },
+        )
     }
 }
 
@@ -221,10 +251,10 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getVirtualCurrenciesWith(
-            onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -234,16 +264,18 @@ public suspend fun Purchases.awaitGetVirtualCurrencies(): VirtualCurrencies {
  * If there is any error, it will return null and log said error.
  * Coroutine friendly version of [Purchases.getStorefrontLocale].
  *
+ * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always throw an error.
+ *
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the country code.
  * @return The Store locale. **Note:** this locale only has a region set.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitStorefrontLocale(): Locale {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getStorefrontLocaleWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -271,12 +303,14 @@ public data class CreateSupportTicketResult(
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         createSupportTicket(
             email = email,
             description = description,
-            onSuccess = { wasSent -> continuation.resume(CreateSupportTicketResult(success = wasSent)) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { wasSent ->
+                continuation.safeResume(CreateSupportTicketResult(success = wasSent))
+            },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }

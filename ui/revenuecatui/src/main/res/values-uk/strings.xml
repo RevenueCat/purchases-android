@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">Розпочніть {{ sub_offer_duration }} пробний період, а потім {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Браузер не встановлено. Посилання не вдалося відкрити.</string>
     <string name="cannot_open_link">Недійсне посилання. Не вдалося відкрити.</string>
+    <string name="revenuecatui_purchase">Купити</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

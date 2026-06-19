@@ -1,13 +1,17 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.paywalls.events.toBackendComponentFields
 import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -53,6 +57,13 @@ internal sealed class BackendStoredEvent : Event {
     @Serializable
     @SerialName("custom_paywall_event")
     data class CustomPaywall(val event: BackendEvent.CustomPaywall) : BackendStoredEvent()
+
+    /**
+     * Represents a stored event related to Workflows.
+     */
+    @Serializable
+    @SerialName("workflows")
+    data class Workflows(val event: BackendEvent.Workflows) : BackendStoredEvent()
 }
 
 /**
@@ -67,6 +78,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
         is BackendStoredEvent.CustomerCenter -> { this.event }
         is BackendStoredEvent.Ad -> { this.event }
         is BackendStoredEvent.CustomPaywall -> { this.event }
+        is BackendStoredEvent.Workflows -> { this.event }
     }
 }
 
@@ -86,6 +98,7 @@ internal fun PaywallEvent.toBackendStoredEvent(
         // WIP: We should implement support for these events in the backend.
         return null
     }
+    val backendComponentFields = componentInteraction.toBackendComponentFields()
     return BackendStoredEvent.Paywalls(
         BackendEvent.Paywalls(
             id = creationData.id.toString(),
@@ -100,12 +113,37 @@ internal fun PaywallEvent.toBackendStoredEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+            workflowID = data.workflowId,
+            presentedOfferingContext = BackendEvent.PresentedOfferingContextData.fromContext(
+                context = data.presentedOfferingContext,
+                paywallId = data.paywallIdentifier,
+                workflowId = data.workflowId,
+            ),
             exitOfferType = data.exitOfferType?.value,
             exitOfferingID = data.exitOfferingIdentifier,
             packageID = data.packageIdentifier,
             productID = data.productIdentifier,
             errorCode = data.errorCode,
             errorMessage = data.errorMessage,
+            componentType = backendComponentFields.componentType,
+            componentName = backendComponentFields.componentName,
+            componentValue = backendComponentFields.componentValue,
+            componentUrl = backendComponentFields.componentUrl,
+            originIndex = backendComponentFields.originIndex,
+            destinationIndex = backendComponentFields.destinationIndex,
+            originContextName = backendComponentFields.originContextName,
+            destinationContextName = backendComponentFields.destinationContextName,
+            defaultIndex = backendComponentFields.defaultIndex,
+            originPackageIdentifier = backendComponentFields.originPackageIdentifier,
+            destinationPackageIdentifier = backendComponentFields.destinationPackageIdentifier,
+            defaultPackageIdentifier = backendComponentFields.defaultPackageIdentifier,
+            originProductIdentifier = backendComponentFields.originProductIdentifier,
+            destinationProductIdentifier = backendComponentFields.destinationProductIdentifier,
+            defaultProductIdentifier = backendComponentFields.defaultProductIdentifier,
+            currentPackageIdentifier = backendComponentFields.currentPackageIdentifier,
+            resultingPackageIdentifier = backendComponentFields.resultingPackageIdentifier,
+            currentProductIdentifier = backendComponentFields.currentProductIdentifier,
+            resultingProductIdentifier = backendComponentFields.resultingProductIdentifier,
         ),
     )
 }
@@ -172,7 +210,7 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Open.toBackendStoredEvent(
     appUserID: String,
@@ -192,11 +230,12 @@ internal fun AdEvent.Open.toBackendStoredEvent(
             impressionId = impressionId,
             appUserID = appUserID,
             appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
         ),
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Displayed.toBackendStoredEvent(
     appUserID: String,
@@ -216,11 +255,12 @@ internal fun AdEvent.Displayed.toBackendStoredEvent(
             impressionId = impressionId,
             appUserID = appUserID,
             appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
         ),
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Revenue.toBackendStoredEvent(
     appUserID: String,
@@ -240,6 +280,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
             impressionId = impressionId,
             appUserID = appUserID,
             appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
             revenueMicros = revenueMicros,
             currency = currency,
             precision = precision.value,
@@ -247,7 +288,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Loaded.toBackendStoredEvent(
     appUserID: String,
@@ -267,11 +308,12 @@ internal fun AdEvent.Loaded.toBackendStoredEvent(
             impressionId = impressionId,
             appUserID = appUserID,
             appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
         ),
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
     appUserID: String,
@@ -290,6 +332,7 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
             impressionId = impressionId,
             appUserID = appUserID,
             appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
             mediatorErrorCode = mediatorErrorCode,
         ),
     )
@@ -303,6 +346,7 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
  * @param appSessionID The session ID of the app session when this event occurred.
  * @return A `BackendStoredEvent.CustomPaywall` containing a `BackendEvent.CustomPaywall`.
  */
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
     appUserID: String,
@@ -317,6 +361,53 @@ internal fun CustomPaywallEvent.Impression.toBackendStoredEvent(
             appSessionID = appSessionID,
             timestamp = creationData.date.time,
             paywallID = data.paywallId,
+            offeringID = data.offeringId,
+            presentedOfferingContext = BackendEvent.CustomPaywallPresentedOfferingContextData.from(
+                placementIdentifier = data.placementIdentifier,
+                targetingRevision = data.targetingRevision,
+                targetingRuleId = data.targetingRuleId,
+            ),
+        ),
+    )
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun WorkflowEvent.toBackendStoredEvent(
+    appUserID: String,
+): BackendStoredEvent {
+    val eventName = when (this) {
+        is WorkflowEvent.StepStarted -> "workflows_step_started"
+        is WorkflowEvent.StepCompleted -> "workflows_step_completed"
+    }
+    val properties = when (this) {
+        is WorkflowEvent.StepStarted -> BackendEvent.Workflows.Properties(
+            workflowId = workflowId,
+            stepId = stepId,
+            traceId = traceId,
+            fromStepId = fromStepId,
+            entryReason = entryReason,
+            isFirstStep = isFirstStep,
+            isLastStep = isLastStep,
+        )
+        is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
+            workflowId = workflowId,
+            stepId = stepId,
+            traceId = traceId,
+            toStepId = toStepId,
+            isFirstStep = isFirstStep,
+            isLastStep = isLastStep,
+        )
+    }
+    return BackendStoredEvent.Workflows(
+        BackendEvent.Workflows(
+            id = creationData.id.toString(),
+            version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
+            type = BackendEvent.WORKFLOW_EVENT_TYPE,
+            eventName = eventName,
+            timestampMs = creationData.date.time,
+            appUserID = appUserID,
+            properties = properties,
         ),
     )
 }

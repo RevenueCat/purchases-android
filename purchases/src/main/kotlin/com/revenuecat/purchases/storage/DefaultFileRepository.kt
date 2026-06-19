@@ -16,7 +16,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -83,8 +82,9 @@ internal class DefaultFileRepository(
 
     constructor(
         context: Context,
+        subDir: String = DefaultFileCache.DEFAULT_SUBDIR,
     ) : this(
-        fileCacheManager = DefaultFileCache(context),
+        fileCacheManager = DefaultFileCache(context, subDir),
     )
 
     override fun prefetch(urls: List<Pair<URL, Checksum?>>) {
@@ -127,19 +127,17 @@ internal class DefaultFileRepository(
             if (fileCacheManager.cachedContentExists(it)) it else null
         }
 
-    private suspend fun downloadFile(url: URL): UrlConnection = try {
-        withContext(Dispatchers.IO) {
-            verboseLog { "Downloading remote file from $url" }
+    private fun downloadFile(url: URL): UrlConnection = try {
+        verboseLog { "Downloading remote file from $url" }
 
-            val connection = urlConnectionFactory.createConnection(url.toString())
+        val connection = urlConnectionFactory.createConnection(url.toString())
 
-            if (connection.responseCode != HttpURLConnection.HTTP_OK) {
-                connection.disconnect()
-                throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
-            }
-
-            return@withContext connection
+        if (connection.responseCode != HttpURLConnection.HTTP_OK) {
+            connection.disconnect()
+            throw IOException("HTTP ${connection.responseCode} when downloading file at: $url")
         }
+
+        connection
     } catch (e: IOException) {
         val message = "Failed to fetch file from remote source: $url. Error: ${e.localizedMessage}"
         logHandler.e("FileRepository", message, e)
@@ -193,14 +191,20 @@ internal class DefaultFileRepository(
 @OptIn(InternalRevenueCatAPI::class)
 internal class DefaultFileCache(
     private val context: Context,
+    private val subDir: String = DEFAULT_SUBDIR,
 ) : LocalFileCache {
+
+    companion object {
+        internal const val DEFAULT_SUBDIR = "rc_files"
+        private const val BUFFER_SIZE = 256 * 1024 // 256KB
+    }
 
     private val md: MessageDigest by lazy {
         MessageDigest.getInstance("MD5")
     }
 
     private val cacheDir: File by lazy {
-        val dir = File(context.cacheDir, "rc_files")
+        val dir = File(context.cacheDir, subDir)
         if (!dir.exists()) {
             dir.mkdirs()
         }
@@ -301,9 +305,5 @@ internal class DefaultFileCache(
         )
 
         return checksum == computedChecksum
-    }
-
-    companion object {
-        private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 }

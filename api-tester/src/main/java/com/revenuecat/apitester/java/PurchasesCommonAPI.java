@@ -5,9 +5,11 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -28,6 +30,7 @@ import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleReplacementMode;
 import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.StoreProduct;
+import com.revenuecat.purchases.models.StoreReplacementMode;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
 
@@ -90,6 +93,7 @@ final class PurchasesCommonAPI {
         purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList);
     }
 
+    @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void checkPurchasing(final Purchases purchases,
                                 final Activity activity,
                                 final StoreProduct storeProduct,
@@ -105,13 +109,15 @@ final class PurchasesCommonAPI {
             }
         };
         String oldProductId = "old";
-        GoogleReplacementMode replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION;
+        GoogleReplacementMode googleReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION;
+        StoreReplacementMode storeReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION;
         Boolean isPersonalizedPrice = true;
 
         PurchaseParams.Builder purchaseProductBuilder = new PurchaseParams.Builder(activity, storeProduct);
         purchaseProductBuilder
                 .oldProductId(oldProductId)
-                .googleReplacementMode(replacementMode)
+                .googleReplacementMode(googleReplacementMode)
+                .replacementMode(storeReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseProductParams = purchaseProductBuilder.build();
         purchases.purchase(purchaseProductParams, purchaseCallback);
@@ -119,7 +125,8 @@ final class PurchasesCommonAPI {
         PurchaseParams.Builder purchaseOptionBuilder = new PurchaseParams.Builder(activity, subscriptionOption);
         purchaseOptionBuilder
                 .oldProductId(oldProductId)
-                .googleReplacementMode(replacementMode)
+                .googleReplacementMode(googleReplacementMode)
+                .replacementMode(storeReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
@@ -127,7 +134,8 @@ final class PurchasesCommonAPI {
         PurchaseParams.Builder purchasePackageBuilder = new PurchaseParams.Builder(activity, packageToPurchase);
         purchasePackageBuilder
                 .oldProductId(oldProductId)
-                .googleReplacementMode(replacementMode)
+                .googleReplacementMode(googleReplacementMode)
+                .replacementMode(storeReplacementMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);

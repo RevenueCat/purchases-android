@@ -211,6 +211,49 @@ class FontLoaderTest {
     }
 
     @Test
+    fun `getCachedFontFamilyOrStartDownload re-downloads when cached file is deleted from disk`() = runTest {
+        urlConnectionFactory = TestUrlConnectionFactory(
+            connectionProvider = { url ->
+                if (url == FONT_URL) {
+                    TestUrlConnection(
+                        responseCode = HttpURLConnection.HTTP_OK,
+                        inputStream = ByteArrayInputStream(FONT_FILE_CONTENT.toByteArray()),
+                    )
+                } else {
+                    throw IllegalArgumentException("No mocked connection for URL: $url")
+                }
+            },
+        )
+        fontLoader = FontLoader(
+            context = mockContext,
+            providedCacheDir = mockCacheDir,
+            ioScope = testScope,
+            urlConnectionFactory = urlConnectionFactory,
+        )
+
+        // First download
+        assertNull(fontLoader.getCachedFontFamilyOrStartDownload(fontInfo))
+        testScope.advanceUntilIdle()
+        val cachedFamily = fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+        verifyDownloadedFontFamily(cachedFamily)
+
+        // Delete the cached file from disk (simulating Android cache eviction)
+        cachedFamily!!.fonts.forEach { it.file.delete() }
+
+        // Should detect missing file, return null, and trigger re-download
+        val afterDeletion = fontLoader.getCachedFontFamilyOrStartDownload(fontInfo)
+        assertNull(afterDeletion)
+
+        testScope.advanceUntilIdle()
+
+        // Font should be re-downloaded and available again
+        verifyDownloadedFontFamily(fontLoader.getCachedFontFamilyOrStartDownload(fontInfo))
+
+        // Should have created 2 connections total (original + re-download)
+        assertEquals(2, urlConnectionFactory.createdConnections.size)
+    }
+
+    @Test
     fun `getCachedFontFileOrStartDownload handles null cacheDir gracefully`() = runTest {
         val contextWithNullCacheDir = mockk<Context> {
             every { cacheDir } returns null

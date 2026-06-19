@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptySet
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.createLocaleFromString
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -61,6 +62,7 @@ internal sealed interface PaywallState {
             val templateConfiguration: TemplateConfiguration,
             val selectedPackage: MutableState<TemplateConfiguration.PackageInfo>,
             val shouldDisplayDismissButton: Boolean,
+            val validationWarning: PaywallWarning? = null,
         ) : Loaded {
 
             constructor(
@@ -68,12 +70,14 @@ internal sealed interface PaywallState {
                 templateConfiguration: TemplateConfiguration,
                 selectedPackage: TemplateConfiguration.PackageInfo,
                 shouldDisplayDismissButton: Boolean,
+                validationWarning: PaywallWarning? = null,
             ) :
                 this(
                     offering,
                     templateConfiguration,
                     mutableStateOf(selectedPackage),
                     shouldDisplayDismissButton,
+                    validationWarning,
                 )
 
             fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {
@@ -85,8 +89,10 @@ internal sealed interface PaywallState {
         @Stable
         class Components(
             val stack: ComponentStyle,
+            val header: ComponentStyle?,
             val stickyFooter: ComponentStyle?,
             val background: BackgroundStyles,
+            val mainStackHasHeroImage: Boolean = false,
             /**
              * Some currencies do not commonly use decimals when displaying prices. Set this to false to accommodate
              * for that.
@@ -115,6 +121,13 @@ internal sealed interface PaywallState {
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
         ) : Loaded {
+
+            /**
+             * Custom variables merged from dashboard defaults and developer-provided overrides.
+             * Developer-provided values take precedence.
+             */
+            val mergedCustomVariables: Map<String, CustomVariableValue> =
+                defaultCustomVariables + customVariables
 
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
@@ -235,8 +248,16 @@ internal sealed interface PaywallState {
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
+            private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
+
+            internal fun setDefaultPackage(info: SelectedPackageInfo) {
+                // Idempotency lock: default is set once and never overwritten, so back
+                // navigation always shows the same content as the initial render.
+                if (defaultPackageInfo == null) defaultPackageInfo = info
+            }
+
             val selectedPackageInfo by derivedStateOf {
-                selectedPackageUniqueId?.let { uniqueId ->
+                val ownSelection = selectedPackageUniqueId?.let { uniqueId ->
                     findPackageInfoByUniqueId(uniqueId)?.let { info ->
                         SelectedPackageInfo(
                             rcPackage = info.pkg,
@@ -246,6 +267,7 @@ internal sealed interface PaywallState {
                         )
                     }
                 }
+                ownSelection ?: defaultPackageInfo
             }
 
             private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {
@@ -264,6 +286,16 @@ internal sealed interface PaywallState {
 
             val currentDate: Date
                 get() = dateProvider()
+
+            /**
+             * The measured height of the header overlay in pixels. Set during the layout phase by
+             * the custom Layout in [LoadedPaywallComponents] so that ZLayer stacks can read it
+             * during their own layout phase (via [Modifier.layout]) to offset non-hero children
+             * below the header — all in a single pass, without recomposition.
+             */
+            @get:JvmSynthetic
+            var headerHeightPx: Int = 0
+                @JvmSynthetic internal set
 
             var actionInProgress by mutableStateOf(false)
                 private set
@@ -317,6 +349,34 @@ internal sealed interface PaywallState {
                     packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
                         ?: initialSelectedPackageOutsideTabs
                         ?: selectedPackageByTab[selectedTabIndex]
+            }
+
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? =
+                packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
+                    ?: initialSelectedPackageOutsideTabs
+                    ?: selectedPackageByTab[selectedTabIndex]
+
+            fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
+                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
+                val info = uid?.let { findPackageInfoByUniqueId(it) }
+                return if (uid != null && info != null) {
+                    SelectedPackageInfo(
+                        rcPackage = info.pkg,
+                        resolvedOffer = info.resolvedOffer,
+                        uniqueId = uid,
+                        offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
+                    )
+                } else {
+                    null
+                }
+            }
+
+            /**
+             * Default package for the current tab / root context (aligned with [resetToDefaultPackage]).
+             */
+            fun defaultPackageForPackageRowAnalytics(): Package? {
+                val uid = peekDefaultPackageUniqueIdAfterSheetDismiss() ?: return null
+                return findPackageInfoByUniqueId(uid)?.pkg
             }
 
             private fun LocaleList.toLocaleId(): LocaleId {

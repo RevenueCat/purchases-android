@@ -47,6 +47,7 @@ internal sealed class PaywallValidationError : Throwable() {
             is TabControlNotInTab -> message
             is UnsupportedBackgroundType -> message
             is RootComponentUnsupportedProperties -> message
+            is WorkflowButtonMissingComponentId -> message
         }
     }
 
@@ -136,5 +137,11 @@ internal sealed class PaywallValidationError : Throwable() {
     ) : PaywallValidationError() {
         override val message: String = PaywallValidationErrorStrings.ROOT_COMPONENT_UNSUPPORTED_PROPERTIES
             .format(component::class.java.simpleName)
+    }
+    data class WorkflowButtonMissingComponentId(
+        val componentName: String?,
+    ) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.WORKFLOW_BUTTON_MISSING_COMPONENT_ID
+            .format(componentName ?: "<unnamed>")
     }
 }

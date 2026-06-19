@@ -1,5 +1,6 @@
 plugins {
-    id("revenuecat-public-library")
+    alias(libs.plugins.revenuecat.public.library)
+    alias(libs.plugins.poko)
 }
 
 metalava {

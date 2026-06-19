@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
@@ -297,6 +298,34 @@ class AppConfigTest {
     }
 
     @Test
+    fun `applyObfuscatedAccountIdToSubscriptionChanges matches value from dangerous settings`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            dangerousSettings = DangerousSettings(applyObfuscatedAccountIdToSubscriptionChanges = true),
+        )
+        assertThat(appConfig.applyObfuscatedAccountIdToSubscriptionChanges).isTrue
+        val appConfig2 = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            dangerousSettings = DangerousSettings(applyObfuscatedAccountIdToSubscriptionChanges = false),
+        )
+        assertThat(appConfig2.applyObfuscatedAccountIdToSubscriptionChanges).isFalse
+    }
+
+    @Test
     fun `uiPreviewMode matches value from dangerous settings`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
@@ -474,7 +503,12 @@ class AppConfigTest {
                 "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
                 "store=PLAY_STORE, " +
                 "isDebugBuild=false, " +
-                "dangerousSettings=DangerousSettings(autoSyncPurchases=true, customEntitlementComputation=false, uiPreviewMode=false), " +
+                "dangerousSettings=DangerousSettings(" +
+                "autoSyncPurchases=true, " +
+                "customEntitlementComputation=false, " +
+                "uiPreviewMode=false, " +
+                "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
+                "useWorkflows=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +
@@ -517,4 +551,33 @@ class AppConfigTest {
     }
 
     // endregion Fallback API host
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `useWorkflows reflects dangerousSettings`() {
+        val enabled = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            dangerousSettings = DangerousSettings.forWorkflows(),
+        )
+        assertThat(enabled.useWorkflows).isTrue
+
+        val disabled = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+        )
+        assertThat(disabled.useWorkflows).isFalse
+    }
 }

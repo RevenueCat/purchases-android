@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
@@ -58,6 +59,7 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @SuppressWarnings("NestedBlockDepth")
 internal fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
     val storeProducts = mutableListOf<StoreProduct>()

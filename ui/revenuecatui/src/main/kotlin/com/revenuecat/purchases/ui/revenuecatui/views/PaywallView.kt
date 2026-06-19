@@ -73,7 +73,7 @@ public class PaywallView : CompatComposeView {
         offering?.let {
             setOfferingId(
                 offeringId = it.identifier,
-                presentedOfferingContext = it.availablePackages.firstOrNull()?.presentedOfferingContext,
+                presentedOfferingContext = it.presentedOfferingContext,
             )
         }
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
@@ -95,6 +95,9 @@ public class PaywallView : CompatComposeView {
     private var internalListener: PaywallListener = object : PaywallListener {
         override fun onPurchasePackageInitiated(rcPackage: Package, resume: Resumable) {
             listener?.onPurchasePackageInitiated(rcPackage, resume) ?: resume()
+        }
+        override fun onRestoreInitiated(resume: Resumable) {
+            listener?.onRestoreInitiated(resume) ?: resume()
         }
         override fun onPurchaseStarted(rcPackage: Package) { listener?.onPurchaseStarted(rcPackage) }
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
@@ -227,6 +230,8 @@ public class PaywallView : CompatComposeView {
         val paywallOptions by remember {
             paywallOptionsState
         }
-        Paywall(paywallOptions)
+        RevenueCatTheme {
+            Paywall(paywallOptions)
+        }
     }
 }

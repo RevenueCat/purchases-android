@@ -20,4 +20,7 @@
     <string name="lifetime">Lifetime</string>
     <string name="no_browser_cannot_open_link">No browser installed. Link could not be opened.</string>
     <string name="cannot_open_link">Link invalid. Could not be opened.</string>
+    <!-- Default Paywall -->
+    <string name="revenuecatui_purchase">Purchase</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

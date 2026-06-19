@@ -9,6 +9,7 @@ import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -93,6 +94,35 @@ class PurchaseParamsValidatorTest {
         )
             .oldProductId("123")
             .googleReplacementMode(GoogleReplacementMode.WITHOUT_PRORATION)
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with oldProductId, GoogleReplacementMode, and StoreReplacementMode passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+        )
+            .oldProductId("123")
+            .googleReplacementMode(GoogleReplacementMode.WITHOUT_PRORATION)
+            .replacementMode(StoreReplacementMode.WITHOUT_PRORATION)
+            .build()
+
+        val validationResult = validator.validate(purchaseParams)
+        assertThat(validationResult).isInstanceOf(Result.Success::class.java)
+    }
+
+    @Test
+    fun `purchaseParams with oldProductId and StoreReplacementMode passes validation`() {
+        val purchaseParams = PurchaseParams.Builder(
+            mockk(),
+            subscriptionOption = stubSubscriptionOption(id = "123", productId = "abc")
+        )
+            .oldProductId("123")
+            .replacementMode(StoreReplacementMode.WITHOUT_PRORATION)
             .build()
 
         val validationResult = validator.validate(purchaseParams)

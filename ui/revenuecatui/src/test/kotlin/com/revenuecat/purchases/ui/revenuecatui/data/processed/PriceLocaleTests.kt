@@ -1,0 +1,111 @@
+package com.revenuecat.purchases.ui.revenuecatui.data.processed
+
+import com.revenuecat.purchases.models.Price
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
+import java.util.Locale
+
+/**
+ * Tests for [Price.getFormatted] to ensure it properly formats prices using
+ * the provided locale, fixing the mixed currencies bug (PW-133).
+ */
+class PriceLocaleTests {
+
+    @Test
+    fun `getFormatted uses provided locale for currency symbol position`() {
+        // Price with USD currency
+        val price = Price(
+            amountMicros = 10_000_000, // $10.00
+            currencyCode = "USD",
+            formatted = "US$10.00", // Pre-formatted with a different locale
+        )
+
+        // Format with US locale - currency symbol before number
+        val usFormatted = price.getFormatted(Locale.US)
+        assertThat(usFormatted).isEqualTo("$10.00")
+
+        // Format with German locale - currency symbol after number
+        val deFormatted = price.getFormatted(Locale.GERMANY)
+        assertThat(deFormatted).isEqualTo("10,00\u00A0$")
+    }
+
+    @Test
+    fun `getFormatted uses provided locale for decimal separator`() {
+        val price = Price(
+            amountMicros = 10_990_000, // $10.99
+            currencyCode = "USD",
+            formatted = "$10.99",
+        )
+
+        // US uses period as decimal separator
+        val usFormatted = price.getFormatted(Locale.US)
+        assertThat(usFormatted).isEqualTo("$10.99")
+
+        // Germany uses comma as decimal separator
+        val deFormatted = price.getFormatted(Locale.GERMANY)
+        assertThat(deFormatted).isEqualTo("10,99\u00A0$")
+    }
+
+    @Test
+    fun `getFormatted respects currency decimal places`() {
+        // Japanese Yen has 0 decimal places
+        val jpyPrice = Price(
+            amountMicros = 1000_000_000, // ¥1000
+            currencyCode = "JPY",
+            formatted = "¥1,000",
+        )
+
+        val jpFormatted = jpyPrice.getFormatted(Locale.JAPAN)
+        assertThat(jpFormatted).isEqualTo("￥1,000")
+    }
+
+    @Test
+    fun `getFormatted uses currency fraction digits even when locale default differs`() {
+        val jpyPrice = Price(
+            amountMicros = 1000_000_000, // ¥1000
+            currencyCode = "JPY",
+            formatted = "¥1,000",
+        )
+        val kwdPrice = Price(
+            amountMicros = 1_234_000, // KWD 1.234
+            currencyCode = "KWD",
+            formatted = "KWD1.234",
+        )
+
+        val jpyFormattedInUsLocale = jpyPrice.getFormatted(Locale.US)
+        assertThat(jpyFormattedInUsLocale).isEqualTo("¥1,000")
+
+        val kwdFormattedInUsLocale = kwdPrice.getFormatted(Locale.US)
+        assertThat(kwdFormattedInUsLocale).isEqualTo("KWD1.234")
+    }
+
+    @Test
+    fun `getFormatted handles EUR currency with correct symbol`() {
+        val eurPrice = Price(
+            amountMicros = 5_000_000, // €5.00
+            currencyCode = "EUR",
+            formatted = "€5.00",
+        )
+
+        // Format with German locale
+        val deFormatted = eurPrice.getFormatted(Locale.GERMANY)
+        assertThat(deFormatted).isEqualTo("5,00\u00A0€")
+
+        // Format with French locale
+        val frFormatted = eurPrice.getFormatted(Locale.FRANCE)
+        assertThat(frFormatted).isEqualTo("5,00\u00A0€")
+    }
+
+    @Test
+    fun `getFormatted uses locale default fraction digits`() {
+        // USD has 2 decimal places, so $5.00 should show as "$5.00" in en_US locale
+        val price = Price(
+            amountMicros = 5_000_000,
+            currencyCode = "USD",
+            formatted = "$5.00",
+        )
+
+        val formatted = price.getFormatted(Locale.US)
+        assertThat(formatted).isEqualTo("\$5.00")
+    }
+}

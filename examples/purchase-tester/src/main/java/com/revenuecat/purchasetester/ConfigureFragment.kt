@@ -14,21 +14,26 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.DebugEventListener
 import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
+import com.revenuecat.purchases.galaxy.GalaxyBillingMode
+import com.revenuecat.purchases.galaxy.GalaxyConfiguration
 import com.revenuecat.purchases_sample.BuildConfig
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentConfigureBinding
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.net.MalformedURLException
 import java.net.URL
 
+@Suppress("TooManyFunctions")
 class ConfigureFragment : Fragment() {
 
     lateinit var binding: FragmentConfigureBinding
@@ -56,12 +61,13 @@ class ConfigureFragment : Fragment() {
                 binding.apiKeyInput.setText(sdkConfiguration.apiKey)
                 binding.proxyUrlInput.setText(sdkConfiguration.proxyUrl)
                 val storeToCheckId =
-                    if (sdkConfiguration.useAmazon) {
-                        R.id.amazon_store_radio_id
-                    } else {
-                        R.id.google_store_radio_id
+                    when (sdkConfiguration.store) {
+                        Store.AMAZON -> R.id.amazon_store_radio_id
+                        Store.GALAXY -> R.id.galaxy_store_radio_id
+                        Store.GOOGLE -> R.id.google_store_radio_id
                     }
                 binding.storeRadioGroup.check(storeToCheckId)
+                updateGalaxyWarningVisibility()
             }.collect()
         }
 
@@ -90,8 +96,12 @@ class ConfigureFragment : Fragment() {
             binding.continueButton.isEnabled = false
 
             lifecycleScope.launch {
-                configureSDK()
-                navigateToLoginFragment()
+                val didConfigure = configureSDK()
+                if (didConfigure) {
+                    navigateToLoginFragment()
+                } else {
+                    binding.continueButton.isEnabled = true
+                }
             }
         }
 
@@ -116,17 +126,26 @@ class ConfigureFragment : Fragment() {
             }
         }
 
+        binding.storeRadioGroup.setOnCheckedChangeListener { _, _ ->
+            updateGalaxyWarningVisibility()
+        }
+
         return binding.root
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
-    private suspend fun configureSDK() {
+    @Suppress("CyclomaticComplexMethod")
+    @OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private suspend fun configureSDK(): Boolean {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
 
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
-        val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
+        val selectedStore = when (binding.storeRadioGroup.checkedRadioButtonId) {
+            R.id.amazon_store_radio_id -> Store.AMAZON
+            R.id.galaxy_store_radio_id -> Store.GALAXY
+            else -> Store.GOOGLE
+        }
         val purchasesAreCompletedBy = when (binding.purchaseCompletionRadioGroup.checkedRadioButtonId) {
             R.id.completed_by_revenuecat_radio_id -> PurchasesAreCompletedBy.REVENUECAT
             R.id.completed_by_my_app_radio_id -> PurchasesAreCompletedBy.MY_APP
@@ -142,10 +161,10 @@ class ConfigureFragment : Fragment() {
         Purchases.logLevel = LogLevel.VERBOSE
 
         val configurationBuilder =
-            if (useAmazonStore) {
-                AmazonConfiguration.Builder(application, apiKey)
-            } else {
-                PurchasesConfiguration.Builder(application, apiKey)
+            when (selectedStore) {
+                Store.AMAZON -> AmazonConfiguration.Builder(application, apiKey)
+                Store.GALAXY -> GalaxyConfiguration.Builder(application, apiKey, GalaxyBillingMode.TEST)
+                Store.GOOGLE -> PurchasesConfiguration.Builder(application, apiKey)
             }
 
         val configuration = configurationBuilder
@@ -169,7 +188,17 @@ class ConfigureFragment : Fragment() {
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
 
-        dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, useAmazonStore))
+        // Preserve the separately-entered app user ID because this screen only edits SDK configuration fields.
+        val existingConfiguration = dataStoreUtils.getSdkConfig().first()
+        dataStoreUtils.saveSdkConfig(
+            SdkConfiguration(
+                apiKey = apiKey,
+                proxyUrl = proxyUrl,
+                store = selectedStore,
+                appUserId = existingConfiguration.appUserId,
+            ),
+        )
+        return true
     }
 
     private fun setupSupportedStoresRadioButtons() {
@@ -182,6 +211,14 @@ class ConfigureFragment : Fragment() {
             binding.amazonStoreRadioId.isEnabled = false
             binding.amazonUnavailableTextView.visibility = View.VISIBLE
         }
+        if (!supportedStores.contains("galaxy")) {
+            binding.galaxyStoreRadioId.isEnabled = false
+        }
+    }
+
+    private fun updateGalaxyWarningVisibility() {
+        val isGalaxySelected = binding.storeRadioGroup.checkedRadioButtonId == R.id.galaxy_store_radio_id
+        binding.galaxyWarningTextView.visibility = if (isGalaxySelected) View.VISIBLE else View.GONE
     }
 
     private fun navigateToLoginFragment() {

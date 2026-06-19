@@ -5,7 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.video
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.SurfaceTexture
-import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Parcelable
 import android.util.AttributeSet
@@ -31,7 +30,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.parcelize.Parcelize
 
 @Suppress("LongParameterList")
@@ -79,15 +77,15 @@ private class TextureVideoView @JvmOverloads constructor(
     enum class ScaleType { FIT, FILL }
 
     private val texture = TextureView(context)
-    private val player = MediaPlayer()
+    private val playerOwner = MediaPlayerThreadOwner(context = context, muteAudio = muteAudio)
     private var controller: MediaController? = null
+    private var attachedSurface: Surface? = null
 
     private var videoWidth = 0
     private var videoHeight = 0
     private var prepared = false
     private var released = false
     private var uri: Uri? = null
-    private var looping = false
     private var autoStart = true
     private var scaleType = ScaleType.FIT
     private var firstFrameRendered = false
@@ -99,6 +97,7 @@ private class TextureVideoView @JvmOverloads constructor(
 
     private val layoutListener = ViewTreeObserver.OnGlobalLayoutListener { applySizing() }
     private var viewTreeObserverListening = false
+    private var prepareRequestId = 0
 
     init {
         clipToPadding = true
@@ -112,7 +111,12 @@ private class TextureVideoView @JvmOverloads constructor(
         texture.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
             override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
                 if (released) return
-                player.setSurface(Surface(st))
+                // Defensive cleanup in case a stale surface is still held.
+                takeAttachedSurface()?.let { staleSurface ->
+                    playerOwner.clearSurfaceBlocking(staleSurface)
+                }
+                attachedSurface = Surface(st)
+                playerOwner.setSurface(attachedSurface)
                 if (!viewTreeObserverListening) {
                     viewTreeObserver.addOnGlobalLayoutListener(layoutListener)
                     viewTreeObserverListening = true
@@ -131,17 +135,17 @@ private class TextureVideoView @JvmOverloads constructor(
                 applySizing()
 
             override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
-                if (released) return true
-                // snapshot play state & position to resume after recreation
-                resumePlayWhenReady = isPlaying
-                resumePosMs = currentPosition
-                // pause before losing surface to avoid state exceptions
-                if (prepared) {
-                    safely(execute = {
-                        player.pause()
-                    })
+                val surfaceToDetach = takeAttachedSurface()
+                if (!released) {
+                    // snapshot play state & position to resume after recreation
+                    resumePlayWhenReady = isPlaying
+                    resumePosMs = currentPosition
+                    // pause before losing surface to avoid state exceptions
+                    if (prepared) {
+                        pause()
+                    }
+                    playerOwner.clearSurfaceBlocking(surfaceToDetach)
                 }
-                player.setSurface(null)
                 return true // we release the surface
             }
 
@@ -173,20 +177,12 @@ private class TextureVideoView @JvmOverloads constructor(
     fun getPlaybackState(): PlaybackState {
         // If not prepared yet, return last requested state (resumePosMs / resumePlayWhenReady)
         val position = if (prepared) {
-            try {
-                player.currentPosition
-            } catch (_: Throwable) {
-                resumePosMs
-            }
+            playerOwner.getCurrentPosition()
         } else {
             resumePosMs
         }
         val play = if (prepared) {
-            try {
-                player.isPlaying
-            } catch (_: Throwable) {
-                false
-            }
+            playerOwner.isPlaying()
         } else {
             resumePlayWhenReady
         }
@@ -220,8 +216,9 @@ private class TextureVideoView @JvmOverloads constructor(
     }
 
     fun setLooping(loop: Boolean) {
-        looping = loop
-        if (!released) player.isLooping = loop
+        if (!released) {
+            playerOwner.setLooping(loop)
+        }
     }
 
     fun setAutoStart(enabled: Boolean) {
@@ -237,15 +234,12 @@ private class TextureVideoView @JvmOverloads constructor(
 
     fun release() {
         if (released) return
-        controller?.hide()
-        safely(execute = {
-            player.stop()
-        })
-        safely(execute = {
-            player.reset()
-        })
-        player.release()
         released = true
+        prepared = false
+        prepareRequestId += 1
+        controller?.hide()
+        controller = null
+        playerOwner.release(surfaceToRelease = takeAttachedSurface())
         if (viewTreeObserverListening) {
             viewTreeObserver.removeOnGlobalLayoutListener(layoutListener)
             viewTreeObserverListening = false
@@ -255,53 +249,48 @@ private class TextureVideoView @JvmOverloads constructor(
     private fun prepareIfNeeded() {
         if (released) return
 
-        uri?.let {
-            prepared = false
-            player.reset()
-            player.setDataSource(context, it)
-        } ?: return
+        val source = uri ?: return
+        val requestId = ++prepareRequestId
+        prepared = false
+        playerOwner.prepare(
+            uri = source,
+            onPrepared = { width, height ->
+                if (released || requestId != prepareRequestId) return@prepare
+                prepared = true
+                videoWidth = width
+                videoHeight = height
+                applySizing()
+                if (resumePosMs > 0) {
+                    safeSeekTo(resumePosMs)
+                } else if (resumePosMs == 0) {
+                    // Show first frame by seeking to 1ms if no saved position is found
+                    safeSeekTo(1)
+                }
+                if (autoStart || resumePlayWhenReady) {
+                    start()
+                }
+                // Always show controller so user can see play button when autoStart is false
+                if (showControls) controller?.show()
+            },
+            onVideoSizeChanged = { width, height ->
+                if (released || requestId != prepareRequestId) return@prepare
+                videoWidth = width
+                videoHeight = height
+                applySizing()
+            },
+        )
+    }
 
-        player.setOnPreparedListener {
-            if (released) return@setOnPreparedListener
-            prepared = true
-            videoWidth = it.videoWidth
-            videoHeight = it.videoHeight
-            it.isLooping = looping
-            if (muteAudio) {
-                // Simple approach: just try to set volume to 0, catch any exceptions
-                safely(execute = {
-                    it.setVolume(0f, 0f)
-                }, failureMessage = { e ->
-                    "Could not mute audio: ${e.message}"
-                })
-            }
-            applySizing()
-            if (resumePosMs > 0) {
-                safeSeekTo(resumePosMs)
-            } else {
-                // Show first frame by seeking to 1ms if no saved position is found
-                if (resumePosMs == 0) safeSeekTo(1)
-            }
-            if (autoStart || resumePlayWhenReady) {
-                start()
-            }
-            // Always show controller so user can see play button when autoStart is false
-            if (showControls) controller?.show()
+    private fun safeSeekTo(position: Int) {
+        if (prepared && position > 0) {
+            playerOwner.seekTo(position)
         }
+    }
 
-        player.setOnVideoSizeChangedListener { _, w, h ->
-            if (released) return@setOnVideoSizeChangedListener
-            videoWidth = w
-            videoHeight = h
-            applySizing()
-        }
-
-        try {
-            player.prepareAsync()
-        } catch (e: IllegalStateException) {
-            // Can happen if rotation tears down while preparing; ignore if released
-            if (!released) throw e
-        }
+    private fun takeAttachedSurface(): Surface? {
+        val previousSurface = attachedSurface
+        attachedSurface = null
+        return previousSurface
     }
 
     private fun applySizing() {
@@ -338,44 +327,34 @@ private class TextureVideoView @JvmOverloads constructor(
         invalidate()
     }
 
-    private fun safeSeekTo(position: Int) {
-        safely(execute = {
-            if (prepared && position > 0) player.seekTo(position)
-        })
-    }
-
     /** MediaController.MediaPlayerControl **/
     override fun start() {
         if (prepared && !released) {
-            safely(execute = {
-                player.start()
-            })
+            playerOwner.start()
         }
     }
 
     override fun pause() {
         if (prepared && !released) {
-            safely(execute = {
-                player.pause()
-            })
+            playerOwner.pause()
         }
     }
 
-    override fun getDuration(): Int = if (prepared && !released) player.duration else 0
+    override fun getDuration(): Int = if (prepared && !released) playerOwner.getDuration() else 0
     override fun getCurrentPosition(): Int =
-        if (prepared && !released) player.currentPosition else resumePosMs
+        if (prepared && !released) playerOwner.getCurrentPosition() else resumePosMs
 
     override fun seekTo(pos: Int) {
         resumePosMs = pos
         safeSeekTo(pos)
     }
 
-    override fun isPlaying(): Boolean = prepared && !released && player.isPlaying
+    override fun isPlaying(): Boolean = prepared && !released && playerOwner.isPlaying()
     override fun getBufferPercentage(): Int = 0
     override fun canPause(): Boolean = true
     override fun canSeekBackward(): Boolean = true
     override fun canSeekForward(): Boolean = true
-    override fun getAudioSessionId(): Int = player.audioSessionId
+    override fun getAudioSessionId(): Int = playerOwner.getAudioSessionId()
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
@@ -384,7 +363,7 @@ private class TextureVideoView @JvmOverloads constructor(
 
     @Suppress("ComplexCondition")
     fun startIfNeeded() {
-        if (prepared && !released && !player.isPlaying && autoStart) {
+        if (prepared && !released && !playerOwner.isPlaying() && autoStart) {
             start()
         }
     }
@@ -492,17 +471,6 @@ private fun Video(
                 videoView.value = null
             },
         )
-    }
-}
-
-@Suppress("TooGenericExceptionCaught")
-private fun safely(execute: () -> Unit, failureMessage: (Exception) -> String? = { null }) {
-    try {
-        execute()
-    } catch (e: Exception) {
-        failureMessage(e)?.run {
-            Logger.e("TextureVideoView: $this", e)
-        }
     }
 }
 

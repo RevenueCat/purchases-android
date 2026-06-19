@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.virtualcurrencies
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.networking.HTTPResult
 import kotlinx.serialization.SerializationException
@@ -15,6 +16,7 @@ import org.json.JSONObject
  */
 internal object VirtualCurrenciesFactory {
 
+    @OptIn(InternalRevenueCatAPI::class)
     @Throws(JSONException::class, SerializationException::class, IllegalArgumentException::class)
     fun buildVirtualCurrencies(httpResult: HTTPResult): VirtualCurrencies {
         return buildVirtualCurrencies(

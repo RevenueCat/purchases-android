@@ -83,23 +83,23 @@ class SimulatedStoreBillingWrapperTest {
     }
 
     @Test
-    fun `startConnection sets connected to true and notifies listener`() {
+    fun `performStartConnection sets connected to true and notifies listener`() {
         every { stateListener.onConnected() } just Runs
-        
+
         assertThat(testStoreBilling.isConnected()).isFalse()
-        
-        testStoreBilling.startConnection()
-        
+
+        testStoreBilling.performStartConnection()
+
         assertThat(testStoreBilling.isConnected()).isTrue()
         verify { stateListener.onConnected() }
     }
 
     @Test
-    fun `startConnectionOnMainThread posts delayed and starts connection`() {
+    fun `startConnection posts delayed and starts connection`() {
         every { stateListener.onConnected() } just Runs
-        
-        testStoreBilling.startConnectionOnMainThread(100)
-        
+
+        testStoreBilling.startConnection(100)
+
         verify { mainHandler.postDelayed(any(), 100) }
         verify { stateListener.onConnected() }
     }
@@ -107,10 +107,10 @@ class SimulatedStoreBillingWrapperTest {
     @Test
     fun `close sets connected to false`() {
         every { stateListener.onConnected() } just Runs
-        
-        testStoreBilling.startConnection()
+
+        testStoreBilling.performStartConnection()
         assertThat(testStoreBilling.isConnected()).isTrue()
-        
+
         testStoreBilling.close()
         assertThat(testStoreBilling.isConnected()).isFalse()
     }

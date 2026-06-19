@@ -6,7 +6,9 @@ import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.utils.serializers.DateSerializer
 import com.revenuecat.purchases.utils.serializers.UUIDSerializer
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.nullable
@@ -57,7 +59,70 @@ public enum class PaywallEventType(public val value: String) {
      * An exit offer will be shown to the user.
      */
     EXIT_OFFER("paywall_exit_offer"),
+
+    /**
+     * User interacted with a paywall component (tabs, carousel, non-purchase button, etc.).
+     */
+    COMPONENT_INTERACTION("paywall_component_interacted"),
 }
+
+/**
+ * Component categories for [PaywallEventType.COMPONENT_INTERACTION].
+ */
+@InternalRevenueCatAPI
+@Serializable
+public enum class PaywallComponentType {
+    @SerialName("tab")
+    TAB,
+
+    @SerialName("switch")
+    SWITCH,
+
+    @SerialName("carousel")
+    CAROUSEL,
+
+    @SerialName("button")
+    BUTTON,
+
+    @SerialName("text")
+    TEXT,
+
+    @SerialName("package")
+    PACKAGE,
+
+    @SerialName("package_selection_sheet")
+    PACKAGE_SELECTION_SHEET,
+
+    @SerialName("purchase_button")
+    PURCHASE_BUTTON,
+}
+
+/**
+ * Payload for [PaywallEventType.COMPONENT_INTERACTION].
+ */
+@InternalRevenueCatAPI
+@Serializable
+public data class PaywallComponentInteractionData(
+    public val componentType: PaywallComponentType,
+    public val componentName: String? = null,
+    public val componentValue: String,
+    public val componentUrl: String? = null,
+    public val originIndex: Int? = null,
+    public val destinationIndex: Int? = null,
+    public val originContextName: String? = null,
+    public val destinationContextName: String? = null,
+    public val defaultIndex: Int? = null,
+    public val originPackageIdentifier: String? = null,
+    public val destinationPackageIdentifier: String? = null,
+    public val defaultPackageIdentifier: String? = null,
+    public val originProductIdentifier: String? = null,
+    public val destinationProductIdentifier: String? = null,
+    public val defaultProductIdentifier: String? = null,
+    public val currentPackageIdentifier: String? = null,
+    public val resultingPackageIdentifier: String? = null,
+    public val currentProductIdentifier: String? = null,
+    public val resultingProductIdentifier: String? = null,
+)
 
 /**
  * Types of exit offers. Meant for RevenueCatUI use.
@@ -80,6 +145,7 @@ public data class PaywallEvent(
     public val creationData: CreationData,
     public val data: Data,
     public val type: PaywallEventType,
+    public val componentInteraction: PaywallComponentInteractionData? = null,
 ) : FeatureEvent {
 
     override val isPriorityEvent: Boolean get() = type == PaywallEventType.IMPRESSION
@@ -108,6 +174,7 @@ public data class PaywallEvent(
         val productIdentifier: String? = null,
         val errorCode: Int? = null,
         val errorMessage: String? = null,
+        val workflowId: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
@@ -142,6 +209,7 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
     private const val PRODUCT_IDENTIFIER_INDEX = 10
     private const val ERROR_CODE_INDEX = 11
     private const val ERROR_MESSAGE_INDEX = 12
+    private const val WORKFLOW_ID_INDEX = 14
 
     private val nullableStringSerializer = String.serializer().nullable
     private val nullableIntSerializer = Int.serializer().nullable
@@ -163,6 +231,7 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         element("errorMessage", nullableStringSerializer.descriptor)
         // Legacy field for backward compatibility
         element("offeringIdentifier", String.serializer().descriptor)
+        element("workflowId", nullableStringSerializer.descriptor)
     }
 
     override fun serialize(encoder: Encoder, value: PaywallEvent.Data) {
@@ -202,6 +271,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             }
             value.errorMessage?.let {
                 encodeStringElement(descriptor, ERROR_MESSAGE_INDEX, it)
+            }
+            value.workflowId?.let {
+                encodeStringElement(descriptor, WORKFLOW_ID_INDEX, it)
             }
         }
     }
@@ -263,6 +335,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         val errorMessage = jsonObject["errorMessage"]?.let {
             decoder.json.decodeFromJsonElement(String.serializer(), it)
         }
+        val workflowId = jsonObject["workflowId"]?.let {
+            decoder.json.decodeFromJsonElement(String.serializer(), it)
+        }
 
         return PaywallEvent.Data(
             paywallIdentifier = paywallIdentifier,
@@ -278,6 +353,64 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             productIdentifier = productIdentifier,
             errorCode = errorCode,
             errorMessage = errorMessage,
+            workflowId = workflowId,
         )
     }
+}
+
+/**
+ * Flattened component-interaction values for [BackendEvent.Paywalls] (shared by stored-event paths).
+ */
+@InternalRevenueCatAPI
+internal data class BackendPaywallComponentFields(
+    val componentType: String? = null,
+    val componentName: String? = null,
+    val componentValue: String? = null,
+    val componentUrl: String? = null,
+    val originIndex: Int? = null,
+    val destinationIndex: Int? = null,
+    val originContextName: String? = null,
+    val destinationContextName: String? = null,
+    val defaultIndex: Int? = null,
+    val originPackageIdentifier: String? = null,
+    val destinationPackageIdentifier: String? = null,
+    val defaultPackageIdentifier: String? = null,
+    val originProductIdentifier: String? = null,
+    val destinationProductIdentifier: String? = null,
+    val defaultProductIdentifier: String? = null,
+    val currentPackageIdentifier: String? = null,
+    val resultingPackageIdentifier: String? = null,
+    val currentProductIdentifier: String? = null,
+    val resultingProductIdentifier: String? = null,
+)
+
+@OptIn(ExperimentalSerializationApi::class)
+@InternalRevenueCatAPI
+internal fun PaywallComponentInteractionData?.toBackendComponentFields(): BackendPaywallComponentFields {
+    val interaction = this ?: return BackendPaywallComponentFields()
+    val componentType = PaywallComponentType
+        .serializer()
+        .descriptor
+        .getElementName(interaction.componentType.ordinal)
+    return BackendPaywallComponentFields(
+        componentType = componentType,
+        componentName = interaction.componentName,
+        componentValue = interaction.componentValue,
+        componentUrl = interaction.componentUrl,
+        originIndex = interaction.originIndex,
+        destinationIndex = interaction.destinationIndex,
+        originContextName = interaction.originContextName,
+        destinationContextName = interaction.destinationContextName,
+        defaultIndex = interaction.defaultIndex,
+        originPackageIdentifier = interaction.originPackageIdentifier,
+        destinationPackageIdentifier = interaction.destinationPackageIdentifier,
+        defaultPackageIdentifier = interaction.defaultPackageIdentifier,
+        originProductIdentifier = interaction.originProductIdentifier,
+        destinationProductIdentifier = interaction.destinationProductIdentifier,
+        defaultProductIdentifier = interaction.defaultProductIdentifier,
+        currentPackageIdentifier = interaction.currentPackageIdentifier,
+        resultingPackageIdentifier = interaction.resultingPackageIdentifier,
+        currentProductIdentifier = interaction.currentProductIdentifier,
+        resultingProductIdentifier = interaction.resultingProductIdentifier,
+    )
 }

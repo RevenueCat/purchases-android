@@ -130,6 +130,9 @@ internal fun InternalCustomerCenter(
                 Lifecycle.Event.ON_START -> {
                     viewModel.onActivityStarted()
                 }
+                Lifecycle.Event.ON_RESUME -> {
+                    viewModel.onActivityResumed()
+                }
                 else -> {}
             }
         }

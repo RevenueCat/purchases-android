@@ -12,6 +12,7 @@ import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import com.revenuecat.purchases.ads.events.AdTracker
 import io.mockk.every
 import io.mockk.mockk
@@ -111,6 +112,59 @@ class InterstitialAdFlowTest {
         loadCallbackSlot.captured.onAdFailedToLoad(error)
 
         assertSame(error, loadCallback.failedToLoadError)
+    }
+
+    @Test
+    fun `interstitial success with null optional params does not crash`() {
+        val context = mockk<Context>()
+        val adRequest = mockk<AdRequest>()
+        val interstitialAd = mockk<InterstitialAd>(relaxed = true)
+        val responseInfo = mockk<ResponseInfo>(relaxed = true)
+        every { interstitialAd.responseInfo } returns responseInfo
+
+        val loadCallbackSlot = slot<InterstitialAdLoadCallback>()
+        every {
+            InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
+        } answers {}
+
+        val adTracker = mockk<AdTracker>(relaxed = true)
+        adTracker.loadAndTrackInterstitialAd(
+            context = context,
+            adUnitId = "interstitial-unit",
+            adRequest = adRequest,
+        )
+
+        assertNotNull(loadCallbackSlot.captured)
+        loadCallbackSlot.captured.onAdLoaded(interstitialAd)
+
+        val fscSlot = slot<FullScreenContentCallback>()
+        verify { interstitialAd.fullScreenContentCallback = capture(fscSlot) }
+        fscSlot.captured.onAdShowedFullScreenContent()
+        fscSlot.captured.onAdClicked()
+        fscSlot.captured.onAdDismissedFullScreenContent()
+        fscSlot.captured.onAdImpression()
+    }
+
+    @Test
+    fun `interstitial failure with null loadCallback does not crash`() {
+        val context = mockk<Context>()
+        val adRequest = mockk<AdRequest>()
+        val error = mockk<LoadAdError>(relaxed = true)
+
+        val loadCallbackSlot = slot<InterstitialAdLoadCallback>()
+        every {
+            InterstitialAd.load(any(), any(), any(), capture(loadCallbackSlot))
+        } answers {}
+
+        val adTracker = mockk<AdTracker>(relaxed = true)
+        adTracker.loadAndTrackInterstitialAd(
+            context = context,
+            adUnitId = "interstitial-unit",
+            adRequest = adRequest,
+        )
+
+        assertNotNull(loadCallbackSlot.captured)
+        loadCallbackSlot.captured.onAdFailedToLoad(error)
     }
 
     private class RecordingInterstitialLoadCallback : InterstitialAdLoadCallback() {

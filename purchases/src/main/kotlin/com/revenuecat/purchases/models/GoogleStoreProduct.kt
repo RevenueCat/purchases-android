@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import dev.drewhamilton.poko.Poko
@@ -235,6 +236,7 @@ constructor(
      * Creates a copy of this `GoogleStoreProduct` with the specified `offeringId` set on itself and its
      * `defaultOption`/`subscriptionOptions`.
      */
+    @OptIn(InternalRevenueCatAPI::class)
     @Deprecated(
         "Use copyWithPresentedOfferingContext instead",
         ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),

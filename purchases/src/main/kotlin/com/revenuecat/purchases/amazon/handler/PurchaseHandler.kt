@@ -9,6 +9,7 @@ import com.amazon.device.iap.model.PurchaseResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.RequestId
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import java.util.Date
 import kotlin.time.Duration
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class PurchaseHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
     private val applicationContext: Context,

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.JsonTools
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -33,7 +34,7 @@ internal class FlexDistributionTests(private val serialized: String, private val
         val actual = JsonTools.json.decodeFromString<FlexDistribution>(serialized)
 
         // Assert
-        assert(actual == expected)
+        assertThat(actual).isEqualTo(expected)
     }
 
 }

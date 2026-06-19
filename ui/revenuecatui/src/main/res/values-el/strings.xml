@@ -20,4 +20,6 @@
     <string name="default_offer_details_with_intro_offer">Ξεκινήστε τη δοκιμή {{ sub_offer_duration }} και μετά {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Δεν είναι εγκατεστημένος περιηγητής. Ο σύνδεσμος δεν μπόρεσε να ανοιχτεί.</string>
     <string name="cannot_open_link">Μη έγκυρος σύνδεσμος. Δεν μπόρεσε να ανοιχτεί.</string>
+    <string name="revenuecatui_purchase">Αγορά</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
 </resources>

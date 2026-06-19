@@ -2,11 +2,24 @@ package com.revenuecat.purchases.customercenter
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.models.StoreTransaction
 
 /**
  * Listener interface for receiving callbacks for Customer Center events.
  */
 public interface CustomerCenterListener {
+
+    /**
+     * Called when a restore purchases operation is about to be initiated.
+     * This allows the app to perform any necessary preparation (e.g., authentication) before proceeding.
+     *
+     * @param resume A callback that must be invoked to continue with the restore flow.
+     *               If not called, the restore flow will not proceed.
+     */
+    public fun onRestoreInitiated(resume: Resumable) {
+        // Default implementation immediately resumes
+        resume()
+    }
 
     /**
      * Called when a restore purchases operation is initiated by the user in the Customer Center.
@@ -67,6 +80,20 @@ public interface CustomerCenterListener {
      * @param purchaseIdentifier The product identifier of the purchase being viewed, if any
      */
     public fun onCustomActionSelected(actionIdentifier: String, purchaseIdentifier: String?) {
+        // Default empty implementation
+    }
+
+    /**
+     * Called when a promotional offer purchase completes successfully in the Customer Center,
+     * providing the resulting customer info and transaction.
+     *
+     * @param customerInfo The updated customer information after the purchase.
+     * @param transaction The store transaction for the purchase.
+     */
+    public fun onPromotionalOfferSucceeded(
+        customerInfo: CustomerInfo,
+        transaction: StoreTransaction,
+    ) {
         // Default empty implementation
     }
 }

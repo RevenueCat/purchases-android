@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.identity
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -16,22 +17,25 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offeringsCache: OfferingsCache,
+    private val workflowsCache: WorkflowsCache?,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
@@ -87,23 +91,27 @@ internal class IdentityManager(
         oldAppUserID: String,
     ) {
         val newAppUserID = currentAppUserID
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             backend.aliasUsers(
                 oldAppUserID = oldAppUserID,
                 newAppUserID = newAppUserID,
                 onSuccessHandler = {
+                    // Cache wipe runs unconditionally: the backend alias has already committed
+                    // server-side, so local caches must be cleared to stay consistent even if
+                    // the caller cancelled mid-flight. safeResume then no-ops if cancelled.
                     synchronized(this@IdentityManager) {
                         log(LogIntent.USER) {
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
                         }
                         offeringsCache.clearCache()
+                        workflowsCache?.clearCache()
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
-                    continuation.resume(Unit)
+                    continuation.safeResume(Unit)
                 },
                 onErrorHandler = { error ->
-                    continuation.resumeWithException(PurchasesException(error))
+                    continuation.safeResumeWithException(PurchasesException(error))
                 },
             )
         }
@@ -149,6 +157,7 @@ internal class IdentityManager(
                         }
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
                         offeringsCache.clearCache()
+                        workflowsCache?.clearCache()
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -251,6 +260,7 @@ internal class IdentityManager(
     private fun resetAndSaveUserID(newUserID: String) {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         offeringsCache.clearCache()
+        workflowsCache?.clearCache()
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)

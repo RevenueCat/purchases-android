@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -9,8 +10,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
@@ -33,7 +34,6 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
@@ -42,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.getPaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.restoreSdkConfigurationIfNeeded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.saveSdkConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 /**
@@ -97,6 +98,7 @@ internal class PaywallActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     @Suppress("LongMethod")
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
@@ -140,6 +142,14 @@ internal class PaywallActivity : ComponentActivity() {
                 }
             }
 
+            override fun onRestoreInitiated(resume: Resumable) {
+                if (userListener != null) {
+                    userListener.onRestoreInitiated(resume)
+                } else {
+                    resume()
+                }
+            }
+
             override fun onPurchaseStarted(rcPackage: Package) {
                 userListener?.onPurchaseStarted(rcPackage)
             }
@@ -147,7 +157,6 @@ internal class PaywallActivity : ComponentActivity() {
             override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
                 userListener?.onPurchaseCompleted(customerInfo, storeTransaction)
                 setResult(RESULT_OK, createResultIntent(PaywallResult.Purchased(customerInfo)))
-                finish()
             }
 
             override fun onPurchaseError(error: PurchasesError) {
@@ -171,10 +180,6 @@ internal class PaywallActivity : ComponentActivity() {
             override fun onRestoreCompleted(customerInfo: CustomerInfo) {
                 userListener?.onRestoreCompleted(customerInfo)
                 setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
-                val requiredEntitlementIdentifier = args?.requiredEntitlementIdentifier ?: return
-                if (customerInfo.entitlements.active.containsKey(requiredEntitlementIdentifier)) {
-                    finish()
-                }
             }
 
             override fun onRestoreError(error: PurchasesError) {
@@ -189,20 +194,21 @@ internal class PaywallActivity : ComponentActivity() {
         }
 
         val offeringSelection = args?.offeringIdAndPresentedOfferingContext
+        val shouldDisplayBlock = args?.requiredEntitlementIdentifier
+            ?.let(::shouldDisplayBlockForEntitlementIdentifier)
 
         setContent {
             MaterialTheme {
-                Scaffold { paddingValues ->
+                // Scaffold padding is intentionally ignored because we zero out contentWindowInsets
+                // and let the Paywall composable handle its own insets to avoid double padding.
+                Scaffold(
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                ) { _ ->
                     Box(
-                        Modifier
-                            .fillMaxSize()
-                            .conditional(!edgeToEdge) {
-                                padding(paddingValues)
-                            },
+                        Modifier.fillMaxSize(),
                     ) {
-                        // Empty dismissRequest is overridden below by setDismissRequestWithExitOffering
                         val paywallOptions = PaywallOptions.Builder(
-                            dismissRequest = {},
+                            dismissRequest = { onDismissRequest(exitOffering = null, result = null) },
                         )
                             .setOfferingSelection(offeringSelection)
                             .setFontProvider(getFontProvider())
@@ -214,7 +220,10 @@ internal class PaywallActivity : ComponentActivity() {
                             .setDismissRequestWithExitOffering(::onDismissRequest)
                             .setCustomVariables(args?.customVariables ?: emptyMap())
                             .build()
-                        val viewModel = getPaywallViewModel(paywallOptions)
+                        val viewModel = getPaywallViewModel(
+                            options = paywallOptions,
+                            shouldDisplayBlock = shouldDisplayBlock,
+                        )
 
                         LaunchedEffect(Unit) {
                             viewModel.preloadExitOffering()

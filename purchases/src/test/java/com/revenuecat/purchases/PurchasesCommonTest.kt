@@ -11,12 +11,12 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -24,6 +24,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -42,6 +43,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -811,7 +813,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productChangeParams = getPurchaseParams(
             storeProduct.first().subscriptionOptions!!.first(),
             oldPurchase.productIds.first(),
-            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+            storeReplacementMode = StoreReplacementMode.DEFERRED,
         )
         var callCount = 0
         purchases.purchaseWith(
@@ -881,7 +883,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productChangeParams = getPurchaseParams(
             storeProduct.first().subscriptionOptions!!.first(),
             oldProductIdWithBasePlan,
-            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+            storeReplacementMode = StoreReplacementMode.DEFERRED,
         )
         var callCount = 0
         purchases.purchaseWith(
@@ -901,7 +903,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
+    fun `upgrade defaults to replacement mode WITHOUT_PRORATION`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
         val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
@@ -930,7 +932,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION
+            StoreReplacementMode.WITHOUT_PRORATION
         )
         verify {
             mockBillingAbstract.makePurchaseAsync(
@@ -942,6 +944,125 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 any()
             )
         }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `upgrade uses replacementMode when store is Galaxy`() {
+        buildPurchases(anonymous = false, store = Store.GALAXY)
+
+        val productId = "galaxy_gold"
+        val oldSubId = "oldGalaxySubId"
+        val storeProduct = mockQueryingProductDetails(productId, ProductType.SUBS)
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                onCompletion = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        val replacementMode = StoreReplacementMode.WITH_TIME_PRORATION
+        val upgradePurchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            storeProduct
+        )
+            .oldProductId(oldSubId)
+            .replacementMode(replacementMode)
+            .build()
+
+        purchases.purchaseWith(
+            upgradePurchaseParams,
+            onError = { _, _ ->
+            },
+        ) { _, _ -> }
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            replacementMode,
+        )
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                storeProduct.purchasingData,
+                expectedReplaceProductInfo,
+                any(),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `when making a deferred product change on Galaxy, completion is called with the new transaction`() {
+        buildPurchases(anonymous = false, store = Store.GALAXY)
+
+        val newProductId = "newproduct"
+        val storeProduct = stubStoreProduct(newProductId)
+        val oldProductId = "oldProductId"
+        val oldPurchase = getMockedStoreTransaction(
+            productId = oldProductId,
+            purchaseToken = "old_purchase_token",
+            productType = ProductType.SUBS,
+        )
+        val newPurchase = getMockedStoreTransaction(
+            productId = newProductId,
+            purchaseToken = "new_purchase_token",
+            productType = ProductType.SUBS,
+        )
+
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserID = appUserId,
+                productType = ProductType.SUBS,
+                productId = oldProductId,
+                onCompletion = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
+        }
+
+        mockQueryingProductDetails(newProductId, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                newPurchase,
+                any(),
+                any(),
+                isRestore = false,
+                appUserId,
+                initiationSource,
+                sdkOriginated = true,
+                captureLambda(),
+                any(),
+            )
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(newPurchase, mockk(relaxed = true))
+        }
+
+        val productChangeParams = getPurchaseParams(
+            storeProduct,
+            oldProductId,
+            storeReplacementMode = StoreReplacementMode.DEFERRED,
+        )
+
+        var receivedPurchase: StoreTransaction? = null
+        purchases.purchaseWith(
+            productChangeParams,
+            onError = { _, _ -> fail("should be successful") },
+            onSuccess = { purchase, _ ->
+                receivedPurchase = purchase
+            },
+        )
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(newPurchase))
+
+        assertThat(receivedPurchase).isEqualTo(newPurchase)
     }
 
     @Test
@@ -1158,7 +1279,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.defaultOption!!.purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, StoreReplacementMode.WITHOUT_PRORATION),
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
@@ -1806,7 +1927,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, StoreReplacementMode.WITHOUT_PRORATION),
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
@@ -1865,7 +1986,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, StoreReplacementMode.WITHOUT_PRORATION),
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
@@ -1955,7 +2076,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION
+            StoreReplacementMode.WITHOUT_PRORATION
         )
 
         verify {
@@ -2019,7 +2140,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION
+            StoreReplacementMode.WITHOUT_PRORATION
         )
 
         verify {
@@ -2567,6 +2688,61 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     // endregion
 
+    // region overridePreferredUILocale
+
+    @Test
+    fun `overridePreferredUILocale clears cache before fetching`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+
+        assertThat(result).isTrue
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache()
+            mockOfferingsManager.getOfferings(appUserId, any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns false if locale unchanged`() {
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale(null)
+
+        assertThat(result).isFalse
+        verify(exactly = 0) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 0) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale skips cache clear and fetch when rate limited`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        mockOfferingsManagerGetOfferings()
+
+        val result1 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("fr_FR")
+        val result2 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("es_ES")
+        val result3 = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("de_DE")
+
+        assertThat(result1).isTrue
+        assertThat(result2).isTrue
+        assertThat(result3).isFalse
+        verify(exactly = 2) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+        verify(exactly = 2) { mockOfferingsManager.getOfferings(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `overridePreferredUILocale returns true even when fetch fails`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "test error")
+        mockOfferingsManagerGetOfferings(error)
+
+        val result = Purchases.sharedInstance.purchasesOrchestrator.overridePreferredUILocale("ja_JP")
+
+        assertThat(result).isTrue
+        verify(exactly = 1) { mockOfferingsManager.clearInMemoryOfferingsCache() }
+    }
+
+    // endregion
+
     // region restoring
 
     @Test
@@ -2640,6 +2816,87 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         purchases.close()
         verifyClose()
+    }
+
+    // endregion
+
+    // region getWorkflow
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow delivers the manager success result to the caller`() {
+        val expected = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        val successSlot = slot<(WorkflowDataResult) -> Unit>()
+        every {
+            mockWorkflowManager.getWorkflow(
+                appUserID = appUserId,
+                workflowId = "wf_1",
+                appInBackground = any(),
+                onSuccess = capture(successSlot),
+                onError = any(),
+                callbackDispatcher = any(),
+            )
+        } answers { successSlot.captured(expected) }
+
+        var received: WorkflowDataResult? = null
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.getWorkflow(
+            workflowId = "wf_1",
+            onSuccess = { received = it },
+            onError = { receivedError = it },
+        )
+
+        assertThat(received).isEqualTo(expected)
+        assertThat(receivedError).isNull()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow delivers the manager error to the caller`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
+        val errorSlot = slot<(PurchasesError) -> Unit>()
+        every {
+            mockWorkflowManager.getWorkflow(
+                appUserID = appUserId,
+                workflowId = "wf_1",
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = capture(errorSlot),
+                callbackDispatcher = any(),
+            )
+        } answers { errorSlot.captured(expectedError) }
+
+        var received: WorkflowDataResult? = null
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.getWorkflow(
+            workflowId = "wf_1",
+            onSuccess = { received = it },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+        assertThat(received).isNull()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+
+        var received: WorkflowDataResult? = null
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.getWorkflow(
+            workflowId = "wf_1",
+            onSuccess = { received = it },
+            onError = { receivedError = it },
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(received).isNull()
+        verify(exactly = 0) {
+            mockWorkflowManager.getWorkflow(any(), any(), any(), any(), any(), any())
+        }
     }
 
     // endregion

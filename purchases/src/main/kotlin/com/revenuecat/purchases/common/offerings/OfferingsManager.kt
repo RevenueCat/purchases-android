@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offerings
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -24,6 +26,7 @@ import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
@@ -36,9 +39,16 @@ internal class OfferingsManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val workflowManager: WorkflowManager? = null,
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
+
+    val cachedCurrentOfferingIdentifier: String?
+        get() = offeringsCache.cachedOfferings?.current?.identifier
+
+    val cachedOfferings: Offerings?
+        get() = offeringsCache.cachedOfferings
 
     fun getOfferings(
         appUserID: String,
@@ -147,7 +157,9 @@ internal class OfferingsManager(
             null,
             null,
         )
-        dispatch { onSuccess?.invoke(cachedOfferings) }
+        val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
+        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
+            ?: dispatchSuccess()
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -158,6 +170,10 @@ internal class OfferingsManager(
             }
             fetchAndCacheOfferings(appUserID, appInBackground)
         }
+    }
+
+    fun clearInMemoryOfferingsCache() {
+        offeringsCache.clearInMemoryOfferingsCache()
     }
 
     fun onAppForeground(appUserID: String) {
@@ -184,6 +200,8 @@ internal class OfferingsManager(
             appInBackground,
             { body, originalDataSource ->
                 createAndCacheOfferings(
+                    appUserID = appUserID,
+                    appInBackground = appInBackground,
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
@@ -210,6 +228,8 @@ internal class OfferingsManager(
                                 }
                             } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
+                                appUserID = appUserID,
+                                appInBackground = appInBackground,
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
@@ -227,6 +247,8 @@ internal class OfferingsManager(
     }
 
     private fun createAndCacheOfferings(
+        appUserID: String,
+        appInBackground: Boolean,
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
@@ -246,9 +268,14 @@ internal class OfferingsManager(
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                dispatch {
-                    onSuccess?.invoke(offeringsResultData)
-                }
+                val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
+                workflowManager?.getWorkflowsList(
+                    appUserID,
+                    appInBackground,
+                    // Refetch workflows only when these offerings are fresh from the network.
+                    forceRefresh = !loadedFromDiskCache,
+                    onComplete = dispatchSuccess,
+                ) ?: dispatchSuccess()
             },
         )
     }

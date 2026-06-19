@@ -23,7 +23,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Purchase manager for purchasesAreCompletedBy MY_APP using BillingClient directly.
@@ -122,7 +121,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
                 val launchResult = billingClient.launchBillingFlow(activity, flowParams)
                 if (launchResult.responseCode != BillingClient.BillingResponseCode.OK) {
                     purchaseContinuation = null
-                    continuation.resume(PurchaseUpdateResult(launchResult, null))
+                    if (continuation.isActive) continuation.resume(PurchaseUpdateResult(launchResult, null))
                 }
             }
         }
@@ -137,7 +136,7 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
         val continuation = purchaseContinuation
         purchaseContinuation = null
         if (continuation != null) {
-            continuation.resume(PurchaseUpdateResult(billingResult, purchases))
+            if (continuation.isActive) continuation.resume(PurchaseUpdateResult(billingResult, purchases))
         } else {
             Log.w(TAG, "Received onPurchasesUpdated but no continuation was set")
         }
@@ -198,12 +197,14 @@ class PurchasesAreCompletedByMyAppUsingBillingClientPurchaseManager(
 
     private suspend fun ensureConnected(): Boolean {
         if (billingClient.isReady) return true
-        return suspendCoroutine { continuation ->
+        return suspendCancellableCoroutine { continuation ->
             billingClient.startConnection(object : BillingClientStateListener {
                 override fun onBillingSetupFinished(billingResult: BillingResult) {
-                    continuation.resume(
-                        billingResult.responseCode == BillingClient.BillingResponseCode.OK,
-                    )
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            billingResult.responseCode == BillingClient.BillingResponseCode.OK,
+                        )
+                    }
                 }
 
                 override fun onBillingServiceDisconnected() {

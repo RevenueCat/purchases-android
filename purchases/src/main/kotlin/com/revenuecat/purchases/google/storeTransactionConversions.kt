@@ -4,8 +4,8 @@ import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
 
@@ -15,7 +15,7 @@ internal fun Purchase.toStoreTransaction(
     presentedOfferingContext: PresentedOfferingContext? = null,
     subscriptionOptionId: String? = null,
     subscriptionOptionIdForProductIDs: Map<String, String>? = null,
-    replacementMode: GoogleReplacementMode? = null,
+    replacementMode: StoreReplacementMode? = null,
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     productIds = this.products,

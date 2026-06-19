@@ -7,6 +7,8 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ReplacementMode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -42,6 +44,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -115,6 +118,7 @@ class BackendTest {
         every { baseURL } returns mockBaseURL
         every { customEntitlementComputation } returns false
         every { fallbackBaseURLs } returns emptyList()
+        every { store } returns Store.PLAY_STORE
     }
     private val dispatcher = spyk(SyncDispatcher())
     private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
@@ -123,7 +127,7 @@ class BackendTest {
         dispatcher,
         dispatcher,
         mockClient,
-        backendHelper
+        backendHelper,
     )
     private val asyncDispatcher = spyk(
         Dispatcher(
@@ -150,7 +154,7 @@ class BackendTest {
             )
         ),
         mockClient,
-        asyncBackendHelper
+        asyncBackendHelper,
     )
     private val appUserID = "jerry"
     private val storeProduct = stubStoreProduct("productID")
@@ -510,7 +514,7 @@ class BackendTest {
         val receiptInfo = createReceiptInfoFromProduct(
             productIDs = productIDs,
             storeProduct = storeProduct,
-            replacementMode = GoogleReplacementMode.WITHOUT_PRORATION
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION
         )
 
         mockPostReceiptResponseAndPost(
@@ -543,6 +547,50 @@ class BackendTest {
         assertThat(requestBodySlot.captured.keys).contains("proration_mode")
         // Backend expects the legacy proration mode values.
         assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
+    }
+
+    @Test
+    fun `postReceipt uses Galaxy replacement mode names in body when configured store is Galaxy`() {
+        every { mockAppConfig.store } returns Store.GALAXY
+
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            replacementMode = StoreReplacementMode.WITHOUT_PRORATION,
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            isRestore = false,
+            finishTransactions = true,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("INSTANT_NO_PRORATION")
+    }
+
+    @Test
+    fun `postReceipt uses Galaxy replacement mode names for deprecated Google replacement modes when configured store is Galaxy`() {
+        every { mockAppConfig.store } returns Store.GALAXY
+
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            replacementMode = GoogleReplacementMode.WITHOUT_PRORATION,
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            isRestore = false,
+            finishTransactions = true,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("INSTANT_NO_PRORATION")
     }
 
     @Test
@@ -3295,7 +3343,7 @@ class BackendTest {
         storeProduct: StoreProduct,
         productIDs: List<String> = listOf(storeProduct.id),
         presentedOfferingContext: PresentedOfferingContext? = null,
-        replacementMode: GoogleReplacementMode? = null,
+        replacementMode: ReplacementMode? = null,
         platformProductIds: List<Map<String, String?>> = listOf(mapOf("product_id" to storeProduct.id)),
         storeUserID: String? = null,
         marketplace: String? = null,

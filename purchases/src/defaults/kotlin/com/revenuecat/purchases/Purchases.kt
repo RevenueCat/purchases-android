@@ -15,11 +15,13 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -37,7 +39,7 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
 import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
-import com.revenuecat.purchases.paywalls.events.CustomPaywallEventParams
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.storage.FileRepository
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -45,6 +47,9 @@ import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import java.net.URL
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -107,6 +112,8 @@ public class Purchases internal constructor(
      * The storefront country code in ISO-3166-1 alpha2.
      * This may be null if the store hasn't connected yet or fetching the country code hasn't finished or failed.
      * To get the country code asynchronously use [getStorefrontCountryCode] or [awaitStorefrontCountryCode].
+     *
+     * Not supported for the Galaxy Store.
      */
     public val storefrontCountryCode: String?
         @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
@@ -213,6 +220,8 @@ public class Purchases internal constructor(
     /**
      * This method will try to obtain the Store (Google/Amazon) country code in ISO-3166-1 alpha2.
      * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
      */
     public fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         purchasesOrchestrator.getStorefrontCountryCode(callback)
@@ -221,6 +230,8 @@ public class Purchases internal constructor(
     /**
      * This method will try to obtain the Store (Google/Amazon) locale.
      * If there is any error, it will return null and log said error.
+     *
+     * Not supported for the Galaxy Store. Invocations for the Galaxy Store will always return an error.
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun getStorefrontLocale(callback: GetStorefrontLocaleCallback) {
@@ -388,6 +399,23 @@ public class Purchases internal constructor(
         purchasesOrchestrator.getOfferings(listener)
     }
 
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    @Throws(PurchasesException::class)
+    public suspend fun awaitGetWorkflow(
+        workflowId: String,
+    ): WorkflowDataResult = suspendCoroutine { continuation ->
+        purchasesOrchestrator.getWorkflow(
+            workflowId = workflowId,
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+
+    @InternalRevenueCatAPI
+    public fun workflowIdForOfferingId(offeringId: String): String? =
+        purchasesOrchestrator.workflowIdForOfferingId(offeringId)
+
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds
@@ -532,8 +560,13 @@ public class Purchases internal constructor(
      * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
         backingFieldSharedInstance = null
+    }
+
+    private fun notifyLifecycleClosed() {
+        serviceDispatcher.close(this)
     }
 
     /**
@@ -644,15 +677,52 @@ public class Purchases internal constructor(
     }
 
     /**
-     * Tracks a custom paywall impression event.
+     * Tracks an impression for a custom paywall.
+     *
+     * Call this method when your custom (non-RevenueCat) paywall is displayed to a user.
+     * This enables RevenueCat to track paywall impressions for analytics.
+     *
      * @param params Parameters for the custom paywall impression event.
      */
     @OptIn(InternalRevenueCatAPI::class)
-    @JvmSynthetic
-    internal fun trackCustomPaywallImpression(params: CustomPaywallEventParams = CustomPaywallEventParams()) {
+    @JvmOverloads
+    public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
+        val cachedOfferings = purchasesOrchestrator.cachedOfferings
+        val resolvedOfferingId: String?
+        val resolvedPresentedOfferingContext: PresentedOfferingContext?
+
+        when {
+            params.presentedOfferingContext != null -> {
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = params.presentedOfferingContext
+            }
+            params.offeringId != null -> {
+                val resolvedOffering = cachedOfferings?.get(params.offeringId)
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
+            }
+            else -> {
+                val resolvedOffering = cachedOfferings?.current
+                resolvedOfferingId = resolvedOffering?.identifier
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
+            }
+        }
+
         purchasesOrchestrator.track(
             CustomPaywallEvent.Impression(
-                data = CustomPaywallEvent.Impression.Data(paywallId = params.paywallId),
+                data = CustomPaywallEvent.Impression.Data(
+                    paywallId = params.paywallId,
+                    offeringId = resolvedOfferingId,
+                    placementIdentifier = resolvedPresentedOfferingContext?.placementIdentifier,
+                    targetingRevision = resolvedPresentedOfferingContext?.targetingContext?.revision,
+                    targetingRuleId = resolvedPresentedOfferingContext?.targetingContext?.ruleId,
+                ),
             ),
         )
     }
@@ -679,6 +749,17 @@ public class Purchases internal constructor(
         onError: (PurchasesError) -> Unit,
     ) {
         purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    internal fun getRewardVerificationResult(
+        clientTransactionId: String,
+        callback: GetRewardVerificationResultCallback,
+    ) {
+        purchasesOrchestrator.getRewardVerificationResult(
+            clientTransactionId = clientTransactionId,
+            callback = callback,
+        )
     }
 
     // region Subscriber Attributes
@@ -1138,6 +1219,8 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 
         @InternalRevenueCatAPI
         public fun getImageLoader(context: Context): Any {
@@ -1265,6 +1348,7 @@ public class Purchases internal constructor(
          * @param configuration: the [PurchasesConfiguration] object you wish to use to configure [Purchases].
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         public fun configure(
             configuration: PurchasesConfiguration,
@@ -1286,6 +1370,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                serviceDispatcher.initialize(it)
             }
         }
 

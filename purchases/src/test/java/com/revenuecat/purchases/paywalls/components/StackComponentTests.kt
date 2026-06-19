@@ -142,7 +142,8 @@ internal class StackComponentTests {
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                    name = "Text",
                                 )
                             ),
                             visible = false,
@@ -167,6 +168,7 @@ internal class StackComponentTests {
                                 y = 45.2
                             ),
                             overflow = StackComponent.Overflow.SCROLL,
+                            name = "Stack",
                         )
                     ),
                 ),
@@ -199,9 +201,11 @@ internal class StackComponentTests {
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                    name = "Text",
                                 )
                             ),
+                            name = "Stack",
                         )
                     ),
                 ),
@@ -235,11 +239,13 @@ internal class StackComponentTests {
                             components = listOf(
                                 TextComponent(
                                     text = LocalizationKey("7bkohQjzIE"),
-                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary")))
+                                    color = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
+                                    name = "Text",
                                 )
                             ),
                             margin = Padding.zero,
                             padding = Padding.zero,
+                            name = "Stack",
                         )
                     ),
                 ),

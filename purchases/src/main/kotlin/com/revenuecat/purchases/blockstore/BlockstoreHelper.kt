@@ -11,15 +11,15 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.identity.IdentityManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 internal class BlockstoreHelper
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -139,10 +139,10 @@ constructor(
         val retrieveRequest = RetrieveBytesRequest.Builder()
             .setRetrieveAll(true)
             .build()
-        return suspendCoroutine { cont ->
+        return suspendCancellableCoroutine { cont ->
             blockstoreClient.retrieveBytes(retrieveRequest)
-                .addOnSuccessListener { cont.resume(it.blockstoreDataMap) }
-                .addOnFailureListener { cont.resumeWithException(it) }
+                .addOnSuccessListener { cont.safeResume(it.blockstoreDataMap) }
+                .addOnFailureListener { cont.safeResumeWithException(it) }
         }
     }
 
@@ -166,13 +166,13 @@ constructor(
             .setKey(BLOCKSTORE_USER_ID_KEY)
             .setShouldBackupToCloud(true)
             .build()
-        suspendCoroutine { cont ->
+        suspendCancellableCoroutine { cont ->
             blockstoreClient.storeBytes(storeRequest)
                 .addOnSuccessListener {
                     debugLog { "Block store: User ID: $userId stored in Block store." }
-                    cont.resume(Unit)
+                    cont.safeResume(Unit)
                 }
-                .addOnFailureListener { cont.resumeWithException(it) }
+                .addOnFailureListener { cont.safeResumeWithException(it) }
         }
     }
 }

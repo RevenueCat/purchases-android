@@ -1,4 +1,4 @@
-@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class, com.revenuecat.purchases.InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ads.events
 
@@ -26,7 +26,8 @@ class BackendStoredEventAdTest {
             adFormat = AdFormat.BANNER,
             placement = "banner_home",
             adUnitId = "ca-app-pub-123456",
-            impressionId = "impression-123"
+            impressionId = "impression-123",
+            captureMethod = AdCaptureMethod.ADAPTER,
         )
 
         val storedEvent = displayedEvent.toBackendStoredEvent(appUserID, appSessionID)
@@ -45,6 +46,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-123")
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
         assertThat(adStoredEvent.event.revenueMicros).isNull()
         assertThat(adStoredEvent.event.currency).isNull()
         assertThat(adStoredEvent.event.precision).isNull()
@@ -60,7 +62,8 @@ class BackendStoredEventAdTest {
             adFormat = AdFormat.INTERSTITIAL,
             placement = null,
             adUnitId = "ca-app-pub-123456",
-            impressionId = "impression-123"
+            impressionId = "impression-123",
+            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         val storedEvent = displayedEvent.toBackendStoredEvent(appUserID, appSessionID)
@@ -69,6 +72,7 @@ class BackendStoredEventAdTest {
         val adStoredEvent = storedEvent as BackendStoredEvent.Ad
         assertThat(adStoredEvent.event.placement).isNull()
         assertThat(adStoredEvent.event.adFormat).isEqualTo("interstitial")
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("manual")
     }
 
     @Test
@@ -81,7 +85,8 @@ class BackendStoredEventAdTest {
             adFormat = AdFormat.NATIVE,
             placement = "interstitial_level",
             adUnitId = "ad-unit-789",
-            impressionId = "impression-456"
+            impressionId = "impression-456",
+            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         val storedEvent = openEvent.toBackendStoredEvent(appUserID, appSessionID)
@@ -100,6 +105,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-456")
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("manual")
         assertThat(adStoredEvent.event.revenueMicros).isNull()
         assertThat(adStoredEvent.event.currency).isNull()
         assertThat(adStoredEvent.event.precision).isNull()
@@ -116,6 +122,7 @@ class BackendStoredEventAdTest {
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.ADAPTER,
             revenueMicros = 1500000,
             currency = "USD",
             precision = AdRevenuePrecision.EXACT
@@ -137,6 +144,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-789")
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
         assertThat(adStoredEvent.event.revenueMicros).isEqualTo(1500000)
         assertThat(adStoredEvent.event.currency).isEqualTo("USD")
         assertThat(adStoredEvent.event.precision).isEqualTo("exact")
@@ -149,10 +157,11 @@ class BackendStoredEventAdTest {
             timestamp = 1111111111L,
             networkName = "Network",
             mediatorName = AdMediatorName.AD_MOB,
-            adFormat = AdFormat.MREC,
+            adFormat = AdFormat.OTHER,
             placement = "placement",
             adUnitId = "ad-unit",
             impressionId = "impression",
+            captureMethod = AdCaptureMethod.MANUAL,
             revenueMicros = 1000000,
             currency = "EUR",
             precision = AdRevenuePrecision.ESTIMATED
@@ -171,6 +180,7 @@ class BackendStoredEventAdTest {
             placement = "placement",
             adUnitId = "ad-unit",
             impressionId = "impression",
+            captureMethod = AdCaptureMethod.MANUAL,
             revenueMicros = 1000000,
             currency = "EUR",
             precision = AdRevenuePrecision.PUBLISHER_DEFINED
@@ -189,6 +199,7 @@ class BackendStoredEventAdTest {
             placement = "placement",
             adUnitId = "ad-unit",
             impressionId = "impression",
+            captureMethod = AdCaptureMethod.MANUAL,
             revenueMicros = 1000000,
             currency = "EUR",
             precision = AdRevenuePrecision.UNKNOWN
@@ -210,7 +221,8 @@ class BackendStoredEventAdTest {
             adFormat = AdFormat.OTHER,
             placement = "custom_placement",
             adUnitId = "custom-ad-unit",
-            impressionId = "custom-impression"
+            impressionId = "custom-impression",
+            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         val storedEvent = event.toBackendStoredEvent(appUserID, appSessionID)
@@ -232,6 +244,7 @@ class BackendStoredEventAdTest {
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.ADAPTER,
         )
 
         val storedEvent = revenueEvent.toBackendStoredEvent(appUserID, appSessionID)
@@ -250,6 +263,7 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-789")
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
     }
 
     @Test
@@ -261,6 +275,7 @@ class BackendStoredEventAdTest {
             adFormat = AdFormat.BANNER,
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
+            captureMethod = AdCaptureMethod.ADAPTER,
             mediatorErrorCode = 123,
         )
 
@@ -281,5 +296,6 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.impressionId).isNull()
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
+        assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
     }
 }

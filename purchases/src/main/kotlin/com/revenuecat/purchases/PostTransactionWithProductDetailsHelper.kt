@@ -8,7 +8,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 /**
  * This class will post store transactions after querying the product details to enrich the data.
  */
-internal class PostTransactionWithProductDetailsHelper(
+internal class PostTransactionWithProductDetailsHelper
+@OptIn(InternalRevenueCatAPI::class)
+constructor(
     private val billing: BillingAbstract,
     private val postReceiptHelper: PostReceiptHelper,
 ) {
@@ -16,7 +18,7 @@ internal class PostTransactionWithProductDetailsHelper(
     /**
      * The callbacks in this method are called for each transaction in the list.
      */
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     @Suppress("LongParameterList", "LongMethod")
     fun postTransactions(
         transactions: List<StoreTransaction>,

@@ -124,7 +124,12 @@ public class Purchases internal constructor(
      * Call close when you are done with this instance of Purchases
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
+    }
+
+    private fun notifyLifecycleClosed() {
+        serviceDispatcher.close(this)
     }
 
     /**
@@ -205,6 +210,8 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
@@ -317,6 +324,7 @@ public class Purchases internal constructor(
          *
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
+        @OptIn(InternalRevenueCatAPI::class)
         @JvmStatic
         public fun configureInCustomEntitlementsComputationMode(
             configuration: PurchasesConfigurationForCustomEntitlementsComputationMode,
@@ -325,9 +333,15 @@ public class Purchases internal constructor(
                 infoLog { ConfigureStrings.INSTANCE_ALREADY_EXISTS }
             }
             val purchasesConfiguration = with(configuration) {
+                val applyObfuscatedAccountId = applyObfuscatedAccountIdToSubscriptionChanges
                 PurchasesConfiguration.Builder(context, apiKey)
                     .appUserID(appUserID)
-                    .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                    .dangerousSettings(
+                        DangerousSettings(
+                            customEntitlementComputation = true,
+                            applyObfuscatedAccountIdToSubscriptionChanges = applyObfuscatedAccountId,
+                        ),
+                    )
                     .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
                     .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
                     .build()
@@ -341,6 +355,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                serviceDispatcher.initialize(it)
             }
         }
 

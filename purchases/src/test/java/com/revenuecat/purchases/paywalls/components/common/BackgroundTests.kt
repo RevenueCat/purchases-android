@@ -141,6 +141,18 @@ internal class BackgroundTests(@Suppress("UNUSED_PARAMETER") name: String, priva
                     expected = Background.Unknown(type = "some_unknown_future_value"),
                 ),
             ),
+            arrayOf(
+                "Known type with malformed fields preserves the type",
+                Args(
+                    json = """
+                        {
+                          "type": "image",
+                          "value": "not_an_object"
+                        }
+                        """.trimIndent(),
+                    expected = Background.Unknown(type = "image"),
+                ),
+            ),
         )
     }
 

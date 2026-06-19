@@ -24,6 +24,8 @@ dependencies {
         api(project(":ui:revenuecatui"))
         api(project(":ui:debugview"))
         api(project(":feature:amazon"))
+        api(project(":feature:galaxy"))
         api(project(":feature:admob"))
+        api(project(":codegen"))
     }
 }

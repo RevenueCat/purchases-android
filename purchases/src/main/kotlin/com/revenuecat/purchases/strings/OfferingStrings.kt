@@ -1,11 +1,15 @@
 package com.revenuecat.purchases.strings
 
 import com.revenuecat.purchases.APIKeyValidator
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Store
 
 internal object OfferingStrings {
     const val CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR = "Could not find ProductDetails for %s " +
         "\nThere is a problem with your configuration in Play Store Developer Console. " +
+        "More info here: https://errors.rev.cat/configuring-products"
+    const val CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR_TEST_STORE = "Could not find ProductDetails for %s " +
+        "\nThere is a problem with your configuration in the RevenueCat dashboard. " +
         "More info here: https://errors.rev.cat/configuring-products"
     const val FETCHING_OFFERINGS_ERROR = "Error fetching offerings - %s"
     const val FETCHING_PRODUCTS = "Requesting products from the store with identifiers: %s"
@@ -51,19 +55,28 @@ internal object OfferingStrings {
     const val CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND = "There's a problem with your configuration. " +
         "None of the products registered in the RevenueCat dashboard could be fetched from the Play Store.\n" +
         "More information: https://rev.cat/why-are-offerings-empty"
+    const val CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND_TEST_STORE = "There's a problem with your configuration. " +
+        "None of the products registered in the RevenueCat dashboard could be found.\n" +
+        "More information: https://rev.cat/why-are-offerings-empty"
     const val OFFERING_EMPTY = "There's a problem with your configuration. No packages could be found for offering " +
         "with identifier %s. This could be due to Products not being configured correctly in " +
         "the RevenueCat dashboard or Play Store.\nTo configure products, follow the instructions in " +
+        "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
+    const val OFFERING_EMPTY_TEST_STORE = "There's a problem with your configuration. No packages could be found " +
+        "for offering with identifier %s. This could be due to Products not being configured correctly in " +
+        "the RevenueCat dashboard.\nTo configure products, follow the instructions in " +
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore: Store): String? {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "Play Store"
             Store.AMAZON -> "Amazon Appstore"
+            Store.GALAXY -> "Galaxy Store"
             else -> null
         }
         APIKeyValidator.ValidationResult.LEGACY -> "Play Store"
@@ -71,15 +84,21 @@ private fun APIKeyValidator.ValidationResult.storeNameForLogging(configuredStore
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
         APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_GALAXY_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GALAXY_STORE,
         -> null
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: Store): String {
     return when (this) {
         APIKeyValidator.ValidationResult.VALID -> when (configuredStore) {
             Store.PLAY_STORE -> "a" // "a Play Store API key"
             Store.AMAZON -> "an" // "an Amazon Appstore API key"
+            Store.GALAXY -> "a" // "a Galaxy Store API key"
             else -> "a"
         }
         APIKeyValidator.ValidationResult.LEGACY -> "a" // "a Play Store API key"
@@ -87,6 +106,10 @@ private fun APIKeyValidator.ValidationResult.indefiniteArticle(configuredStore: 
         APIKeyValidator.ValidationResult.OTHER_PLATFORM,
         APIKeyValidator.ValidationResult.GOOGLE_KEY_AMAZON_STORE,
         APIKeyValidator.ValidationResult.AMAZON_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GOOGLE_KEY_GALAXY_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_GOOGLE_STORE,
+        APIKeyValidator.ValidationResult.GALAXY_KEY_AMAZON_STORE,
+        APIKeyValidator.ValidationResult.AMAZON_KEY_GALAXY_STORE,
         -> "a"
     }
 }

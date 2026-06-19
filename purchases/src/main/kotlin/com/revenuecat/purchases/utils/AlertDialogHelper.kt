@@ -46,6 +46,9 @@ internal class DefaultAlertDialogHelper : AlertDialogHelper {
                 dialog.dismiss()
                 onNeutralButtonClicked()
             }
+            .setOnCancelListener {
+                onNeutralButtonClicked()
+            }
             .show()
     }
 }

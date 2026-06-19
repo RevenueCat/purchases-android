@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.caching
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -116,6 +117,7 @@ internal class LocalTransactionMetadataStore(
         return sharedPreferences.contains("$KEY_PREFIX$tokenHash")
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     private fun getTokenHash(purchaseToken: String): String {
         return purchaseToken.sha1()
     }

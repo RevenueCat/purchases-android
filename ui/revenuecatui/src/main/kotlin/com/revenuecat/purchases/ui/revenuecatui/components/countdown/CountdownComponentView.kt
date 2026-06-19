@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CountdownComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import java.util.Date
 
 @Composable
@@ -24,6 +25,7 @@ internal fun CountdownComponentView(
     state: PaywallState.Loaded.Components,
     onClick: suspend (PaywallAction) -> Unit,
     modifier: Modifier = Modifier,
+    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val countdownState = rememberCountdownState(style.date)
 
@@ -37,6 +39,7 @@ internal fun CountdownComponentView(
         state = state,
         clickHandler = onClick,
         modifier = modifier,
+        componentInteractionTracker = componentInteractionTracker,
     )
 }
 

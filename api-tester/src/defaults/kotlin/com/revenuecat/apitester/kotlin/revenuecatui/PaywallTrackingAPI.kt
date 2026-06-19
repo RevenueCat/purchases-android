@@ -53,6 +53,7 @@ private class PaywallTrackingAPI {
             PaywallEventType.EXIT_OFFER,
             PaywallEventType.PURCHASE_INITIATED,
             PaywallEventType.PURCHASE_ERROR,
+            PaywallEventType.COMPONENT_INTERACTION,
             -> {}
         }
     }

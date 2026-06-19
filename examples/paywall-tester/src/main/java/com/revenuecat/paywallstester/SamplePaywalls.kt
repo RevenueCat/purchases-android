@@ -22,6 +22,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -907,25 +908,40 @@ object SamplePaywalls {
                                             size = Size(width = Fill, height = Fit),
                                             margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
-                                        StackComponent(
-                                            components = listOf(
-                                                TextComponent(
-                                                    text = LocalizationKey("cta"),
-                                                    color = ColorScheme(
-                                                        light = ColorInfo.Hex(Color.White.toArgb()),
+                                        ButtonComponent(
+                                            action = ButtonComponent.Action.RestorePurchases,
+                                            stack = StackComponent(
+                                                components = listOf(
+                                                    TextComponent(
+                                                        text = LocalizationKey("cta"),
+                                                        color = ColorScheme(
+                                                            light = ColorInfo.Hex(Color.White.toArgb()),
+                                                        ),
+                                                        fontName = font,
+                                                        fontWeight = FontWeight.BOLD,
                                                     ),
-                                                    fontName = font,
-                                                    fontWeight = FontWeight.BOLD,
                                                 ),
+                                                dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                                                size = Size(width = Fit, height = Fit),
+                                                backgroundColor = ColorScheme(
+                                                    light = ColorInfo.Hex(
+                                                        Color(red = 5, green = 124, blue = 91).toArgb(),
+                                                    ),
+                                                ),
+                                                padding = Padding(
+                                                    top = 8.0,
+                                                    bottom = 8.0,
+                                                    leading = 32.0,
+                                                    trailing = 32.0,
+                                                ),
+                                                margin = Padding(
+                                                    top = 8.0,
+                                                    bottom = 8.0,
+                                                    leading = 0.0,
+                                                    trailing = 0.0,
+                                                ),
+                                                shape = Shape.Pill,
                                             ),
-                                            dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
-                                            size = Size(width = Fit, height = Fit),
-                                            backgroundColor = ColorScheme(
-                                                light = ColorInfo.Hex(Color(red = 5, green = 124, blue = 91).toArgb()),
-                                            ),
-                                            padding = Padding(top = 8.0, bottom = 8.0, leading = 32.0, trailing = 32.0),
-                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
-                                            shape = Shape.Pill,
                                         ),
                                         TextComponent(
                                             text = LocalizationKey("terms"),

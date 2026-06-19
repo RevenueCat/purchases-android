@@ -1,12 +1,12 @@
 package com.revenuecat.purchases
 
 import android.content.Context
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
@@ -24,10 +24,10 @@ import kotlin.coroutines.suspendCoroutine
 @JvmSynthetic
 @Throws(PurchasesException::class)
 public suspend fun Purchases.awaitOfferings(): Offerings {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getOfferingsWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -47,10 +47,10 @@ public suspend fun Purchases.awaitOfferings(): Offerings {
  */
 @JvmSynthetic
 public suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
-    suspendCoroutine { continuation ->
+    suspendCancellableCoroutine { continuation ->
         getOfferingsWith(
-            onSuccess = { continuation.resume(Result.success(it)) },
-            onError = { continuation.resume(Result.failure(PurchasesException(it))) },
+            onSuccess = { continuation.safeResume(Result.success(it)) },
+            onError = { continuation.safeResume(Result.failure(PurchasesException(it))) },
         )
     }
 
@@ -73,15 +73,17 @@ public suspend fun Purchases.awaitOfferingsResult(): Result<Offerings> =
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
 public suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseResult {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         purchase(
             purchaseParams = purchaseParams,
             callback = purchaseCompletedCallback(
                 onSuccess = { storeTransaction, customerInfo ->
-                    continuation.resume(PurchaseResult(storeTransaction, customerInfo))
+                    continuation.safeResume(PurchaseResult(storeTransaction, customerInfo))
                 },
                 onError = { purchasesError, userCancelled ->
-                    continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
+                    continuation.safeResumeWithException(
+                        PurchasesTransactionException(purchasesError, userCancelled),
+                    )
                 },
             ),
         )
@@ -106,15 +108,17 @@ public suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): Purc
  */
 @JvmSynthetic
 public suspend fun Purchases.awaitPurchaseResult(purchaseParams: PurchaseParams): Result<PurchaseResult> {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         purchase(
             purchaseParams = purchaseParams,
             callback = purchaseCompletedCallback(
                 onSuccess = { storeTransaction, customerInfo ->
-                    continuation.resume(Result.success(PurchaseResult(storeTransaction, customerInfo)))
+                    continuation.safeResume(Result.success(PurchaseResult(storeTransaction, customerInfo)))
                 },
                 onError = { purchasesError, userCancelled ->
-                    continuation.resume(Result.failure(PurchasesTransactionException(purchasesError, userCancelled)))
+                    continuation.safeResume(
+                        Result.failure(PurchasesTransactionException(purchasesError, userCancelled)),
+                    )
                 },
             ),
         )
@@ -139,13 +143,13 @@ public suspend fun Purchases.awaitGetProducts(
     productIds: List<String>,
     type: ProductType? = null,
 ): List<StoreProduct> {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getProductsWith(
             productIds,
             type,
-            onGetStoreProducts = continuation::resume,
+            onGetStoreProducts = { continuation.safeResume(it) },
             onError = {
-                continuation.resumeWithException(PurchasesException(it))
+                continuation.safeResumeWithException(PurchasesException(it))
             },
         )
     }
@@ -168,15 +172,15 @@ public suspend fun Purchases.awaitGetProductsResult(
     productIds: List<String>,
     type: ProductType? = null,
 ): Result<List<StoreProduct>> {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getProductsWith(
             productIds,
             type,
             onGetStoreProducts = { storeProducts ->
-                continuation.resume(Result.success(storeProducts))
+                continuation.safeResume(Result.success(storeProducts))
             },
             onError = {
-                continuation.resume(Result.failure(PurchasesException(it)))
+                continuation.safeResume(Result.failure(PurchasesException(it)))
             },
         )
     }
@@ -201,10 +205,10 @@ public suspend fun Purchases.awaitGetProductsResult(
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
 public suspend fun Purchases.awaitRestore(): CustomerInfo {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         restorePurchasesWith(
-            onSuccess = { continuation.resume(it) },
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -227,13 +231,13 @@ public suspend fun Purchases.awaitRestore(): CustomerInfo {
  */
 @JvmSynthetic
 public suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { customerInfo ->
-                continuation.resume(Result.success(customerInfo))
+                continuation.safeResume(Result.success(customerInfo))
             },
             onError = {
-                continuation.resume(Result.failure(PurchasesException(it)))
+                continuation.safeResume(Result.failure(PurchasesException(it)))
             },
         )
     }
@@ -248,10 +252,10 @@ public suspend fun Purchases.awaitRestoreResult(): Result<CustomerInfo> {
  * @return The Store country code in ISO-3166-1 alpha2.
  */
 public suspend fun Purchases.awaitStorefrontCountryCode(): String {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         getStorefrontCountryCodeWith(
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = { continuation.safeResume(it) },
+            onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
 }
@@ -273,11 +277,11 @@ public suspend fun Purchases.Companion.awaitCanMakePayments(
     context: Context,
     features: List<BillingFeature> = listOf(),
 ): Boolean {
-    return suspendCoroutine { continuation ->
+    return suspendCancellableCoroutine { continuation ->
         canMakePayments(
             context = context,
             features = features,
-            callback = { continuation.resume(it) },
+            callback = { continuation.safeResume(it) },
         )
     }
 }

@@ -12,19 +12,29 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.RewardVerificationError
+import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.api.BuildConfig
+import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
+import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
+import com.revenuecat.purchases.common.workflows.WorkflowsListResponse
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -53,6 +63,7 @@ internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, Po
 internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
+@OptIn(InternalRevenueCatAPI::class)
 internal typealias OfferingsCallback = Pair<
     (JSONObject, HTTPResponseOriginalSource) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
@@ -81,6 +92,7 @@ internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesEr
 internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
+@OptIn(InternalRevenueCatAPI::class)
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -94,6 +106,24 @@ internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit,
 
 internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
 
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias RewardVerificationResultCallback =
+    Pair<(RewardVerificationResult) -> Unit, (RewardVerificationError) -> Unit>
+
+internal typealias RemoteConfigCallback =
+    Pair<(RCContainer?, VerificationResult) -> Unit, (PurchasesError) -> Unit>
+
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias WorkflowDetailCallback = Pair<
+    (WorkflowDetailResponse) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetWorkflowsErrorHandlingBehavior) -> Unit,
+    >
+
+internal typealias WorkflowsListCallback = Pair<
+    (WorkflowsListResponse) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetWorkflowsErrorHandlingBehavior) -> Unit,
+    >
+
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
@@ -102,6 +132,11 @@ internal enum class PostReceiptErrorHandlingBehavior {
 
 internal enum class GetOfferingsErrorHandlingBehavior {
     SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
+    SHOULD_NOT_FALLBACK,
+}
+
+internal enum class GetWorkflowsErrorHandlingBehavior {
+    SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
     SHOULD_NOT_FALLBACK,
 }
 
@@ -174,6 +209,22 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var rewardVerificationResultCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RewardVerificationResultCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var workflowDetailCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowDetailCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var workflowsListCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowsListCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var remoteConfigCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RemoteConfigCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -290,7 +341,7 @@ internal class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to receiptInfo.storeUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
+            "proration_mode" to receiptInfo.replacementMode?.backendName(store = appConfig.store),
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
             "sdk_originated" to receiptInfo.sdkOriginated,
@@ -743,7 +794,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val customerCenterRoot = json.decodeFromString<CustomerCenterRoot>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(customerCenterRoot.customerCenter)
                         } catch (e: SerializationException) {
@@ -973,6 +1024,154 @@ internal class Backend(
         }
     }
 
+    @Suppress("LongParameterList")
+    fun getWorkflow(
+        appUserID: String,
+        workflowId: String,
+        appInBackground: Boolean,
+        onSuccess: (WorkflowDetailResponse) -> Unit,
+        onError: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit,
+        callbackDispatcher: Dispatcher = dispatcher,
+    ) {
+        val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    workflowDetailCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    workflowDetailCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccessHandler(
+                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payloadText),
+                            )
+                        } catch (e: SerializationException) {
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
+                        }
+                    } else {
+                        val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS
+                        } else {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, errorBehavior)
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            workflowDetailCallbacks.addBackgroundAwareCallback(
+                call,
+                callbackDispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getWorkflows(
+        appUserID: String,
+        appInBackground: Boolean,
+        type: String? = null,
+        onSuccess: (WorkflowsListResponse) -> Unit,
+        onError: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetWorkflows(appUserID, type)
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    workflowsListCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    workflowsListCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccessHandler(
+                                WorkflowJsonParser.parseWorkflowsListResponse(result.payloadText),
+                            )
+                        } catch (e: SerializationException) {
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
+                        }
+                    } else {
+                        val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS
+                        } else {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, errorBehavior)
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            workflowsListCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
     fun getWebBillingProducts(
         appUserID: String,
         productIds: Set<String>,
@@ -1008,7 +1207,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val productsResponse = json.decodeFromString<WebBillingProductsResponse>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(productsResponse)
                         } catch (e: SerializationException) {
@@ -1029,6 +1228,159 @@ internal class Backend(
                 path,
                 onSuccess to onError,
                 Delay.NONE,
+            )
+        }
+    }
+
+    fun getRewardVerificationResult(
+        appUserID: String,
+        clientTransactionId: String,
+        onSuccess: (RewardVerificationResult) -> Unit,
+        onError: (RewardVerificationError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetRewardVerification(
+            userId = appUserID,
+            clientTransactionId = clientTransactionId,
+        )
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground = false)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    rewardVerificationResultCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(RewardVerificationError(error, isServerError = false))
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    rewardVerificationResultCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val response = json.decodeFromString<RewardVerificationResponse>(
+                                result.payloadText,
+                            )
+                            onSuccessHandler(response.toRewardVerificationResult())
+                        } catch (e: SerializationException) {
+                            onErrorHandler(
+                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(
+                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
+                        }
+                    } else {
+                        onErrorHandler(
+                            RewardVerificationError(
+                                result.toPurchasesError().also { errorLog(it) },
+                                isServerError = RCHTTPStatusCodes.isServerError(result.responseCode),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            rewardVerificationResultCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                Delay.NONE,
+            )
+        }
+    }
+
+    fun getRemoteConfig(
+        appInBackground: Boolean,
+        onSuccess: (RCContainer?, VerificationResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetRemoteConfig
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+
+        val overrideURL = BuildConfig.REMOTE_CONFIG_BASE_URL
+            .takeIf { it.isNotEmpty() && appConfig.isDebugBuild }
+            ?.let { runCatching { URL(it) }.getOrNull() }
+        val baseURL = overrideURL ?: appConfig.baseURL
+        val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    remoteConfigCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    remoteConfigCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
+                            // 204: nothing changed, no container to parse.
+                            onSuccessHandler(null, result.verificationResult)
+                            return@forEach
+                        }
+                        val payload = result.payload
+                        if (payload !is HTTPResult.Payload.RCFormat) {
+                            onErrorHandler(
+                                PurchasesError(
+                                    PurchasesErrorCode.UnknownError,
+                                    "Expected an RC Container Format payload for remote config.",
+                                ).also { errorLog(it) },
+                            )
+                            return@forEach
+                        }
+                        try {
+                            onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
+                        } catch (e: RCContainerFormatException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            remoteConfigCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
             )
         }
     }
@@ -1113,23 +1465,3 @@ internal fun PricingPhase.toMap(): Map<String, Any?> {
         "priceCurrencyCode" to this.price.currencyCode,
     )
 }
-
-/**
- * [GoogleReplacementMode] used to be `GoogleProrationMode`. The backend still expects these values, hence this enum.
- */
-private enum class LegacyProrationMode {
-    IMMEDIATE_WITHOUT_PRORATION,
-    IMMEDIATE_WITH_TIME_PRORATION,
-    IMMEDIATE_AND_CHARGE_FULL_PRICE,
-    IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
-    DEFERRED,
-}
-
-private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
-    get() = when (this) {
-        GoogleReplacementMode.WITHOUT_PRORATION -> LegacyProrationMode.IMMEDIATE_WITHOUT_PRORATION
-        GoogleReplacementMode.WITH_TIME_PRORATION -> LegacyProrationMode.IMMEDIATE_WITH_TIME_PRORATION
-        GoogleReplacementMode.CHARGE_FULL_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
-        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
-        GoogleReplacementMode.DEFERRED -> LegacyProrationMode.DEFERRED
-    }

@@ -31,6 +31,8 @@ public class TabControlButtonComponent(
     public val tabId: String,
     @get:JvmSynthetic
     public val stack: StackComponent,
+    @get:JvmSynthetic
+    public val name: String? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
@@ -42,6 +44,8 @@ public class TabControlToggleComponent(
     @get:JvmSynthetic
     @SerialName("default_value")
     public val defaultValue: Boolean,
+    @get:JvmSynthetic
+    public val name: String? = null,
     @get:JvmSynthetic
     @SerialName("thumb_color_on")
     public val thumbColorOn: ColorScheme,
@@ -67,6 +71,8 @@ public object TabControlComponent : PaywallComponent
 @SerialName("tabs")
 @Immutable
 public class TabsComponent(
+    @get:JvmSynthetic
+    public val name: String? = null,
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
@@ -102,6 +108,8 @@ public class TabsComponent(
     public class Tab(
         @get:JvmSynthetic
         public val id: String,
+        @get:JvmSynthetic
+        public val name: String? = null,
         @get:JvmSynthetic
         public val stack: StackComponent,
     )

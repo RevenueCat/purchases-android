@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -21,6 +22,7 @@ internal class MockPurchasesType(
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,
     override val customerCenterListener: CustomerCenterListener? = null,
+    override val useWorkflows: Boolean = false,
 ) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         throw NotImplementedError("Mock implementation")
@@ -56,4 +58,9 @@ internal class MockPurchasesType(
         // No-op for mock - return success to simulate success
         return CreateSupportTicketResult(success = true)
     }
+    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+        throw NotImplementedError("Mock implementation")
+    }
+
+    override fun workflowIdForOfferingId(offeringId: String): String? = null
 }

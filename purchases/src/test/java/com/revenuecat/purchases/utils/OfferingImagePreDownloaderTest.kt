@@ -6,15 +6,18 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -24,15 +27,21 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.serialization.SerializationException
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -116,6 +125,27 @@ class OfferingImagePreDownloaderTest {
     }
 
     @Test
+    fun `paywalls V2 - if the component tree fails to decode, it does not throw and downloads nothing`() {
+        val offering = mockk<Offering>().apply {
+            every { paywall } returns null
+            every { paywallComponents } returns Offering.PaywallComponents(
+                uiConfig = mockk(),
+                componentsHash = "hash",
+            ) {
+                throw SerializationException("Malformed component tree")
+            }
+        }
+
+        // Pre-downloading is best-effort: a lazy-decode failure must be swallowed so it can't abort the
+        // offerings success/caching path that invokes this.
+        preDownloader.preDownloadOfferingImages(offering)
+
+        verify(exactly = 0) {
+            coilImageDownloader.downloadImage(any())
+        }
+    }
+
+    @Test
     fun `paywalls V2 - if images, it downloads all of them`() {
         val expectedImageDownloads = listOf(
             "https://pawwalls.com/test_stack_light_low_res.webp",
@@ -127,7 +157,10 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_image_override_dark_low_res.webp",
             "https://pawwalls.com/test_carousel_light_low_res.webp",
             "https://pawwalls.com/test_carousel_dark_low_res.webp",
+            "https://pawwalls.com/test_carousel_page_low_res.webp",
             "https://pawwalls.com/test_tabs_light_low_res.webp",
+            "https://pawwalls.com/test_video_fallback_low_res.webp",
+            "https://pawwalls.com/test_video_override_fallback_low_res.webp",
             "https://pawwalls.com/test_background_light_low_res.webp",
             "https://pawwalls.com/test_background_dark_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_low_res.webp",
@@ -136,6 +169,8 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_sticky_footer_override_2_light_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_override_2_dark_low_res.webp",
             "https://pawwalls.com/test_icon_2.webp",
+            "https://pawwalls.com/test_header_low_res.webp",
+            "https://pawwalls.com/test_icon_5.webp",
             "https://pawwalls.com/test_icon_3.webp",
             "https://pawwalls.com/test_icon_4.webp",
         )
@@ -182,12 +217,57 @@ class OfferingImagePreDownloaderTest {
                             ),
                         ),
                         CarouselComponent(
-                            pages = emptyList(),
+                            pages = listOf(
+                                StackComponent(
+                                    components = listOf(
+                                        ImageComponent(
+                                            source = ThemeImageUrls(
+                                                light = createMockImageUrls(
+                                                    webpLowRes = "https://pawwalls.com/test_carousel_page_low_res.webp",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
                             pageAlignment = VerticalAlignment.TOP,
                             background = Background.Image(
                                 value = ThemeImageUrls(
                                     light = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_carousel_light_low_res.webp"),
                                     dark = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_carousel_dark_low_res.webp"),
+                                ),
+                            ),
+                        ),
+                        VideoComponent(
+                            source = createMockVideoUrls(),
+                            fallbackSource = ThemeImageUrls(
+                                light = createMockImageUrls(
+                                    webpLowRes = "https://pawwalls.com/test_video_fallback_low_res.webp",
+                                ),
+                            ),
+                            visible = null,
+                            showControls = false,
+                            autoplay = true,
+                            loop = true,
+                            muteAudio = true,
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            fitMode = FitMode.FILL,
+                            maskShape = null,
+                            colorOverlay = null,
+                            padding = null,
+                            margin = null,
+                            border = null,
+                            shadow = null,
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = emptyList(),
+                                    properties = PartialVideoComponent(
+                                        fallbackSource = ThemeImageUrls(
+                                            light = createMockImageUrls(
+                                                webpLowRes = "https://pawwalls.com/test_video_override_fallback_low_res.webp",
+                                            ),
+                                        ),
+                                    ),
                                 ),
                             ),
                         ),
@@ -289,6 +369,26 @@ class OfferingImagePreDownloaderTest {
                         ),
                     ),
                 ),
+                header = HeaderComponent(
+                    stack = StackComponent(
+                        components = listOf(
+                            IconComponent(
+                                baseUrl = "https://pawwalls.com",
+                                iconName = "test_icon",
+                                formats = IconComponent.Formats(
+                                    webp = "test_icon_5.webp",
+                                ),
+                            ),
+                        ),
+                        background = Background.Image(
+                            value = ThemeImageUrls(
+                                light = createMockImageUrls(
+                                    webpLowRes = "https://pawwalls.com/test_header_low_res.webp",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
         ))
 
@@ -372,6 +472,18 @@ class OfferingImagePreDownloaderTest {
             webpLowRes = URL(webpLowRes),
             width = 200u,
             height = 200u,
+        )
+    }
+
+    private fun createMockVideoUrls(): ThemeVideoUrls {
+        return ThemeVideoUrls(
+            light = VideoUrls(
+                width = 200u,
+                height = 200u,
+                url = URL("https://www.revenuecat.com/test_video.mp4"),
+                urlLowRes = URL("https://www.revenuecat.com/test_video_low_res.mp4"),
+            ),
+            dark = null,
         )
     }
 }

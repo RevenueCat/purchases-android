@@ -10,6 +10,7 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.models.StoreTransaction
 
 private const val TAG = "MainApplication"
 
@@ -63,6 +64,13 @@ class MainApplication : Application() {
                         "CustomerCenterListener: onCustomActionSelected called with action: $actionIdentifier, " +
                             "purchaseIdentifier: $purchaseIdentifier",
                     )
+                }
+
+                override fun onPromotionalOfferSucceeded(
+                    customerInfo: CustomerInfo,
+                    transaction: StoreTransaction,
+                ) {
+                    Log.d(TAG, "CustomerCenterListener: onPromotionalOfferSucceeded called")
                 }
             }
     }

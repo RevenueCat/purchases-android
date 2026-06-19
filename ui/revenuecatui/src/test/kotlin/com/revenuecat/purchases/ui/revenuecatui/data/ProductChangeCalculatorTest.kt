@@ -14,9 +14,9 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import io.mockk.coEvery
@@ -37,8 +37,8 @@ class ProductChangeCalculatorTest {
     private lateinit var calculator: ProductChangeCalculator
 
     private val defaultProductChangeConfig = ProductChangeConfig(
-        upgradeReplacementMode = GoogleReplacementMode.CHARGE_PRORATED_PRICE,
-        downgradeReplacementMode = GoogleReplacementMode.DEFERRED,
+        upgradeReplacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        downgradeReplacementMode = StoreReplacementMode.DEFERRED,
     )
 
     @Before
@@ -170,7 +170,7 @@ class ProductChangeCalculatorTest {
 
         assertThat(result).isNotNull
         assertThat(result!!.oldProductId).isEqualTo("com.test.subscription.basic")
-        assertThat(result.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(result.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
     }
 
     @Test
@@ -206,7 +206,7 @@ class ProductChangeCalculatorTest {
 
         assertThat(result).isNotNull
         assertThat(result!!.oldProductId).isEqualTo("com.test.subscription.premium")
-        assertThat(result.replacementMode).isEqualTo(GoogleReplacementMode.DEFERRED)
+        assertThat(result.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     @Test
@@ -242,7 +242,7 @@ class ProductChangeCalculatorTest {
 
         assertThat(result).isNotNull
         assertThat(result!!.oldProductId).isEqualTo("com.test.subscription.basic")
-        assertThat(result.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(result.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
     }
 
     @Test
@@ -272,8 +272,8 @@ class ProductChangeCalculatorTest {
         )
 
         val customConfig = ProductChangeConfig(
-            upgradeReplacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE,
-            downgradeReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION,
+            upgradeReplacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
+            downgradeReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION,
         )
 
         val result = calculator.calculateProductChangeInfo(
@@ -282,7 +282,7 @@ class ProductChangeCalculatorTest {
         )
 
         assertThat(result).isNotNull
-        assertThat(result!!.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
+        assertThat(result!!.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
     }
 
     @Test
@@ -312,7 +312,7 @@ class ProductChangeCalculatorTest {
         )
 
         assertThat(result).isNotNull
-        assertThat(result!!.replacementMode).isEqualTo(GoogleReplacementMode.DEFERRED)
+        assertThat(result!!.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     @Test

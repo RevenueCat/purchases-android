@@ -352,6 +352,7 @@ internal class PaywallStateLoadedComponentsLocaleTests(
         deviceLocales: NonEmptyList<String>,
     ) = PaywallState.Loaded.Components(
         stack = previewStackComponentStyle(children = emptyList()),
+        header = null,
         stickyFooter = null,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White))),
         showPricesWithDecimals = true,

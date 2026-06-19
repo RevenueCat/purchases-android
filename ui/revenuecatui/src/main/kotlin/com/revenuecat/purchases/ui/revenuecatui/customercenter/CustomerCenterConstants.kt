@@ -31,5 +31,6 @@ internal object CustomerCenterConstants {
 
     object Management {
         const val MANAGEMENT_URL = "https://play.google.com/store/account/subscriptions"
+        const val AMAZON_MANAGEMENT_URL = "amzn://apps/library/subscriptions"
     }
 }

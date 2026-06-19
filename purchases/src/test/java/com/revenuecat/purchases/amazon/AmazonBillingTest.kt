@@ -49,6 +49,7 @@ import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -577,7 +578,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
         } just Runs
 
         underTest.consumeAndSave(
@@ -600,7 +601,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
         }
     }
 
@@ -614,7 +615,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
         } just Runs
 
         underTest.consumeAndSave(
@@ -637,7 +638,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
         }
     }
 
@@ -651,7 +652,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
         } just Runs
 
         underTest.consumeAndSave(
@@ -674,7 +675,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId, any())
         }
     }
 
@@ -1337,10 +1338,10 @@ class AmazonBillingTest {
 
     private fun mockDiagnosticsTracker() {
         every {
-            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(any(), any(), any())
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(any<Duration>(), any(), any())
         } just Runs
         every {
-            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(any(), any(), any())
+            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(any<Duration>(), any(), any())
         } just Runs
     }
 }

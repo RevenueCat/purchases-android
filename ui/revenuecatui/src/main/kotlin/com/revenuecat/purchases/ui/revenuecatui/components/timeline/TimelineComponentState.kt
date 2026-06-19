@@ -9,7 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -29,6 +31,7 @@ internal fun rememberUpdatedTimelineComponentState(
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
+    customVariablesProvider = { paywallState.mergedCustomVariables },
 )
 
 @Stable
@@ -39,6 +42,7 @@ private fun rememberUpdatedTimelineComponentState(
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
+    customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -49,6 +53,7 @@ private fun rememberUpdatedTimelineComponentState(
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
             selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+            customVariablesProvider = customVariablesProvider,
         )
     }.apply {
         update(windowSize = windowSize)
@@ -62,6 +67,7 @@ internal class TimelineComponentState(
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+    private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
@@ -78,7 +84,15 @@ internal class TimelineComponentState(
         val componentState =
             if (packageAwareDelegate.isSelected) ComponentViewState.SELECTED else ComponentViewState.DEFAULT
 
-        style.overrides.buildPresentedPartial(windowCondition, packageAwareDelegate.offerEligibility, componentState)
+        style.overrides.buildPresentedPartial(
+            windowCondition,
+            packageAwareDelegate.offerEligibility,
+            componentState,
+            conditionContext = ConditionContext(
+                selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                customVariables = customVariablesProvider(),
+            ),
+        )
     }
 
     @get:JvmSynthetic
@@ -114,6 +128,7 @@ internal class TimelineComponentState(
                 selectedPackageInfoProvider = selectedPackageInfoProvider,
                 selectedTabIndexProvider = selectedTabIndexProvider,
                 selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
+                customVariablesProvider = customVariablesProvider,
             )
         }
     }
@@ -130,6 +145,7 @@ internal class TimelineComponentState(
         private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
         private val selectedTabIndexProvider: () -> Int,
         private val selectedOfferEligibilityProvider: () -> OfferEligibility,
+        private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
     ) {
 
         private var windowSize by mutableStateOf(initialWindowSize)
@@ -150,6 +166,10 @@ internal class TimelineComponentState(
                 windowCondition,
                 packageAwareDelegate.offerEligibility,
                 componentState,
+                conditionContext = ConditionContext(
+                    selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
+                    customVariables = customVariablesProvider(),
+                ),
             )
         }
 

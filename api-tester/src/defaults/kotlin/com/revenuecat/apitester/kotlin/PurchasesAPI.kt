@@ -9,7 +9,9 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Purchases.Companion.sharedInstance
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -32,6 +34,7 @@ import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
+import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
@@ -49,6 +52,8 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
@@ -64,6 +69,7 @@ private class PurchasesAPI {
         webPurchaseRedemption: WebPurchaseRedemption,
         redeemWebPurchaseListener: RedeemWebPurchaseListener,
         intent: Intent,
+        offering: Offering,
     ) {
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {}
@@ -133,6 +139,20 @@ private class PurchasesAPI {
 
         val locale: Locale? = purchases.storefrontLocale
         purchases.getStorefrontLocale(getStorefrontLocaleCallback)
+
+        // trackCustomPaywallImpression API
+        val defaultParams = CustomPaywallImpressionParams()
+        val paramsWithId = CustomPaywallImpressionParams(paywallId = "my-paywall")
+        val paramsWithOffering = CustomPaywallImpressionParams(paywallId = "my-paywall", offeringId = "my-offering")
+        val paramsWithOfferingObject = CustomPaywallImpressionParams(paywallId = "my-paywall", offering = offering)
+        val paramsOfferingObjectOnly = CustomPaywallImpressionParams(offering = offering)
+        val presentedOfferingContext: PresentedOfferingContext? = paramsWithOfferingObject.presentedOfferingContext
+        purchases.trackCustomPaywallImpression()
+        purchases.trackCustomPaywallImpression(defaultParams)
+        purchases.trackCustomPaywallImpression(paramsWithId)
+        purchases.trackCustomPaywallImpression(paramsWithOffering)
+        purchases.trackCustomPaywallImpression(paramsWithOfferingObject)
+        purchases.trackCustomPaywallImpression(paramsOfferingObjectOnly)
     }
 
     @Suppress("LongParameterList")
@@ -347,6 +367,9 @@ private class PurchasesAPI {
 
     fun checkCustomerCenter() {
         val customerInfoListener: CustomerCenterListener = object : CustomerCenterListener {
+            override fun onRestoreInitiated(resume: Resumable) {
+            }
+
             override fun onRestoreStarted() {
             }
         }
@@ -363,6 +386,9 @@ private class PurchasesAPI {
             override fun onRestoreFailed(error: PurchasesError) {
             }
 
+            override fun onRestoreInitiated(resume: Resumable) {
+            }
+
             override fun onRestoreStarted() {
             }
 
@@ -376,6 +402,12 @@ private class PurchasesAPI {
                         val uri: Uri = action.uri
                     }
                 }
+            }
+
+            override fun onPromotionalOfferSucceeded(
+                customerInfo: CustomerInfo,
+                transaction: StoreTransaction,
+            ) {
             }
         }
         sharedInstance.customerCenterListener = object : CustomerCenterListener {}

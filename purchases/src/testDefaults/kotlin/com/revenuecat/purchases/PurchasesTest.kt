@@ -18,6 +18,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -29,8 +30,11 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.DownloadedFontFamily
+import com.revenuecat.purchases.paywalls.events.CustomPaywallEvent
+import com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
@@ -49,6 +53,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Assert.fail
@@ -274,7 +279,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleReplacementMode.WITHOUT_PRORATION,
+            StoreReplacementMode.WITHOUT_PRORATION,
         )
         verify {
             mockBillingAbstract.makePurchaseAsync(
@@ -385,7 +390,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
+                        replaceProductInfo.replacementMode == StoreReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
@@ -420,7 +425,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
+                        replaceProductInfo.replacementMode == StoreReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
@@ -1543,6 +1548,176 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // endregion track events
 
+    // region trackCustomPaywallImpression presented offering context resolution
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression derives context from cached current offering`() {
+        val context = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "home_banner",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 3, ruleId = "rule_abc123"),
+        )
+        val offering = makeOfferingWithContext(identifier = "current_offering", context = context)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = offering,
+            all = mapOf(offering.identifier to offering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(CustomPaywallImpressionParams(paywallId = "pw"))
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("current_offering")
+        assertThat(data.placementIdentifier).isEqualTo("home_banner")
+        assertThat(data.targetingRevision).isEqualTo(3)
+        assertThat(data.targetingRuleId).isEqualTo("rule_abc123")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Suppress("DEPRECATION")
+    @Test
+    fun `trackCustomPaywallImpression derives context from cached offering matching passed id`() {
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "current_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "current_rule"),
+        )
+        val otherContext = PresentedOfferingContext(
+            offeringIdentifier = "other_offering",
+            placementIdentifier = "other_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 5, ruleId = "other_rule"),
+        )
+        val currentOffering = makeOfferingWithContext("current_offering", currentContext)
+        val otherOffering = makeOfferingWithContext("other_offering", otherContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = currentOffering,
+            all = mapOf(
+                currentOffering.identifier to currentOffering,
+                otherOffering.identifier to otherOffering,
+            ),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offeringId = "other_offering"),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("other_offering")
+        assertThat(data.placementIdentifier).isEqualTo("other_placement")
+        assertThat(data.targetingRevision).isEqualTo(5)
+        assertThat(data.targetingRuleId).isEqualTo("other_rule")
+    }
+
+    @Suppress("DEPRECATION")
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression leaves context null when passed id not in cache`() {
+        val currentContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "current_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "current_rule"),
+        )
+        val currentOffering = makeOfferingWithContext("current_offering", currentContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = currentOffering,
+            all = mapOf(currentOffering.identifier to currentOffering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offeringId = "unknown_offering"),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("unknown_offering")
+        assertThat(data.placementIdentifier).isNull()
+        assertThat(data.targetingRevision).isNull()
+        assertThat(data.targetingRuleId).isNull()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression uses passed offering context`() {
+        val cachedContext = PresentedOfferingContext(
+            offeringIdentifier = "current_offering",
+            placementIdentifier = "cached_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 1, ruleId = "cached_rule"),
+        )
+        val cachedOffering = makeOfferingWithContext("current_offering", cachedContext)
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = cachedOffering,
+            all = mapOf(cachedOffering.identifier to cachedOffering),
+        )
+
+        val passedContext = PresentedOfferingContext(
+            offeringIdentifier = "passed_offering",
+            placementIdentifier = "passed_placement",
+            targetingContext = PresentedOfferingContext.TargetingContext(revision = 7, ruleId = "passed_rule"),
+        )
+        val passedOffering = makeOfferingWithContext("passed_offering", passedContext)
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(
+            CustomPaywallImpressionParams(paywallId = "pw", offering = passedOffering),
+        )
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("passed_offering")
+        assertThat(data.placementIdentifier).isEqualTo("passed_placement")
+        assertThat(data.targetingRevision).isEqualTo(7)
+        assertThat(data.targetingRuleId).isEqualTo("passed_rule")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `trackCustomPaywallImpression leaves context null when cached offering has no context`() {
+        val offering = makeOfferingWithContext(
+            identifier = "current_offering",
+            context = PresentedOfferingContext("current_offering"),
+        )
+        every { mockOfferingsManager.cachedOfferings } returns Offerings(
+            current = offering,
+            all = mapOf(offering.identifier to offering),
+        )
+        val capturedEvent = slot<CustomPaywallEvent>()
+        every { mockEventsManager.track(capture(capturedEvent)) } just Runs
+
+        purchases.trackCustomPaywallImpression(CustomPaywallImpressionParams(paywallId = "pw"))
+
+        val data = (capturedEvent.captured as CustomPaywallEvent.Impression).data
+        assertThat(data.offeringId).isEqualTo("current_offering")
+        assertThat(data.placementIdentifier).isNull()
+        assertThat(data.targetingRevision).isNull()
+        assertThat(data.targetingRuleId).isNull()
+    }
+
+    private fun makeOfferingWithContext(
+        identifier: String,
+        context: PresentedOfferingContext,
+    ): Offering {
+        val storeProduct = stubStoreProduct("monthly_$identifier")
+        val packageObject = Package(
+            identifier = "\$rc_monthly",
+            packageType = PackageType.MONTHLY,
+            product = storeProduct,
+            presentedOfferingContext = context,
+        )
+        return Offering(
+            identifier = identifier,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(packageObject),
+        )
+    }
+
+    // endregion trackCustomPaywallImpression presented offering context resolution
+
     @Test
     fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
         val expected = PlatformInfo("flavor", "version")
@@ -1705,6 +1880,117 @@ internal class PurchasesTest : BasePurchasesTest() {
         })
 
         assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getRewardVerificationResult returns result from backend on success`() {
+        val expectedResult = RewardVerificationResult.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10))
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationResult) -> Unit>().captured.invoke(expectedResult)
+        }
+
+        var receivedResult: RewardVerificationResult? = null
+        purchases.getRewardVerificationResult(
+            clientTransactionId = "ct_1",
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationResult) {
+                    receivedResult = result
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    fail("should be success")
+                }
+            },
+        )
+
+        assertThat(receivedResult).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getRewardVerificationResult returns error from backend on error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        purchases.getRewardVerificationResult(
+            clientTransactionId = "ct_1",
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationResult) {
+                    fail("should be error")
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    receivedError = error.error
+                }
+            },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetRewardVerificationResult returns backend result`() = runTest {
+        val expectedResult = RewardVerificationResult.PENDING
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationResult) -> Unit>().captured.invoke(expectedResult)
+        }
+
+        val result = purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")
+
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetRewardVerificationResult throws backend error`() = runTest {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
+            )
+        }
+
+        val thrown = runCatching {
+            purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")
+        }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
     }
 
     // region parseAsWebPurchaseRedemption
@@ -1932,7 +2218,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedReplaceProductInfo = replaceProductInfoSlot.captured
         assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
         assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
-        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -1999,7 +2285,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val capturedReplaceProductInfo = replaceProductInfoSlot.captured
         assertThat(capturedReplaceProductInfo.oldPurchase.productIds).isEqualTo(expectedOldPurchase.productIds)
         assertThat(capturedReplaceProductInfo.oldPurchase.purchaseToken).isEqualTo(expectedOldPurchase.purchaseToken)
-        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(GoogleReplacementMode.WITHOUT_PRORATION)
+        assertThat(capturedReplaceProductInfo.replacementMode).isEqualTo(StoreReplacementMode.WITHOUT_PRORATION)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

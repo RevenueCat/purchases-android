@@ -9,7 +9,6 @@ import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.google.extensions.firstSku
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.models.StoreTransaction
@@ -24,7 +23,6 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.data.Offset
-import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -193,8 +191,6 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `queryPurchaseHistoryAsync sets correct type`() {
-        assumeFalse(BuildConfig.ENABLE_QUERY_PURCHASE_HISTORY_AIDL)
-
         val subsBuilder = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             emptyList(),
@@ -279,8 +275,7 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.queryPurchaseHistoryAsync(
             productType = BillingClient.ProductType.SUBS,
             onReceivePurchaseHistory = { fail("should be an error") },
-            onReceivePurchaseHistoryError = {},
-        )
+        ) {}
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
@@ -717,8 +712,6 @@ internal class QueryPurchaseHistoryUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `getting all purchases gets both subs and inapps`() {
-        assumeFalse(BuildConfig.ENABLE_QUERY_PURCHASE_HISTORY_AIDL)
-
         val builder = mockClient.mockQueryPurchaseHistory(
             billingClientOKResult,
             listOf(stubPurchaseHistoryRecord()),

@@ -15,7 +15,8 @@ import kotlinx.parcelize.Parcelize
  * PaywallOptions.Builder { /* dismiss */ }
  *     .setCustomVariables(mapOf(
  *         "player_name" to CustomVariableValue.String("John"),
- *         "level" to CustomVariableValue.String("42"),
+ *         "level" to CustomVariableValue.Number(42),
+ *         "is_premium" to CustomVariableValue.Boolean(true),
  *     ))
  *     .build()
  * ```
@@ -44,10 +45,10 @@ public abstract class CustomVariableValue internal constructor() : Parcelable {
      * A numeric value (integer or decimal).
      */
     @Parcelize
-    internal class Number(val value: kotlin.Double) : CustomVariableValue(), Parcelable {
-        constructor(value: kotlin.Int) : this(value.toDouble())
-        constructor(value: kotlin.Long) : this(value.toDouble())
-        constructor(value: kotlin.Float) : this(value.toDouble())
+    public class Number(public val value: kotlin.Double) : CustomVariableValue(), Parcelable {
+        public constructor(value: kotlin.Int) : this(value.toDouble())
+        public constructor(value: kotlin.Long) : this(value.toDouble())
+        public constructor(value: kotlin.Float) : this(value.toDouble())
 
         override fun equals(other: Any?): kotlin.Boolean =
             other is Number && value == other.value
@@ -61,7 +62,7 @@ public abstract class CustomVariableValue internal constructor() : Parcelable {
      * A boolean value.
      */
     @Parcelize
-    internal class Boolean(val value: kotlin.Boolean) : CustomVariableValue(), Parcelable {
+    public class Boolean(public val value: kotlin.Boolean) : CustomVariableValue(), Parcelable {
         override fun equals(other: Any?): kotlin.Boolean =
             other is Boolean && value == other.value
 

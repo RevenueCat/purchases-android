@@ -12,7 +12,6 @@ import com.revenuecat.purchases.PresentedOfferingContextSerializer
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.TargetingContextSerializer
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PeriodSerializer
 import com.revenuecat.purchases.models.Price
@@ -22,6 +21,8 @@ import com.revenuecat.purchases.models.PricingPhaseSerializer
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreProduct
@@ -334,7 +335,7 @@ class ReceiptInfoTest {
 
     @Test
     fun `ReceiptInfo with replacement mode can be serialized and deserialized`() {
-        val expectedReplacementMode = GoogleReplacementMode.WITH_TIME_PRORATION
+        val expectedReplacementMode = StoreReplacementMode.WITH_TIME_PRORATION
         val original = ReceiptInfo(
             productIDs = listOf(productIdentifier),
             price = 0.99,
@@ -364,6 +365,76 @@ class ReceiptInfoTest {
         assertThat(decoded.replacementMode).isEqualTo(expectedReplacementMode)
 
         assertThat(encoded).isEqualTo(expectedJson)
+    }
+
+    @Test
+    fun `ReceiptInfo with StoreReplacementMode JSON deserializes to StoreReplacementMode`() {
+        // language=JSON
+        val receiptInfoJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "replacementMode":{
+                    "type":"StoreReplacementMode",
+                    "name":"CHARGE_PRORATED_PRICE"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        val decoded = json.decodeFromString<ReceiptInfo>(receiptInfoJson)
+
+        assertThat(decoded.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+    }
+
+    @Test
+    fun `ReceiptInfo with GoogleReplacementMode serializes as GoogleReplacementMode and deserializes to StoreReplacementMode`() {
+        val original = ReceiptInfo(
+            productIDs = listOf(productIdentifier),
+            price = 0.99,
+            currency = "USD",
+            period = null,
+            pricingPhases = null,
+            replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION,
+        )
+
+        val encoded = json.encodeToString(original)
+        val decoded = json.decodeFromString<ReceiptInfo>(encoded)
+
+        val expectedJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "replacementMode":{
+                    "type":"GoogleReplacementMode",
+                    "name":"WITH_TIME_PRORATION"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThat(encoded).isEqualTo(expectedJson)
+        assertThat(decoded.replacementMode).isEqualTo(StoreReplacementMode.WITH_TIME_PRORATION)
+    }
+
+    @Test
+    fun `ReceiptInfo with legacy Google replacement mode JSON deserializes to StoreReplacementMode`() {
+        // language=JSON
+        val receiptInfoJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "replacementMode":{
+                    "type":"GoogleReplacementMode",
+                    "name":"WITH_TIME_PRORATION"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        val decoded = json.decodeFromString<ReceiptInfo>(receiptInfoJson)
+
+        assertThat(decoded.replacementMode).isEqualTo(StoreReplacementMode.WITH_TIME_PRORATION)
     }
 
     @Test
@@ -404,6 +475,26 @@ class ReceiptInfoTest {
             }
         """.trimIndent().lines().joinToString("") { it.trim() }
         assertThatExceptionOfType(SerializationException::class.java).isThrownBy { json.decodeFromString<ReceiptInfo>(unknownReplacementModeJson) }
+    }
+
+    @Test
+    fun `ReceiptInfo with invalid StoreReplacementMode name fails deserializing`() {
+        // language=JSON
+        val invalidReplacementModeJson = """
+            {
+                "productIDs":["com.myproduct"],
+                "price":0.99,
+                "currency":"USD",
+                "replacementMode":{
+                    "type":"StoreReplacementMode",
+                    "name":"NOT_A_REAL_MODE"
+                }
+            }
+        """.trimIndent().lines().joinToString("") { it.trim() }
+
+        assertThatExceptionOfType(SerializationException::class.java).isThrownBy {
+            json.decodeFromString<ReceiptInfo>(invalidReplacementModeJson)
+        }
     }
 
     @Test

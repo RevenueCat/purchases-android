@@ -25,6 +25,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.json.JSONException
@@ -32,6 +33,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
+import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.Date
@@ -93,6 +95,74 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.body.getString("response")).`as`("response is OK").isEqualTo("OK")
     }
 
+    @Test
+    fun `GetRemoteConfig sends the RC format Accept header, skips ETags, and exposes an RC Format payload`() {
+        val endpoint = Endpoint.GetRemoteConfig
+        val containerBytes = byteArrayOf('R'.code.toByte(), 'C'.code.toByte(), 1, 0, 0, 0, 0, 0)
+        server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(containerBytes)))
+
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+        assertThat(request.getHeader("Accept")).isEqualTo("application/x-rc-format")
+        // RC Format endpoints are not ETag-cached: no If-None-Match is sent and the cache is bypassed.
+        assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isNull()
+        verify(exactly = 0) {
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
+        assertThat(result.payload).isInstanceOf(HTTPResult.Payload.RCFormat::class.java)
+        assertThat((result.payload as HTTPResult.Payload.RCFormat).bytes).isEqualTo(containerBytes)
+    }
+
+    @Test
+    fun `GetRemoteConfig with a 204 and a missing body stream returns an empty payload instead of throwing`() {
+        // On some Android devices a 204 yields no readable body stream (getInputStream returns null).
+        // This must surface as a 204 with an empty payload, not as a network IOException.
+        val spyClient = spyk(client)
+        every { spyClient.getInputStream(any()) } returns null
+        server.enqueue(MockResponse().setResponseCode(RCHTTPStatusCodes.NO_CONTENT))
+
+        val result = spyClient.performRequest(
+            baseURL,
+            Endpoint.GetRemoteConfig,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NO_CONTENT)
+        assertThat(result.payload).isInstanceOf(HTTPResult.Payload.RCFormat::class.java)
+        assertThat((result.payload as HTTPResult.Payload.RCFormat).bytes).isEmpty()
+    }
+
+    @Test(expected = IOException::class)
+    fun `a non-204 response with a missing body stream still throws`() {
+        val spyClient = spyk(client)
+        every { spyClient.getInputStream(any()) } returns null
+        server.enqueue(MockResponse().setResponseCode(200))
+
+        spyClient.performRequest(
+            baseURL,
+            Endpoint.GetRemoteConfig,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+    }
+
+    @Test
+    fun `non-RC-Format endpoints do not send the RC format Accept header`() {
+        enqueue(
+            Endpoint.LogIn.getPath(),
+            expectedResult = HTTPResult.createResult(),
+        )
+
+        client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+        assertThat(request.getHeader("Accept")).isNotEqualTo("application/x-rc-format")
+    }
+
     // region forceServerErrors
 
     @Test
@@ -124,7 +194,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
 
         assertThat(result.responseCode).isEqualTo(502)
-        assertThat(result.payload).isEqualTo("Some error xml")
+        assertThat(result.payloadText).isEqualTo("Some error xml")
     }
 
     @Test
@@ -152,7 +222,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}v1/subscribers/identify")
 
         assertThat(result.responseCode).isEqualTo(223)
-        assertThat(result.payload).isEqualTo("{'response': 'OK'}")
+        assertThat(result.payloadText).isEqualTo("{'response': 'OK'}")
     }
 
     // endregion forceServerErrors
@@ -453,7 +523,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             MockResponse()
                 .setHeader(HTTPResult.ETAG_HEADER_NAME, "anotheretag")
                 .setResponseCode(expectedResult.responseCode)
-                .setBody(expectedResult.payload)
+                .setBody(expectedResult.payloadText)
 
         server.enqueue(response)
         server.enqueue(secondResponse)
@@ -478,7 +548,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
-                payload = expectedResult.payload,
+                payload = expectedResult.payloadText,
                 eTagHeader = any(),
                 urlString = urlString,
                 refreshETag = true,
@@ -500,7 +570,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         verify(exactly = 1) {
             mockETagManager.getETagHeaders(any(), any(), refreshETag = true)
         }
-        assertThat(result.payload).isEqualTo(expectedResult.payload)
+        assertThat(result.payloadText).isEqualTo(expectedResult.payloadText)
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)
     }
 
@@ -569,7 +639,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         server.takeRequest()
 
-        assertThat(result.payload).isEqualTo("{}\n")
+        assertThat(result.payloadText).isEqualTo("{}\n")
     }
 
     // region trackHttpRequestPerformed
@@ -720,7 +790,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             MockResponse()
                 .setHeader(HTTPResult.ETAG_HEADER_NAME, "anotheretag")
                 .setResponseCode(expectedResult.responseCode)
-                .setBody(expectedResult.payload)
+                .setBody(expectedResult.payloadText)
 
         server.enqueue(response)
         server.enqueue(secondResponse)
@@ -745,7 +815,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
-                payload = expectedResult.payload,
+                payload = expectedResult.payloadText,
                 eTagHeader = any(),
                 urlString = urlString,
                 refreshETag = true,
@@ -1091,7 +1161,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         timeoutManager.recordRequestResult(
             HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
         )
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup successful response
@@ -1116,7 +1186,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // Verify timeout was reset
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
@@ -1135,7 +1205,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Initially timeout should be default
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup fallback server response
@@ -1184,7 +1254,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
             // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+            assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
                 .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
             verify(exactly = 1) {
                 timeoutManager.recordRequestResult(
@@ -1207,7 +1277,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Initially timeout should be default
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         enqueue(
@@ -1231,10 +1301,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         }.isInstanceOf(SocketTimeoutException::class.java)
 
-        // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_WITH_FALLBACK
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        // Verify HTTPClient recorded OTHER_RESULT (not timeout for fallback endpoint)
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
-        assertThat(timeoutManager.getTimeoutForRequest(Endpoint.GetProductEntitlementMapping, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
@@ -1255,7 +1325,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         timeoutManager.recordRequestResult(
             HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
         )
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup error response (non-timeout error)
@@ -1280,7 +1350,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // Verify HTTPClient recorded OTHER_RESULT and did NOT reset timeout
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_FOUND)
-        assertThat(timeoutManager.getTimeoutForRequest(endpoint, isFallback = false))
+        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
@@ -1378,7 +1448,7 @@ internal class ParameterizedNonJsonResponseBodyTest(
             assertThat(server.requestCount).isEqualTo(1)
             assertThat(fallbackServer.requestCount).isEqualTo(1)
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.payloadText).isEqualTo(validJsonPayload)
             assertThat(result.body.has("offerings")).isTrue
         } finally {
             fallbackServer.shutdown()
@@ -1466,7 +1536,7 @@ internal class ParameterizedConnectionFailureFallbackTest(
             // Assert
             assertThat(fallbackServer.requestCount).isEqualTo(1)
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(result.payload).isEqualTo(validJsonPayload)
+            assertThat(result.payloadText).isEqualTo(validJsonPayload)
             assertThat(result.body.has("offerings")).isTrue
         } finally {
             fallbackServer.shutdown()
