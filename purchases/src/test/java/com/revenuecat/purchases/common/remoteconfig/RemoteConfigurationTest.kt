@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.common.remoteconfig
 
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 
-class ConfigurationResponseTest {
+class RemoteConfigurationTest {
 
     @Test
     fun `parses a full first response`() {
@@ -30,7 +32,7 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.domain).isEqualTo("app")
         assertThat(response.subdomains).containsExactly("app_workflows")
@@ -66,7 +68,7 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         // manifest lists every topic; topics carries only the changed one.
         assertThat(response.manifest.topics.keys)
@@ -90,7 +92,7 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.topics).isEmpty()
         assertThat(response.manifest.topics).containsExactlyEntriesOf(mapOf("sources" to "etag1"))
@@ -113,7 +115,7 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.manifest.topics).containsKey("future_topic")
         assertThat(response.topics).containsKey("future_topic")
@@ -136,7 +138,7 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         val item = response.topics.getValue("sources").getValue("blob")
         assertThat(item.blobRef).isEqualTo("sourcesBlob")
@@ -163,7 +165,7 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         val item = response.topics.getValue("sources").getValue("api")
         assertThat(item.blobRef).isNull()
@@ -184,7 +186,7 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.subdomains).isEmpty()
         assertThat(response.appUuid).isNull()
@@ -207,10 +209,64 @@ class ConfigurationResponseTest {
             }
         """
 
-        val response = ConfigurationResponse.parse(payload.trimIndent().toByteArray())
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         val item = response.topics.getValue("sources").getValue("api")
         assertThat(item.blobRef).isNull()
         assertThat(item.prefetch).isFalse
+    }
+
+    @Test
+    fun `fails to parse when the required domain is missing`() {
+        // language=json
+        val payload = """
+            {
+              "manifest": { "domain": "app", "topics": { "sources": "etag1" } }
+            }
+        """
+
+        assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
+            .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
+    fun `fails to parse when the required manifest is missing`() {
+        // language=json
+        val payload = """
+            {
+              "domain": "app"
+            }
+        """
+
+        assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
+            .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
+    fun `fails to parse malformed JSON`() {
+        // language=json
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": { "domain": "app",
+        """
+
+        assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
+            .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
+    fun `fails to parse when a field has the wrong type`() {
+        // manifest must be an object, not a string.
+        // language=json
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": "not-an-object"
+            }
+        """
+
+        assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
+            .isInstanceOf(SerializationException::class.java)
     }
 }
