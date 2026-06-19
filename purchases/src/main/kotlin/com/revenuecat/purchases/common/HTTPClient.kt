@@ -21,6 +21,8 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -394,7 +396,15 @@ internal class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
+            if (endpoint.expectsRCFormatResponse) {
+                if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
+                    VerificationResult.VERIFIED
+                } else {
+                    verifyRCFormatResponse(path, connection, bodyBytes)
+                }
+            } else {
+                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
+            }
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -576,11 +586,45 @@ internal class HTTPClient(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            body = payload,
+            bodyBytes = payload?.toByteArray(),
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = postFieldsToSignHeader,
         )
+    }
+
+    /**
+     * Verifies an RC Container Format response. The backend signs the config element's (element 0)
+     * 24-byte truncated SHA-256 checksum, so we verify the signature over that checksum and
+     * independently confirm the config bytes hash to it. Both checks are required: the signature ties
+     * the checksum to the backend, and [RCElement.isChecksumValid] ties the checksum to the data.
+     * This endpoint is not ETag-cached and sends no nonce / post params.
+     */
+    private fun verifyRCFormatResponse(
+        urlPath: String,
+        connection: URLConnection,
+        payloadBytes: ByteArray,
+    ): VerificationResult {
+        val config = try {
+            RCContainer.parse(payloadBytes).config
+        } catch (e: RCContainerFormatException) {
+            errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
+            return VerificationResult.FAILED
+        }
+        return if (!config.isChecksumValid()) {
+            errorLog { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
+            VerificationResult.FAILED
+        } else {
+            signingManager.verifyResponse(
+                urlPath = urlPath,
+                signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+                nonce = null,
+                bodyBytes = config.checksumBytes(),
+                requestTime = getRequestTimeHeader(connection),
+                eTag = getETagHeader(connection),
+                postFieldsToSignHeader = null,
+            )
+        }
     }
 
     private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)

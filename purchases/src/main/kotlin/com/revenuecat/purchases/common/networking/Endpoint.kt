@@ -161,6 +161,7 @@ internal sealed class Endpoint(
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
             is GetRewardVerification,
+            GetRemoteConfig,
             ->
                 true
             is GetAmazonReceipt,
@@ -171,8 +172,6 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
-            // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
-            GetRemoteConfig,
             ->
                 false
         }

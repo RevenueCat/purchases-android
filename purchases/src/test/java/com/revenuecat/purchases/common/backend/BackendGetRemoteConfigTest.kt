@@ -77,12 +77,19 @@ class BackendGetRemoteConfigTest {
     fun `getRemoteConfig parses successful RC Format response into an RCContainer`() {
         val config = "{\"hello\":\"world\"}".toByteArray()
         val element = "blob-bytes".toByteArray()
-        mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))))
+        mockHttpResult(
+            payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))),
+            verificationResult = VerificationResult.VERIFIED,
+        )
 
         var container: RCContainer? = null
+        var verification: VerificationResult? = null
         backend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { container = it },
+            onSuccess = { result, verificationResult ->
+                container = result
+                verification = verificationResult
+            },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
@@ -91,6 +98,7 @@ class BackendGetRemoteConfigTest {
         assertThat(parsed.config.data.let { buf -> ByteArray(buf.remaining()).also { buf.duplicate().get(it) } })
             .isEqualTo(config)
         assertThat(parsed.contentElements).hasSize(1)
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Test
@@ -101,13 +109,19 @@ class BackendGetRemoteConfigTest {
         )
         var callbackCount = 0
         var container: RCContainer? = mockk()
+        var verification: VerificationResult? = null
         backend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { callbackCount++; container = it },
+            onSuccess = { result, verificationResult ->
+                callbackCount++
+                container = result
+                verification = verificationResult
+            },
             onError = { error -> fail("Expected success. Got error: $error") },
         )
         assertThat(callbackCount).isEqualTo(1)
         assertThat(container).isNull()
+        assertThat(verification).isEqualTo(VerificationResult.NOT_REQUESTED)
     }
 
     @Test
@@ -117,7 +131,7 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
         assertThat(obtainedError).isNotNull
@@ -130,7 +144,7 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
         assertThat(obtainedError).isNotNull
@@ -145,7 +159,7 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
         assertThat(obtainedError).isNotNull
@@ -157,12 +171,12 @@ class BackendGetRemoteConfigTest {
         val lock = CountDownLatch(2)
         asyncBackend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { lock.countDown() },
+            onSuccess = { _, _ -> lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
         asyncBackend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { lock.countDown() },
+            onSuccess = { _, _ -> lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
@@ -182,6 +196,7 @@ class BackendGetRemoteConfigTest {
         responseCode: Int = RCHTTPStatusCodes.SUCCESS,
         payload: HTTPResult.Payload,
         delayMs: Long? = null,
+        verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
     ) {
         every {
             httpClient.performRequest(
@@ -201,7 +216,7 @@ class BackendGetRemoteConfigTest {
                 payload,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+                verificationResult,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
