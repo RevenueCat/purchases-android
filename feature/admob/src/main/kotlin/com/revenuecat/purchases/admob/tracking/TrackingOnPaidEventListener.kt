@@ -29,7 +29,7 @@ internal class TrackingOnPaidEventListener(
     override fun onPaidEvent(adValue: AdValue) {
         val responseInfo = responseInfoProvider()
         trackIfConfigured {
-            adTracker.trackAdRevenue(
+            adTracker.trackFromAdapter(
                 AdRevenueData(
                     networkName = responseInfo?.mediationAdapterClassName,
                     mediatorName = AdMediatorName.AD_MOB,

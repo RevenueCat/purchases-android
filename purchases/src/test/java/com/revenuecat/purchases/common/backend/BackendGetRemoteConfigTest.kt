@@ -11,9 +11,8 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigResponse
-import com.revenuecat.purchases.common.remoteconfig.Topic
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -22,8 +21,9 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
+import java.io.ByteArrayOutputStream
 import java.net.URL
+import java.security.MessageDigest
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadPoolExecutor
@@ -34,7 +34,6 @@ import kotlin.time.Duration.Companion.seconds
 class BackendGetRemoteConfigTest {
 
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
-    private val mockResponseFilename = "get_remote_config_success.json"
 
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient
@@ -75,136 +74,92 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig parses successful response`() {
-        mockHttpResult(payload = loadJSON(mockResponseFilename))
-        var response: RemoteConfigResponse? = null
-        backend.getRemoteConfig(
-            appInBackground = false,
-            onSuccess = { response = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
-        )
-
-        val parsed = response ?: fail("Expected response to be non-null").let { return }
-        assertThat(parsed.apiSources).hasSize(1)
-        assertThat(parsed.apiSources[0].id).isEqualTo("primary")
-        assertThat(parsed.apiSources[0].url).isEqualTo("https://api.revenuecat.com/")
-        assertThat(parsed.apiSources[0].priority).isEqualTo(0)
-        assertThat(parsed.apiSources[0].weight).isEqualTo(100)
-
-        assertThat(parsed.blobSources).hasSize(1)
-        assertThat(parsed.blobSources[0].id).isEqualTo("cloudfront-primary")
-        assertThat(parsed.blobSources[0].urlFormat)
-            .isEqualTo("https://assets.revenuecat.com/rc_app_1234/{blob_ref}")
-        assertThat(parsed.blobSources[0].priority).isEqualTo(0)
-        assertThat(parsed.blobSources[0].weight).isEqualTo(100)
-
-        val pemTopic = parsed.manifest.topics[Topic.PRODUCT_ENTITLEMENT_MAPPING]
-        assertThat(pemTopic).isNotNull
-        val defaultEntry = pemTopic?.get("DEFAULT")
-        assertThat(defaultEntry?.blobRef)
-            .isEqualTo("6a4d0f53d9f6b8e2f4dca0fd1c7c4f5e3e1b1ef0f45d989e2f8f8d0d91ec1b6a")
-    }
-
-    @Test
-    fun `getRemoteConfig drops unknown topic names from manifest`() {
-        val payloadWithUnknownTopic = """
-            {
-              "api_sources": [],
-              "blob_sources": [],
-              "manifest": {
-                "topics": {
-                  "product_entitlement_mapping": {
-                    "DEFAULT": {
-                      "blob_ref": "abc"
-                    }
-                  },
-                  "future_unknown_topic": {
-                    "DEFAULT": {
-                      "blob_ref": "def"
-                    }
-                  }
-                }
-              }
-            }
-        """.trimIndent()
-        mockHttpResult(payload = payloadWithUnknownTopic)
-
-        var response: RemoteConfigResponse? = null
-        backend.getRemoteConfig(
-            appInBackground = false,
-            onSuccess = { response = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
-        )
-
-        val topics = response?.manifest?.topics ?: fail("Expected response to be non-null").let { return }
-        assertThat(topics).hasSize(1)
-        assertThat(topics).containsKey(Topic.PRODUCT_ENTITLEMENT_MAPPING)
-    }
-
-    @Test
-    fun `getRemoteConfig ignores unknown sibling fields`() {
-        val payloadWithExtraFields = """
-            {
-              "extra_top_level": "ignored",
-              "api_sources": [
-                {
-                  "id": "primary",
-                  "url": "https://api.revenuecat.com/",
-                  "priority": 0,
-                  "weight": 100,
-                  "future_field": true
-                }
-              ],
-              "blob_sources": [
-                {
-                  "id": "primary",
-                  "url_format": "https://assets.example/{blob_ref}",
-                  "priority": 0,
-                  "weight": 100,
-                  "future_field": true
-                }
-              ],
-              "manifest": {
-                "topics": {}
-              }
-            }
-        """.trimIndent()
-        mockHttpResult(payload = payloadWithExtraFields)
-
-        var response: RemoteConfigResponse? = null
-        backend.getRemoteConfig(
-            appInBackground = false,
-            onSuccess = { response = it },
-            onError = { error -> fail("Expected success. Got error: $error") },
-        )
-
-        assertThat(response).isNotNull
-        assertThat(response?.apiSources).hasSize(1)
-        assertThat(response?.blobSources).hasSize(1)
-    }
-
-    @Test
-    fun `getRemoteConfig propagates HTTP errors`() {
+    fun `getRemoteConfig parses successful RC Format response into an RCContainer`() {
+        val config = "{\"hello\":\"world\"}".toByteArray()
+        val element = "blob-bytes".toByteArray()
         mockHttpResult(
-            responseCode = RCHTTPStatusCodes.ERROR,
-            payload = """{"code": 7000, "message": "internal error"}""",
+            payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))),
+            verificationResult = VerificationResult.VERIFIED,
         )
+
+        var container: RCContainer? = null
+        var verification: VerificationResult? = null
+        backend.getRemoteConfig(
+            appInBackground = false,
+            onSuccess = { result, verificationResult ->
+                container = result
+                verification = verificationResult
+            },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        val parsed = container ?: fail("Expected container to be non-null").let { return }
+        assertThat(parsed.version).isEqualTo(1)
+        assertThat(parsed.config.data.let { buf -> ByteArray(buf.remaining()).also { buf.duplicate().get(it) } })
+            .isEqualTo(config)
+        assertThat(parsed.contentElements).hasSize(1)
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `getRemoteConfig surfaces a 204 No Content response as a null container`() {
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.NO_CONTENT,
+            payload = HTTPResult.Payload.RCFormat(ByteArray(0)),
+        )
+        var callbackCount = 0
+        var container: RCContainer? = mockk()
+        var verification: VerificationResult? = null
+        backend.getRemoteConfig(
+            appInBackground = false,
+            onSuccess = { result, verificationResult ->
+                callbackCount++
+                container = result
+                verification = verificationResult
+            },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+        assertThat(callbackCount).isEqualTo(1)
+        assertThat(container).isNull()
+        assertThat(verification).isEqualTo(VerificationResult.NOT_REQUESTED)
+    }
+
+    @Test
+    fun `getRemoteConfig surfaces malformed RC Format payload as PurchasesError`() {
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat("not a container".toByteArray()))
+
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
         assertThat(obtainedError).isNotNull
     }
 
     @Test
-    fun `getRemoteConfig surfaces serialization errors as PurchasesError`() {
-        mockHttpResult(payload = """{"blob_sources": "not-an-array"}""")
+    fun `getRemoteConfig surfaces a non-RC-Format payload as PurchasesError`() {
+        mockHttpResult(payload = HTTPResult.Payload.Text("{}"))
+
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onError = { error -> obtainedError = error },
+        )
+        assertThat(obtainedError).isNotNull
+    }
+
+    @Test
+    fun `getRemoteConfig propagates HTTP errors`() {
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.ERROR,
+            payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "internal error"}"""),
+        )
+        var obtainedError: PurchasesError? = null
+        backend.getRemoteConfig(
+            appInBackground = false,
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
         assertThat(obtainedError).isNotNull
@@ -212,16 +167,16 @@ class BackendGetRemoteConfigTest {
 
     @Test
     fun `getRemoteConfig dedups concurrent calls`() {
-        mockHttpResult(payload = loadJSON(mockResponseFilename), delayMs = 200)
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer()), delayMs = 200)
         val lock = CountDownLatch(2)
         asyncBackend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { lock.countDown() },
+            onSuccess = { _, _ -> lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
         asyncBackend.getRemoteConfig(
             appInBackground = false,
-            onSuccess = { lock.countDown() },
+            onSuccess = { _, _ -> lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
@@ -239,8 +194,9 @@ class BackendGetRemoteConfigTest {
 
     private fun mockHttpResult(
         responseCode: Int = RCHTTPStatusCodes.SUCCESS,
-        payload: String,
+        payload: HTTPResult.Payload,
         delayMs: Long? = null,
+        verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
     ) {
         every {
             httpClient.performRequest(
@@ -260,7 +216,7 @@ class BackendGetRemoteConfigTest {
                 payload,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED,
+                verificationResult,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )
@@ -279,6 +235,37 @@ class BackendGetRemoteConfigTest {
         )
     }
 
-    private fun loadJSON(jsonFileName: String) =
-        File(javaClass.classLoader!!.getResource(jsonFileName).file).readText()
+    /** Builds a minimal valid RC Container Format v1 payload (header + config + content elements). */
+    @Suppress("MagicNumber")
+    private fun buildContainer(
+        version: Int = 1,
+        flags: Int = 0,
+        config: ByteArray = ByteArray(0),
+        elements: List<ByteArray> = emptyList(),
+    ): ByteArray {
+        val out = ByteArrayOutputStream()
+        out.write('R'.code)
+        out.write('C'.code)
+        out.write(version and 0xFF)
+        out.write(flags and 0xFF)
+        repeat(4) { out.write(0) } // header reserved
+
+        val allElements = listOf(config) + elements
+        allElements.forEach { element ->
+            out.write(MessageDigest.getInstance("SHA-256").digest(element).copyOf(24))
+            out.writeUInt32(element.size)
+            out.writeUInt32(0) // element reserved
+            out.write(element)
+            while (out.size() % 8 != 0) out.write(0)
+        }
+        return out.toByteArray()
+    }
+
+    @Suppress("MagicNumber")
+    private fun ByteArrayOutputStream.writeUInt32(value: Int) {
+        write(value and 0xFF)
+        write((value ushr 8) and 0xFF)
+        write((value ushr 16) and 0xFF)
+        write((value ushr 24) and 0xFF)
+    }
 }

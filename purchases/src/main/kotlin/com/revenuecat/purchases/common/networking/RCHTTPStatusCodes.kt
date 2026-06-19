@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 internal object RCHTTPStatusCodes {
     const val SUCCESS = 200
     const val CREATED = 201
+    const val NO_CONTENT = 204
     const val UNSUCCESSFUL = 300
     const val NOT_MODIFIED = 304
     const val BAD_REQUEST = 400

@@ -57,7 +57,7 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
         const val SCALE = 3
 
         @JvmStatic
-        // Placing the offering ID between triple underscores so we can easily parse it later.
+        // Placing the offering ID between triple underscores and percent-encoding it so we can easily parse it later.
         @Parameters(name = "___{0}___")
         fun data(): List<Array<Any>> {
             // The PaywallResourcesProvider uses an OfferingParser under the hood, which logs.
@@ -66,8 +66,19 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
             Purchases.logHandler = PrintLnLogHandler
             return PaywallResourcesProvider()
                 .values
-                .map { paywall -> arrayOf(paywall.offering.identifier, paywall) }
+                .map { paywall -> arrayOf(paywall.offering.identifier.percentEncoded(), paywall) }
                 .toList()
+        }
+
+        // Percent-encodes this String, keeping only ASCII letters, digits, '.' and '-' literal (all of which Paparazzi
+        // preserves in snapshot file names).
+        private fun String.percentEncoded(): String {
+            val unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-"
+            return toByteArray(Charsets.UTF_8).joinToString(separator = "") { byte ->
+                val code = byte.toUByte().toInt()
+                val char = code.toChar()
+                if (char in unreserved) char.toString() else "%%%02X".format(code)
+            }
         }
 
         @JvmStatic

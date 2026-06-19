@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ads.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -20,7 +21,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 class AdTrackerTest {
 
     private lateinit var eventsManager: EventsManager
@@ -57,6 +58,27 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.DISPLAYED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+    }
+
+    @Test
+    fun `internal trackAdDisplayed overload stamps the given capture method`() {
+        val eventSlot = slot<AdEvent.Displayed>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdDisplayed(
+            data = AdDisplayedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.BANNER,
+                placement = "banner_home",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+            ),
+            captureMethod = AdCaptureMethod.ADAPTER,
+        )
+
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
     }
 
     @Test
@@ -104,6 +126,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-456")
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.OPENED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 
     @Test
@@ -137,6 +160,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.currency).isEqualTo("USD")
         assertThat(eventSlot.captured.precision).isEqualTo(AdRevenuePrecision.EXACT)
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REVENUE)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 
     @Test
@@ -186,6 +210,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-456")
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.LOADED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 
     @Test
@@ -213,5 +238,6 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.impressionId).isNull()
         assertThat(eventSlot.captured.mediatorErrorCode).isEqualTo(123)
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.FAILED_TO_LOAD)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 }

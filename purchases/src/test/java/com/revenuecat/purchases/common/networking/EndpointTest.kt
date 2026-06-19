@@ -72,6 +72,27 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetWorkflow fallback path is correct`() {
+        val endpoint = Endpoint.GetWorkflow("test user-id", "wf abc")
+        val expectedPath = "/workflows/v1/workflows/wf%20abc"
+        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetWorkflows fallback path is correct`() {
+        val endpoint = Endpoint.GetWorkflows("test user-id", type = "paywall")
+        val expectedPath = "/workflows/v1/workflows?type=paywall"
+        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetWorkflows fallback path without type is correct`() {
+        val endpoint = Endpoint.GetWorkflows("test user-id")
+        val expectedPath = "/workflows/v1/workflows"
+        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+    }
+
+    @Test
     fun `LogIn has correct path`() {
         val endpoint = Endpoint.LogIn
         val expectedPath = "/v1/subscribers/identify"
@@ -194,6 +215,7 @@ class EndpointTest {
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -211,7 +233,6 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
-            Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)

@@ -1,3 +1,40 @@
+## 10.10.0
+## RevenueCatUI SDK
+### ✨ New Features
+* Add Slovenian support for paywalls (#3605) via Monika Mateska (@MonikaMateska)
+### 🐞 Bugfixes
+* Lazy-load paywall components and optimize parsing (#3589) via Alexander Repty (@alexrepty)
+
+### 🔄 Other Changes
+* chore: Add 3-day Dependabot cooldown, excluding fastlane plugin (#3609) via Toni Rico (@tonidero)
+* Adds Cursor Cloud Agent environment (#3606) via JayShortway (@JayShortway)
+* Add `paywall_id` and `workflow_id` to paywall events and other fixes (#3596) via Cesar de la Vega (@vegaro)
+* WFL-303 | Add fallback URL for workflows (#3608) via Rosie Watson (@RosieWatson)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `d911a06` to `70bf5c7` (#3602) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update generated error codes (#3600) via RevenueCat Git Bot (@RCGitBot)
+* Fix legacy paywalls when workflows are enabled (#3598) via Cesar de la Vega (@vegaro)
+* Tests for verifing paywall callbacks fire from any workflow step (#3512) via Cesar de la Vega (@vegaro)
+* Danger: block manual edits to generated error codes (#3599) via Álvaro Brey (@AlvaroBrey)
+* Update baseline profiles (#3554) via RevenueCat Git Bot (@RCGitBot)
+* Add update-error-codes workflow (#3591) via Álvaro Brey (@AlvaroBrey)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3597) via RevenueCat Git Bot (@RCGitBot)
+* URL-encode offering IDs in `PaywallComponentsTemplatePreviewRecorder` (#3586) via JayShortway (@JayShortway)
+* test(workflow): add test for trigger type mismatch in WorkflowNavigator (#3387) via Facundo Menzella (@facumenzella)
+
+## 10.9.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* fix(paywalls): clamp negative margins/padding to zero (#3559) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* build(deps): bump fastlane from 2.236.0 to 2.236.1 (#3588) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3587) via RevenueCat Git Bot (@RCGitBot)
+* Revives update-paywall-templates workflow (#3585) via JayShortway (@JayShortway)
+* Add internal RulesEngine evaluate API surface (#3575) via Antonio Pallares (@ajpallares)
+* Adopt generated PurchasesErrorCode (#3582) via Álvaro Brey (@AlvaroBrey)
+* Inject workflows for multipage paywall preview in RC App (#3579) via Cesar de la Vega (@vegaro)
+* Change multipage paywalls compiler flag to `@InternalRevenueCatAPI` `DangerousSetting` (#3573) via Cesar de la Vega (@vegaro)
+
 ## 10.9.0
 ## RevenueCat SDK
 ### ✨ New Features
