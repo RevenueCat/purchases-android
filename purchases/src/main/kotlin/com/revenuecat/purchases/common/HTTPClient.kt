@@ -397,7 +397,11 @@ internal class HTTPClient(
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
             if (endpoint.expectsRCFormatResponse) {
-                verifyRCFormatResponse(path, connection, bodyBytes)
+                if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
+                    VerificationResult.VERIFIED
+                } else {
+                    verifyRCFormatResponse(path, connection, bodyBytes)
+                }
             } else {
                 verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
             }

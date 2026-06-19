@@ -505,6 +505,28 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         }
     }
 
+    @Test
+    fun `performRequest skips RC Format verification and returns VERIFIED for a 204 empty response`() {
+        val endpoint = Endpoint.GetRemoteConfig
+
+        mockSigningResult(VerificationResult.VERIFIED)
+        enqueueRCFormat(ByteArray(0), responseCode = RCHTTPStatusCodes.NO_CONTENT)
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NO_CONTENT)
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        assertSigningNotPerformed()
+    }
+
     // endregion
 
     private fun mockSigningResult(result: VerificationResult) {
@@ -519,11 +541,11 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         }
     }
 
-    private fun enqueueRCFormat(body: ByteArray) {
+    private fun enqueueRCFormat(body: ByteArray, responseCode: Int = RCHTTPStatusCodes.SUCCESS) {
         server.enqueue(
             MockResponse()
                 .setBody(Buffer().write(body))
-                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+                .setResponseCode(responseCode)
                 .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
                 .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L)
                 .setHeader(HTTPResult.ETAG_HEADER_NAME, "test-etag")
