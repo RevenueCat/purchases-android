@@ -129,7 +129,7 @@ internal abstract class BaseHTTPClientTest {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
-                expectedResult.payload,
+                expectedResult.payloadText,
                 eTagHeader = any(),
                 urlString = urlString,
                 refreshETag = false,
@@ -140,7 +140,7 @@ internal abstract class BaseHTTPClientTest {
             )
         } returns expectedResult
         val response = MockResponse()
-            .setBody(expectedResult.payload)
+            .setBody(expectedResult.payloadText)
             .setResponseCode(expectedResult.responseCode)
             .apply {
                 if (requestDateHeader != null) {

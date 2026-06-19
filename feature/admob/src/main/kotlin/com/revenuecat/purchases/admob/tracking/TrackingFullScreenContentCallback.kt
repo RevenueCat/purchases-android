@@ -34,7 +34,7 @@ internal class TrackingFullScreenContentCallback(
     override fun onAdShowedFullScreenContent() {
         val responseInfo = responseInfoProvider()
         trackIfConfigured {
-            adTracker.trackAdDisplayed(
+            adTracker.trackFromAdapter(
                 AdDisplayedData(
                     networkName = responseInfo.mediationAdapterClassName,
                     mediatorName = AdMediatorName.AD_MOB,
@@ -51,7 +51,7 @@ internal class TrackingFullScreenContentCallback(
     override fun onAdClicked() {
         val responseInfo = responseInfoProvider()
         trackIfConfigured {
-            adTracker.trackAdOpened(
+            adTracker.trackFromAdapter(
                 AdOpenedData(
                     networkName = responseInfo.mediationAdapterClassName,
                     mediatorName = AdMediatorName.AD_MOB,
@@ -97,7 +97,7 @@ internal fun setUpPaidEventTracking(
         OnPaidEventListener { adValue ->
             val responseInfo = responseInfoProvider()
             trackIfConfigured {
-                adTracker.trackAdRevenue(
+                adTracker.trackFromAdapter(
                     AdRevenueData(
                         networkName = responseInfo.mediationAdapterClassName,
                         mediatorName = AdMediatorName.AD_MOB,
