@@ -137,7 +137,7 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 ## Development Workflow
 
 ### Environment Setup
-1. Install sdkman and run `sdk env install` in project root
+1. Install [mise](https://mise.jdx.dev/) and run `mise install` in project root to install the pinned JDK (sdkman via `sdk env install` is also supported)
 2. Run `bundle exec fastlane setup_dev` to link pre-commit hooks
 3. Run `bundle exec fastlane setup_local_properties` to populate `local.properties` with integration test secrets from 1Password (requires `op` CLI)
 4. Pre-commit hooks automatically run detekt on commits
