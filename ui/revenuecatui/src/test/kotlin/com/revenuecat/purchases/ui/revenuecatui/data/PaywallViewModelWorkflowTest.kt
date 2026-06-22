@@ -23,6 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
+import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
@@ -69,6 +70,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -191,6 +195,9 @@ class PaywallViewModelWorkflowTest {
         return WorkflowDataResult(workflow = wfl, enrolledVariants = null) to offerings
     }
 
+    private fun screenTypeMetadata(vararg types: String): JsonObject =
+        JsonObject(mapOf(WorkflowScreenType.METADATA_KEY to JsonArray(types.map { JsonPrimitive(it) })))
+
     private fun makeContextPackageWorkflow(): Pair<WorkflowDataResult, Offerings> {
         val earlyScreen = makeScreen(screenId1).copy(componentsConfig = noPackagesComponentsConfig)
         val terminalScreen = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
@@ -209,6 +216,8 @@ class PaywallViewModelWorkflowTest {
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
             paramValues = emptyMap(),
+            // Context (non-paywall) step: tagged with an empty screen_type so it suppresses paywall events.
+            metadata = screenTypeMetadata(),
         )
         val terminalStep = WorkflowStep(
             id = "step-2",
@@ -217,6 +226,8 @@ class PaywallViewModelWorkflowTest {
             triggers = emptyList(),
             triggerActions = emptyMap(),
             paramValues = emptyMap(),
+            // Paywall step: tagged so it reports paywall events.
+            metadata = screenTypeMetadata(WorkflowScreenType.PAYWALL),
         )
         val wfl = workflow.copy(
             steps = mapOf("step-1" to earlyStep, "step-2" to terminalStep),
@@ -1623,4 +1634,107 @@ class PaywallViewModelWorkflowTest {
     }
 
     // endregion purchase/restore callbacks
+
+    // region screen_type paywall-event gating
+
+    private fun singleStepScreenTypeWorkflow(metadata: JsonObject?): WorkflowDataResult {
+        val step = WorkflowStep(
+            id = "step-only",
+            type = "screen",
+            screenId = screenId1,
+            triggers = emptyList(),
+            triggerActions = emptyMap(),
+            metadata = metadata,
+        )
+        return WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-only",
+                steps = mapOf("step-only" to step),
+                screens = mapOf(screenId1 to makeScreen(screenId1)),
+                singleStepFallbackId = "step-only",
+            ),
+            enrolledVariants = null,
+        )
+    }
+
+    private fun List<FeatureEvent>.paywallEventsOfType(type: PaywallEventType) =
+        filterIsInstance<PaywallEvent>().filter { it.type == type }
+
+    @Test
+    fun `step tagged paywall reports impression and close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            singleStepScreenTypeWorkflow(screenTypeMetadata(WorkflowScreenType.PAYWALL)),
+            testOfferings,
+            null,
+        )
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).hasSize(1)
+
+        vm.closePaywall(result = null)
+        assertThat(captured.paywallEventsOfType(PaywallEventType.CLOSE)).hasSize(1)
+    }
+
+    @Test
+    fun `step tagged non-paywall suppresses impression and close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        // Empty screen_type means "explicitly not a paywall".
+        vm.startWorkflowPresentationFromResult(
+            singleStepScreenTypeWorkflow(screenTypeMetadata()),
+            testOfferings,
+            null,
+        )
+        vm.trackPaywallImpressionIfNeeded()
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+    }
+
+    @Test
+    fun `untagged fallback step reports impression to preserve behavior`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        // No metadata → stepScreenType is null (untagged / pre-rollout) → falls back to the structural
+        // inference `id == singleStepFallbackId`. Here the only step is the fallback, so it reports.
+        vm.startWorkflowPresentationFromResult(
+            singleStepScreenTypeWorkflow(metadata = null),
+            testOfferings,
+            null,
+        )
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).hasSize(1)
+    }
+
+    @Test
+    fun `untagged non-fallback step suppresses impression matching pre-rollout behavior`() = runTest {
+        // When no step carries screen_type (pre-rollout / legacy backend), gating falls back to the
+        // prior structural inference: only the singleStepFallbackId step reports. step-1 (initial) is
+        // NOT the fallback here (step-2 is), so it suppresses — matching the behavior on main before the
+        // screen_type rollout, rather than over-reporting on every step.
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        // Base workflow steps carry no screen_type; point the fallback at step-2 so step-1 is a
+        // non-fallback initial step.
+        val untaggedMultiStep = WorkflowDataResult(
+            workflow = workflow.copy(singleStepFallbackId = "step-2"),
+            enrolledVariants = null,
+        )
+        vm.startWorkflowPresentationFromResult(untaggedMultiStep, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).isEmpty()
+    }
+
+    // endregion
 }
