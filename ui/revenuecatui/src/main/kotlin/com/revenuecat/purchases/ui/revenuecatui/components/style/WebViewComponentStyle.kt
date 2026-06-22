@@ -3,8 +3,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.runtime.Immutable
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.properties.Size
 
+@OptIn(InternalRevenueCatAPI::class)
 @Immutable
 internal data class WebViewComponentStyle(
     val urlTemplate: String,
@@ -17,4 +20,10 @@ internal data class WebViewComponentStyle(
      */
     val componentId: String? = null,
     val fallbackStackComponentStyle: StackComponentStyle? = null,
+    /**
+     * Web view capabilities as declared by the schema. Drives request-level domain allowlisting,
+     * media (camera/microphone) and geolocation permission decisions. `null` means no capabilities
+     * are granted (the secure default).
+     */
+    val capabilities: WebViewComponent.Capabilities? = null,
 ) : ComponentStyle

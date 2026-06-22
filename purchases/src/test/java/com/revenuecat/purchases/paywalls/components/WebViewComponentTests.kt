@@ -86,6 +86,101 @@ class WebViewComponentTests {
     }
 
     @Test
+    fun `deserializes capabilities with true values`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "capabilities": {
+                "network_access": { "allowed_domains": ["example.com", "api.segment.io"] },
+                "camera": true,
+                "microphone": true,
+                "clipboard_write": true,
+                "clipboard_read": true,
+                "geolocation": true
+              }
+            }
+            """
+
+        val webView = JsonTools.json.decodeFromString<PaywallComponent>(json) as WebViewComponent
+
+        val capabilities = webView.capabilities
+        assertThat(capabilities).isNotNull
+        assertThat(capabilities!!.networkAccess?.allowedDomains)
+            .containsExactly("example.com", "api.segment.io")
+        assertThat(capabilities.camera).isTrue()
+        assertThat(capabilities.microphone).isTrue()
+        assertThat(capabilities.clipboardWrite).isTrue()
+        assertThat(capabilities.clipboardRead).isTrue()
+        assertThat(capabilities.geolocation).isTrue()
+    }
+
+    @Test
+    fun `deserializes network_access with empty allowed_domains as empty list, not null`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "capabilities": {
+                "network_access": { "allowed_domains": [] }
+              }
+            }
+            """
+
+        val webView = JsonTools.json.decodeFromString<PaywallComponent>(json) as WebViewComponent
+
+        val networkAccess = webView.capabilities?.networkAccess
+        assertThat(networkAccess).isNotNull
+        assertThat(networkAccess!!.allowedDomains).isEmpty()
+    }
+
+    @Test
+    fun `decodes omitted capability fields as null, not false`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "capabilities": {
+                "camera": true
+              }
+            }
+            """
+
+        val webView = JsonTools.json.decodeFromString<PaywallComponent>(json) as WebViewComponent
+
+        val capabilities = webView.capabilities
+        assertThat(capabilities).isNotNull
+        assertThat(capabilities!!.camera).isTrue()
+        assertThat(capabilities.networkAccess).isNull()
+        assertThat(capabilities.microphone).isNull()
+        assertThat(capabilities.clipboardWrite).isNull()
+        assertThat(capabilities.clipboardRead).isNull()
+        assertThat(capabilities.geolocation).isNull()
+    }
+
+    @Test
+    fun `ignores unknown capability keys`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "capabilities": {
+                "camera": true,
+                "some_future_capability": true
+              }
+            }
+            """
+
+        val webView = JsonTools.json.decodeFromString<PaywallComponent>(json) as WebViewComponent
+
+        assertThat(webView.capabilities?.camera).isTrue()
+    }
+
+    @Test
     fun `deserializes template url correctly`() {
         @Language("json")
         val templateJson = """

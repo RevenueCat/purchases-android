@@ -592,6 +592,7 @@ internal class StyleFactory(
                     size = component.size,
                     componentId = component.id,
                     fallbackStackComponentStyle = fallbackStyle,
+                    capabilities = component.capabilities,
                 )
             }
 

@@ -138,6 +138,29 @@ class StyleFactoryTests {
         assertThat(style.size).isEqualTo(size)
         assertThat(style.componentId).isEqualTo("promo_web_view")
         assertThat(style.fallbackStackComponentStyle).isNull()
+        assertThat(style.capabilities).isNull()
+    }
+
+    @Test
+    fun `Should pass capabilities through to the WebViewComponentStyle`() {
+        val capabilities = WebViewComponent.Capabilities(
+            networkAccess = WebViewComponent.Capabilities.NetworkAccess(allowedDomains = listOf("api.segment.io")),
+            camera = true,
+            microphone = false,
+            clipboardWrite = true,
+            clipboardRead = false,
+            geolocation = true,
+        )
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/index.html",
+            capabilities = capabilities,
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.capabilities).isEqualTo(capabilities)
     }
 
     @Test
