@@ -21,7 +21,7 @@ internal class PredicateFixtureLoaderTest {
     fun `fixture count matches expected`() {
         // Bump this when adding or removing fixtures. Guards against a fixture
         // file silently failing to load and shrinking the suite.
-        val expectedCount = 369
+        val expectedCount = 371
         assertThat(PredicateConformanceFixtureLoader.allCases).hasSize(expectedCount)
     }
 }
