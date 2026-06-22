@@ -15,10 +15,11 @@ internal object MiscOperators {
      * (identity passthrough).
      * Mirrors json-logic-js `function(a){ console.log(a); return a; }`: a
      * debug aid that never affects a rule's outcome. A missing argument is
-     * [Value.Null]; operands beyond the first are ignored.
+     * [Value.Undefined] (logged as `"undefined"`); operands beyond the
+     * first are ignored.
      */
     fun opLog(args: Value, vars: Value): Value {
-        val value = Operators.evalArgs(args, vars).firstOrNull() ?: Value.Null
+        val value = Operators.evalArgs(args, vars).firstOrNull() ?: Value.Undefined
         RulesEngine.logger.log(jsString(value))
         return value
     }

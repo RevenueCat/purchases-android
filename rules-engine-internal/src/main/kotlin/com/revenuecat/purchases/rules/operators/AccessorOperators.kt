@@ -93,23 +93,45 @@ internal object AccessorOperators {
             )
         }
         val needCountValue = evaluated[0]
-        val options = evaluated[1] as? Value.ArrayValue
-            ?: throw EvaluationException.TypeMismatch(
-                "operator 'missing_some': second argument must be an array of paths, " +
-                    "got ${evaluated[1]}",
-            )
 
-        val total = options.items.size.toLong()
+        // json-logic-js evaluates `missing.apply(this, options)`, so `options`
+        // is treated as an *array-like* argument list rather than strictly an
+        // array:
+        //   - array  → its elements are the keys; length = element count
+        //   - string → its characters are the keys; length = character count
+        //   - null   → no keys; `length` is `undefined`, which makes the
+        //              threshold comparison NaN-based (always false), so the
+        //              missing list is returned unconditionally
+        //   - other  → `Function.prototype.apply` throws a `TypeError`
+        val keys: List<Value>
+        val total: Long?
+        when (val options = evaluated[1]) {
+            is Value.ArrayValue -> {
+                keys = options.items
+                total = options.items.size.toLong()
+            }
+            is Value.StringValue -> {
+                keys = options.value.map { Value.StringValue(it.toString()) }
+                total = options.value.length.toLong()
+            }
+            Value.Null, Value.Undefined -> {
+                keys = emptyList()
+                total = null
+            }
+            else -> throw EvaluationException.TypeMismatch(
+                "operator 'missing_some': second argument must be array-like, got $options",
+            )
+        }
 
         // Threshold uses JS `ToNumber` + `>=`. `NaN` and unparseable
         // strings never satisfy; `+Infinity` never satisfies for finite
         // present counts; `-Infinity` always satisfies.
         val need = jsToNumber(needCountValue)
 
-        val missing = opMissing(options, vars)
+        val missing = opMissing(Value.ArrayValue(keys), vars)
         val missingCount = (missing as? Value.ArrayValue)?.items?.size?.toLong() ?: 0L
 
-        return if ((total - missingCount).toDouble() >= need) {
+        return if (total != null && (total - missingCount).toDouble() >= need) {
             Value.ArrayValue(emptyList())
         } else {
             missing
