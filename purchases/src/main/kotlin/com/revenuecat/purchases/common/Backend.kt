@@ -14,6 +14,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
 import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
@@ -21,12 +22,13 @@ import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigResponse
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
 import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
@@ -109,7 +111,8 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationResult) -> Unit, (RewardVerificationError) -> Unit>
 
-internal typealias RemoteConfigCallback = Pair<(RemoteConfigResponse) -> Unit, (PurchasesError) -> Unit>
+internal typealias RemoteConfigCallback =
+    Pair<(RCContainer?, VerificationResult) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias WorkflowDetailCallback = Pair<
@@ -795,7 +798,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val customerCenterRoot = json.decodeFromString<CustomerCenterRoot>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(customerCenterRoot.customerCenter)
                         } catch (e: SerializationException) {
@@ -1064,7 +1067,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             onSuccessHandler(
-                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payload),
+                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payloadText),
                             )
                         } catch (e: SerializationException) {
                             onErrorHandler(
@@ -1137,7 +1140,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             onSuccessHandler(
-                                WorkflowJsonParser.parseWorkflowsListResponse(result.payload),
+                                WorkflowJsonParser.parseWorkflowsListResponse(result.payloadText),
                             )
                         } catch (e: SerializationException) {
                             onErrorHandler(
@@ -1208,7 +1211,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val productsResponse = json.decodeFromString<WebBillingProductsResponse>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(productsResponse)
                         } catch (e: SerializationException) {
@@ -1272,7 +1275,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val response = json.decodeFromString<RewardVerificationResponse>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(response.toRewardVerificationResult())
                         } catch (e: SerializationException) {
@@ -1309,7 +1312,7 @@ internal class Backend(
 
     fun getRemoteConfig(
         appInBackground: Boolean,
-        onSuccess: (RemoteConfigResponse) -> Unit,
+        onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig
@@ -1347,12 +1350,24 @@ internal class Backend(
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
+                        if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
+                            // 204: nothing changed, no container to parse.
+                            onSuccessHandler(null, result.verificationResult)
+                            return@forEach
+                        }
+                        val payload = result.payload
+                        if (payload !is HTTPResult.Payload.RCFormat) {
+                            onErrorHandler(
+                                PurchasesError(
+                                    PurchasesErrorCode.UnknownError,
+                                    "Expected an RC Container Format payload for remote config.",
+                                ).also { errorLog(it) },
+                            )
+                            return@forEach
+                        }
                         try {
-                            val response = json.decodeFromString<RemoteConfigResponse>(result.payload)
-                            onSuccessHandler(response)
-                        } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
-                        } catch (e: IllegalArgumentException) {
+                            onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
+                        } catch (e: RCContainerFormatException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {

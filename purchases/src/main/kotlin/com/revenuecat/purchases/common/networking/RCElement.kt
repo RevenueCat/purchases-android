@@ -49,6 +49,14 @@ internal class RCElement(
         return Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
     }
 
+    /** A copy of the stored [checksum] bytes (the truncated SHA-256 of [data]). */
+    fun checksumBytes(): ByteArray {
+        val view = checksum.duplicate()
+        val bytes = ByteArray(view.remaining())
+        view.get(bytes)
+        return bytes
+    }
+
     private companion object {
         private const val SHA_256_ALGORITHM = "SHA-256"
     }
