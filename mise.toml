@@ -1,0 +1,29 @@
+[settings]
+lockfile = true
+
+[tools]
+java = ["liberica-21.0.6", "liberica-17.0.6"]
+
+# :codegen needs a Java 17 toolchain while the rest of the build runs on 21.
+# Gradle/Android Studio don't auto-detect mise JDKs (https://github.com/gradle/gradle/issues/29355), so expose them through
+# mise's asdf-compatible layout (https://mise.jdx.dev/lang/java.html). Runs after `mise install`.
+[hooks]
+postinstall = "mise run link-jdks"
+
+[tasks.link-jdks]
+description = "Expose mise JDKs to Gradle/IDE toolchain auto-detection (asdf layout)"
+hide = true
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+# asdf (and Gradle's asdf-based toolchain detection) honor ASDF_DATA_DIR; default to ~/.asdf.
+asdf_installs="${ASDF_DATA_DIR:-$HOME/.asdf}/installs"
+asdf_java="$asdf_installs/java"
+# Leave anything that resolves (real dir or valid symlink, e.g. a real asdf
+# install) alone so we never clobber it; replace a dangling symlink so it heals.
+if [ -e "$asdf_java" ]; then exit 0; fi
+[ -L "$asdf_java" ] && rm -f "$asdf_java"
+mkdir -p "$asdf_installs"
+ln -s "${MISE_DATA_DIR:-$HOME/.local/share/mise}/installs/java" "$asdf_java"
+echo "Linked mise JDKs into $asdf_java for Gradle toolchain auto-detection"
+"""
