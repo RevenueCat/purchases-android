@@ -1,13 +1,14 @@
-package com.revenuecat.purchases.admob.rewardverification
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.RewardVerificationException
-import com.revenuecat.purchases.admob.Logger
-import com.revenuecat.purchases.admob.RewardVerificationResult
-import com.revenuecat.purchases.admob.VerifiedReward
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlin.random.Random
@@ -71,15 +72,15 @@ internal object Poller {
         jitterSeconds: () -> Double,
         maxAttempts: Int,
     ): Outcome {
-        Logger.d("Reward verification poll start transactionId=$clientTransactionId maxAttempts=$maxAttempts")
+        debugLog { "Reward verification poll start transactionId=$clientTransactionId maxAttempts=$maxAttempts" }
         var sawUnknownStatus = false
         var lastRetryWasTransientError = false
         var finalOutcome: Outcome? = null
         var attempt = 0
         while (finalOutcome == null && attempt < maxAttempts) {
-            Logger.v(
-                "Reward verification poll attempt ${attempt + 1}/$maxAttempts transactionId=$clientTransactionId",
-            )
+            verboseLog {
+                "Reward verification poll attempt ${attempt + 1}/$maxAttempts transactionId=$clientTransactionId"
+            }
             if (attempt > 0 && !awaitBackoff(sleepSeconds, jitterSeconds)) {
                 finalOutcome = Outcome.Failed.TerminalError(BACKOFF_SCHEDULING_FAILED_DESCRIPTION)
             } else {
@@ -130,7 +131,9 @@ internal object Poller {
     ): Step {
         return try {
             val result = fetcher.fetch(clientTransactionId)
-            Logger.v("Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId")
+            verboseLog {
+                "Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId"
+            }
             when (result) {
                 is CoreRewardVerificationResult.Verified ->
                     Step.Terminal(Outcome.Verified(result.reward.toAdMobReward()))
@@ -143,10 +146,10 @@ internal object Poller {
             throw e
         } catch (e: PurchasesException) {
             if (e.isTransientPollingError()) {
-                Logger.v(
+                verboseLog {
                     "Reward verification poll transient error, retrying: ${e.code} " +
-                        "transactionId=$clientTransactionId",
-                )
+                        "transactionId=$clientTransactionId"
+                }
                 Step.RetryTransientError
             } else {
                 Step.Terminal(Outcome.Failed.TerminalError(e.describeForLog()))
@@ -176,7 +179,7 @@ internal object Poller {
     }
 
     private fun logFailureToLogcat(message: String, isError: Boolean) {
-        if (isError) Logger.e(message) else Logger.w(message)
+        if (isError) errorLog { message } else warnLog { message }
     }
 
     // Readable log form: object statuses log their name; Verified inlines the reward payload.

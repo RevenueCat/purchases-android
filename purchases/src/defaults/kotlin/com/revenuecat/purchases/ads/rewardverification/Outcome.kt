@@ -1,8 +1,7 @@
-package com.revenuecat.purchases.admob.rewardverification
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RewardVerificationResult
-import com.revenuecat.purchases.admob.VerifiedReward
+import com.revenuecat.purchases.InternalRevenueCatAPI
 
 // Internal poll result. The public [RewardVerificationResult] stays binary (verified/failed); these subtypes
 // capture *why* polling ended so the poller can log an actionable reason without adding public cases.
@@ -51,7 +50,7 @@ internal sealed interface Outcome {
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal fun Outcome.toResult(): RewardVerificationResult {
     return when (this) {
         is Outcome.Verified -> RewardVerificationResult.verified(reward)
