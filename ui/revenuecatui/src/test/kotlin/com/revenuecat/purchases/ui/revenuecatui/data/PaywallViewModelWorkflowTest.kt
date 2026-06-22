@@ -1418,6 +1418,33 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `closePaywall on a new impression after an earlier purchase still fires workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        // Complete a purchase in the first impression: this session is a completion, not abandonment.
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        // A new workflow impression starts on the same ViewModel. _purchaseCompleted stays true (sticky),
+        // but this impression had no purchase, so abandoning it must still emit workflows_close.
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.stepId).isEqualTo("step-1")
+    }
+
+    @Test
     fun `MY_APP purchase success during workflow fires StepCompleted with null toStepId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }

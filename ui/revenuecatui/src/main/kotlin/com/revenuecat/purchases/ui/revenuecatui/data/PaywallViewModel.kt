@@ -211,11 +211,13 @@ internal class PaywallViewModelImpl(
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
-    // Per-impression flag: a successful restore is a natural workflow exit, not an abandonment, so it
-    // suppresses workflows_close even when _purchaseCompleted is not set (e.g. shouldDisplayBlock is
-    // null and the paywall stays up). Reset on each new workflow impression so a prior session's
-    // restore does not leak into the next. Mirrors iOS gating workflows_close on a restore signal.
-    private var workflowRestoreSucceeded: Boolean = false
+    // Per-impression flag: a completed purchase or a successful restore is a natural workflow exit, not
+    // an abandonment, so it suppresses workflows_close. Tracked separately from the sticky, public
+    // _purchaseCompleted (which also gates exit offers and is observed by the host, and which a restore
+    // only sets when shouldDisplayBlock auto-dismisses): this resets on each new workflow impression so
+    // completion from a prior impression on the same ViewModel does not leak into the next. Mirrors
+    // iOS's per-session hasCompletedInSession (purchased || restored).
+    private var workflowCompletedInSession: Boolean = false
 
     private enum class WorkflowStepEntryReason(val value: String) {
         START("start"),
@@ -324,7 +326,7 @@ internal class PaywallViewModelImpl(
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
         trackCurrentWorkflowStepCompleted()
-        if (!_purchaseCompleted.value && !workflowRestoreSucceeded) {
+        if (!workflowCompletedInSession) {
             trackCurrentWorkflowAbandoned()
         }
         trackPaywallClose()
@@ -520,7 +522,7 @@ internal class PaywallViewModelImpl(
                             val updatedCustomerInfo = purchases.awaitSyncPurchases()
                             // A successful restore is a natural workflow exit, not an abandonment, even if
                             // the paywall stays visible (no shouldDisplayBlock). Suppress workflows_close.
-                            workflowRestoreSucceeded = true
+                            workflowCompletedInSession = true
 
                             shouldDisplayBlock?.let {
                                 if (!it(updatedCustomerInfo)) {
@@ -555,7 +557,7 @@ internal class PaywallViewModelImpl(
                     Logger.i("Restore purchases successful: $customerInfo")
                     // A successful restore is a natural workflow exit, not an abandonment, even if the
                     // paywall stays visible (no shouldDisplayBlock). Suppress workflows_close on dismiss.
-                    workflowRestoreSucceeded = true
+                    workflowCompletedInSession = true
                     listener?.onRestoreCompleted(customerInfo)
 
                     shouldDisplayBlock?.let {
@@ -678,6 +680,8 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
+                            // Set before closePaywall so the abandonment gate sees this as a completion.
+                            workflowCompletedInSession = true
                             Logger.d("Dismissing paywall after purchase")
                             closePaywall(PaywallResult.Purchased(customerInfo))
                         }
@@ -722,6 +726,7 @@ internal class PaywallViewModelImpl(
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
+                    workflowCompletedInSession = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     trackCurrentWorkflowStepCompleted()
@@ -985,8 +990,9 @@ internal class PaywallViewModelImpl(
         _workflowState.value = null
         if (isNewWorkflowImpression) {
             workflowTraceId = UUID.randomUUID().toString()
-            // New session: a restore from a prior impression must not suppress this one's abandonment.
-            workflowRestoreSucceeded = false
+            // New session: completion (purchase or restore) from a prior impression on the same
+            // ViewModel must not suppress this impression's abandonment.
+            workflowCompletedInSession = false
         }
 
         // Pre-compute the package step so its default package is available in cache
