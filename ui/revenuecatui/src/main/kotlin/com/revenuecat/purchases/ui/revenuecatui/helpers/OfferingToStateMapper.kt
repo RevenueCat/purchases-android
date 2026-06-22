@@ -124,16 +124,27 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
 ): RcResult<PaywallValidationResult.Components, NonEmptyList<PaywallValidationError>>? {
     val paywallComponents = paywallComponents ?: return null
 
+    // Force the (lazily-decoded) component tree up front. If decoding fails — e.g. a tree that passed the cheap
+    // shape check at parse time but is structurally invalid — treat it as "no components paywall" so the caller
+    // falls back, mirroring the previous eager-parse behavior where a decode failure yielded null paywallComponents.
+    @Suppress("TooGenericExceptionCaught")
+    val componentsData: PaywallComponentsData = try {
+        paywallComponents.data
+    } catch (e: Throwable) {
+        Logger.e("Error deserializing paywall components data. Falling back to default paywall.", e)
+        return null
+    }
+
     // Check that the default localization is present in the localizations map.
-    val defaultLocalization = paywallComponents.data.defaultLocalization
-        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(paywallComponents.data.defaultLocaleIdentifier))
+    val defaultLocalization = componentsData.defaultLocalization
+        .errorIfNull(PaywallValidationError.AllLocalizationsMissing(componentsData.defaultLocaleIdentifier))
         .mapError { nonEmptyListOf(it) }
         .getOrElse { error -> return RcResult.Error(error) }
 
     // Build a NonEmptyMap of localizations, ensuring that we always have the default localization as fallback.
     val localizations = nonEmptyMapOf(
-        paywallComponents.data.defaultLocaleIdentifier to defaultLocalization,
-        paywallComponents.data.componentsLocalizations,
+        componentsData.defaultLocaleIdentifier to defaultLocalization,
+        componentsData.componentsLocalizations,
     ).mapValues { (locale, map) ->
         // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
         // has an empty Map, we add an AllLocalizationsMissing error for that locale to our list of errors.
@@ -146,14 +157,14 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     // Check that the default variable localization is present in the localizations map.
     val defaultVariableLocalization = paywallComponents.defaultVariableLocalization
         .errorIfNull(
-            PaywallValidationError.AllVariableLocalizationsMissing(paywallComponents.data.defaultLocaleIdentifier),
+            PaywallValidationError.AllVariableLocalizationsMissing(componentsData.defaultLocaleIdentifier),
         )
         .mapError { nonEmptyListOf(it) }
         .getOrElse { error -> return RcResult.Error(error) }
 
     // Build a NonEmptyMap of variable localizations, ensuring that we always have the default localization as fallback.
     val variableLocalizations = nonEmptyMapOf(
-        paywallComponents.data.defaultLocaleIdentifier to defaultVariableLocalization,
+        componentsData.defaultLocaleIdentifier to defaultVariableLocalization,
         paywallComponents.uiConfig.localizations,
     ).mapValues { (locale, map) ->
         // We need to turn our NonEmptyMap<LocaleId, Map> into NonEmptyMap<LocaleId, NonEmptyMap>. If a certain locale
@@ -172,7 +183,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
 
     // Check if any component in the tree has an unsupported condition. If so, strip all rule-based
     // overrides across the entire paywall, rendering the "default paywall" with only base overrides.
-    val config = paywallComponents.data.componentsConfig.base
+    val config = componentsData.componentsConfig.base
     val stripRules = config.containsUnsupportedCondition()
     if (stripRules) {
         Logger.w(
@@ -223,7 +234,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             stickyFooter = stickyFooter,
             background = background,
             locales = localizations.keys,
-            zeroDecimalPlaceCountries = paywallComponents.data.zeroDecimalPlaceCountries.toSet(),
+            zeroDecimalPlaceCountries = componentsData.zeroDecimalPlaceCountries.toSet(),
             variableConfig = paywallComponents.uiConfig.variableConfig,
             variableDataProvider = VariableDataProvider(resourceProvider),
             packages = backendRootComponentResult.availablePackages

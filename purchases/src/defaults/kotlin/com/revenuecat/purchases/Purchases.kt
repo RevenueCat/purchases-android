@@ -412,6 +412,10 @@ public class Purchases internal constructor(
         )
     }
 
+    @InternalRevenueCatAPI
+    public fun workflowIdForOfferingId(offeringId: String): String? =
+        purchasesOrchestrator.workflowIdForOfferingId(offeringId)
+
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.Config as RevenueCatConfig
 import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
@@ -21,7 +22,11 @@ class WorkflowEventsRequestSerializationTest {
                 eventName = "workflows_step_started",
                 timestampMs = 123456789L,
                 appUserID = "appUserID",
-                context = BackendEvent.Workflows.Context(locale = "en_US"),
+                context = BackendEvent.Workflows.Context(
+                    platform = "android",
+                    sdkVersion = RevenueCatConfig.frameworkVersion,
+                    locale = "en_US",
+                ),
                 properties = BackendEvent.Workflows.Properties(
                     workflowId = "wfl_abc",
                     stepId = "step-1",
@@ -47,7 +52,11 @@ class WorkflowEventsRequestSerializationTest {
                         "\"event_name\":\"workflows_step_started\"," +
                         "\"timestamp_ms\":123456789," +
                         "\"app_user_id\":\"appUserID\"," +
-                        "\"context\":{\"locale\":\"en_US\"}," +
+                        "\"context\":{" +
+                            "\"platform\":\"android\"," +
+                            "\"sdk_version\":\"${RevenueCatConfig.frameworkVersion}\"," +
+                            "\"locale\":\"en_US\"" +
+                        "}," +
                         "\"properties\":{" +
                             "\"workflow_id\":\"wfl_abc\"," +
                             "\"step_id\":\"step-1\"," +
@@ -103,6 +112,10 @@ class WorkflowEventsRequestSerializationTest {
                     eventName = "workflows_step_started",
                     timestampMs = 123456789L,
                     appUserID = "appUserID",
+                    context = BackendEvent.Workflows.Context(
+                        platform = "android",
+                        sdkVersion = RevenueCatConfig.frameworkVersion,
+                    ),
                     properties = BackendEvent.Workflows.Properties(
                         workflowId = "wfl_abc",
                         stepId = "step-1",

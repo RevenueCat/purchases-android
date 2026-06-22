@@ -41,7 +41,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@3.21.1
+  revenuecat: revenuecat/sdks-common-config@4.1.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -384,7 +384,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.10.0-SNAPSHOT s3://purchases-docs/android/10.10.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.11.0-SNAPSHOT s3://purchases-docs/android/10.11.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -1236,7 +1236,7 @@ workflows:
     jobs:
       - revenuecat/update-error-codes:
           platform: android
-          output: purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt
+          outputs: "PurchasesErrorCode.kt:purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt"
           commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defaults-bc7.txt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
