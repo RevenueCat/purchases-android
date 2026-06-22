@@ -72,6 +72,7 @@ internal class WorkflowManager(
         callbackDispatcher: Dispatcher? = null,
         persistEnvelopeOnResolve: Boolean = false,
         staleWhileRevalidate: Boolean = true,
+        recordOfferingIdMappingOnResolve: Boolean = true,
     ) {
         // The identifier may be a workflow ID (prefetch, or a repeat render once the mapping is known)
         // or an offering ID (the on-demand render path asks by offering ID, and the backend lazily
@@ -79,7 +80,13 @@ internal class WorkflowManager(
         // key the cache is keyed by, so an ask by offering ID hits the entry cached under the real
         // workflow ID. An as-yet-unconverted offering ID has no mapping and passes through unchanged;
         // fetchAndCacheWorkflow learns its real ID from the response and records the mapping.
-        val workflowId = workflowsCache.workflowIdForOfferingId(workflowOrOfferingId) ?: workflowOrOfferingId
+        val mappedWorkflowId = workflowsCache.workflowIdForOfferingId(workflowOrOfferingId)
+        val workflowId = mappedWorkflowId ?: workflowOrOfferingId
+        val offeringIdToRecordOnResolve = if (recordOfferingIdMappingOnResolve && mappedWorkflowId == null) {
+            workflowOrOfferingId
+        } else {
+            null
+        }
         val cached = workflowsCache.cachedWorkflow(workflowId)
         when {
             cached != null && !workflowsCache.isWorkflowCacheStale(workflowId, appInBackground) -> {
@@ -104,6 +111,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    offeringIdToRecordOnResolve = offeringIdToRecordOnResolve,
                     onSuccess = {},
                     onError = { error ->
                         errorLog {
@@ -121,6 +129,7 @@ internal class WorkflowManager(
                     appInBackground = appInBackground,
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
+                    offeringIdToRecordOnResolve = offeringIdToRecordOnResolve,
                     onSuccess = onSuccess,
                     onError = onError,
                 )
@@ -135,6 +144,7 @@ internal class WorkflowManager(
         appInBackground: Boolean,
         callbackDispatcher: Dispatcher?,
         persistEnvelopeOnResolve: Boolean,
+        offeringIdToRecordOnResolve: String?,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -151,7 +161,7 @@ internal class WorkflowManager(
                     onError(e.toPurchasesError())
                     return@launch
                 }
-                cacheResolvedWorkflow(workflowId, result, response, persistEnvelopeOnResolve)
+                cacheResolvedWorkflow(result, response, persistEnvelopeOnResolve, offeringIdToRecordOnResolve)
                 scope.launch {
                     runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
                         .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
@@ -197,26 +207,31 @@ internal class WorkflowManager(
 
     /**
      * Caches [result] under the resolved workflow's own ID — the canonical key every later lookup
-     * uses. On the lazy-conversion path the backend is called with an offering ID, so the resolved ID
-     * differs from the requesting [requestedId]; recording the discovered offeringId → workflowId
-     * mapping makes the next lookup resolve to this entry instead of missing. A workflow with no ID
-     * can't be keyed (looked up, invalidated, or mapped), so a malformed response is delivered for the
-     * current render but not cached under a wrong key — the next render refetches.
+     * uses. On the lazy-conversion path the backend is called with an offering ID, so recording the
+     * discovered offeringId → workflowId mapping makes the next lookup resolve to this entry instead
+     * of missing. Callers that already have a canonical workflow ID pass null for
+     * [offeringIdToRecordOnResolve], so mismatched resolved IDs cannot create bogus workflowId →
+     * workflowId map entries. A workflow with no ID can't be keyed (looked up, invalidated, or mapped),
+     * so a malformed response is delivered for the current render but not cached under a wrong key —
+     * the next render refetches.
      */
     private fun cacheResolvedWorkflow(
-        requestedId: String,
         result: WorkflowDataResult,
         response: WorkflowDetailResponse,
         persistEnvelopeOnResolve: Boolean,
+        offeringIdToRecordOnResolve: String?,
     ) {
         val resolvedWorkflowId = result.workflow.id
         if (resolvedWorkflowId.isEmpty()) {
-            errorLog { "Workflow for '$requestedId' resolved with an empty id; serving it without caching." }
+            errorLog { "Workflow resolved with an empty id; serving it without caching." }
             return
         }
         workflowsCache.cacheWorkflow(resolvedWorkflowId, result)
-        if (resolvedWorkflowId != requestedId) {
-            workflowsCache.recordWorkflowIdForOfferingId(offeringId = requestedId, workflowId = resolvedWorkflowId)
+        if (offeringIdToRecordOnResolve != null && resolvedWorkflowId != offeringIdToRecordOnResolve) {
+            workflowsCache.recordWorkflowIdForOfferingId(
+                offeringId = offeringIdToRecordOnResolve,
+                workflowId = resolvedWorkflowId,
+            )
         }
         if (persistEnvelopeOnResolve) {
             runCatching { workflowsCache.cacheWorkflowDetailEnvelope(resolvedWorkflowId, response) }
@@ -255,7 +270,12 @@ internal class WorkflowManager(
             onError(networkError)
             return
         }
-        cacheResolvedWorkflow(workflowId, result, envelope, persistEnvelopeOnResolve = false)
+        cacheResolvedWorkflow(
+            result = result,
+            response = envelope,
+            persistEnvelopeOnResolve = false,
+            offeringIdToRecordOnResolve = null,
+        )
         onSuccess(result)
     }
 
@@ -404,6 +424,7 @@ internal class WorkflowManager(
                 callbackDispatcher = prefetchDispatcher,
                 persistEnvelopeOnResolve = true,
                 staleWhileRevalidate = false,
+                recordOfferingIdMappingOnResolve = false,
                 onSuccess = { continuation.safeResume(Unit) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }

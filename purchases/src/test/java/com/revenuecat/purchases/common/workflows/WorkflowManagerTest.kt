@@ -409,6 +409,48 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflow disk fallback does not record requested workflow id as an offering id`() {
+        val requestedWorkflowId = "wf_1"
+        val resolvedWorkflowId = "wf_2"
+        val envelope = WorkflowDetailResponse(
+            action = WorkflowResponseAction.USE_CDN,
+            url = "https://cdn/wf.json",
+            hash = "h",
+        )
+        val recovered = WorkflowDataResult(workflow = workflowMock(resolvedWorkflowId), enrolledVariants = null)
+        coEvery { mockResolver.resolve(envelope) } returns recovered
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
+            """{"$requestedWorkflowId":{"action":"use_cdn","url":"https://cdn/wf.json","hash":"h"}}"""
+
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = requestedWorkflowId,
+                appInBackground = false,
+                onSuccess = any(),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            errorSlot.captured(
+                PurchasesError(PurchasesErrorCode.NetworkError, "server error"),
+                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+            )
+        }
+
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowOrOfferingId = requestedWorkflowId,
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        assertThat(workflowsCache.cachedWorkflow(resolvedWorkflowId)).isSameAs(recovered)
+        assertThat(workflowsCache.workflowIdForOfferingId(requestedWorkflowId)).isNull()
+    }
+
+    @Test
     fun `getWorkflow does not fall back to disk envelope on 4xx`() {
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "not found")
 
@@ -997,6 +1039,66 @@ class WorkflowManagerTest {
         assertThat(served).isSameAs(prefetched)
         verify(exactly = 0) {
             mockBackend.getWorkflow(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `getWorkflow mapped lookup does not record requested workflow id as an offering id on resolved id mismatch`() {
+        val offeringId = "my-offering"
+        val requestedWorkflowId = "wf_1"
+        val resolvedWorkflowId = "wf_2"
+        workflowsCache.cacheWorkflowsListInMemory(
+            WorkflowsListResponse(workflows = emptyList()),
+            mapOf(offeringId to requestedWorkflowId),
+        )
+
+        val response = WorkflowDetailResponse(
+            action = WorkflowResponseAction.INLINE,
+            data = workflowMock(resolvedWorkflowId),
+        )
+        coEvery { mockResolver.resolve(response) } returns
+            WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = requestedWorkflowId,
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = any(),
+            )
+        } answers { successSlot.captured(response) }
+
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowOrOfferingId = offeringId,
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        assertThat(workflowsCache.cachedWorkflow(resolvedWorkflowId)).isNotNull
+        assertThat(workflowsCache.cachedWorkflow(requestedWorkflowId)).isNull()
+        assertThat(workflowsCache.workflowIdForOfferingId(offeringId)).isEqualTo(requestedWorkflowId)
+        assertThat(workflowsCache.workflowIdForOfferingId(requestedWorkflowId)).isNull()
+
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowOrOfferingId = requestedWorkflowId,
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        verify(exactly = 2) {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = requestedWorkflowId,
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any(),
+            )
         }
     }
 
