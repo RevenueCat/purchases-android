@@ -12,11 +12,8 @@ public sealed class Value {
     public object Null : Value()
 
     /**
-     * JS `undefined`. Not expressible in JSON, so it never appears in
-     * predicate or variable input — it is only produced internally by
-     * operators that mirror json-logic-js's `undefined` result (e.g.
-     * `{"and": []}`, `{"or": []}`, `{"log": []}`). Distinct from [Null]
-     * so strict equality matches JS (`undefined === null` is `false`).
+     * JS `undefined`. Not expressible in JSON. Only produced internally by
+     * operators (e.g. `{"and": []}`, `{"or": []}`, `{"log": []}`).
      */
     public object Undefined : Value()
 
