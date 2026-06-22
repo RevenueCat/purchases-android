@@ -1245,6 +1245,30 @@ class PaywallViewModelWorkflowTest {
         assertThat(close.workflowId).isEqualTo(workflow.id)
         assertThat(close.stepId).isEqualTo("step-1")
         assertThat(close.isFirstStep).isTrue
+        // step-1 has a trigger to step-2, so it is not the terminal step.
+        assertThat(close.isLastStep).isFalse
+    }
+
+    @Test
+    fun `closePaywall after navigating forward fires workflows Close for the non-initial step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        // Navigate step-1 → step-2 (the terminal step) and settle the transition.
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        captured.clear() // clear load + forward nav events
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.workflowId).isEqualTo(workflow.id)
+        assertThat(close.stepId).isEqualTo("step-2")
+        // step-2 is reached via a trigger and has none of its own, so it is the last (terminal) step.
+        assertThat(close.isFirstStep).isFalse
+        assertThat(close.isLastStep).isTrue
     }
 
     @Test
@@ -1488,6 +1512,25 @@ class PaywallViewModelWorkflowTest {
         assertThat(abandoned.traceId).isEqualTo(firstImpressionTraceId)
         val newStarted = secondImpressionEvents.filterIsInstance<WorkflowEvent.StepStarted>().single()
         assertThat(newStarted.traceId).isNotEqualTo(firstImpressionTraceId)
+    }
+
+    @Test
+    fun `workflows Close carries the same traceId as the StepStarted from the same impression`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        val startedTraceId = captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId
+
+        vm.closePaywall(result = null)
+
+        // The abandonment Close belongs to the same impression, so it shares the load's trace ID.
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.traceId).isEqualTo(startedTraceId)
+        // And the whole impression (StepStarted, StepCompleted, Close) shares one trace ID.
+        assertThat(captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct())
+            .containsExactly(startedTraceId)
     }
 
     @Test
