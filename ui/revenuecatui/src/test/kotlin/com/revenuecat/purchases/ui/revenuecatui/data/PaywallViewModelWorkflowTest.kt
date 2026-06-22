@@ -1492,12 +1492,29 @@ class PaywallViewModelWorkflowTest {
             customerInfo = mockk(relaxed = true),
         )
         val vm = createVm()
+
+        // Both steps render the same screen, so the visual presentation fingerprint is identical
+        // across the re-presentation and the impression is de-duped. Only the workflow step id
+        // changes, which is exactly what withCurrentWorkflowMetadata must refresh on the
+        // already-tracked presentation data.
+        val sharedScreenSteps = mapOf(
+            "step-1" to step1.copy(screenId = screenId2),
+            "step-2" to step2.copy(screenId = screenId2),
+        )
         val step1Result = WorkflowDataResult(
-            workflow = workflow.copy(initialStepId = "step-1", singleStepFallbackId = "step-1"),
+            workflow = workflow.copy(
+                initialStepId = "step-1",
+                singleStepFallbackId = "step-1",
+                steps = sharedScreenSteps,
+            ),
             enrolledVariants = null,
         )
         val step2Result = WorkflowDataResult(
-            workflow = workflow.copy(initialStepId = "step-2", singleStepFallbackId = "step-2"),
+            workflow = workflow.copy(
+                initialStepId = "step-2",
+                singleStepFallbackId = "step-2",
+                steps = sharedScreenSteps,
+            ),
             enrolledVariants = null,
         )
 
@@ -1507,6 +1524,11 @@ class PaywallViewModelWorkflowTest {
 
         vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null)
         vm.trackPaywallImpressionIfNeeded()
+        // Same visual fingerprint, so no new impression is emitted: this proves the de-dup branch
+        // (the one withCurrentWorkflowMetadata lives in) was taken, not a fresh re-creation.
+        assertThat(
+            captured.filterIsInstance<PaywallEvent>().none { it.type == PaywallEventType.IMPRESSION },
+        ).isTrue
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
         advanceUntilIdle()
 
