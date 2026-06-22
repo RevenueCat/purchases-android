@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.admob.rewardverification
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI

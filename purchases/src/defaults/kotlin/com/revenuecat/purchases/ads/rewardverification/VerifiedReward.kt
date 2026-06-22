@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko

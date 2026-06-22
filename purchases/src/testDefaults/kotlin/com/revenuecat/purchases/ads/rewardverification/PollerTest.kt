@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.admob.rewardverification
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -7,7 +7,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationException
 import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
-import com.revenuecat.purchases.admob.VerifiedReward
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -17,8 +16,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@RunWith(RobolectricTestRunner::class)
 class PollerTest {
 
     private val recordedSleeps = mutableListOf<Double>()

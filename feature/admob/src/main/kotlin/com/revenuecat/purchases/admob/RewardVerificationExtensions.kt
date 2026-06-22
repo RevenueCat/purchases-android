@@ -6,6 +6,7 @@ import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.rewardverification.RewardVerificationManager
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import kotlin.jvm.JvmSynthetic
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

@@ -8,11 +8,10 @@ import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.RewardVerificationToken
 import com.revenuecat.purchases.admob.Logger
-import com.revenuecat.purchases.admob.RewardVerificationResult
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
-import org.json.JSONObject
-import java.util.UUID
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal object RewardVerificationManager {
@@ -70,40 +69,23 @@ internal object RewardVerificationManager {
                         "Try enabling reward verification after Purchases is configured.",
                 )
             else -> {
-                val purchases = Purchases.sharedInstance
-                val clientTransactionId = UUID.randomUUID().toString()
+                val token = Purchases.sharedInstance.generateRewardVerificationToken(impressionId = adResponseId)
                 runtime.setClientTransactionId(
                     adResponseId = adResponseId,
-                    clientTransactionId = clientTransactionId,
+                    clientTransactionId = token.clientTransactionId,
                 )
                 // Correlate the ad with the backend verification through AdMob's server-side verification options. The
                 // SSV callback forwards these to RevenueCat, which keys the verification by the client transaction id.
-                attachOptions(
-                    serverSideVerificationOptions(
-                        apiKey = purchases.currentConfiguration.apiKey,
-                        appUserID = purchases.appUserID,
-                        clientTransactionId = clientTransactionId,
-                    ),
-                )
+                attachOptions(serverSideVerificationOptions(token))
             }
         }
     }
 
-    private fun serverSideVerificationOptions(
-        apiKey: String,
-        appUserID: String,
-        clientTransactionId: String,
-    ): ServerSideVerificationOptions =
+    private fun serverSideVerificationOptions(token: RewardVerificationToken): ServerSideVerificationOptions =
         ServerSideVerificationOptions.Builder()
-            .setCustomData(customData(apiKey = apiKey, clientTransactionId = clientTransactionId))
-            .setUserId(appUserID)
+            .setCustomData(token.customData)
+            .setUserId(token.appUserID)
             .build()
-
-    private fun customData(apiKey: String, clientTransactionId: String): String =
-        JSONObject()
-            .put("api_key", apiKey)
-            .put("client_transaction_id", clientTransactionId)
-            .toString()
 
     private fun handleRewardEarnedInternal(
         adResponseId: String?,

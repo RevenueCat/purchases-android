@@ -14,17 +14,17 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesServiceDispatcher
-import com.revenuecat.purchases.admob.RewardVerificationResult
-import com.revenuecat.purchases.admob.VerifiedReward
+import com.revenuecat.purchases.RewardVerificationToken
 import com.revenuecat.purchases.admob.enableRewardVerification
 import com.revenuecat.purchases.admob.show as showWithRewardVerification
-import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
-import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -37,8 +37,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
-import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 
 @RunWith(RobolectricTestRunner::class)
 internal class RewardVerificationManagerTest {
@@ -62,20 +60,18 @@ internal class RewardVerificationManagerTest {
 
     @Test
     fun `verified result flows from enable through show to completed callback`() {
-        val verifiedReward = CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 7)
+        val token = RewardVerificationToken(
+            customData = "custom-data",
+            clientTransactionId = "client-transaction-id",
+            appUserID = "app-user-id",
+        )
         val mockPurchases = mockk<Purchases>(relaxed = true)
+        every { mockPurchases.generateRewardVerificationToken("ad-response-id") } returns token
         val polledClientTransactionId = slot<String>()
-        every {
-            mockPurchases.getRewardVerificationResult(capture(polledClientTransactionId), any())
-        } answers {
-            secondArg<GetRewardVerificationResultCallback>().onReceived(
-                CoreRewardVerificationResult.Verified(verifiedReward),
-            )
-        }
+        coEvery { mockPurchases.pollRewardVerification(capture(polledClientTransactionId)) } returns
+            RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
 
         // Configure Purchases and drive the dispatcher so the reward verification runtime is created.
-        every { mockPurchases.currentConfiguration.apiKey } returns "test_api_key"
-        every { mockPurchases.appUserID } returns "app-user-id"
         Purchases.backingFieldSharedInstance = mockPurchases
         originalServiceDispatcher.initialize(mockPurchases)
 
@@ -89,14 +85,10 @@ internal class RewardVerificationManagerTest {
 
         ad.enableRewardVerification()
 
-        // enableRewardVerification() must attach the api key, app user id, and a client transaction id so the backend
-        // can correlate the reward.
+        // enableRewardVerification() must attach the token's custom data and user id so the backend can correlate.
         assertTrue(ssvOptions.isCaptured)
         assertEquals("app-user-id", ssvOptions.captured.userId)
-        val payload = JSONObject(ssvOptions.captured.customData)
-        assertEquals("test_api_key", payload.getString("api_key"))
-        val attachedClientTransactionId = payload.getString("client_transaction_id")
-        assertTrue(attachedClientTransactionId.isNotBlank())
+        assertEquals("custom-data", ssvOptions.captured.customData)
 
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
@@ -118,25 +110,23 @@ internal class RewardVerificationManagerTest {
             VerifiedReward.VirtualCurrency(code = "gems", amount = 7),
             completedResult!!.verifiedReward,
         )
-        // The id polled from the backend must match the custom data attached to the ad so correlation round-trips.
-        assertEquals(attachedClientTransactionId, polledClientTransactionId.captured)
+        // The id polled from the backend must match the token's client transaction id so correlation round-trips.
+        assertEquals("client-transaction-id", polledClientTransactionId.captured)
     }
 
     @Test
     fun `interstitial verified result flows from enable through show with custom data correlation`() {
-        val verifiedReward = CoreVerifiedReward.VirtualCurrency(code = "coins", amount = 3)
+        val token = RewardVerificationToken(
+            customData = "custom-data",
+            clientTransactionId = "client-transaction-id",
+            appUserID = "app-user-id",
+        )
         val mockPurchases = mockk<Purchases>(relaxed = true)
+        every { mockPurchases.generateRewardVerificationToken("interstitial-response-id") } returns token
         val polledClientTransactionId = slot<String>()
-        every {
-            mockPurchases.getRewardVerificationResult(capture(polledClientTransactionId), any())
-        } answers {
-            secondArg<GetRewardVerificationResultCallback>().onReceived(
-                CoreRewardVerificationResult.Verified(verifiedReward),
-            )
-        }
+        coEvery { mockPurchases.pollRewardVerification(capture(polledClientTransactionId)) } returns
+            RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
 
-        every { mockPurchases.currentConfiguration.apiKey } returns "test_api_key"
-        every { mockPurchases.appUserID } returns "app-user-id"
         Purchases.backingFieldSharedInstance = mockPurchases
         originalServiceDispatcher.initialize(mockPurchases)
 
@@ -152,10 +142,7 @@ internal class RewardVerificationManagerTest {
 
         assertTrue(ssvOptions.isCaptured)
         assertEquals("app-user-id", ssvOptions.captured.userId)
-        val payload = JSONObject(ssvOptions.captured.customData)
-        assertEquals("test_api_key", payload.getString("api_key"))
-        val attachedClientTransactionId = payload.getString("client_transaction_id")
-        assertTrue(attachedClientTransactionId.isNotBlank())
+        assertEquals("custom-data", ssvOptions.captured.customData)
 
         var completedResult: RewardVerificationResult? = null
         val completed = CountDownLatch(1)
@@ -173,7 +160,7 @@ internal class RewardVerificationManagerTest {
         assertTrue(delivered)
         assertNotNull(completedResult)
         assertFalse(completedResult!!.failed)
-        assertEquals(attachedClientTransactionId, polledClientTransactionId.captured)
+        assertEquals("client-transaction-id", polledClientTransactionId.captured)
     }
 
     @Test

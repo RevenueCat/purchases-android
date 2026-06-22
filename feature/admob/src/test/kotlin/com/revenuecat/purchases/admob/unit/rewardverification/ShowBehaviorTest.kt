@@ -11,7 +11,7 @@ import com.google.android.gms.ads.rewarded.RewardItem
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
-import com.revenuecat.purchases.admob.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.admob.show as showWithRewardVerification
 import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import io.mockk.every

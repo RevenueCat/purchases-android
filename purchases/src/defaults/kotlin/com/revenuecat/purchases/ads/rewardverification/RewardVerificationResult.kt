@@ -1,6 +1,7 @@
-package com.revenuecat.purchases.admob
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 
 /**
  * Result delivered to the app after reward verification polling for a rewarded or rewarded interstitial ad.
@@ -27,13 +28,14 @@ public class RewardVerificationResult private constructor(
     public val failed: Boolean
         get() = this.storage is Storage.Failed
 
-    internal companion object {
+    public companion object {
 
         /**
          * Server verification succeeded for this ad transaction.
          */
         @JvmStatic
-        internal fun verified(reward: VerifiedReward): RewardVerificationResult {
+        @InternalRevenueCatAPI
+        public fun verified(reward: VerifiedReward): RewardVerificationResult {
             return RewardVerificationResult(Storage.Verified(reward))
         }
 
@@ -41,6 +43,6 @@ public class RewardVerificationResult private constructor(
          * Verification did not complete successfully (rejected, timeout, network, etc.).
          */
         @JvmField
-        internal val failed: RewardVerificationResult = RewardVerificationResult(Storage.Failed)
+        public val failed: RewardVerificationResult = RewardVerificationResult(Storage.Failed)
     }
 }

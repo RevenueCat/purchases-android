@@ -55,6 +55,9 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult as PollResult
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
@@ -1912,6 +1915,56 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         assertThat(receivedResult).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `generateRewardVerificationToken builds custom data with impression id and unique transaction id`() {
+        val token = purchases.generateRewardVerificationToken(impressionId = "imp-1")
+
+        val payload = JSONObject(token.customData)
+        assertThat(payload.getString("api_key")).isEqualTo(purchases.purchasesOrchestrator.currentConfiguration.apiKey)
+        assertThat(payload.getString("client_transaction_id")).isEqualTo(token.clientTransactionId)
+        assertThat(payload.getString("impression_id")).isEqualTo("imp-1")
+        assertThat(token.clientTransactionId).isNotBlank()
+        assertThat(token.appUserID).isEqualTo(appUserId)
+
+        // Each call mints a distinct client transaction id so concurrent verifications don't collide.
+        assertThat(purchases.generateRewardVerificationToken(impressionId = "imp-1").clientTransactionId)
+            .isNotEqualTo(token.clientTransactionId)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification invalidates virtual currencies cache on verified virtual currency reward`() {
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = { PollResult.verified(PollReward.VirtualCurrency(code = "gems", amount = 5)) },
+            )
+        }
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "gems", amount = 5))
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification does not invalidate virtual currencies cache on non virtual currency reward`() {
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = { PollResult.verified(PollReward.NoReward) },
+            )
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_2",
+                poll = { PollResult.failed },
+            )
+        }
+
+        verify(exactly = 0) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
