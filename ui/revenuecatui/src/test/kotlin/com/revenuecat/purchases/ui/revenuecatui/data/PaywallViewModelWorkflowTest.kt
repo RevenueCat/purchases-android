@@ -1391,6 +1391,33 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `closePaywall after a successful restore does not fire workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+
+        // shouldDisplayBlock is null in createVm, so a successful REVENUECAT restore does NOT auto-dismiss
+        // and does NOT set purchaseCompleted: the paywall stays up and the user dismisses manually.
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+        captured.clear()
+
+        // Premise: the purchase-completed gate alone would not have suppressed Close here.
+        assertThat(vm.purchaseCompleted.value).isFalse
+
+        // A successful restore is a natural exit, not an abandonment, so no workflows_close.
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+        // The workflow was still live (StepCompleted fires on close), so Close was specifically
+        // suppressed by the restore flag, not because there was no current step to report.
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).hasSize(1)
+    }
+
+    @Test
     fun `MY_APP purchase success during workflow fires StepCompleted with null toStepId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
