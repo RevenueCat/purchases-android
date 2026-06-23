@@ -83,7 +83,7 @@ class RemoteConfigDiskCacheTest {
     fun `read returns null for an incompatible old-format file`() {
         // The previous format stored "manifest" as an object; it is now an opaque string. An old file no longer
         // deserializes, so read returns null gracefully and the next sync rebuilds from scratch.
-        val parent = File(testFolder, "RevenueCat").apply { mkdirs() }
+        val parent = File(File(testFolder, "RevenueCat"), "remote_config").apply { mkdirs() }
         File(parent, "remote_config.json").writeText(
             """{"manifest":{"domain":"app","topics":{"sources":"etag1"}},"topicBlobRefs":{}}""",
         )
@@ -92,10 +92,12 @@ class RemoteConfigDiskCacheTest {
     }
 
     @Test
-    fun `write creates the RevenueCat directory when absent`() {
+    fun `write creates the remote_config directory when absent`() {
         diskCache.write(PersistedRemoteConfig(domain = "app", manifest = "v1.0."))
 
-        assertThat(File(File(testFolder, "RevenueCat"), "remote_config.json").exists()).isTrue
+        assertThat(
+            File(File(File(testFolder, "RevenueCat"), "remote_config"), "remote_config.json").exists(),
+        ).isTrue
     }
 
     @Test
@@ -108,7 +110,7 @@ class RemoteConfigDiskCacheTest {
 
     @Test
     fun `read returns null when the persisted file is corrupt`() {
-        val parent = File(testFolder, "RevenueCat").apply { mkdirs() }
+        val parent = File(File(testFolder, "RevenueCat"), "remote_config").apply { mkdirs() }
         File(parent, "remote_config.json").writeText("{ this is not valid json")
 
         assertThat(diskCache.read()).isNull()

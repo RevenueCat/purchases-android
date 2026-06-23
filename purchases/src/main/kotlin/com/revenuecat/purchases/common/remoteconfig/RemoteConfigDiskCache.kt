@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import android.content.Context
+import androidx.core.util.AtomicFile
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.Serializable
@@ -32,8 +33,9 @@ internal data class PersistedRemoteConfig(
 )
 
 /**
- * Persists [PersistedRemoteConfig] to `noBackupFilesDir/RevenueCat/` (excluded from backups as a regenerable
- * cache). Writes are atomic (temp file + rename); a missing or corrupt file reads back as `null`.
+ * Persists [PersistedRemoteConfig] to `noBackupFilesDir/RevenueCat/remote_config/` (excluded from backups as a
+ * regenerable cache). Writes are atomic and crash-safe via [AtomicFile]; a missing or corrupt file reads back as
+ * `null`.
  */
 internal class RemoteConfigDiskCache(
     private val applicationContext: Context,
@@ -41,10 +43,14 @@ internal class RemoteConfigDiskCache(
     private val json = JsonProvider.defaultJson
 
     fun read(): PersistedRemoteConfig? {
-        val target = File(File(applicationContext.noBackupFilesDir, REMOTE_CONFIG_ROOT), REMOTE_CONFIG_FILE_NAME)
+        val target = targetFile()
         if (!target.exists()) return null
+        val atomicFile = AtomicFile(target)
         return try {
-            json.decodeFromString(PersistedRemoteConfig.serializer(), target.readText())
+            json.decodeFromString(
+                PersistedRemoteConfig.serializer(),
+                atomicFile.readFully().toString(Charsets.UTF_8),
+            )
         } catch (e: IOException) {
             errorLog(e) { "Failed to read remote config from disk." }
             null
@@ -55,26 +61,25 @@ internal class RemoteConfigDiskCache(
     }
 
     fun write(config: PersistedRemoteConfig) {
-        val parent = File(applicationContext.noBackupFilesDir, REMOTE_CONFIG_ROOT)
         try {
-            if (!parent.exists()) {
-                parent.mkdirs()
+            val target = targetFile()
+            target.parentFile?.let { parent ->
+                if (!parent.exists()) {
+                    parent.mkdirs()
+                }
             }
             val content = json.encodeToString(
                 PersistedRemoteConfig.serializer(),
                 config,
             )
-            val target = File(parent, REMOTE_CONFIG_FILE_NAME)
-            val tempFile = File.createTempFile("rc_remote_config_", ".tmp", parent)
+            val atomicFile = AtomicFile(target)
+            val out = atomicFile.startWrite()
             try {
-                tempFile.writeText(content)
-                if (!tempFile.renameTo(target)) {
-                    tempFile.copyTo(target, overwrite = true)
-                }
-            } finally {
-                if (tempFile.exists()) {
-                    tempFile.delete()
-                }
+                out.write(content.toByteArray())
+                atomicFile.finishWrite(out)
+            } catch (e: IOException) {
+                atomicFile.failWrite(out)
+                throw e
             }
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist remote config to disk." }
@@ -83,8 +88,15 @@ internal class RemoteConfigDiskCache(
         }
     }
 
+    private fun targetFile(): File =
+        File(
+            File(File(applicationContext.noBackupFilesDir, REMOTE_CONFIG_ROOT), REMOTE_CONFIG_SUBDIR),
+            REMOTE_CONFIG_FILE_NAME,
+        )
+
     private companion object {
         private const val REMOTE_CONFIG_ROOT = "RevenueCat"
+        private const val REMOTE_CONFIG_SUBDIR = "remote_config"
         private const val REMOTE_CONFIG_FILE_NAME = "remote_config.json"
     }
 }
