@@ -232,7 +232,6 @@ class PaywallViewModelTest {
         every { purchases.track(any()) } just Runs
         coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
-        every { purchases.useWorkflows } returns false
         every { purchases.workflowIdForOfferingId(any()) } returns null
 
         every { listener.onPurchaseStarted(any()) } just runs
@@ -736,6 +735,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(
                 UiConfig(),
                 PaywallComponentsData(
@@ -834,6 +834,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
 
@@ -852,6 +853,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
 
@@ -873,6 +875,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
 
@@ -945,6 +948,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -979,6 +983,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -1003,6 +1008,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -1070,6 +1076,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -1150,6 +1157,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -1194,6 +1202,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(
@@ -1220,6 +1229,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(
@@ -1260,6 +1270,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(
@@ -1316,6 +1327,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -1439,7 +1451,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
@@ -1498,7 +1509,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
@@ -1788,6 +1798,7 @@ class PaywallViewModelTest {
                 TestData.Packages.monthly.copy(offeringId),
                 TestData.Packages.annual.copy(offeringId),
             ),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering).apply {
@@ -1837,6 +1848,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -1865,6 +1877,7 @@ class PaywallViewModelTest {
                 TestData.Packages.monthly.copy(offeringId),
                 TestData.Packages.annual.copy(offeringId),
             ),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
 
@@ -1896,13 +1909,6 @@ class PaywallViewModelTest {
         verify(exactly = 0) { purchases.track(any()) }
     }
 
-    @Test
-    fun `trackPaywallImpression does nothing if offering does not have a paywall`() {
-        val model = create(offering = defaultOffering.copy(paywall = null))
-        model.trackPaywallImpressionIfNeeded()
-        verify(exactly = 0) { purchases.track(any()) }
-    }
-
     // region PURCHASE_INITIATED event tests
 
     @Test
@@ -1913,6 +1919,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -1992,6 +1999,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -2033,6 +2041,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
         val model = create(offering = offering)
@@ -2221,7 +2230,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `getWebCheckoutUrl returns expected state when no selected package`(): Unit = runBlocking {
-        val model = create(offering = offeringWithWPL)
+        val model = create(offering = offeringWithWPL.copy(paywall = defaultOffering.paywall))
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
         ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
@@ -2249,7 +2258,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `getWebCheckoutUrl returns expected state when selected package`(): Unit = runBlocking {
-        val model = create(offering = offeringWithWPL)
+        val model = create(offering = offeringWithWPL.copy(paywall = defaultOffering.paywall))
 
         val state = model.state.value as? PaywallState.Loaded.Components
             ?: error("Expected to have loaded components state")
@@ -2299,7 +2308,7 @@ class PaywallViewModelTest {
                 packageParam = "rc_package",
             ),
         )
-        val model = create(offering = offeringWithWPL)
+        val model = create(offering = offeringWithWPL.copy(paywall = defaultOffering.paywall))
 
         assertThat(
             model.getWebCheckoutUrl(action),
@@ -2308,7 +2317,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `purchaseButtonInteractionComponentUrl matches resolved launch url for in app browser`(): Unit = runBlocking {
-        val model = create(offering = offeringWithWPL)
+        val model = create(offering = offeringWithWPL.copy(paywall = defaultOffering.paywall))
 
         val state = model.state.value as? PaywallState.Loaded.Components
             ?: error("Expected to have loaded components state")
@@ -2328,7 +2337,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `purchaseButtonInteractionComponentUrl matches resolved launch url for deep link`(): Unit = runBlocking {
-        val model = create(offering = offeringWithWPL)
+        val model = create(offering = offeringWithWPL.copy(paywall = defaultOffering.paywall))
 
         val state = model.state.value as? PaywallState.Loaded.Components
             ?: error("Expected to have loaded components state")
@@ -2351,7 +2360,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `invalidateCustomerInfoCache invalidates previously obtained customer info`() {
-        val model = create(offering = offeringWithWPL)
+        val model = create(offering = offeringWithWPL.copy(paywall = defaultOffering.paywall))
         every { purchases.invalidateVirtualCurrenciesCache() } just Runs
         model.invalidateCustomerInfoCache()
         verify(exactly = 1) {
@@ -2386,6 +2395,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(
                 UiConfig(),
                 paywallComponentsDataWithProductChange,
@@ -2450,6 +2460,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
         )
 
@@ -2515,6 +2526,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(
                 UiConfig(),
                 paywallComponentsDataWithProductChange,
@@ -2642,6 +2654,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(
                 UiConfig(),
                 paywallComponentsDataWithProductChange,
@@ -2720,6 +2733,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(
                 UiConfig(),
                 paywallComponentsDataWithProductChange,
@@ -2798,6 +2812,7 @@ class PaywallViewModelTest {
             serverDescription = "description",
             metadata = emptyMap(),
             availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywall = defaultOffering.paywall,
             paywallComponents = Offering.PaywallComponents(
                 UiConfig(),
                 paywallComponentsDataWithProductChange,
@@ -2859,7 +2874,7 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .setOffering(offeringWithWPL)
+                .setOffering(offeringWithWPL.copy(paywall = defaultOffering.paywall))
                 .setPurchaseLogic(myAppPurchaseLogic)
                 .build(),
             TestData.Constants.currentColorScheme,
@@ -3082,7 +3097,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
@@ -3091,9 +3105,9 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and offering has a legacy paywall, does not fetch workflow`() {
+    fun `when offering has a legacy paywall, does not fetch workflow`() {
         // defaultOffering has a legacy paywall (offering.paywall != null), so it renders through
-        // the legacy path and never hits the workflows endpoint, even with workflows enabled.
+        // the legacy path and never hits the workflows endpoint.
         PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
@@ -3104,14 +3118,13 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
     }
 
     @Test
-    fun `when useWorkflows is true and offering has a legacy paywall, renders legacy paywall`() {
+    fun `when offering has a legacy paywall, renders legacy paywall`() {
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
@@ -3122,14 +3135,13 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
     }
 
     @Test
-    fun `when useWorkflows is true and offering has no legacy paywall, fetches by workflow id from map`() {
+    fun `when offering has no legacy paywall, fetches by workflow id from map`() {
         // offeringWithWPL has no legacy paywall (offering.paywall == null), so it is served through
         // the workflows endpoint. With a mapped workflow id, that id (not the offering id) is used.
         val workflowId = "wfl-real-id"
@@ -3170,7 +3182,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -3179,10 +3190,10 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and offering has no legacy paywall but no mapped workflow, fetches by offering id`() {
+    fun `when offering has no legacy paywall but no mapped workflow, fetches by offering id`() {
         // offeringWithWPL has no legacy paywall and no mapped workflow (not yet converted). It must
-        // still hit the workflows endpoint, passing the offering id so the backend lazily converts
-        // it — rather than falling back to a legacy paywall that does not exist.
+        // hit the workflows endpoint, passing the offering id so the backend lazily converts it
+        // rather than falling back to a legacy paywall that does not exist.
         every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns null
         val workflowScreen = WorkflowScreen(
             templateName = "template",
@@ -3220,7 +3231,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)

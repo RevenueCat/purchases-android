@@ -454,7 +454,6 @@ class PaywallViewModelWorkflowTest {
             every { storefrontCountryCode } returns "US"
             every { preferredUILocaleOverride } returns null
             every { purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
-            every { useWorkflows } returns true
             every { track(any()) } just Runs
             coEvery { awaitOfferings() } returns testOfferings
             coEvery { awaitCustomerInfo(any()) } returns mockk {
