@@ -175,6 +175,7 @@ public data class PaywallEvent(
         val errorCode: Int? = null,
         val errorMessage: String? = null,
         val workflowId: String? = null,
+        val stepId: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
@@ -210,6 +211,7 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
     private const val ERROR_CODE_INDEX = 11
     private const val ERROR_MESSAGE_INDEX = 12
     private const val WORKFLOW_ID_INDEX = 14
+    private const val STEP_ID_INDEX = 15
 
     private val nullableStringSerializer = String.serializer().nullable
     private val nullableIntSerializer = Int.serializer().nullable
@@ -232,6 +234,7 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         // Legacy field for backward compatibility
         element("offeringIdentifier", String.serializer().descriptor)
         element("workflowId", nullableStringSerializer.descriptor)
+        element("stepId", nullableStringSerializer.descriptor)
     }
 
     override fun serialize(encoder: Encoder, value: PaywallEvent.Data) {
@@ -274,6 +277,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             }
             value.workflowId?.let {
                 encodeStringElement(descriptor, WORKFLOW_ID_INDEX, it)
+            }
+            value.stepId?.let {
+                encodeStringElement(descriptor, STEP_ID_INDEX, it)
             }
         }
     }
@@ -338,6 +344,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         val workflowId = jsonObject["workflowId"]?.let {
             decoder.json.decodeFromJsonElement(String.serializer(), it)
         }
+        val stepId = jsonObject["stepId"]?.let {
+            decoder.json.decodeFromJsonElement(String.serializer(), it)
+        }
 
         return PaywallEvent.Data(
             paywallIdentifier = paywallIdentifier,
@@ -354,6 +363,7 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             errorCode = errorCode,
             errorMessage = errorMessage,
             workflowId = workflowId,
+            stepId = stepId,
         )
     }
 }

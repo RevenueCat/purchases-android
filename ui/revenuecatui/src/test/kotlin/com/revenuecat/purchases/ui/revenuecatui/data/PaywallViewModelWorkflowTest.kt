@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -1703,6 +1704,112 @@ class PaywallViewModelWorkflowTest {
             .filter { it.type == PaywallEventType.IMPRESSION }
         assertThat(impressions).isNotEmpty()
         assertThat(impressions.first().data.workflowId).isEqualTo(fetchResult.workflow.id)
+    }
+
+    @Test
+    fun `purchase initiated after same paywall workflow re-presentation carries current step metadata`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk(relaxed = true),
+        )
+        val vm = createVm()
+
+        // Both steps render the same screen, so the visual presentation fingerprint is identical
+        // across the re-presentation and the impression is de-duped. Only the workflow step id
+        // changes, which is exactly what withCurrentWorkflowMetadata must refresh on the
+        // already-tracked presentation data.
+        val sharedScreenSteps = mapOf(
+            "step-1" to step1.copy(screenId = screenId2),
+            "step-2" to step2.copy(screenId = screenId2),
+        )
+        val step1Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-1",
+                singleStepFallbackId = "step-1",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+        val step2Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-2",
+                singleStepFallbackId = "step-2",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+
+        vm.startWorkflowPresentationFromResult(step1Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        captured.clear()
+
+        vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        // Same visual fingerprint, so no new impression is emitted: this proves the de-dup branch
+        // (the one withCurrentWorkflowMetadata lives in) was taken, not a fresh re-creation.
+        assertThat(
+            captured.filterIsInstance<PaywallEvent>().none { it.type == PaywallEventType.IMPRESSION },
+        ).isTrue
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        val purchaseInitiated = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.PURCHASE_INITIATED }
+        assertThat(purchaseInitiated.data.workflowId).isEqualTo(step2Result.workflow.id)
+        assertThat(purchaseInitiated.data.stepId).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `exit offer after same paywall workflow re-presentation carries current step metadata`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val vm = createVm()
+
+        // Both steps render the same screen, so the visual presentation fingerprint is identical
+        // across the re-presentation and the impression is de-duped. Only the workflow step id
+        // changes, which is exactly what withCurrentWorkflowMetadata must refresh on the
+        // already-tracked presentation data.
+        val sharedScreenSteps = mapOf(
+            "step-1" to step1.copy(screenId = screenId2),
+            "step-2" to step2.copy(screenId = screenId2),
+        )
+        val step1Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-1",
+                singleStepFallbackId = "step-1",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+        val step2Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-2",
+                singleStepFallbackId = "step-2",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+
+        vm.startWorkflowPresentationFromResult(step1Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        captured.clear()
+
+        vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        // Same visual fingerprint, so no new impression is emitted: this proves the de-dup branch
+        // (the one withCurrentWorkflowMetadata lives in) was taken, not a fresh re-creation.
+        assertThat(
+            captured.filterIsInstance<PaywallEvent>().none { it.type == PaywallEventType.IMPRESSION },
+        ).isTrue
+        vm.trackExitOffer(ExitOfferType.DISMISS, exitOfferingIdentifier = "exit-offering-id")
+        advanceUntilIdle()
+
+        val exitOffer = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.EXIT_OFFER }
+        assertThat(exitOffer.data.workflowId).isEqualTo(step2Result.workflow.id)
+        assertThat(exitOffer.data.stepId).isEqualTo("step-2")
     }
 
     @Test

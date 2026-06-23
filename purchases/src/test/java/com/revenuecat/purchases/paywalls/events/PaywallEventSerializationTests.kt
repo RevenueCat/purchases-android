@@ -57,6 +57,7 @@ class PaywallEventSerializationTests {
                 localeIdentifier = "en_US",
                 darkMode = false,
                 workflowId = "workflow-xyz",
+                stepId = "step-xyz",
             ),
             type = PaywallEventType.IMPRESSION,
         ),
@@ -569,6 +570,7 @@ class PaywallEventSerializationTests {
     fun `can encode paywall event with workflowId correctly`() {
         val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
         assertThat(eventString).contains("\"workflowId\":\"workflow-xyz\"")
+        assertThat(eventString).contains("\"stepId\":\"step-xyz\"")
     }
 
     @Test
@@ -576,6 +578,23 @@ class PaywallEventSerializationTests {
         val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
         val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(eventString)
         assertThat(decoded.event.data.workflowId).isEqualTo("workflow-xyz")
+        assertThat(decoded.event.data.stepId).isEqualTo("step-xyz")
+    }
+
+    @Test
+    fun `toPaywallPostReceiptData does not include workflowId or stepId`() {
+        val paywallPostReceiptData = workflowImpressionEvent.event.toPaywallPostReceiptData()
+
+        assertThat(paywallPostReceiptData.paywallID).isEqualTo("paywallID")
+        assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("workflow_id")
+        assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("step_id")
+    }
+
+    @Test
+    fun `workflowId and stepId on PaywallEvent Data are available for WorkflowMetadata construction`() {
+        val data = workflowImpressionEvent.event.data
+        assertThat(data.workflowId).isEqualTo("workflow-xyz")
+        assertThat(data.stepId).isEqualTo("step-xyz")
     }
 
     @Test
@@ -583,6 +602,7 @@ class PaywallEventSerializationTests {
         val legacyJson = """{"event":{"creationData":{"id":"111207f4-87af-4b57-a581-eb27bcc6e001","date":1699270688884},"data":{"paywallIdentifier":"paywallID","presentedOfferingContext":{"offeringIdentifier":"offeringID","placementIdentifier":null,"targetingContext":null},"paywallRevision":5,"sessionIdentifier":"222107f4-98bf-4b68-a582-eb27bcb6e002","displayMode":"footer","localeIdentifier":"en_US","darkMode":false},"type":"IMPRESSION"},"userID":"testAppUserId"}"""
         val decoded = PaywallStoredEvent.fromString(legacyJson)
         assertThat(decoded.event.data.workflowId).isNull()
+        assertThat(decoded.event.data.stepId).isNull()
     }
 
     @Test
