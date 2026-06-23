@@ -1486,6 +1486,35 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `closePaywall on a new session after a REVENUECAT purchase-dismiss still fires workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        // REVENUECAT purchase completes and dismisses via options.dismissRequest() (not closePaywall),
+        // which ends the session on an embedded ViewModel that is not destroyed.
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        // The same ViewModel later presents a NEW workflow session with no purchase, so abandoning it
+        // must still emit workflows_close (the completion must not stick past the dismiss).
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.stepId).isEqualTo("step-1")
+    }
+
+    @Test
     fun `MY_APP purchase success during workflow fires StepCompleted with null toStepId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }

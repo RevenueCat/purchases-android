@@ -573,6 +573,9 @@ internal class PaywallViewModelImpl(
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             trackCurrentWorkflowStepCompleted()
                             options.dismissRequest()
+                            // Bypasses closePaywall, so run the same session cleanup here to reset
+                            // workflowCompletedInSession at the dismiss boundary.
+                            clearWorkflowState()
                         }
                     }
                 }
@@ -738,6 +741,9 @@ internal class PaywallViewModelImpl(
                     Logger.d("Dismissing paywall after purchase")
                     trackCurrentWorkflowStepCompleted()
                     options.dismissRequest()
+                    // This direct-dismiss completion bypasses closePaywall, so run the same session
+                    // cleanup here to reset workflowCompletedInSession at the dismiss boundary.
+                    clearWorkflowState()
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
