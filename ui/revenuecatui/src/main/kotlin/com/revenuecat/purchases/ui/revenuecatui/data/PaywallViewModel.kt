@@ -211,12 +211,13 @@ internal class PaywallViewModelImpl(
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
-    // Per-impression flag: a completed purchase or a successful restore is a natural workflow exit, not
-    // an abandonment, so it suppresses workflows_close. Tracked separately from the sticky, public
-    // _purchaseCompleted (which also gates exit offers and is observed by the host, and which a restore
-    // only sets when shouldDisplayBlock auto-dismisses): this resets on each new workflow impression so
-    // completion from a prior impression on the same ViewModel does not leak into the next. Mirrors
-    // iOS's per-session hasCompletedInSession (purchased || restored).
+    // Per-session flag: a completed purchase or a successful restore is a natural workflow exit, not an
+    // abandonment, so it suppresses workflows_close. The session boundary is the dismiss (reset in
+    // clearWorkflowState), NOT each render/refresh, so an in-session completion that leaves the paywall
+    // visible (e.g. a restore with no shouldDisplayBlock) survives option/locale/color refreshes. Tracked
+    // separately from the sticky, public _purchaseCompleted (which also gates exit offers and is observed
+    // by the host, and which a restore only sets when shouldDisplayBlock auto-dismisses). Mirrors iOS's
+    // per-session hasCompletedInSession (purchased || restored), reset at the dismiss boundary.
     private var workflowCompletedInSession: Boolean = false
 
     private enum class WorkflowStepEntryReason(val value: String) {
@@ -368,6 +369,12 @@ internal class PaywallViewModelImpl(
         currentWorkflowStepTracksPaywallEvents = true
         workflowStepStateCache.clear()
         _workflowState.value = null
+        // The dismiss is the session boundary: the next presentation on this ViewModel is a new session,
+        // so completion from this one must not suppress its abandonment. Runs after closePaywall has
+        // already made its workflows_close decision. A refresh/re-render of an open session does not
+        // pass through here, so an in-session completion (e.g. a restore that leaves the paywall up)
+        // is preserved across refreshes.
+        workflowCompletedInSession = false
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
@@ -990,9 +997,6 @@ internal class PaywallViewModelImpl(
         _workflowState.value = null
         if (isNewWorkflowImpression) {
             workflowTraceId = UUID.randomUUID().toString()
-            // New session: completion (purchase or restore) from a prior impression on the same
-            // ViewModel must not suppress this impression's abandonment.
-            workflowCompletedInSession = false
         }
 
         // Pre-compute the package step so its default package is available in cache

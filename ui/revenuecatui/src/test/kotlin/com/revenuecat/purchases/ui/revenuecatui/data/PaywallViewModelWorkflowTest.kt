@@ -1418,22 +1418,63 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `closePaywall on a new impression after an earlier purchase still fires workflows Close`() = runTest {
+    fun `closePaywall after restore then a re-presentation refresh does not fire workflows Close`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
-        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
-            storeTransaction = mockk<StoreTransaction>(),
-            customerInfo = mockk<CustomerInfo>(),
-        )
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         advanceUntilIdle()
-        // Complete a purchase in the first impression: this session is a completion, not abandonment.
-        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        // Successful restore with shouldDisplayBlock null: the paywall stays open, completion recorded.
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
 
-        // A new workflow impression starts on the same ViewModel. _purchaseCompleted stays true (sticky),
-        // but this impression had no purchase, so abandoning it must still emit workflows_close.
+        // A refresh re-presents the SAME open session (e.g. updateOptions -> presentWorkflow ->
+        // startWorkflowPresentation). The user has NOT dismissed, so the restore completion must survive
+        // and still suppress workflows_close on the eventual manual dismiss.
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+    }
+
+    @Test
+    fun `closePaywall on a new session after an earlier purchase-dismiss still fires workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        coEvery { purchases.awaitSyncPurchases() } returns mockk<CustomerInfo> {
+            every { activeSubscriptions } returns setOf()
+            every { nonSubscriptionTransactions } returns listOf()
+        }
+        val myAppPurchaseLogic = object : PaywallPurchaseLogic {
+            override suspend fun performPurchase(activity: Activity, params: PaywallPurchaseLogicParams) =
+                PurchaseLogicResult.Success
+            override suspend fun performRestore(customerInfo: CustomerInfo) = PurchaseLogicResult.Success
+        }
+
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {}).setPurchaseLogic(myAppPurchaseLogic).build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        // MY_APP purchase completes and auto-dismisses the paywall (closePaywall -> clearWorkflowState),
+        // which ends the session.
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        // The same ViewModel later presents a NEW workflow session. _purchaseCompleted stays true (sticky),
+        // but this session had no purchase, so abandoning it must still emit workflows_close.
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         advanceUntilIdle()
         captured.clear()
