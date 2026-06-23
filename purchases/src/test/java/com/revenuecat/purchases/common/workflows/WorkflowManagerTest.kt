@@ -2569,15 +2569,20 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getWorkflowsList invalidates list timestamp on a non-fallback (4xx) error`() {
+    fun `getWorkflowsList drops the in-memory list and map on a non-fallback (4xx) error`() {
         // Stamp the in-memory cache as fresh so the cache does not look stale before the 4xx.
         val recentDate = Date(1_000_000)
         every { mockDateProvider.now } returns recentDate
         workflowsCache.cacheWorkflowsListInMemory(
-            WorkflowsListResponse(workflows = emptyList()),
-            emptyMap(),
+            WorkflowsListResponse(
+                workflows = listOf(
+                    WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+                ),
+            ),
+            mapOf("default" to "wf_1"),
         )
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isFalse()
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isTrue()
 
         val error = PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "forbidden")
         val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
@@ -2588,9 +2593,69 @@ class WorkflowManagerTest {
         // forceRefresh bypasses the freshness check, matching the real caller (createAndCacheOfferings).
         workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false, forceRefresh = true) {}
 
-        // Timestamp must be cleared so a subsequent non-forced call retries rather than serving a
-        // still-fresh in-memory list — mirrors OfferingsManager.handleErrorFetchingOfferings.
+        // The whole in-memory list must be dropped — not just marked stale — so the stale-but-present
+        // SWR path can't keep vending the server-rejected map. The next non-forced call then sees a
+        // cold miss and blocks on a fresh fetch. Mirrors OfferingsManager forcing the cache stale on 4xx.
         assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue()
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isFalse()
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+    }
+
+    @Test
+    fun `getWorkflowsList stops SWR-serving the rejected map after a 4xx background refresh`() {
+        // Populate the cache at t=0 with a real mapping (auto-resolve the first fetch).
+        val response = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        val firstSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(firstSlot), onError = any())
+        } answers { firstSlot.captured(response) }
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false)
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+
+        // Advance past the TTL: stale-but-present. The next call is served via SWR and fires a
+        // background refresh, which we settle synchronously with a 4xx SHOULD_NOT_FALLBACK error.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = capture(errorSlot))
+        } answers {
+            errorSlot.captured(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "forbidden"),
+                GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+            )
+        }
+        every { mockDeviceCache.getWorkflowsListResponseCache() } returns null
+        every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns null
+
+        var firstCompleted = false
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { firstCompleted = true }
+        // SWR vends immediately, even though the background refresh then 4xx'd.
+        assertThat(firstCompleted).isTrue()
+
+        // The 4xx must have dropped the in-memory list, so the rejected map is no longer served.
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isNull()
+
+        // A subsequent call is now a cold miss that blocks on a fresh fetch rather than SWR-serving
+        // the rejected map again. Resolve it with a recovered list.
+        val recovered = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_2", displayName = "Flow", offeringId = "default", prefetch = false),
+            ),
+        )
+        val recoverSlot = slot<(WorkflowsListResponse) -> Unit>()
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = capture(recoverSlot), onError = any())
+        } answers { recoverSlot.captured(recovered) }
+
+        var secondCompleted = false
+        workflowManager.getWorkflowsList(appUserID = "user_1", appInBackground = false) { secondCompleted = true }
+        assertThat(secondCompleted).isTrue()
+        assertThat(workflowManager.workflowIdForOfferingId("default")).isEqualTo("wf_2")
     }
 
     @Test

@@ -208,6 +208,28 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `clearInMemoryWorkflowsList drops the in-memory list and map but leaves disk untouched`() {
+        workflowsCache.cacheWorkflowsListInMemory(
+            WorkflowsListResponse(
+                workflows = listOf(
+                    WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = false),
+                ),
+            ),
+            mapOf("default" to "wf_1"),
+        )
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isTrue
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+
+        workflowsCache.clearInMemoryWorkflowsList()
+
+        assertThat(workflowsCache.hasCachedWorkflowsList()).isFalse
+        assertThat(workflowsCache.isWorkflowsListCacheStale(appInBackground = false)).isTrue
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isNull()
+        // The disk copy is preserved for the 5xx fallback path.
+        verify(exactly = 0) { deviceCache.clearWorkflowsListResponseCache() }
+    }
+
+    @Test
     fun `clearCache clears the disk cache`() {
         workflowsCache.clearCache()
         verify(exactly = 1) { deviceCache.clearWorkflowsListResponseCache() }

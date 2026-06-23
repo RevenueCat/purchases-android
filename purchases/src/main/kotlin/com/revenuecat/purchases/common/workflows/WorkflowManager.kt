@@ -415,10 +415,13 @@ internal class WorkflowManager(
                 if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
                     // A 4xx means the server intentionally changed/removed these workflows. Don't
                     // resurrect a stale list from disk; just settle the callbacks so offerings
-                    // delivery isn't stranded. Invalidate the timestamp so the next non-forced call
-                    // retries rather than serving a still-fresh in-memory list — mirrors
-                    // OfferingsManager.handleErrorFetchingOfferings calling forceCacheStale().
-                    workflowsCache.invalidateWorkflowsListTimestamp()
+                    // delivery isn't stranded. Drop the in-memory list and offeringId map entirely so
+                    // the stale-but-present SWR branch can't keep vending the server-rejected mappings
+                    // on every later call: clearing the instance (not just the timestamp) makes
+                    // hasCachedWorkflowsList() report a cold miss, so the next non-forced call blocks
+                    // on a fresh fetch. Mirrors OfferingsManager.handleErrorFetchingOfferings forcing
+                    // the cache stale on 4xx — adapted to the list's extra SWR presence check.
+                    workflowsCache.clearInMemoryWorkflowsList()
                     completePendingCallbacks(appUserID)
                 } else {
                     restoreWorkflowsListFromDisk(appUserID)

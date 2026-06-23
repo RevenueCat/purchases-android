@@ -108,6 +108,24 @@ internal class WorkflowsCache(
     }
 
     /**
+     * Drops the in-memory workflows list and its derived offeringId → workflowId map, leaving the
+     * disk copy intact. Used on a 4xx (SHOULD_NOT_FALLBACK) list fetch: the server has intentionally
+     * removed/changed these workflows, so the stale-but-present SWR path in
+     * [com.revenuecat.purchases.common.workflows.WorkflowManager.getWorkflowsList] must not keep
+     * vending the rejected mappings on every later call. Clearing the instance (not just the
+     * timestamp, which [invalidateWorkflowsListTimestamp] does) makes [hasCachedWorkflowsList] report
+     * a cold miss, so the next non-forced call blocks on a fresh fetch rather than re-serving stale.
+     * The disk copy is preserved for the 5xx disk-fallback path, mirroring how
+     * [com.revenuecat.purchases.common.offerings.OfferingsManager] leaves its disk response untouched
+     * on a 4xx while forcing the cache stale.
+     */
+    @Synchronized
+    fun clearInMemoryWorkflowsList() {
+        workflowsListCachedObject.clearCache()
+        offeringIdToWorkflowIdMap = emptyMap()
+    }
+
+    /**
      * Caches the workflows list in memory and persists it to disk, the same way
      * [com.revenuecat.purchases.common.offerings.OfferingsCache.cacheOfferings] caches offerings.
      *
