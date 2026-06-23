@@ -75,10 +75,11 @@ fun OfferingsScreen(
     modifier: Modifier = Modifier,
     viewModel: OfferingsViewModel = viewModel<OfferingsViewModelImpl>(),
 ) {
+    val context = LocalContext.current
     when (val state = viewModel.offeringsState.collectAsStateWithLifecycle().value) {
         is OfferingsState.Error -> ErrorOfferingsScreen(errorState = state, modifier)
         is OfferingsState.Loaded -> OfferingsListScreen(
-            offeringsState = state,
+            offeringsState = remember(state, context) { state.withBundledPaywalls(context) },
             tappedOnNavigateToOffering = { offering ->
                 viewModel.markOfferingAsRecent(offering.identifier)
                 tappedOnOffering(offering)

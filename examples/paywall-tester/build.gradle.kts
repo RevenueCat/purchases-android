@@ -153,6 +153,7 @@ dependencies {
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.kotlinx.serialization.json)
     implementation(platform(libs.compose.bom))
     implementation(libs.material)
     implementation(libs.compose.ui)

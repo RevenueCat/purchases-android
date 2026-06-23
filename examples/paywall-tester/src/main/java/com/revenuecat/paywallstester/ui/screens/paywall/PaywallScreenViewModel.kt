@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.paywallstester.BundledPaywalls
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -144,7 +145,9 @@ class PaywallScreenViewModelImpl(
             return offerings.getCurrentOfferingForPlacement(it)
                 ?: error("Could not find offering for placement $it")
         }
-        return offeringId?.let { offerings.all[it] }
+        return offeringId?.let { id ->
+            BundledPaywalls.offeringById(getApplication(), id) ?: offerings.all[id]
+        }
             ?: offerings.current
             ?: error("Could not find offering")
     }

@@ -987,7 +987,7 @@ object SamplePaywalls {
 }
 
 @Suppress("CyclomaticComplexMethod")
-private fun variableLocalizationKeysForEnUs(): Map<VariableLocalizationKey, String> =
+internal fun variableLocalizationKeysForEnUs(): Map<VariableLocalizationKey, String> =
     VariableLocalizationKey.values().associateWith { key ->
         when (key) {
             VariableLocalizationKey.ANNUAL -> "annual"
