@@ -487,6 +487,25 @@ class EventsManagerTest {
         assertThat(storedContent).contains("workflows_step_started")
     }
 
+    @Test
+    fun `tracking a workflows Close event stores BackendStoredEvent_Workflows`() {
+        val event = WorkflowEvent.Close(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = "wfl_abc",
+            stepId = "step-2",
+            traceId = "trace_session_1",
+            isFirstStep = false,
+            isLastStep = true,
+        )
+
+        eventsManager.track(event)
+
+        val storedContent = checkFileContentsAndReturn()
+        assertThat(storedContent).contains("\"type\":\"workflows\"")
+        assertThat(storedContent).contains("\"workflow_id\":\"wfl_abc\"")
+        assertThat(storedContent).contains("workflows_close")
+    }
+
     // Ad Events Tests
 
     @Test

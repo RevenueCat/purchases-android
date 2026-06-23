@@ -211,6 +211,15 @@ internal class PaywallViewModelImpl(
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
+    // Per-session flag: a completed purchase or a successful restore is a natural workflow exit, not an
+    // abandonment, so it suppresses workflows_close. The session boundary is the dismiss (reset in
+    // clearWorkflowState), NOT each render/refresh, so an in-session completion that leaves the paywall
+    // visible (e.g. a restore with no shouldDisplayBlock) survives option/locale/color refreshes. Tracked
+    // separately from the sticky, public _purchaseCompleted (which also gates exit offers and is observed
+    // by the host, and which a restore only sets when shouldDisplayBlock auto-dismisses). Mirrors iOS's
+    // per-session hasCompletedInSession (purchased || restored), reset at the dismiss boundary.
+    private var workflowCompletedInSession: Boolean = false
+
     private enum class WorkflowStepEntryReason(val value: String) {
         START("start"),
         FORWARD("forward"),
@@ -318,6 +327,9 @@ internal class PaywallViewModelImpl(
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
         trackCurrentWorkflowStepCompleted()
+        if (!workflowCompletedInSession) {
+            trackCurrentWorkflowAbandoned()
+        }
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
@@ -357,6 +369,12 @@ internal class PaywallViewModelImpl(
         currentWorkflowStepTracksPaywallEvents = true
         workflowStepStateCache.clear()
         _workflowState.value = null
+        // The dismiss is the session boundary: the next presentation on this ViewModel is a new session,
+        // so completion from this one must not suppress its abandonment. Runs after closePaywall has
+        // already made its workflows_close decision. A refresh/re-render of an open session does not
+        // pass through here, so an in-session completion (e.g. a restore that leaves the paywall up)
+        // is preserved across refreshes.
+        workflowCompletedInSession = false
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
@@ -509,6 +527,9 @@ internal class PaywallViewModelImpl(
                     when (val result = customRestoreHandler(customerInfo)) {
                         is PurchaseLogicResult.Success -> {
                             val updatedCustomerInfo = purchases.awaitSyncPurchases()
+                            // A successful restore is a natural workflow exit, not an abandonment, even if
+                            // the paywall stays visible (no shouldDisplayBlock). Suppress workflows_close.
+                            workflowCompletedInSession = true
 
                             shouldDisplayBlock?.let {
                                 if (!it(updatedCustomerInfo)) {
@@ -541,6 +562,9 @@ internal class PaywallViewModelImpl(
                     }
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
+                    // A successful restore is a natural workflow exit, not an abandonment, even if the
+                    // paywall stays visible (no shouldDisplayBlock). Suppress workflows_close on dismiss.
+                    workflowCompletedInSession = true
                     listener?.onRestoreCompleted(customerInfo)
 
                     shouldDisplayBlock?.let {
@@ -549,6 +573,9 @@ internal class PaywallViewModelImpl(
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             trackCurrentWorkflowStepCompleted()
                             options.dismissRequest()
+                            // Bypasses closePaywall, so run the same session cleanup here to reset
+                            // workflowCompletedInSession at the dismiss boundary.
+                            clearWorkflowState()
                         }
                     }
                 }
@@ -663,6 +690,8 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
+                            // Set before closePaywall so the abandonment gate sees this as a completion.
+                            workflowCompletedInSession = true
                             Logger.d("Dismissing paywall after purchase")
                             closePaywall(PaywallResult.Purchased(customerInfo))
                         }
@@ -707,10 +736,14 @@ internal class PaywallViewModelImpl(
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
+                    workflowCompletedInSession = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     trackCurrentWorkflowStepCompleted()
                     options.dismissRequest()
+                    // This direct-dismiss completion bypasses closePaywall, so run the same session
+                    // cleanup here to reset workflowCompletedInSession at the dismiss boundary.
+                    clearWorkflowState()
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
@@ -1267,6 +1300,29 @@ internal class PaywallViewModelImpl(
         currentWorkflowStep?.let { step ->
             trackWorkflowStepCompleted(step = step, toStepId = null)
         }
+    }
+
+    /**
+     * Fires [WorkflowEvent.Close] for the step the user is currently on, if any. No-op for
+     * non-workflow paywalls. This is the workflow-level abandonment signal: unlike paywall_close it is
+     * not gated by [WorkflowStep.tracksPaywallEvents], so abandonment that happens on a non-paywall step
+     * (e.g. before the offer is shown) is still captured. Only fired from [closePaywall] when the
+     * workflow was not completed (no purchase).
+     */
+    private fun trackCurrentWorkflowAbandoned() {
+        val workflowResult = currentWorkflowResult ?: return
+        val step = currentWorkflowStep ?: return
+        val workflow = workflowResult.workflow
+        purchases.track(
+            WorkflowEvent.Close(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = step.id,
+                traceId = workflowTraceId,
+                isFirstStep = step.id == workflow.initialStepId,
+                isLastStep = isTerminalStep(workflow, step.id),
+            ),
+        )
     }
 
     @Suppress("ReturnCount")
