@@ -1,4 +1,7 @@
-@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(
+    com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class,
+    com.revenuecat.purchases.InternalRevenueCatAPI::class,
+)
 
 package com.revenuecat.purchases.common.events
 
@@ -12,6 +15,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -80,6 +84,7 @@ class EventsManagerTest {
         )
     )
     private val adEvent = AdEvent.Displayed(
+        captureMethod = AdCaptureMethod.MANUAL,
         id = "ad-event-id",
         timestamp = 1699270688884,
         networkName = "Google AdMob",
@@ -487,6 +492,7 @@ class EventsManagerTest {
     @Test
     fun `tracking ad displayed events adds them to file`() {
         val adEvent = AdEvent.Displayed(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-123",
             timestamp = 1699270688884,
             networkName = "Google AdMob",
@@ -500,13 +506,14 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual"}}""".trimIndent() + "\n"
         )
     }
 
     @Test
     fun `tracking ad displayed event with null placement adds to file`() {
         val adEvent = AdEvent.Displayed(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-123",
             timestamp = 1699270688884,
             networkName = "Google AdMob",
@@ -520,13 +527,14 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual"}}""".trimIndent() + "\n"
         )
     }
 
     @Test
     fun `tracking ad opened events adds them to file`() {
         val adEvent = AdEvent.Open(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-456",
             timestamp = 1699270688885,
             networkName = "AppLovin",
@@ -540,13 +548,14 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","ad_format":"native","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-456","version":1,"type":"rc_ads_ad_opened","timestamp_ms":1699270688885,"network_name":"AppLovin","mediator_name":"AppLovin","ad_format":"native","placement":"interstitial","ad_unit_id":"ad-unit-789","impression_id":"impression-456","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual"}}""".trimIndent() + "\n"
         )
     }
 
     @Test
     fun `tracking ad revenue events adds them to file`() {
         val adEvent = AdEvent.Revenue(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-789",
             timestamp = 1699270688886,
             networkName = "Google AdMob",
@@ -563,13 +572,14 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_revenue","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual","revenue_micros":1500000,"currency":"USD","precision":"exact"}}""".trimIndent() + "\n"
         )
     }
 
     @Test
     fun `tracking ad loaded events adds them to file`() {
         val adEvent = AdEvent.Loaded(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-789",
             timestamp = 1699270688886,
             networkName = "Google AdMob",
@@ -583,13 +593,14 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_loaded","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"interstitial","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual"}}""".trimIndent() + "\n"
         )
     }
 
     @Test
     fun `tracking ad failed to load events adds them to file`() {
         val adEvent = AdEvent.FailedToLoad(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-789",
             timestamp = 1699270688886,
             mediatorName = AdMediatorName.AD_MOB,
@@ -602,7 +613,7 @@ class EventsManagerTest {
         eventsManager.track(adEvent)
 
         checkFileContents(
-            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"mediator_name":"AdMob","ad_format":"banner","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","mediator_error_code":123}}""".trimIndent() + "\n"
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_failed_to_load","timestamp_ms":1699270688886,"mediator_name":"AdMob","ad_format":"banner","placement":"rewarded_video","ad_unit_id":"ad-unit-999","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual","mediator_error_code":123}}""".trimIndent() + "\n"
         )
     }
 
@@ -610,6 +621,7 @@ class EventsManagerTest {
     @Test
     fun `tracking mixed events with ad events adds them to file`() {
         val adEvent = AdEvent.Displayed(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-123",
             timestamp = 1699270688884,
             networkName = "Google AdMob",
@@ -627,7 +639,7 @@ class EventsManagerTest {
         checkFileContents(
             """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_impression","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
                 + "\n"
-                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}"}}""".trimIndent()
+                + """{"type":"ad","event":{"id":"ad-event-id-123","version":1,"type":"rc_ads_ad_displayed","timestamp_ms":1699270688884,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"banner","placement":"banner_home","ad_unit_id":"ca-app-pub-123456","impression_id":"impression-123","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual"}}""".trimIndent()
                 + "\n"
                 + """{"type":"customer_center","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","revision_id":1,"type":"customer_center_impression","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","timestamp":1699270688884,"dark_mode":true,"locale":"es_ES","display_mode":"full_screen"}}""".trimIndent()
                 + "\n"
@@ -676,6 +688,7 @@ class EventsManagerTest {
     fun `flushEvents sends ad events to backend`() {
         mockBackendResponse(success = true)
         val adEvent = AdEvent.Displayed(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-123",
             timestamp = 1699270688884,
             networkName = "Google AdMob",
@@ -698,6 +711,7 @@ class EventsManagerTest {
     @Test
     fun `tracking multiple ad event types adds them to file`() {
         val displayedEvent = AdEvent.Displayed(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-1",
             timestamp = 1699270688884,
             networkName = "Google AdMob",
@@ -709,6 +723,7 @@ class EventsManagerTest {
         )
 
         val openedEvent = AdEvent.Open(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-2",
             timestamp = 1699270688885,
             networkName = "AppLovin",
@@ -720,6 +735,7 @@ class EventsManagerTest {
         )
 
         val revenueEvent = AdEvent.Revenue(
+            captureMethod = AdCaptureMethod.MANUAL,
             id = "ad-event-id-3",
             timestamp = 1699270688886,
             networkName = "Google AdMob",

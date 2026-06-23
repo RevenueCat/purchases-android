@@ -144,6 +144,21 @@ internal class WorkflowsCache(
     fun workflowIdForOfferingId(offeringId: String): String? =
         offeringIdToWorkflowIdMap[offeringId]
 
+    /**
+     * Records a single [offeringId] → [workflowId] mapping discovered outside the list fetch, i.e.
+     * when a workflow is fetched by its offering ID (lazy conversion) and the backend resolves it to
+     * a different workflow ID. Recording it lets the next [workflowIdForOfferingId] lookup resolve to
+     * the cached workflow instead of missing. Copy-on-write so it composes with the [@Volatile] map.
+     *
+     * The next [cacheWorkflowsList] replaces the whole map, dropping any discovered entry not present
+     * in the fresh list — which then self-heals on the next lazy fetch, matching how the rest of this
+     * cache treats identity/list transitions as last-write-wins.
+     */
+    @Synchronized
+    fun recordWorkflowIdForOfferingId(offeringId: String, workflowId: String) {
+        offeringIdToWorkflowIdMap = offeringIdToWorkflowIdMap + (offeringId to workflowId)
+    }
+
     // endregion Workflows list cache
 
     private companion object {

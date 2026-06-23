@@ -244,6 +244,10 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method @Deprecated public abstract void performRestoreWithCompletion(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
   }
 
+  public final class PurchasesPaywallPreviewExtensionsKt {
+    method @MainThread public static boolean presentPaywall(com.revenuecat.purchases.Purchases, android.content.Intent intent, android.app.Activity activity);
+  }
+
 }
 
 package com.revenuecat.purchases.ui.revenuecatui.activity {

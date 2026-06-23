@@ -215,6 +215,7 @@ class EndpointTest {
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -232,7 +233,6 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
-            Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)

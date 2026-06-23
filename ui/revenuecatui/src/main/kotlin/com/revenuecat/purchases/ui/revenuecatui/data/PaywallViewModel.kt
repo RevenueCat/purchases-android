@@ -24,6 +24,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
@@ -1281,8 +1282,24 @@ internal class PaywallViewModelImpl(
         return null
     }
 
-    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean =
-        id == workflow.singleStepFallbackId
+    /**
+     * Whether this workflow step reports paywall events (`paywall_impression` / `paywall_close`),
+     * driven by the backend `screen_type` tag (khepri #21429):
+     * - tagged with `paywall` → reports;
+     * - tagged without `paywall` (including an empty list) → suppressed;
+     * - untagged (null `screen_type`, e.g. a pre-rollout/legacy payload) → falls back to the prior
+     *   structural inference `id == singleStepFallbackId`, so untagged workflows behave exactly as
+     *   before the `screen_type` rollout (only the fallback step reports) rather than over-reporting
+     *   on every step.
+     *
+     * Once the backend republishes a workflow it tags exactly the fallback step as `["paywall"]`, so
+     * tagged behavior is equivalent to the fallback while the explicit signal lets the backend classify
+     * steps independently of `single_step_fallback_id`.
+     */
+    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean {
+        val screenType = stepScreenType ?: return id == workflow.singleStepFallbackId
+        return screenType.contains(WorkflowScreenType.PAYWALL)
+    }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
         val preferredLocale = purchases.preferredUILocaleOverride ?: return LocaleListCompat.getDefault()
