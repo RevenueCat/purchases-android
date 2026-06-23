@@ -85,6 +85,21 @@ internal class WorkflowsCache(
         cachedWorkflows[workflowId]?.clearCacheTimestamp()
     }
 
+    /**
+     * Removes [workflowId]'s in-memory detail entry entirely (value and timestamp), unlike
+     * [invalidateWorkflowTimestamp] which keeps the value and only clears its freshness. Used on a
+     * detail 4xx (SHOULD_NOT_FALLBACK): the server has intentionally removed/changed this workflow,
+     * so the stale-while-revalidate path in
+     * [com.revenuecat.purchases.common.workflows.WorkflowManager.getWorkflow] must not keep vending
+     * the rejected value on every later render. Dropping the entry makes the next [cachedWorkflow] a
+     * miss, so the call blocks on a fresh fetch. The per-workflow analogue of
+     * [clearInMemoryWorkflowsList]. No-op when nothing is cached.
+     */
+    @Synchronized
+    fun removeCachedWorkflow(workflowId: String) {
+        cachedWorkflows.remove(workflowId)
+    }
+
     // endregion Workflow detail cache
 
     // region Workflows list cache

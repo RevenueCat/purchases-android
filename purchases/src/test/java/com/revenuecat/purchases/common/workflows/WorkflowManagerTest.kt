@@ -484,9 +484,79 @@ class WorkflowManagerTest {
         assertThat(receivedError).isEqualTo(expectedError)
         coVerify(exactly = 0) { mockResolver.resolve(any()) }
         verify(exactly = 0) { mockDeviceCache.getWorkflowDetailEnvelopesCache() }
-        // Invalidate the in-memory entry so the next call retries rather than serving a cached value,
-        // mirroring the list/offerings 4xx policy.
-        verify { workflowsCache.invalidateWorkflowTimestamp("wf_1") }
+        // Remove the in-memory entry so the next call retries rather than the SWR path serving a
+        // still-cached value, mirroring the list/offerings 4xx policy.
+        verify { workflowsCache.removeCachedWorkflow("wf_1") }
+    }
+
+    @Test
+    fun `getWorkflow stops SWR-serving a workflow after a 4xx background refresh`() {
+        val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
+        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        coEvery { mockResolver.resolve(response) } returns staleResult
+
+        // First backend call succeeds (populates the cache); the second 4xx's (background refresh);
+        // the third succeeds (the retry the next call must make instead of SWR-serving the rejected value).
+        val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
+        val errorSlot = slot<(PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit>()
+        var call = 0
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = capture(successSlot),
+                onError = capture(errorSlot),
+            )
+        } answers {
+            call++
+            if (call == 2) {
+                errorSlot.captured(
+                    PurchasesError(PurchasesErrorCode.UnknownBackendError, "not found"),
+                    GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
+                )
+            } else {
+                successSlot.captured(response)
+            }
+        }
+
+        // First call at t=0 populates the cache.
+        every { mockDateProvider.now } returns Date(0)
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowOrOfferingId = "wf_1",
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("unexpected error $it") },
+        )
+
+        // Stale-but-present: SWR serves the cached value immediately, then the background refresh 4xx's.
+        every { mockDateProvider.now } returns Date(6L * 60 * 1000)
+        var served: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowOrOfferingId = "wf_1",
+            appInBackground = false,
+            onSuccess = { served = it },
+            onError = { fail("unexpected error $it") },
+        )
+        assertThat(served).isSameAs(staleResult)
+
+        // The 4xx must have dropped the entry, so it is no longer served.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isNull()
+
+        // The next call is a cold miss that blocks on a fresh fetch rather than SWR-serving the
+        // rejected value again. It succeeds and re-populates the cache.
+        var reserved: WorkflowDataResult? = null
+        workflowManager.getWorkflow(
+            appUserID = "user_1",
+            workflowOrOfferingId = "wf_1",
+            appInBackground = false,
+            onSuccess = { reserved = it },
+            onError = { fail("unexpected error $it") },
+        )
+        assertThat(reserved).isSameAs(staleResult)
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(staleResult)
     }
 
     @Test

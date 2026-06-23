@@ -107,6 +107,25 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `removeCachedWorkflow drops the value entirely, not just its freshness`() {
+        workflowsCache.cacheWorkflow("wf_1", mockk())
+        workflowsCache.cacheWorkflow("wf_2", mockk())
+
+        workflowsCache.removeCachedWorkflow("wf_1")
+
+        // wf_1 is gone; wf_2 is untouched.
+        assertThat(workflowsCache.cachedWorkflow("wf_1")).isNull()
+        assertThat(workflowsCache.isWorkflowCacheStale("wf_1", appInBackground = false)).isTrue
+        assertThat(workflowsCache.cachedWorkflow("wf_2")).isNotNull
+    }
+
+    @Test
+    fun `removeCachedWorkflow is a no-op when nothing is cached`() {
+        workflowsCache.removeCachedWorkflow("wf_missing")
+        assertThat(workflowsCache.cachedWorkflow("wf_missing")).isNull()
+    }
+
+    @Test
     fun `clearCache removes all cached workflows`() {
         workflowsCache.cacheWorkflow("wf_1", mockk())
         workflowsCache.cacheWorkflow("wf_2", mockk())
