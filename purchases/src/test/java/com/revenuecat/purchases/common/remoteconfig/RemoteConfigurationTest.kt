@@ -17,12 +17,9 @@ class RemoteConfigurationTest {
               "domain": "app",
               "subdomains": ["app_workflows"],
               "app_uuid": "1a2b3c4d",
-              "manifest": {
-                "domain": "app",
-                "topics": { "sources": "Jc83RzcK1LqA", "product_entitlement_mapping": "9v1DnUu6rXbE" },
-                "prefetch_blobs": ["blobRefA", "blobRefB"],
-                "last_refresh_at": 1710000100
-              },
+              "manifest": "v1.1710000100.sources:Jc83RzcK1LqA,product_entitlement_mapping:9v1DnUu6rXbE",
+              "active_topics": ["sources", "product_entitlement_mapping"],
+              "prefetch_blobs": ["blobRefA", "blobRefB"],
               "topics": {
                 "product_entitlement_mapping": {
                   "default": { "blob_ref": "blobRefA", "prefetch": true }
@@ -39,13 +36,11 @@ class RemoteConfigurationTest {
         assertThat(response.appUuid).isEqualTo("1a2b3c4d")
         assertThat(response.stateHash).isEqualTo("x3R7YvQw2NfM")
 
-        assertThat(response.manifest.domain).isEqualTo("app")
-        assertThat(response.manifest.topics)
-            .containsEntry("sources", "Jc83RzcK1LqA")
-            .containsEntry("product_entitlement_mapping", "9v1DnUu6rXbE")
-        assertThat(response.manifest.prefetchBlobs).containsExactly("blobRefA", "blobRefB")
-        assertThat(response.manifest.prefetchedBlobs).isEmpty()
-        assertThat(response.manifest.lastRefreshAt).isEqualTo(1710000100L)
+        // The manifest is opaque: stored verbatim, never parsed.
+        assertThat(response.manifest)
+            .isEqualTo("v1.1710000100.sources:Jc83RzcK1LqA,product_entitlement_mapping:9v1DnUu6rXbE")
+        assertThat(response.activeTopics).containsExactly("sources", "product_entitlement_mapping")
+        assertThat(response.prefetchBlobs).containsExactly("blobRefA", "blobRefB")
 
         val item = response.topics.getValue("product_entitlement_mapping").getValue("default")
         assertThat(item.blobRef).isEqualTo("blobRefA")
@@ -58,10 +53,8 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": {
-                "domain": "app",
-                "topics": { "sources": "etag1", "product_entitlement_mapping": "etag2" }
-              },
+              "manifest": "v1.1710000200.sources:etag1,product_entitlement_mapping:etag2",
+              "active_topics": ["sources", "product_entitlement_mapping"],
               "topics": {
                 "sources": { "blob": { "blob_ref": "sourcesBlob" } }
               }
@@ -70,8 +63,8 @@ class RemoteConfigurationTest {
 
         val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
-        // manifest lists every topic; topics carries only the changed one.
-        assertThat(response.manifest.topics.keys)
+        // active_topics lists every topic; topics carries only the changed one.
+        assertThat(response.activeTopics)
             .containsExactlyInAnyOrder("sources", "product_entitlement_mapping")
         assertThat(response.topics.keys).containsExactly("sources")
         assertThat(response.topics.getValue("sources").getValue("blob").blobRef).isEqualTo("sourcesBlob")
@@ -83,11 +76,9 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": {
-                "domain": "app",
-                "topics": { "sources": "etag1" },
-                "prefetch_blobs": []
-              },
+              "manifest": "v1.1710000300.sources:etag1",
+              "active_topics": ["sources"],
+              "prefetch_blobs": [],
               "topics": {}
             }
         """
@@ -95,8 +86,8 @@ class RemoteConfigurationTest {
         val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
         assertThat(response.topics).isEmpty()
-        assertThat(response.manifest.topics).containsExactlyEntriesOf(mapOf("sources" to "etag1"))
-        assertThat(response.manifest.prefetchBlobs).isEmpty()
+        assertThat(response.activeTopics).containsExactly("sources")
+        assertThat(response.prefetchBlobs).isEmpty()
     }
 
     @Test
@@ -105,10 +96,8 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": {
-                "domain": "app",
-                "topics": { "future_topic": "etagF" }
-              },
+              "manifest": "v1.1710000400.future_topic:etagF",
+              "active_topics": ["future_topic"],
               "topics": {
                 "future_topic": { "default": { "blob_ref": "futureBlob" } }
               }
@@ -117,7 +106,7 @@ class RemoteConfigurationTest {
 
         val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
 
-        assertThat(response.manifest.topics).containsKey("future_topic")
+        assertThat(response.activeTopics).contains("future_topic")
         assertThat(response.topics).containsKey("future_topic")
         assertThat(response.topics.getValue("future_topic").getValue("default").blobRef)
             .isEqualTo("futureBlob")
@@ -129,7 +118,8 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": { "domain": "app", "topics": { "sources": "etag1" } },
+              "manifest": "v1.1710000500.sources:etag1",
+              "active_topics": ["sources"],
               "topics": {
                 "sources": {
                   "blob": { "blob_ref": "sourcesBlob", "prefetch": true, "future_field": "kept" }
@@ -156,7 +146,8 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": { "domain": "app", "topics": { "sources": "etag1" } },
+              "manifest": "v1.1710000600.sources:etag1",
+              "active_topics": ["sources"],
               "topics": {
                 "sources": {
                   "api": { "id": "primary", "url": "https://api.revenuecat.com", "priority": 100, "weight": 100 }
@@ -182,7 +173,7 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": { "domain": "app" }
+              "manifest": "v1.1710000700."
             }
         """
 
@@ -192,10 +183,8 @@ class RemoteConfigurationTest {
         assertThat(response.appUuid).isNull()
         assertThat(response.stateHash).isNull()
         assertThat(response.topics).isEmpty()
-        assertThat(response.manifest.topics).isEmpty()
-        assertThat(response.manifest.prefetchBlobs).isEmpty()
-        assertThat(response.manifest.prefetchedBlobs).isEmpty()
-        assertThat(response.manifest.lastRefreshAt).isEqualTo(0L)
+        assertThat(response.activeTopics).isEmpty()
+        assertThat(response.prefetchBlobs).isEmpty()
     }
 
     @Test
@@ -204,7 +193,8 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": { "domain": "app", "topics": { "sources": "etag1" } },
+              "manifest": "v1.1710000800.sources:etag1",
+              "active_topics": ["sources"],
               "topics": { "sources": { "api": {} } }
             }
         """
@@ -221,7 +211,7 @@ class RemoteConfigurationTest {
         // language=json
         val payload = """
             {
-              "manifest": { "domain": "app", "topics": { "sources": "etag1" } }
+              "manifest": "v1.1710000900.sources:etag1"
             }
         """
 
@@ -248,7 +238,7 @@ class RemoteConfigurationTest {
         val payload = """
             {
               "domain": "app",
-              "manifest": { "domain": "app",
+              "manifest": "v1.123
         """
 
         assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
@@ -257,12 +247,12 @@ class RemoteConfigurationTest {
 
     @Test
     fun `fails to parse when a field has the wrong type`() {
-        // manifest must be an object, not a string.
+        // manifest must be a string, not an object.
         // language=json
         val payload = """
             {
               "domain": "app",
-              "manifest": "not-an-object"
+              "manifest": { "topics": {} }
             }
         """
 
