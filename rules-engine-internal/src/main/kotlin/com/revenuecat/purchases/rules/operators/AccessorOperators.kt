@@ -16,8 +16,10 @@ internal object AccessorOperators {
     /**
      * `{"var": "subscriber.last_seen_country"}` — look up a (possibly
      * nested) value by dot-path. `{"var": ["path", default]}` returns
-     * `default` when the path is missing. `{"var": ""}` returns the entire
-     * data scope.
+     * `default` when the path is missing; an `undefined` default is
+     * coerced to [Value.Null], mirroring `json-logic-js`'s
+     * `not_found = (b === undefined) ? null : b`. `{"var": ""}` returns
+     * the entire data scope.
      *
      * Per the JSON Logic spec, the path argument is recursively evaluated
      * before lookup, so callers can compute paths dynamically — e.g.
@@ -34,7 +36,8 @@ internal object AccessorOperators {
         val (path, default) = resolveVarArgs(args, vars)
         val found = lookupVar(vars, path)
         if (found != null) return found
-        if (default != null) return default
+        // json-logic-js coerces an `undefined` default to `null`.
+        if (default != null) return if (default is Value.Undefined) Value.Null else default
         RulesEngine.logger.warn("missing variable: $path")
         return Value.Null
     }

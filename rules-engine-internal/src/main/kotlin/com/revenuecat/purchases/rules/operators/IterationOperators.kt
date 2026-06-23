@@ -99,13 +99,17 @@ internal object IterationOperators {
      * scope to seed the accumulator, then the predicate is evaluated
      * once per item with `vars` rebound to
      * `{"current": item, "accumulator": acc}`. A non-array source
-     * returns the seed unchanged. A missing initial accumulator
-     * defaults to [Value.Null] and arguments past the third are ignored.
+     * returns the seed unchanged. A missing predicate defaults to
+     * [Value.Undefined] (so it evaluates to [Value.Undefined] per item,
+     * matching `json-logic-js`'s `apply(undefined, …)`). A missing
+     * initial accumulator defaults to [Value.Null] — `json-logic-js`
+     * seeds the fold with `typeof values[2] !== "undefined" ? values[2]
+     * : null`. Arguments past the third are ignored.
      */
     fun opReduce(args: Value, vars: Value): Value {
         val raw = Operators.argsAsList(args)
         val sourceArg = raw.getOrNull(0) ?: Value.Null
-        val predicate = raw.getOrNull(1) ?: Value.Null
+        val predicate = raw.getOrNull(1) ?: Value.Undefined
         val source = Evaluator.evaluateValue(sourceArg, vars)
         var accumulator = raw.getOrNull(2)?.let { Evaluator.evaluateValue(it, vars) } ?: Value.Null
         val items = (source as? Value.ArrayValue)?.items ?: return accumulator
@@ -124,8 +128,10 @@ internal object IterationOperators {
      * resolve to an array, so callers can distinguish a non-array source
      * from a genuinely empty one (`some`/`all` treat both as `false`, but
      * `none`/`map`/`filter`/`reduce` need the distinction). A missing
-     * predicate defaults to [Value.Null] and arguments past the second
-     * are ignored, matching `json-logic-js`'s
+     * predicate defaults to [Value.Undefined] (so it evaluates to
+     * [Value.Undefined] per item, matching `json-logic-js`'s
+     * `apply(undefined, …)`; observable via `map`'s raw results) and
+     * arguments past the second are ignored, matching `json-logic-js`'s
      * `function(scopedData, scopedLogic)` signature.
      */
     private fun parseIterationArgs(
@@ -134,7 +140,7 @@ internal object IterationOperators {
     ): Pair<List<Value>?, Value> {
         val raw = Operators.argsAsList(args)
         val sourceArg = raw.getOrNull(0) ?: Value.Null
-        val predicate = raw.getOrNull(1) ?: Value.Null
+        val predicate = raw.getOrNull(1) ?: Value.Undefined
         val source = Evaluator.evaluateValue(sourceArg, vars)
         val items = (source as? Value.ArrayValue)?.items
         return items to predicate

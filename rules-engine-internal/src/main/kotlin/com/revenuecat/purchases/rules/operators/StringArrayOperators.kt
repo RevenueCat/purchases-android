@@ -76,11 +76,13 @@ internal object StringArrayOperators {
      * at `start`. Code-point-based, not char-based — see type docs.
      * `json-logic-js` declares `substr` as
      * `function(source, start, end)`, so a missing `start` defaults to
-     * `0` and arguments past the third are silently ignored.
+     * `0` and arguments past the third are silently ignored. A missing
+     * `source` is `undefined`, which stringifies to `"undefined"` (not
+     * `"null"`).
      */
     fun opSubstr(args: Value, vars: Value): Value {
         val evaluated = Operators.evalArgs(args, vars)
-        val source = evaluated.firstOrNull() ?: Value.Null
+        val source = evaluated.firstOrNull() ?: Value.Undefined
         val start = if (evaluated.size >= BINARY_OPERAND_COUNT) {
             evaluated[START_OPERAND_INDEX]
         } else {
