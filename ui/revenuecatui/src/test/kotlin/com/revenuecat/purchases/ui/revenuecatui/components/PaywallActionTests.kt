@@ -32,6 +32,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -271,6 +272,50 @@ class PaywallActionTests {
             availablePackages = listOf(TestData.Packages.monthly),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
         )
+
+    @Test
+    fun `LaunchWebCheckout with autoDismiss closes paywall with WebCheckoutOpened result`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                webCheckoutUrl = "https://checkout.example.com",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: listener notified and paywall closed with WebCheckoutOpened, not Cancelled
+            assertEquals(1, viewModel.notifyWebCheckoutOpenedCallCount)
+            assertEquals(1, viewModel.closePaywallCallCount)
+            assertEquals(PaywallResult.WebCheckoutOpened, viewModel.closePaywallResults.first())
+        }
 
     @Suppress("TestFunctionName")
     private fun FakeOffering(

@@ -39,4 +39,10 @@ public interface PaywallListener {
     public fun onRestoreStarted() {}
     public fun onRestoreCompleted(customerInfo: CustomerInfo) {}
     public fun onRestoreError(error: PurchasesError) {}
+
+    /**
+     * Called when the user tapped a web checkout CTA and the external payment URL was opened.
+     * This is distinct from cancellation — the user may still complete the purchase externally.
+     */
+    public fun onWebCheckoutOpened() {}
 }
