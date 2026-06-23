@@ -20,9 +20,13 @@ import kotlinx.serialization.json.jsonObject
  * element) of the binary [com.revenuecat.purchases.common.networking.RCContainer], and is also the plain
  * JSON fallback body when the SDK does not request the binary format.
  *
- * The [topics] map carries **only changed topic bodies** — a topic whose client-sent etag still matches is
- * omitted, and the client keeps its locally cached topic data. [manifest] lists **every** active topic and
- * its current etag (including unchanged ones), so it is the source of truth for which topics exist.
+ * The [topics] map carries **only changed topic bodies** — a topic whose etag still matches is omitted, and
+ * the client keeps its locally cached topic data. [activeTopics] lists **every** active topic name (including
+ * unchanged ones), so it is the source of truth for which topics exist and which were removed.
+ *
+ * [manifest] is an **opaque** token: the SDK stores it verbatim and replays it on the next request so the
+ * server can diff against the exact state it issued. The SDK never parses it (the per-topic etags it encodes
+ * are server-private).
  *
  * Parsing uses the shared [JsonProvider.defaultJson], which ignores unknown keys so unknown topics and
  * unknown item metadata keys survive, keeping the SDK forward-compatible with topics it does not yet handle.
@@ -33,28 +37,16 @@ internal data class RemoteConfiguration(
     /** Other domains the SDK should also sync to assemble the full configuration. */
     val subdomains: List<String> = emptyList(),
     @SerialName("app_uuid") val appUuid: String? = null,
-    val manifest: Manifest,
+    /** Opaque server token; stored verbatim and replayed as the request `manifest`. Never parsed. */
+    val manifest: String,
+    /** The full set of active topic names, including unchanged ones. Source of truth for topic existence. */
+    @SerialName("active_topics") val activeTopics: List<String> = emptyList(),
+    /** Blob refs the server believes the SDK should have prefetched for the resolved configuration. */
+    @SerialName("prefetch_blobs") val prefetchBlobs: List<String> = emptyList(),
     /** Changed topic bodies only: TopicName -> (ItemName -> [ConfigItem]). */
     val topics: Map<String, ConfigTopic> = emptyMap(),
     @SerialName("state_hash") val stateHash: String? = null,
 ) {
-    /**
-     * A configuration manifest. The SDK persists the server-sent manifest and replays it as the request
-     * `manifest` on each subsequent call so the server can return only what changed.
-     */
-    @Serializable
-    internal data class Manifest(
-        val domain: String,
-        /** Topic name -> compact topic etag. Lists every active topic, including unchanged ones. */
-        val topics: Map<String, String> = emptyMap(),
-        /** Blob refs the server believes the SDK should have prefetched. */
-        @SerialName("prefetch_blobs") val prefetchBlobs: List<String> = emptyList(),
-        /** Blob refs the SDK has actually cached locally. Sent on the request; absent from server responses. */
-        @SerialName("prefetched_blobs") val prefetchedBlobs: List<String> = emptyList(),
-        /** Timestamp from the previous server manifest. Used only for refresh cadence. */
-        @SerialName("last_refresh_at") val lastRefreshAt: Long = 0,
-    )
-
     /**
      * A single item within a topic. An item is arbitrary, topic-specific JSON; [blobRef] and [prefetch] are
      * the only reserved conventions the SDK interprets, and every other key is preserved verbatim in
