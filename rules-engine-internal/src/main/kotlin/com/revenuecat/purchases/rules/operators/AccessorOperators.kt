@@ -100,8 +100,10 @@ internal object AccessorOperators {
         // `options`:
         //   - array  → its elements are the keys; length = element count
         //   - string → the *whole string* is a single key; length = its
-        //              character count (so a long string can satisfy a
-        //              larger threshold while only ever contributing one key)
+        //              UTF-16 code-unit count (Kotlin `String.length`, which
+        //              matches JS `String.length`), so a long string can
+        //              satisfy a larger threshold while only ever
+        //              contributing one key
         //   - null   → no keys; `length` is `undefined`, which makes the
         //              threshold comparison NaN-based (always false), so the
         //              missing list is returned unconditionally
@@ -185,11 +187,13 @@ internal object AccessorOperators {
     /**
      * Coerce the evaluated path argument to a string per
      * `json-logic-js`'s `String(a).split(".")`. `null`, [Value.Null],
-     * and `""` are treated as the empty path, which signals the caller
-     * to return the entire data scope.
+     * [Value.Undefined], and `""` are treated as the empty path, which
+     * signals the caller to return the entire data scope — matching
+     * json-logic-js's `typeof a === "undefined" || a === "" || a === null`
+     * guard.
      */
     private fun pathSegment(value: Value?): String = when (value) {
-        null, Value.Null -> ""
+        null, Value.Null, Value.Undefined -> ""
         else -> jsString(value)
     }
 
