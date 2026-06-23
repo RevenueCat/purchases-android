@@ -197,8 +197,13 @@ internal object AccessorOperators {
         else -> jsString(value)
     }
 
+    /**
+     * `missing` routes each key through `var`, where [Value.Null] and
+     * [Value.Undefined] resolve to the full scope (so they are never
+     * "missing"). Returning `null` here skips them, matching json-logic-js.
+     */
     private fun keyAsPath(value: Value): String? {
-        if (value is Value.Null) return null
+        if (value is Value.Null || value is Value.Undefined) return null
         return jsString(value)
     }
 
