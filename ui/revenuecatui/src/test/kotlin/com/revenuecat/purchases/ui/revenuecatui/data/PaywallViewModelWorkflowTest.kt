@@ -1339,6 +1339,7 @@ class PaywallViewModelWorkflowTest {
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
         )
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         advanceUntilIdle()
@@ -1366,6 +1367,7 @@ class PaywallViewModelWorkflowTest {
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = { false },
+            backgroundDispatcher = testDispatcher,
         )
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         advanceUntilIdle()
