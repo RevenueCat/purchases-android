@@ -37,7 +37,8 @@ internal object AccessorOperators {
         val found = lookupVar(vars, path)
         if (found != null) return found
         // json-logic-js coerces an `undefined` default to `null`.
-        if (default != null) return if (default is Value.Undefined) Value.Null else default
+        if (default is Value.Undefined) return Value.Null
+        if (default != null) return default
         RulesEngine.logger.warn("missing variable: $path")
         return Value.Null
     }
