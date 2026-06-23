@@ -97,17 +97,18 @@ internal object Operators {
 
     /**
      * Evaluate args and return the first two operands. Missing operands
-     * default to [Value.Null] (standing in for JS `undefined`) and extras
-     * are silently discarded — matches `json-logic-js`'s `function(a, b)`
-     * operator signatures.
+     * default to [Value.Undefined] (JS omitted-argument semantics:
+     * `function(a, b)` sees `undefined` for absent args, so e.g.
+     * `{"===": [{"and": []}]}` is `undefined === undefined`) and extras
+     * are silently discarded.
      */
     fun evalTwo(
         args: Value,
         vars: Value,
     ): Pair<Value, Value> {
         val evaluated = evalArgs(args, vars)
-        val lhs = evaluated.firstOrNull() ?: Value.Null
-        val rhs = if (evaluated.size >= 2) evaluated[1] else Value.Null
+        val lhs = evaluated.firstOrNull() ?: Value.Undefined
+        val rhs = if (evaluated.size >= 2) evaluated[1] else Value.Undefined
         return lhs to rhs
     }
 
