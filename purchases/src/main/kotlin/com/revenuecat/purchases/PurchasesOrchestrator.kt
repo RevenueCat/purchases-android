@@ -601,7 +601,7 @@ internal class PurchasesOrchestrator(
         }
         workflowManager.getWorkflow(
             appUserID = identityManager.currentAppUserID,
-            workflowId = workflowId,
+            workflowOrOfferingId = workflowId,
             appInBackground = state.appInBackground,
             onSuccess = { dispatch { onSuccess(it) } },
             onError = { dispatch { onError(it) } },

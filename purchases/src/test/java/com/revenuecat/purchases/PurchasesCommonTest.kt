@@ -2830,7 +2830,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         every {
             mockWorkflowManager.getWorkflow(
                 appUserID = appUserId,
-                workflowId = "wf_1",
+                workflowOrOfferingId = "wf_1",
                 appInBackground = any(),
                 onSuccess = capture(successSlot),
                 onError = any(),
@@ -2858,7 +2858,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         every {
             mockWorkflowManager.getWorkflow(
                 appUserID = appUserId,
-                workflowId = "wf_1",
+                workflowOrOfferingId = "wf_1",
                 appInBackground = any(),
                 onSuccess = any(),
                 onError = capture(errorSlot),

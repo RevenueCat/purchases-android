@@ -142,6 +142,33 @@ class WorkflowsCacheTest {
     }
 
     @Test
+    fun `recordWorkflowIdForOfferingId adds a mapping without dropping existing ones`() {
+        workflowsCache.cacheWorkflowsList(
+            WorkflowsListResponse(workflows = emptyList()),
+            mapOf("default" to "wf_1"),
+        )
+
+        workflowsCache.recordWorkflowIdForOfferingId(offeringId = "premium", workflowId = "wf_2")
+
+        assertThat(workflowsCache.workflowIdForOfferingId("premium")).isEqualTo("wf_2")
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+    }
+
+    @Test
+    fun `cacheWorkflowsList replaces a previously recorded mapping not present in the new list`() {
+        workflowsCache.recordWorkflowIdForOfferingId(offeringId = "premium", workflowId = "wf_2")
+
+        // A fresh list fetch replaces the whole map; a discovered entry absent from it is dropped.
+        workflowsCache.cacheWorkflowsList(
+            WorkflowsListResponse(workflows = emptyList()),
+            mapOf("default" to "wf_1"),
+        )
+
+        assertThat(workflowsCache.workflowIdForOfferingId("premium")).isNull()
+        assertThat(workflowsCache.workflowIdForOfferingId("default")).isEqualTo("wf_1")
+    }
+
+    @Test
     fun `clearCache resets workflows list staleness and offeringId map`() {
         workflowsCache.cacheWorkflowsList(
             WorkflowsListResponse(workflows = emptyList()),
