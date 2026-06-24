@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter.data
 
 import android.net.Uri
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -11,6 +12,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.TransactionDetails
 import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
+import java.util.Date
 import java.util.Locale
 
 @Suppress("LongParameterList")
@@ -41,6 +43,19 @@ internal data class PurchaseInformation(
      * This is true for promotional lifetime purchases or non-subscription purchases attached to an entitlement.
      */
     val isLifetime: Boolean,
+    val purchaseDate: Date? = null,
+    val originalPurchaseDate: Date? = null,
+    val unsubscribeDetectedAt: Date? = null,
+    val billingIssuesDetectedAt: Date? = null,
+    val gracePeriodExpiresDate: Date? = null,
+    val periodType: PeriodType = PeriodType.NORMAL,
+    val refundedAt: Date? = null,
+    val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+    val isSandbox: Boolean = false,
+    val productIdentifier: String = "",
+    val storeTransactionId: String? = null,
+    // Stable source identifier used to re-resolve purchase history details after customer info refreshes.
+    val purchaseHistoryEntryId: String = "",
 ) {
 
     constructor(
@@ -66,6 +81,29 @@ internal data class PurchaseInformation(
         isTrial = determineTrialStatus(entitlementInfo, transaction),
         isCancelled = determineCancellationStatus(entitlementInfo, transaction),
         isLifetime = determineLifetimeStatus(entitlementInfo, transaction),
+        purchaseDate = when (transaction) {
+            is TransactionDetails.Subscription -> transaction.purchaseDate
+            is TransactionDetails.NonSubscription -> transaction.purchaseDate
+        },
+        originalPurchaseDate = when (transaction) {
+            is TransactionDetails.Subscription -> transaction.originalPurchaseDate
+            is TransactionDetails.NonSubscription -> transaction.originalPurchaseDate
+        },
+        unsubscribeDetectedAt = (transaction as? TransactionDetails.Subscription)?.unsubscribeDetectedAt,
+        billingIssuesDetectedAt = (transaction as? TransactionDetails.Subscription)?.billingIssuesDetectedAt,
+        gracePeriodExpiresDate = (transaction as? TransactionDetails.Subscription)?.gracePeriodExpiresDate,
+        periodType = (transaction as? TransactionDetails.Subscription)?.periodType ?: PeriodType.NORMAL,
+        refundedAt = (transaction as? TransactionDetails.Subscription)?.refundedAt,
+        ownershipType = entitlementInfo?.ownershipType
+            ?: (transaction as? TransactionDetails.Subscription)?.ownershipType
+            ?: OwnershipType.UNKNOWN,
+        isSandbox = transaction.isSandbox,
+        productIdentifier = transaction.productIdentifier,
+        storeTransactionId = when (transaction) {
+            is TransactionDetails.Subscription -> transaction.storeTransactionId
+            is TransactionDetails.NonSubscription -> transaction.storeTransactionId
+        },
+        purchaseHistoryEntryId = transaction.purchaseHistoryEntryId,
     )
 
     fun renewalString(
