@@ -11,6 +11,7 @@ import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.rewardverification.Poller
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
@@ -48,8 +49,10 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import org.json.JSONObject
 import java.net.URL
 import java.util.Locale
+import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -766,7 +769,19 @@ public class Purchases internal constructor(
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
-        return purchasesOrchestrator.generateRewardVerificationToken(impressionId)
+        val clientTransactionId = UUID.randomUUID().toString()
+        // Keys inserted in sorted order so the serialized customData is deterministic and matches the
+        // other SDKs byte-for-byte. The backend parses by key, so order is not semantically significant.
+        val customData = JSONObject()
+            .put("api_key", purchasesOrchestrator.currentConfiguration.apiKey)
+            .put("client_transaction_id", clientTransactionId)
+            .put("impression_id", impressionId)
+            .toString()
+        return RewardVerificationToken(
+            customData = customData,
+            clientTransactionId = clientTransactionId,
+            appUserID = purchasesOrchestrator.appUserID,
+        )
     }
 
     /**

@@ -105,12 +105,10 @@ import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import org.json.JSONObject
 import java.net.URL
 import java.util.Collections
 import java.util.Date
 import java.util.Locale
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -942,23 +940,6 @@ internal class PurchasesOrchestrator(
             description,
             onSuccessHandler = onSuccess,
             onErrorHandler = onError,
-        )
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
-        val clientTransactionId = UUID.randomUUID().toString()
-        // Keys inserted in sorted order so the serialized customData is deterministic and matches the
-        // other SDKs byte-for-byte. The backend parses by key, so order is not semantically significant.
-        val customData = JSONObject()
-            .put("api_key", currentConfiguration.apiKey)
-            .put("client_transaction_id", clientTransactionId)
-            .put("impression_id", impressionId)
-            .toString()
-        return RewardVerificationToken(
-            customData = customData,
-            clientTransactionId = clientTransactionId,
-            appUserID = appUserID,
         )
     }
 

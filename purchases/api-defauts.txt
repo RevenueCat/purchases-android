@@ -381,7 +381,7 @@ package com.revenuecat.purchases {
     method public void close();
     method public void collectDeviceIdentifiers();
     method public static com.revenuecat.purchases.Purchases configure(com.revenuecat.purchases.PurchasesConfiguration configuration);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public com.revenuecat.purchases.RewardVerificationToken generateRewardVerificationToken(String impressionId);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken generateRewardVerificationToken(String impressionId);
     method @Deprecated @kotlin.jvm.Synchronized public boolean getAllowSharingPlayStoreAccount();
     method public void getAmazonLWAConsentStatus(com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback callback);
     method @kotlin.jvm.Synchronized public String getAppUserID();
@@ -670,20 +670,6 @@ package com.revenuecat.purchases {
     property public abstract String name;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class RewardVerificationToken {
-    ctor public RewardVerificationToken(String customData, String clientTransactionId, String appUserID);
-    method public String component1();
-    method public String component2();
-    method public String component3();
-    method public com.revenuecat.purchases.RewardVerificationToken copy(String customData, String clientTransactionId, String appUserID);
-    method public String getAppUserID();
-    method public String getClientTransactionId();
-    method public String getCustomData();
-    property public final String appUserID;
-    property public final String clientTransactionId;
-    property public final String customData;
-  }
-
   @kotlinx.serialization.Serializable(with=StoreSerializer::class) public enum Store {
     enum_constant public static final com.revenuecat.purchases.Store AMAZON;
     enum_constant public static final com.revenuecat.purchases.Store APP_STORE;
@@ -921,6 +907,16 @@ package com.revenuecat.purchases.ads.rewardverification {
   }
 
   public static final class RewardVerificationResult.Companion {
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class RewardVerificationToken {
+    ctor public RewardVerificationToken(String customData, String clientTransactionId, String appUserID);
+    method public String getAppUserID();
+    method public String getClientTransactionId();
+    method public String getCustomData();
+    property public final String appUserID;
+    property public final String clientTransactionId;
+    property public final String customData;
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public interface VerifiedReward {
