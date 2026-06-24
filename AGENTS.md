@@ -116,6 +116,11 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 ## Code Style
 
 - **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
+- **No public enums in SDK API surface**: Public `enum class` breaks binary compatibility when new entries are added (exhaustive `when` in consumer code). Use `abstract class` + `internal constructor` + `@JvmField` companion constants (see `StoreReplacementMode` pattern). Enforced by detekt `ForbiddenPublicEnum` rule.
+- **Prefer `val` over no-arg `fun` for state queries**: If a function takes no arguments and only reads existing state without side effects, declare it as a `val` with a custom getter instead of a `fun`.
+- **New `Endpoint` subclasses require `EndpointTest` updates**: Every new `Endpoint` must be added to the `allEndpoints` list, have a "has correct path" test, and be added to the false-side lists for `supportsSignatureVerification` and `needsNonceToPerformSigning`.
+- **Remove stale `@Suppress` and `@OptIn` annotations**: When the underlying reason for a suppression or opt-in no longer applies (e.g., a parameter is now used, or an API is no longer experimental), remove the annotation immediately.
+- **`encodeDefaults = false` awareness**: When adding fields to `@Serializable` classes used with `JsonProvider.defaultJson`, never assign default values to fields that must appear in the wire format. Default-valued fields are silently omitted.
 
 ## Testing Framework
 
