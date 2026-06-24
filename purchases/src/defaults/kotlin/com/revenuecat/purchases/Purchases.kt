@@ -764,7 +764,7 @@ public class Purchases internal constructor(
      *
      * @param impressionId The ad network's impression identifier for the loaded ad.
      */
-    @InternalRevenueCatAPI
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
         return purchasesOrchestrator.generateRewardVerificationToken(impressionId)
     }

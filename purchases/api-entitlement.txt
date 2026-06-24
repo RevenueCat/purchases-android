@@ -558,6 +558,20 @@ package com.revenuecat.purchases {
     property public abstract String name;
   }
 
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class RewardVerificationToken {
+    ctor public RewardVerificationToken(String customData, String clientTransactionId, String appUserID);
+    method public String component1();
+    method public String component2();
+    method public String component3();
+    method public com.revenuecat.purchases.RewardVerificationToken copy(String customData, String clientTransactionId, String appUserID);
+    method public String getAppUserID();
+    method public String getClientTransactionId();
+    method public String getCustomData();
+    property public final String appUserID;
+    property public final String clientTransactionId;
+    property public final String customData;
+  }
+
   @kotlinx.serialization.Serializable(with=StoreSerializer::class) public enum Store {
     enum_constant public static final com.revenuecat.purchases.Store AMAZON;
     enum_constant public static final com.revenuecat.purchases.Store APP_STORE;
