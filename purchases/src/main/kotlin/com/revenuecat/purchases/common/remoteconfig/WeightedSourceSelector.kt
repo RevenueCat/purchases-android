@@ -2,8 +2,16 @@ package com.revenuecat.purchases.common.remoteconfig
 
 import kotlin.random.Random
 
+/**
+ * A source the SDK can fetch a resource from, carrying the metadata used to choose between
+ * alternatives.
+ */
 internal interface WeightedSource {
+
+    /** Higher values are preferred. A tier is exhausted before a lower one is considered. */
     val priority: Int
+
+    /** Relative likelihood of being chosen among sources tied at the same [priority]. */
     val weight: Int
 }
 
