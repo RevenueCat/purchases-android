@@ -1,1 +1,3 @@
-https://github.com/RevenueCat/purchases-android/pull/3505   
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
