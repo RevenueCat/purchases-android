@@ -1,3 +1,6 @@
+## 10.6.2
+https://github.com/RevenueCat/purchases-android/pull/3505   
+
 ## 10.6.1
 ## RevenueCat SDK
 ### 🐞 Bugfixes
