@@ -15,5 +15,6 @@ public enum class FitMode {
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object FitModeDeserializer : EnumDeserializerWithDefault<FitMode>(
+    serialName = "com.revenuecat.purchases.paywalls.components.properties.FitMode",
     defaultValue = FitMode.FIT,
 )

@@ -295,14 +295,17 @@ private enum class DestinationSurrogate {
 private class UrlSurrogate(val url_lid: LocalizationKey, val method: UrlMethod)
 
 private object ActionTypeSurrogateDeserializer : EnumDeserializerWithDefault<ActionTypeSurrogate> (
+    serialName = "com.revenuecat.purchases.paywalls.components.ActionTypeSurrogate",
     defaultValue = ActionTypeSurrogate.unknown,
 )
 
 private object DestinationSurrogateDeserializer : EnumDeserializerWithDefault<DestinationSurrogate> (
+    serialName = "com.revenuecat.purchases.paywalls.components.DestinationSurrogate",
     defaultValue = DestinationSurrogate.unknown,
 )
 
 @OptIn(InternalRevenueCatAPI::class)
 private object UrlMethodDeserializer : EnumDeserializerWithDefault<UrlMethod> (
+    serialName = "com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod",
     defaultValue = UrlMethod.UNKNOWN,
 )

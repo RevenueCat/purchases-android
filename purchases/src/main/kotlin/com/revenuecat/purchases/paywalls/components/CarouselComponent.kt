@@ -195,11 +195,14 @@ public class PartialCarouselComponent(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object CarouselPageControlPositionDeserializer : EnumDeserializerWithDefault<PageControl.Position>(
+    serialName = "com.revenuecat.purchases.paywalls.components.CarouselComponent.PageControl.Position",
     defaultValue = PageControl.Position.BOTTOM,
 )
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object CarouselTransitionTypeDeserializer :
     EnumDeserializerWithDefault<CarouselComponent.AutoAdvancePages.TransitionType>(
+        serialName = "com.revenuecat.purchases.paywalls.components." +
+            "CarouselComponent.AutoAdvancePages.TransitionType",
         defaultValue = CarouselComponent.AutoAdvancePages.TransitionType.SLIDE,
     )
