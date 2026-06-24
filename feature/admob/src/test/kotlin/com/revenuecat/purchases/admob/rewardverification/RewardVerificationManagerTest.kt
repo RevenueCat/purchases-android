@@ -14,10 +14,10 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesServiceDispatcher
-import com.revenuecat.purchases.RewardVerificationToken
 import com.revenuecat.purchases.admob.enableRewardVerification
 import com.revenuecat.purchases.admob.show as showWithRewardVerification
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import io.mockk.coEvery
 import io.mockk.every
