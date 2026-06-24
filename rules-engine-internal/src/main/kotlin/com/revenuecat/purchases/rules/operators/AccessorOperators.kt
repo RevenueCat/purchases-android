@@ -16,8 +16,10 @@ internal object AccessorOperators {
     /**
      * `{"var": "subscriber.last_seen_country"}` — look up a (possibly
      * nested) value by dot-path. `{"var": ["path", default]}` returns
-     * `default` when the path is missing. `{"var": ""}` returns the entire
-     * data scope.
+     * `default` when the path is missing; an `undefined` default is
+     * coerced to [Value.Null], mirroring `json-logic-js`'s
+     * `not_found = (b === undefined) ? null : b`. `{"var": ""}` returns
+     * the entire data scope.
      *
      * Per the JSON Logic spec, the path argument is recursively evaluated
      * before lookup, so callers can compute paths dynamically — e.g.
@@ -34,6 +36,8 @@ internal object AccessorOperators {
         val (path, default) = resolveVarArgs(args, vars)
         val found = lookupVar(vars, path)
         if (found != null) return found
+        // json-logic-js coerces an `undefined` default to `null`.
+        if (default is Value.Undefined) return Value.Null
         if (default != null) return default
         RulesEngine.logger.warn("missing variable: $path")
         return Value.Null
@@ -93,23 +97,50 @@ internal object AccessorOperators {
             )
         }
         val needCountValue = evaluated[0]
-        val options = evaluated[1] as? Value.ArrayValue
-            ?: throw EvaluationException.TypeMismatch(
-                "operator 'missing_some': second argument must be an array of paths, " +
-                    "got ${evaluated[1]}",
-            )
 
-        val total = options.items.size.toLong()
+        // json-logic-js computes `missing.apply(this, [options])` for the
+        // keys, then reads `options.length` for the threshold. So the key
+        // set and the threshold count come from *different* views of
+        // `options`:
+        //   - array  → its elements are the keys; length = element count
+        //   - string → the *whole string* is a single key; length = its
+        //              UTF-16 code-unit count (Kotlin `String.length`, which
+        //              matches JS `String.length`), so a long string can
+        //              satisfy a larger threshold while only ever
+        //              contributing one key
+        //   - null   → no keys; `length` is `undefined`, which makes the
+        //              threshold comparison NaN-based (always false), so the
+        //              missing list is returned unconditionally
+        //   - other  → `Function.prototype.apply` throws a `TypeError`
+        val keys: List<Value>
+        val total: Long?
+        when (val options = evaluated[1]) {
+            is Value.ArrayValue -> {
+                keys = options.items
+                total = options.items.size.toLong()
+            }
+            is Value.StringValue -> {
+                keys = listOf(Value.StringValue(options.value))
+                total = options.value.length.toLong()
+            }
+            Value.Null, Value.Undefined -> {
+                keys = emptyList()
+                total = null
+            }
+            else -> throw EvaluationException.TypeMismatch(
+                "operator 'missing_some': second argument must be array-like, got $options",
+            )
+        }
 
         // Threshold uses JS `ToNumber` + `>=`. `NaN` and unparseable
         // strings never satisfy; `+Infinity` never satisfies for finite
         // present counts; `-Infinity` always satisfies.
         val need = jsToNumber(needCountValue)
 
-        val missing = opMissing(options, vars)
+        val missing = opMissing(Value.ArrayValue(keys), vars)
         val missingCount = (missing as? Value.ArrayValue)?.items?.size?.toLong() ?: 0L
 
-        return if ((total - missingCount).toDouble() >= need) {
+        return if (total != null && (total - missingCount).toDouble() >= need) {
             Value.ArrayValue(emptyList())
         } else {
             missing
@@ -160,16 +191,23 @@ internal object AccessorOperators {
     /**
      * Coerce the evaluated path argument to a string per
      * `json-logic-js`'s `String(a).split(".")`. `null`, [Value.Null],
-     * and `""` are treated as the empty path, which signals the caller
-     * to return the entire data scope.
+     * [Value.Undefined], and `""` are treated as the empty path, which
+     * signals the caller to return the entire data scope — matching
+     * json-logic-js's `typeof a === "undefined" || a === "" || a === null`
+     * guard.
      */
     private fun pathSegment(value: Value?): String = when (value) {
-        null, Value.Null -> ""
+        null, Value.Null, Value.Undefined -> ""
         else -> jsString(value)
     }
 
+    /**
+     * `missing` routes each key through `var`, where [Value.Null] and
+     * [Value.Undefined] resolve to the full scope (so they are never
+     * "missing"). Returning `null` here skips them, matching json-logic-js.
+     */
     private fun keyAsPath(value: Value): String? {
-        if (value is Value.Null) return null
+        if (value is Value.Null || value is Value.Undefined) return null
         return jsString(value)
     }
 

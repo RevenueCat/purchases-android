@@ -11,6 +11,12 @@ public sealed class Value {
     /** JSON `null`. */
     public object Null : Value()
 
+    /**
+     * JS `undefined`. Not expressible in JSON. Only produced internally by
+     * operators (e.g. `{"and": []}`, `{"or": []}`, `{"log": []}`).
+     */
+    public object Undefined : Value()
+
     /** A JSON boolean. */
     public data class BoolValue(val value: Boolean) : Value()
 
@@ -37,7 +43,7 @@ public sealed class Value {
      */
     internal val isTruthy: Boolean
         get() = when (this) {
-            Null -> false
+            Null, Undefined -> false
             is BoolValue -> value
             is IntValue -> value != 0L
             is FloatValue -> value != 0.0 && !value.isNaN()
@@ -63,6 +69,10 @@ public sealed class Value {
      */
     internal fun toNumberOrNull(): Double? = when (this) {
         Null -> 0.0
+        // JS `Number(undefined)` is `NaN`; returning `null` keeps the
+        // "no comparable number" contract (looseEq fallback fails,
+        // arithmetic callers map to `NaN`).
+        Undefined -> null
         is BoolValue -> if (value) 1.0 else 0.0
         is IntValue -> value.toDouble()
         is FloatValue -> value
@@ -84,6 +94,7 @@ public sealed class Value {
  */
 internal fun jsToNumber(value: Value): Double = when (value) {
     Value.Null -> 0.0
+    Value.Undefined -> Double.NaN
     is Value.BoolValue -> if (value.value) 1.0 else 0.0
     is Value.IntValue -> value.value.toDouble()
     is Value.FloatValue -> value.value
@@ -115,6 +126,15 @@ internal fun jsToNumber(value: Value): Double = when (value) {
  */
 @Suppress("ReturnCount", "ComplexMethod")
 internal fun looseEq(lhs: Value, rhs: Value): Boolean {
+    // JS abstract equality: `undefined` is loosely equal to `null` and to
+    // itself, and unequal to everything else. Handle this before the `null`
+    // arms so `null == undefined` doesn't fall through to `false`.
+    if (lhs is Value.Undefined || rhs is Value.Undefined) {
+        val lhsNullish = lhs is Value.Undefined || lhs is Value.Null
+        val rhsNullish = rhs is Value.Undefined || rhs is Value.Null
+        return lhsNullish && rhsNullish
+    }
+
     if (lhs is Value.Null && rhs is Value.Null) return true
     if (lhs is Value.Null || rhs is Value.Null) return false
 
@@ -165,6 +185,7 @@ internal fun looseEq(lhs: Value, rhs: Value): Boolean {
  */
 internal fun jsString(value: Value): String = when (value) {
     Value.Null -> "null"
+    Value.Undefined -> "undefined"
     is Value.BoolValue -> if (value.value) "true" else "false"
     is Value.IntValue -> value.value.toString()
     is Value.FloatValue -> jsNumberString(value.value)
@@ -217,7 +238,7 @@ private fun jsArrayJoin(items: List<Value>): String =
  * [jsString].
  */
 internal fun jsArrayElementString(value: Value): String {
-    if (value is Value.Null) return ""
+    if (value is Value.Null || value is Value.Undefined) return ""
     return jsString(value)
 }
 
@@ -258,6 +279,7 @@ private const val JS_OBJECT_STRING = "[object Object]"
 @Suppress("ReturnCount", "ComplexMethod")
 internal fun strictEq(lhs: Value, rhs: Value): Boolean {
     if (lhs is Value.Null && rhs is Value.Null) return true
+    if (lhs is Value.Undefined && rhs is Value.Undefined) return true
     if (lhs is Value.BoolValue && rhs is Value.BoolValue) return lhs.value == rhs.value
     if (lhs is Value.IntValue && rhs is Value.IntValue) return lhs.value == rhs.value
     if (lhs is Value.FloatValue && rhs is Value.FloatValue) return lhs.value == rhs.value
