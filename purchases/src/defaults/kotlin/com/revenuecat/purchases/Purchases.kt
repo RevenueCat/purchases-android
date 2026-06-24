@@ -781,7 +781,7 @@ public class Purchases internal constructor(
         return pollRewardVerification(clientTransactionId) { Poller.poll(it) }
     }
 
-    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
         poll: suspend (String) -> RewardVerificationResult,
