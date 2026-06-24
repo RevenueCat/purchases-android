@@ -16,6 +16,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -73,6 +75,7 @@ internal class WorkflowManager(
         persistEnvelopeOnResolve: Boolean = false,
         staleWhileRevalidate: Boolean = true,
         recordOfferingIdMappingOnResolve: Boolean = true,
+        preDownloadAssetsOnResolve: Boolean = true,
     ) {
         // The identifier may be a workflow ID (prefetch, or a repeat render once the mapping is known)
         // or an offering ID (the on-demand render path asks by offering ID, and the backend lazily
@@ -112,6 +115,7 @@ internal class WorkflowManager(
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
                     offeringIdToRecordOnResolve = offeringIdToRecordOnResolve,
+                    preDownloadAssetsOnResolve = preDownloadAssetsOnResolve,
                     onSuccess = {},
                     onError = { error ->
                         errorLog {
@@ -130,6 +134,7 @@ internal class WorkflowManager(
                     callbackDispatcher = callbackDispatcher,
                     persistEnvelopeOnResolve = persistEnvelopeOnResolve,
                     offeringIdToRecordOnResolve = offeringIdToRecordOnResolve,
+                    preDownloadAssetsOnResolve = preDownloadAssetsOnResolve,
                     onSuccess = onSuccess,
                     onError = onError,
                 )
@@ -145,6 +150,7 @@ internal class WorkflowManager(
         callbackDispatcher: Dispatcher?,
         persistEnvelopeOnResolve: Boolean,
         offeringIdToRecordOnResolve: String?,
+        preDownloadAssetsOnResolve: Boolean,
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -162,9 +168,11 @@ internal class WorkflowManager(
                     return@launch
                 }
                 cacheResolvedWorkflow(result, response, persistEnvelopeOnResolve, offeringIdToRecordOnResolve)
-                scope.launch {
-                    runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
-                        .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
+                if (preDownloadAssetsOnResolve) {
+                    scope.launch {
+                        runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
+                            .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
+                    }
                 }
                 onSuccess(result)
             }
@@ -346,14 +354,19 @@ internal class WorkflowManager(
                         // sequence settles. A failed prefetch is logged and does not fail the others.
                         // Concurrency is bounded downstream, not here: detail fetches by prefetchDispatcher's
                         // thread pool, CDN downloads by the workflows FileRepository's limited scope.
-                        coroutineScope {
-                            prefetchWorkflows.forEach { summary ->
-                                launch {
-                                    prefetchWorkflow(appUserID, summary.id, appInBackground)
-                                }
-                            }
-                        }
+                        val prefetched = coroutineScope {
+                            prefetchWorkflows.map { summary ->
+                                async { prefetchWorkflow(appUserID, summary.id, appInBackground) }
+                            }.awaitAll()
+                        }.filterNotNull()
                         completePendingCallbacks(appUserID)
+                        // Offerings are delivered. Pre-download the prefetched workflows' assets now, so the
+                        // font/image downloads don't compete for bandwidth with the (now finished) workflow
+                        // detail + CDN fetches that gated delivery.
+                        prefetched.forEach { workflow ->
+                            runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(workflow) }
+                                .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
+                        }
                     }
                 },
                 onError = { error, behavior ->
@@ -414,9 +427,16 @@ internal class WorkflowManager(
      * Suspends until [getWorkflow] for [workflowId] resolves. Prefetch is best-effort, so a failure
      * is logged and the coroutine resumes normally instead of throwing, keeping one failed prefetch
      * from cancelling its siblings in the surrounding [coroutineScope].
+     *
+     * Returns the resolved [PublishedWorkflow] on success, or null on failure. Asset pre-download is
+     * deferred to the caller so it can batch the downloads after offerings delivery ([completePendingCallbacks]).
      */
-    private suspend fun prefetchWorkflow(appUserID: String, workflowId: String, appInBackground: Boolean) {
-        suspendCancellableCoroutine { continuation ->
+    private suspend fun prefetchWorkflow(
+        appUserID: String,
+        workflowId: String,
+        appInBackground: Boolean,
+    ): PublishedWorkflow? {
+        return suspendCancellableCoroutine { continuation ->
             getWorkflow(
                 appUserID = appUserID,
                 workflowOrOfferingId = workflowId,
@@ -425,10 +445,11 @@ internal class WorkflowManager(
                 persistEnvelopeOnResolve = true,
                 staleWhileRevalidate = false,
                 recordOfferingIdMappingOnResolve = false,
-                onSuccess = { continuation.safeResume(Unit) },
+                preDownloadAssetsOnResolve = false,
+                onSuccess = { continuation.safeResume(it.workflow) },
                 onError = { error ->
                     errorLog { "Failed to prefetch workflow $workflowId: ${error.underlyingErrorMessage}" }
-                    continuation.safeResume(Unit)
+                    continuation.safeResume(null)
                 },
             )
         }

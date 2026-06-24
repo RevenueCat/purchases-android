@@ -2387,4 +2387,56 @@ class WorkflowManagerTest {
     }
 
     // endregion onError envelope restore
+
+    // region prefetch asset pre-download ordering
+
+    @Test
+    fun `prefetch pre-downloads workflow assets only after onComplete fires`() {
+        val events = mutableListOf<String>()
+        // Arrange: workflows list returns one prefetched workflow; detail resolves successfully.
+        val workflow = workflowMock()
+        val detailResponse = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflow)
+        val resolvedResult = WorkflowDataResult(workflow = workflow, enrolledVariants = null)
+        coEvery { mockResolver.resolve(detailResponse) } returns resolvedResult
+
+        val listResponse = WorkflowsListResponse(
+            workflows = listOf(
+                WorkflowSummary(id = "wf_1", displayName = "Flow", offeringId = "default", prefetch = true),
+            ),
+        )
+        every {
+            mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any())
+        } answers {
+            @Suppress("UNCHECKED_CAST")
+            (args[3] as (WorkflowsListResponse) -> Unit).invoke(listResponse)
+        }
+        every {
+            mockBackend.getWorkflow(
+                appUserID = "user_1",
+                workflowId = "wf_1",
+                appInBackground = false,
+                onSuccess = any(),
+                onError = any(),
+                callbackDispatcher = mockPrefetchDispatcher,
+            )
+        } answers {
+            @Suppress("UNCHECKED_CAST")
+            (args[3] as (WorkflowDetailResponse) -> Unit).invoke(detailResponse)
+        }
+        every { mockAssetPreDownloader.preDownloadWorkflowAssets(any()) } answers {
+            events.add("preDownloadAssets")
+        }
+
+        workflowManager.getWorkflowsList(
+            appUserID = "user_1",
+            appInBackground = false,
+            forceRefresh = true,
+            onComplete = { events.add("onComplete") },
+        )
+
+        // onComplete (offerings delivery) must come before the prefetch asset pre-download.
+        assertThat(events).containsExactly("onComplete", "preDownloadAssets")
+    }
+
+    // endregion prefetch asset pre-download ordering
 }
