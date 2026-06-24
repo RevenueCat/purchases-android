@@ -2,6 +2,11 @@ package com.revenuecat.purchases.common.remoteconfig
 
 import kotlin.random.Random
 
+internal interface WeightedSource {
+    val priority: Int
+    val weight: Int
+}
+
 /**
  * Picks which [WeightedSource] to use and exposes [current] so callers can advance through the
  * fallback order when a source is unusable.
