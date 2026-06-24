@@ -263,12 +263,18 @@ internal class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             },
             onSuccess = { offeringsResultData ->
-                offeringsResultData.offerings.current?.let {
-                    offeringImagePreDownloader.preDownloadOfferingImages(it)
-                }
-                offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
+                // Defer asset pre-download until after the workflow phase completes. The font/image
+                // downloads run unbounded on Dispatchers.IO; starting them here, before the workflow
+                // list + detail fetches, let them starve the delivery-critical workflow path. Running
+                // them once delivery is settled keeps the pre-warming without the contention.
+                val dispatchSuccess = {
+                    dispatch { onSuccess?.invoke(offeringsResultData) }
+                    offeringsResultData.offerings.current?.let {
+                        offeringImagePreDownloader.preDownloadOfferingImages(it)
+                    }
+                    offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
+                }
                 workflowManager?.getWorkflowsList(
                     appUserID,
                     appInBackground,

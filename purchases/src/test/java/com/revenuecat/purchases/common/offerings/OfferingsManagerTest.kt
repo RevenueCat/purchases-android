@@ -23,6 +23,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
@@ -645,6 +646,26 @@ class OfferingsManagerTest {
 
         verify(exactly = 1) {
             mockWorkflowManager.getWorkflowsList(appUserId, false, forceRefresh = true, onComplete = any())
+        }
+    }
+
+    @Test
+    fun `offering pre-downloads run after the workflow phase, not before`() {
+        every { cache.cachedOfferings } returns null
+        mockDeviceCache()
+        every { backend.getOfferings(any(), any(), captureLambda(), any()) } answers {
+            lambda<(JSONObject, HTTPResponseOriginalSource) -> Unit>().captured.invoke(
+                JSONObject(ONE_OFFERINGS_RESPONSE), HTTPResponseOriginalSource.MAIN,
+            )
+        }
+        mockOfferingsFactory()
+
+        offeringsManager.getOfferings(appUserId, appInBackground = false)
+
+        verifyOrder {
+            mockWorkflowManager.getWorkflowsList(any(), any(), any(), any())
+            offeringImagePreDownloader.preDownloadOfferingImages(testOfferings.current!!)
+            mockOfferingFontPreDownloader.preDownloadOfferingFontsIfNeeded(testOfferings)
         }
     }
 
