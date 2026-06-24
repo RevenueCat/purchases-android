@@ -173,10 +173,11 @@ internal class WorkflowManager(
             { error, behavior ->
                 if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
                     // 4xx: the server intentionally changed/removed this workflow, so don't serve the
-                    // saved copy. Invalidate the in-memory entry so the next call retries rather than
-                    // serving a still-cached value — mirrors the list's invalidateWorkflowsListTimestamp
-                    // and OfferingsManager's forceCacheStale on 4xx.
-                    workflowsCache.invalidateWorkflowTimestamp(workflowId)
+                    // saved copy. Evict the in-memory entry entirely (value included) rather than only
+                    // clearing its timestamp: on the stale-while-revalidate render path the entry would
+                    // otherwise stay as a stale-but-present hit and keep being served on every
+                    // subsequent render. Removing it forces the next call to miss and surface the error.
+                    workflowsCache.clearWorkflow(workflowId)
                     onError(error)
                 } else {
                     // Transport error / 5xx / malformed body: the backend is unavailable, not refusing.
