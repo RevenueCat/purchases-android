@@ -945,7 +945,7 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
         val clientTransactionId = UUID.randomUUID().toString()
         // Keys inserted in sorted order so the serialized customData is deterministic and matches the

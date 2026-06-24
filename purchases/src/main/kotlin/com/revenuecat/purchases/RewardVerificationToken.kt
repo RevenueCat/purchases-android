@@ -7,7 +7,7 @@ package com.revenuecat.purchases
  * ad network's server-side verification options, and keep [clientTransactionId] to correlate the reward
  * callback with [Purchases.pollRewardVerification].
  */
-@InternalRevenueCatAPI
+@ExperimentalPreviewRevenueCatPurchasesAPI
 public data class RewardVerificationToken(
     /** Set as the ad network's server-side verification custom data. */
     val customData: String,
