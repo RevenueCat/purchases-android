@@ -589,6 +589,7 @@ internal class StyleFactory(
                 url = component.url,
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
+                protocolVersion = component.protocolVersion,
             ),
         )
 

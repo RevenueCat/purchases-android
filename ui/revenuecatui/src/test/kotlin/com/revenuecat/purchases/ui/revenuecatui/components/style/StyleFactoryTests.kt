@@ -136,6 +136,21 @@ class StyleFactoryTests {
         assertThat(style.url).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
         assertThat(style.visible).isFalse()
         assertThat(style.size).isEqualTo(size)
+        assertThat(style.protocolVersion).isNull()
+    }
+
+    @Test
+    fun `Should pass protocolVersion through to the WebViewComponentStyle`() {
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/index.html",
+            protocolVersion = 1,
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.protocolVersion).isEqualTo(1)
     }
 
     @Test
