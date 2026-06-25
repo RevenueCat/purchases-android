@@ -1,0 +1,83 @@
+package com.revenuecat.purchases.ui.revenuecatui.components.webview
+
+import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import java.util.Locale
+
+@RunWith(RobolectricTestRunner::class)
+class WebViewUrlResolverTest {
+
+    @Test
+    fun `resolves static https url unchanged`() {
+        val result = resolve("https://paywalls.revenuecat.com/index.html")
+
+        assertThat(result?.toString()).isEqualTo("https://paywalls.revenuecat.com/index.html")
+    }
+
+    @Test
+    fun `resolves static https url with characters accepted by WebView`() {
+        val result = resolve("https://paywalls.revenuecat.com/index.html?filters=a|b")
+
+        assertThat(result?.toString()).isEqualTo("https://paywalls.revenuecat.com/index.html?filters=a|b")
+    }
+
+    @Test
+    fun `substitutes custom variables into the template before validating`() {
+        val result = resolve(
+            template = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+            customVariables = mapOf("animal" to CustomVariableValue.String("dog")),
+        )
+
+        assertThat(result?.toString()).isEqualTo("https://paywalls.revenuecat.com/dog.html")
+    }
+
+    @Test
+    fun `returns null for malformed url`() {
+        val result = resolve("not a url")
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `returns null for malformed https url`() {
+        val result = resolve("https:///missing-host")
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `returns null for non https url`() {
+        val result = resolve("http://paywalls.revenuecat.com/index.html")
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `returns null for file url`() {
+        val result = resolve("file:///android_asset/index.html")
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `returns null for custom scheme url`() {
+        val result = resolve("myapp://paywalls.revenuecat.com/index.html")
+
+        assertThat(result).isNull()
+    }
+
+    private fun resolve(
+        template: String,
+        customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    ) = WebViewUrlResolver.resolve(
+        urlTemplate = template,
+        variableConfig = UiConfig.VariableConfig(),
+        customVariables = customVariables,
+        defaultCustomVariables = emptyMap(),
+        locale = Locale.US,
+    )
+}
