@@ -255,18 +255,28 @@ platform :android do
   desc "Upload and close a release"
   lane :deploy do |options|
     version = current_version_number
+    snapshot = is_snapshot_version?(version)
+
     gradle_properties = {
       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
-      "mavenCentralUsername" => ENV['MAVEN_CENTRAL_PORTAL_USERNAME'],
-      "mavenCentralPassword" => ENV['MAVEN_CENTRAL_PORTAL_PASSWORD'],
       "RELEASE_SIGNING_ENABLED" => true
     }
+    if snapshot
+      gradle_properties["githubPackagesUsername"] = ENV['GITHUB_PACKAGES_USERNAME']
+      gradle_properties["githubPackagesToken"] = ENV['GITHUB_PACKAGES_TOKEN']
+      publish_task = "publishAllPublicationsToGitHubPackagesRepository"
+    else
+      gradle_properties["mavenCentralUsername"] = ENV['MAVEN_CENTRAL_PORTAL_USERNAME']
+      gradle_properties["mavenCentralPassword"] = ENV['MAVEN_CENTRAL_PORTAL_PASSWORD']
+      publish_task = "publish"
+    end
+
     UI.verbose("Deploying #{version}")
     gradle(
       tasks: [
-        "publish --no-daemon --no-parallel"
+        "#{publish_task} --no-daemon --no-parallel"
       ],
       properties: gradle_properties
     )
@@ -276,7 +286,8 @@ platform :android do
       "defaultsBc7Release",
       "purchases-bc7",
       "purchases",
-      gradle_properties
+      gradle_properties,
+      publish_task
     )
 
     UI.verbose("Deploying purchases-ui Billing Client 7 version")
@@ -284,7 +295,8 @@ platform :android do
       "defaultsBc7Release",
       "purchases-ui-bc7",
       "ui:revenuecatui",
-      gradle_properties
+      gradle_properties,
+      publish_task
     )
 
     UI.verbose("Deploying amazon Billing Client 7 version")
@@ -292,7 +304,8 @@ platform :android do
       "defaultsBc7Release",
       "purchases-store-amazon-bc7",
       "feature:amazon",
-      gradle_properties
+      gradle_properties,
+      publish_task
     )
 
     UI.verbose("Deploying galaxy Billing Client 7 version")
@@ -300,7 +313,8 @@ platform :android do
       "defaultsBc7Release",
       "purchases-store-galaxy-bc7",
       "feature:galaxy",
-      gradle_properties
+      gradle_properties,
+      publish_task
     )
 
     UI.verbose("Deploying Custom Entitlements Computation version")
@@ -308,7 +322,8 @@ platform :android do
       "customEntitlementComputationBc8Release",
       "purchases-custom-entitlement-computation",
       "purchases",
-      gradle_properties
+      gradle_properties,
+      publish_task
     )
 
     UI.verbose("Deploying Debug view version")
@@ -316,17 +331,18 @@ platform :android do
       "defaultsBc8Debug",
       "purchases-debug-view",
       "ui:debugview",
-      gradle_properties
+      gradle_properties,
+      publish_task
     )
 
-    github_release(version: version) unless is_snapshot_version?(version)
+    github_release(version: version) unless snapshot
   end
 
-  def deploy_specific_package(variant, artifact_id, module_to_deploy, gradle_properties)
+  def deploy_specific_package(variant, artifact_id, module_to_deploy, gradle_properties, publish_task = "publish")
     gradle_properties["ANDROID_VARIANT_TO_PUBLISH"] = variant
     gradle_properties["POM_ARTIFACT_ID"] = artifact_id
 
-    command = module_to_deploy == nil ? "publish" : "#{module_to_deploy}:publish"
+    command = module_to_deploy == nil ? publish_task : "#{module_to_deploy}:#{publish_task}"
     gradle(
       tasks: [
         "#{command} --no-daemon --no-parallel"

@@ -970,7 +970,9 @@ workflows:
       equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
     jobs:
       - deploy-snapshot:
-          context: maven-central-publishing
+          context:
+            - maven-central-publishing
+            - github-packages-publishing
 
   snapshot-deploy-sample-app-tests:
     when:
@@ -981,11 +983,15 @@ workflows:
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - deploy-snapshot:
-          context: maven-central-publishing
+          context:
+            - maven-central-publishing
+            - github-packages-publishing
       - assemble-magic-weather-compose-sample-app:
+          context: github-packages-publishing
           requires:
             - deploy-snapshot
       - assemble-custom-entitlement-computation-sample-app:
+          context: github-packages-publishing
           requires:
             - deploy-snapshot
       - assemble-admob-integration-sample-app
