@@ -136,7 +136,12 @@ internal object Poller {
             }
             when (result) {
                 is RewardVerificationPollStatus.Verified ->
-                    Step.Terminal(Outcome.Verified(result.reward.toAdMobReward()))
+                    Step.Terminal(
+                        Outcome.Verified(
+                            reward = result.reward.toAdMobReward(),
+                            moreRewards = result.moreRewards.map { it.toAdMobReward() },
+                        ),
+                    )
                 is RewardVerificationPollStatus.Failed ->
                     Step.Terminal(Outcome.Failed.BackendRejected(result.message, result.failureReason))
                 RewardVerificationPollStatus.PENDING -> Step.RetryPending
@@ -196,6 +201,8 @@ internal object Poller {
         return when (this) {
             is CoreVerifiedReward.VirtualCurrency ->
                 VerifiedReward.VirtualCurrency(code = code, amount = amount)
+            is CoreVerifiedReward.Entitlement ->
+                VerifiedReward.Entitlement(identifier = identifier, expiresAt = expiresAt)
             CoreVerifiedReward.NoReward -> VerifiedReward.NoReward
             CoreVerifiedReward.UnsupportedReward -> VerifiedReward.UnsupportedReward
         }

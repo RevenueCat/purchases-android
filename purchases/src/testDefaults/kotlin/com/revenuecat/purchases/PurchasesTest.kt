@@ -64,6 +64,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
+import java.util.Date
 import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
@@ -2019,6 +2020,76 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(delivered).isNull()
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification invalidates virtual currencies cache for a reward in moreRewards`() {
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = {
+                    PollResult.verified(
+                        reward = PollReward.NoReward,
+                        moreRewards = listOf(PollReward.VirtualCurrency(code = "gems", amount = 5)),
+                    )
+                },
+            )
+        }
+
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification refreshes customer info on verified entitlement reward`() {
+        mockCustomerInfoHelper()
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = {
+                    PollResult.verified(
+                        PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                    )
+                },
+            )
+        }
+
+        assertThat(result.failed).isFalse
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                CacheFetchPolicy.FETCH_CURRENT,
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification returns failed when entitlement customer info refresh fails`() {
+        mockCustomerInfoHelper(
+            errorGettingCustomerInfo = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"),
+        )
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = {
+                    PollResult.verified(
+                        PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                    )
+                },
+            )
+        }
+
+        assertThat(result.failed).isTrue
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     private fun mockVerifiedVirtualCurrencyRewardBackend() {
         every {
@@ -2034,7 +2105,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             )
         }
     }
-
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getRewardVerificationResult returns error from backend on error`() {

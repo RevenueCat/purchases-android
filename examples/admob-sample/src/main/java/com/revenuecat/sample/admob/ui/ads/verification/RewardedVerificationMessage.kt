@@ -42,7 +42,12 @@ internal data class RewardedVerificationMessage(
             return when (val reward = result.verifiedReward) {
                 is VerifiedReward.VirtualCurrency ->
                     RewardedVerificationMessage(
-                        "✅ Verified\n🎁 Reward granted: ${reward.amount} ${reward.code}",
+                        "✅ Verified\n🎁 Currency granted: ${reward.amount} ${reward.code}",
+                        Severity.SUCCESS,
+                    )
+                is VerifiedReward.Entitlement ->
+                    RewardedVerificationMessage(
+                        text = "✅ Verified\n🎁 Entitlement granted: ${reward.identifier}",
                         Severity.SUCCESS,
                     )
                 VerifiedReward.NoReward ->

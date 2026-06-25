@@ -7,7 +7,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 // capture *why* polling ended so the poller can log an actionable reason without adding public cases.
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal sealed interface Outcome {
-    class Verified(val reward: VerifiedReward) : Outcome
+    class Verified(val reward: VerifiedReward, val moreRewards: List<VerifiedReward>) : Outcome
 
     sealed interface Failed : Outcome {
         val logMessage: String
@@ -53,7 +53,7 @@ internal sealed interface Outcome {
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal fun Outcome.toResult(): RewardVerificationResult {
     return when (this) {
-        is Outcome.Verified -> RewardVerificationResult.verified(reward)
+        is Outcome.Verified -> RewardVerificationResult.verified(reward, moreRewards)
         is Outcome.Failed -> RewardVerificationResult.failed
     }
 }

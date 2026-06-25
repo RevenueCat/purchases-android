@@ -26,4 +26,13 @@ internal object RewardVerificationStrings {
     fun terminalError(error: String): String =
         "Reward verification stopped after an unrecoverable error: $error. This is unexpected; if it " +
             "persists, contact RevenueCat support with the error above."
+
+    fun entitlementFetchingCustomerInfo(clientTransactionId: String): String =
+        "Reward verification granted an entitlement; refreshing CustomerInfo " +
+            "(transactionId=$clientTransactionId)."
+
+    fun entitlementCustomerInfoRefreshFailed(clientTransactionId: String): String =
+        "Reward verification could not refresh CustomerInfo after an entitlement grant " +
+            "(transactionId=$clientTransactionId). The grant persists server-side and will sync on a " +
+            "later fetch."
 }

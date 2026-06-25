@@ -9,6 +9,7 @@ import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
+import java.util.Date
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -75,6 +76,30 @@ class PollerTest {
         assertEquals(1, attempts)
         assertFalse(result.failed)
         assertEquals(VerifiedReward.VirtualCurrency(code = "gems", amount = 10), result.verifiedReward)
+    }
+
+    @Test
+    fun `poll maps primary and more rewards including entitlement`() = runBlocking {
+        val expiresAt = Date(1_800_000_000_000L)
+
+        val result = Poller.poll(
+            clientTransactionId = "ct_1",
+            fetcher = {
+                RewardVerificationPollStatus.Verified(
+                    reward = CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10),
+                    moreRewards = listOf(CoreVerifiedReward.Entitlement(identifier = "pro", expiresAt = expiresAt)),
+                )
+            },
+            sleepSeconds = noSleep,
+            jitterSeconds = fixedJitter,
+        )
+
+        assertFalse(result.failed)
+        assertEquals(VerifiedReward.VirtualCurrency(code = "gems", amount = 10), result.verifiedReward)
+        assertEquals(
+            listOf(VerifiedReward.Entitlement(identifier = "pro", expiresAt = expiresAt)),
+            result.moreRewards,
+        )
     }
 
     @Test
