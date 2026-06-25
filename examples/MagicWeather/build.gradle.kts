@@ -8,8 +8,14 @@ allprojects {
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://central.sonatype.com/repository/maven-snapshots/") {
+        maven(url = "https://maven.pkg.github.com/RevenueCat/purchases-android") {
             content { includeGroup("com.revenuecat.purchases") }
+            credentials {
+                username = providers.gradleProperty("githubPackagesUsername").orNull
+                    ?: System.getenv("GITHUB_PACKAGES_USERNAME")
+                password = providers.gradleProperty("githubPackagesToken").orNull
+                    ?: System.getenv("GITHUB_PACKAGES_TOKEN")
+            }
         }
     }
 }
