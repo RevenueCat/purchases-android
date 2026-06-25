@@ -23,7 +23,7 @@ import java.io.IOException
  * an empty list for inline-only topics.
  */
 @Serializable
-internal data class PersistedRemoteConfig(
+internal data class PersistedRemoteConfigurationState(
     val domain: String,
     val manifest: String,
     val activeTopics: List<String> = emptyList(),
@@ -33,22 +33,22 @@ internal data class PersistedRemoteConfig(
 )
 
 /**
- * Persists [PersistedRemoteConfig] to `noBackupFilesDir/RevenueCat/remote_config/` (excluded from backups as a
- * regenerable cache). Writes are atomic and crash-safe via [AtomicFile]; a missing or corrupt file reads back as
- * `null`.
+ * Persists [PersistedRemoteConfigurationState] to `noBackupFilesDir/RevenueCat/remote_config/`
+ * (excluded from backups as a regenerable cache). Writes are atomic and crash-safe via [AtomicFile];
+ * a missing or corrupt file reads back as `null`.
  */
 internal class RemoteConfigDiskCache(
     private val applicationContext: Context,
 ) {
     private val json = JsonProvider.defaultJson
 
-    fun read(): PersistedRemoteConfig? {
+    fun read(): PersistedRemoteConfigurationState? {
         val target = targetFile()
         if (!target.exists()) return null
         val atomicFile = AtomicFile(target)
         return try {
             json.decodeFromString(
-                PersistedRemoteConfig.serializer(),
+                PersistedRemoteConfigurationState.serializer(),
                 atomicFile.readFully().toString(Charsets.UTF_8),
             )
         } catch (e: IOException) {
@@ -60,7 +60,7 @@ internal class RemoteConfigDiskCache(
         }
     }
 
-    fun write(config: PersistedRemoteConfig) {
+    fun write(config: PersistedRemoteConfigurationState) {
         try {
             val target = targetFile()
             target.parentFile?.let { parent ->
@@ -69,7 +69,7 @@ internal class RemoteConfigDiskCache(
                 }
             }
             val content = json.encodeToString(
-                PersistedRemoteConfig.serializer(),
+                PersistedRemoteConfigurationState.serializer(),
                 config,
             )
             val atomicFile = AtomicFile(target)

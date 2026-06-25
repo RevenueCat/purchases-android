@@ -90,7 +90,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
-        val written = slot<PersistedRemoteConfig>()
+        val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
         assertThat(written.captured.manifest).isEqualTo("v1.200.sources:etag2")
         assertThat(written.captured.activeTopics).containsExactly("sources")
@@ -121,7 +121,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
-        val written = slot<PersistedRemoteConfig>()
+        val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
         assertThat(written.captured.topicBlobRefs)
             .containsExactlyEntriesOf(mapOf("sources" to listOf("newSources")))
@@ -142,7 +142,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
-        val written = slot<PersistedRemoteConfig>()
+        val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
         assertThat(written.captured.topicBlobRefs).containsExactlyEntriesOf(mapOf("sources" to emptyList()))
     }
@@ -181,7 +181,7 @@ class RemoteConfigManagerTest {
         manifest: String,
         domain: String = "app",
         topicBlobRefs: Map<String, List<String>> = emptyMap(),
-    ) = PersistedRemoteConfig(
+    ) = PersistedRemoteConfigurationState(
         domain = domain,
         manifest = manifest,
         topicBlobRefs = topicBlobRefs,

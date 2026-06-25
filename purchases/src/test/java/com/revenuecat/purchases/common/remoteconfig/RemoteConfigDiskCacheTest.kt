@@ -47,7 +47,7 @@ class RemoteConfigDiskCacheTest {
 
     @Test
     fun `write then read round-trips the full persisted config`() {
-        val config = PersistedRemoteConfig(
+        val config = PersistedRemoteConfigurationState(
             domain = "app",
             manifest = "v1.1710000100.sources:etag1,product_entitlement_mapping:etag2",
             activeTopics = listOf("sources", "product_entitlement_mapping"),
@@ -67,7 +67,7 @@ class RemoteConfigDiskCacheTest {
 
     @Test
     fun `inline-only topics persist with an empty blob ref list`() {
-        val config = PersistedRemoteConfig(
+        val config = PersistedRemoteConfigurationState(
             domain = "app",
             manifest = "v1.1.sources:etag1",
             activeTopics = listOf("sources"),
@@ -93,7 +93,7 @@ class RemoteConfigDiskCacheTest {
 
     @Test
     fun `write creates the remote_config directory when absent`() {
-        diskCache.write(PersistedRemoteConfig(domain = "app", manifest = "v1.0."))
+        diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0."))
 
         assertThat(
             File(File(File(testFolder, "RevenueCat"), "remote_config"), "remote_config.json").exists(),
@@ -102,8 +102,8 @@ class RemoteConfigDiskCacheTest {
 
     @Test
     fun `write overwrites a previous snapshot`() {
-        diskCache.write(PersistedRemoteConfig(domain = "app", manifest = "v1.1.sources:old"))
-        diskCache.write(PersistedRemoteConfig(domain = "app", manifest = "v1.2.sources:new"))
+        diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.1.sources:old"))
+        diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.2.sources:new"))
 
         assertThat(diskCache.read()?.manifest).isEqualTo("v1.2.sources:new")
     }

@@ -49,13 +49,13 @@ internal class RemoteConfigManager(
         )
     }
 
-    private fun persist(previous: PersistedRemoteConfig?, response: RemoteConfiguration) {
+    private fun persist(previous: PersistedRemoteConfigurationState?, response: RemoteConfiguration) {
         val previousBlobRefs = previous?.topicBlobRefs ?: emptyMap()
         // Changed topics overwrite their refs; topics no longer active are pruned.
         val mergedBlobRefs = (previousBlobRefs + response.topics.toTopicBlobRefs())
             .filterKeys { it in response.activeTopics }
         diskCache.write(
-            PersistedRemoteConfig(
+            PersistedRemoteConfigurationState(
                 domain = response.domain,
                 manifest = response.manifest,
                 activeTopics = response.activeTopics,
