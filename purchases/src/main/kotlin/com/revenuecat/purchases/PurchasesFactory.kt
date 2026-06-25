@@ -65,9 +65,10 @@ import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -366,19 +367,22 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
             )
 
+            // Two dedicated thread pools for the delivery-critical workflow path, kept off Dispatchers.IO
+            // (unbounded font/image downloads) and Dispatchers.Default (image decoding) so background work
+            // can't starve workflow loading. Resolve (parse + signature verify + orchestration) and the
+            // blocking CDN downloads get SEPARATE pools — sharing one pool head-of-lines them and regressed.
+            val workflowCdnDispatcher = Executors.newScheduledThreadPool(MAX_CONCURRENT_WORKFLOW_CDN_FETCHES)
+                .asCoroutineDispatcher()
+            val workflowResolveDispatcher = Executors.newScheduledThreadPool(WORKFLOW_RESOLVE_THREADS)
+                .asCoroutineDispatcher()
             val workflowManager = workflowsCache?.let {
                 WorkflowManager(
                     backend = backend,
                     workflowDetailResolver = WorkflowDetailResolver(
                         workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                            // Dedicated FileRepository instance with a concurrency-limited scope, so workflow
-                            // CDN downloads are capped without affecting the instances used for images/video.
                             fileRepository = DefaultFileRepository(
                                 fileCacheManager = DefaultFileCache(contextForStorage, "rc_compiled_workflows"),
-                                ioScope = CoroutineScope(
-                                    Dispatchers.IO.limitedParallelism(MAX_CONCURRENT_WORKFLOW_CDN_FETCHES) +
-                                        NonCancellable,
-                                ),
+                                ioScope = CoroutineScope(workflowCdnDispatcher + NonCancellable),
                             ),
                         ),
                     ),
@@ -391,6 +395,7 @@ internal class PurchasesFactory(
                         createConcurrentExecutor(),
                         runningIntegrationTests = runningIntegrationTests,
                     ),
+                    scope = CoroutineScope(SupervisorJob() + workflowResolveDispatcher),
                 )
             }
 
@@ -580,6 +585,7 @@ internal class PurchasesFactory(
         // Caps concurrent workflow CDN downloads on the dedicated workflows FileRepository scope, the
         // same way CONCURRENT_BACKEND_CALLS caps concurrent workflow detail fetches on prefetchDispatcher.
         private const val MAX_CONCURRENT_WORKFLOW_CDN_FETCHES = 4
+        private const val WORKFLOW_RESOLVE_THREADS = 4
 
         @VisibleForTesting
         internal fun shouldInitializeDiagnostics(
