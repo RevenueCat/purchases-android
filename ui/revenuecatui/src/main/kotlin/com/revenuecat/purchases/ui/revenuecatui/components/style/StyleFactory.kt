@@ -574,12 +574,23 @@ internal class StyleFactory(
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
-            is WebViewComponent -> Result.Success(null)
+            is WebViewComponent -> createWebViewComponentStyle(component)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
         }
     }
+
+    private fun createWebViewComponentStyle(
+        component: WebViewComponent,
+    ): Result<WebViewComponentStyle, NonEmptyList<PaywallValidationError>> =
+        Result.Success(
+            WebViewComponentStyle(
+                urlTemplate = component.url,
+                visible = component.visible ?: DEFAULT_VISIBILITY,
+                size = component.size,
+            ),
+        )
 
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,
