@@ -1310,8 +1310,12 @@ internal class Backend(
         }
     }
 
+    @Suppress("LongParameterList")
     fun getRemoteConfig(
         appInBackground: Boolean,
+        domain: String,
+        manifest: String?,
+        prefetchedBlobs: List<String>,
         onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -1324,13 +1328,19 @@ internal class Backend(
             ?.let { runCatching { URL(it) }.getOrNull() }
         val baseURL = overrideURL ?: appConfig.baseURL
         val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+        // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
+        val body = buildMap<String, Any?> {
+            put("domain", domain)
+            manifest?.let { put("manifest", it) }
+            put("prefetched_blobs", prefetchedBlobs)
+        }
 
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     baseURL,
                     endpoint,
-                    body = null,
+                    body = body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = fallbackBaseURLs,

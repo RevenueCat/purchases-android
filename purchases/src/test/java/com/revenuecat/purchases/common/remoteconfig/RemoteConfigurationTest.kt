@@ -6,6 +6,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
+import java.nio.ByteBuffer
 
 class RemoteConfigurationTest {
 
@@ -258,5 +259,25 @@ class RemoteConfigurationTest {
 
         assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
             .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
+    fun `parses from a ByteBuffer without consuming the caller's buffer`() {
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": "v1.1710001000.sources:etag1",
+              "active_topics": ["sources"]
+            }
+        """.trimIndent()
+        val buffer = ByteBuffer.wrap(payload.toByteArray())
+
+        val response = RemoteConfiguration.parse(buffer)
+
+        assertThat(response.domain).isEqualTo("app")
+        assertThat(response.manifest).isEqualTo("v1.1710001000.sources:etag1")
+        assertThat(response.activeTopics).containsExactly("sources")
+        // The overload duplicates the buffer, so the caller's position is untouched.
+        assertThat(buffer.position()).isEqualTo(0)
     }
 }
