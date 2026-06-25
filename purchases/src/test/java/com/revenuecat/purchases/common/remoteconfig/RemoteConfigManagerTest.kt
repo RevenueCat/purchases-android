@@ -30,6 +30,7 @@ class RemoteConfigManagerTest {
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var manager: RemoteConfigManager
 
+    private var capturedAppUserID: String? = null
     private var capturedDomain: String? = null
     private var capturedManifest: String? = null
     private var capturedPrefetchedBlobs: List<String>? = null
@@ -43,13 +44,14 @@ class RemoteConfigManagerTest {
         manager = RemoteConfigManager(backend, diskCache, dateProvider = FixedDateProvider)
 
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
         } answers {
-            capturedDomain = arg(1)
-            capturedManifest = arg(2)
-            capturedPrefetchedBlobs = arg(3)
-            onSuccess = arg(4)
-            onError = arg(5)
+            capturedAppUserID = arg(1)
+            capturedDomain = arg(2)
+            capturedManifest = arg(3)
+            capturedPrefetchedBlobs = arg(4)
+            onSuccess = arg(5)
+            onError = arg(6)
         }
     }
 
@@ -57,8 +59,9 @@ class RemoteConfigManagerTest {
     fun `first run sends the app domain with no manifest`() {
         every { diskCache.read() } returns null
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
+        assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
         assertThat(capturedDomain).isEqualTo("app")
         assertThat(capturedManifest).isNull()
         assertThat(capturedPrefetchedBlobs).isEmpty()
@@ -68,7 +71,7 @@ class RemoteConfigManagerTest {
     fun `replays the persisted opaque manifest on subsequent runs`() {
         every { diskCache.read() } returns persisted(manifest = "v1.123.sources:etag1", domain = "app")
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
         assertThat(capturedDomain).isEqualTo("app")
         assertThat(capturedManifest).isEqualTo("v1.123.sources:etag1")
@@ -87,7 +90,7 @@ class RemoteConfigManagerTest {
             }
         """.trimIndent()
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         val written = slot<PersistedRemoteConfigurationState>()
@@ -118,7 +121,7 @@ class RemoteConfigManagerTest {
             }
         """.trimIndent()
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         val written = slot<PersistedRemoteConfigurationState>()
@@ -139,7 +142,7 @@ class RemoteConfigManagerTest {
             }
         """.trimIndent()
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         val written = slot<PersistedRemoteConfigurationState>()
@@ -151,7 +154,7 @@ class RemoteConfigManagerTest {
     fun `a 204 response leaves the cache untouched`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(null, VerificationResult.VERIFIED)
 
         verify(exactly = 0) { diskCache.write(any()) }
@@ -161,17 +164,50 @@ class RemoteConfigManagerTest {
     fun `an error leaves the cache untouched`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onError.invoke(PurchasesError(PurchasesErrorCode.UnknownError, "boom"))
 
         verify(exactly = 0) { diskCache.write(any()) }
     }
 
     @Test
+    fun `a refresh while one is already in flight is skipped`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // The first refresh has not settled yet (the stub captures callbacks without invoking them).
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a new refresh is allowed after a success settles the in-flight one`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a new refresh is allowed after an error settles the in-flight one`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(PurchasesError(PurchasesErrorCode.UnknownError, "boom"))
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `a malformed config payload leaves the cache untouched`() {
         every { diskCache.read() } returns null
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
 
         verify(exactly = 0) { diskCache.write(any()) }
@@ -196,6 +232,7 @@ class RemoteConfigManagerTest {
     }
 
     private companion object {
+        private const val TEST_APP_USER_ID = "test-app-user-id"
         private const val FIXED_MILLIS = 1_710_000_000_000L
         private val FixedDateProvider = object : DateProvider {
             override val now: Date get() = Date(FIXED_MILLIS)

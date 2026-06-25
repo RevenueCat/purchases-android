@@ -36,6 +36,7 @@ class BackendGetRemoteConfigTest {
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
 
     private val testDomain = "app"
+    private val testAppUserID = "test-app-user-id"
     private val testManifest = "v1.1710000100.sources:etag1"
     private val testPrefetchedBlobs = listOf("blobRefA")
 
@@ -90,6 +91,7 @@ class BackendGetRemoteConfigTest {
         var verification: VerificationResult? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -115,6 +117,7 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -131,6 +134,7 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -153,6 +157,7 @@ class BackendGetRemoteConfigTest {
         var verification: VerificationResult? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -170,12 +175,13 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig sends domain, opaque manifest and prefetched_blobs as the request body`() {
+    fun `getRemoteConfig sends app_user_id, domain, opaque manifest and prefetched_blobs as the request body`() {
         val bodySlot = mutableListOf<Map<String, Any?>?>()
         mockNoContentRequest(bodySlot)
 
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -185,7 +191,8 @@ class BackendGetRemoteConfigTest {
 
         val body = bodySlot.firstOrNull()
         assertThat(body).isNotNull
-        assertThat(body?.keys).containsExactlyInAnyOrder("domain", "manifest", "prefetched_blobs")
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "domain", "manifest", "prefetched_blobs")
+        assertThat(body?.get("app_user_id")).isEqualTo(testAppUserID)
         assertThat(body?.get("domain")).isEqualTo("app")
         // The manifest is replayed verbatim as the opaque string the SDK received.
         assertThat(body?.get("manifest")).isEqualTo(testManifest)
@@ -199,6 +206,7 @@ class BackendGetRemoteConfigTest {
 
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = null,
             prefetchedBlobs = emptyList(),
@@ -207,7 +215,7 @@ class BackendGetRemoteConfigTest {
         )
 
         val body = bodySlot.firstOrNull()
-        assertThat(body?.keys).containsExactlyInAnyOrder("domain", "prefetched_blobs")
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "domain", "prefetched_blobs")
         assertThat(body).doesNotContainKey("manifest")
     }
 
@@ -220,6 +228,7 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -235,6 +244,7 @@ class BackendGetRemoteConfigTest {
         val lock = CountDownLatch(2)
         asyncBackend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -243,6 +253,7 @@ class BackendGetRemoteConfigTest {
         )
         asyncBackend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -252,6 +263,42 @@ class BackendGetRemoteConfigTest {
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetRemoteConfig,
+                body = any(),
+                postFieldsToSign = null,
+                requestHeaders = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getRemoteConfig does not dedup concurrent calls for different app user ids`() {
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer()), delayMs = 200)
+        val lock = CountDownLatch(2)
+        asyncBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = "user-a",
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> lock.countDown() },
+            onError = { fail("Expected success. Got error: $it") },
+        )
+        asyncBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = "user-b",
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> lock.countDown() },
+            onError = { fail("Expected success. Got error: $it") },
+        )
+        lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        // Different users must each get their own request rather than sharing the first caller's response.
+        verify(exactly = 2) {
             httpClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetRemoteConfig,

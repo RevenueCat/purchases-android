@@ -106,7 +106,7 @@ internal sealed class Endpoint(
     }
 
     object GetRemoteConfig : Endpoint(
-        pathTemplate = "/v2/config",
+        pathTemplate = "/v1/config",
         name = "remote_config",
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate

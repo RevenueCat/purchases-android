@@ -17,7 +17,7 @@ import kotlinx.serialization.json.jsonObject
 import java.nio.ByteBuffer
 
 /**
- * The `/v2/config` configuration response. This is the JSON payload carried in element 0 (the config
+ * The `/v1/config` configuration response. This is the JSON payload carried in element 0 (the config
  * element) of the binary [com.revenuecat.purchases.common.networking.RCContainer], and is also the plain
  * JSON fallback body when the SDK does not request the binary format.
  *
