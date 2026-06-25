@@ -96,11 +96,13 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? getFontProvider();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallListener? getListener();
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic? getPurchaseLogic();
+    method public com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler? getWebViewMessageHandler();
     property public final java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue> customVariables;
     property public final kotlin.jvm.functions.Function0<kotlin.Unit> dismissRequest;
     property public final com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider? fontProvider;
     property public final com.revenuecat.purchases.ui.revenuecatui.PaywallListener? listener;
     property public final com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic? purchaseLogic;
+    property public final com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler? webViewMessageHandler;
     field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Companion Companion;
   }
 
@@ -113,6 +115,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setOffering(com.revenuecat.purchases.Offering? offering);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setPurchaseLogic(com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic? purchaseLogic);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setShouldDisplayDismissButton(boolean shouldDisplayDismissButton);
+    method public com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder setWebViewMessageHandler(com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler? handler);
   }
 
   public static final class PaywallOptions.Companion {

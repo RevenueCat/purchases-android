@@ -46,6 +46,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
@@ -649,6 +650,38 @@ class PaywallViewModelWorkflowTest {
         assertThat(
             (step2State!!.mergedCustomVariables["highlight_color"] as? CustomVariableValue.String)?.value,
         ).isEqualTo("gold")
+    }
+
+    @Test
+    fun `pre-warmed workflow steps carry the web view message handler and follow updateOptions swaps`() {
+        val handlerA = PaywallWebViewMessageHandler { _, _ -> }
+        val handlerB = PaywallWebViewMessageHandler { _, _ -> }
+        fun optionsWith(handler: PaywallWebViewMessageHandler) =
+            PaywallOptions.Builder(dismissRequest = {})
+                .setWebViewMessageHandler(handler)
+                .build()
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = optionsWith(handlerA),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        // Let the background pre-warm finish so step-2 is cached without navigating to it.
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // The pre-warmed (not navigated-to) step carries the handler from options.
+        assertThat(vm.workflowState.value?.stepStates?.get("step-2")?.webViewMessageHandler)
+            .isSameAs(handlerA)
+
+        // Swapping the handler refreshes already-cached pre-warmed steps in place.
+        vm.updateOptions(optionsWith(handlerB))
+        assertThat(vm.workflowState.value?.stepStates?.get("step-2")?.webViewMessageHandler)
+            .isSameAs(handlerB)
     }
 
     // endregion

@@ -59,6 +59,11 @@ public class PaywallOptions internal constructor(
      * `{{ $custom.key }}` placeholders in the paywall configuration.
      */
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    /**
+     * Handler for messages sent by Paywalls V2 `web_view` components. Lets app code receive validated
+     * messages and reply to them. See [PaywallWebViewMessageHandler].
+     */
+    public val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
     internal val injectedWorkflow: WorkflowDataResult? = null,
 ) {
     public companion object {
@@ -75,6 +80,7 @@ public class PaywallOptions internal constructor(
         dismissRequest = builder.dismissRequest,
         dismissRequestWithExitOffering = builder.dismissRequestWithExitOffering,
         customVariables = builder.customVariables,
+        webViewMessageHandler = builder.webViewMessageHandler,
         injectedWorkflow = builder.injectedWorkflow,
     )
 
@@ -102,6 +108,7 @@ public class PaywallOptions internal constructor(
             this.purchaseLogic != other.purchaseLogic -> false
             this.mode != other.mode -> false
             this.customVariables != other.customVariables -> false
+            this.webViewMessageHandler != other.webViewMessageHandler -> false
             this.injectedWorkflow != other.injectedWorkflow -> false
             else -> this.dismissRequest == other.dismissRequest
         }
@@ -117,6 +124,7 @@ public class PaywallOptions internal constructor(
         dismissRequest: () -> Unit = this.dismissRequest,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
+        webViewMessageHandler: PaywallWebViewMessageHandler? = this.webViewMessageHandler,
         injectedWorkflow: WorkflowDataResult? = this.injectedWorkflow,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
@@ -128,6 +136,7 @@ public class PaywallOptions internal constructor(
         dismissRequest = dismissRequest,
         dismissRequestWithExitOffering = dismissRequestWithExitOffering,
         customVariables = customVariables,
+        webViewMessageHandler = webViewMessageHandler,
         injectedWorkflow = injectedWorkflow,
     )
 
@@ -143,6 +152,7 @@ public class PaywallOptions internal constructor(
         internal var mode: PaywallMode = PaywallMode.default
         internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
+        internal var webViewMessageHandler: PaywallWebViewMessageHandler? = null
         internal var injectedWorkflow: WorkflowDataResult? = null
 
         public fun setOffering(offering: Offering?): Builder = apply {
@@ -203,6 +213,19 @@ public class PaywallOptions internal constructor(
          */
         public fun setCustomVariables(variables: Map<String, CustomVariableValue>): Builder = apply {
             this.customVariables = CustomVariableKeyValidator.validateAndFilter(variables)
+        }
+
+        /**
+         * Sets a handler for messages sent by Paywalls V2 `web_view` components. The handler receives
+         * validated messages (such as `rc:step-complete`, `rc:request-variables`, and `rc:error`) on
+         * the main thread, along with a [PaywallWebViewController] for replying to the web view.
+         *
+         * Bidirectional messaging is always enabled for `web_view` components; this handler is how the
+         * app observes and responds to those messages. The SDK does not automatically dismiss the
+         * paywall or trigger a purchase in response to any message.
+         */
+        public fun setWebViewMessageHandler(handler: PaywallWebViewMessageHandler?): Builder = apply {
+            this.webViewMessageHandler = handler
         }
 
         /**

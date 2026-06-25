@@ -50,6 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicWithCallback
@@ -659,6 +660,44 @@ class PaywallViewModelTest {
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options2)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `updateOptions refreshes the web view message handler in place without rebuilding`(): Unit = runBlocking {
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val handlerA = PaywallWebViewMessageHandler { _, _ -> }
+        val handlerB = PaywallWebViewMessageHandler { _, _ -> }
+        fun optionsWith(handler: PaywallWebViewMessageHandler) =
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offering)
+                .setWebViewMessageHandler(handler)
+                .build()
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            optionsWith(handlerA),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+        val state = model.state.value as PaywallState.Loaded.Components
+        assertThat(state.webViewMessageHandler).isSameAs(handlerA)
+
+        // Same paywall, only the handler differs (handler is excluded from hashCode).
+        model.updateOptions(optionsWith(handlerB))
+
+        // No rebuild: the loaded state instance is preserved (same selections/scroll), and it now
+        // carries the new handler so web_view components see the latest one.
+        assertThat(model.state.value).isSameAs(state)
+        assertThat(state.webViewMessageHandler).isSameAs(handlerB)
     }
 
     @Test
