@@ -39,6 +39,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -1298,7 +1299,8 @@ class TabsComponentViewTests {
                 is IconComponent,
                 is TextComponent,
                 is VideoComponent,
-                    -> {
+                is WebViewComponent,
+                -> {
                     // These don't have child components.
                 }
             }
