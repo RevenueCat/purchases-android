@@ -192,7 +192,7 @@ class EndpointTest {
     @Test
     fun `GetRemoteConfig has correct path`() {
         val endpoint = Endpoint.GetRemoteConfig
-        val expectedPath = "/v2/config"
+        val expectedPath = "/v1/config"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 

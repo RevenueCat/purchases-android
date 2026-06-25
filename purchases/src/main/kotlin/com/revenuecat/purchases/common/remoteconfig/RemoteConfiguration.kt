@@ -14,9 +14,10 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
+import java.nio.ByteBuffer
 
 /**
- * The `/v2/config` configuration response. This is the JSON payload carried in element 0 (the config
+ * The `/v1/config` configuration response. This is the JSON payload carried in element 0 (the config
  * element) of the binary [com.revenuecat.purchases.common.networking.RCContainer], and is also the plain
  * JSON fallback body when the SDK does not request the binary format.
  *
@@ -75,6 +76,14 @@ internal data class RemoteConfiguration(
     companion object {
         fun parse(bytes: ByteArray): RemoteConfiguration =
             JsonProvider.defaultJson.decodeFromString(serializer(), bytes.decodeToString())
+
+        /** Duplicates [buffer] so the caller's read-only, zero-copy `RCElement.data` view is left untouched. */
+        fun parse(buffer: ByteBuffer): RemoteConfiguration {
+            val view = buffer.duplicate()
+            val bytes = ByteArray(view.remaining())
+            view.get(bytes)
+            return parse(bytes)
+        }
     }
 }
 

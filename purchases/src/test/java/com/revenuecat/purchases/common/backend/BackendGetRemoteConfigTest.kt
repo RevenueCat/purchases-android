@@ -35,6 +35,11 @@ class BackendGetRemoteConfigTest {
 
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
 
+    private val testDomain = "app"
+    private val testAppUserID = "test-app-user-id"
+    private val testManifest = "v1.1710000100.sources:etag1"
+    private val testPrefetchedBlobs = listOf("blobRefA")
+
     private lateinit var appConfig: AppConfig
     private lateinit var httpClient: HTTPClient
 
@@ -86,6 +91,10 @@ class BackendGetRemoteConfigTest {
         var verification: VerificationResult? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
             onSuccess = { result, verificationResult ->
                 container = result
                 verification = verificationResult
@@ -102,35 +111,16 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig surfaces a 204 No Content response as a null container`() {
-        mockHttpResult(
-            responseCode = RCHTTPStatusCodes.NO_CONTENT,
-            payload = HTTPResult.Payload.RCFormat(ByteArray(0)),
-        )
-        var callbackCount = 0
-        var container: RCContainer? = mockk()
-        var verification: VerificationResult? = null
-        backend.getRemoteConfig(
-            appInBackground = false,
-            onSuccess = { result, verificationResult ->
-                callbackCount++
-                container = result
-                verification = verificationResult
-            },
-            onError = { error -> fail("Expected success. Got error: $error") },
-        )
-        assertThat(callbackCount).isEqualTo(1)
-        assertThat(container).isNull()
-        assertThat(verification).isEqualTo(VerificationResult.NOT_REQUESTED)
-    }
-
-    @Test
     fun `getRemoteConfig surfaces malformed RC Format payload as PurchasesError`() {
         mockHttpResult(payload = HTTPResult.Payload.RCFormat("not a container".toByteArray()))
 
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
             onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
@@ -144,10 +134,89 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
             onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
         assertThat(obtainedError).isNotNull
+    }
+
+    @Test
+    fun `getRemoteConfig surfaces a 204 No Content response as a null container`() {
+        var callbackCount = 0
+        var container: RCContainer? = mockk()
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.NO_CONTENT,
+            payload = HTTPResult.Payload.RCFormat(ByteArray(0)),
+            verificationResult = VerificationResult.VERIFIED,
+        )
+
+        var verification: VerificationResult? = null
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { result, verificationResult ->
+                callbackCount++
+                container = result
+                verification = verificationResult
+            },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(callbackCount).isEqualTo(1)
+        assertThat(container).isNull()
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `getRemoteConfig sends app_user_id, domain, opaque manifest and prefetched_blobs as the request body`() {
+        val bodySlot = mutableListOf<Map<String, Any?>?>()
+        mockNoContentRequest(bodySlot)
+
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        val body = bodySlot.firstOrNull()
+        assertThat(body).isNotNull
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "domain", "manifest", "prefetched_blobs")
+        assertThat(body?.get("app_user_id")).isEqualTo(testAppUserID)
+        assertThat(body?.get("domain")).isEqualTo("app")
+        // The manifest is replayed verbatim as the opaque string the SDK received.
+        assertThat(body?.get("manifest")).isEqualTo(testManifest)
+        assertThat(body?.get("prefetched_blobs")).isEqualTo(listOf("blobRefA"))
+    }
+
+    @Test
+    fun `getRemoteConfig omits the manifest on the first run`() {
+        val bodySlot = mutableListOf<Map<String, Any?>?>()
+        mockNoContentRequest(bodySlot)
+
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = null,
+            prefetchedBlobs = emptyList(),
+            onSuccess = { _, _ -> },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        val body = bodySlot.firstOrNull()
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "domain", "prefetched_blobs")
+        assertThat(body).doesNotContainKey("manifest")
     }
 
     @Test
@@ -159,6 +228,10 @@ class BackendGetRemoteConfigTest {
         var obtainedError: PurchasesError? = null
         backend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
             onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error -> obtainedError = error },
         )
@@ -171,11 +244,19 @@ class BackendGetRemoteConfigTest {
         val lock = CountDownLatch(2)
         asyncBackend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
             onSuccess = { _, _ -> lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
         asyncBackend.getRemoteConfig(
             appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
             onSuccess = { _, _ -> lock.countDown() },
             onError = { fail("Expected success. Got error: $it") },
         )
@@ -185,11 +266,68 @@ class BackendGetRemoteConfigTest {
             httpClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetRemoteConfig,
-                body = null,
+                body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
             )
         }
+    }
+
+    @Test
+    fun `getRemoteConfig does not dedup concurrent calls for different app user ids`() {
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer()), delayMs = 200)
+        val lock = CountDownLatch(2)
+        asyncBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = "user-a",
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> lock.countDown() },
+            onError = { fail("Expected success. Got error: $it") },
+        )
+        asyncBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = "user-b",
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> lock.countDown() },
+            onError = { fail("Expected success. Got error: $it") },
+        )
+        lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        // Different users must each get their own request rather than sharing the first caller's response.
+        verify(exactly = 2) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetRemoteConfig,
+                body = any(),
+                postFieldsToSign = null,
+                requestHeaders = any(),
+            )
+        }
+    }
+
+    private fun mockNoContentRequest(bodySlot: MutableList<Map<String, Any?>?>) {
+        every {
+            httpClient.performRequest(
+                any(),
+                any(),
+                body = captureNullable(bodySlot),
+                postFieldsToSign = any(),
+                requestHeaders = any(),
+                fallbackBaseURLs = any(),
+            )
+        } returns HTTPResult(
+            RCHTTPStatusCodes.NO_CONTENT,
+            HTTPResult.Payload.RCFormat(ByteArray(0)),
+            HTTPResult.Origin.BACKEND,
+            requestDate = null,
+            VerificationResult.NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
     }
 
     private fun mockHttpResult(
