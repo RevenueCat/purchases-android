@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
@@ -36,6 +37,10 @@ internal fun WebViewComponentView(
     // always resolve; render nothing rather than crashing if it doesn't.
     if (resolvedUrl == null) return
 
+    // For v1, the presence of a protocol_version means the web content is isolated from external
+    // sources via a fixed Content-Security-Policy. Legacy configs without it get no policy.
+    val enforceContentSecurityPolicy = style.protocolVersion != null
+
     // Key on the resolved URL so the WebView is created (and the page loaded) exactly once per intended
     // URL. We deliberately do NOT reload on every recomposition: in-page navigation changes WebView.url,
     // and reloading whenever it differs from resolvedUrl would reset a multi-step web flow. The WebView
@@ -44,7 +49,7 @@ internal fun WebViewComponentView(
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
-                    configure()
+                    configure(enforceContentSecurityPolicy)
                     loadUrl(resolvedUrl.toString())
                 }
             },
@@ -58,7 +63,7 @@ internal fun WebViewComponentView(
     }
 }
 
-private fun WebView.configure() {
+private fun WebView.configure(enforceContentSecurityPolicy: Boolean) {
     setBackgroundColor(Color.TRANSPARENT)
     isVerticalScrollBarEnabled = false
     isHorizontalScrollBarEnabled = false
@@ -68,7 +73,17 @@ private fun WebView.configure() {
     settings.domStorageEnabled = true
     settings.javaScriptEnabled = true
     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+    settings.setGeolocationEnabled(false)
     webViewClient = object : WebViewClient() {
+        override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
+            super.onPageStarted(view, url, favicon)
+            // Install the isolation Content-Security-Policy before any of the page's own resources or
+            // scripts run.
+            if (enforceContentSecurityPolicy) {
+                view.evaluateJavascript(contentSecurityPolicyMetaScript(), null)
+            }
+        }
+
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             return request.url.scheme != HTTPS_SCHEME
         }
