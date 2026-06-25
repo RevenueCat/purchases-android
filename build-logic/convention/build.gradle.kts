@@ -40,5 +40,10 @@ gradlePlugin {
             implementationClass =
                 "com.revenuecat.purchases.android.buildlogic.plugin.ApiTesterApplicationConventionPlugin"
         }
+        register("SnapshotPublishing") {
+            id = "revenuecat-snapshot-publishing"
+            implementationClass =
+                "com.revenuecat.purchases.android.buildlogic.plugin.SnapshotPublishingConventionPlugin"
+        }
     }
 }

@@ -3,6 +3,7 @@ import java.lang.Runtime.Version
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    id("revenuecat-snapshot-publishing")
 }
 
 private val kotlinPlugin = plugins
