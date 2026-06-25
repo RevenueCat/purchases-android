@@ -10,7 +10,7 @@ import java.io.File
 import java.io.IOException
 
 /**
- * The sync bookkeeping the SDK persists between `/v2/config` calls.
+ * The sync bookkeeping the SDK persists between `/v1/config` calls.
  *
  * [manifest] is the **opaque** server token, stored verbatim and replayed on the next request; the SDK never
  * parses it. [activeTopics] is the last response's full active-topic-name set (used to detect removed topics).

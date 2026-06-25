@@ -18,7 +18,7 @@ internal object RCContainerTestData {
     const val FIXTURE_DIR = "rc_container"
 
     /**
-     * A representative `/v2/config` payload, modeled on `get_remote_config_success.json`. Stored as
+     * A representative `/v1/config` payload, modeled on `get_remote_config_success.json`. Stored as
      * the config element (element 0) of most fixtures so they resemble real wire data.
      */
     // language=json
