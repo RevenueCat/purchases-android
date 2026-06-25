@@ -109,6 +109,20 @@ class WeightedSourceSelectorTest {
         assertThat(selector.advance()).isNull()
     }
 
+    @Test
+    fun `weights summing beyond Int MAX_VALUE do not overflow`() {
+        // The tier's weights overflow Int when summed, so the total saturates to Int.MAX_VALUE
+        // instead of overflowing. Drawing target 5 skips a (weight 1) and lands on b (weight
+        // Int.MAX_VALUE) without the running subtraction underflowing.
+        val a = TestSource("a", priority = 0, weight = 1)
+        val b = TestSource("b", priority = 0, weight = Int.MAX_VALUE)
+        val selector = WeightedSourceSelector(listOf(a, b), FakeRandom(5))
+
+        assertThat(selector.current).isSameAs(b)
+        assertThat(selector.advance()).isSameAs(a)
+        assertThat(selector.advance()).isNull()
+    }
+
     // endregion
 
     // region advance()

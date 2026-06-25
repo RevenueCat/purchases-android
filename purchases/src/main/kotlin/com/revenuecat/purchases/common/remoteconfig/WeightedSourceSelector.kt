@@ -74,21 +74,24 @@ internal class WeightedSourceSelector<T : WeightedSource>(
 
         fun <T : WeightedSource> weightedPickIndex(sources: List<T>, random: Random): Int {
             val weights = sources.map { maxOf(0, it.weight) }
-            val totalWeight = weights.sum()
+            val totalWeight = weights.fold(0, ::sumOrIntMax)
 
             if (totalWeight <= 0) return random.nextInt(sources.size)
 
-            val target = random.nextInt(totalWeight)
-            var cumulative = 0
+            var target = random.nextInt(totalWeight)
             var selected = weights.lastIndex
             for (index in weights.indices) {
-                cumulative += weights[index]
-                if (target < cumulative) {
+                target -= weights[index]
+                if (target < 0) {
                     selected = index
                     break
                 }
             }
             return selected
         }
+
+        /** Adds [a] and [b], clamping to Int.MAX_VALUE instead of overflowing. */
+        fun sumOrIntMax(a: Int, b: Int): Int =
+            (a.toLong() + b.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 }
