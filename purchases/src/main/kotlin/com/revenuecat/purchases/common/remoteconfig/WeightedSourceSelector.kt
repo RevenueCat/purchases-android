@@ -90,8 +90,8 @@ internal class WeightedSourceSelector<T : WeightedSource>(
             return selected
         }
 
-        /** Adds [a] and [b], clamping to Int.MAX_VALUE instead of overflowing. */
-        fun sumOrIntMax(a: Int, b: Int): Int =
-            (a.toLong() + b.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        /** Adds [lhs] and [rhs], clamping to Int.MAX_VALUE instead of overflowing. */
+        fun sumOrIntMax(lhs: Int, rhs: Int): Int =
+            (lhs.toLong() + rhs.toLong()).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
     }
 }
