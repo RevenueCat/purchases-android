@@ -52,3 +52,29 @@ Sonatype might fail when performing the `closeAndRelease` step. Fortunately, we 
 - Head to https://central.sonatype.com/publishing/deployments, login using the credentials in 1Password
 - You should see one staging repository there. If there are more than one, drop all of them and rerun the failing job in CircleCI.
 - Select the only repository available, then do Close. When close finishes, do Release and automatically drop the repository.
+
+Snapshot builds
+=========
+Snapshot versions (those ending in `-SNAPSHOT`) are published to GitHub Packages, not Maven Central. Release versions still go to Maven Central. Snapshots are published automatically on every merge to `main`, and can be triggered manually with the `deploy_snapshot_release` CircleCI action. They are GPG-signed like releases.
+
+GitHub Packages requires authentication to download artifacts even though the packages are public, so consumers need a GitHub personal access token (classic) with the `read:packages` scope.
+
+To consume snapshots, add the repository to your Gradle build:
+
+```kotlin
+repositories {
+    maven(url = "https://maven.pkg.github.com/RevenueCat/purchases-android") {
+        content { includeGroup("com.revenuecat.purchases") }
+        credentials {
+            username = providers.gradleProperty("githubPackagesUsername").orNull
+                ?: System.getenv("GITHUB_PACKAGES_USERNAME")
+            password = providers.gradleProperty("githubPackagesToken").orNull
+                ?: System.getenv("GITHUB_PACKAGES_TOKEN")
+        }
+    }
+}
+```
+
+Provide the credentials as the `githubPackagesUsername` (your GitHub username) and `githubPackagesToken` (the PAT) Gradle properties in `~/.gradle/gradle.properties`, or as the `GITHUB_PACKAGES_USERNAME` / `GITHUB_PACKAGES_TOKEN` environment variables. The sample apps under `examples/` are already configured this way.
+
+Publishing uses the same credential names; CI provides them through the `github-packages-publishing` context, where the token needs the `write:packages` scope.
