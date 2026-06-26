@@ -116,6 +116,25 @@ class RemoteConfigDiskCacheTest {
     }
 
     @Test
+    fun `clear deletes the persisted state so read returns null`() {
+        diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.1.sources:etag1"))
+
+        diskCache.clear()
+
+        assertThat(diskCache.read()).isNull()
+        assertThat(
+            File(File(File(testFolder, "RevenueCat"), "remote_config"), "remote_config.json").exists(),
+        ).isFalse
+    }
+
+    @Test
+    fun `clear is a no-op when nothing has been persisted`() {
+        diskCache.clear()
+
+        assertThat(diskCache.read()).isNull()
+    }
+
+    @Test
     fun `read returns null when the persisted file is corrupt`() {
         val parent = File(File(testFolder, "RevenueCat"), "remote_config").apply { mkdirs() }
         File(parent, "remote_config.json").writeText("{ this is not valid json")

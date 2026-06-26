@@ -111,6 +111,25 @@ class RemoteConfigBlobStoreTest {
     }
 
     @Test
+    fun `clear deletes every cached blob`() {
+        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        blobStore.write(refB, ByteBuffer.wrap(byteArrayOf(2)))
+
+        blobStore.clear()
+
+        assertThat(blobStore.cachedRefs()).isEmpty()
+        assertThat(blobStore.contains(refA)).isFalse
+        assertThat(blobStore.contains(refB)).isFalse
+    }
+
+    @Test
+    fun `clear is a no-op when nothing has been written`() {
+        blobStore.clear()
+
+        assertThat(blobStore.cachedRefs()).isEmpty()
+    }
+
+    @Test
     fun `a malformed ref is rejected and cannot escape the blobs directory`() {
         val malformed = "../escape"
 

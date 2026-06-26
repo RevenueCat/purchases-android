@@ -92,6 +92,18 @@ internal class RemoteConfigDiskCache(
         }
     }
 
+    /**
+     * Deletes the persisted state so the next sync starts fresh (no manifest -> full re-fetch). Used on identity
+     * change to keep configuration from bleeding across users.
+     */
+    fun clear() {
+        try {
+            AtomicFile(targetFile()).delete()
+        } catch (e: SecurityException) {
+            errorLog(e) { "Failed to clear remote config from disk." }
+        }
+    }
+
     private fun targetFile(): File =
         File(
             File(File(applicationContext.noBackupFilesDir, REMOTE_CONFIG_ROOT), REMOTE_CONFIG_SUBDIR),

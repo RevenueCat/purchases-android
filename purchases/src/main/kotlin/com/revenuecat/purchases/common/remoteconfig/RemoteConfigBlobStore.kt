@@ -84,6 +84,16 @@ internal class RemoteConfigBlobStore(
             ?.forEach { deleteQuietly(it) }
     }
 
+    /**
+     * Deletes every cached blob unconditionally. Used on identity change to keep config from bleeding across
+     * users (unlike [retainOnly], which only prunes unreferenced blobs).
+     */
+    fun clear() {
+        val parent = blobsDir()
+        if (!parent.exists()) return
+        parent.listFiles()?.forEach { deleteQuietly(it) }
+    }
+
     private fun deleteQuietly(file: File) {
         try {
             if (!file.delete()) {
