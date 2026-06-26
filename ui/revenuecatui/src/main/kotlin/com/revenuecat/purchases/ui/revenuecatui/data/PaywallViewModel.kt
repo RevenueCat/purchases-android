@@ -211,6 +211,9 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
+
+    // Shared across all screens of a workflow presentation so state-driven values survive screen navigation.
+    private var currentWorkflowStateStore: PaywallStateStore? = null
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
@@ -371,6 +374,7 @@ internal class PaywallViewModelImpl(
         currentWorkflowPresentedOfferingContext = null
         currentWorkflowStepTracksPaywallEvents = true
         workflowStepStateCache.clear()
+        currentWorkflowStateStore = null
         _workflowState.value = null
         // The dismiss is the session boundary: the next presentation on this ViewModel is a new session,
         // so completion from this one must not suppress its abandonment. Runs after closePaywall has
@@ -1114,6 +1118,9 @@ internal class PaywallViewModelImpl(
         _workflowState.value = null
         if (isNewWorkflowImpression) {
             workflowTraceId = UUID.randomUUID().toString()
+            // Fresh presentation: start the shared store empty; each step registers its declarations as it builds.
+            // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
+            currentWorkflowStateStore = PaywallStateStore(emptyMap())
         }
 
         // Pre-compute the package step so its default package is available in cache
@@ -1239,6 +1246,7 @@ internal class PaywallViewModelImpl(
             colorScheme = _colorScheme.value,
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
+            stateStore = currentWorkflowStateStore,
         )
     }
 
@@ -1495,6 +1503,7 @@ internal class PaywallViewModelImpl(
         colorScheme: ColorScheme,
         storefrontCountryCode: String?,
         mode: PaywallMode,
+        stateStore: PaywallStateStore? = null,
     ): PaywallState {
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
@@ -1533,6 +1542,7 @@ internal class PaywallViewModelImpl(
                 purchases = purchases,
                 customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
+                stateStore = stateStore,
             )
         }
     }
