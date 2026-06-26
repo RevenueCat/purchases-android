@@ -431,7 +431,10 @@ internal class Backend(
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
         val call = object : Dispatcher.AsyncCall() {
+            private var requestStartedAtNanos = System.nanoTime()
+
             override fun call(): HTTPResult {
+                requestStartedAtNanos = System.nanoTime()
                 return httpClient.performRequest(
                     appConfig.baseURL,
                     endpoint,
@@ -443,6 +446,10 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
+                debugLog {
+                    "Offerings backend request failed in " +
+                        "${elapsedMillisecondsSince(requestStartedAtNanos)} ms: ${error.underlyingErrorMessage}"
+                }
                 synchronized(this@Backend) {
                     offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
@@ -451,6 +458,11 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPResult) {
+                debugLog {
+                    "Offerings backend request completed in " +
+                        "${elapsedMillisecondsSince(requestStartedAtNanos)} ms " +
+                        "(responseCode=${result.responseCode}, source=${result.originalDataSource})."
+                }
                 synchronized(this@Backend) {
                     offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
@@ -1041,7 +1053,10 @@ internal class Backend(
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
         val call = object : Dispatcher.AsyncCall() {
+            private var requestStartedAtNanos = System.nanoTime()
+
             override fun call(): HTTPResult {
+                requestStartedAtNanos = System.nanoTime()
                 return httpClient.performRequest(
                     appConfig.baseURL,
                     endpoint,
@@ -1053,6 +1068,10 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
+                debugLog {
+                    "Workflow detail backend request failed for $workflowId in " +
+                        "${elapsedMillisecondsSince(requestStartedAtNanos)} ms: ${error.underlyingErrorMessage}"
+                }
                 synchronized(this@Backend) {
                     workflowDetailCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
@@ -1061,6 +1080,11 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPResult) {
+                debugLog {
+                    "Workflow detail backend request completed for $workflowId in " +
+                        "${elapsedMillisecondsSince(requestStartedAtNanos)} ms " +
+                        "(responseCode=${result.responseCode}, source=${result.originalDataSource})."
+                }
                 synchronized(this@Backend) {
                     workflowDetailCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
@@ -1114,7 +1138,10 @@ internal class Backend(
         val path = endpoint.getPath()
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
         val call = object : Dispatcher.AsyncCall() {
+            private var requestStartedAtNanos = System.nanoTime()
+
             override fun call(): HTTPResult {
+                requestStartedAtNanos = System.nanoTime()
                 return httpClient.performRequest(
                     appConfig.baseURL,
                     endpoint,
@@ -1126,6 +1153,10 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
+                debugLog {
+                    "Workflows list backend request failed in " +
+                        "${elapsedMillisecondsSince(requestStartedAtNanos)} ms: ${error.underlyingErrorMessage}"
+                }
                 synchronized(this@Backend) {
                     workflowsListCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
@@ -1134,6 +1165,11 @@ internal class Backend(
             }
 
             override fun onCompletion(result: HTTPResult) {
+                debugLog {
+                    "Workflows list backend request completed in " +
+                        "${elapsedMillisecondsSince(requestStartedAtNanos)} ms " +
+                        "(responseCode=${result.responseCode}, source=${result.originalDataSource})."
+                }
                 synchronized(this@Backend) {
                     workflowsListCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->

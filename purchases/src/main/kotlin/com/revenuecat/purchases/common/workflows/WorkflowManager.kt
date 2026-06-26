@@ -7,6 +7,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetWorkflowsErrorHandlingBehavior
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.elapsedMillisecondsSince
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.toPurchasesError
@@ -142,7 +144,7 @@ internal class WorkflowManager(
         }
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongMethod", "LongParameterList")
     private fun fetchAndCacheWorkflow(
         appUserID: String,
         workflowId: String,
@@ -154,6 +156,7 @@ internal class WorkflowManager(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        val workflowFetchStartedAtNanos = System.nanoTime()
         val onSuccessHandler: (WorkflowDetailResponse) -> Unit = { response ->
             scope.launch {
                 // resolve() can fail in several ways (missing inline data, CDN fetch/parse failures,
@@ -168,6 +171,11 @@ internal class WorkflowManager(
                     return@launch
                 }
                 cacheResolvedWorkflow(result, response, persistEnvelopeOnResolve, offeringIdToRecordOnResolve)
+                debugLog {
+                    "Workflow $workflowId resolved in " +
+                        "${elapsedMillisecondsSince(workflowFetchStartedAtNanos)} ms " +
+                        "(action=${response.action}, includes CDN wait when action is use_cdn)."
+                }
                 if (preDownloadAssetsOnResolve) {
                     scope.launch {
                         runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
@@ -180,6 +188,11 @@ internal class WorkflowManager(
         val onErrorWithFallback: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit =
             { error, behavior ->
                 if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                    debugLog {
+                        "Workflow $workflowId failed in " +
+                            "${elapsedMillisecondsSince(workflowFetchStartedAtNanos)} ms without fallback: " +
+                            error.underlyingErrorMessage
+                    }
                     // 4xx: the server intentionally changed/removed this workflow, so don't serve the
                     // saved copy. Invalidate the in-memory entry so the next call retries rather than
                     // serving a still-cached value — mirrors the list's invalidateWorkflowsListTimestamp
@@ -187,6 +200,11 @@ internal class WorkflowManager(
                     workflowsCache.invalidateWorkflowTimestamp(workflowId)
                     onError(error)
                 } else {
+                    debugLog {
+                        "Workflow $workflowId backend failed in " +
+                            "${elapsedMillisecondsSince(workflowFetchStartedAtNanos)} ms; trying disk fallback: " +
+                            error.underlyingErrorMessage
+                    }
                     // Transport error / 5xx / malformed body: the backend is unavailable, not refusing.
                     // Recover from the persisted envelope if we have one, matching OfferingsManager's
                     // disk fallback. Applies to every caller, including the SWR background refresh.
@@ -307,12 +325,14 @@ internal class WorkflowManager(
      * while a batch is running joins it instead of starting a new fetch. That window self-heals on the
      * next fetch.
      */
+    @Suppress("LongMethod")
     fun getWorkflowsList(
         appUserID: String,
         appInBackground: Boolean,
         forceRefresh: Boolean = false,
         onComplete: () -> Unit = {},
     ) {
+        val workflowsGateStartedAtNanos = System.nanoTime()
         // Decide under the lock, act outside it so onComplete never fires while holding it.
         val startFetch = synchronized(callbackLock) {
             val inFlight = pendingCompletionCallbacks[appUserID]
@@ -322,6 +342,7 @@ internal class WorkflowManager(
                 // before its prefetch finishes, so a freshness check would let this caller complete
                 // early, and an in-flight batch is never interrupted.
                 inFlight.add(onComplete)
+                debugLog { "Joined in-flight workflows list gate." }
                 return
             }
             // Nothing in flight: open a batch and fetch when forced or when the cached list is stale.
@@ -332,6 +353,10 @@ internal class WorkflowManager(
         // Fresh cache and nothing in flight: complete now. Otherwise the request's onSuccess/onError
         // fire the queued callbacks when it settles.
         if (!startFetch) {
+            debugLog {
+                "Workflows list gate completed from cache in " +
+                    "${elapsedMillisecondsSince(workflowsGateStartedAtNanos)} ms."
+            }
             completePendingCallbacks(appUserID)
         } else {
             backend.getWorkflows(
@@ -359,6 +384,13 @@ internal class WorkflowManager(
                                 async { prefetchWorkflow(appUserID, summary.id, appInBackground) }
                             }.awaitAll()
                         }.filterNotNull()
+                        debugLog {
+                            "Workflows list gate completed in " +
+                                "${elapsedMillisecondsSince(workflowsGateStartedAtNanos)} ms " +
+                                "(listed=${filtered.workflows.size}, " +
+                                "prefetched=${prefetched.size}/${prefetchWorkflows.size}); " +
+                                "excluding workflow asset predownloads."
+                        }
                         completePendingCallbacks(appUserID)
                         // Offerings are delivered. Pre-download the prefetched workflows' assets now, so the
                         // font/image downloads don't compete for bandwidth with the (now finished) workflow
@@ -372,6 +404,10 @@ internal class WorkflowManager(
                 onError = { error, behavior ->
                     errorLog { "Failed to fetch workflows list: ${error.underlyingErrorMessage}" }
                     if (behavior == GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK) {
+                        debugLog {
+                            "Workflows list gate failed without fallback in " +
+                                "${elapsedMillisecondsSince(workflowsGateStartedAtNanos)} ms."
+                        }
                         // A 4xx means the server intentionally changed/removed these workflows. Don't
                         // resurrect a stale list from disk; just settle the callbacks so offerings
                         // delivery isn't stranded. Invalidate the timestamp so the next non-forced call
@@ -380,7 +416,7 @@ internal class WorkflowManager(
                         workflowsCache.invalidateWorkflowsListTimestamp()
                         completePendingCallbacks(appUserID)
                     } else {
-                        restoreWorkflowsListFromDisk(appUserID)
+                        restoreWorkflowsListFromDisk(appUserID, workflowsGateStartedAtNanos)
                     }
                 },
             )
@@ -393,7 +429,10 @@ internal class WorkflowManager(
      * in-memory cache is rewritten from disk without re-persisting it — disk already holds this payload.
      * [completePendingCallbacks] always fires exactly once.
      */
-    private fun restoreWorkflowsListFromDisk(appUserID: String) {
+    private fun restoreWorkflowsListFromDisk(
+        appUserID: String,
+        workflowsGateStartedAtNanos: Long,
+    ) {
         val restoredFromDisk = workflowsCache.cachedWorkflowsListResponseFromDisk()?.let { response ->
             val filtered = response.onlyWorkflowsWithOfferingId()
             workflowsCache.cacheWorkflowsListInMemory(filtered, buildOfferingIdMap(filtered.workflows))
@@ -407,6 +446,11 @@ internal class WorkflowManager(
         }
         val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk().orEmpty()
         if (envelopes.isEmpty()) {
+            debugLog {
+                "Workflows list gate restored from disk in " +
+                    "${elapsedMillisecondsSince(workflowsGateStartedAtNanos)} ms " +
+                    "(restoredList=$restoredFromDisk, restoredEnvelopes=0)."
+            }
             completePendingCallbacks(appUserID)
         } else {
             scope.launch {
@@ -417,6 +461,12 @@ internal class WorkflowManager(
                     envelopes.forEach { (workflowId, envelope) ->
                         launch { restoreWorkflowFromEnvelope(workflowId, envelope) }
                     }
+                }
+                debugLog {
+                    "Workflows list gate restored from disk in " +
+                        "${elapsedMillisecondsSince(workflowsGateStartedAtNanos)} ms " +
+                        "(restoredList=$restoredFromDisk, restoredEnvelopes=${envelopes.size}); " +
+                        "excluding workflow asset predownloads."
                 }
                 completePendingCallbacks(appUserID)
             }
