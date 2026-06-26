@@ -69,7 +69,11 @@ internal class PaywallResourceProvider(
             resources.getXml(resourceId)
         } catch (_: Resources.NotFoundException) {
             return null
-        }
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            // layoutlib (Paparazzi) can throw instead of returning null for an unresolvable font.
+            Logger.e("Error loading XML font family for resource ID $resourceId. Falling back.", e)
+            return null
+        } ?: return null // layoutlib (Paparazzi) returns null instead of throwing NotFoundException.
         return try {
             FontFamilyXmlParser.parse(parser)
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {

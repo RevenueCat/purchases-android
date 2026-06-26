@@ -119,7 +119,7 @@ private fun Image(
 
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
-    val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
+    val imageLoader = previewImageLoader ?: remember(applicationContext) {
         Purchases.getImageLoaderTyped(applicationContext)
     }
 
@@ -131,7 +131,8 @@ private fun Image(
         .memoryCachePolicy(cachePolicy)
         .build()
 
-    val previewPlaceholder = if (isInPreviewMode()) imageLoader.getPreviewPlaceholderBlocking(imageRequest) else null
+    // An injected loader (previews and offline tests) loads eagerly and blocking for single-frame rendering.
+    val previewPlaceholder = previewImageLoader?.let { imageLoader.getPreviewPlaceholderBlocking(imageRequest) }
     val placeholder = placeholderSource?.let {
         rememberAsyncImagePainter(
             model = it.data,

@@ -13,20 +13,25 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class PaywallResourceProviderTest {
 
-    private fun resourceProviderWith(
-        assetsByDir: Map<String, Array<String>>,
-    ): PaywallResourceProvider {
-        val resources = mockk<Resources> {
-            every { assets.list(any()) } returns emptyArray()
-            assetsByDir.forEach { (dir, files) ->
-                every { assets.list(dir) } returns files
-            }
-        }
-        return PaywallResourceProvider(
-            applicationName = "TestApp",
-            packageName = "com.test.app",
-            resources = resources,
-        )
+    @Test
+    fun `getXmlFontFamily returns null instead of crashing when getXml returns null`() {
+        // Reproduces the Paparazzi/layoutlib behavior: getXml returns null (rather than throwing
+        // NotFoundException) for a font resource that can't be resolved. Before the fix, assigning the
+        // null platform return to a non-null local crashed with a Kotlin intrinsic NPE.
+        val resources = mockk<Resources>()
+        every { resources.getXml(123) } returns null
+        val provider = providerWith(resources)
+
+        assertThat(provider.getXmlFontFamily(123)).isNull()
+    }
+
+    @Test
+    fun `getXmlFontFamily returns null when the resource is not found`() {
+        val resources = mockk<Resources>()
+        every { resources.getXml(456) } throws Resources.NotFoundException("missing")
+        val provider = providerWith(resources)
+
+        assertThat(provider.getXmlFontFamily(456)).isNull()
     }
 
     @Test
@@ -68,5 +73,28 @@ class PaywallResourceProviderTest {
         val paths = provider.getAssetFontPaths(listOf("missingFont"))
 
         assertThat(paths).isNull()
+    }
+
+    private fun providerWith(resources: Resources): PaywallResourceProvider =
+        PaywallResourceProvider(
+            applicationName = "App",
+            packageName = "com.example",
+            resources = resources,
+        )
+
+    private fun resourceProviderWith(
+        assetsByDir: Map<String, Array<String>>,
+    ): PaywallResourceProvider {
+        val resources = mockk<Resources> {
+            every { assets.list(any()) } returns emptyArray()
+            assetsByDir.forEach { (dir, files) ->
+                every { assets.list(dir) } returns files
+            }
+        }
+        return PaywallResourceProvider(
+            applicationName = "TestApp",
+            packageName = "com.test.app",
+            resources = resources,
+        )
     }
 }

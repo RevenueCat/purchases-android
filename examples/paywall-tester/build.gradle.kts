@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.revenuecat.android.application)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.baselineprofile)
+    alias(libs.plugins.paparazzi)
 }
 
 val localProperties = Properties().apply {
@@ -126,6 +127,12 @@ android {
             excludes += setOf("/META-INF/{AL2.0,LGPL2.1}")
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
@@ -168,6 +175,12 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.test.compose.manifest)
     debugImplementation(libs.leakcanary.android)
+
+    // Offline paywall snapshot testing via the kit (see src/test/.../PaywallSnapshotTest.kt).
+    testImplementation(project(":ui:revenuecatui-testing"))
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui)
+    testImplementation(libs.assertJ)
 
     baselineProfile(project(":baselineprofile")) {
         attributes {

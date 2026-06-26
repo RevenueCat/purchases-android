@@ -148,3 +148,8 @@ libs/samsung-iap-*.aar
 
 # Claude Code
 .claude/
+
+# paywall-tester: commit only the rendered snapshot result images (src/test/snapshots/images).
+# The whole recorded fixture (offerings.json + manifest + downloaded image assets) is regenerated with
+# recordPaywallFixtures, so the fixture directory itself is not committed.
+examples/paywall-tester/src/test/resources/revenuecat-paywall-fixtures/
