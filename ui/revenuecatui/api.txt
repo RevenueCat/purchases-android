@@ -150,6 +150,27 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public abstract void performRestoreWithCompletion(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
   }
 
+  public interface PaywallWebViewController {
+    method public void postMessage(String componentId, String type, java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> variables);
+    method public void postVariables(String componentId, java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> variables);
+  }
+
+  @dev.drewhamilton.poko.Poko public final class PaywallWebViewMessage {
+    ctor public PaywallWebViewMessage(String componentId, String type, optional java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue>? responses, optional String? error);
+    method public String getComponentId();
+    method public String? getError();
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue>? getResponses();
+    method public String getType();
+    property public final String componentId;
+    property public final String? error;
+    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue>? responses;
+    property public final String type;
+  }
+
+  public fun interface PaywallWebViewMessageHandler {
+    method public void onMessage(com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessage message, com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewController controller);
+  }
+
   public abstract class PaywallWebViewValue {
   }
 
