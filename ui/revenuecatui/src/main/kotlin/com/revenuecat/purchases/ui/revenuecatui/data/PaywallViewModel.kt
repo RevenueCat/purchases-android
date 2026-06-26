@@ -211,6 +211,10 @@ internal class PaywallViewModelImpl(
 
     // Shared across all screens of a workflow presentation so state-driven values survive screen navigation.
     private var currentWorkflowStateStore: PaywallStateStore? = null
+
+    // Reused across full state refreshes (e.g. color changes) of a standalone paywall so its state-driven values
+    // are not lost. Tied to this ViewModel's lifetime, so it resets when the paywall is presented again.
+    private var standaloneStateStore: PaywallStateStore? = null
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
@@ -910,11 +914,14 @@ internal class PaywallViewModelImpl(
                 "You do not have a current offering configured in the RevenueCat dashboard.",
             )
         } else {
+            val stateStore = standaloneStateStore
+                ?: PaywallStateStore(emptyMap()).also { standaloneStateStore = it }
             _state.value = calculateState(
                 currentOffering,
                 _colorScheme.value,
                 purchases.storefrontCountryCode,
                 options.mode,
+                stateStore = stateStore,
             )
         }
     }
