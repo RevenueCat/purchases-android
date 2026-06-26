@@ -68,8 +68,12 @@ internal class RewardVerificationManagerTest {
         val mockPurchases = mockk<Purchases>(relaxed = true)
         every { mockPurchases.generateRewardVerificationToken("ad-response-id") } returns token
         val polledClientTransactionId = slot<String>()
-        coEvery { mockPurchases.pollRewardVerification(capture(polledClientTransactionId)) } returns
-            RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
+        coEvery {
+            mockPurchases.pollRewardVerification(
+                capture(polledClientTransactionId),
+                any<suspend (String) -> RewardVerificationResult>(),
+            )
+        } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
 
         // Configure Purchases and drive the dispatcher so the reward verification runtime is created.
         Purchases.backingFieldSharedInstance = mockPurchases
@@ -124,8 +128,12 @@ internal class RewardVerificationManagerTest {
         val mockPurchases = mockk<Purchases>(relaxed = true)
         every { mockPurchases.generateRewardVerificationToken("interstitial-response-id") } returns token
         val polledClientTransactionId = slot<String>()
-        coEvery { mockPurchases.pollRewardVerification(capture(polledClientTransactionId)) } returns
-            RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
+        coEvery {
+            mockPurchases.pollRewardVerification(
+                capture(polledClientTransactionId),
+                any<suspend (String) -> RewardVerificationResult>(),
+            )
+        } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
 
         Purchases.backingFieldSharedInstance = mockPurchases
         originalServiceDispatcher.initialize(mockPurchases)

@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases
 
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.CustomerInfoFactory
@@ -21,6 +22,7 @@ import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -62,6 +64,7 @@ import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.net.URL
 import java.util.Locale
@@ -1965,6 +1968,47 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         verify(exactly = 0) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitPollRewardVerification polls the backend and returns the verified reward`() = runTest {
+        mockVerifiedVirtualCurrencyRewardBackend()
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        val result = purchases.awaitPollRewardVerification("ct_1")
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `pollRewardVerification callback delivers the verified reward`() {
+        mockVerifiedVirtualCurrencyRewardBackend()
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        var delivered: PollResult? = null
+        purchases.pollRewardVerification("ct_1", PollRewardVerificationCallback { delivered = it })
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(delivered?.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun mockVerifiedVirtualCurrencyRewardBackend() {
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationResult) -> Unit>().captured.invoke(
+                RewardVerificationResult.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+            )
+        }
     }
 
     @OptIn(InternalRevenueCatAPI::class)

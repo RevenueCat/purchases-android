@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.awaitPollRewardVerification
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +27,7 @@ internal class RewardVerificationRuntime(
         CoroutineScope(SupervisorJob() + Dispatchers.IO)
     },
     private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
-        Purchases.sharedInstance.pollRewardVerification(clientTransactionId)
+        Purchases.sharedInstance.awaitPollRewardVerification(clientTransactionId)
     },
 ) {
     private val clientTransactionIdByAdResponseId = mutableMapOf<String, String>()
