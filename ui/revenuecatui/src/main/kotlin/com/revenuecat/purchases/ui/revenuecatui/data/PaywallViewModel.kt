@@ -163,7 +163,6 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
-    private val useWorkflowsEndpoint: Boolean = purchases.useWorkflows,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
@@ -799,12 +798,11 @@ internal class PaywallViewModelImpl(
         val resolvedOfferingSelection = resolveOfferingSelection(offeringSelection)
         val selectedOffering = resolvedOfferingSelection.selectedOffering
 
-        // When workflows are enabled, every non-legacy paywall is served through the /workflows
-        // endpoint. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
-        // paywall: a legacy v1 paywall always carries `offering.paywall`, and that field stays
-        // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
-        // deliberately do NOT gate on `paywallComponents`, which is going away.
-        if (useWorkflowsEndpoint && selectedOffering != null && selectedOffering.paywall == null) {
+        // Every non-legacy paywall is served through the /workflows endpoint. `offering.paywall == null`
+        // is the durable marker of a non-legacy (workflow) paywall: a legacy v1 paywall always carries
+        // `offering.paywall`, and that field stays even after `paywallComponents` is removed and all V2
+        // paywalls move to workflows. We deliberately do NOT gate on `paywallComponents`, which is going away.
+        if (selectedOffering != null && selectedOffering.paywall == null) {
             presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
             return
         }

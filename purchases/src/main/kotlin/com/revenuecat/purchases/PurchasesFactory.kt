@@ -268,7 +268,7 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
+            val workflowsCache = WorkflowsCache(deviceCache = cache)
 
             val identityManager = IdentityManager(
                 cache,
@@ -366,33 +366,31 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
             )
 
-            val workflowManager = workflowsCache?.let {
-                WorkflowManager(
-                    backend = backend,
-                    workflowDetailResolver = WorkflowDetailResolver(
-                        workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                            // Dedicated FileRepository instance with a concurrency-limited scope, so workflow
-                            // CDN downloads are capped without affecting the instances used for images/video.
-                            fileRepository = DefaultFileRepository(
-                                fileCacheManager = DefaultFileCache(contextForStorage, "rc_compiled_workflows"),
-                                ioScope = CoroutineScope(
-                                    Dispatchers.IO.limitedParallelism(MAX_CONCURRENT_WORKFLOW_CDN_FETCHES) +
-                                        NonCancellable,
-                                ),
+            val workflowManager = WorkflowManager(
+                backend = backend,
+                workflowDetailResolver = WorkflowDetailResolver(
+                    workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
+                        // Dedicated FileRepository instance with a concurrency-limited scope, so workflow
+                        // CDN downloads are capped without affecting the instances used for images/video.
+                        fileRepository = DefaultFileRepository(
+                            fileCacheManager = DefaultFileCache(contextForStorage, "rc_compiled_workflows"),
+                            ioScope = CoroutineScope(
+                                Dispatchers.IO.limitedParallelism(MAX_CONCURRENT_WORKFLOW_CDN_FETCHES) +
+                                    NonCancellable,
                             ),
                         ),
                     ),
-                    workflowAssetPreDownloader = WorkflowAssetPreDownloader(
-                        paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                        offeringFontPreDownloader = offeringFontPreDownloader,
-                    ),
-                    workflowsCache = it,
-                    prefetchDispatcher = Dispatcher(
-                        createConcurrentExecutor(),
-                        runningIntegrationTests = runningIntegrationTests,
-                    ),
-                )
-            }
+                ),
+                workflowAssetPreDownloader = WorkflowAssetPreDownloader(
+                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
+                    offeringFontPreDownloader = offeringFontPreDownloader,
+                ),
+                workflowsCache = workflowsCache,
+                prefetchDispatcher = Dispatcher(
+                    createConcurrentExecutor(),
+                    runningIntegrationTests = runningIntegrationTests,
+                ),
+            )
 
             val offeringsManager = OfferingsManager(
                 offeringsCache,

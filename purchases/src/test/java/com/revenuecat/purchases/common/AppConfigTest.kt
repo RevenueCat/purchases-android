@@ -4,7 +4,6 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
@@ -507,8 +506,7 @@ class AppConfigTest {
                 "autoSyncPurchases=true, " +
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
-                "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
-                "useWorkflows=false), " +
+                "applyObfuscatedAccountIdToSubscriptionChanges=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +
@@ -551,33 +549,4 @@ class AppConfigTest {
     }
 
     // endregion Fallback API host
-
-    @OptIn(InternalRevenueCatAPI::class)
-    @Test
-    fun `useWorkflows reflects dangerousSettings`() {
-        val enabled = AppConfig(
-            context = mockk(relaxed = true),
-            purchasesAreCompletedBy = REVENUECAT,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE,
-            isDebugBuild = false,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
-            dangerousSettings = DangerousSettings.forWorkflows(),
-        )
-        assertThat(enabled.useWorkflows).isTrue
-
-        val disabled = AppConfig(
-            context = mockk(relaxed = true),
-            purchasesAreCompletedBy = REVENUECAT,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE,
-            isDebugBuild = false,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
-        )
-        assertThat(disabled.useWorkflows).isFalse
-    }
 }

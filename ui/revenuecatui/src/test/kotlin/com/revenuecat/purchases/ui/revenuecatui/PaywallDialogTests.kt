@@ -10,10 +10,12 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -33,10 +35,15 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.WorkflowScreen
+import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import io.mockk.Runs
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -67,6 +74,7 @@ class PaywallDialogTests {
         every { mockPurchases.storefrontCountryCode } returns "US"
         every { mockPurchases.preferredUILocaleOverride } returns null
         every { mockPurchases.track(any()) } just Runs
+        every { mockPurchases.workflowIdForOfferingId(any()) } returns null
         every { mockPurchases.currentConfiguration } returns mockk {
             every { dangerousSettings } returns DangerousSettings()
         }
@@ -81,16 +89,33 @@ class PaywallDialogTests {
     fun `PaywallDialog dismisses after toggling sticky footer control on first presentation`() {
         var dismissCount = 0
 
+        // Workflows are always on, so a non-legacy (paywall == null) offering is served through the
+        // /workflows endpoint. Wrap the offering's components in a single-screen workflow so the dialog
+        // renders the same sticky-footer content it did under the pre-workflows path.
+        val offering = fakeOffering()
+        val components = offering.paywallComponents!!
+        every { mockPurchases.getOfferings(any()) } answers {
+            firstArg<ReceiveOfferingsCallback>().onReceived(
+                Offerings(current = offering, all = mapOf(offering.identifier to offering)),
+            )
+        }
+        coEvery { mockPurchases.awaitGetWorkflow(any()) } returns
+            WorkflowDataResult(singleScreenWorkflow(components.data), null)
+
         composeTestRule.setContent {
             PaywallDialog(
                 PaywallDialogOptions.Builder()
-                    .setOffering(fakeOffering())
+                    .setOffering(offering)
                     .setDismissRequest { dismissCount++ }
                     .build(),
             )
         }
 
         with(composeTestRule) {
+            // The workflow paywall is fetched asynchronously, so wait until its sticky-footer
+            // toggle is rendered before interacting with it.
+            waitUntil { onAllNodes(isToggleable()).fetchSemanticsNodes().isNotEmpty() }
+
             onNode(isToggleable())
                 .assertIsOn()
                 .performClick()
@@ -174,6 +199,25 @@ class PaywallDialogTests {
             metadata = emptyMap(),
             availablePackages = listOf(monthly, annual),
             paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+    }
+
+    private fun singleScreenWorkflow(data: PaywallComponentsData): PublishedWorkflow {
+        val screen = WorkflowScreen(
+            templateName = data.templateName,
+            assetBaseURL = data.assetBaseURL,
+            componentsConfig = data.componentsConfig,
+            componentsLocalizations = data.componentsLocalizations,
+            defaultLocaleIdentifier = data.defaultLocaleIdentifier,
+            offeringIdentifier = "offering-id",
+        )
+        return PublishedWorkflow(
+            id = "offering-id",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")),
+            screens = mapOf("screen-1" to screen),
+            uiConfig = UiConfig(),
         )
     }
 
