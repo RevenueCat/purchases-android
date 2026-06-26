@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -63,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteract
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import kotlinx.serialization.json.JsonPrimitive
 
 private const val DURATION_MS_CROSS_FADE = 220
 
@@ -80,6 +82,15 @@ internal fun TabsComponentView(
         paywallState = state,
     )
     if (!tabsState.visible) return
+
+    // State-driven paywalls: publish the selected tab id into the state store so components that react to it via a
+    // `state_condition` override recompose. Runs on first composition (seed) and whenever the selection changes.
+    val selectedTabId = style.tabs[state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)].id
+    LaunchedEffect(selectedTabId) {
+        style.stateUpdates?.takeIf { it.isNotEmpty() }?.let { updates ->
+            state.stateStore.applyUpdates(updates, payload = JsonPrimitive(selectedTabId))
+        }
+    }
 
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }
@@ -214,6 +225,7 @@ private fun TabsComponentView_Preview() {
             control = TabControlStyle.Buttons(stack = previewStackComponentStyle(emptyList())),
             tabs = nonEmptyListOf(
                 TabsComponentStyle.Tab(
+                    id = "tab1",
                     stack = previewStackComponentStyle(
                         children = listOf(
                             controlButtons,
@@ -228,6 +240,7 @@ private fun TabsComponentView_Preview() {
                     ),
                 ),
                 TabsComponentStyle.Tab(
+                    id = "tab2",
                     stack = previewStackComponentStyle(
                         children = listOf(
                             controlButtons,
@@ -242,6 +255,7 @@ private fun TabsComponentView_Preview() {
                     ),
                 ),
                 TabsComponentStyle.Tab(
+                    id = "tab3",
                     stack = previewStackComponentStyle(
                         children = listOf(
                             controlButtons,
