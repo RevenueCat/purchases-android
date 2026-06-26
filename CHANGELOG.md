@@ -1,3 +1,32 @@
+## 10.11.0
+## RevenueCatUI SDK
+### ✨ New Features
+* Preview paywalls via deep link (#3550) via Dave DeLong (@davedelong)
+
+### 🔄 Other Changes
+* fix: align rules-engine-internal with json-logic-js (undefined & missing_some) (#3634) via Antonio Pallares (@ajpallares)
+* Add `presented_workflow_id` and `presented_step_id` to `/receipts` (#3603) via Cesar de la Vega (@vegaro)
+* refactor(remote-config): Migrate config to opaque-manifest wire format (#3641) via Toni Rico (@tonidero)
+* Emit `workflows_close` on workflow abandonment (#3626) via Facundo Menzella (@facumenzella)
+* build(deps): bump nokogiri from 1.19.3 to 1.19.4 (#3638) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump danger from 9.5.3 to 9.6.0 (#3635) via dependabot[bot] (@dependabot[bot])
+* Enable mise for JDK management (#3632) via Álvaro Brey (@AlvaroBrey)
+* Normalize cache keys on `getWorkflow` to workflow id (#3604) via Cesar de la Vega (@vegaro)
+* feat(workflows): drive paywall-event gating by step screen_type (#3620) via Facundo Menzella (@facumenzella)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3631) via RevenueCat Git Bot (@RCGitBot)
+* Bump sdks-common-config orb to 4.1.0 (#3629) via Álvaro Brey (@AlvaroBrey)
+* refactor(remote-config): wire-format models (#3610) via Toni Rico (@tonidero)
+* refactor(remote-config): Trusted-entitlements signing for the binary remote config response (#3601) via Toni Rico (@tonidero)
+* refactor(remote-config): Support RC Container Format for remote config request, remove stale implementation temporarily (#3607) via Toni Rico (@tonidero)
+* refactor(remote-config): RC Container Format v1 support (#3534) via Toni Rico (@tonidero)
+* Migrate update_error_codes to the outputs parameter (#3625) via Álvaro Brey (@AlvaroBrey)
+* Update sdks-common-config orb to 3.21.2 (#3624) via Antonio Pallares (@ajpallares)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3623) via RevenueCat Git Bot (@RCGitBot)
+* Report ad event capture_method (adapter vs manual) (#3616) via Pol Miro (@polmiro)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3618) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3617) via RevenueCat Git Bot (@RCGitBot)
+* Removes stale paywall template screenshots if necessary (#3595) via JayShortway (@JayShortway)
+
 ## 10.10.0
 ## RevenueCatUI SDK
 ### ✨ New Features
