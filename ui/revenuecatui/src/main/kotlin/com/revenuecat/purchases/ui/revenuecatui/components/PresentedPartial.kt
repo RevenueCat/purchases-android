@@ -11,8 +11,10 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
+import kotlin.math.abs
 
 /**
  * Partial components transformed and ready for presentation.
@@ -91,6 +93,8 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 internal class ConditionContext(
     val selectedPackageId: String?,
     val customVariables: Map<String, CustomVariableValue>,
+    val stateValues: Map<String, JsonPrimitive> = emptyMap(),
+    val stateDefaults: Map<String, JsonPrimitive> = emptyMap(),
 )
 
 /**
@@ -147,8 +151,7 @@ private fun ComponentOverride.Condition.evaluate(
     is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
-    // State condition evaluation lands in a later phase; until then it never applies its override.
-    is ComponentOverride.Condition.State -> false
+    is ComponentOverride.Condition.State -> evaluate(conditionContext.stateValues, conditionContext.stateDefaults)
     ComponentOverride.Condition.Unsupported -> false
 }
 
@@ -197,6 +200,35 @@ private fun ComponentOverride.Condition.Variable.matchesValue(
     value.doubleOrNull != null ->
         variableValue is CustomVariableValue.Number && variableValue.value == value.doubleOrNull
     else -> false
+}
+
+private const val STATE_NUMBER_COMPARISON_EPSILON = 1e-10
+
+private fun ComponentOverride.Condition.State.evaluate(
+    stateValues: Map<String, JsonPrimitive>,
+    stateDefaults: Map<String, JsonPrimitive>,
+): Boolean {
+    // An undeclared key (absent from both the store and the declared defaults) never applies its override,
+    // regardless of operator.
+    val current = stateValues[name] ?: stateDefaults[name] ?: return false
+    val matches = matchesValue(current)
+    return when (operator) {
+        ComponentOverride.EqualityOperator.EQUALS -> matches
+        ComponentOverride.EqualityOperator.NOT_EQUALS -> !matches
+    }
+}
+
+private fun ComponentOverride.Condition.State.matchesValue(current: JsonPrimitive): Boolean = when {
+    value.isString || current.isString ->
+        value.isString && current.isString && value.content == current.content
+    value.booleanOrNull != null || current.booleanOrNull != null ->
+        value.booleanOrNull == current.booleanOrNull
+    else -> {
+        val expectedNumber = value.doubleOrNull
+        val currentNumber = current.doubleOrNull
+        expectedNumber != null && currentNumber != null &&
+            abs(expectedNumber - currentNumber) < STATE_NUMBER_COMPARISON_EPSILON
+    }
 }
 
 private val ScreenCondition.applicableConditions: Set<ComponentOverride.Condition>
