@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
@@ -175,7 +176,7 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig sends app_user_id, domain, opaque manifest and prefetched_blobs as the request body`() {
+    fun `getRemoteConfig sends app_user_id, opaque manifest and prefetched_blobs as the request body`() {
         val bodySlot = mutableListOf<Map<String, Any?>?>()
         mockNoContentRequest(bodySlot)
 
@@ -191,12 +192,47 @@ class BackendGetRemoteConfigTest {
 
         val body = bodySlot.firstOrNull()
         assertThat(body).isNotNull
-        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "domain", "manifest", "prefetched_blobs")
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "manifest", "prefetched_blobs")
         assertThat(body?.get("app_user_id")).isEqualTo(testAppUserID)
-        assertThat(body?.get("domain")).isEqualTo("app")
         // The manifest is replayed verbatim as the opaque string the SDK received.
         assertThat(body?.get("manifest")).isEqualTo(testManifest)
         assertThat(body?.get("prefetched_blobs")).isEqualTo(listOf("blobRefA"))
+    }
+
+    @Test
+    fun `getRemoteConfig sends the domain as a path segment`() {
+        val endpointSlot = slot<Endpoint>()
+        every {
+            httpClient.performRequest(
+                any(),
+                capture(endpointSlot),
+                body = any(),
+                postFieldsToSign = any(),
+                requestHeaders = any(),
+                fallbackBaseURLs = any(),
+            )
+        } returns HTTPResult(
+            RCHTTPStatusCodes.NO_CONTENT,
+            HTTPResult.Payload.RCFormat(ByteArray(0)),
+            HTTPResult.Origin.BACKEND,
+            requestDate = null,
+            VerificationResult.NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
+
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> },
+            onError = { error -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(endpointSlot.captured).isEqualTo(Endpoint.GetRemoteConfig(testDomain))
+        assertThat(endpointSlot.captured.getPath()).isEqualTo("/v1/config/app")
     }
 
     @Test
@@ -215,7 +251,7 @@ class BackendGetRemoteConfigTest {
         )
 
         val body = bodySlot.firstOrNull()
-        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "domain", "prefetched_blobs")
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "prefetched_blobs")
         assertThat(body).doesNotContainKey("manifest")
     }
 
@@ -265,7 +301,7 @@ class BackendGetRemoteConfigTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRemoteConfig,
+                Endpoint.GetRemoteConfig(testDomain),
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),
@@ -301,7 +337,7 @@ class BackendGetRemoteConfigTest {
         verify(exactly = 2) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.GetRemoteConfig,
+                Endpoint.GetRemoteConfig(testDomain),
                 body = any(),
                 postFieldsToSign = null,
                 requestHeaders = any(),

@@ -407,7 +407,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test
     fun `performRequest verifies an RC Container Format response over the config part bytes`() {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
         val configBytes = "{\"config\":true}".toByteArray()
         val container = buildContainer(configBytes)
 
@@ -444,7 +444,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test
     fun `performRequest verifies the config part bytes regardless of the element checksum`() {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
         val configBytes = "{\"config\":true}".toByteArray()
         // The element checksum is an untrusted lookup hint: a mismatch must not affect verification, which is
         // anchored on the signature over the config part bytes.
@@ -479,7 +479,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test
     fun `performRequest fails RC Format verification when the response is not a valid RC Container`() {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
 
         mockSigningResult(VerificationResult.VERIFIED)
         enqueueRCFormat(byteArrayOf(1, 2, 3, 4))
@@ -501,7 +501,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     @Test
     fun `performRequest on enforced client throws when RC Format verification fails`() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
         val container = buildContainer("{\"config\":true}".toByteArray())
 
         mockSigningResult(VerificationResult.FAILED)
@@ -520,7 +520,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test
     fun `performRequest verifies a 204 empty response over the request context with an empty body`() {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
 
         mockSigningResult(VerificationResult.VERIFIED)
         enqueueRCFormat(ByteArray(0), responseCode = RCHTTPStatusCodes.NO_CONTENT)
@@ -554,7 +554,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     @Test
     fun `performRequest on enforced client throws when a 204 fails verification`() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
 
         mockSigningResult(VerificationResult.FAILED)
         enqueueRCFormat(ByteArray(0), responseCode = RCHTTPStatusCodes.NO_CONTENT)
