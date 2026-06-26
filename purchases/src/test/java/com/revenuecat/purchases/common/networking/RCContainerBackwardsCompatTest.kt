@@ -38,7 +38,7 @@ class RCContainerBackwardsCompatTest {
     @Test
     fun `single-element fixture parses`() {
         val container = parseFixture("v1_single_element.bin")
-        val blob = RCContainerTestData.ENTITLEMENT_MAPPING_BLOB
+        val blob = RCContainerTestData.WORKFLOW_BLOB
 
         assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
         assertThat(container.contentElements).hasSize(1)
@@ -53,7 +53,7 @@ class RCContainerBackwardsCompatTest {
         val expected = listOf(
             RCContainerTestData.SMALL_BLOB,
             ByteArray(0),
-            RCContainerTestData.ENTITLEMENT_MAPPING_BLOB,
+            RCContainerTestData.WORKFLOW_BLOB,
             RCContainerTestData.LARGE_BLOB,
         )
 
@@ -70,7 +70,7 @@ class RCContainerBackwardsCompatTest {
     @Test
     fun `empty-config fixture parses`() {
         val container = parseFixture("v1_empty_config.bin")
-        val blob = RCContainerTestData.ENTITLEMENT_MAPPING_BLOB
+        val blob = RCContainerTestData.WORKFLOW_BLOB
 
         assertThat(container.config.data.remaining()).isEqualTo(0)
         assertThat(container.contentElements).hasSize(1)
