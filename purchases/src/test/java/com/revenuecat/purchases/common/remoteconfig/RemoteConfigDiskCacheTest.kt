@@ -66,6 +66,13 @@ class RemoteConfigDiskCacheTest {
     }
 
     @Test
+    fun `write returns true on a successful persist`() {
+        val persisted = diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0."))
+
+        assertThat(persisted).isTrue
+    }
+
+    @Test
     fun `inline-only topics persist with an empty blob ref list`() {
         val config = PersistedRemoteConfigurationState(
             domain = "app",

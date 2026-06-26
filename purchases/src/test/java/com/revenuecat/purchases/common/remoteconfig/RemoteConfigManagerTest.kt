@@ -45,6 +45,9 @@ class RemoteConfigManagerTest {
         blobStore = mockk(relaxed = true)
         manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider)
 
+        // Persist succeeds by default; the blob store is only touched once the configuration is persisted.
+        every { diskCache.write(any()) } returns true
+
         every {
             backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
         } answers {
@@ -88,7 +91,7 @@ class RemoteConfigManagerTest {
         every { blobStore.contains(REF_VALID) } returns true
         every { blobStore.contains(REF_TAMPERED) } returns false
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
         assertThat(capturedPrefetchedBlobs).containsExactly(REF_VALID)
     }
@@ -160,7 +163,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
         val validData = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(
             containerWithConfig(
                 response,
@@ -177,6 +180,65 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a 200 response does not cache a valid inline blob the config does not reference`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        val wantedData = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(
+            containerWithConfig(
+                response,
+                elements = mapOf(
+                    REF_VALID to inlineElement(wantedData, checksumValid = true),
+                    // Valid bytes, but not in prefetch_blobs nor referenced by any active topic.
+                    REF_UNWANTED to inlineElement(ByteBuffer.wrap(byteArrayOf(7)), checksumValid = true),
+                ),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        verify(exactly = 1) { blobStore.write(REF_VALID, wantedData) }
+        verify(exactly = 0) { blobStore.write(REF_UNWANTED, any()) }
+    }
+
+    @Test
+    fun `a failed persist leaves the blob store untouched`() {
+        every { diskCache.read() } returns null
+        every { diskCache.write(any()) } returns false
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(
+            containerWithConfig(
+                response,
+                elements = mapOf(REF_VALID to inlineElement(ByteBuffer.wrap(byteArrayOf(1, 2, 3)), checksumValid = true)),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        // Both blob-store mutations are gated on a successful persist.
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
+    }
+
+    @Test
     fun `a 200 response evicts blobs no longer referenced by the config`() {
         every { diskCache.read() } returns null
         val response = """
@@ -189,7 +251,7 @@ class RemoteConfigManagerTest {
             }
         """.trimIndent()
 
-        manager.refreshRemoteConfig(appInBackground = false)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         val retained = slot<Set<String>>()
@@ -324,6 +386,7 @@ class RemoteConfigManagerTest {
         private const val FIXED_MILLIS = 1_710_000_000_000L
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
+        private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
         private val FixedDateProvider = object : DateProvider {
             override val now: Date get() = Date(FIXED_MILLIS)
         }

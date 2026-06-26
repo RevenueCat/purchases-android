@@ -60,8 +60,9 @@ internal class RemoteConfigDiskCache(
         }
     }
 
-    fun write(config: PersistedRemoteConfigurationState) {
-        try {
+    /** Returns `true` once the state is durably persisted, `false` if serialization or IO failed. */
+    fun write(config: PersistedRemoteConfigurationState): Boolean {
+        return try {
             val target = targetFile()
             target.parentFile?.let { parent ->
                 if (!parent.exists()) {
@@ -81,10 +82,13 @@ internal class RemoteConfigDiskCache(
                 atomicFile.failWrite(out)
                 throw e
             }
+            true
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist remote config to disk." }
+            false
         } catch (e: SerializationException) {
             errorLog(e) { "Failed to serialize remote config for disk persistence." }
+            false
         }
     }
 

@@ -12,8 +12,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Orchestrates a single `/v1/config` sync: replays the persisted opaque manifest, then on `204` keeps the cache
- * untouched and on `200` extracts any inlined blobs, persists the fresh server manifest plus the per-topic blob
- * refs, and reports which prefetch blobs are now cached locally on the next request.
+ * untouched and on `200` persists the fresh server manifest plus the per-topic blob refs and only then, gated on
+ * a successful persist, writes the inlined blobs the resolved config still wants and prunes the rest. It reports
+ * which prefetch blobs are now cached locally on the next request.
  *
  * The manifest is opaque (stored and replayed verbatim); the active-topic set and removed-topic detection come
  * from the response's [RemoteConfiguration.activeTopics]. Only blobs that arrive inlined in the response are
@@ -75,17 +76,18 @@ internal class RemoteConfigManager(
         container: RCContainer,
     ) {
         val previousBlobRefs = previous?.topicBlobRefs ?: emptyMap()
-        // Changed topics overwrite their refs; topics no longer active are pruned.
+        // Changed topics overwrite their refs; unchanged topics keep their carried-forward refs (the server
+        // omits them); topics no longer active are pruned.
         val mergedBlobRefs = (previousBlobRefs + response.topics.toTopicBlobRefs())
             .filterKeys { it in response.activeTopics }
 
-        extractInlineBlobs(container)
+        // Blobs the current config still wants: the prefetch set plus any active-topic blob ref.
+        val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedBlobRefs.values.flatten()
 
-        // Retain only blobs the current config still references: the prefetch set plus any topic blob ref.
-        val referencedRefs = response.prefetchBlobs.toSet() + mergedBlobRefs.values.flatten()
-        blobStore.retainOnly(referencedRefs)
-
-        diskCache.write(
+        // Persist the configuration first: it is the source of truth (the manifest the server diffs against),
+        // whereas inline blobs are recoverable over the network. Only touch the blob store
+        // once the state is durably committed, so a failed persist never orphans or evicts blobs.
+        val persisted = diskCache.write(
             PersistedRemoteConfigurationState(
                 domain = response.domain,
                 manifest = response.manifest,
@@ -95,11 +97,19 @@ internal class RemoteConfigManager(
                 lastRefreshAt = dateProvider.now.time,
             ),
         )
+
+        if (persisted) {
+            extractInlineBlobs(container, blobRefsToKeep)
+            blobStore.retainOnly(blobRefsToKeep)
+        } else {
+            errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
+        }
     }
 
-    /** Caches every inlined content element whose bytes match its content-address ref; skips the rest. */
-    private fun extractInlineBlobs(container: RCContainer) {
+    /** Caches inlined content elements the config still wants, whose bytes match their content-address ref. */
+    private fun extractInlineBlobs(container: RCContainer, refsToKeep: Set<String>) {
         container.elements.forEach { (ref, element) ->
+            if (ref !in refsToKeep) return@forEach
             if (element.isChecksumValid()) {
                 blobStore.write(ref, element.data)
             } else {
