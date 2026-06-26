@@ -99,7 +99,8 @@ internal class RemoteConfigSourceProvider(
                 }
                 if (source.priority != existing.priority || source.weight != existing.weight) {
                     debugLog {
-                        "Duplicate remote config source url with conflicting priority/weight: ${source.url}"
+                        "Found remote config sources sharing the same URL with conflicting priority/weight " +
+                            "(${source.url}). Keeping the highest-priority one, tie-broken by weight."
                     }
                 }
                 if (source.priority > existing.priority ||
