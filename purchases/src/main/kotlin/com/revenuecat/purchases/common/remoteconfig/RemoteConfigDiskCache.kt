@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.util.AtomicFile
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.errorLog
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import java.io.File
@@ -12,10 +13,11 @@ import java.io.IOException
 /**
  * The sync bookkeeping the SDK persists between `/v1/config` calls.
  *
- * [manifest] is the **opaque** server token, stored verbatim and replayed on the next request; the SDK never
- * parses it. [activeTopics] is the last response's full active-topic-name set (used to detect removed topics).
- * [prefetchBlobs] is the last response's prefetch set (retention input + which blobs to fetch). [lastRefreshAt]
- * is the SDK's own wall-clock of the last sync attempt, used only for refresh cadence.
+ * [appUserID] scopes the manifest to the user whose request produced it. [manifest] is the **opaque** server
+ * token, stored verbatim and replayed on the next request; the SDK never parses it. [activeTopics] is the last
+ * response's full active-topic-name set (used to detect removed topics). [prefetchBlobs] is the last response's
+ * prefetch set (retention input + which blobs to fetch). [lastRefreshAt] is the SDK's own wall-clock of the last
+ * sync attempt, used only for refresh cadence.
  *
  * The full topic bodies are intentionally **not** persisted: an item's payload lives either in the blob store
  * (addressed by its blob ref) or is projected into a purpose-built cache by its topic handler, so the only
@@ -24,6 +26,7 @@ import java.io.IOException
  */
 @Serializable
 internal data class PersistedRemoteConfigurationState(
+    @SerialName("app_user_id") val appUserID: String? = null,
     val domain: String,
     val manifest: String,
     val activeTopics: List<String> = emptyList(),

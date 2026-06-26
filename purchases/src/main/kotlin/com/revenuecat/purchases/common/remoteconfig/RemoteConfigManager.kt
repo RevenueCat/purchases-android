@@ -35,7 +35,7 @@ internal class RemoteConfigManager(
             debugLog { "Remote config refresh already in progress. Skipping." }
             return
         }
-        val persisted = diskCache.read()
+        val persisted = diskCache.read()?.takeIf { it.appUserID == appUserID }
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = appUserID,
@@ -50,7 +50,7 @@ internal class RemoteConfigManager(
                 try {
                     if (container != null) {
                         val response = RemoteConfiguration.parse(container.config.data)
-                        persist(previous = persisted, response = response)
+                        persist(previous = persisted, appUserID = appUserID, response = response)
                     }
                     // container == null is a 204: nothing changed, keep the cache.
                 } catch (e: SerializationException) {
@@ -66,13 +66,18 @@ internal class RemoteConfigManager(
         )
     }
 
-    private fun persist(previous: PersistedRemoteConfigurationState?, response: RemoteConfiguration) {
+    private fun persist(
+        previous: PersistedRemoteConfigurationState?,
+        appUserID: String,
+        response: RemoteConfiguration,
+    ) {
         val previousBlobRefs = previous?.topicBlobRefs ?: emptyMap()
         // Changed topics overwrite their refs; topics no longer active are pruned.
         val mergedBlobRefs = (previousBlobRefs + response.topics.toTopicBlobRefs())
             .filterKeys { it in response.activeTopics }
         diskCache.write(
             PersistedRemoteConfigurationState(
+                appUserID = appUserID,
                 domain = response.domain,
                 manifest = response.manifest,
                 activeTopics = response.activeTopics,

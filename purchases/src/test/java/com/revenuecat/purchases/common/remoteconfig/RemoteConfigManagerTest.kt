@@ -78,6 +78,20 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `does not replay a persisted manifest for a different app user id`() {
+        every { diskCache.read() } returns persisted(
+            appUserID = "different-app-user-id",
+            manifest = "v1.123.sources:etag1",
+            domain = "subscriber",
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        assertThat(capturedDomain).isEqualTo("app")
+        assertThat(capturedManifest).isNull()
+    }
+
+    @Test
     fun `a 200 response persists the server manifest, active topics and changed topic blob refs`() {
         every { diskCache.read() } returns null
         val response = """
@@ -95,6 +109,7 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
+        assertThat(written.captured.appUserID).isEqualTo(TEST_APP_USER_ID)
         assertThat(written.captured.manifest).isEqualTo("v1.200.sources:etag2")
         assertThat(written.captured.activeTopics).containsExactly("sources")
         assertThat(written.captured.prefetchBlobs).containsExactly("newBlob")
@@ -214,10 +229,12 @@ class RemoteConfigManagerTest {
     }
 
     private fun persisted(
+        appUserID: String? = TEST_APP_USER_ID,
         manifest: String,
         domain: String = "app",
         topicBlobRefs: Map<String, List<String>> = emptyMap(),
     ) = PersistedRemoteConfigurationState(
+        appUserID = appUserID,
         domain = domain,
         manifest = manifest,
         topicBlobRefs = topicBlobRefs,

@@ -48,6 +48,7 @@ class RemoteConfigDiskCacheTest {
     @Test
     fun `write then read round-trips the full persisted config`() {
         val config = PersistedRemoteConfigurationState(
+            appUserID = "test-app-user-id",
             domain = "app",
             manifest = "v1.1710000100.sources:etag1,product_entitlement_mapping:etag2",
             activeTopics = listOf("sources", "product_entitlement_mapping"),
