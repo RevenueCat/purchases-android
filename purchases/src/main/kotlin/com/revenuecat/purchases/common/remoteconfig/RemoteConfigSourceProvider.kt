@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.remoteconfig
 
-import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.warnLog
 import kotlin.random.Random
 
 /** A remote config source: a URL plus the metadata used to order sources. */
@@ -98,7 +98,7 @@ internal class RemoteConfigSourceProvider(
                     continue
                 }
                 if (source.priority != existing.priority || source.weight != existing.weight) {
-                    debugLog {
+                    warnLog {
                         "Found remote config sources sharing the same URL with conflicting priority/weight " +
                             "(${source.url}). Keeping the highest-priority one, tie-broken by weight."
                     }
