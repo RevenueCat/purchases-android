@@ -17,7 +17,6 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
@@ -39,7 +38,8 @@ internal class OfferingsManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-    private val workflowManager: WorkflowManager? = null,
+    // Gates offerings delivery on remote-config readiness (the `workflows` topic). Null → deliver immediately.
+    private val offeringsConfigGate: OfferingsConfigGate? = null,
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
@@ -157,9 +157,7 @@ internal class OfferingsManager(
             null,
             null,
         )
-        val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
-        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
-            ?: dispatchSuccess()
+        deliverWhenConfigReady(appInBackground, appUserID) { dispatch { onSuccess?.invoke(cachedOfferings) } }
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -268,16 +266,24 @@ internal class OfferingsManager(
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                workflowManager?.getWorkflowsList(
-                    appUserID,
-                    appInBackground,
-                    // Refetch workflows only when these offerings are fresh from the network.
-                    forceRefresh = !loadedFromDiskCache,
-                    onComplete = dispatchSuccess,
-                ) ?: dispatchSuccess()
+                deliverWhenConfigReady(appInBackground, appUserID) {
+                    dispatch { onSuccess?.invoke(offeringsResultData) }
+                }
             },
         )
+    }
+
+    /**
+     * Delivers offerings once remote config is ready (the old "wait for the workflows list" guarantee, now
+     * gated on the `workflows` config topic). With no gate wired, delivers immediately.
+     */
+    private fun deliverWhenConfigReady(appInBackground: Boolean, appUserID: String, deliver: () -> Unit) {
+        val gate = offeringsConfigGate
+        if (gate != null) {
+            gate.awaitReady(appInBackground, appUserID) { deliver() }
+        } else {
+            deliver()
+        }
     }
 
     private fun handleErrorFetchingOfferings(

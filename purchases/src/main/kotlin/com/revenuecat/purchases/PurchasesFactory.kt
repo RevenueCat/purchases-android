@@ -31,24 +31,28 @@ import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
+import com.revenuecat.purchases.common.offerings.OfferingsConfigGate
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
-import com.revenuecat.purchases.common.workflows.WorkflowDetailResolver
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowsCache
+import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
+import com.revenuecat.purchases.common.workflows.WorkflowsTopicHandler
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
-import com.revenuecat.purchases.storage.DefaultFileCache
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
@@ -61,13 +65,9 @@ import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
-import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.NonCancellable
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -366,32 +366,27 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
             )
 
-            val workflowManager = workflowsCache?.let {
-                WorkflowManager(
+            // Workflows are now served from the `/v1/config` layer. WorkflowManager is the unchanged consumer
+            // seam; behind it sit the RemoteConfig stack (sync + blob store + on-demand fetch) and the
+            // WorkflowsConfigProvider. The manager is hoisted so the orchestrator can drive its lifecycle
+            // (foreground refresh + teardown).
+            var remoteConfigManager: RemoteConfigManager? = null
+            val workflowManager = if (appConfig.useWorkflows) {
+                val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
+                // Stubbed pending the blob-fetch phase: a no-op, so on-demand fetch is inert and only
+                // inline/prefetched blobs resolve. The interface is the seam that work plugs into.
+                val remoteConfigBlobFetcher = RemoteConfigBlobFetcher { false }
+                val manager = RemoteConfigManager(
                     backend = backend,
-                    workflowDetailResolver = WorkflowDetailResolver(
-                        workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                            // Dedicated FileRepository instance with a concurrency-limited scope, so workflow
-                            // CDN downloads are capped without affecting the instances used for images/video.
-                            fileRepository = DefaultFileRepository(
-                                fileCacheManager = DefaultFileCache(contextForStorage, "rc_compiled_workflows"),
-                                ioScope = CoroutineScope(
-                                    Dispatchers.IO.limitedParallelism(MAX_CONCURRENT_WORKFLOW_CDN_FETCHES) +
-                                        NonCancellable,
-                                ),
-                            ),
-                        ),
-                    ),
-                    workflowAssetPreDownloader = WorkflowAssetPreDownloader(
-                        paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                        offeringFontPreDownloader = offeringFontPreDownloader,
-                    ),
-                    workflowsCache = it,
-                    prefetchDispatcher = Dispatcher(
-                        createConcurrentExecutor(),
-                        runningIntegrationTests = runningIntegrationTests,
-                    ),
+                    diskCache = RemoteConfigDiskCache(contextForStorage),
+                    blobStore = remoteConfigBlobStore,
+                    topicHandlers = listOf(WorkflowsTopicHandler(remoteConfigBlobFetcher)),
+                    blobFetcher = remoteConfigBlobFetcher,
                 )
+                remoteConfigManager = manager
+                WorkflowManager(WorkflowsConfigProvider(manager))
+            } else {
+                null
             }
 
             val offeringsManager = OfferingsManager(
@@ -405,7 +400,13 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
-                workflowManager = workflowManager,
+                // Reinstates "wait for workflows before returning offerings", now gated on the `workflows`
+                // config topic instead of a per-offerings workflows-list fetch.
+                offeringsConfigGate = remoteConfigManager?.let { manager ->
+                    OfferingsConfigGate { appInBackground, appUserID, onReady ->
+                        manager.awaitTopicsReady(listOf("workflows"), appInBackground, appUserID, onReady)
+                    }
+                },
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }
@@ -473,6 +474,7 @@ internal class PurchasesFactory(
                 virtualCurrencyManager = virtualCurrencyManager,
                 purchaseParamsValidator = purchaseParamsValidator,
                 workflowManager = workflowManager,
+                remoteConfigManager = remoteConfigManager,
                 fileRepository = fileRepository,
             )
 
@@ -556,12 +558,6 @@ internal class PurchasesFactory(
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
     }
 
-    // Bounded pool for backend calls that are issued many-at-a-time (workflow detail prefetch), so
-    // they run concurrently instead of serializing on the single-threaded default executor.
-    private fun createConcurrentExecutor(): ExecutorService {
-        return Executors.newScheduledThreadPool(CONCURRENT_BACKEND_CALLS)
-    }
-
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
         override fun newThread(r: Runnable?): Thread {
             val wrapperRunnable = Runnable {
@@ -575,11 +571,6 @@ internal class PurchasesFactory(
     }
 
     companion object {
-        private const val CONCURRENT_BACKEND_CALLS = 4
-
-        // Caps concurrent workflow CDN downloads on the dedicated workflows FileRepository scope, the
-        // same way CONCURRENT_BACKEND_CALLS caps concurrent workflow detail fetches on prefetchDispatcher.
-        private const val MAX_CONCURRENT_WORKFLOW_CDN_FETCHES = 4
 
         @VisibleForTesting
         internal fun shouldInitializeDiagnostics(
