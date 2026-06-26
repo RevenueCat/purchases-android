@@ -1,6 +1,8 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.ads.rewardverification.Poller
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -10,6 +12,7 @@ import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
+import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
 
 /**
  * Get latest available customer info.
@@ -33,6 +36,21 @@ public suspend fun Purchases.awaitCustomerInfo(
             onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
+}
+
+/**
+ * Polls the backend until reward verification completes or the attempt budget is exhausted.
+ *
+ * Coroutine friendly version of [Purchases.pollRewardVerification].
+ *
+ * @return The [RewardVerificationResult] (verified reward or a failed result).
+ */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
+public suspend fun Purchases.awaitPollRewardVerification(
+    clientTransactionId: String,
+): RewardVerificationResult {
+    return pollRewardVerification(clientTransactionId) { Poller.poll(it) }
 }
 
 /**
@@ -221,12 +239,12 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitGetRewardVerificationResult(
     clientTransactionId: String,
-): RewardVerificationResult {
+): CoreRewardVerificationResult {
     return suspendCancellableCoroutine { continuation ->
         getRewardVerificationResult(
             clientTransactionId = clientTransactionId,
             callback = object : GetRewardVerificationResultCallback {
-                override fun onReceived(result: RewardVerificationResult) {
+                override fun onReceived(result: CoreRewardVerificationResult) {
                     continuation.safeResume(result)
                 }
 

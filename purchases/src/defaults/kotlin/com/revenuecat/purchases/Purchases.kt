@@ -9,7 +9,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.ads.events.AdTracker
-import com.revenuecat.purchases.ads.rewardverification.Poller
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
@@ -31,6 +31,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -68,6 +69,9 @@ import kotlin.coroutines.suspendCoroutine
 public class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
+
+    private val rewardVerificationPollLauncher = RewardVerificationPollLauncher()
+
     /**
      * The current configuration parameters of the Purchases SDK.
      */
@@ -789,11 +793,19 @@ public class Purchases internal constructor(
      *
      * Call when your ad network's reward callback fires, passing the `clientTransactionId` returned by
      * [generateRewardVerificationToken]. Invalidates the virtual currencies cache automatically on a
-     * verified virtual-currency reward.
+     * verified virtual-currency reward. The [callback] is invoked on the main thread.
+     *
+     * For coroutines, use the `awaitPollRewardVerification` suspend extension instead.
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
-    public suspend fun pollRewardVerification(clientTransactionId: String): RewardVerificationResult {
-        return pollRewardVerification(clientTransactionId) { Poller.poll(it) }
+    public fun pollRewardVerification(
+        clientTransactionId: String,
+        callback: PollRewardVerificationCallback,
+    ) {
+        rewardVerificationPollLauncher.launch(
+            poll = { awaitPollRewardVerification(clientTransactionId) },
+            onCompleted = { callback.onCompleted(it) },
+        )
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
