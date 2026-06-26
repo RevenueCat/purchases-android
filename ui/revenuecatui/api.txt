@@ -150,6 +150,46 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public abstract void performRestoreWithCompletion(com.revenuecat.purchases.CustomerInfo customerInfo, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult,kotlin.Unit> completion);
   }
 
+  public abstract class PaywallWebViewValue {
+  }
+
+  public static final class PaywallWebViewValue.Array extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue {
+    ctor public PaywallWebViewValue.Array(java.util.List<? extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> value);
+    method public java.util.List<com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> getValue();
+    property public final java.util.List<com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> value;
+  }
+
+  public static final class PaywallWebViewValue.Boolean extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue {
+    ctor public PaywallWebViewValue.Boolean(boolean value);
+    method public boolean getValue();
+    property public final boolean value;
+  }
+
+  public static final class PaywallWebViewValue.Null extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue {
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue.Null INSTANCE;
+  }
+
+  public static final class PaywallWebViewValue.Number extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue {
+    ctor public PaywallWebViewValue.Number(double value);
+    ctor public PaywallWebViewValue.Number(float value);
+    ctor public PaywallWebViewValue.Number(int value);
+    ctor public PaywallWebViewValue.Number(long value);
+    method public double getValue();
+    property public final double value;
+  }
+
+  public static final class PaywallWebViewValue.Object extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue {
+    ctor public PaywallWebViewValue.Object(java.util.Map<java.lang.String,? extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> value);
+    method public java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> getValue();
+    property public final java.util.Map<java.lang.String,com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue> value;
+  }
+
+  public static final class PaywallWebViewValue.String extends com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue {
+    ctor public PaywallWebViewValue.String(String value);
+    method public String getValue();
+    property public final String value;
+  }
+
   @Deprecated public interface PurchaseLogic extends com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic {
     method @Deprecated public suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.Package rcPackage, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
     method @Deprecated public default suspend Object? performPurchase(android.app.Activity activity, com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams params, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult>);
