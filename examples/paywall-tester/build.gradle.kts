@@ -169,6 +169,11 @@ dependencies {
     debugImplementation(libs.androidx.test.compose.manifest)
     debugImplementation(libs.leakcanary.android)
 
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+
     baselineProfile(project(":baselineprofile")) {
         attributes {
             attribute(

@@ -51,6 +51,11 @@ private inline fun logIfEnabled(
 }
 
 private const val PURCHASES_LOG_TAG: String = "[Purchases]"
+private const val NANOS_PER_MILLISECOND: Long = 1_000_000L
+
+internal fun elapsedMillisecondsSince(startNanos: Long): Long {
+    return (System.nanoTime() - startNanos) / NANOS_PER_MILLISECOND
+}
 
 internal fun errorLog(error: PurchasesError) {
     when (error.code) {

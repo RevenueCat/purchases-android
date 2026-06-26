@@ -2391,7 +2391,7 @@ class WorkflowManagerTest {
     // region prefetch asset pre-download ordering
 
     @Test
-    fun `prefetch pre-downloads workflow assets only after onComplete fires`() {
+    fun `prefetch starts workflow asset pre-download before onComplete fires`() {
         val events = mutableListOf<String>()
         // Arrange: workflows list returns one prefetched workflow; detail resolves successfully.
         val workflow = workflowMock()
@@ -2434,8 +2434,9 @@ class WorkflowManagerTest {
             onComplete = { events.add("onComplete") },
         )
 
-        // onComplete (offerings delivery) must come before the prefetch asset pre-download.
-        assertThat(events).containsExactly("onComplete", "preDownloadAssets")
+        // This comparison branch intentionally lets asset pre-download contend with any remaining
+        // workflow work instead of waiting until the whole workflows gate settles.
+        assertThat(events).containsExactly("preDownloadAssets", "onComplete")
     }
 
     // endregion prefetch asset pre-download ordering

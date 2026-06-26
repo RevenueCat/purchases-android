@@ -13,7 +13,9 @@ import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.elapsedMillisecondsSince
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
@@ -158,8 +160,16 @@ internal class OfferingsManager(
             null,
         )
         val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
-        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
-            ?: dispatchSuccess()
+        val workflowGateStartedAtNanos = System.nanoTime()
+        val dispatchSuccessWithTiming = {
+            debugLog {
+                "Cached Offerings workflow gate completed in " +
+                    "${elapsedMillisecondsSince(workflowGateStartedAtNanos)} ms before delivery."
+            }
+            dispatchSuccess()
+        }
+        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccessWithTiming)
+            ?: dispatchSuccessWithTiming()
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -184,6 +194,7 @@ internal class OfferingsManager(
         }
     }
 
+    @Suppress("LongMethod")
     fun fetchAndCacheOfferings(
         appUserID: String,
         appInBackground: Boolean,
@@ -195,6 +206,21 @@ internal class OfferingsManager(
             return
         }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
+        val offeringsFetchStartedAtNanos = System.nanoTime()
+        val onErrorWithTiming: ((PurchasesError) -> Unit) = { error ->
+            debugLog {
+                "Offerings fetch failed in ${elapsedMillisecondsSince(offeringsFetchStartedAtNanos)} ms " +
+                    "before delivery: ${error.underlyingErrorMessage}"
+            }
+            onError?.invoke(error)
+        }
+        val onSuccessWithTiming: ((OfferingsResultData) -> Unit) = { result ->
+            debugLog {
+                "Offerings fetch completed in ${elapsedMillisecondsSince(offeringsFetchStartedAtNanos)} ms " +
+                    "before delivery, including workflows gate and excluding asset predownloads."
+            }
+            onSuccess?.invoke(result)
+        }
         backend.getOfferings(
             appUserID,
             appInBackground,
@@ -205,8 +231,8 @@ internal class OfferingsManager(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
-                    onError,
-                    onSuccess,
+                    onErrorWithTiming,
+                    onSuccessWithTiming,
                 )
             },
             { backendError, errorBehavior ->
@@ -214,7 +240,7 @@ internal class OfferingsManager(
                     GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS -> {
                         val cachedOfferingsResponse = offeringsCache.cachedOfferingsResponse
                         if (cachedOfferingsResponse == null) {
-                            handleErrorFetchingOfferings(backendError, onError)
+                            handleErrorFetchingOfferings(backendError, onErrorWithTiming)
                         } else {
                             warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
                             val originalDataSource = cachedOfferingsResponse.optNullableString(
@@ -233,13 +259,13 @@ internal class OfferingsManager(
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
-                                onError,
-                                onSuccess,
+                                onErrorWithTiming,
+                                onSuccessWithTiming,
                             )
                         }
                     }
                     GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK -> {
-                        handleErrorFetchingOfferings(backendError, onError)
+                        handleErrorFetchingOfferings(backendError, onErrorWithTiming)
                     }
                 }
             },
@@ -264,16 +290,12 @@ internal class OfferingsManager(
             },
             onSuccess = { offeringsResultData ->
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                // Defer asset pre-download until after the workflow phase completes. The font/image
-                // downloads run unbounded on Dispatchers.IO; starting them here, before the workflow
-                // list + detail fetches, let them starve the delivery-critical workflow path. Running
-                // them once delivery is settled keeps the pre-warming without the contention.
+                offeringsResultData.offerings.current?.let {
+                    offeringImagePreDownloader.preDownloadOfferingImages(it)
+                }
+                offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 val dispatchSuccess = {
                     dispatch { onSuccess?.invoke(offeringsResultData) }
-                    offeringsResultData.offerings.current?.let {
-                        offeringImagePreDownloader.preDownloadOfferingImages(it)
-                    }
-                    offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 }
                 workflowManager?.getWorkflowsList(
                     appUserID,
