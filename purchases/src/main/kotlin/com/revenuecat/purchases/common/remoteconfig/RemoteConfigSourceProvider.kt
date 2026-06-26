@@ -11,12 +11,6 @@ internal data class RemoteConfigSource(
     val weight: Int,
 )
 
-/** The api and blob sources for the remote config, as provided by the `sources` topic. */
-internal data class RemoteConfigSources(
-    val api: List<RemoteConfigSource>,
-    val blob: List<RemoteConfigSource>,
-)
-
 /**
  * A source handed out by a [RemoteConfigSourceProvider], tagged with its [purpose] (api or blob).
  * Report it back via [RemoteConfigSourceProvider.reportUnhealthy] to fall back to the next source.
@@ -38,11 +32,8 @@ internal data class RemoteConfigSourceHandle(
 
 internal interface RemoteConfigSourceProviderType {
 
-    /** The current healthy api source, or null once every api source has been reported unhealthy. */
-    val currentApiSource: RemoteConfigSourceHandle?
-
-    /** The current healthy blob source, or null once every blob source has been reported unhealthy. */
-    val currentBlobSource: RemoteConfigSourceHandle?
+    /** The current healthy source for [purpose], or null once all of its sources are reported unhealthy. */
+    fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle?
 
     /** Falls back to the next source for the handle's purpose. No-op if [handle] is no longer current. */
     fun reportUnhealthy(handle: RemoteConfigSourceHandle)
@@ -59,18 +50,19 @@ internal interface RemoteConfigSourceProviderType {
  * Thread-safe.
  */
 internal class RemoteConfigSourceProvider(
-    sources: RemoteConfigSources,
+    apiSources: List<RemoteConfigSource>,
+    blobSources: List<RemoteConfigSource>,
     random: Random = Random.Default,
 ) : RemoteConfigSourceProviderType {
 
-    private val api = SourceFailover(handles(sources.api, RemoteConfigSourceHandle.Purpose.API), random)
-    private val blob = SourceFailover(handles(sources.blob, RemoteConfigSourceHandle.Purpose.BLOB), random)
+    private val api = SourceFailover(handles(apiSources, RemoteConfigSourceHandle.Purpose.API), random)
+    private val blob = SourceFailover(handles(blobSources, RemoteConfigSourceHandle.Purpose.BLOB), random)
 
-    override val currentApiSource: RemoteConfigSourceHandle?
-        get() = api.current
-
-    override val currentBlobSource: RemoteConfigSourceHandle?
-        get() = blob.current
+    override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle? =
+        when (purpose) {
+            RemoteConfigSourceHandle.Purpose.API -> api.current
+            RemoteConfigSourceHandle.Purpose.BLOB -> blob.current
+        }
 
     override fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
         when (handle.purpose) {

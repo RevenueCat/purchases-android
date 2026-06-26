@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,11 +21,12 @@ class RemoteConfigSourceProviderTest {
     @Test
     fun `current sources are null when there are no sources`() {
         val provider = RemoteConfigSourceProvider(
-            RemoteConfigSources(api = emptyList(), blob = emptyList()),
-            FakeRandom(),
+            apiSources = emptyList(),
+            blobSources = emptyList(),
+            random = FakeRandom(),
         )
-        assertThat(provider.currentApiSource).isNull()
-        assertThat(provider.currentBlobSource).isNull()
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
+        assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
     }
 
     @Test
@@ -33,16 +35,16 @@ class RemoteConfigSourceProviderTest {
         val high = source("high", priority = 10, weight = 1)
         val provider = apiProvider(listOf(low, high))
 
-        val handle = provider.currentApiSource
+        val handle = provider.getCurrent(Purpose.API)
         assertThat(handle?.url).isEqualTo(url("high"))
-        assertThat(handle?.purpose).isEqualTo(RemoteConfigSourceHandle.Purpose.API)
+        assertThat(handle?.purpose).isEqualTo(Purpose.API)
     }
 
     @Test
     fun `current source is stable across reads`() {
         val provider = apiProvider(listOf(source("a"), source("b")))
 
-        assertThat(provider.currentApiSource?.url).isEqualTo(provider.currentApiSource?.url)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(provider.getCurrent(Purpose.API)?.url)
     }
 
     // endregion
@@ -55,19 +57,19 @@ class RemoteConfigSourceProviderTest {
         val low = source("low", priority = 0, weight = 1)
         val provider = apiProvider(listOf(high, low))
 
-        val first = provider.currentApiSource
+        val first = provider.getCurrent(Purpose.API)
         assertThat(first?.url).isEqualTo(url("high"))
 
         provider.reportUnhealthy(first!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("low"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("low"))
     }
 
     @Test
     fun `current source is null when exhausted`() {
         val provider = apiProvider(listOf(source("only")))
 
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource).isNull()
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
     }
 
     @Test
@@ -77,13 +79,13 @@ class RemoteConfigSourceProviderTest {
         val third = source("3", priority = 10, weight = 1)
         val provider = apiProvider(listOf(first, second, third))
 
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("1"))
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("2"))
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("3"))
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource).isNull()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("1"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("2"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("3"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
     }
 
     // endregion
@@ -100,11 +102,11 @@ class RemoteConfigSourceProviderTest {
             ),
         )
 
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("a"))
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("b"))
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource).isNull()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
     }
 
     @Test
@@ -118,10 +120,10 @@ class RemoteConfigSourceProviderTest {
         )
 
         // `a` is kept at priority 10, so it outranks `b` (priority 5) despite appearing first at 0.
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("a"))
-        assertThat(provider.currentApiSource?.priority).isEqualTo(10)
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("b"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+        assertThat(provider.getCurrent(Purpose.API)?.priority).isEqualTo(10)
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
 
     @Test
@@ -133,7 +135,7 @@ class RemoteConfigSourceProviderTest {
             ),
         )
 
-        assertThat(provider.currentApiSource?.weight).isEqualTo(100)
+        assertThat(provider.getCurrent(Purpose.API)?.weight).isEqualTo(100)
     }
 
     // endregion
@@ -143,35 +145,34 @@ class RemoteConfigSourceProviderTest {
     @Test
     fun `api and blob are exposed independently`() {
         val provider = RemoteConfigSourceProvider(
-            RemoteConfigSources(api = listOf(source("api")), blob = listOf(source("blob"))),
-            FakeRandom(0),
+            apiSources = listOf(source("api")),
+            blobSources = listOf(source("blob")),
+            random = FakeRandom(0),
         )
 
-        val api = provider.currentApiSource
-        val blob = provider.currentBlobSource
+        val api = provider.getCurrent(Purpose.API)
+        val blob = provider.getCurrent(Purpose.BLOB)
         assertThat(api?.url).isEqualTo(url("api"))
-        assertThat(api?.purpose).isEqualTo(RemoteConfigSourceHandle.Purpose.API)
+        assertThat(api?.purpose).isEqualTo(Purpose.API)
         assertThat(blob?.url).isEqualTo(url("blob"))
-        assertThat(blob?.purpose).isEqualTo(RemoteConfigSourceHandle.Purpose.BLOB)
+        assertThat(blob?.purpose).isEqualTo(Purpose.BLOB)
     }
 
     @Test
     fun `reporting api unhealthy does not affect blob`() {
         val provider = RemoteConfigSourceProvider(
-            RemoteConfigSources(
-                api = listOf(source("api1", priority = 10), source("api2", priority = 0)),
-                blob = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
-            ),
-            FakeRandom(0),
+            apiSources = listOf(source("api1", priority = 10), source("api2", priority = 0)),
+            blobSources = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
+            random = FakeRandom(0),
         )
 
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("api2"))
-        assertThat(provider.currentBlobSource?.url).isEqualTo(url("blob1"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("api2"))
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob1"))
 
-        provider.reportUnhealthy(provider.currentBlobSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("api2"))
-        assertThat(provider.currentBlobSource?.url).isEqualTo(url("blob2"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.BLOB)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("api2"))
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob2"))
     }
 
     // endregion
@@ -183,56 +184,56 @@ class RemoteConfigSourceProviderTest {
         val provider = apiProvider(listOf(source("a"), source("b"), source("c")))
 
         // Two callers grab the same current source.
-        val handleA = provider.currentApiSource
-        val handleB = provider.currentApiSource
+        val handleA = provider.getCurrent(Purpose.API)
+        val handleB = provider.getCurrent(Purpose.API)
         assertThat(handleA?.url).isEqualTo(handleB?.url)
 
         // Caller A reports it unhealthy: the provider advances.
         provider.reportUnhealthy(handleA!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("b"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
 
         // Caller B reports the *same* (now superseded) source: this must NOT advance again.
         provider.reportUnhealthy(handleB!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("b"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
 
     @Test
     fun `reporting same source twice advances only once`() {
         val provider = apiProvider(listOf(source("a"), source("b"), source("c")))
 
-        val handle = provider.currentApiSource
+        val handle = provider.getCurrent(Purpose.API)
         provider.reportUnhealthy(handle!!)
         provider.reportUnhealthy(handle)
         provider.reportUnhealthy(handle)
 
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("b"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
 
     @Test
     fun `reporting fresh source after stale report still advances`() {
         val provider = apiProvider(listOf(source("a"), source("b"), source("c")))
 
-        val stale = provider.currentApiSource
+        val stale = provider.getCurrent(Purpose.API)
         provider.reportUnhealthy(stale!!) // a -> b
         provider.reportUnhealthy(stale) // ignored, still b
 
-        val fresh = provider.currentApiSource // b
+        val fresh = provider.getCurrent(Purpose.API) // b
         provider.reportUnhealthy(fresh!!) // b -> c
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("c"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("c"))
     }
 
     @Test
     fun `stale report on exhausted provider is ignored`() {
         val provider = apiProvider(listOf(source("a"), source("b")))
 
-        val first = provider.currentApiSource
+        val first = provider.getCurrent(Purpose.API)
         provider.reportUnhealthy(first!!)
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource).isNull()
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
 
         // Reporting the original stale source again must not resurrect or change anything.
         provider.reportUnhealthy(first)
-        assertThat(provider.currentApiSource).isNull()
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
     }
 
     // endregion
@@ -243,35 +244,33 @@ class RemoteConfigSourceProviderTest {
     fun `restart rewinds to first source`() {
         val provider = apiProvider(listOf(source("a"), source("b"), source("c")))
 
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("c"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("c"))
 
-        provider.restart(RemoteConfigSourceHandle.Purpose.API)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("a"))
+        provider.restart(Purpose.API)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
     }
 
     @Test
     fun `restart only rewinds requested purpose`() {
         val provider = RemoteConfigSourceProvider(
-            RemoteConfigSources(
-                api = listOf(source("api1", priority = 10), source("api2", priority = 0)),
-                blob = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
-            ),
-            FakeRandom(0),
+            apiSources = listOf(source("api1", priority = 10), source("api2", priority = 0)),
+            blobSources = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
+            random = FakeRandom(0),
         )
 
-        provider.reportUnhealthy(provider.currentApiSource!!)
-        provider.reportUnhealthy(provider.currentBlobSource!!)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("api2"))
-        assertThat(provider.currentBlobSource?.url).isEqualTo(url("blob2"))
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        provider.reportUnhealthy(provider.getCurrent(Purpose.BLOB)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("api2"))
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob2"))
 
-        provider.restart(RemoteConfigSourceHandle.Purpose.API)
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("api1"))
-        assertThat(provider.currentBlobSource?.url).isEqualTo(url("blob2"))
+        provider.restart(Purpose.API)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("api1"))
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob2"))
 
-        provider.restart(RemoteConfigSourceHandle.Purpose.BLOB)
-        assertThat(provider.currentBlobSource?.url).isEqualTo(url("blob1"))
+        provider.restart(Purpose.BLOB)
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob1"))
     }
 
     // endregion
@@ -283,7 +282,7 @@ class RemoteConfigSourceProviderTest {
         val sources = (0 until 100).map { source("$it") }
         val provider = apiProvider(sources)
 
-        val first = provider.currentApiSource
+        val first = provider.getCurrent(Purpose.API)
         assertThat(first?.url).isEqualTo(url("0"))
 
         // Many threads report the *same* source concurrently. The first report advances to the next
@@ -293,7 +292,7 @@ class RemoteConfigSourceProviderTest {
             provider.reportUnhealthy(first!!)
         }
 
-        assertThat(provider.currentApiSource?.url).isEqualTo(url("1"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("1"))
     }
 
     @Test
@@ -309,11 +308,11 @@ class RemoteConfigSourceProviderTest {
         repeat(8) {
             pool.execute {
                 try {
-                    var current = provider.currentApiSource
+                    var current = provider.getCurrent(Purpose.API)
                     while (current != null) {
                         seen.add(current.url)
                         provider.reportUnhealthy(current)
-                        current = provider.currentApiSource
+                        current = provider.getCurrent(Purpose.API)
                     }
                 } finally {
                     latch.countDown()
@@ -324,7 +323,7 @@ class RemoteConfigSourceProviderTest {
         pool.shutdown()
 
         assertThat(seen).isEqualTo(sources.map { it.url }.toSet())
-        assertThat(provider.currentApiSource).isNull()
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
     }
 
     // endregion
@@ -337,7 +336,7 @@ class RemoteConfigSourceProviderTest {
         RemoteConfigSource(url = url(host), priority = priority, weight = weight)
 
     private fun apiProvider(sources: List<RemoteConfigSource>): RemoteConfigSourceProvider =
-        RemoteConfigSourceProvider(RemoteConfigSources(api = sources, blob = emptyList()), FakeRandom(0))
+        RemoteConfigSourceProvider(apiSources = sources, blobSources = emptyList(), random = FakeRandom(0))
 
     private fun runConcurrently(iterations: Int, block: () -> Unit) {
         val pool = Executors.newFixedThreadPool(16)
