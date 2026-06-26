@@ -181,12 +181,78 @@ class TabStateTests {
         waitForIdle()
 
         // Seeded on first appearance with the default tab id.
-        assertThat(state.stateStore.values[stateKey]).isEqualTo(JsonPrimitive("monthly"))
+        assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("monthly"))
 
         onNodeWithText("Annual").assertHasClickAction().performClick()
         waitForIdle()
 
         // Selection republished the new tab id.
-        assertThat(state.stateStore.values[stateKey]).isEqualTo(JsonPrimitive("annual"))
+        assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("annual"))
+    }
+
+    /**
+     * A hidden tabs container still publishes its selected tab id, so sibling components reacting to it are not
+     * left on a stale value. The declared default differs from the initial (default_tab_id) selection, so only the
+     * publish (not the declaration seed) can produce the expected value.
+     */
+    @Test
+    fun `A hidden tabs component still publishes its selected tab id`(): Unit = with(composeTestRule) {
+        val tab0LabelKey = LocalizationKey("tab0_label")
+        val tab1LabelKey = LocalizationKey("tab1_label")
+        val localizations = nonEmptyMapOf(
+            localeId to nonEmptyMapOf(
+                tab0LabelKey to LocalizationData.Text("Monthly"),
+                tab1LabelKey to LocalizationData.Text("Annual"),
+            ),
+        )
+        val tabControlButtons = listOf(tab0LabelKey, tab1LabelKey).mapIndexed { index, labelKey ->
+            TabControlButtonComponent(
+                tabIndex = index,
+                tabId = listOf("monthly", "annual")[index],
+                stack = StackComponent(components = listOf(TextComponent(text = labelKey, color = textColor))),
+            )
+        }
+        val tabsComponent = TabsComponent(
+            visible = false,
+            tabs = listOf("monthly", "annual").map { id ->
+                TabsComponent.Tab(id = id, stack = StackComponent(components = listOf(TabControlComponent)))
+            },
+            control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = tabControlButtons)),
+            defaultTabId = "annual",
+            stateUpdates = listOf(StateUpdate.Set(stateKey, StateUpdateValue.PayloadReference)),
+        )
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = assetBaseURL,
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(tabsComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+            stateDeclarations = mapOf(
+                stateKey to StateDeclaration(type = StateDeclaration.ValueType.STRING, defaultValue = JsonPrimitive("monthly")),
+            ),
+        )
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val styleFactory = StyleFactory(localizations = localizations, offering = offering)
+        val style = styleFactory.create(tabsComponent).getOrThrow().componentStyle as TabsComponentStyle
+
+        setContent { TabsComponentView(style = style, state = state, clickHandler = { }) }
+        waitForIdle()
+
+        assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("annual"))
     }
 }
