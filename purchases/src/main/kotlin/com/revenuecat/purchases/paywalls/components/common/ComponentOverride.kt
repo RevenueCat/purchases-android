@@ -94,6 +94,13 @@ public class ComponentOverride<T : PartialComponent>(
         ) : Condition { override val isRule: Boolean get() = true }
 
         @Serializable
+        public data class State(
+            public val operator: EqualityOperator,
+            public val name: String,
+            public val value: JsonPrimitive,
+        ) : Condition { override val isRule: Boolean get() = true }
+
+        @Serializable
         public object Unsupported : Condition
     }
 }
@@ -113,6 +120,7 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "promo_offer_condition" to { Condition.PromoOfferRule.serializer() },
         "selected_package_condition" to { Condition.SelectedPackage.serializer() },
         "variable_condition" to { Condition.Variable.serializer() },
+        "state_condition" to { Condition.State.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )
