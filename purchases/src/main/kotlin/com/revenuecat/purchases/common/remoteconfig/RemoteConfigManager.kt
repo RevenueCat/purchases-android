@@ -12,9 +12,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Orchestrates a single `/v1/config` sync: replays the persisted opaque manifest, then on `204` keeps the cache
- * untouched and on `200` persists the fresh server manifest plus the per-topic blob refs and only then, gated on
- * a successful persist, writes the inlined blobs the resolved config still wants and prunes the rest. It reports
- * which prefetch blobs are now cached locally on the next request.
+ * untouched and on `200` persists the fresh server manifest plus the full per-topic item index — the
+ * configuration (incl. each item's inline content) is the source of truth, and persisting it is the entire
+ * commit. Only then, gated on a successful persist, it writes the inlined blobs the resolved config still wants
+ * and prunes the rest. It reports which prefetch blobs are now cached locally on the next request.
  *
  * The manifest is opaque (stored and replayed verbatim); the active-topic set and removed-topic detection come
  * from the response's [RemoteConfiguration.activeTopics]. Only blobs that arrive inlined in the response are
@@ -76,25 +77,26 @@ internal class RemoteConfigManager(
         response: RemoteConfiguration,
         container: RCContainer,
     ) {
-        val previousBlobRefs = previous?.topicBlobRefs ?: emptyMap()
-        // Changed topics overwrite their refs; unchanged topics keep their carried-forward refs (the server
-        // omits them); topics no longer active are pruned.
-        val mergedBlobRefs = (previousBlobRefs + response.topics.toTopicBlobRefs())
+        val previousTopics = previous?.topics ?: emptyMap()
+        // Changed topics (present in the response) overwrite their item index; unchanged active topics keep their
+        // carried-forward index (the server omits them); topics no longer active are pruned.
+        val mergedTopics = (previousTopics + response.topics)
             .filterKeys { it in response.activeTopics }
 
         // Blobs the current config still wants: the prefetch set plus any active-topic blob ref.
-        val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedBlobRefs.values.flatten()
+        val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
 
-        // Persist the configuration first: it is the source of truth (the manifest the server diffs against),
-        // whereas inline blobs are recoverable over the network. Only touch the blob store
-        // once the state is durably committed, so a failed persist never orphans or evicts blobs.
+        // Persist the configuration first: it is the source of truth (the full topic index — incl. each item's
+        // inline content — plus the manifest the server diffs against), whereas inline blobs are recoverable over
+        // the network. Persisting it IS the entire commit; only touch the blob store once the state is durably
+        // committed, so a failed persist never orphans or evicts blobs.
         val persisted = diskCache.write(
             PersistedRemoteConfigurationState(
                 domain = response.domain,
                 manifest = response.manifest,
                 activeTopics = response.activeTopics,
                 prefetchBlobs = response.prefetchBlobs,
-                topicBlobRefs = mergedBlobRefs,
+                topics = mergedTopics,
                 lastRefreshAt = dateProvider.now.time,
             ),
         )
