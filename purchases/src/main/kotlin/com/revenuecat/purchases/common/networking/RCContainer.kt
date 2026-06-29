@@ -14,6 +14,10 @@ import java.nio.ByteOrder
  * Elements repeat until the backing buffer is exhausted (the format stores no count). Element 0 is
  * always the [config]; the remaining elements are content-addressed by checksum.
  *
+ * The low byte of each element's `reserved` u32 is its content-encoding codec ([RCContentEncoding]):
+ * `element_size` is then the **on-wire (compressed)** length, while the checksum covers the
+ * **uncompressed** bytes. Header `flags` are parsed and ignored (forward-compatible).
+ *
  * [config] and each [RCElement] expose read-only views that share the backing buffer, so parsing
  * copies no field bytes. The content-addressed [elements] map is built lazily: only its base64 keys
  * allocate, and only on first access. Element bodies are always zero-copy views.
@@ -80,9 +84,11 @@ internal class RCContainer private constructor(
                 val checksum = source.sliceBytes(CHECKSUM_SIZE.toLong(), "checksum")
                 val size = source.readUnsignedInt()
                 val reserved = source.readUnsignedInt()
+                // The codec id lives in the low byte of the reserved u32; upper bytes stay reserved.
+                val codec = (reserved and BYTE_MASK.toLong()).toInt()
                 val data = source.sliceBytes(size, "element")
                 source.alignTo(ALIGNMENT)
-                parsed.add(RCElement(checksum = checksum, data = data, reserved = reserved))
+                parsed.add(RCElement(checksum = checksum, data = data, reserved = reserved, codec = codec))
             }
 
             if (parsed.isEmpty()) {

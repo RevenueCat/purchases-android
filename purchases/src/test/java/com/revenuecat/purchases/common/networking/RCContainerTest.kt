@@ -145,6 +145,74 @@ class RCContainerTest {
     }
 
     @Test
+    fun `gzip element decodes to its uncompressed bytes and verifies`() {
+        val element = "compress-me-".repeat(20).toByteArray()
+        val bytes = buildContainer(
+            elements = listOf(element),
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+        )
+
+        val container = RCContainer.parse(bytes)
+        val parsed = container.contentElements[0]
+
+        assertThat(parsed.codec).isEqualTo(RCContentEncoding.GZIP.id)
+        // The on-wire bytes are compressed (and smaller than the original)...
+        assertThat(parsed.data.readBytes()).isNotEqualTo(element)
+        assertThat(parsed.data.remaining()).isLessThan(element.size)
+        // ...but decode() yields the original and the checksum verifies against the uncompressed bytes.
+        assertThat(parsed.decode().readBytes()).isEqualTo(element)
+        assertThat(parsed.isChecksumValid()).isTrue()
+        // The content address is the hash of the uncompressed bytes, unchanged by compression.
+        assertThat(container.elements).containsKey(refOf(element))
+    }
+
+    @Test
+    fun `gzip config element decodes for parsing`() {
+        val config = "{\"hello\":\"world\"}".toByteArray()
+        val bytes = buildContainer(config = config, codecForIndex = { RCContentEncoding.GZIP.id })
+
+        val container = RCContainer.parse(bytes)
+
+        assertThat(container.config.codec).isEqualTo(RCContentEncoding.GZIP.id)
+        assertThat(container.config.decode().readBytes()).isEqualTo(config)
+        assertThat(container.config.isChecksumValid()).isTrue()
+    }
+
+    @Test
+    fun `unsupported codec makes decode throw and checksum invalid`() {
+        listOf(RCContentEncoding.BROTLI.id, RCContentEncoding.ZSTD.id, 9).forEach { codecId ->
+            val element = "payload".toByteArray()
+            val bytes = buildContainer(
+                elements = listOf(element),
+                codecForIndex = { index -> if (index == 1) codecId else RCContentEncoding.NONE.id },
+            )
+
+            val parsed = RCContainer.parse(bytes).contentElements[0]
+
+            assertThat(parsed.codec).isEqualTo(codecId)
+            assertThatThrownBy { parsed.decode() }.isInstanceOf(RCContainerFormatException::class.java)
+            assertThat(parsed.isChecksumValid()).isFalse()
+        }
+    }
+
+    @Test
+    fun `corrupt gzip body fails verification without throwing`() {
+        val element = "compress-me-".repeat(20).toByteArray()
+        val bytes = buildContainer(
+            elements = listOf(element),
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+        )
+        // Layout: header(8) + empty-config element header(32) + content element header(32) = 72.
+        // Offset 72 is the gzip body's first magic byte; corrupting it breaks decompression.
+        val gzipBodyStart = 8 + 32 + 32
+        bytes[gzipBodyStart] = (bytes[gzipBodyStart] + 1).toByte()
+
+        val parsed = RCContainer.parse(bytes).contentElements[0]
+
+        assertThat(parsed.isChecksumValid()).isFalse()
+    }
+
+    @Test
     fun `config data is a zero-copy view over the source buffer`() {
         val config = "ABCD".toByteArray()
         // Element 0 (config) body begins at offset 8 (header) + 32 (checksum + size + reserved) = 40.
@@ -269,5 +337,7 @@ class RCContainerTest {
         config: ByteArray = ByteArray(0),
         elements: List<ByteArray> = emptyList(),
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
-    ): ByteArray = RCContainerTestData.buildContainer(version, flags, config, elements, checksumOverride)
+        codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
+    ): ByteArray =
+        RCContainerTestData.buildContainer(version, flags, config, elements, checksumOverride, codecForIndex)
 }

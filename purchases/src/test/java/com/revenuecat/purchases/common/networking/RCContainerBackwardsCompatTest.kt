@@ -86,6 +86,22 @@ class RCContainerBackwardsCompatTest {
     }
 
     @Test
+    fun `gzip-element fixture decodes to the uncompressed blob and verifies`() {
+        val container = parseFixture("v1_gzip_element.bin")
+        val blob = RCContainerTestData.WORKFLOW_BLOB
+
+        assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
+        assertThat(container.contentElements).hasSize(1)
+        val element = container.contentElements[0]
+        assertThat(element.codec).isEqualTo(RCContentEncoding.GZIP.id)
+        // The on-wire body is compressed, but decode() recovers the original and the checksum verifies.
+        assertThat(element.data.readBytes()).isNotEqualTo(blob)
+        assertThat(element.decode().readBytes()).isEqualTo(blob)
+        assertThat(element.isChecksumValid()).isTrue()
+        assertThat(container.elements[RCContainerTestData.refOf(blob)]!!.decode().readBytes()).isEqualTo(blob)
+    }
+
+    @Test
     fun `duplicate-elements fixture collapses in the content-addressed map`() {
         val container = parseFixture("v1_duplicate_elements.bin")
 

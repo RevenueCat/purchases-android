@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 import android.util.Base64
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
+import java.util.zip.GZIPOutputStream
 
 /**
  * Shared builders and fixture definitions for RC Container Format tests.
@@ -110,15 +111,31 @@ internal object RCContainerTestData {
             config = CONFIG_JSON,
             elements = listOf(WORKFLOW_BLOB, WORKFLOW_BLOB.copyOf()),
         ),
+        RCContainerFixture(
+            fileName = "v1_gzip_element.bin",
+            config = CONFIG_JSON,
+            elements = listOf(WORKFLOW_BLOB),
+            // Element index 1 (the content blob) is gzipped on the wire; config (index 0) stays uncompressed.
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+        ),
     )
 
-    /** Serializes a fixture/spec to RC Container Format v1 bytes. */
+    /**
+     * Serializes a fixture/spec to RC Container Format v1 bytes.
+     *
+     * [elements]/[config] are the **uncompressed** payloads. [codecForIndex] picks a codec id per element
+     * (index 0 is the config); when it returns [RCContentEncoding.GZIP] the body is gzipped on the wire while
+     * the checksum still covers the uncompressed bytes (so the content-address is unchanged). Any other codec
+     * id is written verbatim into the reserved low byte with the raw (un-encoded) body, for unsupported-codec
+     * tests.
+     */
     fun buildContainer(
         version: Int = 1,
         flags: Int = 0,
         config: ByteArray = ByteArray(0),
         elements: List<ByteArray> = emptyList(),
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
+        codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
     ): ByteArray {
         val out = ByteArrayOutputStream()
         out.write('R'.code)
@@ -130,13 +147,22 @@ internal object RCContainerTestData {
         // Element 0 is always the config, followed by the content elements.
         val allElements = listOf(config) + elements
         allElements.forEachIndexed { index, element ->
+            val codec = codecForIndex(index)
             val checksum = checksumOverride?.invoke(index, element) ?: sha256(element)
+            val onWire = if (codec == RCContentEncoding.GZIP.id) gzip(element) else element
             out.write(checksum)
-            out.writeUInt32(element.size)
-            out.writeUInt32(0) // element reserved
-            out.write(element)
+            out.writeUInt32(onWire.size)
+            out.writeUInt32(codec and 0xFF) // element reserved: low byte is the codec id
+            out.write(onWire)
             out.padTo8()
         }
+        return out.toByteArray()
+    }
+
+    /** Gzip-compresses [data] (matches the wire format the backend produces for the GZIP codec). */
+    fun gzip(data: ByteArray): ByteArray {
+        val out = ByteArrayOutputStream()
+        GZIPOutputStream(out).use { it.write(data) }
         return out.toByteArray()
     }
 
@@ -145,6 +171,7 @@ internal object RCContainerTestData {
         flags = fixture.flags,
         config = fixture.config,
         elements = fixture.elements,
+        codecForIndex = fixture.codecForIndex,
     )
 
     /** Content-addressed ref: SHA-256 truncated to 24 bytes, URL-safe base64 (no padding). */
@@ -176,4 +203,5 @@ internal class RCContainerFixture(
     val flags: Int = 0,
     val config: ByteArray,
     val elements: List<ByteArray> = emptyList(),
+    val codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
 )

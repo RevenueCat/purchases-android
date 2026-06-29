@@ -84,6 +84,10 @@ internal class HTTPClient(
 
         // Accept header value requesting the RC Container Format response.
         const val RC_FORMAT_ACCEPT = "application/x-rc-format"
+
+        // Per-element codecs the SDK can decode, advertised so the server never picks one we can't
+        // (e.g. brotli/zstd). "gzip" implies "identity" is also acceptable.
+        const val RC_FORMAT_ACCEPT_ENCODING = "gzip"
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
@@ -520,6 +524,8 @@ internal class HTTPClient(
         return mapOf(
             "Content-Type" to "application/json",
             "Accept" to if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT else null,
+            // Advertise supported per-element codecs for RC Container Format responses (gzip-only on Android).
+            "Accept-Encoding" to if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT_ENCODING else null,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
