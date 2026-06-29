@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SubscriptionInfo
@@ -49,6 +51,12 @@ internal class ProductChangeCalculator(
                     )
                 }
         } catch (e: PurchasesException) {
+            // The user is trying to purchase a subscription they already actively own (same product
+            // and base plan). Propagate so the purchase flow is not launched and the developer's
+            // error callback receives ProductAlreadyPurchasedError.
+            if (e.code == PurchasesErrorCode.ProductAlreadyPurchasedError) {
+                throw e
+            }
             Logger.e("Error determining product change info: ${e.message}")
             null
         }
@@ -62,9 +70,22 @@ internal class ProductChangeCalculator(
         val oldSubscriptionId = activePlayStoreSubscription.productIdentifier
         val oldBasePlanId = activePlayStoreSubscription.productPlanIdentifier
 
-        val (newSubscriptionId, _) = packageToPurchase.product.subscriptionIdentifiers()
+        val (newSubscriptionId, newBasePlanId) = packageToPurchase.product.subscriptionIdentifiers()
 
         if (oldSubscriptionId == newSubscriptionId) {
+            if (oldBasePlanId == newBasePlanId) {
+                // The user already actively owns this exact subscription (same product and base
+                // plan). Launching the billing flow would fail with ITEM_ALREADY_OWNED, so we
+                // surface the error to the developer instead.
+                Logger.d("Already subscribed to $newSubscriptionId ($newBasePlanId)")
+                throw PurchasesException(
+                    PurchasesError(
+                        PurchasesErrorCode.ProductAlreadyPurchasedError,
+                        "This product is already active for the user.",
+                    ),
+                )
+            }
+            // Same product, different base plan: Google handles the base plan change automatically.
             Logger.d("Same product ($newSubscriptionId), Google handles base plan change automatically")
             return null
         }

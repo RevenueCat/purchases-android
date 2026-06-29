@@ -115,6 +115,7 @@ class ProductChangeCalculatorTest {
     fun `returns null when purchasing same product with different base plan`() = runTest {
         val activeSubscription = createSubscriptionInfo(
             productIdentifier = "com.test.subscription",
+            productPlanIdentifier = "monthly_plan",
             store = Store.PLAY_STORE,
             isActive = true,
             isSandbox = false,
@@ -135,6 +136,37 @@ class ProductChangeCalculatorTest {
         )
 
         assertThat(result).isNull()
+    }
+
+    @Test
+    fun `throws ProductAlreadyPurchasedError when purchasing same product and base plan`() = runTest {
+        val activeSubscription = createSubscriptionInfo(
+            productIdentifier = "com.test.subscription",
+            productPlanIdentifier = "monthly_plan",
+            store = Store.PLAY_STORE,
+            isActive = true,
+            isSandbox = false,
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "com.test.subscription" to activeSubscription,
+        )
+
+        val sameProductSameBasePlan = createSubscriptionPackage(
+            productId = "com.test.subscription:monthly_plan",
+            period = Period(1, Period.Unit.MONTH, "P1M"),
+            priceMicros = 9_990_000,
+        )
+
+        val exception = runCatching {
+            calculator.calculateProductChangeInfo(
+                sameProductSameBasePlan,
+                defaultProductChangeConfig,
+            )
+        }.exceptionOrNull()
+
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code)
+            .isEqualTo(PurchasesErrorCode.ProductAlreadyPurchasedError)
     }
 
     @Test

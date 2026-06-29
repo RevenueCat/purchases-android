@@ -2562,6 +2562,70 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `purchase surfaces ProductAlreadyPurchasedError without launching billing flow`(): Unit = runBlocking {
+        val productChangeConfig = ProductChangeConfig()
+        val paywallComponentsDataWithProductChange = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            productChangeConfig = productChangeConfig,
+        )
+        val offeringWithProductChange = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                paywallComponentsDataWithProductChange,
+            ),
+        )
+
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductAlreadyPurchasedError)
+        val productChangeCalculator = mockk<ProductChangeCalculator>()
+        coEvery {
+            productChangeCalculator.calculateProductChangeInfo(any(), any())
+        } throws PurchasesException(expectedError)
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithProductChange)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            productChangeCalculator = productChangeCalculator,
+        )
+
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        coVerify(exactly = 0) {
+            purchases.awaitPurchase(any())
+        }
+        verify {
+            listener.onPurchaseError(expectedError)
+        }
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
     fun `purchase from package button uses configured promotional offer`(): Unit = runBlocking {
         val promoSubscriptionOption = TestData.Packages.monthly.product.defaultOption!!
         val resolvedOffer = ResolvedOffer.ConfiguredOffer(
