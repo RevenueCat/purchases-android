@@ -66,6 +66,13 @@ class RemoteConfigDiskCacheTest {
     }
 
     @Test
+    fun `write returns true on a successful persist`() {
+        val persisted = diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0."))
+
+        assertThat(persisted).isTrue
+    }
+
+    @Test
     fun `inline-only topics persist with an empty blob ref list`() {
         val config = PersistedRemoteConfigurationState(
             domain = "app",
@@ -106,6 +113,25 @@ class RemoteConfigDiskCacheTest {
         diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.2.sources:new"))
 
         assertThat(diskCache.read()?.manifest).isEqualTo("v1.2.sources:new")
+    }
+
+    @Test
+    fun `clear deletes the persisted state so read returns null`() {
+        diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.1.sources:etag1"))
+
+        diskCache.clear()
+
+        assertThat(diskCache.read()).isNull()
+        assertThat(
+            File(File(File(testFolder, "RevenueCat"), "remote_config"), "remote_config.json").exists(),
+        ).isFalse
+    }
+
+    @Test
+    fun `clear is a no-op when nothing has been persisted`() {
+        diskCache.clear()
+
+        assertThat(diskCache.read()).isNull()
     }
 
     @Test
