@@ -6,7 +6,7 @@
 * fix: align rules-engine-internal with json-logic-js (undefined & missing_some) (#3634) via Antonio Pallares (@ajpallares)
 * Add `presented_workflow_id` and `presented_step_id` to `/receipts` (#3603) via Cesar de la Vega (@vegaro)
 * refactor(remote-config): Migrate config to opaque-manifest wire format (#3641) via Toni Rico (@tonidero)
-* Emit `workflow_close` on workflow abandonment (#3626) via Facundo Menzella (@facumenzella)
+* Emit `workflows_close` on workflow abandonment (#3626) via Facundo Menzella (@facumenzella)
 * build(deps): bump nokogiri from 1.19.3 to 1.19.4 (#3638) via dependabot[bot] (@dependabot[bot])
 * build(deps): bump danger from 9.5.3 to 9.6.0 (#3635) via dependabot[bot] (@dependabot[bot])
 * Enable mise for JDK management (#3632) via Álvaro Brey (@AlvaroBrey)
