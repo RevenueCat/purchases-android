@@ -26,7 +26,7 @@ class EndpointTest {
         Endpoint.GetWorkflow("test-user-id", "wf_test"),
         Endpoint.GetWorkflows("test-user-id"),
         Endpoint.AliasUsers("test-user-id"),
-        Endpoint.GetRemoteConfig,
+        Endpoint.GetRemoteConfig("app"),
     )
 
     @Test
@@ -191,8 +191,15 @@ class EndpointTest {
 
     @Test
     fun `GetRemoteConfig has correct path`() {
-        val endpoint = Endpoint.GetRemoteConfig
-        val expectedPath = "/v1/config"
+        val endpoint = Endpoint.GetRemoteConfig("app")
+        val expectedPath = "/v1/config/app"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetRemoteConfig encodes the domain in the path`() {
+        val endpoint = Endpoint.GetRemoteConfig("my domain")
+        val expectedPath = "/v1/config/my%20domain"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
@@ -215,7 +222,7 @@ class EndpointTest {
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
-            Endpoint.GetRemoteConfig,
+            Endpoint.GetRemoteConfig("app"),
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -261,6 +268,7 @@ class EndpointTest {
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.GetRemoteConfig("app"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
@@ -282,7 +290,6 @@ class EndpointTest {
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
             Endpoint.GetWorkflows("test-user-id"),
-            Endpoint.GetRemoteConfig,
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
