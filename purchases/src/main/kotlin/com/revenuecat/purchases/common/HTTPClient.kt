@@ -398,9 +398,9 @@ internal class HTTPClient(
         ) {
             if (endpoint.expectsRCFormatResponse) {
                 if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
-                    VerificationResult.VERIFIED
+                    verifyRCFormatNoContentResponse(path, connection, nonce)
                 } else {
-                    verifyRCFormatResponse(path, connection, bodyBytes)
+                    verifyRCFormatResponse(path, connection, bodyBytes, nonce)
                 }
             } else {
                 verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
@@ -594,16 +594,18 @@ internal class HTTPClient(
     }
 
     /**
-     * Verifies an RC Container Format response. The backend signs the config element's (element 0)
-     * 24-byte truncated SHA-256 checksum, so we verify the signature over that checksum and
-     * independently confirm the config bytes hash to it. Both checks are required: the signature ties
-     * the checksum to the backend, and [RCElement.isChecksumValid] ties the checksum to the data.
-     * This endpoint is not ETag-cached and sends no nonce / post params.
+     * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
+     * bytes exactly as received — the config part / `main_body` — so we verify the signature over those bytes.
+     * The per-element container checksums are untrusted lookup hints, not a trust anchor: inline blob elements
+     * are not signed and are instead authenticated transitively by hashing against the `blob_ref` in the signed
+     * config. This endpoint is not ETag-cached and sends no post params, but the signature does cover the request
+     * [nonce].
      */
     private fun verifyRCFormatResponse(
         urlPath: String,
         connection: URLConnection,
         payloadBytes: ByteArray,
+        nonce: String?,
     ): VerificationResult {
         val config = try {
             RCContainer.parse(payloadBytes).config
@@ -611,20 +613,36 @@ internal class HTTPClient(
             errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
             return VerificationResult.FAILED
         }
-        return if (!config.isChecksumValid()) {
-            errorLog { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
-            VerificationResult.FAILED
-        } else {
-            signingManager.verifyResponse(
-                urlPath = urlPath,
-                signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
-                nonce = null,
-                bodyBytes = config.checksumBytes(),
-                requestTime = getRequestTimeHeader(connection),
-                eTag = getETagHeader(connection),
-                postFieldsToSignHeader = null,
-            )
-        }
+        return signingManager.verifyResponse(
+            urlPath = urlPath,
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            nonce = nonce,
+            bodyBytes = config.dataBytes(),
+            requestTime = getRequestTimeHeader(connection),
+            eTag = getETagHeader(connection),
+            postFieldsToSignHeader = null,
+        )
+    }
+
+    /**
+     * Verifies a `204 No Content` RC Container Format response. There is no body to sign, but the signature still
+     * covers the request context (api key, [nonce], path, request time), so the empty response remains replay-
+     * and tamper-evident. This endpoint emits no ETag, so the empty body is the only signed payload component.
+     */
+    private fun verifyRCFormatNoContentResponse(
+        urlPath: String,
+        connection: URLConnection,
+        nonce: String?,
+    ): VerificationResult {
+        return signingManager.verifyResponse(
+            urlPath = urlPath,
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            nonce = nonce,
+            bodyBytes = ByteArray(0),
+            requestTime = getRequestTimeHeader(connection),
+            eTag = getETagHeader(connection),
+            postFieldsToSignHeader = null,
+        )
     }
 
     private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)

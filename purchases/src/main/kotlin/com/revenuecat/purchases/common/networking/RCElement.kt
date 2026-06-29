@@ -49,9 +49,9 @@ internal class RCElement(
         return Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
     }
 
-    /** A copy of the stored [checksum] bytes (the truncated SHA-256 of [data]). */
-    fun checksumBytes(): ByteArray {
-        val view = checksum.duplicate()
+    /** A copy of this element's [data] bytes (the payload exactly as received). */
+    fun dataBytes(): ByteArray {
+        val view = data.duplicate().apply { rewind() }
         val bytes = ByteArray(view.remaining())
         view.get(bytes)
         return bytes
