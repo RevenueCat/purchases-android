@@ -66,6 +66,22 @@ commands:
               echo "Error installing Java SDK through SDKMAN, continuing with default Java" >&2
             fi
 
+  # On release branches we build and test without the Gradle build cache, so the
+  # release is verified from scratch. Cache stays on for main and feature branches.
+  # No-op off release branches. Relies on $BASH_ENV being sourced before later steps.
+  disable-build-cache-on-release:
+    steps:
+      - run:
+          name: Disable Gradle build cache on release branches
+          command: |
+            case "$CIRCLE_BRANCH" in
+              release/*)
+                echo 'export GRADLE_OPTS="$GRADLE_OPTS -Dorg.gradle.caching=false"' >> "$BASH_ENV"
+                echo "release branch ($CIRCLE_BRANCH): Gradle build cache disabled" ;;
+              *)
+                echo "non-release branch ($CIRCLE_BRANCH): Gradle build cache enabled" ;;
+            esac
+
   android-dependencies:
     steps:
       - android/restore_gradle_cache
@@ -226,6 +242,7 @@ jobs:
       - install-sdkman
       - android/accept_licenses
       - android/restore_gradle_cache
+      - disable-build-cache-on-release
       - run:
           name: Assemble all variants (warms Gradle cache once)
           command: ./gradlew testClasses --parallel --no-daemon
@@ -257,6 +274,7 @@ jobs:
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
+      - disable-build-cache-on-release
       - run:
           name: Run << parameters.flavor >> << parameters.bc_version >> << parameters.build_type >> Tests
           command: |
@@ -294,6 +312,7 @@ jobs:
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
+      - disable-build-cache-on-release
       - run:
           name: Run dokka-hide-internal Tests
           command: ./gradlew :dokka-hide-internal:test --parallel --no-daemon
@@ -309,6 +328,7 @@ jobs:
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
+      - disable-build-cache-on-release
       - run:
           name: Run detekt-rules Tests
           command: ./gradlew :detekt-rules:test --parallel --no-daemon
@@ -325,6 +345,7 @@ jobs:
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
+      - disable-build-cache-on-release
       - run:
           name: Validate Galaxy API Signature with Metalava
           command: |
@@ -357,6 +378,7 @@ jobs:
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
+      - disable-build-cache-on-release
       - run:
           name: Run Rules Engine Internal Unit Tests
           command: |
