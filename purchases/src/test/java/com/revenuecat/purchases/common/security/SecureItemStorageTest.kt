@@ -1,14 +1,12 @@
 package com.revenuecat.purchases.common.security
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-@OptIn(InternalRevenueCatAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class SecureItemStorageTest {
@@ -191,7 +189,6 @@ class SecureItemStorageTest {
 // Test double
 // ---------------------------------------------------------------------------
 
-@OptIn(InternalRevenueCatAPI::class)
 private class FakeSecureItemStorage(
     private val errorOnAllIdentifiers: SecureStorageException? = null,
 ) : SecureItemStorage {

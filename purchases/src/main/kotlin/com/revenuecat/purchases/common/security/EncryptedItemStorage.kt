@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.security
 import android.content.Context
 import android.util.Base64
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.warnLog
 import org.json.JSONObject
 import java.io.File
@@ -50,8 +49,7 @@ import javax.crypto.spec.SecretKeySpec
  * RevenueCat. It does **not** enable cross-app item sharing on Android; each app's internal
  * storage directory is OS-sandboxed.
  */
-@InternalRevenueCatAPI
-class EncryptedItemStorage @VisibleForTesting internal constructor(
+internal class EncryptedItemStorage @VisibleForTesting internal constructor(
     private val backupFile: File,
     private val noBackupFile: File,
     private val key: SecretKey,
@@ -70,7 +68,7 @@ class EncryptedItemStorage @VisibleForTesting internal constructor(
      * @param appIdentifier An identifier for this specific app, used to scope storage file
      *        names so that different apps within the same group do not share items.
      */
-    data class AccessGroup(
+    internal data class AccessGroup(
         val accessGroup: String,
         val appIdentifier: String,
     )

@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.security
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -19,7 +18,6 @@ import javax.crypto.SecretKey
  * without requiring a real PBKDF2 derivation. The key derivation itself is a one-liner
  * delegating to the JDK's SecretKeyFactory, which has its own test coverage.
  */
-@OptIn(InternalRevenueCatAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class EncryptedItemStorageTest {

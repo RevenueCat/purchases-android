@@ -1,15 +1,12 @@
 package com.revenuecat.purchases.common.security
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
-
 /**
  * Defines the interface for reading, writing, updating, and deleting secure items.
  *
  * Implementations of this interface should only store items locally on device. Items should
  * not be synchronized to other devices.
  */
-@InternalRevenueCatAPI
-interface SecureItemStorage {
+internal interface SecureItemStorage {
 
     /**
      * Determine whether the secure storage holds an item with the specified identifier.
@@ -98,8 +95,7 @@ interface SecureItemStorage {
 /**
  * Storage attributes of secure items.
  */
-@InternalRevenueCatAPI
-data class SecureItemAttributes(
+internal data class SecureItemAttributes(
 
     /**
      * Whether the item should be included in Android Auto Backup.
@@ -119,8 +115,7 @@ data class SecureItemAttributes(
 /**
  * An exception that occurred during an operation on a [SecureItemStorage].
  */
-@InternalRevenueCatAPI
-class SecureStorageException(
+internal class SecureStorageException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
