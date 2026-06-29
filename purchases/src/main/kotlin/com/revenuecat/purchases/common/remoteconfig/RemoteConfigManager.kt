@@ -40,6 +40,7 @@ internal class RemoteConfigManager(
             return
         }
         val persisted = diskCache.read()
+        val storedBlobs = blobStore.cachedRefs()
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = appUserID,
@@ -47,7 +48,7 @@ internal class RemoteConfigManager(
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
             // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
-            prefetchedBlobs = persisted?.prefetchBlobs?.filter { blobStore.contains(it) } ?: emptyList(),
+            prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
             onSuccess = { container, _ ->
                 // Hold the in-flight guard until persistence completes so a concurrent refresh can't read the
                 // disk cache mid-write and merge against a stale snapshot.

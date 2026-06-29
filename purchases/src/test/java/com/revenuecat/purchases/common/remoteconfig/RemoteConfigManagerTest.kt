@@ -88,8 +88,7 @@ class RemoteConfigManagerTest {
             manifest = "v1.1.sources:etag1",
             prefetchBlobs = listOf(REF_VALID, REF_TAMPERED),
         )
-        every { blobStore.contains(REF_VALID) } returns true
-        every { blobStore.contains(REF_TAMPERED) } returns false
+        every { blobStore.cachedRefs() } returns setOf(REF_VALID)
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
