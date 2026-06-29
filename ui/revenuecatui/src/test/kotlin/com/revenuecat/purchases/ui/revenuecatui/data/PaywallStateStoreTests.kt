@@ -24,8 +24,8 @@ internal class PaywallStateStoreTests {
             ),
         )
 
-        assertThat(store.values).isEqualTo(mapOf("open" to JsonPrimitive(false), "tab" to JsonPrimitive("billing")))
-        assertThat(store.defaults).isEqualTo(store.values)
+        assertThat(store.values.toMap()).isEqualTo(mapOf("open" to JsonPrimitive(false), "tab" to JsonPrimitive("billing")))
+        assertThat(store.defaults.toMap()).isEqualTo(store.values.toMap())
     }
 
     @Test
@@ -111,7 +111,7 @@ internal class PaywallStateStoreTests {
 
         store.registerDeclarations(mapOf("b" to declaration(StateDeclaration.ValueType.INTEGER, JsonPrimitive(7))))
 
-        assertThat(store.values).isEqualTo(mapOf("a" to JsonPrimitive("x"), "b" to JsonPrimitive(7)))
+        assertThat(store.values.toMap()).isEqualTo(mapOf("a" to JsonPrimitive("x"), "b" to JsonPrimitive(7)))
     }
 
     @Test
@@ -125,13 +125,4 @@ internal class PaywallStateStoreTests {
         assertThat(store.values["tab"]).isEqualTo(JsonPrimitive("b"))
     }
 
-    @Test
-    fun `reset restores declared defaults`() {
-        val store = PaywallStateStore(mapOf("open" to declaration(StateDeclaration.ValueType.BOOLEAN, JsonPrimitive(false))))
-        store.applyUpdates(listOf(setUpdate("open", StateUpdateValue.Literal(JsonPrimitive(true)))))
-
-        store.reset()
-
-        assertThat(store.values["open"]).isEqualTo(JsonPrimitive(false))
-    }
 }

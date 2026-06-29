@@ -350,6 +350,7 @@ internal class PaywallViewModelImpl(
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
         paywallPresentationData = null
+        standaloneStateStore = null
         clearWorkflowState()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
