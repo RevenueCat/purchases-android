@@ -95,13 +95,8 @@ private val configItemMapSerializer =
     MapSerializer(String.serializer(), RemoteConfiguration.ConfigItem.serializer())
 
 /**
- * A single topic's items plus a stable [hash] of those items.
- *
- * Promoted from a bare `Map` typealias so consumers can cheaply detect whether a topic changed without
- * re-reading its contents (e.g. `RemoteConfigSourceProvider` restarting its source list when `sources`
- * changes). [hash] is computed once at construction (i.e. parse) time over a canonical form of [items], so an
- * unchanged topic keeps the same hash across syncs. It delegates [Map], so existing `topic["key"]` /
- * `topic.values` access is unchanged, and [hash] is SDK-derived: it never appears in the persisted/wire JSON.
+ * A single topic's items, with a stable content [hash] so consumers can tell whether a topic changed
+ * without re-reading its contents. Delegates [Map], so it can be accessed like the item map it wraps.
  */
 @Serializable(with = ConfigTopicSerializer::class)
 internal data class ConfigTopic(
