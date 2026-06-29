@@ -467,6 +467,74 @@ internal class ComponentOverridesTests {
                         value = JsonPrimitive("premium"),
                     ),
                 ),
+
+                // State condition with boolean value
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "name": "planComparisonOpen", "value": true }""",
+                    ComponentOverride.Condition.State(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        name = "planComparisonOpen",
+                        value = JsonPrimitive(true),
+                    ),
+                ),
+                // State condition with integer value
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "name": "activeSlide", "value": 2 }""",
+                    ComponentOverride.Condition.State(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        name = "activeSlide",
+                        value = JsonPrimitive(2),
+                    ),
+                ),
+                // State condition with double value
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "name": "discountMultiplier", "value": 0.5 }""",
+                    ComponentOverride.Condition.State(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        name = "discountMultiplier",
+                        value = JsonPrimitive(0.5),
+                    ),
+                ),
+                // State condition with string value and not-equals
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "!=", "name": "selectedFeatureTab", "value": "billing" }""",
+                    ComponentOverride.Condition.State(
+                        operator = ComponentOverride.EqualityOperator.NOT_EQUALS,
+                        name = "selectedFeatureTab",
+                        value = JsonPrimitive("billing"),
+                    ),
+                ),
+                // State condition with extra unknown fields deserializes successfully
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "name": "k", "value": true, "future_field": 1 }""",
+                    ComponentOverride.Condition.State(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        name = "k",
+                        value = JsonPrimitive(true),
+                    ),
+                ),
+                // State condition with missing name / value / unknown operator falls back to Unsupported
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "value": true }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "name": "k" }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "state_condition", "operator": ">", "name": "k", "value": 1 }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                // State condition with non-scalar value falls back to Unsupported
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "name": "k", "value": [1, 2] }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "=", "name": "k", "value": {"nested": true} }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
                 // SelectedPackage with extra unknown fields deserializes successfully
                 arrayOf(
                     """{ "type": "selected_package_condition", "operator": "in", "packages": ["a"], "future_field": true }""",

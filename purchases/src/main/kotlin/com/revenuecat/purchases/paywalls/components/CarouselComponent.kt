@@ -72,6 +72,7 @@ public class CarouselComponent(
     @get:JvmSynthetic
     public val name: String? = null,
     @get:JvmSynthetic
+    @SerialName("state_updates")
     public val stateUpdates: List<StateUpdate>? = null,
 ) : PaywallComponent {
 

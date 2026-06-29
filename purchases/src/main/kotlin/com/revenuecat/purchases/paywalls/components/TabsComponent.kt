@@ -103,6 +103,7 @@ public class TabsComponent(
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
     @get:JvmSynthetic
+    @SerialName("state_updates")
     public val stateUpdates: List<StateUpdate>? = null,
 ) : PaywallComponent {
     @InternalRevenueCatAPI
