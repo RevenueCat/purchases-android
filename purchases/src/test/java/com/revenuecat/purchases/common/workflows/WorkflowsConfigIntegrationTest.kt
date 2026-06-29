@@ -31,9 +31,9 @@ import java.nio.ByteBuffer
 import java.security.MessageDigest
 
 /**
- * End-to-end spike: drives a fake `/v1/config` sync through the **real** [RemoteConfigManager] (now the single
- * read front door via `topic()`/`body()`) + [RemoteConfigBlobStore] + [WorkflowsTopicHandler] +
- * [RemoteConfigBlobFetcher] + [WorkflowsConfigProvider]. Only the backend transport and the blob HTTP download
+ * End-to-end spike: drives a fake `/v1/config` sync through the **real** [RemoteConfigManager] (the single read
+ * front door via `topic()`/`body()`, and the owner of the generic best-effort prefetch) + [RemoteConfigBlobStore]
+ * + [RemoteConfigBlobFetcher] + [WorkflowsConfigProvider]. Only the backend transport and the blob HTTP download
  * are faked; the disk cache is a stateful in-memory stand-in so reads see exactly what the sync committed.
  */
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
@@ -88,7 +88,6 @@ class WorkflowsConfigIntegrationTest {
             backend,
             diskCache,
             blobStore,
-            topicHandlers = listOf(WorkflowsTopicHandler(fetcher)),
             blobFetcher = fetcher,
             scope = testScope,
         )
@@ -145,7 +144,7 @@ class WorkflowsConfigIntegrationTest {
             }
         """.trimIndent()
 
-        sync(config) // no inline blob; the handler prefetches it during the sync
+        sync(config) // no inline blob; the manager prefetches it during the sync
 
         assertThat(blobStore.contains(ref)).isTrue()
         assertThat(downloadCount).isEqualTo(1)

@@ -47,7 +47,6 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
-import com.revenuecat.purchases.common.workflows.WorkflowsTopicHandler
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -380,7 +379,6 @@ internal class PurchasesFactory(
                     backend = backend,
                     diskCache = RemoteConfigDiskCache(contextForStorage),
                     blobStore = remoteConfigBlobStore,
-                    topicHandlers = listOf(WorkflowsTopicHandler(remoteConfigBlobFetcher)),
                     blobFetcher = remoteConfigBlobFetcher,
                 )
                 remoteConfigManager = manager
@@ -404,7 +402,7 @@ internal class PurchasesFactory(
                 // config topic instead of a per-offerings workflows-list fetch.
                 offeringsConfigGate = remoteConfigManager?.let { manager ->
                     OfferingsConfigGate { appInBackground, appUserID, onReady ->
-                        manager.awaitTopicsReady(listOf("workflows"), appInBackground, appUserID, onReady)
+                        manager.awaitConfigReady(appInBackground, appUserID, onReady)
                     }
                 },
             )
