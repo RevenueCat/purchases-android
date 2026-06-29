@@ -4,9 +4,12 @@ import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonEncoder
@@ -15,6 +18,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.jsonObject
 import java.nio.ByteBuffer
+import java.security.MessageDigest
 
 /**
  * The `/v1/config` configuration response. This is the JSON payload carried in element 0 (the config
@@ -87,7 +91,63 @@ internal data class RemoteConfiguration(
     }
 }
 
-internal typealias ConfigTopic = Map<String, RemoteConfiguration.ConfigItem>
+private val configItemMapSerializer =
+    MapSerializer(String.serializer(), RemoteConfiguration.ConfigItem.serializer())
+
+/**
+ * A single topic's items plus a stable [hash] of those items.
+ *
+ * Promoted from a bare `Map` typealias so consumers can cheaply detect whether a topic changed without
+ * re-reading its contents (e.g. `RemoteConfigSourceProvider` restarting its source list when `sources`
+ * changes). [hash] is computed once at construction (i.e. parse) time over a canonical form of [items], so an
+ * unchanged topic keeps the same hash across syncs. It delegates [Map], so existing `topic["key"]` /
+ * `topic.values` access is unchanged, and [hash] is SDK-derived: it never appears in the persisted/wire JSON.
+ */
+@Serializable(with = ConfigTopicSerializer::class)
+internal data class ConfigTopic(
+    val items: Map<String, RemoteConfiguration.ConfigItem>,
+) : Map<String, RemoteConfiguration.ConfigItem> by items {
+
+    /** Stable content hash of [items], computed once at construction. */
+    val hash: String = computeHash(items)
+
+    private companion object {
+        private const val HEX_BYTE_MASK = 0xFF
+
+        private fun computeHash(items: Map<String, RemoteConfiguration.ConfigItem>): String {
+            val element = JsonProvider.defaultJson.encodeToJsonElement(configItemMapSerializer, items)
+            return sha256Hex(canonicalize(element).toString())
+        }
+
+        // Sorts object keys recursively so logically-equal topics hash the same regardless of key order.
+        // Array order is preserved (it can be meaningful, e.g. the sources list).
+        private fun canonicalize(element: JsonElement): JsonElement = when (element) {
+            is JsonObject -> JsonObject(
+                element.entries.sortedBy { it.key }.associate { it.key to canonicalize(it.value) },
+            )
+            is JsonArray -> JsonArray(element.map { canonicalize(it) })
+            else -> element
+        }
+
+        private fun sha256Hex(input: String): String =
+            MessageDigest.getInstance("SHA-256")
+                .digest(input.toByteArray(Charsets.UTF_8))
+                .joinToString("") { "%02x".format(it.toInt() and HEX_BYTE_MASK) }
+    }
+}
+
+/**
+ * Serializes [ConfigTopic] transparently as its bare item map (no wrapper object), so the wire and persisted
+ * shape is identical to the previous `Map` typealias and [ConfigTopic.hash] stays a derived, SDK-only value.
+ */
+internal object ConfigTopicSerializer : KSerializer<ConfigTopic> {
+    override val descriptor: SerialDescriptor = configItemMapSerializer.descriptor
+    override fun deserialize(decoder: Decoder): ConfigTopic =
+        ConfigTopic(configItemMapSerializer.deserialize(decoder))
+
+    override fun serialize(encoder: Encoder, value: ConfigTopic) =
+        configItemMapSerializer.serialize(encoder, value.items)
+}
 
 /**
  * Serializes [RemoteConfiguration.ConfigItem] as a flat JSON object: the reserved keys `blob_ref`/`prefetch`
