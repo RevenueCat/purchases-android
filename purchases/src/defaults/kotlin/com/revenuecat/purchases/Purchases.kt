@@ -14,6 +14,7 @@ import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationStrings
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
+import com.revenuecat.purchases.ads.rewardverification.rewardVerificationRetryDelay
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.debugLog
@@ -829,7 +830,8 @@ public class Purchases internal constructor(
         return if (entitlementReflected) result else RewardVerificationResult.failed
     }
 
-    // getCustomerInfo has no built-in retry, so retry transient (network) failures before giving up.
+    // getCustomerInfo has no built-in retry, so retry transient (network) failures (with a short delay
+    // between attempts, so a brief blip doesn't exhaust all retries at once) before giving up.
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun refreshCustomerInfoAfterEntitlementGrant(clientTransactionId: String): Boolean {
         debugLog { RewardVerificationStrings.entitlementFetchingCustomerInfo(clientTransactionId) }
@@ -843,6 +845,7 @@ public class Purchases internal constructor(
                 if (e.code != PurchasesErrorCode.NetworkError) break
             }
             attempt++
+            if (attempt < MAX_ENTITLEMENT_REFRESH_ATTEMPTS) rewardVerificationRetryDelay()
         }
         warnLog { RewardVerificationStrings.entitlementCustomerInfoRefreshFailed(clientTransactionId) }
         return false
