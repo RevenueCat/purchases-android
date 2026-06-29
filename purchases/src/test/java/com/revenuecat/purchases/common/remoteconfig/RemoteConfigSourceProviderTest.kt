@@ -121,7 +121,7 @@ class RemoteConfigSourceProviderTest {
 
         // `a` is kept at priority 10, so it outranks `b` (priority 5) despite appearing first at 0.
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
-        assertThat(provider.getCurrent(Purpose.API)?.priority).isEqualTo(10)
+        assertThat(provider.getCurrent(Purpose.API)?.source?.priority).isEqualTo(10)
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
@@ -135,7 +135,7 @@ class RemoteConfigSourceProviderTest {
             ),
         )
 
-        assertThat(provider.getCurrent(Purpose.API)?.weight).isEqualTo(100)
+        assertThat(provider.getCurrent(Purpose.API)?.source?.weight).isEqualTo(100)
     }
 
     // endregion
@@ -271,6 +271,24 @@ class RemoteConfigSourceProviderTest {
 
         provider.restart(Purpose.BLOB)
         assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob1"))
+    }
+
+    @Test
+    fun `stale report from before restart is ignored`() {
+        val provider = apiProvider(listOf(source("a"), source("b"), source("c")))
+
+        // A caller grabs `a`, then the provider is restarted before that caller reports back.
+        val stale = provider.getCurrent(Purpose.API)
+        assertThat(stale?.url).isEqualTo(url("a"))
+        provider.restart(Purpose.API)
+
+        // The stale report belongs to a pre-restart cycle, so it must not advance past `a`.
+        provider.reportUnhealthy(stale!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+
+        // A handle obtained after the restart still advances normally.
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
 
     // endregion

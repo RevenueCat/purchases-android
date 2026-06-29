@@ -7,27 +7,32 @@ import kotlin.random.Random
 internal data class RemoteConfigSource(
     /** A plain URL or a URL format with placeholders (e.g. `{blob_ref}`), to be resolved by the caller. */
     val url: String,
-    val priority: Int,
-    val weight: Int,
-)
+    override val priority: Int,
+    override val weight: Int,
+) : WeightedSource
 
 /**
  * A source handed out by a [RemoteConfigSourceProvider], tagged with its [purpose] (api or blob).
  * Report it back via [RemoteConfigSourceProvider.reportUnhealthy] to fall back to the next source.
- * The [url] is its identity: a report is ignored once the provider has already moved past that url.
+ * The opaque [token] is its identity: a report is ignored once the provider has moved past it (via
+ * fallback or [RemoteConfigSourceProvider.restart]), so stale or concurrent reports can't advance
+ * the order more than once.
  */
 internal data class RemoteConfigSourceHandle(
     val purpose: Purpose,
     val source: RemoteConfigSource,
-) : WeightedSource {
+    /**
+     * Identifies the handout that produced this handle. Only meaningful to the provider, which uses
+     * it to discard stale reports.
+     */
+    val token: Int,
+) {
 
     /** What the source is used for: calling the config api or downloading a blob. */
     enum class Purpose { API, BLOB }
 
     /** A plain URL or a URL format with placeholders, to be resolved by the caller. */
     val url: String get() = source.url
-    override val priority: Int get() = source.priority
-    override val weight: Int get() = source.weight
 }
 
 internal interface RemoteConfigSourceProviderType {
@@ -55,8 +60,8 @@ internal class RemoteConfigSourceProvider(
     random: Random = Random.Default,
 ) : RemoteConfigSourceProviderType {
 
-    private val api = SourceFailover(handles(apiSources, RemoteConfigSourceHandle.Purpose.API), random)
-    private val blob = SourceFailover(handles(blobSources, RemoteConfigSourceHandle.Purpose.BLOB), random)
+    private val api = SourceFailover(RemoteConfigSourceHandle.Purpose.API, dedupe(apiSources), random)
+    private val blob = SourceFailover(RemoteConfigSourceHandle.Purpose.BLOB, dedupe(blobSources), random)
 
     override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle? =
         when (purpose) {
@@ -66,8 +71,8 @@ internal class RemoteConfigSourceProvider(
 
     override fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
         when (handle.purpose) {
-            RemoteConfigSourceHandle.Purpose.API -> api.reportUnhealthy(handle.url)
-            RemoteConfigSourceHandle.Purpose.BLOB -> blob.reportUnhealthy(handle.url)
+            RemoteConfigSourceHandle.Purpose.API -> api.reportUnhealthy(handle)
+            RemoteConfigSourceHandle.Purpose.BLOB -> blob.reportUnhealthy(handle)
         }
     }
 
@@ -81,14 +86,10 @@ internal class RemoteConfigSourceProvider(
     private companion object {
 
         /**
-         * Builds the handles for a purpose, collapsing duplicate urls to the occurrence with the
-         * highest priority (tie-broken by weight). Done once here so handles never need to be rebuilt
-         * on reads.
+         * Collapses duplicate urls to the occurrence with the highest priority (tie-broken by
+         * weight), keeping first-seen order. Done once at init so reads never need to re-dedupe.
          */
-        fun handles(
-            sources: List<RemoteConfigSource>,
-            purpose: RemoteConfigSourceHandle.Purpose,
-        ): List<RemoteConfigSourceHandle> {
+        fun dedupe(sources: List<RemoteConfigSource>): List<RemoteConfigSource> {
             // LinkedHashMap keeps first-seen url order for deterministic ordering downstream.
             val bestByUrl = LinkedHashMap<String, RemoteConfigSource>()
             for (source in sources) {
@@ -109,37 +110,45 @@ internal class RemoteConfigSourceProvider(
                     bestByUrl[source.url] = source
                 }
             }
-            return bestByUrl.values.map { RemoteConfigSourceHandle(purpose, it) }
+            return bestByUrl.values.toList()
         }
     }
 }
 
 /**
- * Walks a single list of handles in fallback order, using each handle's url as its identity so a
- * stale [reportUnhealthy] (one the list has already moved past) is ignored.
+ * Walks a single list of sources in fallback order. Every handout is stamped with the current
+ * [token], which is bumped whenever the position changes (fallback or [restart]). A report only
+ * advances if its handle still carries the current token, so stale or concurrent reports - and
+ * reports left over from before a [restart] - are ignored.
  *
  * Thread-safe.
  */
 private class SourceFailover(
-    handles: List<RemoteConfigSourceHandle>,
+    private val purpose: RemoteConfigSourceHandle.Purpose,
+    sources: List<RemoteConfigSource>,
     random: Random,
 ) {
-    private val selector = WeightedSourceSelector(handles, random)
+    private val selector = WeightedSourceSelector(sources, random)
     private val lock = Any()
+    private var token = 0
 
     val current: RemoteConfigSourceHandle?
-        get() = synchronized(lock) { selector.current }
+        get() = synchronized(lock) {
+            selector.current?.let { RemoteConfigSourceHandle(purpose, it, token) }
+        }
 
-    fun reportUnhealthy(url: String) {
+    fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
         synchronized(lock) {
-            // Only advance when the report is about the current source: a url the list has already
-            // moved past (e.g. from a concurrent caller) no longer matches, so it can't advance twice.
-            if (selector.current?.url != url) return
+            if (handle.token != token) return
             selector.advance()
+            token++
         }
     }
 
     fun restart() {
-        synchronized(lock) { selector.reset() }
+        synchronized(lock) {
+            selector.reset()
+            token++
+        }
     }
 }
