@@ -35,12 +35,12 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
     /**
      * The declared default for each key, used as the fallback when a key has not been written.
      */
-    val defaults: Map<String, JsonPrimitive> get() = declaredDefaults.toMap()
+    val defaults: Map<String, JsonPrimitive> get() = declaredDefaults
 
     /**
      * The current value of each key. Reads are observable so dependent components recompose when a value changes.
      */
-    val values: Map<String, JsonPrimitive> get() = currentValues.toMap()
+    val values: Map<String, JsonPrimitive> get() = currentValues
 
     /**
      * Adds any keys from [declarations] not already known, seeding each with its declared default. Keys that already
@@ -73,11 +73,6 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
                 currentValues[setUpdate.key] = value
             }
         }
-    }
-
-    fun reset() {
-        currentValues.clear()
-        currentValues.putAll(declaredDefaults)
     }
 }
 
