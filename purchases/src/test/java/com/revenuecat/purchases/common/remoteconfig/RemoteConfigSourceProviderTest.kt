@@ -20,7 +20,7 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `current sources are null when there are no sources`() {
-        val provider = RemoteConfigSourceProvider(
+        val provider = DefaultRemoteConfigSourceProvider(
             apiSources = emptyList(),
             blobSources = emptyList(),
             random = FakeRandom(),
@@ -144,7 +144,7 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `api and blob are exposed independently`() {
-        val provider = RemoteConfigSourceProvider(
+        val provider = DefaultRemoteConfigSourceProvider(
             apiSources = listOf(source("api")),
             blobSources = listOf(source("blob")),
             random = FakeRandom(0),
@@ -160,7 +160,7 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `reporting api unhealthy does not affect blob`() {
-        val provider = RemoteConfigSourceProvider(
+        val provider = DefaultRemoteConfigSourceProvider(
             apiSources = listOf(source("api1", priority = 10), source("api2", priority = 0)),
             blobSources = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
             random = FakeRandom(0),
@@ -254,7 +254,7 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `restart only rewinds requested purpose`() {
-        val provider = RemoteConfigSourceProvider(
+        val provider = DefaultRemoteConfigSourceProvider(
             apiSources = listOf(source("api1", priority = 10), source("api2", priority = 0)),
             blobSources = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
             random = FakeRandom(0),
@@ -354,7 +354,7 @@ class RemoteConfigSourceProviderTest {
         RemoteConfigSource(url = url(host), priority = priority, weight = weight)
 
     private fun apiProvider(sources: List<RemoteConfigSource>): RemoteConfigSourceProvider =
-        RemoteConfigSourceProvider(apiSources = sources, blobSources = emptyList(), random = FakeRandom(0))
+        DefaultRemoteConfigSourceProvider(apiSources = sources, blobSources = emptyList(), random = FakeRandom(0))
 
     private fun runConcurrently(iterations: Int, block: () -> Unit) {
         val pool = Executors.newFixedThreadPool(16)

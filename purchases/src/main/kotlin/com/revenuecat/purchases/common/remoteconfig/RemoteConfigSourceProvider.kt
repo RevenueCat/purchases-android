@@ -35,7 +35,7 @@ internal data class RemoteConfigSourceHandle(
     val url: String get() = source.url
 }
 
-internal interface RemoteConfigSourceProviderType {
+internal interface RemoteConfigSourceProvider {
 
     /** The current healthy source for [purpose], or null once all of its sources are reported unhealthy. */
     fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle?
@@ -54,11 +54,11 @@ internal interface RemoteConfigSourceProviderType {
  *
  * Thread-safe.
  */
-internal class RemoteConfigSourceProvider(
+internal class DefaultRemoteConfigSourceProvider(
     apiSources: List<RemoteConfigSource>,
     blobSources: List<RemoteConfigSource>,
     random: Random = Random.Default,
-) : RemoteConfigSourceProviderType {
+) : RemoteConfigSourceProvider {
 
     private val api = SourceFailover(RemoteConfigSourceHandle.Purpose.API, dedupe(apiSources), random)
     private val blob = SourceFailover(RemoteConfigSourceHandle.Purpose.BLOB, dedupe(blobSources), random)
