@@ -377,9 +377,9 @@ internal fun WorkflowEvent.toBackendStoredEvent(
     appUserID: String,
 ): BackendStoredEvent {
     val eventName = when (this) {
-        is WorkflowEvent.StepStarted -> "workflows_step_started"
-        is WorkflowEvent.StepCompleted -> "workflows_step_completed"
-        is WorkflowEvent.Close -> "workflows_close"
+        is WorkflowEvent.StepStarted -> "workflow_step_started"
+        is WorkflowEvent.StepCompleted -> "workflow_step_completed"
+        is WorkflowEvent.Close -> "workflow_close"
     }
     val properties = when (this) {
         is WorkflowEvent.StepStarted -> BackendEvent.Workflows.Properties(

@@ -212,7 +212,7 @@ internal class PaywallViewModelImpl(
     private var transitionIdCounter: Int = 0
 
     // Per-session flag: a completed purchase or a successful restore is a natural workflow exit, not an
-    // abandonment, so it suppresses workflows_close. The session boundary is the dismiss (reset in
+    // abandonment, so it suppresses workflow_close. The session boundary is the dismiss (reset in
     // clearWorkflowState), NOT each render/refresh, so an in-session completion that leaves the paywall
     // visible (e.g. a restore with no shouldDisplayBlock) survives option/locale/color refreshes. Tracked
     // separately from the sticky, public _purchaseCompleted (which also gates exit offers and is observed
@@ -371,7 +371,7 @@ internal class PaywallViewModelImpl(
         _workflowState.value = null
         // The dismiss is the session boundary: the next presentation on this ViewModel is a new session,
         // so completion from this one must not suppress its abandonment. Runs after closePaywall has
-        // already made its workflows_close decision. A refresh/re-render of an open session does not
+        // already made its workflow_close decision. A refresh/re-render of an open session does not
         // pass through here, so an in-session completion (e.g. a restore that leaves the paywall up)
         // is preserved across refreshes.
         workflowCompletedInSession = false
@@ -533,7 +533,7 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Success -> {
                             val updatedCustomerInfo = purchases.awaitSyncPurchases()
                             // A successful restore is a natural workflow exit, not an abandonment, even if
-                            // the paywall stays visible (no shouldDisplayBlock). Suppress workflows_close.
+                            // the paywall stays visible (no shouldDisplayBlock). Suppress workflow_close.
                             workflowCompletedInSession = true
 
                             shouldDisplayBlock?.let {
@@ -568,7 +568,7 @@ internal class PaywallViewModelImpl(
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
                     // A successful restore is a natural workflow exit, not an abandonment, even if the
-                    // paywall stays visible (no shouldDisplayBlock). Suppress workflows_close on dismiss.
+                    // paywall stays visible (no shouldDisplayBlock). Suppress workflow_close on dismiss.
                     workflowCompletedInSession = true
                     listener?.onRestoreCompleted(customerInfo)
 
