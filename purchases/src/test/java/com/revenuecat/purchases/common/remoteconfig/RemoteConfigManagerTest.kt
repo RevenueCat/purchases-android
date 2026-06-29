@@ -13,6 +13,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -20,8 +24,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.nio.ByteBuffer
 import java.util.Date
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class RemoteConfigManagerTest {
@@ -30,6 +36,9 @@ class RemoteConfigManagerTest {
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var blobStore: RemoteConfigBlobStore
     private lateinit var manager: RemoteConfigManager
+
+    // Unconfined so the launched 200-path coroutine runs eagerly: invoke(onSuccess) then verify still works.
+    private val testScope = CoroutineScope(UnconfinedTestDispatcher())
 
     private var capturedAppUserID: String? = null
     private var capturedDomain: String? = null
@@ -43,7 +52,7 @@ class RemoteConfigManagerTest {
         backend = mockk()
         diskCache = mockk(relaxed = true)
         blobStore = mockk(relaxed = true)
-        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider)
+        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider, scope = testScope)
 
         // Persist succeeds by default; the blob store is only touched once the configuration is persisted.
         every { diskCache.write(any()) } returns true
@@ -358,6 +367,99 @@ class RemoteConfigManagerTest {
         verify(exactly = 0) { diskCache.write(any()) }
     }
 
+    @Test
+    fun `clearCache wipes the disk cache and blob store`() {
+        manager.clearCache()
+
+        verify(exactly = 1) { diskCache.clear() }
+        verify(exactly = 1) { blobStore.clear() }
+    }
+
+    @Test
+    fun `a response that arrives after clearCache does not persist`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // Identity change wipes the cache before the in-flight request settles.
+        manager.clearCache()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        // The stale response is dropped (epoch guard): nothing is written over the wiped cache.
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `clearCache during an in-flight persist wipes after the write, never leaving stale config`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        val writeEntered = CountDownLatch(1)
+        val releaseWrite = CountDownLatch(1)
+        val clearEntered = CountDownLatch(1)
+        // persist() holds cacheLock while it writes; block inside the write so a concurrent clearCache races it.
+        every { diskCache.write(any()) } answers {
+            writeEntered.countDown()
+            check(releaseWrite.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "write was not released in time" }
+            true
+        }
+        every { diskCache.clear() } answers { clearEntered.countDown() }
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // Run the 200 path on its own thread: it enters the lock and parks inside diskCache.write.
+        val persistThread = thread { onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED) }
+        check(writeEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "persist did not reach diskCache.write" }
+
+        // Identity change mid-persist: clearCache must block on the lock persist is holding.
+        val clearThread = thread { manager.clearCache() }
+
+        // While persist holds the lock, the wipe cannot run — the stale config can't be cleared out from under it.
+        assertThat(clearEntered.await(BLOCKED_MILLIS, TimeUnit.MILLISECONDS)).isFalse()
+
+        // Release the write: persist finishes and frees the lock, and only then does the wipe run.
+        releaseWrite.countDown()
+        persistThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        clearThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+
+        assertThat(clearEntered.count).isZero()
+        verify(exactly = 1) { diskCache.write(any()) }
+        verify(exactly = 1) { diskCache.clear() }
+    }
+
+    @Test
+    fun `the manager can sync again after clearCache`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        manager.clearCache()
+        // A brand-new sync (e.g. for the new user) proceeds normally: the guard was released by clearCache.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        verify(exactly = 1) { diskCache.write(any()) }
+    }
+
     private fun persisted(
         manifest: String,
         domain: String = "app",
@@ -393,6 +495,8 @@ class RemoteConfigManagerTest {
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"
         private const val FIXED_MILLIS = 1_710_000_000_000L
+        private const val WAIT_SECONDS = 5L
+        private const val BLOCKED_MILLIS = 200L
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
