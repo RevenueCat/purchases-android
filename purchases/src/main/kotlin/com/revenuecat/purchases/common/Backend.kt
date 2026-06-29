@@ -1320,10 +1320,10 @@ internal class Backend(
         onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig(domain)
         val path = endpoint.getPath()
-        // Include the app user in the key: the path is static but the request body carries app_user_id, so
-        // concurrent calls for different users must not be deduped onto a single shared request.
+        // Include the app user in the key: the path carries the domain but not the app_user_id (sent in the
+        // request body), so concurrent calls for different users must not be deduped onto a single shared request.
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path, appUserID), appInBackground)
 
         val overrideURL = BuildConfig.REMOTE_CONFIG_BASE_URL
@@ -1334,7 +1334,6 @@ internal class Backend(
         // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
         val body = buildMap<String, Any?> {
             put(APP_USER_ID, appUserID)
-            put("domain", domain)
             manifest?.let { put("manifest", it) }
             put("prefetched_blobs", prefetchedBlobs)
         }
