@@ -11,7 +11,6 @@ import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
-import com.revenuecat.purchases.ads.rewardverification.RewardVerificationStrings
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import com.revenuecat.purchases.ads.rewardverification.rewardVerificationRetryDelay
@@ -834,7 +833,10 @@ public class Purchases internal constructor(
     // between attempts, so a brief blip doesn't exhaust all retries at once) before giving up.
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun refreshCustomerInfoAfterEntitlementGrant(clientTransactionId: String): Boolean {
-        debugLog { RewardVerificationStrings.entitlementFetchingCustomerInfo(clientTransactionId) }
+        debugLog {
+            "Reward verification granted an entitlement; refreshing CustomerInfo " +
+                "(transactionId=$clientTransactionId)."
+        }
         var attempt = 0
         while (attempt < MAX_ENTITLEMENT_REFRESH_ATTEMPTS) {
             try {
@@ -847,7 +849,11 @@ public class Purchases internal constructor(
             attempt++
             if (attempt < MAX_ENTITLEMENT_REFRESH_ATTEMPTS) rewardVerificationRetryDelay()
         }
-        warnLog { RewardVerificationStrings.entitlementCustomerInfoRefreshFailed(clientTransactionId) }
+        warnLog {
+            "Reward verification could not refresh CustomerInfo after an entitlement grant " +
+                "(transactionId=$clientTransactionId). The grant persists server-side and will sync on a " +
+                "later fetch."
+        }
         return false
     }
 

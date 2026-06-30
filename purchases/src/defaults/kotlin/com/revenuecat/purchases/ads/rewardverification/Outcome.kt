@@ -23,28 +23,39 @@ internal sealed interface Outcome {
             override val logMessage: String
                 get() = backendMessage?.takeIf { it.isNotBlank() }
                     ?: failureReason?.takeIf { it.isNotBlank() }
-                        ?.let { RewardVerificationStrings.backendRejectedWithReason(it) }
-                    ?: RewardVerificationStrings.BACKEND_REJECTED_WITHOUT_MESSAGE
+                        ?.let { "Reward verification was rejected by AdMob server-side verification (reason: $it)." }
+                    ?: "Reward verification was rejected by AdMob server-side verification."
             override val isUnexpected: Boolean get() = false
         }
 
         object ExhaustedWhilePending : Failed {
-            override val logMessage: String get() = RewardVerificationStrings.EXHAUSTED_WHILE_PENDING
+            override val logMessage: String
+                get() = "Reward verification timed out: the AdMob server-side verification (SSV) callback was " +
+                    "not received in time. Possible causes: SSV is not enabled/configured for this ad unit in " +
+                    "the AdMob Dashboard, the SSV callback URL is misconfigured in the AdMob Dashboard, AdMob " +
+                    "delayed delivering the callback, or RevenueCat failed to process the SSV webhook."
             override val isUnexpected: Boolean get() = false
         }
 
         object ExhaustedWhileTransientErroring : Failed {
-            override val logMessage: String get() = RewardVerificationStrings.EXHAUSTED_WHILE_TRANSIENT_ERRORING
+            override val logMessage: String
+                get() = "Reward verification timed out after repeated transient errors while polling — " +
+                    "typically unstable device network connectivity. The reward couldn't be verified."
             override val isUnexpected: Boolean get() = false
         }
 
         object UnexpectedResponse : Failed {
-            override val logMessage: String get() = RewardVerificationStrings.UNEXPECTED_RESPONSE
+            override val logMessage: String
+                get() = "Reward verification stopped after the server returned a status this SDK version " +
+                    "doesn't recognize. Update to the latest SDK version; if you're already on the latest, " +
+                    "contact RevenueCat support."
             override val isUnexpected: Boolean get() = true
         }
 
         class TerminalError(private val error: String) : Failed {
-            override val logMessage: String get() = RewardVerificationStrings.terminalError(error)
+            override val logMessage: String
+                get() = "Reward verification stopped after an unrecoverable error: $error. This is " +
+                    "unexpected; if it persists, contact RevenueCat support with the error above."
             override val isUnexpected: Boolean get() = true
         }
     }
