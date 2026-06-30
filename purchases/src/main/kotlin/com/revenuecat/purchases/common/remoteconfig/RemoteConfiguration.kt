@@ -95,7 +95,7 @@ private val configItemMapSerializer =
     MapSerializer(String.serializer(), RemoteConfiguration.ConfigItem.serializer())
 
 /**
- * A single topic's items, with a stable content [hash] so consumers can tell whether a topic changed
+ * A single topic's items, with a stable [contentHash] so consumers can tell whether a topic changed
  * without re-reading its contents. Delegates [Map], so it can be accessed like the item map it wraps.
  */
 @Serializable(with = ConfigTopicSerializer::class)
@@ -103,8 +103,8 @@ internal data class ConfigTopic(
     val items: Map<String, RemoteConfiguration.ConfigItem>,
 ) : Map<String, RemoteConfiguration.ConfigItem> by items {
 
-    /** Stable content hash of [items], computed once at construction. */
-    val hash: String = computeHash(items)
+    /** Stable content hash of [items], computed lazily on first access. */
+    val contentHash: String by lazy { computeHash(items) }
 
     private companion object {
         private const val HEX_BYTE_MASK = 0xFF
@@ -133,7 +133,7 @@ internal data class ConfigTopic(
 
 /**
  * Serializes [ConfigTopic] transparently as its bare item map (no wrapper object), so the wire and persisted
- * shape is identical to the previous `Map` typealias and [ConfigTopic.hash] stays a derived, SDK-only value.
+ * shape is identical to the previous `Map` typealias and [ConfigTopic.contentHash] stays a derived, SDK-only value.
  */
 internal object ConfigTopicSerializer : KSerializer<ConfigTopic> {
     override val descriptor: SerialDescriptor = configItemMapSerializer.descriptor

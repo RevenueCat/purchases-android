@@ -10,7 +10,7 @@ class ConfigTopicTest {
         val a = topic("""{ "api": { "url": "https://a.com", "priority": 100, "weight": 50 } }""")
         val b = topic("""{ "api": { "url": "https://a.com", "priority": 100, "weight": 50 } }""")
 
-        assertThat(a.hash).isEqualTo(b.hash)
+        assertThat(a.contentHash).isEqualTo(b.contentHash)
     }
 
     @Test
@@ -28,7 +28,7 @@ class ConfigTopicTest {
             }""",
         )
 
-        assertThat(a.hash).isEqualTo(b.hash)
+        assertThat(a.contentHash).isEqualTo(b.contentHash)
     }
 
     @Test
@@ -36,7 +36,7 @@ class ConfigTopicTest {
         val a = topic("""{ "api": { "url": "https://a.com", "priority": 100, "weight": 50 } }""")
         val b = topic("""{ "api": { "weight": 50, "url": "https://a.com", "priority": 100 } }""")
 
-        assertThat(a.hash).isEqualTo(b.hash)
+        assertThat(a.contentHash).isEqualTo(b.contentHash)
     }
 
     @Test
@@ -44,7 +44,7 @@ class ConfigTopicTest {
         val a = topic("""{ "api": { "meta": { "region": "us", "tier": "primary" } } }""")
         val b = topic("""{ "api": { "meta": { "tier": "primary", "region": "us" } } }""")
 
-        assertThat(a.hash).isEqualTo(b.hash)
+        assertThat(a.contentHash).isEqualTo(b.contentHash)
     }
 
     @Test
@@ -52,7 +52,7 @@ class ConfigTopicTest {
         val a = topic("""{ "api": { "url": "https://a.com" } }""")
         val b = topic("""{ "api": { "url": "https://b.com" } }""")
 
-        assertThat(a.hash).isNotEqualTo(b.hash)
+        assertThat(a.contentHash).isNotEqualTo(b.contentHash)
     }
 
     @Test
@@ -65,7 +65,7 @@ class ConfigTopicTest {
             }""",
         )
 
-        assertThat(a.hash).isNotEqualTo(b.hash)
+        assertThat(a.contentHash).isNotEqualTo(b.contentHash)
     }
 
     @Test
@@ -73,7 +73,7 @@ class ConfigTopicTest {
         val a = topic("""{ "api": { "hosts": ["a", "b"] } }""")
         val b = topic("""{ "api": { "hosts": ["b", "a"] } }""")
 
-        assertThat(a.hash).isNotEqualTo(b.hash)
+        assertThat(a.contentHash).isNotEqualTo(b.contentHash)
     }
 
     @Test
@@ -81,7 +81,7 @@ class ConfigTopicTest {
         val a = topic("""{ "default": { "blob_ref": "blobA" } }""")
         val b = topic("""{ "default": { "blob_ref": "blobB" } }""")
 
-        assertThat(a.hash).isNotEqualTo(b.hash)
+        assertThat(a.contentHash).isNotEqualTo(b.contentHash)
     }
 
     private fun topic(sourcesJson: String): ConfigTopic {
