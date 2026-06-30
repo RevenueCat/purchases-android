@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerTestData
+import com.revenuecat.purchases.common.networking.RCContentEncoding
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -181,6 +182,47 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     @Test
+    fun `a gzipped inline blob is stored decompressed and retrievable by its uncompressed ref`() {
+        val blob = """{"workflow":"wf1","note":"${"pad".repeat(50)}"}""".toByteArray()
+        // The ref is the content-address of the uncompressed bytes, unchanged by compression.
+        val ref = RCContainerTestData.refOf(blob)
+        val config = workflowsConfig(prefetchBlobs = listOf(ref), items = mapOf("wf1234" to ref))
+
+        // codec index 1 = the inline blob element is gzipped on the wire.
+        sync(
+            container(
+                config,
+                blobs = listOf(blob),
+                codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+            ),
+        )
+
+        assertThat(blobStore.contains(ref)).isTrue
+        // The store holds the uncompressed payload.
+        assertThat(blobStore.read(ref)).isEqualTo(blob)
+    }
+
+    @Test
+    fun `an inline blob with an unsupported codec is skipped but the config still persists`() {
+        val blob = """{"workflow":"wf1"}""".toByteArray()
+        val ref = RCContainerTestData.refOf(blob)
+        val config = workflowsConfig(items = mapOf("wf1234" to ref))
+
+        // codec index 1 = brotli, which Android cannot decode: the blob is dropped, config is kept.
+        sync(
+            container(
+                config,
+                blobs = listOf(blob),
+                codecForIndex = { index -> if (index == 1) RCContentEncoding.BROTLI.id else RCContentEncoding.NONE.id },
+            ),
+        )
+
+        assertThat(blobStore.contains(ref)).isFalse
+        assertThat(blobStore.cachedRefs()).isEmpty()
+        assertThat(diskCache.read()!!.topicBlobRefs).containsExactlyEntriesOf(mapOf("workflows" to listOf(ref)))
+    }
+
+    @Test
     fun `a 204 after a prior sync leaves the disk cache and blobs untouched`() {
         val blob = """{"workflow":"wf1"}""".toByteArray()
         val ref = RCContainerTestData.refOf(blob)
@@ -239,11 +281,13 @@ class RemoteConfigManagerIntegrationTest {
         configJson: String,
         blobs: List<ByteArray>,
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
+        codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
     ): RCContainer = RCContainer.parse(
         RCContainerTestData.buildContainer(
             config = configJson.toByteArray(),
             elements = blobs,
             checksumOverride = checksumOverride,
+            codecForIndex = codecForIndex,
         ),
     )
 

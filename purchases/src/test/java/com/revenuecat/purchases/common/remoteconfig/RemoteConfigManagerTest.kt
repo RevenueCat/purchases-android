@@ -367,13 +367,15 @@ class RemoteConfigManagerTest {
     private fun inlineElement(data: ByteBuffer, checksumValid: Boolean): RCElement {
         val element = mockk<RCElement>()
         every { element.data } returns data
-        every { element.isChecksumValid() } returns checksumValid
+        // The manager decodes (codec-aware) then verifies the decoded bytes against the checksum.
+        every { element.decode() } returns data
+        every { element.matchesChecksum(any()) } returns checksumValid
         return element
     }
 
     private fun containerWithConfig(json: String, elements: Map<String, RCElement> = emptyMap()): RCContainer {
         val element = mockk<RCElement>()
-        every { element.data } returns ByteBuffer.wrap(json.toByteArray())
+        every { element.decode() } returns ByteBuffer.wrap(json.toByteArray())
         val container = mockk<RCContainer>()
         every { container.config } returns element
         every { container.elements } returns elements
