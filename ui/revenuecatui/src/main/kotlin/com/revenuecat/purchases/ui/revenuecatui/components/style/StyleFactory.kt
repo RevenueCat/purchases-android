@@ -573,8 +573,8 @@ internal class StyleFactory(
             is TabControlComponent -> tabControl.errorIfNull(nonEmptyListOf(PaywallValidationError.TabControlNotInTab))
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
-            is FallbackHeaderComponent -> Result.Success(null)
             is WebViewComponent -> createWebViewComponentStyle(component)
+            is FallbackHeaderComponent -> Result.Success(null)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
@@ -589,6 +589,7 @@ internal class StyleFactory(
                 urlTemplate = component.url,
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
+                componentId = component.id,
                 protocolVersion = component.protocolVersion,
             ),
         )

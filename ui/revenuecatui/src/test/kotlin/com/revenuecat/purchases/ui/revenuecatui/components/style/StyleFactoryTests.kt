@@ -136,6 +136,7 @@ class StyleFactoryTests {
         assertThat(style.urlTemplate).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
         assertThat(style.visible).isFalse()
         assertThat(style.size).isEqualTo(size)
+        assertThat(style.componentId).isEqualTo("promo_web_view")
         assertThat(style.protocolVersion).isNull()
     }
 
