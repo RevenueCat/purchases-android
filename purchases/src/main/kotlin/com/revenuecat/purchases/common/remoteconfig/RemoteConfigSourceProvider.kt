@@ -101,7 +101,7 @@ internal class DefaultRemoteConfigSourceProvider(
             RemoteConfigSourceHandle.Purpose.BLOB -> blob
         }
 
-    /** Rebuilds both failovers from the latest `sources` topic when its hash changed. Guarded by [lock]. */
+    /** Rebuilds both failovers from the latest `sources` topic when its hash changed. Callers must hold [lock]. */
     private fun rebuildIfChanged() {
         val topic = topicStore.topic(SOURCES_TOPIC)
         val hash = topic?.contentHash
