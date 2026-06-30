@@ -49,7 +49,6 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             }
             """.trimIndent(),
         )
-        // Assert the `sources` topic body matches without requiring the topics map to contain only it.
         assertThat(actualTopics).containsKey("sources")
         assertThat(actualTopics["sources"]).isEqualTo(expectedSourcesTopic)
         assertThat(actualTopics).containsKey("ui_config")
