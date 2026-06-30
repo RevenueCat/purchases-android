@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "23439",
+    "Content-Length": "23453",
     "Content-Type": "application\/json",
     "access-control-allow-origin": "*",
     "access-control-expose-headers": "X-Request-Id",
@@ -38,6 +38,7 @@
                   }
                 }
               },
+              "header": null,
               "stack": {
                 "background": null,
                 "background_color": null,
@@ -2086,7 +2087,7 @@
           "exit_offers": {},
           "id": "pw13dea1ae2d694a7c",
           "play_store_product_change_mode": {},
-          "revision": 2,
+          "revision": 5,
           "state_declarations": {},
           "template_name": "components",
           "zero_decimal_place_countries": {

@@ -1,6 +1,12 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.LogMessage
+import com.revenuecat.purchases.assertWarnLog
+import com.revenuecat.purchases.common.Config as PurchasesConfig
+import com.revenuecat.purchases.common.currentLogHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
@@ -25,6 +31,55 @@ class RCContainerTest {
         assertThat(container.config.isChecksumValid()).isTrue()
         assertThat(container.contentElements).isEmpty()
         assertThat(container.elements).isEmpty()
+    }
+
+    @Test
+    fun `warns and still parses when header flags are non-zero`() {
+        val bytes = buildContainer(version = 1, flags = 0x07, config = "cfg".toByteArray())
+
+        assertWarnLog("RC Container header flags non-zero (0x7); ignoring unknown flags.") {
+            val container = RCContainer.parse(bytes)
+            // Parsing remains forward-compatible: the flags are preserved, not rejected.
+            assertThat(container.flags).isEqualTo(0x07)
+        }
+    }
+
+    @Test
+    fun `does not warn when header flags are zero`() {
+        val bytes = buildContainer(version = 1, flags = 0, config = "cfg".toByteArray())
+
+        val logs = captureLogs { RCContainer.parse(bytes) }
+
+        assertThat(logs.filter { it.level == LogLevel.WARN }).isEmpty()
+    }
+
+    @Test
+    fun `warns and still parses when element reserved upper bits are non-zero`() {
+        // reserved = 0x00000100: codec low byte is 0 (NONE), the upper bits carry an unknown flag.
+        val bytes = buildContainer(
+            config = "cfg".toByteArray(),
+            elements = listOf("payload".toByteArray()),
+            reservedForIndex = { index -> if (index == 1) 0x100L else 0L },
+        )
+
+        assertWarnLog("RC element reserved bits non-zero (0x100); ignoring unknown reserved bits.") {
+            val container = RCContainer.parse(bytes)
+            assertThat(container.contentElements[0].data.readBytes()).isEqualTo("payload".toByteArray())
+        }
+    }
+
+    @Test
+    fun `does not warn when only the element codec byte is set`() {
+        // A legitimate non-zero codec (GZIP) lives in the reserved low byte; the upper bits stay zero.
+        val bytes = buildContainer(
+            config = "cfg".toByteArray(),
+            elements = listOf("compress-me-".repeat(20).toByteArray()),
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+        )
+
+        val logs = captureLogs { RCContainer.parse(bytes) }
+
+        assertThat(logs.filter { it.level == LogLevel.WARN }).isEmpty()
     }
 
     @Test
@@ -142,6 +197,74 @@ class RCContainerTest {
         val container = RCContainer.parse(bytes)
 
         assertThat(container.contentElements[0].isChecksumValid()).isFalse()
+    }
+
+    @Test
+    fun `gzip element decodes to its uncompressed bytes and verifies`() {
+        val element = "compress-me-".repeat(20).toByteArray()
+        val bytes = buildContainer(
+            elements = listOf(element),
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+        )
+
+        val container = RCContainer.parse(bytes)
+        val parsed = container.contentElements[0]
+
+        assertThat(parsed.codec).isEqualTo(RCContentEncoding.GZIP.id)
+        // The on-wire bytes are compressed (and smaller than the original)...
+        assertThat(parsed.data.readBytes()).isNotEqualTo(element)
+        assertThat(parsed.data.remaining()).isLessThan(element.size)
+        // ...but decode() yields the original and the checksum verifies against the uncompressed bytes.
+        assertThat(parsed.decode().readBytes()).isEqualTo(element)
+        assertThat(parsed.isChecksumValid()).isTrue()
+        // The content address is the hash of the uncompressed bytes, unchanged by compression.
+        assertThat(container.elements).containsKey(refOf(element))
+    }
+
+    @Test
+    fun `gzip config element decodes for parsing`() {
+        val config = "{\"hello\":\"world\"}".toByteArray()
+        val bytes = buildContainer(config = config, codecForIndex = { RCContentEncoding.GZIP.id })
+
+        val container = RCContainer.parse(bytes)
+
+        assertThat(container.config.codec).isEqualTo(RCContentEncoding.GZIP.id)
+        assertThat(container.config.decode().readBytes()).isEqualTo(config)
+        assertThat(container.config.isChecksumValid()).isTrue()
+    }
+
+    @Test
+    fun `unsupported codec makes decode throw and checksum invalid`() {
+        listOf(RCContentEncoding.BROTLI.id, RCContentEncoding.ZSTD.id, 9).forEach { codecId ->
+            val element = "payload".toByteArray()
+            val bytes = buildContainer(
+                elements = listOf(element),
+                codecForIndex = { index -> if (index == 1) codecId else RCContentEncoding.NONE.id },
+            )
+
+            val parsed = RCContainer.parse(bytes).contentElements[0]
+
+            assertThat(parsed.codec).isEqualTo(codecId)
+            assertThatThrownBy { parsed.decode() }.isInstanceOf(RCContainerFormatException::class.java)
+            assertThat(parsed.isChecksumValid()).isFalse()
+        }
+    }
+
+    @Test
+    fun `corrupt gzip body fails verification without throwing`() {
+        val element = "compress-me-".repeat(20).toByteArray()
+        val bytes = buildContainer(
+            elements = listOf(element),
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+        )
+        // Layout: header(8) + empty-config element header(32) + content element header(32) = 72.
+        // Offset 72 is the gzip body's first magic byte; corrupting it breaks decompression.
+        val gzipBodyStart = 8 + 32 + 32
+        bytes[gzipBodyStart] = (bytes[gzipBodyStart] + 1).toByte()
+
+        val parsed = RCContainer.parse(bytes).contentElements[0]
+
+        assertThat(parsed.isChecksumValid()).isFalse()
     }
 
     @Test
@@ -269,5 +392,40 @@ class RCContainerTest {
         config: ByteArray = ByteArray(0),
         elements: List<ByteArray> = emptyList(),
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
-    ): ByteArray = RCContainerTestData.buildContainer(version, flags, config, elements, checksumOverride)
+        codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
+        reservedForIndex: ((index: Int) -> Long)? = null,
+    ): ByteArray =
+        RCContainerTestData.buildContainer(
+            version,
+            flags,
+            config,
+            elements,
+            checksumOverride,
+            codecForIndex,
+            reservedForIndex,
+        )
+
+    /** Captures every log emitted while [block] runs (with logging forced to VERBOSE). */
+    private fun captureLogs(block: () -> Unit): List<LogMessage> {
+        val logs = mutableListOf<LogMessage>()
+        val previousLogLevel = PurchasesConfig.logLevel
+        val previousLogHandler = currentLogHandler
+        PurchasesConfig.logLevel = LogLevel.VERBOSE
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) { logs.add(LogMessage(LogLevel.VERBOSE, msg)) }
+            override fun d(tag: String, msg: String) { logs.add(LogMessage(LogLevel.DEBUG, msg)) }
+            override fun i(tag: String, msg: String) { logs.add(LogMessage(LogLevel.INFO, msg)) }
+            override fun w(tag: String, msg: String) { logs.add(LogMessage(LogLevel.WARN, msg)) }
+            override fun e(tag: String, msg: String, throwable: Throwable?) {
+                logs.add(LogMessage(LogLevel.ERROR, msg, throwable))
+            }
+        }
+        try {
+            block()
+        } finally {
+            currentLogHandler = previousLogHandler
+            PurchasesConfig.logLevel = previousLogLevel
+        }
+        return logs
+    }
 }

@@ -28,7 +28,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val config = RemoteConfiguration.parse(rcContainer.config.data)
         assertThat(config.domain).isEqualTo("app")
         assertThat(config.manifest).isNotEmpty()
-        assertThat(config.activeTopics).containsExactly("sources")
+        assertThat(config.activeTopics).containsExactlyInAnyOrder("sources", "workflows", "ui_config")
         assertThat(rcContainer.contentElements).isEmpty()
 
         val topicsSerializer = MapSerializer(
@@ -46,7 +46,9 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
                   ]
                 },
                 "blob": { "sources": [] }
-              }
+              },
+              "workflows": {},
+              "ui_config": {}
             }
             """.trimIndent(),
         )
