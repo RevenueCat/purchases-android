@@ -5,20 +5,24 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Bridges the suspend reward-verification poll to the callback-based public API, so coroutine usage stays
- * out of [com.revenuecat.purchases.Purchases]. The poll loop only suspends (never blocks), so running it on
- * [Dispatchers.Main] keeps the callback on the main thread like the SDK's other callback APIs.
+ * out of [com.revenuecat.purchases.Purchases]. Polling runs off the main thread and the result is delivered
+ * back on the main thread, like the SDK's other callback APIs.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class RewardVerificationPollLauncher(
-    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     fun launch(
         poll: suspend () -> RewardVerificationResult,
         onCompleted: (RewardVerificationResult) -> Unit,
     ) {
-        scope.launch { onCompleted(poll()) }
+        scope.launch {
+            val result = poll()
+            withContext(Dispatchers.Main) { onCompleted(result) }
+        }
     }
 }
