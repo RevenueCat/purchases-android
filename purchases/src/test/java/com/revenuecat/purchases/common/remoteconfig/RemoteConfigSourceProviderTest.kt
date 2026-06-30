@@ -342,6 +342,18 @@ class RemoteConfigSourceProviderTest {
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("y"))
     }
 
+    @Test
+    fun `sources topic appearing after being absent builds the list`() {
+        val store = FakeTopicStore(null)
+        val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
+
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
+
+        // A sources topic shows up where there was none: the provider builds the list from the top.
+        store.sources = sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList())
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+    }
+
     // endregion
 
     // region Threading

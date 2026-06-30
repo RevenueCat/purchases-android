@@ -69,9 +69,8 @@ internal class DefaultRemoteConfigSourceProvider(
 
     private val lock = Any()
 
-    // The hash the current failovers were built from, and whether we've built at all. A null hash is a
-    // valid built state (the `sources` topic is absent), so `built` distinguishes it from "never built".
-    private var built = false
+    // Content hash of the `sources` topic the current failovers were built from. Null means there is no
+    // sources topic (absent, or none seen yet).
     private var builtHash: String? = null
     private var api = SourceFailover(RemoteConfigSourceHandle.Purpose.API, emptyList(), random)
     private var blob = SourceFailover(RemoteConfigSourceHandle.Purpose.BLOB, emptyList(), random)
@@ -106,7 +105,7 @@ internal class DefaultRemoteConfigSourceProvider(
     private fun rebuildIfChanged() {
         val topic = topicStore.topic(SOURCES_TOPIC)
         val hash = topic?.contentHash
-        if (built && hash == builtHash) return
+        if (hash == builtHash) return
         // Seed the new generation past any token the previous one could have handed out, so reports left
         // over from before the rebuild are ignored instead of advancing the freshly-restarted list.
         val nextToken = maxOf(api.currentToken, blob.currentToken) + 1
@@ -123,7 +122,6 @@ internal class DefaultRemoteConfigSourceProvider(
             nextToken,
         )
         builtHash = hash
-        built = true
     }
 
     private companion object {
