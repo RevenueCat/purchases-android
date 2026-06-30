@@ -92,15 +92,19 @@ internal class DefaultRemoteConfigSourceProvider(
 
     override fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
         synchronized(lock) {
-            rebuildIfChanged()
-            failoverFor(handle.purpose).reportUnhealthy(handle)
+            // Rebuild happened, no need to report unhealthy
+            if (!rebuildIfChanged()) {
+                failoverFor(handle.purpose).reportUnhealthy(handle)
+            }
         }
     }
 
     override fun restart(purpose: RemoteConfigSourceHandle.Purpose) {
         synchronized(lock) {
-            rebuildIfChanged()
-            failoverFor(purpose).restart()
+            // Rebuild happened, no need to restart
+            if (!rebuildIfChanged()) {
+                failoverFor(purpose).restart()
+            }
         }
     }
 
@@ -110,11 +114,14 @@ internal class DefaultRemoteConfigSourceProvider(
             RemoteConfigSourceHandle.Purpose.BLOB -> blob
         }
 
-    /** Rebuilds both failovers from the latest `sources` topic when its hash changed. Callers must hold [lock]. */
-    private fun rebuildIfChanged() {
+    /**
+     * Rebuilds both failovers from the latest `sources` topic when its hash changed, returning whether
+     * a rebuild happened. Callers must hold [lock].
+     */
+    private fun rebuildIfChanged(): Boolean {
         val topic = topicStore.topic(SOURCES_TOPIC)
         val hash = topic?.contentHash
-        if (hash == builtHash) return
+        if (hash == builtHash) return false
         // Seed the new generation past any token the previous one could have handed out, so reports left
         // over from before the rebuild are ignored instead of advancing the freshly-restarted list.
         val nextToken = maxOf(api.currentToken, blob.currentToken) + 1
@@ -131,6 +138,7 @@ internal class DefaultRemoteConfigSourceProvider(
             nextToken,
         )
         builtHash = hash
+        return true
     }
 
     private companion object {
