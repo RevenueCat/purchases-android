@@ -13,7 +13,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
-import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
@@ -109,7 +109,7 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias RewardVerificationResultCallback =
-    Pair<(RewardVerificationResult) -> Unit, (RewardVerificationError) -> Unit>
+    Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
 internal typealias RemoteConfigCallback =
     Pair<(RCContainer?, VerificationResult) -> Unit, (PurchasesError) -> Unit>
@@ -1239,7 +1239,7 @@ internal class Backend(
     fun getRewardVerificationResult(
         appUserID: String,
         clientTransactionId: String,
-        onSuccess: (RewardVerificationResult) -> Unit,
+        onSuccess: (RewardVerificationPollStatus) -> Unit,
         onError: (RewardVerificationError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRewardVerification(
@@ -1277,7 +1277,7 @@ internal class Backend(
                             val response = json.decodeFromString<RewardVerificationResponse>(
                                 result.payloadText,
                             )
-                            onSuccessHandler(response.toRewardVerificationResult())
+                            onSuccessHandler(response.toRewardVerificationPollStatus())
                         } catch (e: SerializationException) {
                             onErrorHandler(
                                 RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),

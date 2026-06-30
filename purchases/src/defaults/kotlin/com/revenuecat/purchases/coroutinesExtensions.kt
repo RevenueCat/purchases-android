@@ -12,7 +12,6 @@ import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
-import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
 
 /**
  * Get latest available customer info.
@@ -239,12 +238,12 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitGetRewardVerificationResult(
     clientTransactionId: String,
-): CoreRewardVerificationResult {
+): RewardVerificationPollStatus {
     return suspendCancellableCoroutine { continuation ->
         getRewardVerificationResult(
             clientTransactionId = clientTransactionId,
             callback = object : GetRewardVerificationResultCallback {
-                override fun onReceived(result: CoreRewardVerificationResult) {
+                override fun onReceived(result: RewardVerificationPollStatus) {
                     continuation.safeResume(result)
                 }
 

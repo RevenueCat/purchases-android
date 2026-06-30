@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.RewardVerificationException
+import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
@@ -12,7 +13,6 @@ import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlin.random.Random
-import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
@@ -135,12 +135,12 @@ internal object Poller {
                 "Reward verification poll result=${result.logDescription()} transactionId=$clientTransactionId"
             }
             when (result) {
-                is CoreRewardVerificationResult.Verified ->
+                is RewardVerificationPollStatus.Verified ->
                     Step.Terminal(Outcome.Verified(result.reward.toAdMobReward()))
-                is CoreRewardVerificationResult.Failed ->
+                is RewardVerificationPollStatus.Failed ->
                     Step.Terminal(Outcome.Failed.BackendRejected(result.message, result.failureReason))
-                CoreRewardVerificationResult.PENDING -> Step.RetryPending
-                CoreRewardVerificationResult.UNKNOWN -> Step.RetryUnknown
+                RewardVerificationPollStatus.PENDING -> Step.RetryPending
+                RewardVerificationPollStatus.UNKNOWN -> Step.RetryUnknown
             }
         } catch (e: CancellationException) {
             throw e
@@ -183,12 +183,12 @@ internal object Poller {
     }
 
     // Readable log form: object statuses log their name; Verified inlines the reward payload.
-    private fun CoreRewardVerificationResult.logDescription(): String {
+    private fun RewardVerificationPollStatus.logDescription(): String {
         return when (this) {
-            is CoreRewardVerificationResult.Verified -> "verified(reward=$reward)"
-            CoreRewardVerificationResult.PENDING -> "pending"
-            is CoreRewardVerificationResult.Failed -> "failed"
-            CoreRewardVerificationResult.UNKNOWN -> "unknown"
+            is RewardVerificationPollStatus.Verified -> "verified(reward=$reward)"
+            RewardVerificationPollStatus.PENDING -> "pending"
+            is RewardVerificationPollStatus.Failed -> "failed"
+            RewardVerificationPollStatus.UNKNOWN -> "unknown"
         }
     }
 
