@@ -106,7 +106,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
         assertThat(request.getHeader("Accept")).isEqualTo("application/x-rc-format")
         // Advertise the per-element codecs the SDK can decode so the server never sends brotli/zstd.
-        assertThat(request.getHeader("Accept-Encoding")).isEqualTo("gzip")
+        assertThat(request.getHeader("Accept-RC-Element-Encoding")).isEqualTo("gzip")
         // RC Format endpoints are not ETag-cached: no If-None-Match is sent and the cache is bypassed.
         assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isNull()
         verify(exactly = 0) {

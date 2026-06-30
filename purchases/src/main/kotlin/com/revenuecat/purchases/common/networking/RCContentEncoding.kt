@@ -14,8 +14,9 @@ import java.util.zip.GZIPInputStream
  * changes: callers must [decode] before verifying the checksum or consuming the content.
  *
  * Android intentionally supports only [NONE] and [GZIP] (no extra dependencies) and advertises this with an
- * `Accept-Encoding` request header so the server never selects a codec it cannot decode. [BROTLI]/[ZSTD] and
- * unknown ids are surfaced as a decode failure ([RCContainerFormatException]) and handled gracefully upstream.
+ * `Accept-RC-Element-Encoding` request header so the server never selects a codec it cannot decode.
+ * [BROTLI]/[ZSTD] and unknown ids are surfaced as a decode failure ([RCContainerFormatException]) and handled
+ * gracefully upstream.
  */
 @Suppress("MagicNumber")
 internal enum class RCContentEncoding(val id: Int) {
