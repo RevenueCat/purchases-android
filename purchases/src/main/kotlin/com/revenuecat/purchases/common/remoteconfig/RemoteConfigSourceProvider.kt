@@ -56,7 +56,7 @@ internal interface RemoteConfigSourceProvider {
  * back to the next one when a source is reported unhealthy. Each purpose fails over independently.
  *
  * Reads the `sources` topic lazily from [topicStore] and rebuilds its ordered lists only when that
- * topic's content [ConfigTopic.hash] changes: an unchanged topic keeps failover progress, while a
+ * topic's [ConfigTopic.contentHash] changes: an unchanged topic keeps failover progress, while a
  * changed one restarts both lists from the top. Sources are deduped by url and ordered via
  * [WeightedSourceSelector].
  *
@@ -105,7 +105,7 @@ internal class DefaultRemoteConfigSourceProvider(
     /** Rebuilds both failovers from the latest `sources` topic when its hash changed. Guarded by [lock]. */
     private fun rebuildIfChanged() {
         val topic = topicStore.topic(SOURCES_TOPIC)
-        val hash = topic?.hash
+        val hash = topic?.contentHash
         if (built && hash == builtHash) return
         // Seed the new generation past any token the previous one could have handed out, so reports left
         // over from before the rebuild are ignored instead of advancing the freshly-restarted list.
