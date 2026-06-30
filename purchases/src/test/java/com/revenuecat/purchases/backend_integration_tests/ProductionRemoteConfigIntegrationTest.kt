@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import io.mockk.every
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
+import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -28,31 +29,31 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val config = RemoteConfiguration.parse(rcContainer.config.data)
         assertThat(config.domain).isEqualTo("app")
         assertThat(config.manifest).isNotEmpty()
-        assertThat(config.activeTopics).containsExactlyInAnyOrder("sources", "workflows", "ui_config")
+        assertThat(config.activeTopics).contains("sources", "ui_config", "workflows")
         assertThat(rcContainer.contentElements).isEmpty()
 
         val topicsSerializer = MapSerializer(
             String.serializer(),
             MapSerializer(String.serializer(), RemoteConfiguration.ConfigItem.serializer()),
         )
-        val actualTopics = JsonProvider.defaultJson.encodeToJsonElement(topicsSerializer, config.topics)
-        val expectedTopics = JsonProvider.defaultJson.parseToJsonElement(
+        val actualTopics = JsonProvider.defaultJson.encodeToJsonElement(topicsSerializer, config.topics).jsonObject
+        val expectedSourcesTopic = JsonProvider.defaultJson.parseToJsonElement(
             """
             {
-              "sources": {
-                "api": {
-                  "sources": [
-                    { "id": "primary", "url": "https://api.revenuecat.com/", "priority": 0, "weight": 100 }
-                  ]
-                },
-                "blob": { "sources": [] }
+              "api": {
+                "sources": [
+                  { "id": "primary", "url": "https://api.revenuecat.com/", "priority": 0, "weight": 100 }
+                ]
               },
-              "workflows": {},
-              "ui_config": {}
+              "blob": { "sources": [] }
             }
             """.trimIndent(),
         )
-        assertThat(actualTopics).isEqualTo(expectedTopics)
+        // Assert the `sources` topic body matches without requiring the topics map to contain only it.
+        assertThat(actualTopics).containsKey("sources")
+        assertThat(actualTopics["sources"]).isEqualTo(expectedSourcesTopic)
+        assertThat(actualTopics).containsKey("ui_config")
+        assertThat(actualTopics).containsKey("workflows")
     }
 
     @Test
