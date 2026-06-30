@@ -23,10 +23,11 @@ class RemoteConfigSourceProviderTest {
     // region Initial selection
 
     @Test
-    fun `current sources are null when the sources topic is absent`() {
+    fun `current sources fall back to embedded defaults when the sources topic is absent`() {
         val provider = DefaultRemoteConfigSourceProvider(FakeTopicStore(null), FakeRandom())
-        assertThat(provider.getCurrent(Purpose.API)).isNull()
-        assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url)
+            .isEqualTo("https://config.revenuecat-static.com/{blob_ref}")
     }
 
     @Test
@@ -343,11 +344,11 @@ class RemoteConfigSourceProviderTest {
     }
 
     @Test
-    fun `sources topic appearing after being absent builds the list`() {
+    fun `sources topic appearing after being absent replaces the embedded defaults`() {
         val store = FakeTopicStore(null)
         val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
 
-        assertThat(provider.getCurrent(Purpose.API)).isNull()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
 
         // A sources topic shows up where there was none: the provider builds the list from the top.
         store.sources = sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList())

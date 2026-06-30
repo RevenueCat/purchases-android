@@ -57,8 +57,9 @@ internal interface RemoteConfigSourceProvider {
  *
  * Reads the `sources` topic lazily from [topicStore] and rebuilds its ordered lists only when that
  * topic's [ConfigTopic.contentHash] changes: an unchanged topic keeps failover progress, while a
- * changed one restarts both lists from the top. Sources are deduped by url and ordered via
- * [WeightedSourceSelector].
+ * changed one restarts both lists from the top. While the topic is absent, it falls back to embedded
+ * default sources so the SDK can reach the config api before any config is fetched. Sources are
+ * deduped by url and ordered via [WeightedSourceSelector].
  *
  * Thread-safe.
  */
@@ -70,10 +71,18 @@ internal class DefaultRemoteConfigSourceProvider(
     private val lock = Any()
 
     // Content hash of the `sources` topic the current failovers were built from. Null means there is no
-    // sources topic (absent, or none seen yet).
+    // sources topic (absent, or none seen yet), in which case the failovers hold the embedded defaults.
     private var builtHash: String? = null
-    private var api = SourceFailover(RemoteConfigSourceHandle.Purpose.API, emptyList(), random)
-    private var blob = SourceFailover(RemoteConfigSourceHandle.Purpose.BLOB, emptyList(), random)
+    private var api = SourceFailover(
+        RemoteConfigSourceHandle.Purpose.API,
+        dedupe(sourcesFor(null, RemoteConfigSourceHandle.Purpose.API)),
+        random,
+    )
+    private var blob = SourceFailover(
+        RemoteConfigSourceHandle.Purpose.BLOB,
+        dedupe(sourcesFor(null, RemoteConfigSourceHandle.Purpose.BLOB)),
+        random,
+    )
 
     override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle? =
         synchronized(lock) {
@@ -111,13 +120,13 @@ internal class DefaultRemoteConfigSourceProvider(
         val nextToken = maxOf(api.currentToken, blob.currentToken) + 1
         api = SourceFailover(
             RemoteConfigSourceHandle.Purpose.API,
-            dedupe(parseSources(topic, API_ITEM, URL_KEY)),
+            dedupe(sourcesFor(topic, RemoteConfigSourceHandle.Purpose.API)),
             random,
             nextToken,
         )
         blob = SourceFailover(
             RemoteConfigSourceHandle.Purpose.BLOB,
-            dedupe(parseSources(topic, BLOB_ITEM, URL_FORMAT_KEY)),
+            dedupe(sourcesFor(topic, RemoteConfigSourceHandle.Purpose.BLOB)),
             random,
             nextToken,
         )
@@ -133,6 +142,28 @@ internal class DefaultRemoteConfigSourceProvider(
         private const val URL_FORMAT_KEY = "url_format"
         private const val PRIORITY_KEY = "priority"
         private const val WEIGHT_KEY = "weight"
+
+        // Embedded defaults used until a `sources` topic is fetched, so the SDK can always reach config.
+        private val DEFAULT_API_SOURCES = listOf(
+            RemoteConfigSource(url = "https://api.revenuecat.com", priority = 0, weight = 1),
+        )
+        private val DEFAULT_BLOB_SOURCES = listOf(
+            RemoteConfigSource(url = "https://config.revenuecat-static.com/{blob_ref}", priority = 0, weight = 1),
+        )
+
+        /**
+         * The sources for [purpose]: parsed from the `sources` [topic], or the embedded defaults while
+         * the topic is absent.
+         */
+        fun sourcesFor(
+            topic: ConfigTopic?,
+            purpose: RemoteConfigSourceHandle.Purpose,
+        ): List<RemoteConfigSource> = when (purpose) {
+            RemoteConfigSourceHandle.Purpose.API ->
+                if (topic == null) DEFAULT_API_SOURCES else parseSources(topic, API_ITEM, URL_KEY)
+            RemoteConfigSourceHandle.Purpose.BLOB ->
+                if (topic == null) DEFAULT_BLOB_SOURCES else parseSources(topic, BLOB_ITEM, URL_FORMAT_KEY)
+        }
 
         /**
          * Extracts the source list from the `sources` topic item [itemKey] (`api` or `blob`), reading each
