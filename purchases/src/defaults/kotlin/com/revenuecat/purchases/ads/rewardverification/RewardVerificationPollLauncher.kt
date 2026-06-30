@@ -4,6 +4,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -24,5 +25,13 @@ internal class RewardVerificationPollLauncher(
             val result = poll()
             withContext(Dispatchers.Main) { onCompleted(result) }
         }
+    }
+
+    /**
+     * Cancels any in-flight poll. Called when the owning [com.revenuecat.purchases.Purchases] instance is
+     * closed so a poll started on it cannot survive close/reconfigure and run against a different SDK.
+     */
+    fun close() {
+        scope.cancel()
     }
 }

@@ -572,6 +572,7 @@ public class Purchases internal constructor(
     public fun close() {
         notifyLifecycleClosed()
         purchasesOrchestrator.close()
+        rewardVerificationPollLauncher.close()
         backingFieldSharedInstance = null
     }
 

@@ -22,7 +22,6 @@ import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -59,6 +58,11 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult as PollResult
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
 import org.junit.Assert.fail
@@ -1984,15 +1988,35 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     @Test
-    fun `pollRewardVerification callback delivers the verified reward`() {
-        mockVerifiedVirtualCurrencyRewardBackend()
-        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+    fun `reward verification poll launcher delivers the result to the callback`() {
+        val launcher = RewardVerificationPollLauncher(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+        val expected = PollResult.verified(PollReward.VirtualCurrency(code = "coins", amount = 10))
 
         var delivered: PollResult? = null
-        purchases.pollRewardVerification("ct_1", PollRewardVerificationCallback { delivered = it })
+        launcher.launch(poll = { expected }, onCompleted = { delivered = it })
         shadowOf(Looper.getMainLooper()).idle()
 
         assertThat(delivered?.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `closing the reward verification poll launcher cancels an in-flight poll`() {
+        val launcher = RewardVerificationPollLauncher(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+        val gate = CompletableDeferred<PollResult>()
+
+        var delivered: PollResult? = null
+        launcher.launch(poll = { gate.await() }, onCompleted = { delivered = it })
+
+        launcher.close()
+        gate.complete(PollResult.verified(PollReward.VirtualCurrency(code = "coins", amount = 10)))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(delivered).isNull()
     }
 
     @OptIn(InternalRevenueCatAPI::class)
