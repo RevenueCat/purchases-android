@@ -14,13 +14,7 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import java.util.concurrent.ConcurrentHashMap
 
-/**
- * In-memory state store for state-driven paywalls, scoped to a single presentation session: one store per workflow
- * presentation (shared across its screens) or per standalone paywall. Seeded from the declared state defaults;
- * interactive components mutate it via [applyUpdates] and condition evaluation reads via [currentValueOrDefault].
- *
- * State persists across screen navigation within a workflow and is never persisted across presentations.
- */
+/** In-memory state store for state-driven paywalls, scoped to one presentation session. */
 @OptIn(InternalRevenueCatAPI::class)
 @Stable
 internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
@@ -35,18 +29,9 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
         registerDeclarations(declarations)
     }
 
-    /**
-     * Returns the current value for [key], falling back to the declared default if the key has never been written.
-     * Reading this inside a `derivedStateOf` block subscribes only to [key]'s individual state, so a write to an
-     * unrelated key does not invalidate the block.
-     */
     fun currentValueOrDefault(key: String): JsonPrimitive? = currentValues[key]?.value ?: declaredDefaults[key]
 
-    /**
-     * Adds any keys from [declarations] not already known, seeding each with its declared default. Keys that already
-     * exist keep their current value, so registering a workflow screen's declarations never resets state another
-     * screen set.
-     */
+    /** Adds new keys from [declarations]; keys already in the store keep their current value. */
     fun registerDeclarations(declarations: Map<String, StateDeclaration>) {
         declarations.forEach { (key, declaration) ->
             if (key !in declaredDefaults) {
@@ -57,10 +42,6 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
         }
     }
 
-    /**
-     * Applies [updates] in declared order. A `$value` reference resolves to [payload]; a reference with no payload is
-     * skipped. Writes to undeclared keys, or values whose type does not match the declared type, are ignored.
-     */
     fun applyUpdates(updates: List<StateUpdate>, payload: JsonPrimitive? = null) {
         updates.forEach { update ->
             val setUpdate = update as? StateUpdate.Set ?: return@forEach
