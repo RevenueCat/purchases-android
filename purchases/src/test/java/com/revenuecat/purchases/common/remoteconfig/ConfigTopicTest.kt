@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.common.remoteconfig
 
+import com.revenuecat.purchases.common.JsonProvider
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -82,6 +85,36 @@ class ConfigTopicTest {
         val b = topic("""{ "default": { "blob_ref": "blobB" } }""")
 
         assertThat(a.contentHash).isNotEqualTo(b.contentHash)
+    }
+
+    @Test
+    fun `serializes as a bare item map with no wrapper or hash field`() {
+        val topic = topic("""{ "api": { "url": "https://a.com", "priority": 100 } }""")
+
+        val element = JsonProvider.defaultJson.encodeToJsonElement(ConfigTopicSerializer, topic).jsonObject
+
+        // No wrapper object and no derived hash leaking into the serialized form.
+        assertThat(element.keys).containsExactly("api")
+        assertThat(element).doesNotContainKey("contentHash")
+        assertThat(element).doesNotContainKey("items")
+        assertThat(element.getValue("api").jsonObject["url"]?.jsonPrimitive?.content)
+            .isEqualTo("https://a.com")
+    }
+
+    @Test
+    fun `round-trips through serialization preserving items and hash`() {
+        val original = topic(
+            """{
+              "api": { "url": "https://a.com", "priority": 100 },
+              "blob": { "blob_ref": "b", "prefetch": true }
+            }""",
+        )
+
+        val json = JsonProvider.defaultJson.encodeToString(ConfigTopicSerializer, original)
+        val decoded = JsonProvider.defaultJson.decodeFromString(ConfigTopicSerializer, json)
+
+        assertThat(decoded.items).isEqualTo(original.items)
+        assertThat(decoded.contentHash).isEqualTo(original.contentHash)
     }
 
     private fun topic(sourcesJson: String): ConfigTopic {
