@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import kotlinx.serialization.SerializationException
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -54,7 +55,7 @@ internal class RemoteConfigManager(
                 // disk cache mid-write and merge against a stale snapshot.
                 try {
                     if (container != null) {
-                        val response = RemoteConfiguration.parse(container.config.data)
+                        val response = RemoteConfiguration.parse(container.config.decode())
                         persist(previous = persisted, response = response, container = container)
                     }
                     // container == null is a 204: nothing changed, keep the cache.
@@ -111,8 +112,16 @@ internal class RemoteConfigManager(
     private fun extractInlineBlobs(container: RCContainer, refsToKeep: Set<String>) {
         container.elements.forEach { (ref, element) ->
             if (ref !in refsToKeep) return@forEach
-            if (element.isChecksumValid()) {
-                blobStore.write(ref, element.data)
+            // Decode once (the on-wire bytes may be compressed), then verify and store the uncompressed
+            // bytes: the blob store is content-addressed by the hash of the uncompressed payload.
+            val decoded = try {
+                element.decode()
+            } catch (e: RCContainerFormatException) {
+                errorLog(e) { "Skipping remote config blob '$ref': could not decode element." }
+                return@forEach
+            }
+            if (element.matchesChecksum(decoded)) {
+                blobStore.write(ref, decoded)
             } else {
                 errorLog { "Skipping remote config blob '$ref': checksum verification failed." }
             }
