@@ -58,10 +58,6 @@ class TabStateTests {
     private val assetBaseURL = URL("https://assets.pawwalls.com")
     private val stateKey = "selectedTab"
 
-    /**
-     * A component reacting via a `state_condition` override recomposes when the store value changes.
-     * Proves the read path: the store snapshot is threaded into the resolver and a write triggers re-resolution.
-     */
     @Test
     fun `Component re-resolves its state_condition override when the store value changes`(): Unit =
         with(composeTestRule) {
@@ -119,10 +115,6 @@ class TabStateTests {
             onNodeWithText("Default copy").assertDoesNotExist()
         }
 
-    /**
-     * Selecting a tab publishes the selected tab id into the store via the component's `state_updates`.
-     * Proves the write path: seed on first appearance plus republish on selection change.
-     */
     @Test
     fun `Selecting a tab publishes its id into the state store`(): Unit = with(composeTestRule) {
         val tab0LabelKey = LocalizationKey("tab0_label")
@@ -190,11 +182,6 @@ class TabStateTests {
         assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("annual"))
     }
 
-    /**
-     * A hidden tabs container still publishes its selected tab id, so sibling components reacting to it are not
-     * left on a stale value. The declared default differs from the initial (default_tab_id) selection, so only the
-     * publish (not the declaration seed) can produce the expected value.
-     */
     @Test
     fun `A hidden tabs component still publishes its selected tab id`(): Unit = with(composeTestRule) {
         val tab0LabelKey = LocalizationKey("tab0_label")
