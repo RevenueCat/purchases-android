@@ -2165,8 +2165,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             conditionContext = ConditionContext(
                 selectedPackageId = args.selectedPackageId,
                 customVariables = args.customVariables,
-                stateValues = args.stateValues,
-                stateDefaults = args.stateDefaults,
+                stateReader = { key -> args.stateValues[key] ?: args.stateDefaults[key] },
             ),
         )
 

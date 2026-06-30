@@ -93,8 +93,8 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> List<ComponentOverr
 internal class ConditionContext(
     val selectedPackageId: String?,
     val customVariables: Map<String, CustomVariableValue>,
-    val stateValues: Map<String, JsonPrimitive> = emptyMap(),
-    val stateDefaults: Map<String, JsonPrimitive> = emptyMap(),
+    // Calls inside derivedStateOf subscribe only to the keys condition evaluation actually reads.
+    val stateReader: (String) -> JsonPrimitive? = { null },
 )
 
 /**
@@ -151,7 +151,7 @@ private fun ComponentOverride.Condition.evaluate(
     is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
-    is ComponentOverride.Condition.State -> evaluate(conditionContext.stateValues, conditionContext.stateDefaults)
+    is ComponentOverride.Condition.State -> evaluate(conditionContext.stateReader)
     ComponentOverride.Condition.Unsupported -> false
 }
 
@@ -205,12 +205,11 @@ private fun ComponentOverride.Condition.Variable.matchesValue(
 private const val STATE_NUMBER_COMPARISON_EPSILON = 1e-10
 
 private fun ComponentOverride.Condition.State.evaluate(
-    stateValues: Map<String, JsonPrimitive>,
-    stateDefaults: Map<String, JsonPrimitive>,
+    stateReader: (String) -> JsonPrimitive?,
 ): Boolean {
     // An undeclared key (absent from both the store and the declared defaults) never applies its override,
     // regardless of operator.
-    val current = stateValues[name] ?: stateDefaults[name] ?: return false
+    val current = stateReader(name) ?: return false
     val matches = matchesValue(current)
     return when (operator) {
         ComponentOverride.EqualityOperator.EQUALS -> matches
