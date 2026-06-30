@@ -8,11 +8,11 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * In-memory state store for state-driven paywalls, scoped to a single presentation session: one store per workflow
@@ -27,6 +27,7 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
 
     private val declaredTypes = ConcurrentHashMap<String, String>()
     private val declaredDefaults = mutableStateMapOf<String, JsonPrimitive>()
+
     // Per-key MutableState so mutating one key doesn't invalidate derivedStateOf blocks reading other keys.
     private val currentValues = mutableStateMapOf<String, MutableState<JsonPrimitive>>()
 
