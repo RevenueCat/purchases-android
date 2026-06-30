@@ -67,7 +67,16 @@ class RemoteConfigManagerIntegrationTest {
         backend = mockk()
         diskCache = RemoteConfigDiskCache(applicationContext)
         blobStore = RemoteConfigBlobStore(applicationContext)
-        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider, scope = testScope)
+        // This suite exercises the real disk/blob-store path; network prefetch is unit-tested separately, so the
+        // fetcher is mocked here to keep the test hermetic (no real CDN calls from the background worker pool).
+        manager = RemoteConfigManager(
+            backend,
+            diskCache,
+            blobStore,
+            dateProvider = FixedDateProvider,
+            scope = testScope,
+            blobFetcher = mockk(relaxed = true),
+        )
 
         every {
             backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())

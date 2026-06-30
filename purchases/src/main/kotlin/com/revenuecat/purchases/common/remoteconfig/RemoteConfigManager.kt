@@ -23,30 +23,41 @@ import java.util.concurrent.atomic.AtomicInteger
  * untouched and on `200` persists the fresh server manifest plus the full per-topic item index — the
  * configuration (incl. each item's inline content) is the source of truth, and persisting it is the **entire**
  * sync commit, advancing the manifest unconditionally. Only then, gated on a successful persist, it writes the
- * inlined blobs the resolved config still wants and prunes the rest; a missing or un-parseable blob is
- * recoverable later (fetched on demand in a future phase) and never blocks the commit. It reports which prefetch
- * blobs are now cached locally on the next request.
+ * inlined blobs the resolved config still wants, prunes the rest, and best-effort prefetches the remaining
+ * wanted blobs over the network ([RemoteConfigBlobFetcher], resolving blob source URLs through
+ * [RemoteConfigSourceProvider]); a missing or un-parseable blob is recoverable later (re-fetched next sync / on
+ * demand) and never blocks the commit. It reports which prefetch blobs are now cached locally on the next
+ * request. (Live API base-URL rerouting from the `sources` topic is out of scope — a future phase.)
  *
  * The manifest is opaque (stored and replayed verbatim); the active-topic set and removed-topic detection come
  * from the response's [RemoteConfiguration.activeTopics]. The manager is topic-agnostic: it never interprets item
  * shapes or branches on topic name — consumer topics are read lazily by providers through the manager.
  *
- * The `200` path runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel in-flight
- * work and gives a later phase's network blob fetch a scope to run in. Identity changes call [clearCache], which
- * bumps an epoch so a late `/v1/config` response (its HTTP request cannot be socket-cancelled) is dropped instead
- * of persisting over the freshly wiped cache.
+ * The `200` path runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel the
+ * in-flight parse/persist. Blob prefetch runs on the fetcher's own worker pool (not [scope]). Identity changes
+ * call [clearCache], which bumps an epoch so a late `/v1/config` response (its HTTP request cannot be
+ * socket-cancelled) is dropped instead of persisting over the freshly wiped cache.
  *
  * Overlapping refreshes are deduped: only one [refreshRemoteConfig] runs at a time. A call made while one is
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
  * would otherwise parse and persist the same response more than once).
  */
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("LongParameterList")
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val diskCache: RemoteConfigDiskCache,
     private val blobStore: RemoteConfigBlobStore,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    // Resolves blob source URLs lazily from the committed `sources` topic, read through a RemoteConfigTopicStore
+    // backed by the disk cache. It rebuilds only when the topic's content hash changes.
+    private val sourceProvider: RemoteConfigSourceProvider =
+        DefaultRemoteConfigSourceProvider(RemoteConfigTopicStore { diskCache.read()?.topics?.get(it) }),
+    // The fetcher owns its own worker-pool scope on purpose: clearCache() cancels this manager's scope
+    // children (the in-flight parse/persist), and sharing it would also cancel the fetcher's long-lived
+    // workers, permanently disabling blob fetching for the next user.
+    private val blobFetcher: RemoteConfigBlobFetcher = RemoteConfigBlobFetcher(blobStore, sourceProvider),
 ) {
     private val isRefreshing = AtomicBoolean(false)
 
@@ -139,9 +150,11 @@ internal class RemoteConfigManager(
      * started either finished before the wipe, or re-checks the bumped epoch under the same lock and skips — so an
      * old user's config can never be written after the wipe. Releasing the guard here (rather than before the
      * lock) keeps it paired with the epoch a [refreshRemoteConfig] observes, so a refresh can't acquire the guard
-     * with a stale epoch and then strand it when its callback drops on the mismatch. (`cancelChildren()` still
-     * unwinds a suspended sync, e.g. Phase 5's blob fetches, but is not load-bearing for either guarantee since
-     * `persist()` is synchronous; the lock is.)
+     * with a stale epoch and then strand it when its callback drops on the mismatch. (`cancelChildren()` unwinds a
+     * suspended parse/persist but is not load-bearing for either guarantee since `persist()` is synchronous; the
+     * lock is.) Blob prefetch runs on the fetcher's own scope, so it is not cancelled here — a late
+     * content-addressed blob write after the wipe is harmless (pruned by the next sync's `retainOnly`);
+     * `sourceProvider.clear()` drops the old user's resolved sources.
      */
     fun clearCache() {
         scope.coroutineContext.cancelChildren()
@@ -154,6 +167,8 @@ internal class RemoteConfigManager(
             isRefreshing.set(false)
             diskCache.clear()
             blobStore.clear()
+            // Drop the memoized sources so the next user re-resolves from a fresh config (defaults until then).
+            sourceProvider.clear()
         }
     }
 
@@ -207,9 +222,28 @@ internal class RemoteConfigManager(
         if (persisted) {
             extractInlineBlobs(container, blobRefsToKeep)
             blobStore.retainOnly(blobRefsToKeep)
+            prefetchBlobs(response, mergedTopics)
         } else {
             errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
         }
+    }
+
+    /**
+     * Best-effort, topic-agnostic warm of the blobs the committed config wants prefetched: the server's
+     * [RemoteConfiguration.prefetchBlobs] plus any item flagged `prefetch`. Re-arms the blob source provider
+     * first (a prior cycle may have exhausted its sources), then hands the not-yet-cached refs to the fetcher's
+     * LOW-priority queue. Runs on the manager's IO scope (inside [persist]), so it never blocks the main thread;
+     * a failed download is tolerated (re-fetched next sync / on demand).
+     */
+    private fun prefetchBlobs(response: RemoteConfiguration, mergedTopics: Map<String, ConfigTopic>) {
+        sourceProvider.restart(RemoteConfigSourceHandle.Purpose.BLOB)
+        val refs = buildSet {
+            addAll(response.prefetchBlobs)
+            mergedTopics.values.forEach { topic ->
+                topic.values.forEach { item -> if (item.prefetch) item.blobRef?.let(::add) }
+            }
+        }
+        blobFetcher.prefetch(refs.filterNot { blobStore.contains(it) })
     }
 
     /** Caches inlined content elements the config still wants, whose bytes match their content-address ref. */
