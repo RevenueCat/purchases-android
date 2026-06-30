@@ -124,20 +124,21 @@ class RemoteConfigBlobFetcherTest {
     }
 
     @Test
-    fun `restarts the exhausted provider on a later download so a transient outage recovers`() {
-        val bytes = "recovered".toByteArray()
-        val ref = refOf(bytes)
+    fun `stops and fails once the provider has exhausted its sources, without restarting`() {
+        val ref = refOf("body".toByteArray())
         val provider = provider(blobSource(TEMPLATE))
-        // First attempt errors (source becomes unhealthy -> exhausted); the second succeeds.
-        every { urlConnectionFactory.createConnection(urlFor(ref), any()) } returnsMany
-            listOf(connection(code = 500), connection(code = 200, body = bytes))
+        // The only source errors, so it is reported unhealthy and the provider becomes exhausted.
+        stubConnection(urlFor(ref), code = 500)
         val fetcher = fetcher(provider)
 
+        // First download fails over to exhaustion; a later download must not re-arm the provider and retry.
         assertThat(download(fetcher, ref)).isFalse()
-        assertThat(download(fetcher, ref)).isTrue()
+        assertThat(download(fetcher, ref)).isFalse()
 
-        verify { provider.restart(Purpose.BLOB) }
-        verify { blobStore.write(ref, any()) }
+        verify(exactly = 0) { provider.restart(any()) }
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        // Only the first download reached a source; the second saw no current source and stopped immediately.
+        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
     }
 
     @Test

@@ -168,13 +168,10 @@ internal class RemoteConfigBlobFetcher(
         // Another worker (or a just-completed prefetch) may have cached it between scheduling and now.
         if (blobStore.contains(ref)) return true
 
+        // Each SOURCE_UNHEALTHY failure falls over to the next source; once the provider has none left
+        // (getCurrent == null) the operation fails and stops. We never restart here, so we can't spin retrying
+        // sources already known to be bad. Re-arming the provider (restart) is the caller's job — a new sync cycle.
         var handle = sourceProvider.getCurrent(Purpose.BLOB)
-        if (handle == null) {
-            // The provider stays exhausted (getCurrent == null) until restart; give its sources a fresh chance on
-            // each new download so a transient outage doesn't permanently disable blob fetching.
-            sourceProvider.restart(Purpose.BLOB)
-            handle = sourceProvider.getCurrent(Purpose.BLOB)
-        }
         var result: Boolean? = null
         while (handle != null && result == null) {
             val url = handle.url.replace(BLOB_REF_PLACEHOLDER, ref)
