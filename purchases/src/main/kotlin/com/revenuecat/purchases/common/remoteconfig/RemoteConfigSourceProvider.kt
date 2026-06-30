@@ -192,7 +192,8 @@ internal class DefaultRemoteConfigSourceProvider(
  * advances if its handle still carries the current token, so stale or concurrent reports - and
  * reports left over from before a [restart] - are ignored.
  *
- * Thread-safe.
+ * Not thread-safe on its own: [DefaultRemoteConfigSourceProvider] serializes every access under its
+ * own lock, which also provides the happens-before for these mutations.
  */
 private class SourceFailover(
     private val purpose: RemoteConfigSourceHandle.Purpose,
@@ -201,29 +202,22 @@ private class SourceFailover(
     initialToken: Int = 0,
 ) {
     private val selector = WeightedSourceSelector(sources, random)
-    private val lock = Any()
     private var token = initialToken
 
     /** The token a handle handed out right now would carry. Used to seed the next generation on rebuild. */
-    val currentToken: Int get() = synchronized(lock) { token }
+    val currentToken: Int get() = token
 
     val current: RemoteConfigSourceHandle?
-        get() = synchronized(lock) {
-            selector.current?.let { RemoteConfigSourceHandle(purpose, it, token) }
-        }
+        get() = selector.current?.let { RemoteConfigSourceHandle(purpose, it, token) }
 
     fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
-        synchronized(lock) {
-            if (handle.token != token) return
-            selector.advance()
-            token++
-        }
+        if (handle.token != token) return
+        selector.advance()
+        token++
     }
 
     fun restart() {
-        synchronized(lock) {
-            selector.reset()
-            token++
-        }
+        selector.reset()
+        token++
     }
 }
