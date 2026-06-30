@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.remoteconfig
 
+import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonPrimitive
@@ -259,6 +260,36 @@ class RemoteConfigurationTest {
 
         assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
             .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
+    fun `re-serializes topics as bare item maps without the derived hash`() {
+        // language=json
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": "v1.1710002000.sources:etag1",
+              "active_topics": ["sources"],
+              "topics": {
+                "sources": {
+                  "api": { "url": "https://api.revenuecat.com", "priority": 100 },
+                  "blob": { "blob_ref": "sourcesBlob", "prefetch": true }
+                }
+              }
+            }
+        """
+
+        val response = RemoteConfiguration.parse(payload.trimIndent().toByteArray())
+        val json = JsonProvider.defaultJson.encodeToString(RemoteConfiguration.serializer(), response)
+        val reparsed = RemoteConfiguration.parse(json.toByteArray())
+
+        // The derived hash never leaks into the serialized config.
+        assertThat(json).doesNotContain("contentHash")
+        // Topics survive a parse -> serialize -> parse round-trip, hash included.
+        val original = response.topics.getValue("sources")
+        val roundTripped = reparsed.topics.getValue("sources")
+        assertThat(roundTripped.items).isEqualTo(original.items)
+        assertThat(roundTripped.contentHash).isEqualTo(original.contentHash)
     }
 
     @Test
