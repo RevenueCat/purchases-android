@@ -1,11 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -14,7 +17,7 @@ import kotlinx.serialization.json.longOrNull
 /**
  * In-memory state store for state-driven paywalls, scoped to a single presentation session: one store per workflow
  * presentation (shared across its screens) or per standalone paywall. Seeded from the declared state defaults;
- * interactive components mutate it via [apply] and condition evaluation reads the current [values].
+ * interactive components mutate it via [applyUpdates] and condition evaluation reads via [currentValueOrDefault].
  *
  * State persists across screen navigation within a workflow and is never persisted across presentations.
  */
@@ -22,25 +25,21 @@ import kotlinx.serialization.json.longOrNull
 @Stable
 internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
 
-    // Snapshot-backed so registration/mutations are both thread-safe (workflow pre-warm registers screens off the
-    // main thread) and observable (dependent components recompose when state changes).
-    private val declaredTypes = mutableStateMapOf<String, String>()
+    private val declaredTypes = ConcurrentHashMap<String, String>()
     private val declaredDefaults = mutableStateMapOf<String, JsonPrimitive>()
-    private val currentValues = mutableStateMapOf<String, JsonPrimitive>()
+    // Per-key MutableState so mutating one key doesn't invalidate derivedStateOf blocks reading other keys.
+    private val currentValues = mutableStateMapOf<String, MutableState<JsonPrimitive>>()
 
     init {
         registerDeclarations(declarations)
     }
 
     /**
-     * The declared default for each key, used as the fallback when a key has not been written.
+     * Returns the current value for [key], falling back to the declared default if the key has never been written.
+     * Reading this inside a `derivedStateOf` block subscribes only to [key]'s individual state, so a write to an
+     * unrelated key does not invalidate the block.
      */
-    val defaults: Map<String, JsonPrimitive> get() = declaredDefaults
-
-    /**
-     * The current value of each key. Reads are observable so dependent components recompose when a value changes.
-     */
-    val values: Map<String, JsonPrimitive> get() = currentValues
+    fun currentValueOrDefault(key: String): JsonPrimitive? = currentValues[key]?.value ?: declaredDefaults[key]
 
     /**
      * Adds any keys from [declarations] not already known, seeding each with its declared default. Keys that already
@@ -52,7 +51,7 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
             if (key !in declaredDefaults) {
                 declaredTypes[key] = declaration.type
                 declaredDefaults[key] = declaration.defaultValue
-                currentValues[key] = declaration.defaultValue
+                currentValues[key] = mutableStateOf(declaration.defaultValue)
             }
         }
     }
@@ -70,7 +69,8 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
             }
             val declaredType = declaredTypes[setUpdate.key] ?: return@forEach
             if (value.matchesDeclaredType(declaredType)) {
-                currentValues[setUpdate.key] = value
+                // Mutate .value, not the map entry: reassigning the entry would invalidate all-key readers.
+                currentValues[setUpdate.key]?.value = value
             }
         }
     }

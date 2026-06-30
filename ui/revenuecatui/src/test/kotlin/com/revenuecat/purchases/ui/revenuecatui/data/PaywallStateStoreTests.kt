@@ -24,8 +24,8 @@ internal class PaywallStateStoreTests {
             ),
         )
 
-        assertThat(store.values.toMap()).isEqualTo(mapOf("open" to JsonPrimitive(false), "tab" to JsonPrimitive("billing")))
-        assertThat(store.defaults.toMap()).isEqualTo(store.values.toMap())
+        assertThat(store.currentValueOrDefault("open")).isEqualTo(JsonPrimitive(false))
+        assertThat(store.currentValueOrDefault("tab")).isEqualTo(JsonPrimitive("billing"))
     }
 
     @Test
@@ -34,7 +34,7 @@ internal class PaywallStateStoreTests {
 
         store.applyUpdates(listOf(setUpdate("open", StateUpdateValue.Literal(JsonPrimitive(true)))))
 
-        assertThat(store.values["open"]).isEqualTo(JsonPrimitive(true))
+        assertThat(store.currentValueOrDefault("open")).isEqualTo(JsonPrimitive(true))
     }
 
     @Test
@@ -43,7 +43,7 @@ internal class PaywallStateStoreTests {
 
         store.applyUpdates(listOf(setUpdate("slide", StateUpdateValue.PayloadReference)), payload = JsonPrimitive(3))
 
-        assertThat(store.values["slide"]).isEqualTo(JsonPrimitive(3))
+        assertThat(store.currentValueOrDefault("slide")).isEqualTo(JsonPrimitive(3))
     }
 
     @Test
@@ -52,7 +52,7 @@ internal class PaywallStateStoreTests {
 
         store.applyUpdates(listOf(setUpdate("slide", StateUpdateValue.PayloadReference)), payload = null)
 
-        assertThat(store.values["slide"]).isEqualTo(JsonPrimitive(0))
+        assertThat(store.currentValueOrDefault("slide")).isEqualTo(JsonPrimitive(0))
     }
 
     @Test
@@ -61,7 +61,7 @@ internal class PaywallStateStoreTests {
 
         store.applyUpdates(listOf(setUpdate("ghost", StateUpdateValue.Literal(JsonPrimitive(true)))))
 
-        assertThat(store.values).isEmpty()
+        assertThat(store.currentValueOrDefault("ghost")).isNull()
     }
 
     @Test
@@ -70,7 +70,7 @@ internal class PaywallStateStoreTests {
 
         store.applyUpdates(listOf(setUpdate("open", StateUpdateValue.Literal(JsonPrimitive("true")))))
 
-        assertThat(store.values["open"]).isEqualTo(JsonPrimitive(false))
+        assertThat(store.currentValueOrDefault("open")).isEqualTo(JsonPrimitive(false))
     }
 
     @Test
@@ -79,7 +79,7 @@ internal class PaywallStateStoreTests {
 
         store.applyUpdates(listOf(setUpdate("ratio", StateUpdateValue.Literal(JsonPrimitive(2)))))
 
-        assertThat(store.values["ratio"]).isEqualTo(JsonPrimitive(2))
+        assertThat(store.currentValueOrDefault("ratio")).isEqualTo(JsonPrimitive(2))
     }
 
     @Test
@@ -88,7 +88,7 @@ internal class PaywallStateStoreTests {
 
         store.applyUpdates(listOf(StateUpdate.Unsupported))
 
-        assertThat(store.values["open"]).isEqualTo(JsonPrimitive(false))
+        assertThat(store.currentValueOrDefault("open")).isEqualTo(JsonPrimitive(false))
     }
 
     @Test
@@ -102,7 +102,7 @@ internal class PaywallStateStoreTests {
             ),
         )
 
-        assertThat(store.values["tab"]).isEqualTo(JsonPrimitive("c"))
+        assertThat(store.currentValueOrDefault("tab")).isEqualTo(JsonPrimitive("c"))
     }
 
     @Test
@@ -111,7 +111,8 @@ internal class PaywallStateStoreTests {
 
         store.registerDeclarations(mapOf("b" to declaration(StateDeclaration.ValueType.INTEGER, JsonPrimitive(7))))
 
-        assertThat(store.values.toMap()).isEqualTo(mapOf("a" to JsonPrimitive("x"), "b" to JsonPrimitive(7)))
+        assertThat(store.currentValueOrDefault("a")).isEqualTo(JsonPrimitive("x"))
+        assertThat(store.currentValueOrDefault("b")).isEqualTo(JsonPrimitive(7))
     }
 
     @Test
@@ -122,7 +123,7 @@ internal class PaywallStateStoreTests {
 
         store.registerDeclarations(mapOf("tab" to declaration(StateDeclaration.ValueType.STRING, JsonPrimitive("a"))))
 
-        assertThat(store.values["tab"]).isEqualTo(JsonPrimitive("b"))
+        assertThat(store.currentValueOrDefault("tab")).isEqualTo(JsonPrimitive("b"))
     }
 
 }
