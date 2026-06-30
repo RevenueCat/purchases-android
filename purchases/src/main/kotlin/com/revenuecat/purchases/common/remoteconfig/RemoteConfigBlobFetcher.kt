@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import android.util.Base64
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
@@ -67,7 +66,6 @@ internal class RemoteConfigBlobFetcher(
     private val sourceProvider: RemoteConfigSourceProvider = defaultBlobSourceProvider(),
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    maxConcurrentDownloads: Int = MAX_CONCURRENT_DOWNLOADS,
 ) {
     /** Scheduling priority. Natural (ordinal) order is used by the queue, so HIGH must sort after LOW. */
     private enum class Priority { LOW, HIGH }
@@ -98,7 +96,7 @@ internal class RemoteConfigBlobFetcher(
     private val signal = Channel<Unit>(Channel.UNLIMITED)
 
     init {
-        repeat(maxConcurrentDownloads) { scope.launch { runWorker() } }
+        repeat(MAX_CONCURRENT_DOWNLOADS) { scope.launch { runWorker() } }
     }
 
     /**
@@ -222,17 +220,6 @@ internal class RemoteConfigBlobFetcher(
     }
 
     private enum class DownloadOutcome { SUCCESS, SOURCE_UNHEALTHY, BLOB_UNAVAILABLE }
-
-    /** The currently-queued (not yet claimed) refs in the order workers will pick them. Tests only. */
-    @VisibleForTesting
-    internal fun queuedRefsInPriorityOrder(): List<String> = synchronized(lock) {
-        val copy = PriorityQueue(queue)
-        generateSequence { copy.poll() }.map { it.ref }.toList()
-    }
-
-    /** How many callers are awaiting the download of [ref] (queued or in flight). Tests only. */
-    @VisibleForTesting
-    internal fun awaiterCount(ref: String): Int = synchronized(lock) { pending[ref]?.awaiters?.size ?: 0 }
 
     private companion object {
         private const val MAX_CONCURRENT_DOWNLOADS = 4

@@ -10,12 +10,17 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
-import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -31,20 +36,22 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class RemoteConfigBlobFetcherTest {
 
     private lateinit var blobStore: RemoteConfigBlobStore
     private lateinit var urlConnectionFactory: UrlConnectionFactory
-    private lateinit var scope: CoroutineScope
+
+    // Real multi-threaded scope for the behavioural / real-concurrency tests; cancelled in tearDown.
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Before
     fun setup() {
         blobStore = mockk(relaxed = true)
         every { blobStore.contains(any()) } returns false
         urlConnectionFactory = mockk()
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     }
 
     @After
@@ -55,7 +62,7 @@ class RemoteConfigBlobFetcherTest {
     @Test
     fun `returns true without downloading when the blob is already cached`() {
         every { blobStore.contains(REF_A) } returns true
-        val fetcher = fetcher(provider(blobSource(TEMPLATE)))
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
 
         assertThat(download(fetcher, REF_A)).isTrue()
 
@@ -68,7 +75,7 @@ class RemoteConfigBlobFetcherTest {
         val bytes = "a workflow body".toByteArray()
         val ref = refOf(bytes)
         stubConnection(urlFor(ref), code = 200, body = bytes)
-        val fetcher = fetcher(provider(blobSource(TEMPLATE)))
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
 
         assertThat(download(fetcher, ref)).isTrue()
 
@@ -84,7 +91,7 @@ class RemoteConfigBlobFetcherTest {
         val ref = refOf("expected".toByteArray())
         stubConnection(urlFor(ref), code = 200, body = "tampered".toByteArray())
         val provider = provider(blobSource(TEMPLATE))
-        val fetcher = fetcher(provider)
+        val fetcher = realFetcher(provider)
 
         assertThat(download(fetcher, ref)).isFalse()
 
@@ -97,7 +104,7 @@ class RemoteConfigBlobFetcherTest {
         val ref = refOf("missing".toByteArray())
         stubConnection(urlFor(ref), code = 404)
         val provider = provider(blobSource(TEMPLATE))
-        val fetcher = fetcher(provider)
+        val fetcher = realFetcher(provider)
 
         assertThat(download(fetcher, ref)).isFalse()
 
@@ -115,7 +122,7 @@ class RemoteConfigBlobFetcherTest {
         val provider = provider(blobSource(primary, priority = 2), blobSource(secondary, priority = 1))
         stubConnection(primary.replace(PLACEHOLDER, ref), code = 500)
         stubConnection(secondary.replace(PLACEHOLDER, ref), code = 200, body = bytes)
-        val fetcher = fetcher(provider)
+        val fetcher = realFetcher(provider)
 
         assertThat(download(fetcher, ref)).isTrue()
 
@@ -129,7 +136,7 @@ class RemoteConfigBlobFetcherTest {
         val provider = provider(blobSource(TEMPLATE))
         // The only source errors, so it is reported unhealthy and the provider becomes exhausted.
         stubConnection(urlFor(ref), code = 500)
-        val fetcher = fetcher(provider)
+        val fetcher = realFetcher(provider)
 
         // First download fails over to exhaustion; a later download must not re-arm the provider and retry.
         assertThat(download(fetcher, ref)).isFalse()
@@ -142,35 +149,7 @@ class RemoteConfigBlobFetcherTest {
     }
 
     @Test
-    fun `concurrent requests for the same ref share a single download`() {
-        val bytes = "shared".toByteArray()
-        val ref = refOf(bytes)
-        val downloadStarted = CountDownLatch(1)
-        val releaseDownload = CountDownLatch(1)
-        every { urlConnectionFactory.createConnection(urlFor(ref), any()) } answers {
-            downloadStarted.countDown()
-            releaseDownload.await(WAIT_SECONDS, TimeUnit.SECONDS)
-            connection(code = 200, body = bytes)
-        }
-        val fetcher = fetcher(provider(blobSource(TEMPLATE)))
-
-        val results = CopyOnWriteArrayList<Boolean>()
-        val first = thread { results.add(download(fetcher, ref)) }
-        check(downloadStarted.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "first download did not start" }
-        // Second request arrives while the first is in flight: it must join, not start a new download.
-        val second = thread { results.add(download(fetcher, ref)) }
-        awaitUntil { fetcher.awaiterCount(ref) == 2 } // both callers attached to the one in-flight download
-
-        releaseDownload.countDown()
-        first.join(WAIT_MS)
-        second.join(WAIT_MS)
-
-        assertThat(results).containsExactly(true, true)
-        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
-    }
-
-    @Test
-    fun `never runs more downloads at once than the configured concurrency`() {
+    fun `never runs more downloads at once than the worker pool allows`() {
         val concurrency = 4
         val live = AtomicInteger(0)
         val maxLive = AtomicInteger(0)
@@ -183,9 +162,9 @@ class RemoteConfigBlobFetcherTest {
             live.decrementAndGet()
             connection(code = 200)
         }
-        val fetcher = fetcher(provider(blobSource(TEMPLATE)), maxConcurrentDownloads = concurrency)
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
 
-        // Far more work than workers; only `concurrency` may run at once.
+        // Far more work than workers; only the pool size may run at once.
         fetcher.prefetch((1..12).map { refOf("blob-$it".toByteArray()) })
 
         check(allBlocked.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "workers did not all start" }
@@ -196,62 +175,68 @@ class RemoteConfigBlobFetcherTest {
     }
 
     @Test
-    fun `an on-demand request is queued ahead of the prefetch backlog`() {
-        val (started, release) = blockingConnections()
-        val fetcher = fetcher(provider(blobSource(TEMPLATE)), maxConcurrentDownloads = 4)
+    fun `concurrent requests for the same ref share a single download`() = runTest {
+        val bytes = "shared".toByteArray()
+        val ref = refOf(bytes)
+        stubConnection(urlFor(ref), code = 200, body = bytes)
+        val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
 
-        val busy = (1..4).map { refOf("busy-$it".toByteArray()) }
-        val queued = (5..8).map { refOf("queued-$it".toByteArray()) }
-        val onDemand = refOf("on-demand".toByteArray())
+        // Both requests are enqueued before any worker runs (StandardTestDispatcher), so the second joins the first.
+        val first = async { fetcher.ensureDownloaded(ref) }
+        val second = async { fetcher.ensureDownloaded(ref) }
+        advanceUntilIdle()
 
-        fetcher.prefetch(busy)
-        awaitUntil { started.size == 4 }                                 // all workers occupied
-        fetcher.prefetch(queued)                                          // LOW backlog
-        thread { download(fetcher, onDemand) }                            // HIGH, must jump the backlog
-        awaitUntil { fetcher.awaiterCount(onDemand) == 1 }                // on-demand request has landed
-
-        // The HIGH request sits at the head of the queue, ahead of the whole LOW backlog (which keeps its FIFO order).
-        assertThat(fetcher.queuedRefsInPriorityOrder()).containsExactly(onDemand, *queued.toTypedArray())
-
-        release.countDown()
+        assertThat(first.await()).isTrue()
+        assertThat(second.await()).isTrue()
+        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+        fetcherScope.cancel()
     }
 
     @Test
-    fun `an on-demand request boosts and joins a blob already queued for prefetch`() {
-        val (started, release) = blockingConnections()
-        val fetcher = fetcher(provider(blobSource(TEMPLATE)), maxConcurrentDownloads = 4)
+    fun `an on-demand request is downloaded ahead of the prefetch backlog`() = runTest {
+        val started = CopyOnWriteArrayList<String>()
+        recordStartedConnections(started)
+        val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
 
-        val busy = (1..4).map { refOf("busy-$it".toByteArray()) }
-        val queued = (5..7).map { refOf("queued-$it".toByteArray()) }
+        val backlog = (1..3).map { refOf("low-$it".toByteArray()) }
+        val onDemand = refOf("on-demand".toByteArray())
+
+        fetcher.prefetch(backlog)                        // LOW backlog
+        fetcherScope.launch { fetcher.ensureDownloaded(onDemand) } // HIGH
+        advanceUntilIdle()
+
+        // The HIGH request is served first, ahead of the whole LOW backlog (which keeps its FIFO order).
+        assertThat(started).containsExactly(onDemand, *backlog.toTypedArray())
+        fetcherScope.cancel()
+    }
+
+    @Test
+    fun `an on-demand request boosts and joins a blob already queued for prefetch`() = runTest {
+        val started = CopyOnWriteArrayList<String>()
+        recordStartedConnections(started)
+        val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+
+        val others = (1..3).map { refOf("low-$it".toByteArray()) }
         val boosted = refOf("boosted".toByteArray())
 
-        fetcher.prefetch(busy)
-        awaitUntil { started.size == 4 }
-        fetcher.prefetch(queued)                                          // queued LOW first
-        fetcher.prefetch(listOf(boosted))                                 // boosted enqueued LOW, behind the others
-        awaitUntil { fetcher.queuedRefsInPriorityOrder().containsAll(queued + boosted) }
-        // On-demand request for the already-queued ref: it must be raised to the front, joining the same download.
-        thread { download(fetcher, boosted) }
-        awaitUntil { fetcher.awaiterCount(boosted) == 2 }                 // prefetch + on-demand share one download
+        // `boosted` is enqueued LOW, last in the backlog; the on-demand request must raise it to the front.
+        fetcher.prefetch(others + boosted)
+        fetcherScope.launch { fetcher.ensureDownloaded(boosted) }
+        advanceUntilIdle()
 
-        assertThat(fetcher.queuedRefsInPriorityOrder().first()).isEqualTo(boosted)
-        assertThat(fetcher.queuedRefsInPriorityOrder()).containsExactly(boosted, *queued.toTypedArray())
-
-        release.countDown()
+        assertThat(started.first()).isEqualTo(boosted)
+        assertThat(started.count { it == boosted }).isEqualTo(1) // prefetch + on-demand shared one download
+        assertThat(started).containsExactlyInAnyOrderElementsOf(others + boosted)
+        fetcherScope.cancel()
     }
 
     // region helpers
 
-    private fun fetcher(
-        provider: RemoteConfigSourceProvider,
-        maxConcurrentDownloads: Int = 4,
-    ) = RemoteConfigBlobFetcher(
-        blobStore = blobStore,
-        sourceProvider = provider,
-        urlConnectionFactory = urlConnectionFactory,
-        scope = scope,
-        maxConcurrentDownloads = maxConcurrentDownloads,
-    )
+    private fun realFetcher(provider: RemoteConfigSourceProvider) =
+        RemoteConfigBlobFetcher(blobStore, provider, urlConnectionFactory, scope)
 
     /** A spy over a real provider so we get real failover behaviour and can still verify calls. */
     private fun provider(vararg blobSources: RemoteConfigSource): RemoteConfigSourceProvider =
@@ -274,30 +259,11 @@ class RemoteConfigBlobFetcherTest {
         return connection
     }
 
-    /**
-     * Stubs every connection to record the requested ref (in start order) then block until released, so callers can
-     * keep the worker pool occupied and observe scheduling order. Returns the start log and the release latch.
-     */
-    private fun blockingConnections(): Pair<CopyOnWriteArrayList<String>, CountDownLatch> {
-        val started = CopyOnWriteArrayList<String>()
-        val release = CountDownLatch(1)
-        val live = AtomicInteger(0)
+    /** Records the requested ref of every connection (in start order) so tests can assert scheduling order. */
+    private fun recordStartedConnections(started: MutableList<String>) {
         every { urlConnectionFactory.createConnection(any(), any()) } answers {
             started.add(refFromUrl(firstArg<String>()))
-            // Block only while workers are saturated; later (post-release) downloads pass straight through.
-            if (live.incrementAndGet() <= 4) {
-                release.await(WAIT_SECONDS, TimeUnit.SECONDS)
-            }
             connection(code = 200)
-        }
-        return started to release
-    }
-
-    private fun awaitUntil(condition: () -> Boolean) {
-        val deadline = System.currentTimeMillis() + WAIT_MS
-        while (!condition()) {
-            check(System.currentTimeMillis() < deadline) { "condition not met within ${WAIT_MS}ms" }
-            Thread.sleep(POLL_MS)
         }
     }
 
@@ -324,6 +290,5 @@ class RemoteConfigBlobFetcherTest {
         private const val REF_A = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val WAIT_SECONDS = 5L
         private const val WAIT_MS = 5_000L
-        private const val POLL_MS = 5L
     }
 }
