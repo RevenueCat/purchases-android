@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.WebCheckoutEnvironment
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GoogleOfferingParser
@@ -215,6 +216,67 @@ class OfferingsFactoryTest {
                         }
                     ],
                     "web_checkout_url": "http://revenuecat.com"
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER",
+            "targeting": {
+                "revision": 1,
+                "rule_id": "abc123"
+            }
+        }
+        """.trimIndent()
+    )
+    // language=JSON
+    private val oneOfferingWithEnvironmentSpecificWPL = JSONObject(
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER"
+                        }
+                    ],
+                    "web_checkout_url": "http://revenuecat.com",
+                    "web_checkout_urls": {
+                        "production": "http://revenuecat.com/production",
+                        "sandbox": "http://revenuecat.com/sandbox"
+                    }
+                }
+            ],
+            "current_offering_id": "$STUB_OFFERING_IDENTIFIER",
+            "targeting": {
+                "revision": 1,
+                "rule_id": "abc123"
+            }
+        }
+        """.trimIndent()
+    )
+    // language=JSON
+    private val oneOfferingWithEnvironmentSpecificPackageWPL = JSONObject(
+        """
+        {
+            "offerings": [
+                {
+                    "identifier": "$STUB_OFFERING_IDENTIFIER",
+                    "description": "This is the base offering",
+                    "packages": [
+                        {
+                            "identifier": "${'$'}rc_monthly",
+                            "platform_product_identifier": "$STUB_PRODUCT_IDENTIFIER",
+                            "web_checkout_urls": {
+                                "production": "http://revenuecat.com/package-production?package_id=${'$'}rc_monthly",
+                                "sandbox": "http://revenuecat.com/package-sandbox?package_id=${'$'}rc_monthly"
+                            }
+                        }
+                    ],
+                    "web_checkout_urls": {
+                        "production": "http://revenuecat.com/offering-production",
+                        "sandbox": "http://revenuecat.com/offering-sandbox"
+                    }
                 }
             ],
             "current_offering_id": "$STUB_OFFERING_IDENTIFIER",
@@ -483,8 +545,12 @@ class OfferingsFactoryTest {
         val offering = offerings!!.current
         assertThat(offering).isNotNull
         assertThat(offering?.webCheckoutURL).isNull()
+        assertThat(offering?.webCheckoutURLs).isEmpty()
+        assertThat(offering?.getWebCheckoutURL(WebCheckoutEnvironment.PRODUCTION)).isNull()
         val pkg = offering!!.availablePackages.first()
         assertThat(pkg.webCheckoutURL).isNull()
+        assertThat(pkg.webCheckoutURLs).isEmpty()
+        assertThat(pkg.getWebCheckoutURL(WebCheckoutEnvironment.PRODUCTION)).isNull()
     }
 
     @Test
@@ -506,8 +572,79 @@ class OfferingsFactoryTest {
         val offering = offerings!!.current
         assertThat(offering).isNotNull
         assertThat(offering?.webCheckoutURL).isEqualTo(URL("http://revenuecat.com"))
+        assertThat(offering?.webCheckoutURLs).isEmpty()
         val pkg = offering!!.availablePackages.first()
         assertThat(pkg.webCheckoutURL).isEqualTo(URL("http://revenuecat.com?package_id=\$rc_monthly"))
+        assertThat(pkg.webCheckoutURLs).isEmpty()
+    }
+
+    @Test
+    fun `createOfferings with environment-specific WPL`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithEnvironmentSpecificWPL,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        val offering = offerings!!.current
+        assertThat(offering).isNotNull
+        assertThat(offering?.webCheckoutURL).isEqualTo(URL("http://revenuecat.com"))
+        assertThat(offering?.webCheckoutURLs).isEqualTo(mapOf(
+            WebCheckoutEnvironment.PRODUCTION to URL("http://revenuecat.com/production"),
+            WebCheckoutEnvironment.SANDBOX to URL("http://revenuecat.com/sandbox")
+        ))
+        assertThat(offering?.getWebCheckoutURL(WebCheckoutEnvironment.PRODUCTION))
+            .isEqualTo(URL("http://revenuecat.com/production"))
+        assertThat(offering?.getWebCheckoutURL(WebCheckoutEnvironment.SANDBOX))
+            .isEqualTo(URL("http://revenuecat.com/sandbox"))
+
+        val pkg = offering!!.availablePackages.first()
+        assertThat(pkg.webCheckoutURLs).isEqualTo(mapOf(
+            WebCheckoutEnvironment.PRODUCTION to URL("http://revenuecat.com/production?package_id=\$rc_monthly"),
+            WebCheckoutEnvironment.SANDBOX to URL("http://revenuecat.com/sandbox?package_id=\$rc_monthly")
+        ))
+        assertThat(pkg.getWebCheckoutURL(WebCheckoutEnvironment.PRODUCTION))
+            .isEqualTo(URL("http://revenuecat.com/production?package_id=\$rc_monthly"))
+        assertThat(pkg.getWebCheckoutURL(WebCheckoutEnvironment.SANDBOX))
+            .isEqualTo(URL("http://revenuecat.com/sandbox?package_id=\$rc_monthly"))
+    }
+
+    @Test
+    fun `createOfferings with environment-specific package WPL`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithEnvironmentSpecificPackageWPL,
+            originalDataSource = HTTPResponseOriginalSource.MAIN,
+            loadedFromDiskCache = false,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it.offerings }
+        )
+
+        assertThat(offerings).isNotNull
+        val offering = offerings!!.current
+        assertThat(offering).isNotNull
+        assertThat(offering?.webCheckoutURLs).isEqualTo(mapOf(
+            WebCheckoutEnvironment.PRODUCTION to URL("http://revenuecat.com/offering-production"),
+            WebCheckoutEnvironment.SANDBOX to URL("http://revenuecat.com/offering-sandbox")
+        ))
+
+        val pkg = offering!!.availablePackages.first()
+        assertThat(pkg.webCheckoutURLs).isEqualTo(mapOf(
+            WebCheckoutEnvironment.PRODUCTION to URL("http://revenuecat.com/package-production?package_id=\$rc_monthly"),
+            WebCheckoutEnvironment.SANDBOX to URL("http://revenuecat.com/package-sandbox?package_id=\$rc_monthly")
+        ))
     }
 
     @Test
@@ -516,11 +653,19 @@ class OfferingsFactoryTest {
         mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
         mockStoreProduct(productIds, productIds, ProductType.INAPP)
 
-        val invalidUrlWPL = oneOfferingWithWPL.apply {
+        val invalidUrlWPL = JSONObject(oneOfferingWithEnvironmentSpecificWPL.toString()).apply {
             val offering = getJSONArray("offerings").getJSONObject(0)
             offering.put("web_checkout_url", "ht!tp:/invalid-url")
+            offering.put("web_checkout_urls", JSONObject(mapOf(
+                "production" to "ht!tp:/invalid-production-url",
+                "sandbox" to "http://revenuecat.com/sandbox"
+            )))
             val pkg = offering.getJSONArray("packages").getJSONObject(0)
             pkg.put("web_checkout_url", "ht!tp:/invalid-url")
+            pkg.put("web_checkout_urls", JSONObject(mapOf(
+                "production" to "ht!tp:/invalid-package-production-url",
+                "sandbox" to "http://revenuecat.com/package-sandbox?package_id=${'$'}rc_monthly"
+            )))
         }
 
         var offerings: Offerings? = null
@@ -536,8 +681,14 @@ class OfferingsFactoryTest {
         val offering = offerings!!.current
         assertThat(offering).isNotNull
         assertThat(offering?.webCheckoutURL).isNull()
+        assertThat(offering?.webCheckoutURLs).isEqualTo(mapOf(
+            WebCheckoutEnvironment.SANDBOX to URL("http://revenuecat.com/sandbox")
+        ))
         val pkg = offering!!.availablePackages.first()
         assertThat(pkg.webCheckoutURL).isNull()
+        assertThat(pkg.webCheckoutURLs).isEqualTo(mapOf(
+            WebCheckoutEnvironment.SANDBOX to URL("http://revenuecat.com/package-sandbox?package_id=\$rc_monthly")
+        ))
     }
 
     @Test

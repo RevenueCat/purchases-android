@@ -18,6 +18,8 @@ import java.net.URL
  * @property availablePackages Array of [Package] objects available for purchase.
  * @property metadata Offering metadata defined in RevenueCat dashboard.
  * @property webCheckoutURL If the Offering has an associated Web Purchase Link, this will be the URL for it.
+ * @property webCheckoutURLs If the Offering has associated Web Purchase Links, these will be the URLs for each
+ * environment.
  */
 @Suppress("UnsafeOptInUsageError")
 @Poko
@@ -33,7 +35,28 @@ constructor(
     @InternalRevenueCatAPI
     val paywallComponents: PaywallComponents? = null,
     val webCheckoutURL: URL? = null,
+    val webCheckoutURLs: Map<WebCheckoutEnvironment, URL> = emptyMap(),
 ) {
+    @OptIn(InternalRevenueCatAPI::class)
+    constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+        paywall: PaywallData?,
+        paywallComponents: PaywallComponents?,
+        webCheckoutURL: URL?,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = paywall,
+        paywallComponents = paywallComponents,
+        webCheckoutURL = webCheckoutURL,
+        webCheckoutURLs = emptyMap(),
+    )
+
     @OptIn(InternalRevenueCatAPI::class)
     constructor(
         identifier: String,
@@ -48,6 +71,7 @@ constructor(
         paywall = null,
         paywallComponents = null,
         webCheckoutURL = null,
+        webCheckoutURLs = emptyMap(),
     )
 
     @InternalRevenueCatAPI
@@ -127,6 +151,13 @@ constructor(
         return this.metadata[key] as? String ?: default
     }
 
+    /**
+     * Returns the Web Purchase Link checkout URL for the given environment, if available.
+     */
+    fun getWebCheckoutURL(environment: WebCheckoutEnvironment): URL? {
+        return webCheckoutURLs[environment]
+    }
+
     @InternalRevenueCatAPI
     fun copy(presentedOfferingContext: PresentedOfferingContext): Offering {
         return Offering(
@@ -137,6 +168,7 @@ constructor(
             paywall = this.paywall,
             paywallComponents = this.paywallComponents,
             webCheckoutURL = this.webCheckoutURL,
+            webCheckoutURLs = this.webCheckoutURLs,
         )
     }
 }

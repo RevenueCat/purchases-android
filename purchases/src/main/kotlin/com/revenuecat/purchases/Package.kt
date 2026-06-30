@@ -13,6 +13,8 @@ import java.net.URL
  * @property presentedOfferingContext [PresentedOfferingContext] from which this package was obtained.
  * @property webCheckoutURL If the Offering has an associated Web Purchase Link with a product in this package,
  * this will be the URL for it linking directly to purchase this package.
+ * @property webCheckoutURLs If the Offering has associated Web Purchase Links with a product in this package, these
+ * will be the URLs for each environment linking directly to purchase this package.
  */
 @Poko
 class Package @JvmOverloads constructor(
@@ -21,6 +23,7 @@ class Package @JvmOverloads constructor(
     val product: StoreProduct,
     val presentedOfferingContext: PresentedOfferingContext,
     val webCheckoutURL: URL? = null,
+    val webCheckoutURLs: Map<WebCheckoutEnvironment, URL> = emptyMap(),
 ) {
     @Deprecated(
         "Use constructor with presentedOfferingContext instead",
@@ -40,6 +43,7 @@ class Package @JvmOverloads constructor(
         product,
         PresentedOfferingContext(offeringIdentifier = offering),
         webCheckoutURL = null,
+        webCheckoutURLs = emptyMap(),
     )
 
     @Deprecated(
@@ -49,6 +53,13 @@ class Package @JvmOverloads constructor(
     val offering: String
         get() = presentedOfferingContext.offeringIdentifier ?: ""
 
+    /**
+     * Returns the Web Purchase Link checkout URL for the given environment, if available.
+     */
+    fun getWebCheckoutURL(environment: WebCheckoutEnvironment): URL? {
+        return webCheckoutURLs[environment]
+    }
+
     internal fun copy(presentedOfferingContext: PresentedOfferingContext): Package {
         return Package(
             identifier = this.identifier,
@@ -56,6 +67,7 @@ class Package @JvmOverloads constructor(
             product = this.product.copyWithPresentedOfferingContext(presentedOfferingContext),
             presentedOfferingContext = presentedOfferingContext,
             webCheckoutURL = this.webCheckoutURL,
+            webCheckoutURLs = this.webCheckoutURLs,
         )
     }
 }

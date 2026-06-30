@@ -145,6 +145,7 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
             product = product,
             presentedOfferingContext = newContext,
             webCheckoutURL = it.webCheckoutURL,
+            webCheckoutURLs = it.webCheckoutURLs,
         )
     }
 
@@ -156,5 +157,6 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
         paywall = this.paywall,
         paywallComponents = this.paywallComponents,
         webCheckoutURL = this.webCheckoutURL,
+        webCheckoutURLs = this.webCheckoutURLs,
     )
 }

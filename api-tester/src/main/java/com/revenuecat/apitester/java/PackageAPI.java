@@ -5,9 +5,11 @@ import androidx.annotation.Nullable;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PackageType;
 import com.revenuecat.purchases.PresentedOfferingContext;
+import com.revenuecat.purchases.WebCheckoutEnvironment;
 import com.revenuecat.purchases.models.StoreProduct;
 
 import java.net.URL;
+import java.util.Map;
 
 @SuppressWarnings({"unused"})
 final class PackageAPI {
@@ -18,6 +20,8 @@ final class PackageAPI {
         final String offering = p.getOffering();
         final PresentedOfferingContext offeringContext = p.getPresentedOfferingContext();
         final @Nullable URL webCheckoutURL = p.getWebCheckoutURL();
+        final Map<WebCheckoutEnvironment, URL> webCheckoutURLs = p.getWebCheckoutURLs();
+        final @Nullable URL sandboxWebCheckoutURL = p.getWebCheckoutURL(WebCheckoutEnvironment.SANDBOX);
     }
 
     static void check(final PackageType type) {
@@ -31,6 +35,13 @@ final class PackageAPI {
             case TWO_MONTH:
             case MONTHLY:
             case WEEKLY:
+        }
+    }
+
+    static void check(final WebCheckoutEnvironment environment) {
+        switch (environment) {
+            case PRODUCTION:
+            case SANDBOX:
         }
     }
 }
