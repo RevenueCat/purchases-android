@@ -13,10 +13,10 @@ import javax.crypto.SecretKey
 
 /**
  * Tests for [EncryptedItemStorage] using temp files and a randomly generated [SecretKey]
- * injected via the `@VisibleForTesting` constructor. This exercises all business logic
- * (routing, attribute handling, encryption round-trips, file I/O, AccessGroup namespacing)
- * without requiring a real PBKDF2 derivation. The key derivation itself is a one-liner
- * delegating to the JDK's SecretKeyFactory, which has its own test coverage.
+ * injected via the internal constructor. This exercises all business logic (routing, attribute
+ * handling, encryption round-trips, file I/O) without requiring a real PBKDF2 derivation.
+ * The key derivation itself is a one-liner delegating to the JDK's SecretKeyFactory, which
+ * has its own test coverage.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -62,38 +62,6 @@ class EncryptedItemStorageTest {
             File(tempDir, "$noBackupName.json"),
             testKey,
         )
-
-    // region AccessGroup
-
-    @Test
-    fun `AccessGroup stores accessGroup and appIdentifier`() {
-        val group = EncryptedItemStorage.AccessGroup(
-            accessGroup = "com.example.group",
-            appIdentifier = "com.example.myapp",
-        )
-        assertThat(group.accessGroup).isEqualTo("com.example.group")
-        assertThat(group.appIdentifier).isEqualTo("com.example.myapp")
-    }
-
-    @Test
-    fun `AccessGroup is a value type - copy produces independent instance`() {
-        val original = EncryptedItemStorage.AccessGroup(
-            accessGroup = "group",
-            appIdentifier = "app",
-        )
-        val copy = original.copy(appIdentifier = "other-app")
-        assertThat(original.appIdentifier).isEqualTo("app")
-        assertThat(copy.appIdentifier).isEqualTo("other-app")
-    }
-
-    @Test
-    fun `AccessGroup instances with same values are equal`() {
-        val a = EncryptedItemStorage.AccessGroup("group", "app")
-        val b = EncryptedItemStorage.AccessGroup("group", "app")
-        assertThat(a).isEqualTo(b)
-    }
-
-    // endregion
 
     // region File namespace isolation
 

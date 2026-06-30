@@ -2,8 +2,9 @@ package com.revenuecat.purchases.common.security
 
 import android.content.Context
 import android.util.Base64
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.warnLog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 import java.security.GeneralSecurityException
@@ -42,36 +43,14 @@ import javax.crypto.spec.SecretKeySpec
  * This means a ciphertext stored under one identifier cannot be silently decrypted as a
  * different identifier, even with the same key.
  *
- * ## Cross-app sharing
- *
- * The [AccessGroup] class exists for API parity with the iOS SDK. It provides a file-name
- * namespace that prevents collisions when multiple apps from the same developer use
- * RevenueCat. It does **not** enable cross-app item sharing on Android; each app's internal
- * storage directory is OS-sandboxed.
  */
-internal class EncryptedItemStorage @VisibleForTesting internal constructor(
+internal class EncryptedItemStorage private constructor(
     private val backupFile: File,
     private val noBackupFile: File,
     private val key: SecretKey,
+    private val backupStore: MutableMap<String, String>,
+    private val noBackupStore: MutableMap<String, String>,
 ) : SecureItemStorage {
-
-    /**
-     * An optional access-group configuration that namespaces the underlying storage files.
-     *
-     * Mirrors the `Keychain.AccessGroup` concept from the iOS SDK. On Android, the
-     * [accessGroup] value is used as the PBKDF2 salt, so two different access groups produce
-     * two different encryption keys from the same password. The [appIdentifier] is used to
-     * scope the storage file names within the group.
-     *
-     * @param accessGroup The logical group identifier (analogous to a keychain access group
-     *        entitlement on iOS). Used as the PBKDF2 salt on Android.
-     * @param appIdentifier An identifier for this specific app, used to scope storage file
-     *        names so that different apps within the same group do not share items.
-     */
-    internal data class AccessGroup(
-        val accessGroup: String,
-        val appIdentifier: String,
-    )
 
     companion object {
         private const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
@@ -90,45 +69,72 @@ internal class EncryptedItemStorage @VisibleForTesting internal constructor(
         /**
          * Create an [EncryptedItemStorage] backed by PBKDF2-derived AES-256-GCM.
          *
+         * Key derivation runs on [Dispatchers.Default] (CPU-bound); store loading runs on
+         * [Dispatchers.IO]. Neither blocks the calling thread.
+         *
          * @param context the application context
          * @param password the password from which the encryption key is derived; the caller is
          *        responsible for zeroing this array after the call returns if desired
-         * @param access optional [AccessGroup] whose [AccessGroup.accessGroup] value serves as
-         *        the PBKDF2 salt and whose [AccessGroup.appIdentifier] scopes file names
+         * @param salt the PBKDF2 salt; defaults to [DEFAULT_SALT]
          * @throws GeneralSecurityException if key derivation fails
          */
         @Throws(GeneralSecurityException::class)
-        fun create(
+        suspend fun create(
             context: Context,
             password: CharArray,
-            access: AccessGroup? = null,
+            salt: String = DEFAULT_SALT,
         ): EncryptedItemStorage {
-            val salt = (access?.accessGroup ?: DEFAULT_SALT).toByteArray(Charsets.UTF_8)
-            val spec = PBEKeySpec(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
-            val keyBytes = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
-                .generateSecret(spec)
-                .encoded
-            val key = SecretKeySpec(keyBytes, KEY_ALGORITHM)
-
-            val baseName = if (access != null) {
-                "${access.appIdentifier}_rc_secure"
-            } else {
-                DEFAULT_STORAGE_NAME
+            val key = withContext(Dispatchers.Default) {
+                val saltBytes = salt.toByteArray(Charsets.UTF_8)
+                val spec = PBEKeySpec(password, saltBytes, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
+                val keyBytes = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
+                    .generateSecret(spec)
+                    .encoded
+                SecretKeySpec(keyBytes, KEY_ALGORITHM)
             }
 
-            return EncryptedItemStorage(
-                backupFile = File(context.filesDir, "${baseName}_backup.json"),
-                noBackupFile = File(context.noBackupFilesDir, "${baseName}_no_backup.json"),
-                key = key,
-            )
+            val backupFile = File(context.filesDir, "${DEFAULT_STORAGE_NAME}_backup.json")
+            val noBackupFile = File(context.noBackupFilesDir, "${DEFAULT_STORAGE_NAME}_no_backup.json")
+
+            val (backupStore, noBackupStore) = withContext(Dispatchers.IO) {
+                loadStore(backupFile) to loadStore(noBackupFile)
+            }
+
+            return EncryptedItemStorage(backupFile, noBackupFile, key, backupStore, noBackupStore)
+        }
+
+        // Loads a JSON store file into a mutable map. Returns an empty map if the file does not
+        // exist or cannot be parsed. Exposed internally so the test secondary constructor can
+        // reuse it without duplicating the parsing logic.
+        internal fun loadStore(file: File): MutableMap<String, String> {
+            if (!file.exists()) return mutableMapOf()
+            return try {
+                val json = JSONObject(file.readText())
+                val map = mutableMapOf<String, String>()
+                for (k in json.keys()) {
+                    map[k] = json.getString(k)
+                }
+                map
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                warnLog { "Failed to load secure store from ${file.name}, starting empty: $e" }
+                mutableMapOf()
+            }
         }
     }
 
-    // Both stores are loaded once at construction time and kept in memory.
-    // Reads are served entirely from these maps; writes update the map then flush the
-    // affected file to disk. loadStore() is private and only called here.
-    private val backupStore: MutableMap<String, String> = loadStore(backupFile)
-    private val noBackupStore: MutableMap<String, String> = loadStore(noBackupFile)
+    // Secondary constructor for tests: loads both stores synchronously from their files.
+    // Only used within the module; production code always goes through create().
+    internal constructor(
+        backupFile: File,
+        noBackupFile: File,
+        key: SecretKey,
+    ) : this(
+        backupFile = backupFile,
+        noBackupFile = noBackupFile,
+        key = key,
+        backupStore = loadStore(backupFile),
+        noBackupStore = loadStore(noBackupFile),
+    )
 
     // region SecureItemStorage
 
@@ -207,21 +213,6 @@ internal class EncryptedItemStorage @VisibleForTesting internal constructor(
     // endregion
 
     // region File I/O
-
-    private fun loadStore(file: File): MutableMap<String, String> {
-        if (!file.exists()) return mutableMapOf()
-        return try {
-            val json = JSONObject(file.readText())
-            val map = mutableMapOf<String, String>()
-            for (k in json.keys()) {
-                map[k] = json.getString(k)
-            }
-            map
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            warnLog { "Failed to load secure store from ${file.name}, starting empty: $e" }
-            mutableMapOf()
-        }
-    }
 
     private fun saveStore(file: File, store: Map<String, String>) {
         val json = JSONObject()
