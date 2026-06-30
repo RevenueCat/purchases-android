@@ -24,6 +24,7 @@ private const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
 /** The hardcoded blob source used until the `sources` topic feeds [RemoteConfigSourceProvider] (Phase 5 follow-up). */
 private const val DEFAULT_BLOB_URL_TEMPLATE = "https://config.revenuecat-static.com/$BLOB_REF_PLACEHOLDER"
 
+// WIP: Phase 5 follow-up: remove this hardcoded default and feed the blob sources from the `sources` topic.
 private fun defaultBlobSourceProvider(): RemoteConfigSourceProvider =
     DefaultRemoteConfigSourceProvider(
         apiSources = emptyList(),
@@ -86,7 +87,9 @@ internal class RemoteConfigBlobFetcher(
     private val inFlight = HashSet<String>()
 
     /** Queued, not-yet-claimed downloads, ordered by priority (HIGH first) then enqueue order (FIFO). */
+    // The (initialCapacity, comparator) constructor is API 1; the comparator-only overload is API 24+.
     private val queue = PriorityQueue<PendingDownload>(
+        QUEUE_INITIAL_CAPACITY,
         compareByDescending<PendingDownload> { it.priority }.thenBy { it.seq },
     )
 
@@ -223,5 +226,8 @@ internal class RemoteConfigBlobFetcher(
 
     private companion object {
         private const val MAX_CONCURRENT_DOWNLOADS = 4
+
+        // Matches java.util.PriorityQueue's own default; it grows as needed.
+        private const val QUEUE_INITIAL_CAPACITY = 11
     }
 }
