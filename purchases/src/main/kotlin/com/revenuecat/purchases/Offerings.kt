@@ -140,24 +140,8 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
                 PresentedOfferingContext.TargetingContext(targeting.revision, targeting.ruleId)
             } ?: oldContext.targetingContext,
         )
-        val product = it.product.copyWithPresentedOfferingContext(newContext)
-
-        Package(
-            identifier = it.identifier,
-            packageType = it.packageType,
-            product = product,
-            presentedOfferingContext = newContext,
-            webCheckoutURL = it.webCheckoutURL,
-        )
+        it.copy(newContext)
     }
 
-    return Offering(
-        identifier = this.identifier,
-        serverDescription = this.serverDescription,
-        metadata = this.metadata,
-        availablePackages = updatedAvailablePackages,
-        paywall = this.paywall,
-        paywallComponents = this.paywallComponents,
-        webCheckoutURL = this.webCheckoutURL,
-    )
+    return copyWithAvailablePackages(updatedAvailablePackages)
 }

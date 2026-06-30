@@ -17,7 +17,9 @@ import java.net.URL
  * @property serverDescription Offering description defined in RevenueCat dashboard.
  * @property availablePackages Array of [Package] objects available for purchase.
  * @property metadata Offering metadata defined in RevenueCat dashboard.
- * @property webCheckoutURL If the Offering has an associated Web Purchase Link, this will be the URL for it.
+ * @property webCheckoutURL If the Offering has an associated Web Purchase Link, this will be the checkout URL
+ * selected for the current request environment. Use [getWebCheckoutURL] to explicitly select a production or
+ * sandbox URL.
  */
 @Suppress("UnsafeOptInUsageError")
 @Poko
@@ -34,6 +36,30 @@ constructor(
     public val paywallComponents: PaywallComponents? = null,
     public val webCheckoutURL: URL? = null,
 ) {
+    private var environmentWebCheckoutURLs: Map<WebCheckoutEnvironment, URL> = emptyMap()
+
+    @OptIn(InternalRevenueCatAPI::class)
+    internal constructor(
+        identifier: String,
+        serverDescription: String,
+        metadata: Map<String, Any>,
+        availablePackages: List<Package>,
+        paywall: PaywallData?,
+        paywallComponents: PaywallComponents?,
+        webCheckoutURL: URL?,
+        environmentWebCheckoutURLs: Map<WebCheckoutEnvironment, URL>,
+    ) : this(
+        identifier = identifier,
+        serverDescription = serverDescription,
+        metadata = metadata,
+        availablePackages = availablePackages,
+        paywall = paywall,
+        paywallComponents = paywallComponents,
+        webCheckoutURL = webCheckoutURL,
+    ) {
+        this.environmentWebCheckoutURLs = environmentWebCheckoutURLs
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     public constructor(
         identifier: String,
@@ -164,6 +190,15 @@ constructor(
     }
 
     /**
+     * Returns this Offering's Web Purchase Link checkout URL for [environment], if available.
+     *
+     * Use this to choose a production or sandbox checkout URL explicitly.
+     */
+    public fun getWebCheckoutURL(environment: WebCheckoutEnvironment): URL? {
+        return environmentWebCheckoutURLs[environment]
+    }
+
+    /**
      * The presented offering context (placement and targeting information) derived from the
      * first available package, if any.
      */
@@ -181,6 +216,22 @@ constructor(
             paywall = this.paywall,
             paywallComponents = this.paywallComponents,
             webCheckoutURL = this.webCheckoutURL,
+        ).apply {
+            environmentWebCheckoutURLs = this@Offering.environmentWebCheckoutURLs
+        }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    internal fun copyWithAvailablePackages(availablePackages: List<Package>): Offering {
+        return Offering(
+            identifier = this.identifier,
+            serverDescription = this.serverDescription,
+            metadata = this.metadata,
+            availablePackages = availablePackages,
+            paywall = this.paywall,
+            paywallComponents = this.paywallComponents,
+            webCheckoutURL = this.webCheckoutURL,
+            environmentWebCheckoutURLs = this.environmentWebCheckoutURLs,
         )
     }
 }

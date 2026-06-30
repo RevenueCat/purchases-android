@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Package;
+import com.revenuecat.purchases.WebCheckoutEnvironment;
 
 import java.net.URL;
 import java.util.List;
@@ -32,6 +33,8 @@ final class OfferingAPI {
         final Boolean hasPaywall = offering.hasPaywall();
 
         final @Nullable URL webCheckoutURL = offering.getWebCheckoutURL();
+        final @Nullable URL sandboxWebCheckoutURL =
+                offering.getWebCheckoutURL(WebCheckoutEnvironment.SANDBOX);
 
         new Offering(
                 identifier,

@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.WebCheckoutEnvironment
 import java.net.URL
 
 @Suppress("unused", "UNUSED_VARIABLE")
@@ -24,6 +25,7 @@ private class OfferingAPI {
             val metadataString: String = getMetadataString("key", "default")
             var hasPaywall: Boolean = hasPaywall
             val webCheckoutURL: URL? = webCheckoutURL
+            val sandboxWebCheckoutURL: URL? = getWebCheckoutURL(WebCheckoutEnvironment.SANDBOX)
 
             Offering(
                 identifier = identifier,

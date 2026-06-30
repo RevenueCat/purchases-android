@@ -12,7 +12,8 @@ import java.net.URL
  * @property offering offering Id this package was returned from.
  * @property presentedOfferingContext [PresentedOfferingContext] from which this package was obtained.
  * @property webCheckoutURL If the Offering has an associated Web Purchase Link with a product in this package,
- * this will be the URL for it linking directly to purchase this package.
+ * this will be the package-specific checkout URL selected for the current request environment. Use
+ * [getWebCheckoutURL] to explicitly select a production or sandbox URL.
  */
 @Poko
 public class Package @JvmOverloads constructor(
@@ -22,6 +23,25 @@ public class Package @JvmOverloads constructor(
     public val presentedOfferingContext: PresentedOfferingContext,
     public val webCheckoutURL: URL? = null,
 ) {
+    private var environmentWebCheckoutURLs: Map<WebCheckoutEnvironment, URL> = emptyMap()
+
+    internal constructor(
+        identifier: String,
+        packageType: PackageType,
+        product: StoreProduct,
+        presentedOfferingContext: PresentedOfferingContext,
+        webCheckoutURL: URL?,
+        environmentWebCheckoutURLs: Map<WebCheckoutEnvironment, URL>,
+    ) : this(
+        identifier = identifier,
+        packageType = packageType,
+        product = product,
+        presentedOfferingContext = presentedOfferingContext,
+        webCheckoutURL = webCheckoutURL,
+    ) {
+        this.environmentWebCheckoutURLs = environmentWebCheckoutURLs
+    }
+
     @Deprecated(
         "Use constructor with presentedOfferingContext instead",
         ReplaceWith(
@@ -49,6 +69,18 @@ public class Package @JvmOverloads constructor(
     public val offering: String
         get() = presentedOfferingContext.offeringIdentifier ?: ""
 
+    /**
+     * Returns this Package's Web Purchase Link checkout URL for [environment], if available.
+     *
+     * Use this to choose a production or sandbox checkout URL explicitly.
+     *
+     * The returned URL links directly to purchase this package and includes the package identifier, matching
+     * [webCheckoutURL].
+     */
+    public fun getWebCheckoutURL(environment: WebCheckoutEnvironment): URL? {
+        return environmentWebCheckoutURLs[environment]
+    }
+
     internal fun copy(presentedOfferingContext: PresentedOfferingContext): Package {
         return Package(
             identifier = this.identifier,
@@ -56,6 +88,7 @@ public class Package @JvmOverloads constructor(
             product = this.product.copyWithPresentedOfferingContext(presentedOfferingContext),
             presentedOfferingContext = presentedOfferingContext,
             webCheckoutURL = this.webCheckoutURL,
+            environmentWebCheckoutURLs = this.environmentWebCheckoutURLs,
         )
     }
 }

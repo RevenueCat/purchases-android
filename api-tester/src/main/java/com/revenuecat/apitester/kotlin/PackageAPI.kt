@@ -3,6 +3,7 @@ package com.revenuecat.apitester.kotlin
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.WebCheckoutEnvironment
 import com.revenuecat.purchases.models.StoreProduct
 import java.net.URL
 
@@ -16,6 +17,7 @@ private class PackageAPI {
             val offering: String = offering
             val presentedOfferingContext: PresentedOfferingContext = presentedOfferingContext
             val webCheckoutURL: URL? = webCheckoutURL
+            val sandboxWebCheckoutURL: URL? = getWebCheckoutURL(WebCheckoutEnvironment.SANDBOX)
         }
     }
 
@@ -30,6 +32,14 @@ private class PackageAPI {
             PackageType.TWO_MONTH,
             PackageType.MONTHLY,
             PackageType.WEEKLY,
+            -> {}
+        }.exhaustive
+    }
+
+    fun check(environment: WebCheckoutEnvironment) {
+        when (environment) {
+            WebCheckoutEnvironment.PRODUCTION,
+            WebCheckoutEnvironment.SANDBOX,
             -> {}
         }.exhaustive
     }
