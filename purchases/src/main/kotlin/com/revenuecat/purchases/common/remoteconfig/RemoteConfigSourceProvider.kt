@@ -1,6 +1,11 @@
 package com.revenuecat.purchases.common.remoteconfig
 
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
 import com.revenuecat.purchases.common.warnLog
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.random.Random
 
 /** A remote config source: a URL plus the metadata used to order sources. */
@@ -45,6 +50,9 @@ internal interface RemoteConfigSourceProvider {
 
     /** Rewinds the given purpose to its first source, e.g. to start fresh on a new fetch cycle. */
     fun restart(purpose: RemoteConfigSourceHandle.Purpose)
+
+    /** Drops any memoized source resolution (e.g. on identity change). No-op for fixed-source providers. */
+    fun clear() {}
 }
 
 /**
@@ -150,5 +158,120 @@ private class SourceFailover(
             selector.reset()
             token++
         }
+    }
+}
+
+/** The hardcoded blob URL template used as a last-resort fallback when the `sources` topic supplies none. */
+internal const val DEFAULT_BLOB_URL_TEMPLATE = "https://config.revenuecat-static.com/{blob_ref}"
+
+/** The hardcoded API base URL used as a last-resort fallback. Held for the future; live API rerouting is not wired. */
+internal const val DEFAULT_API_URL = "https://api.revenuecat.com"
+
+/**
+ * A [RemoteConfigSourceProvider] that resolves its sources **lazily** from the committed `sources` topic
+ * (read through [RemoteConfigTopicStore]) instead of taking fixed lists at construction. It wraps a memoized
+ * [DefaultRemoteConfigSourceProvider] — it does not reimplement the failover/token logic.
+ *
+ * - **Initialized from the cached configuration.** The first [resolve] reads the persisted `sources` topic
+ *   (from a prior session, if any), so configured sources are in effect from the very first download — the
+ *   fetcher calls [getCurrent] before downloading.
+ * - **Hardcoded fallbacks, always present, lowest priority.** Parsed sources are followed by
+ *   [DEFAULT_API_URL] / [DEFAULT_BLOB_URL_TEMPLATE] at [Int.MIN_VALUE] priority, so configured/cached
+ *   sources are always tried first and blob fetching never regresses below the hardcoded source (never empty).
+ * - **Non-blocking on the consuming thread.** The memo is keyed on the persisted manifest, which advances on
+ *   every commit, so only the first [resolve] after a config change touches disk; steady state is in-memory.
+ *   Every call here runs on the blob fetcher's IO pool (or the manager's IO scope), never the main thread.
+ */
+internal class LazyRemoteConfigSourceProvider(
+    private val topicStore: RemoteConfigTopicStore,
+    private val apiFallbacks: List<RemoteConfigSource> = listOf(
+        RemoteConfigSource(url = DEFAULT_API_URL, priority = Int.MIN_VALUE, weight = 1),
+    ),
+    private val blobFallbacks: List<RemoteConfigSource> = listOf(
+        RemoteConfigSource(url = DEFAULT_BLOB_URL_TEMPLATE, priority = Int.MIN_VALUE, weight = 1),
+    ),
+    private val random: Random = Random.Default,
+) : RemoteConfigSourceProvider {
+
+    private val lock = Any()
+
+    /** The manifest the memoized [inner] was built from. [NOT_BUILT] until the first [resolve]. */
+    private var memoKey: String? = NOT_BUILT
+    private var inner: DefaultRemoteConfigSourceProvider? = null
+
+    override fun getCurrent(purpose: Purpose): RemoteConfigSourceHandle? = resolve().getCurrent(purpose)
+
+    override fun reportUnhealthy(handle: RemoteConfigSourceHandle) = resolve().reportUnhealthy(handle)
+
+    override fun restart(purpose: Purpose) = resolve().restart(purpose)
+
+    /** Drops the memoized sources (identity change). The next call re-parses from the (cleared) disk cache. */
+    override fun clear() = synchronized(lock) {
+        memoKey = NOT_BUILT
+        inner = null
+    }
+
+    /**
+     * Returns the inner provider for the currently committed `sources`, rebuilding it only when the persisted
+     * manifest has changed since the memo was built. The lock guards the cheap read/rebuild/return; the inner
+     * provider is independently thread-safe, so no lock is held across a delegated call.
+     */
+    private fun resolve(): DefaultRemoteConfigSourceProvider = synchronized(lock) {
+        val key = topicStore.read()?.manifest
+        val current = inner
+        if (current != null && key == memoKey) return current
+
+        val (apiSources, blobSources) = parseSources(topicStore.topic(SOURCES_TOPIC))
+        DefaultRemoteConfigSourceProvider(
+            apiSources = apiSources + apiFallbacks,
+            blobSources = blobSources + blobFallbacks,
+            random = random,
+        ).also {
+            inner = it
+            memoKey = key
+        }
+    }
+
+    private fun parseSources(topic: ConfigTopic?): Pair<List<RemoteConfigSource>, List<RemoteConfigSource>> {
+        val apiSources = mutableListOf<RemoteConfigSource>()
+        val blobSources = mutableListOf<RemoteConfigSource>()
+        topic?.forEach { (key, item) ->
+            val source = item.toSource() ?: return@forEach
+            // A blob source carries the `{blob_ref}` slot; otherwise treat it as an api source. The item key
+            // (`blob`/`api`) is only a tiebreak so an unexpected shape still routes by the placeholder.
+            if (BLOB_REF_PLACEHOLDER in source.url || key == BLOB_ITEM_KEY) {
+                blobSources.add(source)
+            } else {
+                apiSources.add(source)
+            }
+        }
+        if (topic != null && blobSources.isEmpty()) {
+            warnLog { "Remote config 'sources' topic has no usable blob source; using the hardcoded fallback." }
+        }
+        return apiSources to blobSources
+    }
+
+    private fun RemoteConfiguration.ConfigItem.toSource(): RemoteConfigSource? {
+        val url = content.string(URL_FORMAT_KEY) ?: content.string(URL_KEY) ?: return null
+        return RemoteConfigSource(
+            url = url,
+            priority = content[PRIORITY_KEY]?.jsonPrimitive?.intOrNull ?: 0,
+            weight = content[WEIGHT_KEY]?.jsonPrimitive?.intOrNull ?: 1,
+        )
+    }
+
+    private fun JsonObject.string(key: String): String? = this[key]?.jsonPrimitive?.contentOrNull
+
+    private companion object {
+        private const val SOURCES_TOPIC = "sources"
+        private const val BLOB_ITEM_KEY = "blob"
+        private const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
+        private const val URL_FORMAT_KEY = "url_format"
+        private const val URL_KEY = "url"
+        private const val PRIORITY_KEY = "priority"
+        private const val WEIGHT_KEY = "weight"
+
+        /** Sentinel distinguishing "never built" from "built from a null manifest" (first run). */
+        private const val NOT_BUILT = " <unbuilt>"
     }
 }

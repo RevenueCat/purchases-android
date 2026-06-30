@@ -21,16 +21,6 @@ import java.util.PriorityQueue
 /** The placeholder a blob source URL template carries; substituted with the blob ref before download. */
 private const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
 
-/** The hardcoded blob source used until the `sources` topic feeds [RemoteConfigSourceProvider] (Phase 5 follow-up). */
-private const val DEFAULT_BLOB_URL_TEMPLATE = "https://config.revenuecat-static.com/$BLOB_REF_PLACEHOLDER"
-
-// WIP: Phase 5 follow-up: remove this hardcoded default and feed the blob sources from the `sources` topic.
-private fun defaultBlobSourceProvider(): RemoteConfigSourceProvider =
-    DefaultRemoteConfigSourceProvider(
-        apiSources = emptyList(),
-        blobSources = listOf(RemoteConfigSource(url = DEFAULT_BLOB_URL_TEMPLATE, priority = 0, weight = 1)),
-    )
-
 private const val REF_HASH_BYTES = 24
 private const val SHA_256_ALGORITHM = "SHA-256"
 
@@ -64,7 +54,7 @@ private fun contentAddressRef(bytes: ByteArray): String {
  */
 internal class RemoteConfigBlobFetcher(
     private val blobStore: RemoteConfigBlobStore,
-    private val sourceProvider: RemoteConfigSourceProvider = defaultBlobSourceProvider(),
+    private val sourceProvider: RemoteConfigSourceProvider,
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
