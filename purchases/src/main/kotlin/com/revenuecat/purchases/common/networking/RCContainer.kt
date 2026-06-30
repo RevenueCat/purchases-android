@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.networking
 
+import com.revenuecat.purchases.common.warnLog
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -53,6 +54,12 @@ internal class RCContainer private constructor(
         private const val ELEMENT_HEADER_SIZE = CHECKSUM_SIZE + UINT32_SIZE + ELEM_RESERVED_SIZE
         private const val UINT32_MASK = 0xFFFFFFFFL
 
+        // The low byte of the element reserved u32 is the codec; the upper 24 bits are reserved/ignored.
+        private const val RESERVED_UPPER_BITS_MASK = 0xFFFFFF00L
+
+        // Radix for rendering unknown flag/reserved values as hex in warning logs.
+        private const val HEX_RADIX = 16
+
         fun parse(bytes: ByteArray): RCContainer = parse(ByteBuffer.wrap(bytes).asReadOnlyBuffer())
 
         /**
@@ -86,6 +93,13 @@ internal class RCContainer private constructor(
                 val reserved = source.readUnsignedInt()
                 // The codec id lives in the low byte of the reserved u32; upper bytes stay reserved.
                 val codec = (reserved and BYTE_MASK.toLong()).toInt()
+                val reservedUpperBits = reserved and RESERVED_UPPER_BITS_MASK
+                if (reservedUpperBits != 0L) {
+                    warnLog {
+                        "RC element reserved bits non-zero (0x${reservedUpperBits.toString(HEX_RADIX)}); " +
+                            "ignoring unknown reserved bits."
+                    }
+                }
                 val data = source.sliceBytes(size, "element")
                 source.alignTo(ALIGNMENT)
                 parsed.add(RCElement(checksum = checksum, data = data, reserved = reserved, codec = codec))
@@ -116,6 +130,10 @@ internal class RCContainer private constructor(
                 throw RCContainerFormatException("Unsupported version $version. Expected $SUPPORTED_VERSION.")
             }
             val flags = get().toInt() and BYTE_MASK
+            if (flags != 0) {
+                val flagsHex = flags.toString(HEX_RADIX)
+                warnLog { "RC Container header flags non-zero (0x$flagsHex); ignoring unknown flags." }
+            }
             position(position() + HEADER_RESERVED_SIZE)
             return version to flags
         }

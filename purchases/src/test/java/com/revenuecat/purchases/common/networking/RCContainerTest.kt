@@ -1,6 +1,12 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.LogMessage
+import com.revenuecat.purchases.assertWarnLog
+import com.revenuecat.purchases.common.Config as PurchasesConfig
+import com.revenuecat.purchases.common.currentLogHandler
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Test
@@ -25,6 +31,55 @@ class RCContainerTest {
         assertThat(container.config.isChecksumValid()).isTrue()
         assertThat(container.contentElements).isEmpty()
         assertThat(container.elements).isEmpty()
+    }
+
+    @Test
+    fun `warns and still parses when header flags are non-zero`() {
+        val bytes = buildContainer(version = 1, flags = 0x07, config = "cfg".toByteArray())
+
+        assertWarnLog("RC Container header flags non-zero (0x7); ignoring unknown flags.") {
+            val container = RCContainer.parse(bytes)
+            // Parsing remains forward-compatible: the flags are preserved, not rejected.
+            assertThat(container.flags).isEqualTo(0x07)
+        }
+    }
+
+    @Test
+    fun `does not warn when header flags are zero`() {
+        val bytes = buildContainer(version = 1, flags = 0, config = "cfg".toByteArray())
+
+        val logs = captureLogs { RCContainer.parse(bytes) }
+
+        assertThat(logs.filter { it.level == LogLevel.WARN }).isEmpty()
+    }
+
+    @Test
+    fun `warns and still parses when element reserved upper bits are non-zero`() {
+        // reserved = 0x00000100: codec low byte is 0 (NONE), the upper bits carry an unknown flag.
+        val bytes = buildContainer(
+            config = "cfg".toByteArray(),
+            elements = listOf("payload".toByteArray()),
+            reservedForIndex = { index -> if (index == 1) 0x100L else 0L },
+        )
+
+        assertWarnLog("RC element reserved bits non-zero (0x100); ignoring unknown reserved bits.") {
+            val container = RCContainer.parse(bytes)
+            assertThat(container.contentElements[0].data.readBytes()).isEqualTo("payload".toByteArray())
+        }
+    }
+
+    @Test
+    fun `does not warn when only the element codec byte is set`() {
+        // A legitimate non-zero codec (GZIP) lives in the reserved low byte; the upper bits stay zero.
+        val bytes = buildContainer(
+            config = "cfg".toByteArray(),
+            elements = listOf("compress-me-".repeat(20).toByteArray()),
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
+        )
+
+        val logs = captureLogs { RCContainer.parse(bytes) }
+
+        assertThat(logs.filter { it.level == LogLevel.WARN }).isEmpty()
     }
 
     @Test
@@ -338,6 +393,39 @@ class RCContainerTest {
         elements: List<ByteArray> = emptyList(),
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
         codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
+        reservedForIndex: ((index: Int) -> Long)? = null,
     ): ByteArray =
-        RCContainerTestData.buildContainer(version, flags, config, elements, checksumOverride, codecForIndex)
+        RCContainerTestData.buildContainer(
+            version,
+            flags,
+            config,
+            elements,
+            checksumOverride,
+            codecForIndex,
+            reservedForIndex,
+        )
+
+    /** Captures every log emitted while [block] runs (with logging forced to VERBOSE). */
+    private fun captureLogs(block: () -> Unit): List<LogMessage> {
+        val logs = mutableListOf<LogMessage>()
+        val previousLogLevel = PurchasesConfig.logLevel
+        val previousLogHandler = currentLogHandler
+        PurchasesConfig.logLevel = LogLevel.VERBOSE
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) { logs.add(LogMessage(LogLevel.VERBOSE, msg)) }
+            override fun d(tag: String, msg: String) { logs.add(LogMessage(LogLevel.DEBUG, msg)) }
+            override fun i(tag: String, msg: String) { logs.add(LogMessage(LogLevel.INFO, msg)) }
+            override fun w(tag: String, msg: String) { logs.add(LogMessage(LogLevel.WARN, msg)) }
+            override fun e(tag: String, msg: String, throwable: Throwable?) {
+                logs.add(LogMessage(LogLevel.ERROR, msg, throwable))
+            }
+        }
+        try {
+            block()
+        } finally {
+            currentLogHandler = previousLogHandler
+            PurchasesConfig.logLevel = previousLogLevel
+        }
+        return logs
+    }
 }

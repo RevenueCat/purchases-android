@@ -136,6 +136,7 @@ internal object RCContainerTestData {
         elements: List<ByteArray> = emptyList(),
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
         codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
+        reservedForIndex: ((index: Int) -> Long)? = null,
     ): ByteArray {
         val out = ByteArrayOutputStream()
         out.write('R'.code)
@@ -150,9 +151,11 @@ internal object RCContainerTestData {
             val codec = codecForIndex(index)
             val checksum = checksumOverride?.invoke(index, element) ?: sha256(element)
             val onWire = if (codec == RCContentEncoding.GZIP.id) gzip(element) else element
+            // The reserved u32's low byte is the codec id; reservedForIndex lets tests set the upper bits.
+            val reserved = reservedForIndex?.invoke(index) ?: (codec.toLong() and 0xFF)
             out.write(checksum)
             out.writeUInt32(onWire.size)
-            out.writeUInt32(codec and 0xFF) // element reserved: low byte is the codec id
+            out.writeUInt32(reserved.toInt())
             out.write(onWire)
             out.padTo8()
         }
