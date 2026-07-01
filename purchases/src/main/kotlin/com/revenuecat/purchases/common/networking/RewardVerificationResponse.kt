@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.serialization.SerialName
@@ -21,14 +21,14 @@ internal data class RewardVerificationResponse(
     val message: String? = null,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
-    fun toRewardVerificationResult(): RewardVerificationResult {
+    fun toRewardVerificationPollStatus(): RewardVerificationPollStatus {
         return when (status.lowercase()) {
-            "pending" -> RewardVerificationResult.PENDING
-            "verified" -> RewardVerificationResult.Verified(reward = reward.toVerifiedReward())
-            "failed" -> RewardVerificationResult.Failed(failureReason = failureReason, message = message)
+            "pending" -> RewardVerificationPollStatus.PENDING
+            "verified" -> RewardVerificationPollStatus.Verified(reward = reward.toVerifiedReward())
+            "failed" -> RewardVerificationPollStatus.Failed(failureReason = failureReason, message = message)
             else -> {
                 warnLog { "Unknown reward verification status: $status" }
-                RewardVerificationResult.UNKNOWN
+                RewardVerificationPollStatus.UNKNOWN
             }
         }
     }

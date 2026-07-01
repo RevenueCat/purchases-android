@@ -2,6 +2,10 @@ package com.revenuecat.purchases.common.remoteconfig
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -19,24 +23,40 @@ class RemoteConfigSourceProviderTest {
     // region Initial selection
 
     @Test
-    fun `current sources are null when there are no sources`() {
-        val provider = DefaultRemoteConfigSourceProvider(
-            apiSources = emptyList(),
-            blobSources = emptyList(),
-            random = FakeRandom(),
-        )
-        assertThat(provider.getCurrent(Purpose.API)).isNull()
+    fun `current api source falls back to the embedded default when the sources topic is absent`() {
+        val provider = DefaultRemoteConfigSourceProvider(FakeTopicStore(null), FakeRandom())
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
+        // Blob has no embedded default, so it stays empty.
         assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
     }
 
     @Test
-    fun `current source returns highest priority source`() {
-        val low = source("low", priority = 0, weight = 100)
-        val high = source("high", priority = 10, weight = 1)
+    fun `current api source falls back to the embedded default when the topic has no sources`() {
+        val provider = provider(api = emptyList(), blob = emptyList())
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
+        // Blob has no embedded default, so it stays empty.
+        assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
+    }
+
+    @Test
+    fun `embedded api defaults fall back to backup when primary unhealthy`() {
+        val provider = DefaultRemoteConfigSourceProvider(FakeTopicStore(null), FakeRandom(0))
+        // The primary default is preferred (lower priority number); the backup is the next fallback.
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.rc-backup.com/")
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
+    }
+
+    @Test
+    fun `current source returns lowest priority number source`() {
+        val low = source("low", priority = 0, weight = 1)
+        val high = source("high", priority = 10, weight = 100)
         val provider = apiProvider(listOf(low, high))
 
         val handle = provider.getCurrent(Purpose.API)
-        assertThat(handle?.url).isEqualTo(url("high"))
+        assertThat(handle?.url).isEqualTo(url("low"))
         assertThat(handle?.purpose).isEqualTo(Purpose.API)
     }
 
@@ -58,10 +78,10 @@ class RemoteConfigSourceProviderTest {
         val provider = apiProvider(listOf(high, low))
 
         val first = provider.getCurrent(Purpose.API)
-        assertThat(first?.url).isEqualTo(url("high"))
+        assertThat(first?.url).isEqualTo(url("low"))
 
         provider.reportUnhealthy(first!!)
-        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("low"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("high"))
     }
 
     @Test
@@ -74,9 +94,9 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `reportUnhealthy walks full fallback order`() {
-        val first = source("1", priority = 30, weight = 1)
+        val first = source("1", priority = 10, weight = 1)
         val second = source("2", priority = 20, weight = 1)
-        val third = source("3", priority = 10, weight = 1)
+        val third = source("3", priority = 30, weight = 1)
         val provider = apiProvider(listOf(first, second, third))
 
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("1"))
@@ -98,7 +118,7 @@ class RemoteConfigSourceProviderTest {
             listOf(
                 source("a", priority = 10, weight = 1),
                 source("a", priority = 5, weight = 1),
-                source("b", priority = 0, weight = 1),
+                source("b", priority = 20, weight = 1),
             ),
         )
 
@@ -110,18 +130,19 @@ class RemoteConfigSourceProviderTest {
     }
 
     @Test
-    fun `dedup keeps highest priority regardless of order`() {
+    fun `dedup keeps lowest priority number regardless of order`() {
         val provider = apiProvider(
             listOf(
-                source("a", priority = 0, weight = 1),
                 source("a", priority = 10, weight = 1),
+                source("a", priority = 0, weight = 1),
                 source("b", priority = 5, weight = 1),
             ),
         )
 
-        // `a` is kept at priority 10, so it outranks `b` (priority 5) despite appearing first at 0.
+        // `a` is kept at priority 0 (lowest number, i.e. highest priority), so it outranks `b`
+        // (priority 5) despite appearing first at 10.
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
-        assertThat(provider.getCurrent(Purpose.API)?.source?.priority).isEqualTo(10)
+        assertThat(provider.getCurrent(Purpose.API)?.source?.priority).isEqualTo(0)
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
@@ -144,11 +165,7 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `api and blob are exposed independently`() {
-        val provider = DefaultRemoteConfigSourceProvider(
-            apiSources = listOf(source("api")),
-            blobSources = listOf(source("blob")),
-            random = FakeRandom(0),
-        )
+        val provider = provider(api = listOf(source("api")), blob = listOf(source("blob")))
 
         val api = provider.getCurrent(Purpose.API)
         val blob = provider.getCurrent(Purpose.BLOB)
@@ -160,10 +177,9 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `reporting api unhealthy does not affect blob`() {
-        val provider = DefaultRemoteConfigSourceProvider(
-            apiSources = listOf(source("api1", priority = 10), source("api2", priority = 0)),
-            blobSources = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
-            random = FakeRandom(0),
+        val provider = provider(
+            api = listOf(source("api1", priority = 0), source("api2", priority = 10)),
+            blob = listOf(source("blob1", priority = 0), source("blob2", priority = 10)),
         )
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
@@ -254,10 +270,9 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `restart only rewinds requested purpose`() {
-        val provider = DefaultRemoteConfigSourceProvider(
-            apiSources = listOf(source("api1", priority = 10), source("api2", priority = 0)),
-            blobSources = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
-            random = FakeRandom(0),
+        val provider = provider(
+            api = listOf(source("api1", priority = 0), source("api2", priority = 10)),
+            blob = listOf(source("blob1", priority = 0), source("blob2", priority = 10)),
         )
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
@@ -289,6 +304,68 @@ class RemoteConfigSourceProviderTest {
         // A handle obtained after the restart still advances normally.
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+    }
+
+    // endregion
+
+    // region Sources topic changes
+
+    @Test
+    fun `changed sources topic rebuilds and restarts from the top`() {
+        val store = FakeTopicStore(sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList()))
+        val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+
+        // The sources topic changes: the provider rebuilds and starts the new list from the top.
+        store.sources = sourcesTopic(api = listOf(source("x"), source("y")), blob = emptyList())
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("x"))
+    }
+
+    @Test
+    fun `unchanged sources topic preserves failover progress`() {
+        val store = FakeTopicStore(sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList()))
+        val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+
+        // Re-providing content-equal sources must not rebuild, so the position is kept at `b`.
+        store.sources = sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList())
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+    }
+
+    @Test
+    fun `stale report from before a sources change is ignored`() {
+        val store = FakeTopicStore(
+            sourcesTopic(api = listOf(source("a"), source("b"), source("c")), blob = emptyList()),
+        )
+        val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
+
+        val stale = provider.getCurrent(Purpose.API)
+        assertThat(stale?.url).isEqualTo(url("a"))
+
+        // Sources change before the stale handle is reported back. Its report belongs to the old list, so
+        // it must not advance the freshly-rebuilt one.
+        store.sources = sourcesTopic(api = listOf(source("x"), source("y"), source("z")), blob = emptyList())
+        provider.reportUnhealthy(stale!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("x"))
+
+        // A handle obtained after the change still advances normally.
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("y"))
+    }
+
+    @Test
+    fun `sources topic appearing after being absent replaces the embedded defaults`() {
+        val store = FakeTopicStore(null)
+        val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
+
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
+
+        // A sources topic shows up where there was none: the provider builds the list from the top.
+        store.sources = sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList())
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
     }
 
     // endregion
@@ -354,7 +431,35 @@ class RemoteConfigSourceProviderTest {
         RemoteConfigSource(url = url(host), priority = priority, weight = weight)
 
     private fun apiProvider(sources: List<RemoteConfigSource>): RemoteConfigSourceProvider =
-        DefaultRemoteConfigSourceProvider(apiSources = sources, blobSources = emptyList(), random = FakeRandom(0))
+        provider(api = sources, blob = emptyList())
+
+    private fun provider(
+        api: List<RemoteConfigSource>,
+        blob: List<RemoteConfigSource>,
+    ): RemoteConfigSourceProvider =
+        DefaultRemoteConfigSourceProvider(FakeTopicStore(sourcesTopic(api, blob)), FakeRandom(0))
+
+    /** Builds a `sources` ConfigTopic matching the backend shape: api entries use `url`, blob use `url_format`. */
+    private fun sourcesTopic(api: List<RemoteConfigSource>, blob: List<RemoteConfigSource>): ConfigTopic {
+        fun item(sources: List<RemoteConfigSource>, urlKey: String) = RemoteConfiguration.ConfigItem(
+            content = buildJsonObject {
+                putJsonArray("sources") {
+                    sources.forEach { s ->
+                        addJsonObject {
+                            put(urlKey, s.url)
+                            put("priority", s.priority)
+                            put("weight", s.weight)
+                        }
+                    }
+                }
+            },
+        )
+        return ConfigTopic(mapOf("api" to item(api, "url"), "blob" to item(blob, "url_format")))
+    }
+
+    private class FakeTopicStore(var sources: ConfigTopic?) : RemoteConfigTopicStore {
+        override fun topic(name: String): ConfigTopic? = if (name == "sources") sources else null
+    }
 
     private fun runConcurrently(iterations: Int, block: () -> Unit) {
         val pool = Executors.newFixedThreadPool(16)

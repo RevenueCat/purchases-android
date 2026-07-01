@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "93470",
+    "Content-Length": "94043",
     "Server": "cloudflare",
     "x-revenuecat-app-id": "appc735cd95ea"
   },
@@ -18,7 +18,7 @@
         "paywall_components": {
           "id": "pw13dea1ae2d694a7c",
           "template_name": "components",
-          "revision": 2,
+          "revision": 5,
           "asset_base_url": "https:\/\/assets.pawwalls.com",
           "components_config": {
             "base": {
@@ -366,6 +366,7 @@
                 ],
                 "background_color": null
               },
+              "header": null,
               "background": {
                 "type": "color",
                 "value": {
@@ -2114,7 +2115,29 @@
           "exit_offers": {},
           "state_declarations": {},
           "automatically_scale_font_size": true,
-          "play_store_product_change_mode": {}
+          "play_store_product_change_mode": {},
+          "components_localizations_resolved": {
+            "en_US": {
+              "15YPaaFndM": "12",
+              "EYAGuQaVvE": "{{ product.price }}",
+              "FB8Ij4dWgS": "Subscribe now",
+              "GF8nSwwMGd": "MONTHS",
+              "LWqOTrq-iX": "DAYS",
+              "QrXq4nuUiI": "{{ product.price }}",
+              "RmROTKBUo3": "{{ product.price }}",
+              "WDVSYgoYpq": "LIFETIME",
+              "X9tpZe7iez": "12",
+              "_N6XmMk-2M": "{{ product.price }}",
+              "iuFGR2yPjh": "Get CatPrrro",
+              "k5VV49gTpU": "{{ product.price }}",
+              "kCEPZg4ydy": "LIFETIME",
+              "lv5Aim2mnP": "DAYS",
+              "opcMlPRpzh": "MONTHS",
+              "q1ZraAn6tT": "{{ product.price }}",
+              "rW4YDQIa-j": "30",
+              "tWuZkHyp1p": "30"
+            }
+          }
         },
         "packages": [
           {

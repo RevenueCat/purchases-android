@@ -9,6 +9,10 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.errorLog
@@ -27,6 +31,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -45,8 +50,10 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import org.json.JSONObject
 import java.net.URL
 import java.util.Locale
+import java.util.UUID
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -62,6 +69,9 @@ import kotlin.coroutines.suspendCoroutine
 public class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
+
+    private val rewardVerificationPollLauncher = RewardVerificationPollLauncher()
+
     /**
      * The current configuration parameters of the Purchases SDK.
      */
@@ -562,6 +572,7 @@ public class Purchases internal constructor(
     public fun close() {
         notifyLifecycleClosed()
         purchasesOrchestrator.close()
+        rewardVerificationPollLauncher.close()
         backingFieldSharedInstance = null
     }
 
@@ -749,6 +760,65 @@ public class Purchases internal constructor(
         onError: (PurchasesError) -> Unit,
     ) {
         purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
+    }
+
+    /**
+     * Generates a reward verification token for a loaded rewarded ad.
+     *
+     * Call after the ad has loaded. Forward [RewardVerificationToken.customData] and
+     * [RewardVerificationToken.appUserID] to your ad network's server-side verification options, then keep
+     * [RewardVerificationToken.clientTransactionId] for use with [pollRewardVerification] when the reward
+     * callback fires.
+     *
+     * @param impressionId The ad network's impression identifier for the loaded ad.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
+        val clientTransactionId = UUID.randomUUID().toString()
+        // Keys inserted in sorted order so the serialized customData is deterministic and matches the
+        // other SDKs byte-for-byte. The backend parses by key, so order is not semantically significant.
+        val customData = JSONObject()
+            .put("api_key", purchasesOrchestrator.currentConfiguration.apiKey)
+            .put("client_transaction_id", clientTransactionId)
+            .put("impression_id", impressionId)
+            .toString()
+        return RewardVerificationToken(
+            customData = customData,
+            clientTransactionId = clientTransactionId,
+            appUserID = purchasesOrchestrator.appUserID,
+        )
+    }
+
+    /**
+     * Polls the backend until reward verification completes or the attempt budget is exhausted.
+     *
+     * Call when your ad network's reward callback fires, passing the `clientTransactionId` returned by
+     * [generateRewardVerificationToken]. Invalidates the virtual currencies cache automatically on a
+     * verified virtual-currency reward. The [callback] is invoked on the main thread.
+     *
+     * For coroutines, use the `awaitPollRewardVerification` suspend extension instead.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun pollRewardVerification(
+        clientTransactionId: String,
+        callback: PollRewardVerificationCallback,
+    ) {
+        rewardVerificationPollLauncher.launch(
+            poll = { awaitPollRewardVerification(clientTransactionId) },
+            onCompleted = { callback.onCompleted(it) },
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    internal suspend fun pollRewardVerification(
+        clientTransactionId: String,
+        poll: suspend (String) -> RewardVerificationResult,
+    ): RewardVerificationResult {
+        val result = poll(clientTransactionId)
+        if (result.verifiedReward is VerifiedReward.VirtualCurrency) {
+            purchasesOrchestrator.invalidateVirtualCurrenciesCache()
+        }
+        return result
     }
 
     @OptIn(InternalRevenueCatAPI::class)

@@ -42,8 +42,11 @@ prod_code_files = (git.modified_files + git.added_files).uniq.select do |f|
 end
 
 total_changed = prod_code_files.sum do |f|
-  info = git.info_for_file(f)
-  info ? info[:insertions] + info[:deletions] : 0
+  # Read diff stats directly with a nil guard instead of git.info_for_file, which
+  # crashes on renamed files: git keys `diff.stats[:files]` with brace-arrow rename
+  # notation rather than the resolved new path, so the lookup returns nil.
+  stats = git.diff.stats[:files][f]
+  stats ? stats[:insertions] + stats[:deletions] : 0
 end
 
 if total_changed > PROD_LINES_LIMIT
