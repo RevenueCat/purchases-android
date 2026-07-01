@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap
 @Stable
 internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
 
-    private val declaredTypes = ConcurrentHashMap<String, String>()
+    private val declaredTypes = ConcurrentHashMap<String, StateDeclaration.ValueType>()
     private val declaredDefaults = mutableStateMapOf<String, JsonPrimitive>()
 
     // Per-key MutableState so mutating one key doesn't invalidate derivedStateOf blocks reading other keys.
@@ -63,10 +63,11 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
     }
 }
 
-private fun JsonPrimitive.matchesDeclaredType(declaredType: String): Boolean = when (declaredType) {
-    StateDeclaration.ValueType.BOOLEAN -> !isString && booleanOrNull != null
-    StateDeclaration.ValueType.STRING -> isString
-    StateDeclaration.ValueType.INTEGER -> !isString && longOrNull != null
-    StateDeclaration.ValueType.DOUBLE -> !isString && doubleOrNull != null
-    else -> false
-}
+private fun JsonPrimitive.matchesDeclaredType(declaredType: StateDeclaration.ValueType): Boolean =
+    when (declaredType) {
+        StateDeclaration.ValueType.BOOLEAN -> !isString && booleanOrNull != null
+        StateDeclaration.ValueType.STRING -> isString
+        StateDeclaration.ValueType.INTEGER -> !isString && longOrNull != null
+        StateDeclaration.ValueType.DOUBLE -> !isString && doubleOrNull != null
+        StateDeclaration.ValueType.UNKNOWN -> false
+    }
