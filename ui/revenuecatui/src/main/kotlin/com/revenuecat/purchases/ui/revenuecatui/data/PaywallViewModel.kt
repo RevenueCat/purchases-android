@@ -1279,6 +1279,9 @@ internal class PaywallViewModelImpl(
                 val computed = withContext(backgroundDispatcher) {
                     computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext, stateStore)
                 }
+                // A newer presentation may have swapped in a different session store while we computed.
+                // Abandon this stale prewarm so we never cache a step bound to the old store.
+                if (stateStore !== currentWorkflowStateStore) return@launch
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
                     workflowStepStateCache[stepId] = computed
                     computed.update(localeList = _lastLocaleList.value.toFrameworkLocaleList())
