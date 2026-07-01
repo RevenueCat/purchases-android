@@ -116,6 +116,12 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 ## Code Style
 
 - **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
+- **No public enums in SDK API surface**: Public `enum class` breaks binary compatibility when new entries are added (consumers' exhaustive `when` expressions break). Use sealed classes/interfaces with objects, or annotate with `@InternalRevenueCatAPI`. Enforced by detekt `ForbiddenPublicEnum`.
+- **Explicit `@SerialName` for snake_case wire fields**: This module has no global naming strategy, so `@Serializable` properties whose wire name differs from the Kotlin property name **must** have `@SerialName("wire_name")`. Omitting it causes silent deserialization failures.
+- **Prefer `Default`/`Impl` suffix over `Type` for interface implementations**: `Type` is not idiomatic Kotlin/Android. Name implementations `DefaultFoo` or `FooImpl`, not `FooType`.
+- **Log level discipline**: Use `Logger.v` for per-iteration/polling output and high-frequency events. Reserve `Logger.d` for one-shot noteworthy events, `Logger.w` for recoverable errors, and `Logger.e` for unrecoverable errors.
+- **Thread safety — atomic check-then-act**: When shared mutable state requires a "read then conditionally write" pattern, wrap the entire check-then-act sequence in a single `synchronized` block or use `AtomicReference.compareAndSet`. Do not split the read and write across separate synchronized calls.
+- **Prefer `Exception` over `RuntimeException` for recoverable domain errors**: `RuntimeException` signals an unrecoverable bug and may crash the app. For domain-specific errors the caller is expected to handle, extend `Exception` instead.
 
 ## Testing Framework
 
