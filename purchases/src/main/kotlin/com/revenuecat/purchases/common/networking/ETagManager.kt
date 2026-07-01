@@ -143,6 +143,13 @@ internal class ETagManager(
         result: HTTPResult,
         eTag: String,
     ) {
+        val payloadLength = result.payloadText.length
+        if (payloadLength > MAX_CACHEABLE_PAYLOAD_BYTES) {
+            log(LogIntent.WARNING) {
+                NetworkStrings.ETAG_RESPONSE_TOO_LARGE_TO_CACHE.format(urlString, payloadLength)
+            }
+            return
+        }
         val cacheResult = result.copy(origin = HTTPResult.Origin.CACHE)
         val eTagData = ETagData(eTag, dateProvider.now)
         val httpResultWithETag = HTTPResultWithETag(eTagData, cacheResult)
@@ -173,6 +180,16 @@ internal class ETagManager(
     }
 
     companion object {
+        /**
+         * Maximum payload size (in UTF-16 chars, which equals bytes for ASCII/Latin-1 JSON)
+         * allowed for an ETag cache entry. Responses larger than this are served to the
+         * caller but not stored, preventing the single large contiguous String allocation
+         * in [HTTPResultWithETag.serialize] from triggering an OutOfMemoryError on
+         * memory-constrained devices. 4 MB is generous for typical /offerings responses
+         * while comfortably below the crash threshold observed in production (~37 MB).
+         */
+        internal const val MAX_CACHEABLE_PAYLOAD_BYTES = 4 * 1024 * 1024 // 4 MB
+
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "${context.packageName}_preferences_etags",
