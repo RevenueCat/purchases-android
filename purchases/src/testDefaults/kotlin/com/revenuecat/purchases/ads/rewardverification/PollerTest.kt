@@ -1,13 +1,12 @@
-package com.revenuecat.purchases.admob.rewardverification
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationException
-import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
+import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
-import com.revenuecat.purchases.admob.VerifiedReward
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -17,8 +16,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@RunWith(RobolectricTestRunner::class)
 class PollerTest {
 
     private val recordedSleeps = mutableListOf<Double>()
@@ -43,7 +45,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = { clientTransactionId ->
                 receivedClientTransactionId = clientTransactionId
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -64,7 +66,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10))
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10))
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -84,7 +86,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.Failed(failureReason = "ssv_not_enabled", message = backendMessage)
+                RewardVerificationPollStatus.Failed(failureReason = "ssv_not_enabled", message = backendMessage)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -102,7 +104,7 @@ class PollerTest {
     fun `poll logs a fallback message when the backend rejects without a message`() = runBlocking {
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = { CoreRewardVerificationResult.Failed() },
+            fetcher = { RewardVerificationPollStatus.Failed() },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
             logFailure = captureFailure,
@@ -119,7 +121,7 @@ class PollerTest {
     fun `poll falls back to the failure reason when the backend rejects without a message`() = runBlocking {
         val result = Poller.poll(
             clientTransactionId = "ct_1",
-            fetcher = { CoreRewardVerificationResult.Failed(failureReason = "no_reward_rule") },
+            fetcher = { RewardVerificationPollStatus.Failed(failureReason = "no_reward_rule") },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
             logFailure = captureFailure,
@@ -147,9 +149,9 @@ class PollerTest {
             fetcher = {
                 attempts++
                 if (attempts < 3) {
-                    CoreRewardVerificationResult.PENDING
+                    RewardVerificationPollStatus.PENDING
                 } else {
-                    CoreRewardVerificationResult.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 5))
+                    RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 5))
                 }
             },
             sleepSeconds = noSleep,
@@ -171,7 +173,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.PENDING
+                RewardVerificationPollStatus.PENDING
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -198,7 +200,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.UNKNOWN
+                RewardVerificationPollStatus.UNKNOWN
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -227,7 +229,7 @@ class PollerTest {
                 attempts++
                 // Unknown first, then transient errors until exhaustion: the unknown status wins.
                 if (attempts == 1) {
-                    CoreRewardVerificationResult.UNKNOWN
+                    RewardVerificationPollStatus.UNKNOWN
                 } else {
                     throw RewardVerificationException(
                         PurchasesError(PurchasesErrorCode.NetworkError),
@@ -285,7 +287,7 @@ class PollerTest {
                         isServerError = false,
                     )
                 }
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -310,7 +312,7 @@ class PollerTest {
                         isServerError = true,
                     )
                 }
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -381,7 +383,7 @@ class PollerTest {
                         isServerError = true,
                     )
                 }
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -456,7 +458,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.PENDING
+                RewardVerificationPollStatus.PENDING
             },
             sleepSeconds = { throw IllegalStateException("scheduler down") },
             jitterSeconds = fixedJitter,
@@ -493,7 +495,7 @@ class PollerTest {
         try {
             Poller.poll(
                 clientTransactionId = "ct_1",
-                fetcher = { CoreRewardVerificationResult.PENDING },
+                fetcher = { RewardVerificationPollStatus.PENDING },
                 sleepSeconds = { throw CancellationException("cancelled") },
                 jitterSeconds = fixedJitter,
             )

@@ -1,8 +1,8 @@
 package com.revenuecat.sample.admob.ui.ads.verification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RewardVerificationResult
-import com.revenuecat.purchases.admob.VerifiedReward
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 
 /**
  * Status message surfaced in the sample UI while loading, showing and verifying a rewarded ad.

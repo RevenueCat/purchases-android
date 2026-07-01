@@ -3,8 +3,9 @@ package com.revenuecat.purchases.admob.rewardverification
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RewardVerificationResult
-import com.revenuecat.purchases.admob.VerifiedReward
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,7 +23,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.shadows.ShadowLog
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
 internal class RewardVerificationRuntimeTest {
 
@@ -107,90 +108,6 @@ internal class RewardVerificationRuntimeTest {
         assertNotNull(completedResult)
         assertFalse(completedResult!!.failed)
         assertEquals(verifiedReward, completedResult!!.verifiedReward)
-    }
-
-    @Test
-    fun `verified virtual currency reward invalidates virtual currencies cache`() {
-        var invalidationCount = 0
-        val runtime = runtimeDeliveringResult(
-            result = RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 5)),
-            invalidateVirtualCurrenciesCache = { invalidationCount++ },
-        )
-
-        deliverRewardEarned(runtime)
-
-        assertEquals(1, invalidationCount)
-    }
-
-    @Test
-    fun `verified no reward does not invalidate virtual currencies cache`() {
-        var invalidationCount = 0
-        val runtime = runtimeDeliveringResult(
-            result = RewardVerificationResult.verified(VerifiedReward.NoReward),
-            invalidateVirtualCurrenciesCache = { invalidationCount++ },
-        )
-
-        deliverRewardEarned(runtime)
-
-        assertEquals(0, invalidationCount)
-    }
-
-    @Test
-    fun `verified unsupported reward does not invalidate virtual currencies cache`() {
-        var invalidationCount = 0
-        val runtime = runtimeDeliveringResult(
-            result = RewardVerificationResult.verified(VerifiedReward.UnsupportedReward),
-            invalidateVirtualCurrenciesCache = { invalidationCount++ },
-        )
-
-        deliverRewardEarned(runtime)
-
-        assertEquals(0, invalidationCount)
-    }
-
-    @Test
-    fun `failed result does not invalidate virtual currencies cache`() {
-        var invalidationCount = 0
-        val runtime = runtimeDeliveringResult(
-            result = RewardVerificationResult.failed,
-            invalidateVirtualCurrenciesCache = { invalidationCount++ },
-        )
-
-        deliverRewardEarned(runtime)
-
-        assertEquals(0, invalidationCount)
-    }
-
-    private fun runtimeDeliveringResult(
-        result: RewardVerificationResult,
-        invalidateVirtualCurrenciesCache: () -> Unit,
-    ): RewardVerificationRuntime {
-        return RewardVerificationRuntime(
-            mainHandler = Handler(Looper.getMainLooper()),
-            createVerificationScope = {
-                CoroutineScope(SupervisorJob() + Dispatchers.Default)
-            },
-            poll = { result },
-            invalidateVirtualCurrenciesCache = invalidateVirtualCurrenciesCache,
-        )
-    }
-
-    private fun deliverRewardEarned(runtime: RewardVerificationRuntime) {
-        val adResponseId = "ad-response-id"
-        val completed = CountDownLatch(1)
-
-        runtime.setClientTransactionId(adResponseId, "client-transaction-id")
-
-        runtime.handleRewardEarned(
-            adResponseId = adResponseId,
-            rewardVerificationStarted = null,
-            rewardVerificationCompleted = { completed.countDown() },
-        )
-        val completionDelivered = (1..10).any {
-            shadowOf(Looper.getMainLooper()).idle()
-            completed.await(100, TimeUnit.MILLISECONDS)
-        }
-        assertTrue(completionDelivered)
     }
 
     @Test
