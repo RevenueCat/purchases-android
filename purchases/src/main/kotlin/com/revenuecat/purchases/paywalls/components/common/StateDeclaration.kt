@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -19,20 +20,26 @@ import kotlinx.serialization.json.JsonPrimitive
 @Poko
 @Serializable
 public class StateDeclaration(
-    // Raw String rather than an enum so unknown types decode without failing.
-    @get:JvmSynthetic public val type: String,
+    @get:JvmSynthetic public val type: ValueType,
     @get:JvmSynthetic @SerialName("default") public val defaultValue: JsonPrimitive,
 ) {
 
-    // Constants rather than an enum so unrecognized wire types are preserved.
-    @InternalRevenueCatAPI
-    public object ValueType {
-        public const val BOOLEAN: String = "boolean"
-        public const val INTEGER: String = "integer"
-        public const val DOUBLE: String = "double"
-        public const val STRING: String = "string"
+    /** Declared type of a state key. Unrecognized wire types decode to [UNKNOWN]. */
+    @Serializable(with = ValueTypeSerializer::class)
+    public enum class ValueType {
+        // SerialNames are handled by the ValueTypeSerializer.
+        BOOLEAN,
+        INTEGER,
+        DOUBLE,
+        STRING,
+        UNKNOWN,
     }
 }
+
+@OptIn(InternalRevenueCatAPI::class)
+internal object ValueTypeSerializer : EnumDeserializerWithDefault<StateDeclaration.ValueType>(
+    defaultValue = StateDeclaration.ValueType.UNKNOWN,
+)
 
 /**
  * Decodes the top-level `state_declarations` map resiliently: individual malformed entries are dropped and a
