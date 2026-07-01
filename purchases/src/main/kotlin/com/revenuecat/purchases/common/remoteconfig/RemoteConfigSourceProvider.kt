@@ -102,7 +102,8 @@ internal class DefaultRemoteConfigSourceProvider(
                 if (source.priority != existing.priority || source.weight != existing.weight) {
                     warnLog {
                         "Found remote config sources sharing the same URL with conflicting priority/weight " +
-                            "(${source.url}). Keeping the highest-priority one, tie-broken by weight."
+                            "(${source.url}). Keeping the highest-priority one (lowest priority number), " +
+                            "tie-broken by weight."
                     }
                 }
                 if (source.priority < existing.priority ||
