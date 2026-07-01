@@ -70,12 +70,6 @@ android {
             value = (localProperties["ENABLE_REMOTE_CONFIG"] as? String ?: "false"),
         )
 
-        buildConfigField(
-            type = "String",
-            name = "REMOTE_CONFIG_BASE_URL",
-            value = "\"${(localProperties["REMOTE_CONFIG_BASE_URL"] as? String) ?: ""}\"",
-        )
-
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )
