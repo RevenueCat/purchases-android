@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
+import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -36,6 +37,9 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
@@ -282,6 +286,16 @@ internal class PurchasesFactory(
                 uiPreviewMode = appConfig.uiPreviewMode,
             )
 
+            val remoteConfigManager = if (BuildConfig.ENABLE_REMOTE_CONFIG) {
+                RemoteConfigManager(
+                    backend = backend,
+                    diskCache = RemoteConfigDiskCache(contextForStorage),
+                    blobStore = RemoteConfigBlobStore(contextForStorage),
+                )
+            } else {
+                null
+            }
+
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
                 cache,
                 identityManager,
@@ -474,6 +488,7 @@ internal class PurchasesFactory(
                 purchaseParamsValidator = purchaseParamsValidator,
                 workflowManager = workflowManager,
                 fileRepository = fileRepository,
+                remoteConfigManager = remoteConfigManager,
             )
 
             return Purchases(purchasesOrchestrator)

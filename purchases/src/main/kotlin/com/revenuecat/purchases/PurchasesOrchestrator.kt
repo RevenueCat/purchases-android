@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
@@ -160,6 +161,7 @@ internal class PurchasesOrchestrator(
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    private val remoteConfigManager: RemoteConfigManager? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -315,6 +317,11 @@ internal class PurchasesOrchestrator(
 
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
+
+            remoteConfigManager?.refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = identityManager.currentAppUserID,
+            )
 
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
