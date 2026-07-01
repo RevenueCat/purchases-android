@@ -3,6 +3,8 @@ package com.revenuecat.purchases.paywalls.components.common
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
+import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.TabsComponent
 import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -43,7 +45,18 @@ internal class PaywallComponentStateTests {
 
         val actual = JsonTools.json.decodeFromString(StateDeclarationMapSerializer, json)
 
-        assertThat(actual["k"]).isEqualTo(StateDeclaration(type = "string", defaultValue = JsonPrimitive("v")))
+        assertThat(actual["k"])
+            .isEqualTo(StateDeclaration(type = StateDeclaration.ValueType.STRING, defaultValue = JsonPrimitive("v")))
+    }
+
+    @Test
+    fun `decodes an unrecognized declaration type as UNKNOWN`() {
+        @Language("json")
+        val json = """{ "k": { "type": "date", "default": "v" } }"""
+
+        val actual = JsonTools.json.decodeFromString(StateDeclarationMapSerializer, json)
+
+        assertThat(actual["k"]?.type).isEqualTo(StateDeclaration.ValueType.UNKNOWN)
     }
 
     @Test
@@ -137,6 +150,44 @@ internal class PaywallComponentStateTests {
 
         assertThat(actual.stateUpdates).containsExactly(
             StateUpdate.Set("planComparisonOpen", StateUpdateValue.Literal(JsonPrimitive(true))),
+        )
+    }
+
+    @Test
+    fun `decodes stateUpdates wired onto a carousel`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "carousel",
+              "pages": [],
+              "page_alignment": "center",
+              "state_updates": [ { "set": "activeSlide", "to": 1 } ]
+            }
+        """.trimIndent()
+
+        val actual = JsonTools.json.decodeFromString<CarouselComponent>(json)
+
+        assertThat(actual.stateUpdates).containsExactly(
+            StateUpdate.Set("activeSlide", StateUpdateValue.Literal(JsonPrimitive(1))),
+        )
+    }
+
+    @Test
+    fun `decodes stateUpdates wired onto tabs`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "tabs",
+              "control": { "type": "toggle", "stack": { "type": "stack", "components": [] } },
+              "tabs": [],
+              "state_updates": [ { "set": "selectedFeatureTab", "to": "annual" } ]
+            }
+        """.trimIndent()
+
+        val actual = JsonTools.json.decodeFromString<TabsComponent>(json)
+
+        assertThat(actual.stateUpdates).containsExactly(
+            StateUpdate.Set("selectedFeatureTab", StateUpdateValue.Literal(JsonPrimitive("annual"))),
         )
     }
 
