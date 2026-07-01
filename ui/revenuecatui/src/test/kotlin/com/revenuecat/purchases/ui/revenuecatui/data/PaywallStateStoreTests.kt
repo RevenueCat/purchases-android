@@ -11,7 +11,8 @@ import kotlinx.serialization.json.JsonPrimitive
 @OptIn(InternalRevenueCatAPI::class)
 internal class PaywallStateStoreTests {
 
-    private fun declaration(type: String, default: JsonPrimitive) = StateDeclaration(type = type, defaultValue = default)
+    private fun declaration(type: StateDeclaration.ValueType, default: JsonPrimitive) =
+        StateDeclaration(type = type, defaultValue = default)
 
     private fun setUpdate(key: String, value: StateUpdateValue): StateUpdate = StateUpdate.Set(key, value)
 
