@@ -22,6 +22,10 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.json.addJsonObject
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -35,6 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.random.Random
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -118,8 +123,8 @@ class RemoteConfigBlobFetcherTest {
         val ref = refOf(bytes)
         val primary = "https://primary.example/$PLACEHOLDER"
         val secondary = "https://secondary.example/$PLACEHOLDER"
-        // Higher priority is tried first.
-        val provider = provider(blobSource(primary, priority = 2), blobSource(secondary, priority = 1))
+        // The lower priority number is tried first.
+        val provider = provider(blobSource(primary, priority = 1), blobSource(secondary, priority = 2))
         stubConnection(primary.replace(PLACEHOLDER, ref), code = 500)
         stubConnection(secondary.replace(PLACEHOLDER, ref), code = 200, body = bytes)
         val fetcher = realFetcher(provider)
@@ -238,9 +243,31 @@ class RemoteConfigBlobFetcherTest {
     private fun realFetcher(provider: RemoteConfigSourceProvider) =
         RemoteConfigBlobFetcher(blobStore, provider, urlConnectionFactory, scope)
 
-    /** A spy over a real provider so we get real failover behaviour and can still verify calls. */
+    /**
+     * A spy over a real provider (fed a `sources` topic with only blob entries) so we get real failover
+     * behaviour and can still verify calls. Lower `priority` numbers are tried first.
+     */
     private fun provider(vararg blobSources: RemoteConfigSource): RemoteConfigSourceProvider =
-        spyk(DefaultRemoteConfigSourceProvider(apiSources = emptyList(), blobSources = blobSources.toList()))
+        spyk(DefaultRemoteConfigSourceProvider(FakeTopicStore(sourcesTopic(blobSources.toList())), FakeRandom(0)))
+
+    /** Builds a `sources` ConfigTopic carrying only blob entries (blob sources use the `url_format` key). */
+    private fun sourcesTopic(blob: List<RemoteConfigSource>): ConfigTopic = ConfigTopic(
+        mapOf(
+            "blob" to RemoteConfiguration.ConfigItem(
+                content = buildJsonObject {
+                    putJsonArray("sources") {
+                        blob.forEach { s ->
+                            addJsonObject {
+                                put("url_format", s.url)
+                                put("priority", s.priority)
+                                put("weight", s.weight)
+                            }
+                        }
+                    }
+                },
+            ),
+        ),
+    )
 
     private fun blobSource(url: String, priority: Int = 0, weight: Int = 1) =
         RemoteConfigSource(url = url, priority = priority, weight = weight)
@@ -279,6 +306,24 @@ class RemoteConfigBlobFetcherTest {
     private fun ByteBuffer.toBytes(): ByteArray {
         val view = duplicate().apply { rewind() }
         return ByteArray(view.remaining()).also { view.get(it) }
+    }
+
+    private class FakeTopicStore(private val sources: ConfigTopic?) : RemoteConfigTopicStore {
+        override fun topic(name: String): ConfigTopic? = if (name == "sources") sources else null
+    }
+
+    /** Deterministic randomizer for weighted source selection: always returns the first candidate. */
+    private class FakeRandom(vararg values: Int) : Random() {
+        private val values: IntArray = if (values.isEmpty()) intArrayOf(0) else values
+        private var index = 0
+
+        override fun nextBits(bitCount: Int): Int = error("nextBits should not be used")
+
+        override fun nextInt(until: Int): Int {
+            val value = if (index < values.size) values[index] else values.last()
+            index++
+            return value.coerceIn(0, until - 1)
+        }
     }
 
     // endregion
