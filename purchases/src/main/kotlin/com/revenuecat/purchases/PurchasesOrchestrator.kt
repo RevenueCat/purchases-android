@@ -805,6 +805,7 @@ internal class PurchasesOrchestrator(
                             callback?.onReceived(customerInfo, created)
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
+                        remoteConfigManager?.refreshRemoteConfig(state.appInBackground, newAppUserID)
                         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                         backupManager.dataChanged()
                     },
@@ -1313,6 +1314,7 @@ internal class PurchasesOrchestrator(
         identityManager.switchUser(newAppUserID)
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+        remoteConfigManager?.refreshRemoteConfig(state.appInBackground, newAppUserID)
     }
     //endregion
 
@@ -1388,6 +1390,7 @@ internal class PurchasesOrchestrator(
         completion: ReceiveCustomerInfoCallback? = null,
     ) {
         state.appInBackground.let { appInBackground ->
+            remoteConfigManager?.refreshRemoteConfig(appInBackground, appUserID)
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,

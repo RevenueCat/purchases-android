@@ -664,6 +664,28 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `login successful with new appUserID refreshes remote config`() {
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID)
+        }
+    }
+
+    @Test
     fun `logout called with identified user makes right calls`() {
         val appUserID = "fakeUserID"
         every {
@@ -689,6 +711,22 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         verify(exactly = 1) {
             mockBackupManager.dataChanged()
+        }
+    }
+
+    @Test
+    fun `logout refreshes remote config`() {
+        val appUserID = "fakeUserID"
+        every {
+            mockCache.cleanupOldAttributionData()
+        } just Runs
+        mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
+
+        purchases.logOut()
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserID)
         }
     }
 
