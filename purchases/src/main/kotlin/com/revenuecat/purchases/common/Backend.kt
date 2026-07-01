@@ -15,7 +15,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
 import com.revenuecat.purchases.RewardVerificationResult
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
