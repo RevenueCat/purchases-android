@@ -38,6 +38,7 @@ import java.security.MessageDigest
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.random.Random
 
@@ -119,6 +120,22 @@ class RemoteConfigBlobFetcherTest {
 
         // A local write failure isn't a source problem, so the source is not condemned.
         verify(exactly = 0) { provider.reportUnhealthy(any()) }
+    }
+
+    @Test
+    fun `reports true when the blob is cached concurrently while the download fails`() {
+        val ref = refOf("body".toByteArray())
+        val cachedConcurrently = AtomicBoolean(false)
+        every { blobStore.contains(ref) } answers { cachedConcurrently.get() }
+        // The download fails, but a concurrent writer (e.g. inline extraction) lands the blob mid-fetch.
+        every { urlConnectionFactory.createConnection(urlFor(ref), any()) } answers {
+            cachedConcurrently.set(true)
+            connection(code = 404)
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isTrue()
+        verify(exactly = 0) { blobStore.write(any(), any()) }
     }
 
     @Test

@@ -146,7 +146,10 @@ internal class RemoteConfigBlobFetcher(
                 errorLog(e) { "Unexpected failure downloading remote config blob '${download.ref}'." }
                 false
             }
-            complete(download, result)
+            // The store is shared: a concurrent writer (e.g. inline extraction during a config sync) may have cached
+            // the ref while our download failed. Report the truthful "is it cached now?" so a benign race isn't a
+            // false negative. Short-circuits on success, so the extra stat only happens on the failure path.
+            complete(download, result || blobStore.contains(download.ref))
         }
     }
 
