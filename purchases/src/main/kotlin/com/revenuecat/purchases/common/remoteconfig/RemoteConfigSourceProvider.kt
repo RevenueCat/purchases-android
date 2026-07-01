@@ -57,9 +57,10 @@ internal interface RemoteConfigSourceProvider {
  *
  * Reads the `sources` topic lazily from [topicStore] and rebuilds its ordered lists only when that
  * topic's [ConfigTopic.contentHash] changes: an unchanged topic keeps failover progress, while a
- * changed one restarts both lists from the top. While the topic is absent or carries no usable
- * sources, it falls back to embedded default sources so the SDK can reach the config api before any
- * config is fetched. Sources are deduped by url and ordered via [WeightedSourceSelector].
+ * changed one restarts both lists from the top. While the topic has no usable api sources, it falls
+ * back to an embedded default so the SDK can reach the config api before any config is fetched. Blob
+ * sources have no embedded default: they are only useful alongside a fetched config, which carries
+ * its own. Sources are deduped by url and ordered via [WeightedSourceSelector].
  *
  * Thread-safe.
  */
@@ -151,17 +152,14 @@ internal class DefaultRemoteConfigSourceProvider(
         private const val PRIORITY_KEY = "priority"
         private const val WEIGHT_KEY = "weight"
 
-        // Embedded defaults used until a `sources` topic is fetched, so the SDK can always reach config.
+        // Embedded api default used until a `sources` topic is fetched, so the SDK can always reach config.
         private val DEFAULT_API_SOURCES = listOf(
             RemoteConfigSource(url = "https://api.revenuecat.com", priority = 0, weight = 1),
         )
-        private val DEFAULT_BLOB_SOURCES = listOf(
-            RemoteConfigSource(url = "https://config.revenuecat-static.com/{blob_ref}", priority = 0, weight = 1),
-        )
 
         /**
-         * The sources for [purpose]: parsed from the `sources` [topic], or the embedded defaults while
-         * the topic is absent or carries no usable sources.
+         * The sources for [purpose], parsed from the `sources` [topic]. Api falls back to the embedded
+         * default while the topic has no usable api sources; blob has no default, so it can be empty.
          */
         fun sourcesFor(
             topic: ConfigTopic?,
@@ -170,7 +168,7 @@ internal class DefaultRemoteConfigSourceProvider(
             RemoteConfigSourceHandle.Purpose.API ->
                 parseSources(topic, API_ITEM, URL_KEY).ifEmpty { DEFAULT_API_SOURCES }
             RemoteConfigSourceHandle.Purpose.BLOB ->
-                parseSources(topic, BLOB_ITEM, URL_FORMAT_KEY).ifEmpty { DEFAULT_BLOB_SOURCES }
+                parseSources(topic, BLOB_ITEM, URL_FORMAT_KEY)
         }
 
         /**

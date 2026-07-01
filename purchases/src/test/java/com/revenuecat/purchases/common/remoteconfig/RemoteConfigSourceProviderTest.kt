@@ -23,19 +23,19 @@ class RemoteConfigSourceProviderTest {
     // region Initial selection
 
     @Test
-    fun `current sources fall back to embedded defaults when the sources topic is absent`() {
+    fun `current api source falls back to the embedded default when the sources topic is absent`() {
         val provider = DefaultRemoteConfigSourceProvider(FakeTopicStore(null), FakeRandom())
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
-        assertThat(provider.getCurrent(Purpose.BLOB)?.url)
-            .isEqualTo("https://config.revenuecat-static.com/{blob_ref}")
+        // Blob has no embedded default, so it stays empty.
+        assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
     }
 
     @Test
-    fun `current sources fall back to embedded defaults when the topic has no sources`() {
+    fun `current api source falls back to the embedded default when the topic has no sources`() {
         val provider = provider(api = emptyList(), blob = emptyList())
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
-        assertThat(provider.getCurrent(Purpose.BLOB)?.url)
-            .isEqualTo("https://config.revenuecat-static.com/{blob_ref}")
+        // Blob has no embedded default, so it stays empty.
+        assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
     }
 
     @Test
