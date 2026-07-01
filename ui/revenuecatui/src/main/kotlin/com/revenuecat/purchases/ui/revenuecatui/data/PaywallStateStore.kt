@@ -31,7 +31,11 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
 
     fun currentValueOrDefault(key: String): JsonPrimitive? = currentValues[key]?.value ?: declaredDefaults[key]
 
-    /** Adds new keys from [declarations]; keys already in the store keep their current value. */
+    /**
+     * Adds new keys from [declarations]; keys already in the store keep their current value.
+     * Synchronized: workflow prewarm (background) and navigation (main) can hit the same store.
+     */
+    @Synchronized
     fun registerDeclarations(declarations: Map<String, StateDeclaration>) {
         declarations.forEach { (key, declaration) ->
             if (key !in declaredDefaults) {
@@ -42,6 +46,7 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
         }
     }
 
+    @Synchronized
     fun applyUpdates(updates: List<StateUpdate>, payload: JsonPrimitive? = null) {
         updates.forEach { update ->
             val setUpdate = update as? StateUpdate.Set ?: return@forEach
