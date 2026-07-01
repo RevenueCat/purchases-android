@@ -16,6 +16,11 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
+import com.revenuecat.purchases.utils.UrlConnection
+import com.revenuecat.purchases.utils.UrlConnectionFactory
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
@@ -27,7 +32,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.io.ByteArrayInputStream
 import java.nio.ByteBuffer
+import java.net.HttpURLConnection
 import java.security.MessageDigest
 
 /**
@@ -68,22 +75,12 @@ class WorkflowsConfigIntegrationTest {
         every { diskCache.write(any()) } answers { persistedState = firstArg(); true }
         blobStore = RemoteConfigBlobStore(context)
         blobStore.retainOnly(emptySet()) // start from a clean blob dir between runs
-        // Fake fetcher standing in for the real (Phase 5) one: already-cached refs short-circuit (no download),
-        // otherwise it writes the arranged bytes into the store.
-        val fetcher = RemoteConfigBlobFetcher { ref ->
-            if (blobStore.contains(ref)) {
-                true
-            } else {
-                downloadCount++
-                val bytes = downloads[ref]
-                if (bytes != null) {
-                    blobStore.write(ref, ByteBuffer.wrap(bytes))
-                    true
-                } else {
-                    false
-                }
-            }
-        }
+        val fetcher = RemoteConfigBlobFetcher(
+            blobStore = blobStore,
+            sourceProvider = FakeBlobSourceProvider,
+            urlConnectionFactory = fakeUrlConnectionFactory(),
+            scope = testScope,
+        )
         manager = RemoteConfigManager(
             backend,
             diskCache,
@@ -233,11 +230,12 @@ class WorkflowsConfigIntegrationTest {
 
     private fun containerWith(configJson: String, vararg blobs: Pair<String, String>): RCContainer {
         val configElement = mockk<RCElement>()
-        every { configElement.data } returns ByteBuffer.wrap(configJson.toByteArray())
+        every { configElement.decode() } returns ByteBuffer.wrap(configJson.toByteArray())
         val elements = blobs.associate { (ref, json) ->
             val element = mockk<RCElement>()
-            every { element.data } returns ByteBuffer.wrap(json.toByteArray())
-            every { element.isChecksumValid() } returns true
+            val bytes = ByteBuffer.wrap(json.toByteArray())
+            every { element.decode() } returns bytes
+            every { element.matchesChecksum(any()) } returns true
             ref to element
         }
         val container = mockk<RCContainer>()
@@ -246,7 +244,39 @@ class WorkflowsConfigIntegrationTest {
         return container
     }
 
+    private fun fakeUrlConnectionFactory() = object : UrlConnectionFactory {
+        override fun createConnection(url: String, requestMethod: String): UrlConnection {
+            val ref = url.substringAfterLast("/")
+            val bytes = downloads[ref]
+            if (bytes != null) {
+                downloadCount++
+            }
+            return object : UrlConnection {
+                override val responseCode: Int = if (bytes == null) {
+                    HttpURLConnection.HTTP_NOT_FOUND
+                } else {
+                    HttpURLConnection.HTTP_OK
+                }
+                override val inputStream = ByteArrayInputStream(bytes ?: byteArrayOf())
+                override fun disconnect() = Unit
+            }
+        }
+    }
+
     private companion object {
+        private val FakeBlobSourceProvider = object : RemoteConfigSourceProvider {
+            override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle =
+                RemoteConfigSourceHandle(
+                    purpose = purpose,
+                    source = RemoteConfigSource(url = "https://blob.test/{blob_ref}", priority = 1, weight = 1),
+                    token = 0,
+                )
+
+            override fun reportUnhealthy(handle: RemoteConfigSourceHandle) = Unit
+
+            override fun restart(purpose: RemoteConfigSourceHandle.Purpose) = Unit
+        }
+
         // A valid content-address ref for the inline path (the store checks shape, not hash, on write).
         private const val INLINE_REF = "abcdefghijklmnopqrstuvwxyz012345"
 

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,7 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger
  * would otherwise parse and persist the same response more than once).
  */
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val diskCache: RemoteConfigDiskCache,
@@ -71,6 +72,10 @@ internal class RemoteConfigManager(
     // late persist either runs fully before the wipe or sees the bumped epoch and skips — never writes after it.
     private val cacheLock = Any()
 
+    // Completes when the active refresh settles (200 commit attempt, 204, error, or cache clear). Used by
+    // non-coroutine consumers that need to wait for the config index before reading from it.
+    private var currentRefresh: CompletableDeferred<Unit>? = null
+
     fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String) {
         val requestEpoch: Int
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
@@ -83,6 +88,7 @@ internal class RemoteConfigManager(
                 return
             }
             requestEpoch = epoch.get()
+            currentRefresh = CompletableDeferred()
         }
         val persisted = diskCache.read()
         val storedBlobs = blobStore.cachedRefs()
@@ -165,6 +171,7 @@ internal class RemoteConfigManager(
             // matches, releasing it normally) or runs entirely before this block (and we release it here).
             // Never the gap where it acquires the guard with the old epoch and then strands it on mismatch.
             isRefreshing.set(false)
+            currentRefresh?.complete(Unit)
             diskCache.clear()
             blobStore.clear()
             // Drop the memoized sources so the next user re-resolves from a fresh config (defaults until then).
@@ -178,6 +185,57 @@ internal class RemoteConfigManager(
     }
 
     /**
+     * Callback bridge for callers that cannot suspend: ensures a config sync has happened at least once, waits
+     * for any active sync to settle, then invokes [onReady]. It waits for the config commit, not for blob bodies.
+     */
+    fun awaitConfigReady(
+        appInBackground: Boolean,
+        appUserID: String,
+        onReady: () -> Unit,
+    ) {
+        scope.launch {
+            ensureSynced(appInBackground, appUserID)
+            awaitCurrentSync()
+            onReady()
+        }
+    }
+
+    /** The persisted item index for [name], or `null` when no such topic is cached. */
+    fun topic(name: String): ConfigTopic? = diskCache.read()?.topics?.get(name)
+
+    /**
+     * Returns the bytes for [itemKey] in [topicName]. Inline items serialize their content; blob-ref items read
+     * from the blob store, downloading on demand through the shared fetcher when absent.
+     */
+    suspend fun body(topicName: String, itemKey: String): ByteArray? {
+        awaitCurrentSync()
+        val item = topic(topicName)?.get(itemKey)
+        return when (val ref = item?.blobRef) {
+            null -> item?.content?.toString()?.toByteArray()
+            else -> {
+                if (!blobStore.contains(ref)) {
+                    sourceProvider.restart(RemoteConfigSourceHandle.Purpose.BLOB)
+                    blobFetcher.ensureDownloaded(ref)
+                }
+                blobStore.read(ref)
+            }
+        }
+    }
+
+    private suspend fun ensureSynced(appInBackground: Boolean, appUserID: String) {
+        if (diskCache.read() != null) return
+        refreshRemoteConfig(appInBackground, appUserID)
+        awaitCurrentSync()
+    }
+
+    private suspend fun awaitCurrentSync() {
+        val refresh = synchronized(cacheLock) {
+            currentRefresh?.takeUnless { it.isCompleted }
+        }
+        refresh?.await()
+    }
+
+    /**
      * Atomically releases the in-flight guard iff this request still owns the sync (its captured
      * [requestEpoch] is still current), under [cacheLock] so the epoch check and the release happen as one
      * step — paired with clearCache()'s bump+release and a refresh's acquire+capture. Prevents releasing the
@@ -186,7 +244,10 @@ internal class RemoteConfigManager(
      */
     private fun releaseGuardIfOwned(requestEpoch: Int): Boolean = synchronized(cacheLock) {
         val owned = epoch.get() == requestEpoch
-        if (owned) isRefreshing.set(false)
+        if (owned) {
+            currentRefresh?.complete(Unit)
+            isRefreshing.set(false)
+        }
         owned
     }
 

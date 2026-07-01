@@ -37,7 +37,6 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -372,14 +371,10 @@ internal class PurchasesFactory(
             var remoteConfigManager: RemoteConfigManager? = null
             val workflowManager = if (appConfig.useWorkflows) {
                 val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
-                // Stubbed pending the blob-fetch phase: a no-op, so on-demand fetch is inert and only
-                // inline/prefetched blobs resolve. The interface is the seam that work plugs into.
-                val remoteConfigBlobFetcher = RemoteConfigBlobFetcher { false }
                 val manager = RemoteConfigManager(
                     backend = backend,
                     diskCache = RemoteConfigDiskCache(contextForStorage),
                     blobStore = remoteConfigBlobStore,
-                    blobFetcher = remoteConfigBlobFetcher,
                 )
                 remoteConfigManager = manager
                 WorkflowManager(WorkflowsConfigProvider(manager))
