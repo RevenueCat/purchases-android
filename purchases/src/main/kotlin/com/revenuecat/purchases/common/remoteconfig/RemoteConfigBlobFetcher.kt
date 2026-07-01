@@ -180,9 +180,7 @@ internal class RemoteConfigBlobFetcher(
             val url = handle.url.replace(BLOB_REF_PLACEHOLDER, ref)
             when (tryDownloadVerifyStore(url, ref)) {
                 DownloadOutcome.SUCCESS -> result = true
-                // The blob is absent/corrupt on a healthy source — fail this blob without condemning the source.
                 DownloadOutcome.BLOB_UNAVAILABLE -> result = false
-                // The source itself is failing — fall over to the next one and retry.
                 DownloadOutcome.SOURCE_UNHEALTHY -> {
                     sourceProvider.reportUnhealthy(handle)
                     handle = sourceProvider.getCurrent(Purpose.BLOB)
