@@ -57,9 +57,9 @@ internal interface RemoteConfigSourceProvider {
  *
  * Reads the `sources` topic lazily from [topicStore] and rebuilds its ordered lists only when that
  * topic's [ConfigTopic.contentHash] changes: an unchanged topic keeps failover progress, while a
- * changed one restarts both lists from the top. While the topic is absent, it falls back to embedded
- * default sources so the SDK can reach the config api before any config is fetched. Sources are
- * deduped by url and ordered via [WeightedSourceSelector].
+ * changed one restarts both lists from the top. While the topic is absent or carries no usable
+ * sources, it falls back to embedded default sources so the SDK can reach the config api before any
+ * config is fetched. Sources are deduped by url and ordered via [WeightedSourceSelector].
  *
  * Thread-safe.
  */
@@ -161,16 +161,16 @@ internal class DefaultRemoteConfigSourceProvider(
 
         /**
          * The sources for [purpose]: parsed from the `sources` [topic], or the embedded defaults while
-         * the topic is absent.
+         * the topic is absent or carries no usable sources.
          */
         fun sourcesFor(
             topic: ConfigTopic?,
             purpose: RemoteConfigSourceHandle.Purpose,
         ): List<RemoteConfigSource> = when (purpose) {
             RemoteConfigSourceHandle.Purpose.API ->
-                if (topic == null) DEFAULT_API_SOURCES else parseSources(topic, API_ITEM, URL_KEY)
+                parseSources(topic, API_ITEM, URL_KEY).ifEmpty { DEFAULT_API_SOURCES }
             RemoteConfigSourceHandle.Purpose.BLOB ->
-                if (topic == null) DEFAULT_BLOB_SOURCES else parseSources(topic, BLOB_ITEM, URL_FORMAT_KEY)
+                parseSources(topic, BLOB_ITEM, URL_FORMAT_KEY).ifEmpty { DEFAULT_BLOB_SOURCES }
         }
 
         /**

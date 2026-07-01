@@ -31,10 +31,11 @@ class RemoteConfigSourceProviderTest {
     }
 
     @Test
-    fun `current sources are null when there are no sources`() {
+    fun `current sources fall back to embedded defaults when the topic has no sources`() {
         val provider = provider(api = emptyList(), blob = emptyList())
-        assertThat(provider.getCurrent(Purpose.API)).isNull()
-        assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url)
+            .isEqualTo("https://config.revenuecat-static.com/{blob_ref}")
     }
 
     @Test
