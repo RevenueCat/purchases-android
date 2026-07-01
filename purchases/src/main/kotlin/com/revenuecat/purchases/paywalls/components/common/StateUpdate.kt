@@ -20,14 +20,12 @@ import kotlinx.serialization.json.JsonPrimitive
 public sealed interface StateUpdate {
 
     /** Wire shape: `{ "set": "<key>", "to": <value | "$value"> }`. */
-    @InternalRevenueCatAPI
     @Poko
     public class Set(
         @get:JvmSynthetic public val key: String,
         @get:JvmSynthetic public val value: StateUpdateValue,
     ) : StateUpdate
 
-    @InternalRevenueCatAPI
     public object Unsupported : StateUpdate
 }
 
@@ -37,14 +35,11 @@ public sealed interface StateUpdate {
 @InternalRevenueCatAPI
 public sealed interface StateUpdateValue {
 
-    @InternalRevenueCatAPI
     @Poko
     public class Literal(@get:JvmSynthetic public val value: JsonPrimitive) : StateUpdateValue
 
-    @InternalRevenueCatAPI
     public object PayloadReference : StateUpdateValue
 
-    @InternalRevenueCatAPI
     public companion object {
         public const val PAYLOAD_REFERENCE_TOKEN: String = "\$value"
     }
