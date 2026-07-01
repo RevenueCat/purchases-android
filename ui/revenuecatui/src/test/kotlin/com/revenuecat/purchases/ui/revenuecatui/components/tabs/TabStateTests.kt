@@ -183,7 +183,7 @@ class TabStateTests {
     }
 
     @Test
-    fun `A hidden tabs component still publishes its selected tab id`(): Unit = with(composeTestRule) {
+    fun `A hidden tabs component does not publish its selected tab id`(): Unit = with(composeTestRule) {
         val tab0LabelKey = LocalizationKey("tab0_label")
         val tab1LabelKey = LocalizationKey("tab1_label")
         val localizations = nonEmptyMapOf(
@@ -240,6 +240,6 @@ class TabStateTests {
         setContent { TabsComponentView(style = style, state = state, clickHandler = { }) }
         waitForIdle()
 
-        assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("annual"))
+        assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("monthly"))
     }
 }

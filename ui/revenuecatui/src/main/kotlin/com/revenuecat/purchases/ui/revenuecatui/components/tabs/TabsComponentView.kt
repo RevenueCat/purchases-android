@@ -81,17 +81,18 @@ internal fun TabsComponentView(
         style = style,
         paywallState = state,
     )
+
+    if (!tabsState.visible) return
+
     // State-driven paywalls: publish the selected tab id into the state store so components that react to it via a
-    // `state_condition` override recompose. Done before the visibility check so a hidden Tabs still publishes its
-    // selected state. Runs on first composition (seed) and whenever the selection changes.
+    // `state_condition` override recompose. Gated behind visibility (parity with iOS): a hidden Tabs never
+    // publishes. Runs on first composition (seed) and whenever the selection changes.
     val selectedTabId = style.tabs[state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)].id
     LaunchedEffect(selectedTabId) {
         style.stateUpdates?.takeIf { it.isNotEmpty() }?.let { updates ->
             state.stateStore.applyUpdates(updates, payload = JsonPrimitive(selectedTabId))
         }
     }
-
-    if (!tabsState.visible) return
 
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }
