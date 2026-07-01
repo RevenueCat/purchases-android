@@ -12,15 +12,21 @@ public class RewardVerificationResult private constructor(
 ) {
 
     private sealed interface Storage {
-        class Verified(val reward: VerifiedReward) : Storage
+        class Verified(val reward: VerifiedReward, val moreRewards: List<VerifiedReward>) : Storage
         object Failed : Storage
     }
 
     /**
-     * Non-null when verification succeeded.
+     * The primary reward when verification succeeded, null otherwise.
      */
     public val verifiedReward: VerifiedReward?
         get() = (this.storage as? Storage.Verified)?.reward
+
+    /**
+     * Additional rewards granted alongside [verifiedReward]; does not repeat it. Empty when verification failed.
+     */
+    public val moreRewards: List<VerifiedReward>
+        get() = (this.storage as? Storage.Verified)?.moreRewards ?: emptyList()
 
     /**
      * True when verification did not complete successfully.
@@ -32,11 +38,17 @@ public class RewardVerificationResult private constructor(
 
         /**
          * Server verification succeeded for this ad transaction.
+         *
+         * @param moreRewards Additional rewards granted alongside [reward]; should not repeat it.
          */
         @JvmStatic
+        @JvmOverloads
         @InternalRevenueCatAPI
-        public fun verified(reward: VerifiedReward): RewardVerificationResult {
-            return RewardVerificationResult(Storage.Verified(reward))
+        public fun verified(
+            reward: VerifiedReward,
+            moreRewards: List<VerifiedReward> = emptyList(),
+        ): RewardVerificationResult {
+            return RewardVerificationResult(Storage.Verified(reward, moreRewards))
         }
 
         /**

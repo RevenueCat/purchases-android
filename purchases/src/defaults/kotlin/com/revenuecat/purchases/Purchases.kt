@@ -13,12 +13,15 @@ import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLau
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
+import com.revenuecat.purchases.ads.rewardverification.rewardVerificationRetryDelay
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
@@ -792,9 +795,8 @@ public class Purchases internal constructor(
     /**
      * Polls the backend until reward verification completes or the attempt budget is exhausted.
      *
-     * Call when your ad network's reward callback fires, passing the `clientTransactionId` returned by
-     * [generateRewardVerificationToken]. Invalidates the virtual currencies cache automatically on a
-     * verified virtual-currency reward. The [callback] is invoked on the main thread.
+     * [generateRewardVerificationToken]. Reflects any verified reward locally before returning. The
+     * [callback] is invoked on the main thread.
      *
      * For coroutines, use the `awaitPollRewardVerification` suspend extension instead.
      */
@@ -815,10 +817,44 @@ public class Purchases internal constructor(
         poll: suspend (String) -> RewardVerificationResult,
     ): RewardVerificationResult {
         val result = poll(clientTransactionId)
-        if (result.verifiedReward is VerifiedReward.VirtualCurrency) {
+        val rewards = result.verifiedReward?.let { listOf(it) + result.moreRewards } ?: return result
+
+        if (rewards.any { it is VerifiedReward.VirtualCurrency }) {
             purchasesOrchestrator.invalidateVirtualCurrenciesCache()
         }
-        return result
+        // Don't surface an entitlement reward we couldn't reflect locally; the grant persists
+        // server-side and syncs on a later fetch.
+        val entitlementReflected = rewards.none { it is VerifiedReward.Entitlement } ||
+            refreshCustomerInfoAfterEntitlementGrant(clientTransactionId)
+        return if (entitlementReflected) result else RewardVerificationResult.failed
+    }
+
+    // getCustomerInfo has no built-in retry, so retry transient (network) failures (with a short delay
+    // between attempts, so a brief blip doesn't exhaust all retries at once) before giving up.
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private suspend fun refreshCustomerInfoAfterEntitlementGrant(clientTransactionId: String): Boolean {
+        debugLog {
+            "Reward verification granted an entitlement; refreshing CustomerInfo " +
+                "(transactionId=$clientTransactionId)."
+        }
+        var attempt = 0
+        while (attempt < MAX_ENTITLEMENT_REFRESH_ATTEMPTS) {
+            try {
+                awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+                return true
+            } catch (e: PurchasesException) {
+                // Retry only transient (network) failures; a terminal error won't improve on retry.
+                if (e.code != PurchasesErrorCode.NetworkError) break
+            }
+            attempt++
+            if (attempt < MAX_ENTITLEMENT_REFRESH_ATTEMPTS) rewardVerificationRetryDelay()
+        }
+        warnLog {
+            "Reward verification could not refresh CustomerInfo after an entitlement grant " +
+                "(transactionId=$clientTransactionId). The grant persists server-side and will sync on a " +
+                "later fetch."
+        }
+        return false
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -1289,6 +1325,8 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        private const val MAX_ENTITLEMENT_REFRESH_ATTEMPTS = 3
+
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 

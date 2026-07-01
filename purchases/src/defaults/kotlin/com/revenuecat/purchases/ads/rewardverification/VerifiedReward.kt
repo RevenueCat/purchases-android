@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
+import java.util.Date
 
 /**
  * Reward payload delivered when server-side reward verification succeeds.
@@ -16,6 +17,15 @@ public interface VerifiedReward {
     public class VirtualCurrency(
         public val code: String,
         public val amount: Int,
+    ) : VerifiedReward
+
+    /**
+     * A temporary entitlement grant with an identifier and expiration.
+     */
+    @Poko
+    public class Entitlement(
+        public val identifier: String,
+        public val expiresAt: Date,
     ) : VerifiedReward
 
     /**

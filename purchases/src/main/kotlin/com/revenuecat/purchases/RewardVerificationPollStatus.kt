@@ -7,8 +7,14 @@ package com.revenuecat.purchases
 public sealed interface RewardVerificationPollStatus {
     /**
      * Verified by the backend with the associated reward payload.
+     *
+     * @param reward The primary granted reward.
+     * @param moreRewards Additional granted rewards; does not repeat [reward].
      */
-    public data class Verified(val reward: VerifiedReward) : RewardVerificationPollStatus
+    public data class Verified(
+        val reward: VerifiedReward,
+        val moreRewards: List<VerifiedReward> = emptyList(),
+    ) : RewardVerificationPollStatus
 
     /**
      * Verification has started but has not yet reached a terminal state.

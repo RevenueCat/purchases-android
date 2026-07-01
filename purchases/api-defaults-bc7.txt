@@ -900,8 +900,10 @@ package com.revenuecat.purchases.ads.rewardverification {
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class RewardVerificationResult {
     method public boolean getFailed();
+    method public java.util.List<com.revenuecat.purchases.ads.rewardverification.VerifiedReward> getMoreRewards();
     method public com.revenuecat.purchases.ads.rewardverification.VerifiedReward? getVerifiedReward();
     property public final boolean failed;
+    property public final java.util.List<com.revenuecat.purchases.ads.rewardverification.VerifiedReward> moreRewards;
     property public final com.revenuecat.purchases.ads.rewardverification.VerifiedReward? verifiedReward;
     field public static final com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult.Companion Companion;
     field public static final com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult failed;
@@ -921,6 +923,14 @@ package com.revenuecat.purchases.ads.rewardverification {
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public interface VerifiedReward {
+  }
+
+  @dev.drewhamilton.poko.Poko public static final class VerifiedReward.Entitlement implements com.revenuecat.purchases.ads.rewardverification.VerifiedReward {
+    ctor public VerifiedReward.Entitlement(String identifier, java.util.Date expiresAt);
+    method public java.util.Date getExpiresAt();
+    method public String getIdentifier();
+    property public final java.util.Date expiresAt;
+    property public final String identifier;
   }
 
   public static final class VerifiedReward.NoReward implements com.revenuecat.purchases.ads.rewardverification.VerifiedReward {
