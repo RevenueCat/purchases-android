@@ -1167,7 +1167,8 @@ internal class PaywallViewModelImpl(
         shouldApplyState: Boolean = true,
     ) {
         val cached = workflowStepStateCache[step.id]
-        val newState = cached ?: computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
+        val newState = cached
+            ?: computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext, currentWorkflowStateStore)
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
@@ -1228,6 +1229,7 @@ internal class PaywallViewModelImpl(
         uiConfig: UiConfig,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
+        stateStore: PaywallStateStore?,
     ): PaywallState {
         val screenId = step.screenId
             ?: return PaywallState.Error("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
@@ -1254,7 +1256,7 @@ internal class PaywallViewModelImpl(
             colorScheme = _colorScheme.value,
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
-            stateStore = currentWorkflowStateStore,
+            stateStore = stateStore,
         )
     }
 
@@ -1268,11 +1270,14 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
+        // Capture on the main thread: cancellation is cooperative and can't stop an in-flight
+        // computeStateForStep, so a late prewarm must not write into a store swapped in by a newer session.
+        val stateStore = currentWorkflowStateStore
         preWarmJob = viewModelScope.launch {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
                 val computed = withContext(backgroundDispatcher) {
-                    computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
+                    computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext, stateStore)
                 }
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
                     workflowStepStateCache[stepId] = computed
