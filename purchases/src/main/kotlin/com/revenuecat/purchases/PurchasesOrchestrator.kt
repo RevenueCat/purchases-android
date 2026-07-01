@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
@@ -156,6 +157,8 @@ internal class PurchasesOrchestrator(
     private val purchaseParamsValidator: PurchaseParamsValidator,
 
     private val workflowManager: WorkflowManager?,
+    // Drives the shared `/v1/config` sync lifecycle. Null when workflows (and any other config topic) are off.
+    private val remoteConfigManager: RemoteConfigManager? = null,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
@@ -315,6 +318,12 @@ internal class PurchasesOrchestrator(
 
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
+
+            // Sync remote config on foreground (deduped + cadence-gated inside the manager).
+            remoteConfigManager?.refreshRemoteConfig(
+                appInBackground = false,
+                appUserID = identityManager.currentAppUserID,
+            )
 
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
@@ -600,9 +609,7 @@ internal class PurchasesOrchestrator(
             return
         }
         workflowManager.getWorkflow(
-            appUserID = identityManager.currentAppUserID,
             workflowOrOfferingId = workflowId,
-            appInBackground = state.appInBackground,
             onSuccess = { dispatch { onSuccess(it) } },
             onError = { dispatch { onError(it) } },
         )
@@ -843,6 +850,7 @@ internal class PurchasesOrchestrator(
         }
         this.backend.close()
         this.workflowManager?.close()
+        this.remoteConfigManager?.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
