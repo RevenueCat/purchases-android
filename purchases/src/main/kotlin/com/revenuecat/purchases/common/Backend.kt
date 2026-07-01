@@ -15,7 +15,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
 import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -1326,11 +1325,8 @@ internal class Backend(
         // request body), so concurrent calls for different users must not be deduped onto a single shared request.
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path, appUserID), appInBackground)
 
-        val overrideURL = BuildConfig.REMOTE_CONFIG_BASE_URL
-            .takeIf { it.isNotEmpty() && appConfig.isDebugBuild }
-            ?.let { runCatching { URL(it) }.getOrNull() }
-        val baseURL = overrideURL ?: appConfig.baseURL
-        val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+        val baseURL = appConfig.baseURL
+        val fallbackBaseURLs = appConfig.fallbackBaseURLs
         // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
         val body = buildMap<String, Any?> {
             put(APP_USER_ID, appUserID)

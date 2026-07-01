@@ -60,7 +60,6 @@ class RemoteConfigDiskCacheTest {
                     mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
                 ),
             ),
-            lastRefreshAt = 1710000100L,
         )
 
         diskCache.write(config)

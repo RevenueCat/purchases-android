@@ -41,6 +41,12 @@ class RemoteConfigManagerTest {
     // Unconfined so the launched 200-path coroutine runs eagerly: invoke(onSuccess) then verify still works.
     private val testScope = CoroutineScope(UnconfinedTestDispatcher())
 
+    // Mutable clock so staleness tests can advance time past the refresh window.
+    private var currentTimeMillis = FIXED_MILLIS
+    private val dateProvider = object : DateProvider {
+        override val now: Date get() = Date(currentTimeMillis)
+    }
+
     private var capturedAppUserID: String? = null
     private var capturedDomain: String? = null
     private var capturedManifest: String? = null
@@ -53,7 +59,8 @@ class RemoteConfigManagerTest {
         backend = mockk()
         diskCache = mockk(relaxed = true)
         blobStore = mockk(relaxed = true)
-        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider, scope = testScope)
+        currentTimeMillis = FIXED_MILLIS
+        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = dateProvider, scope = testScope)
 
         // Persist succeeds by default; the blob store is only touched once the configuration is persisted.
         every { diskCache.write(any()) } returns true
@@ -80,6 +87,57 @@ class RemoteConfigManagerTest {
         assertThat(capturedDomain).isEqualTo("app")
         assertThat(capturedManifest).isNull()
         assertThat(capturedPrefetchedBlobs).isEmpty()
+    }
+
+    @Test
+    fun `refreshRemoteConfigIfStale refreshes on the first call in a process`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `refreshRemoteConfigIfStale skips within the staleness window after a successful sync`() {
+        every { diskCache.read() } returns null
+
+        // First refresh completes (204), stamping the in-memory last-sync time.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        // Same clock: still within the foreground window, so no new request.
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `refreshRemoteConfigIfStale refreshes again once the window elapses`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        currentTimeMillis = FIXED_MILLIS + STALE_FOREGROUND_AGE_MILLIS
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `clearCache makes refreshRemoteConfigIfStale refresh again within the window`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        // Identity change wipes the cache and the in-memory marker, so the next user refreshes immediately.
+        manager.clearCache()
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -128,7 +186,6 @@ class RemoteConfigManagerTest {
         assertThat(written.captured.prefetchBlobs).containsExactly("newBlob")
         assertThat(written.captured.topics).containsOnlyKeys("sources")
         assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
-        assertThat(written.captured.lastRefreshAt).isEqualTo(FIXED_MILLIS)
     }
 
     @Test
@@ -520,13 +577,13 @@ class RemoteConfigManagerTest {
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"
         private const val FIXED_MILLIS = 1_710_000_000_000L
+
+        // Older than the 5-minute foreground staleness window (see Date?.isCacheStale).
+        private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L
         private const val WAIT_SECONDS = 5L
         private const val BLOCKED_MILLIS = 200L
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
-        private val FixedDateProvider = object : DateProvider {
-            override val now: Date get() = Date(FIXED_MILLIS)
-        }
     }
 }

@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.RCContainer
@@ -15,6 +16,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.serialization.SerializationException
+import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -60,6 +62,15 @@ internal class RemoteConfigManager(
     // late persist either runs fully before the wipe or sees the bumped epoch and skips — never writes after it.
     private val cacheLock = Any()
 
+    @Volatile
+    private var lastRefreshedAt: Date? = null
+
+    fun refreshRemoteConfigIfStale(appInBackground: Boolean, appUserID: String) {
+        if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider)) {
+            refreshRemoteConfig(appInBackground, appUserID)
+        }
+    }
+
     fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String) {
         val requestEpoch: Int
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
@@ -90,19 +101,18 @@ internal class RemoteConfigManager(
                     return@getRemoteConfig
                 }
                 if (container == null) {
-                    // 204: nothing changed, keep the cache. Release the guard only if we still own the sync:
-                    // clearCache() could have bumped the epoch between the check above and here.
-                    releaseGuardIfOwned(requestEpoch)
+                    // 204: nothing changed
+                    synchronized(cacheLock) {
+                        if (epoch.get() == requestEpoch) {
+                            lastRefreshedAt = dateProvider.now
+                            isRefreshing.set(false)
+                        }
+                    }
                     return@getRemoteConfig
                 }
                 scope.launch {
-                    // Hold the in-flight guard until persistence completes so a concurrent refresh can't read
-                    // the disk cache mid-write and merge against a stale snapshot.
                     try {
                         val response = RemoteConfiguration.parse(container.config.decode())
-                        // Re-check the epoch and persist under the lock that also guards clearCache()'s wipe, so
-                        // a racing identity change either runs entirely before this write or makes it skip — the
-                        // synchronous persist can never write the old user's config after the cache was wiped.
                         synchronized(cacheLock) {
                             if (epoch.get() != requestEpoch) return@launch
                             persist(previous = persisted, response = response, container = container)
@@ -116,15 +126,11 @@ internal class RemoteConfigManager(
                             "Failed to decode remote config response. Keeping the cached configuration."
                         }
                     } finally {
-                        // Only release the guard if we still own this sync; a clearCache()/newer refresh owns
-                        // it otherwise.
                         releaseGuardIfOwned(requestEpoch)
                     }
                 }
             },
             onError = { error ->
-                // Release the guard and log only if we still own the sync; a stale error response (the cache
-                // was cleared after this request started) is dropped and leaves a newer owner's guard alone.
                 if (releaseGuardIfOwned(requestEpoch)) {
                     errorLog(error)
                 }
@@ -134,30 +140,18 @@ internal class RemoteConfigManager(
 
     /**
      * Wipes the cache on an identity change so configuration never bleeds across users (offerings-parity).
-     * Cancels in-flight sync work and keeps the scope usable for the next user (unlike [close]). The epoch bump,
-     * the in-flight guard release, and the wipe all run under [cacheLock]: a synchronous `persist()` that already
-     * started either finished before the wipe, or re-checks the bumped epoch under the same lock and skips — so an
-     * old user's config can never be written after the wipe. Releasing the guard here (rather than before the
-     * lock) keeps it paired with the epoch a [refreshRemoteConfig] observes, so a refresh can't acquire the guard
-     * with a stale epoch and then strand it when its callback drops on the mismatch. (`cancelChildren()` still
-     * unwinds a suspended sync, e.g. Phase 5's blob fetches, but is not load-bearing for either guarantee since
-     * `persist()` is synchronous; the lock is.)
      */
     fun clearCache() {
         scope.coroutineContext.cancelChildren()
         synchronized(cacheLock) {
             epoch.incrementAndGet()
-            // Release the guard inside the lock, after the bump, so it stays paired with the epoch a
-            // refresh observes: a refresh either acquires the guard with the new epoch (and its callback
-            // matches, releasing it normally) or runs entirely before this block (and we release it here).
-            // Never the gap where it acquires the guard with the old epoch and then strands it on mismatch.
             isRefreshing.set(false)
+            lastRefreshedAt = null
             diskCache.clear()
             blobStore.clear()
         }
     }
 
-    /** Cancels in-flight sync work. Called on SDK teardown (Phase 7 wiring). */
     fun close() {
         scope.cancel()
     }
@@ -200,11 +194,11 @@ internal class RemoteConfigManager(
                 activeTopics = response.activeTopics,
                 prefetchBlobs = response.prefetchBlobs,
                 topics = mergedTopics,
-                lastRefreshAt = dateProvider.now.time,
             ),
         )
 
         if (persisted) {
+            lastRefreshedAt = dateProvider.now
             extractInlineBlobs(container, blobRefsToKeep)
             blobStore.retainOnly(blobRefsToKeep)
         } else {

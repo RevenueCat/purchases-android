@@ -76,10 +76,9 @@
 #ENABLE_EXTRA_REQUEST_LOGGING=true
 
 ## ──────────────────────────────────────────────
-## Remote Config Base URL Override
-## When set, redirects only GET /v2/config to this host.
-## All other endpoints continue to use the production base URL.
-## Useful for pointing the remote-config endpoint at a local backend.
-## Only takes effect in debug builds.
+## Enable Remote Config (test-only)
+## When true, the SDK instantiates the /v1/config manager and refreshes it on app
+## foreground (staleness-gated). The response is not consumed yet; this only exercises
+## the request/parse/persist path from test apps ahead of the production wiring.
 ## ──────────────────────────────────────────────
-#REMOTE_CONFIG_BASE_URL=http://localhost:8080/
+#ENABLE_REMOTE_CONFIG=true

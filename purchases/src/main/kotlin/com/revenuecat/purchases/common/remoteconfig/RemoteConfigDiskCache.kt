@@ -14,8 +14,7 @@ import java.io.IOException
  *
  * [manifest] is the **opaque** server token, stored verbatim and replayed on the next request; the SDK never
  * parses it. [activeTopics] is the last response's full active-topic-name set (used to detect removed topics).
- * [prefetchBlobs] is the last response's prefetch set (retention input + which blobs to fetch). [lastRefreshAt]
- * is the SDK's own wall-clock of the last sync attempt, used only for refresh cadence.
+ * [prefetchBlobs] is the last response's prefetch set (retention input + which blobs to fetch).
  *
  * [topics] is the full per-topic item index — the configuration itself (each item's `blob_ref` plus its inline
  * `content`), which is the **source of truth**: persisting it is the whole sync commit, and consumers read their
@@ -29,7 +28,6 @@ internal data class PersistedRemoteConfigurationState(
     val activeTopics: List<String> = emptyList(),
     val prefetchBlobs: List<String> = emptyList(),
     val topics: Map<String, ConfigTopic> = emptyMap(),
-    val lastRefreshAt: Long = 0,
 )
 
 /**
