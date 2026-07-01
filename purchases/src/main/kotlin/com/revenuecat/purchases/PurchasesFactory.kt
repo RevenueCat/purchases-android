@@ -274,18 +274,6 @@ internal class PurchasesFactory(
 
             val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
-            val identityManager = IdentityManager(
-                cache,
-                subscriberAttributesCache,
-                subscriberAttributesManager,
-                offeringsCache,
-                workflowsCache,
-                backend,
-                offlineEntitlementsManager,
-                dispatcher,
-                uiPreviewMode = appConfig.uiPreviewMode,
-            )
-
             val remoteConfigManager = if (BuildConfig.ENABLE_REMOTE_CONFIG) {
                 RemoteConfigManager(
                     backend = backend,
@@ -295,6 +283,19 @@ internal class PurchasesFactory(
             } else {
                 null
             }
+
+            val identityManager = IdentityManager(
+                cache,
+                subscriberAttributesCache,
+                subscriberAttributesManager,
+                offeringsCache,
+                workflowsCache,
+                remoteConfigManager,
+                backend,
+                offlineEntitlementsManager,
+                dispatcher,
+                uiPreviewMode = appConfig.uiPreviewMode,
+            )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
                 cache,
