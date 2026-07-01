@@ -55,6 +55,16 @@ class RemoteConfigBlobStoreTest {
     }
 
     @Test
+    fun `write returns true when the blob is persisted`() {
+        assertThat(blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1, 2, 3)))).isTrue
+    }
+
+    @Test
+    fun `write returns false for a malformed ref`() {
+        assertThat(blobStore.write("../escape", ByteBuffer.wrap(byteArrayOf(6, 6, 6)))).isFalse
+    }
+
+    @Test
     fun `write does not consume the caller's buffer`() {
         val buffer = ByteBuffer.wrap(byteArrayOf(9, 8, 7))
 

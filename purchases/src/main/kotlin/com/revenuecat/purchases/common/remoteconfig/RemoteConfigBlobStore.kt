@@ -33,14 +33,15 @@ internal class RemoteConfigBlobStore(
         }
     }
 
-    fun write(ref: String, data: ByteBuffer) {
+    /** Returns whether the blob was actually persisted; IO failures are logged, swallowed, and reported as `false`. */
+    fun write(ref: String, data: ByteBuffer): Boolean {
         val target = blobFile(ref)
         if (target == null) {
             errorLog { "Refusing to write remote config blob with malformed ref '$ref'." }
-            return
+            return false
         }
         val parent = blobsDir()
-        try {
+        return try {
             if (!parent.exists()) {
                 parent.mkdirs()
             }
@@ -58,8 +59,10 @@ internal class RemoteConfigBlobStore(
                     tempFile.delete()
                 }
             }
+            true
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist remote config blob '$ref' to disk." }
+            false
         }
     }
 
@@ -69,7 +72,7 @@ internal class RemoteConfigBlobStore(
         if (!parent.exists()) return emptySet()
         return parent.listFiles()
             ?.asSequence()
-            ?.filter { it.isFile && isValidRef(it.name) }
+            ?.filter { it.isFile && RemoteConfigUtils.isValidRef(it.name) }
             ?.map { it.name }
             ?.toSet()
             ?: emptySet()
@@ -108,15 +111,11 @@ internal class RemoteConfigBlobStore(
         File(File(applicationContext.noBackupFilesDir, REMOTE_CONFIG_ROOT), BLOBS_DIR)
 
     /** The target file for [ref], or `null` when [ref] is not a valid content-address ref. */
-    private fun blobFile(ref: String): File? = if (isValidRef(ref)) File(blobsDir(), ref) else null
+    private fun blobFile(ref: String): File? =
+        if (RemoteConfigUtils.isValidRef(ref)) File(blobsDir(), ref) else null
 
     private companion object {
         private const val REMOTE_CONFIG_ROOT = "RevenueCat"
         private const val BLOBS_DIR = "blobs"
-
-        /** 24-byte hash -> 32 URL-safe base64 chars, unpadded. */
-        private val REF_REGEX = Regex("^[A-Za-z0-9_-]{32}$")
-
-        private fun isValidRef(ref: String): Boolean = REF_REGEX.matches(ref)
     }
 }
