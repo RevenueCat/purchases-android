@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.remoteconfig
 
-import android.util.Base64
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
@@ -10,29 +9,18 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.nio.ByteBuffer
-import java.security.MessageDigest
 import java.util.PriorityQueue
 
 /** The placeholder a blob source URL template carries; substituted with the blob ref before download. */
 private const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
-
-private const val REF_HASH_BYTES = 24
-private const val SHA_256_ALGORITHM = "SHA-256"
-
-/**
- * The content-address ref of [bytes]: SHA-256 truncated to [REF_HASH_BYTES] (192 bits), URL-safe base64 with no
- * padding. Mirrors `RCElement.checksumBase64`, so inline and fetched blobs verify against the same ref shape.
- */
-private fun contentAddressRef(bytes: ByteArray): String {
-    val digest = MessageDigest.getInstance(SHA_256_ALGORITHM).digest(bytes)
-    val truncated = digest.copyOf(REF_HASH_BYTES)
-    return Base64.encodeToString(truncated, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
-}
 
 /**
  * Downloads remote-config blobs by their content-address ref and stores them in the **same** on-disk cache
@@ -49,8 +37,9 @@ private fun contentAddressRef(bytes: ByteArray): String {
  * - **Failure tolerant**: nothing thrown to callers; a failed or un-verifiable blob just yields `false` (it is
  *   recoverable — re-fetched on demand or on the next sync).
  *
- * Each download is verified against its ref (truncated SHA-256, URL-safe base64 — see [contentAddressRef],
- * matching `RCElement.checksumBase64`) before it is stored, so a tampered or corrupt payload is never cached.
+ * Each download is verified against its ref (truncated SHA-256, URL-safe base64 — see
+ * [RemoteConfigUtils.contentAddressRef], matching `RCElement.checksumBase64`) before it is stored, so a tampered
+ * or corrupt payload is never cached.
  */
 internal class RemoteConfigBlobFetcher(
     private val blobStore: RemoteConfigBlobStore,
@@ -98,15 +87,27 @@ internal class RemoteConfigBlobFetcher(
      * queued/in-flight download for the same ref.
      */
     suspend fun ensureDownloaded(ref: String): Boolean {
-        if (blobStore.contains(ref)) return true
-        return enqueue(ref, Priority.HIGH).await()
+        if (!RemoteConfigUtils.isValidRef(ref)) {
+            errorLog { "Refusing to download remote config blob with malformed ref '$ref'." }
+            return false
+        }
+        return if (blobStore.contains(ref)) true else enqueue(ref, Priority.HIGH).await()
+    }
+
+    /**
+     * Ensures every ref in [refs] is in the store, downloading missing ones concurrently at HIGH priority.
+     * Returns whether they *all* ended up cached. Deduping and per-ref validation are inherited from the
+     * single-ref [ensureDownloaded].
+     */
+    suspend fun ensureDownloaded(refs: List<String>): Boolean = coroutineScope {
+        refs.map { async { ensureDownloaded(it) } }.awaitAll().all { it }
     }
 
     /** Best-effort background warm of [refs] at LOW priority. Fire-and-forget; failures are tolerated. */
     fun prefetch(refs: List<String>) {
         scope.launch {
             refs.forEach { ref ->
-                if (!blobStore.contains(ref)) {
+                if (RemoteConfigUtils.isValidRef(ref) && !blobStore.contains(ref)) {
                     enqueue(ref, Priority.LOW)
                 }
             }
@@ -218,7 +219,7 @@ internal class RemoteConfigBlobFetcher(
     }
 
     private fun verifyAndStore(bytes: ByteArray, ref: String, url: String): DownloadOutcome {
-        if (contentAddressRef(bytes) != ref) {
+        if (RemoteConfigUtils.contentAddressRef(bytes) != ref) {
             errorLog { "Remote config blob '$ref' from $url failed content-address verification." }
             return DownloadOutcome.BLOB_UNAVAILABLE
         }

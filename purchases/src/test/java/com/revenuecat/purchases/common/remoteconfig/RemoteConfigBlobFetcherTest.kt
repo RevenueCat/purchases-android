@@ -290,6 +290,69 @@ class RemoteConfigBlobFetcherTest {
         fetcherScope.cancel()
     }
 
+    @Test
+    fun `a malformed ref is rejected without attempting a download`() {
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, "not-a-valid-ref")).isFalse()
+
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+    }
+
+    @Test
+    fun `prefetch skips malformed refs`() = runTest {
+        val started = CopyOnWriteArrayList<String>()
+        recordStartedConnections(started)
+        val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+
+        val valid = refOf("valid".toByteArray())
+        fetcher.prefetch(listOf("malformed", valid))
+        advanceUntilIdle()
+
+        assertThat(started).containsExactly(valid)
+        fetcherScope.cancel()
+    }
+
+    @Test
+    fun `list ensureDownloaded returns true only when every ref ends up cached`() {
+        val cached = refOf("cached".toByteArray())
+        val downloadable = refOf("downloadable".toByteArray())
+        every { blobStore.contains(cached) } returns true
+        stubConnection(urlFor(downloadable), code = 200, body = "downloadable".toByteArray())
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(downloadAll(fetcher, listOf(cached, downloadable))).isTrue()
+    }
+
+    @Test
+    fun `list ensureDownloaded returns false when any ref fails`() {
+        val ok = refOf("ok".toByteArray())
+        val missing = refOf("missing".toByteArray())
+        stubConnection(urlFor(ok), code = 200, body = "ok".toByteArray())
+        stubConnection(urlFor(missing), code = 404)
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(downloadAll(fetcher, listOf(ok, missing))).isFalse()
+    }
+
+    @Test
+    fun `list ensureDownloaded dedupes repeated refs into a single download`() = runTest {
+        val bytes = "shared".toByteArray()
+        val ref = refOf(bytes)
+        stubConnection(urlFor(ref), code = 200, body = bytes)
+        val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+
+        val result = async { fetcher.ensureDownloaded(listOf(ref, ref)) }
+        advanceUntilIdle()
+
+        assertThat(result.await()).isTrue()
+        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+        fetcherScope.cancel()
+    }
+
     // region helpers
 
     private fun realFetcher(provider: RemoteConfigSourceProvider) =
@@ -326,6 +389,9 @@ class RemoteConfigBlobFetcherTest {
 
     private fun download(fetcher: RemoteConfigBlobFetcher, ref: String): Boolean =
         runBlocking { withTimeout(WAIT_MS) { fetcher.ensureDownloaded(ref) } }
+
+    private fun downloadAll(fetcher: RemoteConfigBlobFetcher, refs: List<String>): Boolean =
+        runBlocking { withTimeout(WAIT_MS) { fetcher.ensureDownloaded(refs) } }
 
     private fun stubConnection(url: String, code: Int, body: ByteArray = ByteArray(0)) {
         every { urlConnectionFactory.createConnection(url, any()) } returns connection(code, body)
