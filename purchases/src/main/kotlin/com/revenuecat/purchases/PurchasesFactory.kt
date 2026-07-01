@@ -268,6 +268,25 @@ internal class PurchasesFactory(
 
             val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
+            // Workflows are now served from the `/v1/config` layer. WorkflowManager is the unchanged consumer
+            // seam; behind it sit the RemoteConfig stack (sync + blob store + on-demand fetch) and the
+            // WorkflowsConfigProvider. The manager is hoisted so the orchestrator can drive its lifecycle
+            // (foreground refresh + teardown). It's constructed here, ahead of IdentityManager, so its
+            // clearCache() can be wired into identity transitions below.
+            var remoteConfigManager: RemoteConfigManager? = null
+            val workflowManager = if (appConfig.useWorkflows) {
+                val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
+                val manager = RemoteConfigManager(
+                    backend = backend,
+                    diskCache = RemoteConfigDiskCache(contextForStorage),
+                    blobStore = remoteConfigBlobStore,
+                )
+                remoteConfigManager = manager
+                WorkflowManager(WorkflowsConfigProvider(manager))
+            } else {
+                null
+            }
+
             val identityManager = IdentityManager(
                 cache,
                 subscriberAttributesCache,
@@ -278,6 +297,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 dispatcher,
                 uiPreviewMode = appConfig.uiPreviewMode,
+                remoteConfigCacheClearer = remoteConfigManager?.let { manager -> { manager.clearCache() } },
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
@@ -363,24 +383,6 @@ internal class PurchasesFactory(
                 context = contextForStorage,
                 fontLoader = fontLoader,
             )
-
-            // Workflows are now served from the `/v1/config` layer. WorkflowManager is the unchanged consumer
-            // seam; behind it sit the RemoteConfig stack (sync + blob store + on-demand fetch) and the
-            // WorkflowsConfigProvider. The manager is hoisted so the orchestrator can drive its lifecycle
-            // (foreground refresh + teardown).
-            var remoteConfigManager: RemoteConfigManager? = null
-            val workflowManager = if (appConfig.useWorkflows) {
-                val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
-                val manager = RemoteConfigManager(
-                    backend = backend,
-                    diskCache = RemoteConfigDiskCache(contextForStorage),
-                    blobStore = remoteConfigBlobStore,
-                )
-                remoteConfigManager = manager
-                WorkflowManager(WorkflowsConfigProvider(manager))
-            } else {
-                null
-            }
 
             val offeringsManager = OfferingsManager(
                 offeringsCache,

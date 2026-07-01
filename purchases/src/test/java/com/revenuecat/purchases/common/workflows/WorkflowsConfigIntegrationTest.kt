@@ -19,6 +19,8 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import io.mockk.every
@@ -121,8 +123,64 @@ class WorkflowsConfigIntegrationTest {
         val result = provider.getWorkflow("wf-1")
         assertThat(result).isNotNull
         assertThat(result!!.workflow.id).isEqualTo("wf-1")
+        // enrolled_variants is intentionally out of scope for the config-topic path (see WorkflowsConfigProvider).
+        assertThat(result.enrolledVariants).isNull()
         // The body arrived inline, so neither prefetch nor the read touches the downloader.
         assertThat(downloadCount).isZero()
+    }
+
+    @Test
+    fun `getWorkflow assembles ui_config from its own topic's three inline parts`() = runTest {
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows", "ui_config"],
+              "prefetch_blobs": ["$INLINE_REF"],
+              "topics": {
+                "workflows": {
+                  "wf-1": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual", "prefetch": true }
+                },
+                "ui_config": {
+                  "app": { "colors": {}, "fonts": {} },
+                  "localizations": { "en_US": { "day": "Day" } },
+                  "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} }
+                }
+              }
+            }
+        """.trimIndent()
+
+        sync(config, INLINE_REF to workflowJson)
+
+        val result = provider.getWorkflow("wf-1")
+        assertThat(result).isNotNull
+        assertThat(result!!.workflow.uiConfig.localizations)
+            .isEqualTo(mapOf(LocaleId("en_US") to mapOf(VariableLocalizationKey.DAY to "Day")))
+    }
+
+    @Test
+    fun `getWorkflow defaults ui_config when the topic is absent`() = runTest {
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$INLINE_REF"],
+              "topics": {
+                "workflows": {
+                  "wf-1": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual", "prefetch": true }
+                }
+              }
+            }
+        """.trimIndent()
+
+        sync(config, INLINE_REF to workflowJson)
+
+        val result = provider.getWorkflow("wf-1")
+        assertThat(result).isNotNull
+        assertThat(result!!.workflow.uiConfig).isEqualTo(UiConfig())
     }
 
     @Test

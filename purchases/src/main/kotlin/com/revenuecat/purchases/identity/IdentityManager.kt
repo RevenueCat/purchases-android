@@ -40,6 +40,7 @@ internal class IdentityManager(
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
     private val uiPreviewMode: Boolean = false,
+    private val remoteConfigCacheClearer: (() -> Unit)? = null,
 ) {
     companion object {
         private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
@@ -105,6 +106,7 @@ internal class IdentityManager(
                         }
                         offeringsCache.clearCache()
                         workflowsCache?.clearCache()
+                        remoteConfigCacheClearer?.invoke()
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
@@ -158,6 +160,7 @@ internal class IdentityManager(
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
                         offeringsCache.clearCache()
                         workflowsCache?.clearCache()
+                        remoteConfigCacheClearer?.invoke()
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -261,6 +264,7 @@ internal class IdentityManager(
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         offeringsCache.clearCache()
         workflowsCache?.clearCache()
+        remoteConfigCacheClearer?.invoke()
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)

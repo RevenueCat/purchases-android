@@ -141,7 +141,9 @@ public data class PublishedWorkflow(
     @SerialName("initial_step_id") val initialStepId: String,
     val steps: Map<String, WorkflowStep>,
     val screens: Map<String, WorkflowScreen>,
-    @SerialName("ui_config") val uiConfig: UiConfig,
+    // Not yet sent by the config-topic path for lazy-converted/legacy workflows; falls back to defaults
+    // rather than failing the whole workflow until the backend backfills it.
+    @SerialName("ui_config") val uiConfig: UiConfig = UiConfig(),
     @Serializable(with = JsonObjectToMapSerializer::class)
     val metadata: Map<String, @Contextual Any> = emptyMap(),
     val hash: String? = null,

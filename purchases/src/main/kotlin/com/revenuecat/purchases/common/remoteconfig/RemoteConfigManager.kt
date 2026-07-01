@@ -92,6 +92,7 @@ internal class RemoteConfigManager(
         }
         val persisted = diskCache.read()
         val storedBlobs = blobStore.cachedRefs()
+        debugLog { "Starting /v1/config sync (appUserID=$appUserID, manifest=${persisted?.manifest})" }
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = appUserID,
@@ -281,6 +282,10 @@ internal class RemoteConfigManager(
         )
 
         if (persisted) {
+            debugLog {
+                "Persisted remote config (activeTopics=${response.activeTopics}, " +
+                    "topicItemCounts=${mergedTopics.mapValues { it.value.size }})"
+            }
             extractInlineBlobs(container, blobRefsToKeep)
             blobStore.retainOnly(blobRefsToKeep)
             prefetchBlobs(response, mergedTopics)
