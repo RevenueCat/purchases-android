@@ -33,14 +33,15 @@ internal class RemoteConfigBlobStore(
         }
     }
 
-    fun write(ref: String, data: ByteBuffer) {
+    /** Returns whether the blob was actually persisted; IO failures are logged, swallowed, and reported as `false`. */
+    fun write(ref: String, data: ByteBuffer): Boolean {
         val target = blobFile(ref)
         if (target == null) {
             errorLog { "Refusing to write remote config blob with malformed ref '$ref'." }
-            return
+            return false
         }
         val parent = blobsDir()
-        try {
+        return try {
             if (!parent.exists()) {
                 parent.mkdirs()
             }
@@ -58,8 +59,10 @@ internal class RemoteConfigBlobStore(
                     tempFile.delete()
                 }
             }
+            true
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist remote config blob '$ref' to disk." }
+            false
         }
     }
 

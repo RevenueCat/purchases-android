@@ -138,7 +138,15 @@ internal class RemoteConfigBlobFetcher(
         while (true) {
             signal.receive()
             val download = claimNext() ?: continue
-            complete(download, downloadAndStore(download.ref))
+            // A stray Throwable (e.g. OOM from readBytes(), or a bug) must not strand awaiters on an unresolved
+            // deferred nor silently kill this worker; log it (so it surfaces) and fail the blob as recoverable.
+            val result = try {
+                downloadAndStore(download.ref)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                errorLog(e) { "Unexpected failure downloading remote config blob '${download.ref}'." }
+                false
+            }
+            complete(download, result)
         }
     }
 
@@ -187,13 +195,7 @@ internal class RemoteConfigBlobFetcher(
             when (val code = connection.responseCode) {
                 HttpURLConnection.HTTP_OK -> {
                     val bytes = connection.inputStream.use { it.readBytes() }
-                    if (contentAddressRef(bytes) == ref) {
-                        blobStore.write(ref, ByteBuffer.wrap(bytes))
-                        DownloadOutcome.SUCCESS
-                    } else {
-                        errorLog { "Remote config blob '$ref' from $url failed content-address verification." }
-                        DownloadOutcome.BLOB_UNAVAILABLE
-                    }
+                    verifyAndStore(bytes, ref, url)
                 }
                 HttpURLConnection.HTTP_NOT_FOUND -> {
                     errorLog { "Remote config blob '$ref' not found at $url (404)." }
@@ -209,6 +211,20 @@ internal class RemoteConfigBlobFetcher(
             DownloadOutcome.SOURCE_UNHEALTHY
         } finally {
             connection?.disconnect()
+        }
+    }
+
+    private fun verifyAndStore(bytes: ByteArray, ref: String, url: String): DownloadOutcome {
+        if (contentAddressRef(bytes) != ref) {
+            errorLog { "Remote config blob '$ref' from $url failed content-address verification." }
+            return DownloadOutcome.BLOB_UNAVAILABLE
+        }
+        // A failed disk write isn't a source problem, so don't condemn the source: report the blob as unavailable
+        // (yields false, stops) and let a later sync/on-demand read re-fetch it.
+        return if (blobStore.write(ref, ByteBuffer.wrap(bytes))) {
+            DownloadOutcome.SUCCESS
+        } else {
+            DownloadOutcome.BLOB_UNAVAILABLE
         }
     }
 

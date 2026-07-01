@@ -56,6 +56,7 @@ class RemoteConfigBlobFetcherTest {
     fun setup() {
         blobStore = mockk(relaxed = true)
         every { blobStore.contains(any()) } returns false
+        every { blobStore.write(any(), any()) } returns true
         urlConnectionFactory = mockk()
     }
 
@@ -102,6 +103,40 @@ class RemoteConfigBlobFetcherTest {
 
         verify(exactly = 0) { blobStore.write(any(), any()) }
         verify(exactly = 0) { provider.reportUnhealthy(any()) }
+    }
+
+    @Test
+    fun `reports failure when the blob store fails to persist the download`() {
+        val bytes = "unpersisted".toByteArray()
+        val ref = refOf(bytes)
+        stubConnection(urlFor(ref), code = 200, body = bytes)
+        // The download verifies, but the disk write fails (swallowed inside the store), so it never got cached.
+        every { blobStore.write(ref, any()) } returns false
+        val provider = provider(blobSource(TEMPLATE))
+        val fetcher = realFetcher(provider)
+
+        assertThat(download(fetcher, ref)).isFalse()
+
+        // A local write failure isn't a source problem, so the source is not condemned.
+        verify(exactly = 0) { provider.reportUnhealthy(any()) }
+    }
+
+    @Test
+    fun `an unexpected throw fails the blob without stranding the worker`() {
+        val firstBytes = "boom".toByteArray()
+        val firstRef = refOf(firstBytes)
+        val secondBytes = "healthy".toByteArray()
+        val secondRef = refOf(secondBytes)
+        stubConnection(urlFor(firstRef), code = 200, body = firstBytes)
+        stubConnection(urlFor(secondRef), code = 200, body = secondBytes)
+        // A non-IOException escapes the download for the first ref.
+        every { blobStore.write(firstRef, any()) } throws OutOfMemoryError("simulated")
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        // The awaiter resolves (does not hang) with false rather than propagating the throwable.
+        assertThat(download(fetcher, firstRef)).isFalse()
+        // A subsequent download for a different ref still succeeds, proving the worker pool survived.
+        assertThat(download(fetcher, secondRef)).isTrue()
     }
 
     @Test
