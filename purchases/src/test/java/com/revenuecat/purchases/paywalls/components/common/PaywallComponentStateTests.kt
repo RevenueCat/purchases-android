@@ -75,6 +75,22 @@ internal class PaywallComponentStateTests {
     }
 
     @Test
+    fun `drops entries with a missing field or a non-object value`() {
+        @Language("json")
+        val json = """
+            {
+              "good":        { "type": "string", "default": "v" },
+              "missingType": { "default": "v" },
+              "notAnObject": "oops"
+            }
+        """.trimIndent()
+
+        val actual = JsonTools.json.decodeFromString(StateDeclarationMapSerializer, json)
+
+        assertThat(actual.keys).containsExactly("good")
+    }
+
+    @Test
     fun `decodes a non-object state_declarations value as an empty map`() {
         val actual = JsonTools.json.decodeFromString(StateDeclarationMapSerializer, """"not_an_object"""")
 
