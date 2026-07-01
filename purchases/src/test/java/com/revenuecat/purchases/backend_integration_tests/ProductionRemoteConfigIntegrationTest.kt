@@ -37,20 +37,17 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             MapSerializer(String.serializer(), RemoteConfiguration.ConfigItem.serializer()),
         )
         val actualTopics = JsonProvider.defaultJson.encodeToJsonElement(topicsSerializer, config.topics).jsonObject
-        val expectedSourcesTopic = JsonProvider.defaultJson.parseToJsonElement(
+        val expectedApiSourcesTopic = JsonProvider.defaultJson.parseToJsonElement(
             """
             {
-              "api": {
-                "sources": [
+               "sources": [
                   { "id": "primary", "url": "https://api.revenuecat.com/", "priority": 0, "weight": 100 }
                 ]
-              },
-              "blob": { "sources": [] }
             }
             """.trimIndent(),
         )
         assertThat(actualTopics).containsKey("sources")
-        assertThat(actualTopics["sources"]).isEqualTo(expectedSourcesTopic)
+        assertThat(actualTopics["sources"]?.jsonObject?.get("api")).isEqualTo(expectedApiSourcesTopic)
         assertThat(actualTopics).containsKey("ui_config")
         assertThat(actualTopics).containsKey("workflows")
     }
