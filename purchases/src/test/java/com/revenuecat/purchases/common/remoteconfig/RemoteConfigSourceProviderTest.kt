@@ -25,7 +25,7 @@ class RemoteConfigSourceProviderTest {
     @Test
     fun `current api source falls back to the embedded default when the sources topic is absent`() {
         val provider = DefaultRemoteConfigSourceProvider(FakeTopicStore(null), FakeRandom())
-        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
         // Blob has no embedded default, so it stays empty.
         assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
     }
@@ -33,9 +33,20 @@ class RemoteConfigSourceProviderTest {
     @Test
     fun `current api source falls back to the embedded default when the topic has no sources`() {
         val provider = provider(api = emptyList(), blob = emptyList())
-        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
         // Blob has no embedded default, so it stays empty.
         assertThat(provider.getCurrent(Purpose.BLOB)).isNull()
+    }
+
+    @Test
+    fun `embedded api defaults fall back to backup when primary unhealthy`() {
+        val provider = DefaultRemoteConfigSourceProvider(FakeTopicStore(null), FakeRandom(0))
+        // The primary default is preferred (lower priority number); the backup is the next fallback.
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.rc-backup.com/")
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
     }
 
     @Test
@@ -350,7 +361,7 @@ class RemoteConfigSourceProviderTest {
         val store = FakeTopicStore(null)
         val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
 
-        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com")
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo("https://api.revenuecat.com/")
 
         // A sources topic shows up where there was none: the provider builds the list from the top.
         store.sources = sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList())
