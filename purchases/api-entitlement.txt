@@ -206,6 +206,7 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.Package? getThreeMonth();
     method public com.revenuecat.purchases.Package? getTwoMonth();
     method public java.net.URL? getWebCheckoutURL();
+    method public java.net.URL? getWebCheckoutURL(com.revenuecat.purchases.WebCheckoutEnvironment environment);
     method public com.revenuecat.purchases.Package? getWeekly();
     method public boolean hasPaywall();
     property public final com.revenuecat.purchases.Package? annual;
@@ -252,6 +253,7 @@ package com.revenuecat.purchases {
     method public com.revenuecat.purchases.PresentedOfferingContext getPresentedOfferingContext();
     method public com.revenuecat.purchases.models.StoreProduct getProduct();
     method public java.net.URL? getWebCheckoutURL();
+    method public java.net.URL? getWebCheckoutURL(com.revenuecat.purchases.WebCheckoutEnvironment environment);
     property public final String identifier;
     property @Deprecated public final String offering;
     property public final com.revenuecat.purchases.PackageType packageType;
@@ -626,6 +628,11 @@ package com.revenuecat.purchases {
     enum_constant public static final com.revenuecat.purchases.VerificationResult NOT_REQUESTED;
     enum_constant public static final com.revenuecat.purchases.VerificationResult VERIFIED;
     enum_constant public static final com.revenuecat.purchases.VerificationResult VERIFIED_ON_DEVICE;
+  }
+
+  public enum WebCheckoutEnvironment {
+    enum_constant public static final com.revenuecat.purchases.WebCheckoutEnvironment PRODUCTION;
+    enum_constant public static final com.revenuecat.purchases.WebCheckoutEnvironment SANDBOX;
   }
 
   public final class WebPurchaseRedemption {

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common
 
+import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools.json
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.WebCheckoutEnvironment
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
@@ -127,11 +129,12 @@ internal abstract class OfferingParser {
         val metadata = offeringJson.optJSONObject("metadata")?.toMap<Any>(deep = true) ?: emptyMap()
         val jsonPackages = offeringJson.getJSONArray("packages")
         val presentedOfferingContext = PresentedOfferingContext(offeringIdentifier)
+        val webCheckoutURLs = offeringJson.getWebCheckoutURLs()
 
         val availablePackages = mutableListOf<Package>()
         for (i in 0 until jsonPackages.length()) {
             val packageJson = jsonPackages.getJSONObject(i)
-            createPackage(packageJson, productsById, presentedOfferingContext)?.let {
+            createPackage(packageJson, productsById, presentedOfferingContext, webCheckoutURLs)?.let {
                 availablePackages.add(it)
             }
         }
@@ -174,13 +177,14 @@ internal abstract class OfferingParser {
 
         return if (availablePackages.isNotEmpty()) {
             Offering(
-                offeringIdentifier,
-                offeringJson.getString("description"),
-                metadata,
-                availablePackages,
-                paywallData,
-                paywallComponents,
-                webCheckoutURL,
+                identifier = offeringIdentifier,
+                serverDescription = offeringJson.getString("description"),
+                metadata = metadata,
+                availablePackages = availablePackages,
+                paywall = paywallData,
+                paywallComponents = paywallComponents,
+                webCheckoutURL = webCheckoutURL,
+                environmentWebCheckoutURLs = webCheckoutURLs,
             )
         } else {
             null
@@ -192,6 +196,7 @@ internal abstract class OfferingParser {
         packageJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
         presentedOfferingContext: PresentedOfferingContext,
+        offeringWebCheckoutURLs: Map<WebCheckoutEnvironment, URL> = emptyMap(),
     ): Package? {
         val packageIdentifier = packageJson.getString("identifier")
         val product = findMatchingProduct(productsById, packageJson)
@@ -199,14 +204,18 @@ internal abstract class OfferingParser {
         val packageType = packageIdentifier.toPackageType()
 
         val webCheckoutURL = packageJson.getWebCheckoutURL()
+        val webCheckoutURLs = packageJson.getWebCheckoutURLs()
+            .ifEmpty { offeringWebCheckoutURLs }
+            .withPackageIdentifier(packageIdentifier)
 
         return product?.let {
             Package(
-                packageIdentifier,
-                packageType,
-                product.copyWithPresentedOfferingContext(presentedOfferingContext),
-                presentedOfferingContext,
-                webCheckoutURL,
+                identifier = packageIdentifier,
+                packageType = packageType,
+                product = product.copyWithPresentedOfferingContext(presentedOfferingContext),
+                presentedOfferingContext = presentedOfferingContext,
+                webCheckoutURL = webCheckoutURL,
+                environmentWebCheckoutURLs = webCheckoutURLs,
             )
         }
     }
@@ -214,13 +223,55 @@ internal abstract class OfferingParser {
 
 private fun JSONObject.getWebCheckoutURL(): URL? =
     this.optString("web_checkout_url").takeUnless { it.isNullOrEmpty() }?.let { urlString ->
-        try {
-            URL(urlString)
-        } catch (e: MalformedURLException) {
-            errorLog(e) { "Error parsing web checkout URL: $urlString" }
-            null
-        }
+        parseWebCheckoutURL(urlString)
     }
+
+private fun JSONObject.getWebCheckoutURLs(): Map<WebCheckoutEnvironment, URL> {
+    val urlsJson = optJSONObject("web_checkout_urls") ?: return emptyMap()
+    return WebCheckoutEnvironment.values().mapNotNull { environment ->
+        val urlString = urlsJson.optString(environment.jsonKey).takeUnless { it.isNullOrEmpty() }
+        val url = urlString?.let { parseWebCheckoutURL(it) }
+        url?.let { environment to it }
+    }.toMap()
+}
+
+private val WebCheckoutEnvironment.jsonKey: String
+    get() = when (this) {
+        WebCheckoutEnvironment.PRODUCTION -> "production"
+        WebCheckoutEnvironment.SANDBOX -> "sandbox"
+    }
+
+private fun parseWebCheckoutURL(urlString: String): URL? {
+    return try {
+        URL(urlString)
+    } catch (e: MalformedURLException) {
+        errorLog(e) { "Error parsing web checkout URL: $urlString" }
+        null
+    }
+}
+
+private fun Map<WebCheckoutEnvironment, URL>.withPackageIdentifier(
+    packageIdentifier: String,
+): Map<WebCheckoutEnvironment, URL> =
+    mapNotNull { (environment, url) ->
+        url.withPackageIdentifier(packageIdentifier)?.let { environment to it }
+    }.toMap()
+
+private fun URL.withPackageIdentifier(packageIdentifier: String): URL? {
+    if (hasPackageIdentifier()) return this
+
+    val urlString = toString()
+    val urlWithoutFragment = urlString.substringBefore("#")
+    val fragment = ref?.let { "#$it" } ?: ""
+    val separator = if (query.isNullOrEmpty()) "?" else "&"
+    return parseWebCheckoutURL("$urlWithoutFragment${separator}package_id=${Uri.encode(packageIdentifier)}$fragment")
+}
+
+private fun URL.hasPackageIdentifier(): Boolean =
+    query
+        ?.split("&")
+        ?.any { it.substringBefore("=") == "package_id" }
+        ?: false
 
 private fun String.toPackageType(): PackageType =
     PackageType.values().firstOrNull { it.identifier == this }
