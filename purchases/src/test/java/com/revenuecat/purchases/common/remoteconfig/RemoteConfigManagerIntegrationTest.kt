@@ -93,7 +93,10 @@ class RemoteConfigManagerIntegrationTest {
         assertThat(persisted.manifest).isEqualTo("v1.1.workflows:etag1")
         assertThat(persisted.activeTopics).containsExactly("workflows")
         assertThat(persisted.prefetchBlobs).containsExactly(ref)
-        assertThat(persisted.topicBlobRefs).containsExactlyEntriesOf(mapOf("workflows" to listOf(ref)))
+        assertThat(persisted.topics).containsOnlyKeys("workflows")
+        assertThat(persisted.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(ref)
+        // The full config is the source of truth: the item's inline content is persisted too, not just its ref.
+        assertThat(persisted.topics["workflows"]!!["wf1234"]!!.content).containsKey("offering_identifier")
         assertThat(blobStore.contains(ref)).isTrue
         assertThat(blobStore.read(ref)).isEqualTo(blob)
     }
@@ -141,7 +144,7 @@ class RemoteConfigManagerIntegrationTest {
 
         assertThat(blobStore.contains(refA)).isFalse
         assertThat(blobStore.contains(refB)).isTrue
-        assertThat(diskCache.read()!!.topicBlobRefs).containsExactlyEntriesOf(mapOf("workflows" to listOf(refB)))
+        assertThat(diskCache.read()!!.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(refB)
     }
 
     @Test
@@ -178,7 +181,7 @@ class RemoteConfigManagerIntegrationTest {
         assertThat(blobStore.contains(tamperedRef)).isFalse
         assertThat(blobStore.cachedRefs()).isEmpty()
         // The configuration itself is the source of truth and persists regardless of the blob failing validation.
-        assertThat(diskCache.read()!!.topicBlobRefs).containsExactlyEntriesOf(mapOf("workflows" to listOf(tamperedRef)))
+        assertThat(diskCache.read()!!.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(tamperedRef)
     }
 
     @Test
@@ -219,7 +222,8 @@ class RemoteConfigManagerIntegrationTest {
 
         assertThat(blobStore.contains(ref)).isFalse
         assertThat(blobStore.cachedRefs()).isEmpty()
-        assertThat(diskCache.read()!!.topicBlobRefs).containsExactlyEntriesOf(mapOf("workflows" to listOf(ref)))
+        assertThat(diskCache.read()!!.topics.toTopicBlobRefs())
+            .containsExactlyEntriesOf(mapOf("workflows" to listOf(ref)))
     }
 
     @Test
@@ -236,13 +240,16 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     @Test
-    fun `an inline-only topic persists an empty blob-ref list and writes no blobs`() {
+    fun `an inline-only topic persists its item with no blob ref and writes no blobs`() {
         // wf1234 carries only inline content (offering_identifier), no blob_ref, and no element is inlined.
         val config = workflowsConfig(items = mapOf("wf1234" to null))
 
         sync(container(config))
 
-        assertThat(diskCache.read()!!.topicBlobRefs).containsExactlyEntriesOf(mapOf("workflows" to emptyList()))
+        val topics = diskCache.read()!!.topics
+        assertThat(topics).containsOnlyKeys("workflows")
+        assertThat(topics["workflows"]!!["wf1234"]!!.blobRef).isNull()
+        assertThat(topics["workflows"]!!.values.mapNotNull { it.blobRef }).isEmpty()
         assertThat(blobStore.cachedRefs()).isEmpty()
     }
 

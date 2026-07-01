@@ -116,25 +116,29 @@ class RemoteConfigManagerTest {
         assertThat(written.captured.manifest).isEqualTo("v1.200.sources:etag2")
         assertThat(written.captured.activeTopics).containsExactly("sources")
         assertThat(written.captured.prefetchBlobs).containsExactly("newBlob")
-        assertThat(written.captured.topicBlobRefs).containsExactlyEntriesOf(mapOf("sources" to listOf("newBlob")))
+        assertThat(written.captured.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
         assertThat(written.captured.lastRefreshAt).isEqualTo(FIXED_MILLIS)
     }
 
     @Test
-    fun `a 200 response merges unchanged topics and prunes topics no longer active`() {
+    fun `a 200 response overwrites changed topics, carries unchanged active topics forward, and prunes inactive ones`() {
         every { diskCache.read() } returns persisted(
-            manifest = "v1.1.sources:etag1,product_entitlement_mapping:pemEtag1",
-            topicBlobRefs = mapOf(
-                "sources" to listOf("oldSources"),
-                "product_entitlement_mapping" to listOf("pemBlob"),
+            manifest = "v1.1.sources:etag1,workflows:wfEtag1,product_entitlement_mapping:pemEtag1",
+            topics = mapOf(
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "oldSources"))),
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "wfBlob"))),
+                "product_entitlement_mapping" to ConfigTopic(
+                    mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
+                ),
             ),
         )
-        // sources changed; product_entitlement_mapping no longer active.
+        // sources changed; workflows still active but unchanged (omitted by the server); PEM no longer active.
         val response = """
             {
               "domain": "app",
               "manifest": "v1.2.sources:etag2",
-              "active_topics": ["sources"],
+              "active_topics": ["sources", "workflows"],
               "topics": { "sources": { "default": { "blob_ref": "newSources" } } }
             }
         """.trimIndent()
@@ -144,8 +148,11 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
-        assertThat(written.captured.topicBlobRefs)
-            .containsExactlyEntriesOf(mapOf("sources" to listOf("newSources")))
+        assertThat(written.captured.topics).containsOnlyKeys("sources", "workflows")
+        // Changed topic overwritten with the new index.
+        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newSources")
+        // Unchanged-but-active topic carried forward verbatim (the server omitted its body).
+        assertThat(written.captured.topics["workflows"]!!["wf1"]!!.blobRef).isEqualTo("wfBlob")
     }
 
     @Test
@@ -280,8 +287,9 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
-        // An inline-only topic references no blobs, so it persists an empty list and triggers no blob write.
-        assertThat(written.captured.topicBlobRefs).containsExactlyEntriesOf(mapOf("sources" to emptyList()))
+        // An inline-only topic is persisted with its inline content and no blob_ref, and triggers no blob write.
+        assertThat(written.captured.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.topics["sources"]!!["api"]!!.blobRef).isNull()
         verify(exactly = 0) { blobStore.write(any(), any()) }
     }
 
@@ -355,13 +363,13 @@ class RemoteConfigManagerTest {
         domain: String = "app",
         activeTopics: List<String> = emptyList(),
         prefetchBlobs: List<String> = emptyList(),
-        topicBlobRefs: Map<String, List<String>> = emptyMap(),
+        topics: Map<String, ConfigTopic> = emptyMap(),
     ) = PersistedRemoteConfigurationState(
         domain = domain,
         manifest = manifest,
         activeTopics = activeTopics,
         prefetchBlobs = prefetchBlobs,
-        topicBlobRefs = topicBlobRefs,
+        topics = topics,
     )
 
     private fun inlineElement(data: ByteBuffer, checksumValid: Boolean): RCElement {

@@ -17,10 +17,10 @@ import java.io.IOException
  * [prefetchBlobs] is the last response's prefetch set (retention input + which blobs to fetch). [lastRefreshAt]
  * is the SDK's own wall-clock of the last sync attempt, used only for refresh cadence.
  *
- * The full topic bodies are intentionally **not** persisted: an item's payload lives either in the blob store
- * (addressed by its blob ref) or is projected into a purpose-built cache by its topic handler, so the only
- * topic state the sync needs to keep is which blobs each topic keeps alive for retention. [topicBlobRefs] holds
- * an empty list for inline-only topics.
+ * [topics] is the full per-topic item index — the configuration itself (each item's `blob_ref` plus its inline
+ * `content`), which is the **source of truth**: persisting it is the whole sync commit, and consumers read their
+ * topic metadata back from it. Only the heavy blob *bytes* live elsewhere (the content-addressed blob store,
+ * keyed by `blob_ref`); the index holds the small metadata map per topic (an empty map for inline-only topics).
  */
 @Serializable
 internal data class PersistedRemoteConfigurationState(
@@ -28,7 +28,7 @@ internal data class PersistedRemoteConfigurationState(
     val manifest: String,
     val activeTopics: List<String> = emptyList(),
     val prefetchBlobs: List<String> = emptyList(),
-    val topicBlobRefs: Map<String, List<String>> = emptyMap(),
+    val topics: Map<String, ConfigTopic> = emptyMap(),
     val lastRefreshAt: Long = 0,
 )
 
