@@ -188,7 +188,6 @@ internal class RemoteConfigManager(
         // manifest the server diffs against is the source of truth, and persisting it IS the entire commit (the
         // manifest advances unconditionally). Inline blobs are recoverable over the network, so only touch the
         // blob store once the state is durably committed — a failed persist never orphans or evicts blobs.
-        val now = dateProvider.now
         val persisted = diskCache.write(
             PersistedRemoteConfigurationState(
                 domain = response.domain,
@@ -200,7 +199,7 @@ internal class RemoteConfigManager(
         )
 
         if (persisted) {
-            lastRefreshedAt = now
+            lastRefreshedAt = dateProvider.now
             extractInlineBlobs(container, blobRefsToKeep)
             blobStore.retainOnly(blobRefsToKeep)
         } else {
