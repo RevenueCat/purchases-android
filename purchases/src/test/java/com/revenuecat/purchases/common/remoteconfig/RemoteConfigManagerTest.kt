@@ -8,6 +8,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
 import io.mockk.every
 import io.mockk.mockk
@@ -368,6 +369,21 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a config element that fails to decode leaves the cache untouched and releases the guard`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithUndecodableConfig(), VerificationResult.VERIFIED)
+
+        // The decode failure is caught: nothing is persisted and the cache is left intact.
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        // The guard was released in the finally block, so a subsequent refresh is allowed to start.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `clearCache wipes the disk cache and blob store`() {
         manager.clearCache()
 
@@ -489,6 +505,15 @@ class RemoteConfigManagerTest {
         val container = mockk<RCContainer>()
         every { container.config } returns element
         every { container.elements } returns elements
+        return container
+    }
+
+    private fun containerWithUndecodableConfig(): RCContainer {
+        val element = mockk<RCElement>()
+        every { element.decode() } throws RCContainerFormatException("Unsupported content encoding id 2.")
+        val container = mockk<RCContainer>()
+        every { container.config } returns element
+        every { container.elements } returns emptyMap()
         return container
     }
 

@@ -99,7 +99,7 @@ internal class RemoteConfigManager(
                     // Hold the in-flight guard until persistence completes so a concurrent refresh can't read
                     // the disk cache mid-write and merge against a stale snapshot.
                     try {
-                        val response = RemoteConfiguration.parse(container.config.data)
+                        val response = RemoteConfiguration.parse(container.config.decode())
                         // Re-check the epoch and persist under the lock that also guards clearCache()'s wipe, so
                         // a racing identity change either runs entirely before this write or makes it skip — the
                         // synchronous persist can never write the old user's config after the cache was wiped.
@@ -110,6 +110,10 @@ internal class RemoteConfigManager(
                     } catch (e: SerializationException) {
                         errorLog(e) {
                             "Failed to parse remote config response. Keeping the cached configuration."
+                        }
+                    } catch (e: RCContainerFormatException) {
+                        errorLog(e) {
+                            "Failed to decode remote config response. Keeping the cached configuration."
                         }
                     } finally {
                         // Only release the guard if we still own this sync; a clearCache()/newer refresh owns
