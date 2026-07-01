@@ -8,7 +8,7 @@ import kotlin.random.Random
  */
 internal interface WeightedSource {
 
-    /** Higher values are preferred. A tier is exhausted before a lower one is considered. */
+    /** Lower values are preferred. A tier is exhausted before a higher one is considered. */
     val priority: Int
 
     /** Relative likelihood of being chosen among sources tied at the same [priority]. */
@@ -19,7 +19,7 @@ internal interface WeightedSource {
  * Picks which [WeightedSource] to use and exposes [current] so callers can advance through the
  * fallback order when a source is unusable.
  *
- * The order is computed up front: priority tiers from highest to lowest, each tier arranged into a
+ * The order is computed up front: priority tiers from lowest to highest, each tier arranged into a
  * weight-biased random order. Negative weights are treated as 0; when a group's weights sum to 0,
  * the next source is drawn uniformly at random.
  *
@@ -57,7 +57,7 @@ internal class WeightedSourceSelector<T : WeightedSource>(
             sources
                 .groupBy { it.priority }
                 .entries
-                .sortedByDescending { it.key }
+                .sortedBy { it.key }
                 .flatMap { weightedShuffle(it.value, random) }
 
         fun <T : WeightedSource> weightedShuffle(tier: List<T>, random: Random): List<T> {
