@@ -22,20 +22,20 @@ class WeightedSourceSelectorTest {
     }
 
     @Test
-    fun `highest priority wins`() {
-        val low = TestSource("low", priority = 0, weight = 100)
-        val high = TestSource("high", priority = 10, weight = 1)
+    fun `lowest priority number wins`() {
+        val low = TestSource("low", priority = 0, weight = 1)
+        val high = TestSource("high", priority = 10, weight = 100)
         val selector = WeightedSourceSelector(listOf(low, high), FakeRandom(0))
-        assertThat(selector.current).isSameAs(high)
+        assertThat(selector.current).isSameAs(low)
     }
 
     @Test
-    fun `highest priority wins regardless of order`() {
-        val low1 = TestSource("low1", priority = 0, weight = 100)
-        val high = TestSource("high", priority = 5, weight = 1)
-        val low2 = TestSource("low2", priority = 0, weight = 100)
-        val selector = WeightedSourceSelector(listOf(low1, high, low2), FakeRandom(0))
-        assertThat(selector.current).isSameAs(high)
+    fun `lowest priority number wins regardless of order`() {
+        val high1 = TestSource("high1", priority = 10, weight = 100)
+        val low = TestSource("low", priority = 5, weight = 1)
+        val high2 = TestSource("high2", priority = 10, weight = 100)
+        val selector = WeightedSourceSelector(listOf(high1, low, high2), FakeRandom(0))
+        assertThat(selector.current).isSameAs(low)
     }
 
     // endregion
@@ -100,7 +100,7 @@ class WeightedSourceSelectorTest {
         // last resort: tried after its weighted peer, yet still before any lower-priority source.
         val weighted = TestSource("weighted", priority = 10, weight = 50)
         val zero = TestSource("zero", priority = 10, weight = 0)
-        val lowerPriority = TestSource("lower", priority = 0, weight = 100)
+        val lowerPriority = TestSource("lower", priority = 20, weight = 100)
         val selector = WeightedSourceSelector(listOf(weighted, zero, lowerPriority), FakeRandom(0))
 
         assertThat(selector.current).isSameAs(weighted)
@@ -133,9 +133,9 @@ class WeightedSourceSelectorTest {
         val low = TestSource("low", priority = 0, weight = 1)
         val selector = WeightedSourceSelector(listOf(high, low), FakeRandom(0))
 
-        assertThat(selector.current).isSameAs(high)
-        assertThat(selector.advance()).isSameAs(low)
         assertThat(selector.current).isSameAs(low)
+        assertThat(selector.advance()).isSameAs(high)
+        assertThat(selector.current).isSameAs(high)
     }
 
     @Test
@@ -144,7 +144,7 @@ class WeightedSourceSelectorTest {
         val low = TestSource("low", priority = 0, weight = 1)
         val selector = WeightedSourceSelector(listOf(high, low), FakeRandom(0))
 
-        assertThat(selector.advance()).isSameAs(low)
+        assertThat(selector.advance()).isSameAs(high)
         assertThat(selector.advance()).isNull()
         assertThat(selector.current).isNull()
     }
@@ -187,10 +187,10 @@ class WeightedSourceSelectorTest {
         val low = TestSource("low", priority = 0, weight = 1)
         val selector = WeightedSourceSelector(listOf(high, low), FakeRandom(0))
 
-        assertThat(selector.advance()).isSameAs(low)
+        assertThat(selector.advance()).isSameAs(high)
         selector.reset()
-        assertThat(selector.current).isSameAs(high)
-        assertThat(selector.advance()).isSameAs(low)
+        assertThat(selector.current).isSameAs(low)
+        assertThat(selector.advance()).isSameAs(high)
     }
 
     // endregion

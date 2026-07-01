@@ -192,8 +192,9 @@ internal class DefaultRemoteConfigSourceProvider(
         private fun JsonObject.int(key: String): Int? = (this[key] as? JsonPrimitive)?.intOrNull
 
         /**
-         * Collapses duplicate urls to the occurrence with the highest priority (tie-broken by
-         * weight), keeping first-seen order. Done once per rebuild so reads never need to re-dedupe.
+         * Collapses duplicate urls to the occurrence with the highest priority (i.e. the lowest
+         * [RemoteConfigSource.priority] number, tie-broken by weight), keeping first-seen order.
+         * Done once per rebuild so reads never need to re-dedupe.
          */
         fun dedupe(sources: List<RemoteConfigSource>): List<RemoteConfigSource> {
             // LinkedHashMap keeps first-seen url order for deterministic ordering downstream.
@@ -207,10 +208,11 @@ internal class DefaultRemoteConfigSourceProvider(
                 if (source.priority != existing.priority || source.weight != existing.weight) {
                     warnLog {
                         "Found remote config sources sharing the same URL with conflicting priority/weight " +
-                            "(${source.url}). Keeping the highest-priority one, tie-broken by weight."
+                            "(${source.url}). Keeping the highest-priority one (lowest priority number), " +
+                            "tie-broken by weight."
                     }
                 }
-                if (source.priority > existing.priority ||
+                if (source.priority < existing.priority ||
                     (source.priority == existing.priority && source.weight > existing.weight)
                 ) {
                     bestByUrl[source.url] = source

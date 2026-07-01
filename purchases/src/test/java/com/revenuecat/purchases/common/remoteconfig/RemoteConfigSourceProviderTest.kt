@@ -39,13 +39,13 @@ class RemoteConfigSourceProviderTest {
     }
 
     @Test
-    fun `current source returns highest priority source`() {
-        val low = source("low", priority = 0, weight = 100)
-        val high = source("high", priority = 10, weight = 1)
+    fun `current source returns lowest priority number source`() {
+        val low = source("low", priority = 0, weight = 1)
+        val high = source("high", priority = 10, weight = 100)
         val provider = apiProvider(listOf(low, high))
 
         val handle = provider.getCurrent(Purpose.API)
-        assertThat(handle?.url).isEqualTo(url("high"))
+        assertThat(handle?.url).isEqualTo(url("low"))
         assertThat(handle?.purpose).isEqualTo(Purpose.API)
     }
 
@@ -67,10 +67,10 @@ class RemoteConfigSourceProviderTest {
         val provider = apiProvider(listOf(high, low))
 
         val first = provider.getCurrent(Purpose.API)
-        assertThat(first?.url).isEqualTo(url("high"))
+        assertThat(first?.url).isEqualTo(url("low"))
 
         provider.reportUnhealthy(first!!)
-        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("low"))
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("high"))
     }
 
     @Test
@@ -83,9 +83,9 @@ class RemoteConfigSourceProviderTest {
 
     @Test
     fun `reportUnhealthy walks full fallback order`() {
-        val first = source("1", priority = 30, weight = 1)
+        val first = source("1", priority = 10, weight = 1)
         val second = source("2", priority = 20, weight = 1)
-        val third = source("3", priority = 10, weight = 1)
+        val third = source("3", priority = 30, weight = 1)
         val provider = apiProvider(listOf(first, second, third))
 
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("1"))
@@ -107,7 +107,7 @@ class RemoteConfigSourceProviderTest {
             listOf(
                 source("a", priority = 10, weight = 1),
                 source("a", priority = 5, weight = 1),
-                source("b", priority = 0, weight = 1),
+                source("b", priority = 20, weight = 1),
             ),
         )
 
@@ -119,18 +119,19 @@ class RemoteConfigSourceProviderTest {
     }
 
     @Test
-    fun `dedup keeps highest priority regardless of order`() {
+    fun `dedup keeps lowest priority number regardless of order`() {
         val provider = apiProvider(
             listOf(
-                source("a", priority = 0, weight = 1),
                 source("a", priority = 10, weight = 1),
+                source("a", priority = 0, weight = 1),
                 source("b", priority = 5, weight = 1),
             ),
         )
 
-        // `a` is kept at priority 10, so it outranks `b` (priority 5) despite appearing first at 0.
+        // `a` is kept at priority 0 (lowest number, i.e. highest priority), so it outranks `b`
+        // (priority 5) despite appearing first at 10.
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
-        assertThat(provider.getCurrent(Purpose.API)?.source?.priority).isEqualTo(10)
+        assertThat(provider.getCurrent(Purpose.API)?.source?.priority).isEqualTo(0)
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
@@ -166,8 +167,8 @@ class RemoteConfigSourceProviderTest {
     @Test
     fun `reporting api unhealthy does not affect blob`() {
         val provider = provider(
-            api = listOf(source("api1", priority = 10), source("api2", priority = 0)),
-            blob = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
+            api = listOf(source("api1", priority = 0), source("api2", priority = 10)),
+            blob = listOf(source("blob1", priority = 0), source("blob2", priority = 10)),
         )
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
@@ -259,8 +260,8 @@ class RemoteConfigSourceProviderTest {
     @Test
     fun `restart only rewinds requested purpose`() {
         val provider = provider(
-            api = listOf(source("api1", priority = 10), source("api2", priority = 0)),
-            blob = listOf(source("blob1", priority = 10), source("blob2", priority = 0)),
+            api = listOf(source("api1", priority = 0), source("api2", priority = 10)),
+            blob = listOf(source("blob1", priority = 0), source("blob2", priority = 10)),
         )
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)

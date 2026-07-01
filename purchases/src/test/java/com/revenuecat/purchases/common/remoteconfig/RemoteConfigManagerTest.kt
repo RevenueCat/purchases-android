@@ -8,11 +8,16 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -20,8 +25,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.nio.ByteBuffer
 import java.util.Date
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class RemoteConfigManagerTest {
@@ -30,6 +37,9 @@ class RemoteConfigManagerTest {
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var blobStore: RemoteConfigBlobStore
     private lateinit var manager: RemoteConfigManager
+
+    // Unconfined so the launched 200-path coroutine runs eagerly: invoke(onSuccess) then verify still works.
+    private val testScope = CoroutineScope(UnconfinedTestDispatcher())
 
     private var capturedAppUserID: String? = null
     private var capturedDomain: String? = null
@@ -43,7 +53,7 @@ class RemoteConfigManagerTest {
         backend = mockk()
         diskCache = mockk(relaxed = true)
         blobStore = mockk(relaxed = true)
-        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider)
+        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider, scope = testScope)
 
         // Persist succeeds by default; the blob store is only touched once the configuration is persisted.
         every { diskCache.write(any()) } returns true
@@ -116,25 +126,29 @@ class RemoteConfigManagerTest {
         assertThat(written.captured.manifest).isEqualTo("v1.200.sources:etag2")
         assertThat(written.captured.activeTopics).containsExactly("sources")
         assertThat(written.captured.prefetchBlobs).containsExactly("newBlob")
-        assertThat(written.captured.topicBlobRefs).containsExactlyEntriesOf(mapOf("sources" to listOf("newBlob")))
+        assertThat(written.captured.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
         assertThat(written.captured.lastRefreshAt).isEqualTo(FIXED_MILLIS)
     }
 
     @Test
-    fun `a 200 response merges unchanged topics and prunes topics no longer active`() {
+    fun `a 200 response overwrites changed topics, carries unchanged active topics forward, and prunes inactive ones`() {
         every { diskCache.read() } returns persisted(
-            manifest = "v1.1.sources:etag1,product_entitlement_mapping:pemEtag1",
-            topicBlobRefs = mapOf(
-                "sources" to listOf("oldSources"),
-                "product_entitlement_mapping" to listOf("pemBlob"),
+            manifest = "v1.1.sources:etag1,workflows:wfEtag1,product_entitlement_mapping:pemEtag1",
+            topics = mapOf(
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "oldSources"))),
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "wfBlob"))),
+                "product_entitlement_mapping" to ConfigTopic(
+                    mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
+                ),
             ),
         )
-        // sources changed; product_entitlement_mapping no longer active.
+        // sources changed; workflows still active but unchanged (omitted by the server); PEM no longer active.
         val response = """
             {
               "domain": "app",
               "manifest": "v1.2.sources:etag2",
-              "active_topics": ["sources"],
+              "active_topics": ["sources", "workflows"],
               "topics": { "sources": { "default": { "blob_ref": "newSources" } } }
             }
         """.trimIndent()
@@ -144,8 +158,11 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
-        assertThat(written.captured.topicBlobRefs)
-            .containsExactlyEntriesOf(mapOf("sources" to listOf("newSources")))
+        assertThat(written.captured.topics).containsOnlyKeys("sources", "workflows")
+        // Changed topic overwritten with the new index.
+        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newSources")
+        // Unchanged-but-active topic carried forward verbatim (the server omitted its body).
+        assertThat(written.captured.topics["workflows"]!!["wf1"]!!.blobRef).isEqualTo("wfBlob")
     }
 
     @Test
@@ -280,8 +297,9 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
-        // An inline-only topic references no blobs, so it persists an empty list and triggers no blob write.
-        assertThat(written.captured.topicBlobRefs).containsExactlyEntriesOf(mapOf("sources" to emptyList()))
+        // An inline-only topic is persisted with its inline content and no blob_ref, and triggers no blob write.
+        assertThat(written.captured.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.topics["sources"]!!["api"]!!.blobRef).isNull()
         verify(exactly = 0) { blobStore.write(any(), any()) }
     }
 
@@ -350,18 +368,126 @@ class RemoteConfigManagerTest {
         verify(exactly = 0) { diskCache.write(any()) }
     }
 
+    @Test
+    fun `a config element that fails to decode leaves the cache untouched and releases the guard`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithUndecodableConfig(), VerificationResult.VERIFIED)
+
+        // The decode failure is caught: nothing is persisted and the cache is left intact.
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        // The guard was released in the finally block, so a subsequent refresh is allowed to start.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `clearCache wipes the disk cache and blob store`() {
+        manager.clearCache()
+
+        verify(exactly = 1) { diskCache.clear() }
+        verify(exactly = 1) { blobStore.clear() }
+    }
+
+    @Test
+    fun `a response that arrives after clearCache does not persist`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // Identity change wipes the cache before the in-flight request settles.
+        manager.clearCache()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        // The stale response is dropped (epoch guard): nothing is written over the wiped cache.
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `clearCache during an in-flight persist wipes after the write, never leaving stale config`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        val writeEntered = CountDownLatch(1)
+        val releaseWrite = CountDownLatch(1)
+        val clearEntered = CountDownLatch(1)
+        // persist() holds cacheLock while it writes; block inside the write so a concurrent clearCache races it.
+        every { diskCache.write(any()) } answers {
+            writeEntered.countDown()
+            check(releaseWrite.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "write was not released in time" }
+            true
+        }
+        every { diskCache.clear() } answers { clearEntered.countDown() }
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // Run the 200 path on its own thread: it enters the lock and parks inside diskCache.write.
+        val persistThread = thread { onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED) }
+        check(writeEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "persist did not reach diskCache.write" }
+
+        // Identity change mid-persist: clearCache must block on the lock persist is holding.
+        val clearThread = thread { manager.clearCache() }
+
+        // While persist holds the lock, the wipe cannot run — the stale config can't be cleared out from under it.
+        assertThat(clearEntered.await(BLOCKED_MILLIS, TimeUnit.MILLISECONDS)).isFalse()
+
+        // Release the write: persist finishes and frees the lock, and only then does the wipe run.
+        releaseWrite.countDown()
+        persistThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        clearThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+
+        assertThat(clearEntered.count).isZero()
+        verify(exactly = 1) { diskCache.write(any()) }
+        verify(exactly = 1) { diskCache.clear() }
+    }
+
+    @Test
+    fun `the manager can sync again after clearCache`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        manager.clearCache()
+        // A brand-new sync (e.g. for the new user) proceeds normally: the guard was released by clearCache.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        verify(exactly = 1) { diskCache.write(any()) }
+    }
+
     private fun persisted(
         manifest: String,
         domain: String = "app",
         activeTopics: List<String> = emptyList(),
         prefetchBlobs: List<String> = emptyList(),
-        topicBlobRefs: Map<String, List<String>> = emptyMap(),
+        topics: Map<String, ConfigTopic> = emptyMap(),
     ) = PersistedRemoteConfigurationState(
         domain = domain,
         manifest = manifest,
         activeTopics = activeTopics,
         prefetchBlobs = prefetchBlobs,
-        topicBlobRefs = topicBlobRefs,
+        topics = topics,
     )
 
     private fun inlineElement(data: ByteBuffer, checksumValid: Boolean): RCElement {
@@ -382,9 +508,20 @@ class RemoteConfigManagerTest {
         return container
     }
 
+    private fun containerWithUndecodableConfig(): RCContainer {
+        val element = mockk<RCElement>()
+        every { element.decode() } throws RCContainerFormatException("Unsupported content encoding id 2.")
+        val container = mockk<RCContainer>()
+        every { container.config } returns element
+        every { container.elements } returns emptyMap()
+        return container
+    }
+
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"
         private const val FIXED_MILLIS = 1_710_000_000_000L
+        private const val WAIT_SECONDS = 5L
+        private const val BLOCKED_MILLIS = 200L
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
