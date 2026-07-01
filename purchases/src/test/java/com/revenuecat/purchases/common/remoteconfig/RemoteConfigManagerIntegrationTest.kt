@@ -11,6 +11,9 @@ import com.revenuecat.purchases.common.networking.RCContainerTestData
 import com.revenuecat.purchases.common.networking.RCContentEncoding
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -30,7 +33,7 @@ import java.util.Date
  * end-to-end path: inline-blob extraction -> on-disk storage -> retrieval, plus pruning and the prefetch
  * report fed from the blobs actually held.
  */
-@OptIn(InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class RemoteConfigManagerIntegrationTest {
@@ -42,6 +45,9 @@ class RemoteConfigManagerIntegrationTest {
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var blobStore: RemoteConfigBlobStore
     private lateinit var manager: RemoteConfigManager
+
+    // Unconfined so the launched 200-path coroutine runs eagerly: settle(onSuccess) then assert still works.
+    private val testScope = CoroutineScope(UnconfinedTestDispatcher())
 
     private var capturedManifest: String? = null
     private var capturedPrefetchedBlobs: List<String>? = null
@@ -61,7 +67,7 @@ class RemoteConfigManagerIntegrationTest {
         backend = mockk()
         diskCache = RemoteConfigDiskCache(applicationContext)
         blobStore = RemoteConfigBlobStore(applicationContext)
-        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider)
+        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = FixedDateProvider, scope = testScope)
 
         every {
             backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
