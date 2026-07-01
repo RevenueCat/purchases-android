@@ -126,9 +126,11 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns persisted(
             manifest = "v1.1.sources:etag1,workflows:wfEtag1,product_entitlement_mapping:pemEtag1",
             topics = mapOf(
-                "sources" to mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "oldSources")),
-                "workflows" to mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "wfBlob")),
-                "product_entitlement_mapping" to mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "oldSources"))),
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "wfBlob"))),
+                "product_entitlement_mapping" to ConfigTopic(
+                    mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
+                ),
             ),
         )
         // sources changed; workflows still active but unchanged (omitted by the server); PEM no longer active.

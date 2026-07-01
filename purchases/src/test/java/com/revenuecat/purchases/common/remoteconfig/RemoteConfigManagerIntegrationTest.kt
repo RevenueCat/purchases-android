@@ -222,7 +222,8 @@ class RemoteConfigManagerIntegrationTest {
 
         assertThat(blobStore.contains(ref)).isFalse
         assertThat(blobStore.cachedRefs()).isEmpty()
-        assertThat(diskCache.read()!!.topicBlobRefs).containsExactlyEntriesOf(mapOf("workflows" to listOf(ref)))
+        assertThat(diskCache.read()!!.topics.toTopicBlobRefs())
+            .containsExactlyEntriesOf(mapOf("workflows" to listOf(ref)))
     }
 
     @Test

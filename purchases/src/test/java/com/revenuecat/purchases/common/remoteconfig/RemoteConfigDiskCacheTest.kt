@@ -55,8 +55,10 @@ class RemoteConfigDiskCacheTest {
             activeTopics = listOf("sources", "product_entitlement_mapping"),
             prefetchBlobs = listOf("blobRefA"),
             topics = mapOf(
-                "sources" to mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "blobRefA")),
-                "product_entitlement_mapping" to mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "blobRefA"))),
+                "product_entitlement_mapping" to ConfigTopic(
+                    mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
+                ),
             ),
             lastRefreshAt = 1710000100L,
         )
@@ -81,9 +83,11 @@ class RemoteConfigDiskCacheTest {
             manifest = "v1.1.sources:etag1",
             activeTopics = listOf("sources"),
             topics = mapOf(
-                "sources" to mapOf(
-                    "api" to RemoteConfiguration.ConfigItem(
-                        content = buildJsonObject { put("url", "https://api.revenuecat.com") },
+                "sources" to ConfigTopic(
+                    mapOf(
+                        "api" to RemoteConfiguration.ConfigItem(
+                            content = buildJsonObject { put("url", "https://api.revenuecat.com") },
+                        ),
                     ),
                 ),
             ),
