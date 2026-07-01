@@ -152,7 +152,6 @@ internal class RemoteConfigManager(
         }
     }
 
-    /** Cancels in-flight sync work. Called on SDK teardown (Phase 7 wiring). */
     fun close() {
         scope.cancel()
     }

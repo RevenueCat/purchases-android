@@ -849,6 +849,7 @@ internal class PurchasesOrchestrator(
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
         this.backend.close()
+        this.remoteConfigManager?.close()
         this.workflowManager?.close()
 
         billing.close()

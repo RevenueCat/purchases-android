@@ -2818,6 +2818,17 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verifyClose()
     }
 
+    @Test
+    fun `when closing instance, the remote config manager is closed`() {
+        mockCloseActions()
+
+        purchases.close()
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.close()
+        }
+    }
+
     // endregion
 
     // region getWorkflow
@@ -2958,6 +2969,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private fun verifyClose() {
         verify {
             mockBackend.close()
+            mockRemoteConfigManager.close()
             mockBillingAbstract.close()
         }
         assertThat(purchases.updatedCustomerInfoListener).isNull()
