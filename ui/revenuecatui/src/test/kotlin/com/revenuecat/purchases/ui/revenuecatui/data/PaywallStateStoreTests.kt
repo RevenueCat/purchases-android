@@ -75,6 +75,24 @@ internal class PaywallStateStoreTests {
     }
 
     @Test
+    fun `accepts an integral double write to an integer-typed key`() {
+        val store = PaywallStateStore(mapOf("slide" to declaration(StateDeclaration.ValueType.INTEGER, JsonPrimitive(0))))
+
+        store.applyUpdates(listOf(setUpdate("slide", StateUpdateValue.Literal(JsonPrimitive(2.0)))))
+
+        assertThat(store.currentValueOrDefault("slide")).isEqualTo(JsonPrimitive(2.0))
+    }
+
+    @Test
+    fun `ignores a fractional double write to an integer-typed key`() {
+        val store = PaywallStateStore(mapOf("slide" to declaration(StateDeclaration.ValueType.INTEGER, JsonPrimitive(0))))
+
+        store.applyUpdates(listOf(setUpdate("slide", StateUpdateValue.Literal(JsonPrimitive(2.5)))))
+
+        assertThat(store.currentValueOrDefault("slide")).isEqualTo(JsonPrimitive(0))
+    }
+
+    @Test
     fun `accepts an integer write to a double-typed key`() {
         val store = PaywallStateStore(mapOf("ratio" to declaration(StateDeclaration.ValueType.DOUBLE, JsonPrimitive(0.0))))
 

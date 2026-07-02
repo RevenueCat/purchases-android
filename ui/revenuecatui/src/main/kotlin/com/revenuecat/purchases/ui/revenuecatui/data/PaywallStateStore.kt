@@ -67,7 +67,8 @@ private fun JsonPrimitive.matchesDeclaredType(declaredType: StateDeclaration.Val
     when (declaredType) {
         StateDeclaration.ValueType.BOOLEAN -> !isString && booleanOrNull != null
         StateDeclaration.ValueType.STRING -> isString
-        StateDeclaration.ValueType.INTEGER -> !isString && longOrNull != null
+        // Integral doubles are accepted for parity with iOS, which coerces them via Int(exactly:).
+        StateDeclaration.ValueType.INTEGER -> !isString && (longOrNull != null || doubleOrNull?.rem(1.0) == 0.0)
         StateDeclaration.ValueType.DOUBLE -> !isString && doubleOrNull != null
         StateDeclaration.ValueType.UNKNOWN -> false
     }
