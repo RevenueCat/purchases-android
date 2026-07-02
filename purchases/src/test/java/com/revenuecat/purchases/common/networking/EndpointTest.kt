@@ -204,6 +204,26 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetRemoteConfig supports fallback base URLs`() {
+        val endpoint = Endpoint.GetRemoteConfig("app")
+        assertThat(endpoint.supportsFallbackBaseURLs).isTrue
+    }
+
+    @Test
+    fun `GetRemoteConfig fallback path is correct`() {
+        val endpoint = Endpoint.GetRemoteConfig("app")
+        val expectedPath = "/v1/config/app"
+        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetRemoteConfig encodes the domain in the fallback path`() {
+        val endpoint = Endpoint.GetRemoteConfig("my domain")
+        val expectedPath = "/v1/config/my%20domain"
+        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+    }
+
+    @Test
     fun `AliasUsers has correct name`() {
         val endpoint = Endpoint.AliasUsers(userId = "test user-id")
         assertThat(endpoint.name).isEqualTo("alias_users")
