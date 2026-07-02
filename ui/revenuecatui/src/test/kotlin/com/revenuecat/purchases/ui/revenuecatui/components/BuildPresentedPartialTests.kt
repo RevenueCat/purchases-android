@@ -49,6 +49,8 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val expected: LocalizedTextPartial?,
         val selectedPackageId: String? = null,
         val customVariables: Map<String, CustomVariableValue> = emptyMap(),
+        val stateValues: Map<String, JsonPrimitive> = emptyMap(),
+        val stateDefaults: Map<String, JsonPrimitive> = emptyMap(),
     )
 
     @Suppress("LargeClass")
@@ -193,6 +195,27 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             }
             return overrides
         }
+
+        private fun stateCondition(
+            operator: ComponentOverride.EqualityOperator,
+            name: String,
+            value: JsonPrimitive,
+        ) = ComponentOverride.Condition.State(operator = operator, name = name, value = value)
+
+        private fun stateArgs(
+            condition: ComponentOverride.Condition.State,
+            stateValues: Map<String, JsonPrimitive> = emptyMap(),
+            stateDefaults: Map<String, JsonPrimitive> = emptyMap(),
+            expected: LocalizedTextPartial?,
+        ) = Args(
+            availableOverrides = listOf(PresentedOverride(listOf(condition), selectedPartial)),
+            windowSize = COMPACT,
+            offerEligibility = Ineligible,
+            state = DEFAULT,
+            stateValues = stateValues,
+            stateDefaults = stateDefaults,
+            expected = expected,
+        )
 
         @Suppress("LongMethod")
         @JvmStatic
@@ -1169,6 +1192,91 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
 
+            // State condition tests
+            arrayOf(
+                "state boolean equals: applies when the stored value matches",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "open", JsonPrimitive(true)),
+                    stateValues = mapOf("open" to JsonPrimitive(true)),
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "state boolean equals: does not apply when the stored value differs",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "open", JsonPrimitive(true)),
+                    stateValues = mapOf("open" to JsonPrimitive(false)),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "state string not-equals: applies when the stored value differs",
+                stateArgs(
+                    condition = stateCondition(
+                        ComponentOverride.EqualityOperator.NOT_EQUALS, "tab", JsonPrimitive("billing"),
+                    ),
+                    stateValues = mapOf("tab" to JsonPrimitive("usage")),
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "state integer equals: applies when the stored value matches",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "slide", JsonPrimitive(2)),
+                    stateValues = mapOf("slide" to JsonPrimitive(2)),
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "state number: integer condition matches a double-typed store value",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "slide", JsonPrimitive(2)),
+                    stateValues = mapOf("slide" to JsonPrimitive(2.0)),
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "state: type mismatch evaluates as not equal",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "slide", JsonPrimitive(2)),
+                    stateValues = mapOf("slide" to JsonPrimitive("2")),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "state: missing value falls back to the declared default",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "open", JsonPrimitive(true)),
+                    stateDefaults = mapOf("open" to JsonPrimitive(true)),
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "state: stored value wins over the declared default",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "open", JsonPrimitive(true)),
+                    stateValues = mapOf("open" to JsonPrimitive(true)),
+                    stateDefaults = mapOf("open" to JsonPrimitive(false)),
+                    expected = selectedPartial,
+                ),
+            ),
+            arrayOf(
+                "state: undeclared key with equals never applies",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "ghost", JsonPrimitive(true)),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "state: undeclared key with not-equals never applies",
+                stateArgs(
+                    condition = stateCondition(
+                        ComponentOverride.EqualityOperator.NOT_EQUALS, "ghost", JsonPrimitive(true),
+                    ),
+                    expected = null,
+                ),
+            ),
+
             // IntroOffer (legacy object) tests
             arrayOf(
                 "intro_offer: should apply when eligible",
@@ -2057,6 +2165,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
             conditionContext = ConditionContext(
                 selectedPackageId = args.selectedPackageId,
                 customVariables = args.customVariables,
+                stateReader = { key -> args.stateValues[key] ?: args.stateDefaults[key] },
             ),
         )
 
