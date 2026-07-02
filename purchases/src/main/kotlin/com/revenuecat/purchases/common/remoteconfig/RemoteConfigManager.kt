@@ -217,12 +217,13 @@ internal class RemoteConfigManager(
     /**
      * Best-effort, topic-agnostic warm of the blobs the committed config wants prefetched: the server's
      * [RemoteConfiguration.prefetchBlobs] plus any item flagged `prefetch`. Re-arms the blob source provider
-     * first (a prior cycle may have exhausted its sources), then hands the not-yet-cached refs to the fetcher's
-     * LOW-priority queue. Runs on the manager's IO scope (inside [persist]), so it never blocks the main thread;
-     * a failed download is tolerated (re-fetched next sync / on demand).
+     * first **only if a prior cycle exhausted its sources** (otherwise failover progress is kept, so a
+     * known-bad higher-priority source isn't re-tried every sync), then hands the not-yet-cached refs to the
+     * fetcher's LOW-priority queue. Runs on the manager's IO scope (inside [persist]), so it never blocks the
+     * main thread; a failed download is tolerated (re-fetched next sync / on demand).
      */
     private fun prefetchBlobs(response: RemoteConfiguration, mergedTopics: Map<String, ConfigTopic>) {
-        sourceProvider.restart(RemoteConfigSourceHandle.Purpose.BLOB)
+        sourceProvider.restartIfExhausted(RemoteConfigSourceHandle.Purpose.BLOB)
         val refs = buildSet {
             addAll(response.prefetchBlobs)
             mergedTopics.values.forEach { topic ->

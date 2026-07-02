@@ -21,10 +21,24 @@ import java.nio.ByteBuffer
 internal class RemoteConfigBlobStore(
     private val applicationContext: Context,
 ) {
-    fun contains(ref: String): Boolean = blobFile(ref)?.exists() == true
+    private val lock = Any()
+
+    // Refs known to be on disk. Loaded once from a disk scan on first access, then kept in sync by write /
+    // retainOnly / clear, so contains() and cachedRefs() answer from memory instead of stat-ing the disk each
+    // call. The store is the sole writer of its directory, so this stays authoritative; if disk and index ever
+    // diverge, read() self-heals by evicting the ref on a miss, so a stale "cached" flag can't strand a re-fetch.
+    private var knownRefs: MutableSet<String>? = null
+
+    fun contains(ref: String): Boolean = synchronized(lock) { loadedRefs().contains(ref) }
 
     fun read(ref: String): ByteArray? {
-        val target = blobFile(ref)?.takeIf { it.exists() } ?: return null
+        val target = blobFile(ref)?.takeIf { it.exists() }
+        if (target == null) {
+            // Disk and index disagree (ref gone from under us): correct the index so a later
+            // ensureDownloaded/prefetch re-fetches instead of trusting a stale "cached" flag.
+            synchronized(lock) { knownRefs?.remove(ref) }
+            return null
+        }
         return try {
             target.readBytes()
         } catch (e: IOException) {
@@ -59,6 +73,7 @@ internal class RemoteConfigBlobStore(
                     tempFile.delete()
                 }
             }
+            synchronized(lock) { loadedRefs().add(ref) }
             true
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist remote config blob '$ref' to disk." }
@@ -67,24 +82,21 @@ internal class RemoteConfigBlobStore(
     }
 
     /** The refs currently cached on disk (only files whose name is a valid ref). */
-    fun cachedRefs(): Set<String> {
-        val parent = blobsDir()
-        if (!parent.exists()) return emptySet()
-        return parent.listFiles()
-            ?.asSequence()
-            ?.filter { it.isFile && RemoteConfigUtils.isValidRef(it.name) }
-            ?.map { it.name }
-            ?.toSet()
-            ?: emptySet()
-    }
+    fun cachedRefs(): Set<String> = synchronized(lock) { loadedRefs().toSet() }
 
-    /** Deletes every cached blob whose ref is not in [refs]. */
+    /**
+     * Deletes every cached blob whose ref is not in [refs]. Scans the directory (not just the in-memory index)
+     * so orphans the index never tracks are pruned too: leftover `rc_blob_*.tmp` files from a write interrupted
+     * by a process kill, and any invalid-named file. Runs once per sync, so the scan is not on a hot path.
+     */
     fun retainOnly(refs: Set<String>) {
         val parent = blobsDir()
-        if (!parent.exists()) return
-        parent.listFiles()
-            ?.filter { it.isFile && it.name !in refs }
-            ?.forEach { deleteQuietly(it) }
+        if (parent.exists()) {
+            parent.listFiles()
+                ?.filter { it.isFile && it.name !in refs }
+                ?.forEach { deleteQuietly(it) }
+        }
+        synchronized(lock) { loadedRefs().retainAll(refs) }
     }
 
     /**
@@ -92,9 +104,27 @@ internal class RemoteConfigBlobStore(
      * users (unlike [retainOnly], which only prunes unreferenced blobs).
      */
     fun clear() {
+        synchronized(lock) {
+            val parent = blobsDir()
+            if (parent.exists()) parent.listFiles()?.forEach { deleteQuietly(it) }
+            knownRefs = mutableSetOf()
+        }
+    }
+
+    /**
+     * The in-memory ref index, populated on first access from a one-time scan of the blobs directory for files
+     * whose name is a valid ref. Callers must hold [lock].
+     */
+    private fun loadedRefs(): MutableSet<String> = knownRefs ?: run {
         val parent = blobsDir()
-        if (!parent.exists()) return
-        parent.listFiles()?.forEach { deleteQuietly(it) }
+        val scanned = parent.takeIf { it.exists() }
+            ?.listFiles()
+            ?.asSequence()
+            ?.filter { it.isFile && RemoteConfigUtils.isValidRef(it.name) }
+            ?.map { it.name }
+            ?.toMutableSet()
+            ?: mutableSetOf()
+        scanned.also { knownRefs = it }
     }
 
     private fun deleteQuietly(file: File) {

@@ -88,6 +88,17 @@ class RemoteConfigBlobStoreTest {
     }
 
     @Test
+    fun `contains and cachedRefs load blobs already on disk from a previous instance`() {
+        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+
+        // A fresh instance over the same directory must discover the existing blob via its one-time disk scan.
+        val reopened = RemoteConfigBlobStore(applicationContext)
+
+        assertThat(reopened.contains(refA)).isTrue
+        assertThat(reopened.cachedRefs()).containsExactly(refA)
+    }
+
+    @Test
     fun `cachedRefs reflects the written blobs`() {
         blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
         blobStore.write(refB, ByteBuffer.wrap(byteArrayOf(2)))
@@ -109,6 +120,35 @@ class RemoteConfigBlobStoreTest {
 
         assertThat(blobStore.contains(refA)).isTrue
         assertThat(blobStore.contains(refB)).isFalse
+    }
+
+    @Test
+    fun `retainOnly prunes orphan temp files and invalid-named files the index never tracks`() {
+        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        // Simulate a temp file left by a write interrupted mid-flight, plus a stray invalid-named file.
+        val blobsDir = File(File(testFolder, "RevenueCat"), "blobs")
+        val orphanTemp = File(blobsDir, "rc_blob_orphan.tmp").apply { writeBytes(byteArrayOf(9)) }
+        val invalidNamed = File(blobsDir, "not-a-valid-ref").apply { writeBytes(byteArrayOf(9)) }
+
+        blobStore.retainOnly(setOf(refA))
+
+        assertThat(orphanTemp.exists()).isFalse
+        assertThat(invalidNamed.exists()).isFalse
+        assertThat(blobStore.contains(refA)).isTrue
+        assertThat(blobStore.cachedRefs()).containsExactly(refA)
+    }
+
+    @Test
+    fun `read self-heals the index when the underlying file is gone`() {
+        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        assertThat(blobStore.contains(refA)).isTrue
+
+        // The file disappears from under us (e.g. external removal); the index still claims it.
+        File(File(File(testFolder, "RevenueCat"), "blobs"), refA).delete()
+
+        assertThat(blobStore.read(refA)).isNull()
+        // The read miss corrected the index, so a later ensureDownloaded/prefetch would re-fetch it.
+        assertThat(blobStore.contains(refA)).isFalse
     }
 
     @Test
