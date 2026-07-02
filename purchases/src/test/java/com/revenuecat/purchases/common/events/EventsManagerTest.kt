@@ -484,7 +484,7 @@ class EventsManagerTest {
         val storedContent = checkFileContentsAndReturn()
         assertThat(storedContent).contains("\"type\":\"workflows\"")
         assertThat(storedContent).contains("\"workflow_id\":\"wfl_abc\"")
-        assertThat(storedContent).contains("workflows_step_started")
+        assertThat(storedContent).contains("workflow_step_started")
     }
 
     @Test
@@ -503,7 +503,7 @@ class EventsManagerTest {
         val storedContent = checkFileContentsAndReturn()
         assertThat(storedContent).contains("\"type\":\"workflows\"")
         assertThat(storedContent).contains("\"workflow_id\":\"wfl_abc\"")
-        assertThat(storedContent).contains("workflows_close")
+        assertThat(storedContent).contains("workflow_close")
     }
 
     // Ad Events Tests
