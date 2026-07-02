@@ -91,6 +91,21 @@ internal class PaywallComponentStateTests {
     }
 
     @Test
+    fun `drops a declaration with a null default`() {
+        @Language("json")
+        val json = """
+            {
+              "good": { "type": "string", "default": "v" },
+              "bad":  { "type": "string", "default": null }
+            }
+        """.trimIndent()
+
+        val actual = JsonTools.json.decodeFromString(StateDeclarationMapSerializer, json)
+
+        assertThat(actual.keys).containsExactly("good")
+    }
+
+    @Test
     fun `decodes a non-object state_declarations value as an empty map`() {
         val actual = JsonTools.json.decodeFromString(StateDeclarationMapSerializer, """"not_an_object"""")
 

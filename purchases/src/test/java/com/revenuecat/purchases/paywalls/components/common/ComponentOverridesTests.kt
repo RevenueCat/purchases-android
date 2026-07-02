@@ -531,6 +531,11 @@ internal class ComponentOverridesTests {
                     """{ "type": "state_condition", "operator": "=", "name": "k", "value": [1, 2] }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
+                // State condition with a null value falls back to Unsupported (parity with iOS)
+                arrayOf(
+                    """{ "type": "state_condition", "operator": "!=", "name": "k", "value": null }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
                 arrayOf(
                     """{ "type": "state_condition", "operator": "=", "name": "k", "value": {"nested": true} }""",
                     ComponentOverride.Condition.Unsupported,

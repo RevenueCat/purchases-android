@@ -7,6 +7,7 @@ import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 
 @InternalRevenueCatAPI
@@ -98,7 +99,14 @@ public class ComponentOverride<T : PartialComponent>(
             public val operator: EqualityOperator,
             public val name: String,
             public val value: JsonPrimitive,
-        ) : Condition { override val isRule: Boolean get() = true }
+        ) : Condition {
+            override val isRule: Boolean get() = true
+
+            init {
+                // Parity with iOS, where a null value fails ConditionValue decoding: fall back to Unsupported.
+                require(value !is JsonNull) { "State condition value must not be null" }
+            }
+        }
 
         @Serializable
         public object Unsupported : Condition
