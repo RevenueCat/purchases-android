@@ -91,7 +91,14 @@ internal class RemoteConfigBlobFetcher(
             errorLog { "Refusing to download remote config blob with malformed ref '$ref'." }
             return false
         }
-        return if (blobStore.contains(ref)) true else enqueue(ref, Priority.HIGH).await()
+        return if (blobStore.contains(ref)) {
+            true
+        } else {
+            // An on-demand read is worth a fresh pass: if a prior cycle exhausted the blob sources, re-arm them
+            // so a source that has since recovered is retried. No-op (and keeps failover progress) otherwise.
+            sourceProvider.restartIfExhausted(Purpose.BLOB)
+            enqueue(ref, Priority.HIGH).await()
+        }
     }
 
     /**
@@ -172,8 +179,10 @@ internal class RemoteConfigBlobFetcher(
         if (blobStore.contains(ref)) return true
 
         // Each SOURCE_UNHEALTHY failure falls over to the next source; once the provider has none left
-        // (getCurrent == null) the operation fails and stops. We never restart here, so we can't spin retrying
-        // sources already known to be bad. Re-arming the provider (restart) is the caller's job — a new sync cycle.
+        // (getCurrent == null) the operation fails and stops. We never restart here, so a backlog of downloads
+        // can't each spin re-walking sources already known to be bad. Re-arming an exhausted provider happens at
+        // the operation entry instead (on-demand ensureDownloaded, and the manager's per-sync prefetch), bounding
+        // it to one re-arm per request/cycle.
         var handle = sourceProvider.getCurrent(Purpose.BLOB)
         var result: Boolean? = null
         while (handle != null && result == null) {

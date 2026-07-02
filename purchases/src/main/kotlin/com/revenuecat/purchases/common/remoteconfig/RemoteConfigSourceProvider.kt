@@ -51,6 +51,13 @@ internal interface RemoteConfigSourceProvider {
     fun restart(purpose: RemoteConfigSourceHandle.Purpose)
 
     /**
+     * Rewinds [purpose] to its first source only if it is currently exhausted (no healthy source left),
+     * e.g. so an on-demand read or a new sync can retry sources that may have recovered. No-op when a
+     * healthy source is still current, preserving failover progress. Returns whether it re-armed.
+     */
+    fun restartIfExhausted(purpose: RemoteConfigSourceHandle.Purpose): Boolean
+
+    /**
      * Drops any resolved sources and returns to the embedded defaults, e.g. on an identity change so a new
      * user's sources are re-resolved from a fresh config. No-op for providers that hold no per-user state.
      */
@@ -114,6 +121,19 @@ internal class DefaultRemoteConfigSourceProvider(
             }
         }
     }
+
+    override fun restartIfExhausted(purpose: RemoteConfigSourceHandle.Purpose): Boolean =
+        synchronized(lock) {
+            // A config change already re-armed both lists from the top; nothing more to do here.
+            if (rebuildIfChanged()) return true
+            val failover = failoverFor(purpose)
+            if (failover.current == null) {
+                failover.restart()
+                true
+            } else {
+                false
+            }
+        }
 
     override fun clear() {
         // Identity change: rebuild from an empty topic, back to the embedded defaults. The next access after the
