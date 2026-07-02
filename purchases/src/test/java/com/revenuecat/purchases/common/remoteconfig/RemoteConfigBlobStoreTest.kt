@@ -88,6 +88,17 @@ class RemoteConfigBlobStoreTest {
     }
 
     @Test
+    fun `contains and cachedRefs load blobs already on disk from a previous instance`() {
+        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+
+        // A fresh instance over the same directory must discover the existing blob via its one-time disk scan.
+        val reopened = RemoteConfigBlobStore(applicationContext)
+
+        assertThat(reopened.contains(refA)).isTrue
+        assertThat(reopened.cachedRefs()).containsExactly(refA)
+    }
+
+    @Test
     fun `cachedRefs reflects the written blobs`() {
         blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
         blobStore.write(refB, ByteBuffer.wrap(byteArrayOf(2)))

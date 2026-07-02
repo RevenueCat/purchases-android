@@ -308,6 +308,64 @@ class RemoteConfigSourceProviderTest {
 
     // endregion
 
+    // region restartIfExhausted
+
+    @Test
+    fun `restartIfExhausted rewinds and returns true once the sources are exhausted`() {
+        val provider = apiProvider(listOf(source("a"), source("b")))
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
+
+        assertThat(provider.restartIfExhausted(Purpose.API)).isTrue()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+    }
+
+    @Test
+    fun `restartIfExhausted is a no-op and returns false while a healthy source is current`() {
+        val provider = apiProvider(listOf(source("a"), source("b")))
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, still healthy
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+
+        // Not exhausted, so it must keep failover progress instead of rewinding to `a`.
+        assertThat(provider.restartIfExhausted(Purpose.API)).isFalse()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+    }
+
+    @Test
+    fun `restartIfExhausted only rewinds the requested purpose`() {
+        val provider = provider(
+            api = listOf(source("api1", priority = 0)),
+            blob = listOf(source("blob1", priority = 0), source("blob2", priority = 10)),
+        )
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // api exhausted
+        provider.reportUnhealthy(provider.getCurrent(Purpose.BLOB)!!) // blob1 -> blob2, still healthy
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
+
+        assertThat(provider.restartIfExhausted(Purpose.API)).isTrue()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("api1"))
+        // Blob was not exhausted, so its progress is untouched.
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob2"))
+    }
+
+    @Test
+    fun `restartIfExhausted returns true when a changed sources topic already re-armed the list`() {
+        val store = FakeTopicStore(sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList()))
+        val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0))
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+
+        // A changed topic rebuilds from the top; restartIfExhausted reports the re-arm and leaves it at the top.
+        store.sources = sourcesTopic(api = listOf(source("x"), source("y")), blob = emptyList())
+        assertThat(provider.restartIfExhausted(Purpose.API)).isTrue()
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("x"))
+    }
+
+    // endregion
+
     // region Sources topic changes
 
     @Test

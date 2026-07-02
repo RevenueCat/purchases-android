@@ -188,20 +188,35 @@ class RemoteConfigBlobFetcherTest {
     }
 
     @Test
-    fun `stops and fails once the provider has exhausted its sources, without restarting`() {
+    fun `an on-demand request re-arms exhausted blob sources and retries on a later download`() {
         val ref = refOf("body".toByteArray())
         val provider = provider(blobSource(TEMPLATE))
-        // The only source errors, so it is reported unhealthy and the provider becomes exhausted.
+        // The only source keeps erroring, so each attempt reports it unhealthy and exhausts the provider.
         stubConnection(urlFor(ref), code = 500)
         val fetcher = realFetcher(provider)
 
-        // First download fails over to exhaustion; a later download must not re-arm the provider and retry.
+        // First download exhausts the single source; the second, on-demand, re-arms it and tries again.
         assertThat(download(fetcher, ref)).isFalse()
         assertThat(download(fetcher, ref)).isFalse()
 
-        verify(exactly = 0) { provider.restart(any()) }
         verify(exactly = 0) { blobStore.write(any(), any()) }
-        // Only the first download reached a source; the second saw no current source and stopped immediately.
+        // The provider was re-armed once exhausted, so the second download reached the source again.
+        verify { provider.restartIfExhausted(Purpose.BLOB) }
+        verify(exactly = 2) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+    }
+
+    @Test
+    fun `an on-demand request does not re-arm while a healthy source is still current`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val provider = provider(blobSource(TEMPLATE))
+        stubConnection(urlFor(ref), code = 200, body = bytes)
+        val fetcher = realFetcher(provider)
+
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The source was healthy, so restartIfExhausted was a no-op and never rewound the failover.
+        verify(exactly = 0) { provider.restart(any()) }
         verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
     }
 

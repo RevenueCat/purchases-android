@@ -392,8 +392,8 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
-        // Re-arm the (possibly exhausted) blob sources before fetching.
-        verify(exactly = 1) { sourceProvider.restart(RemoteConfigSourceHandle.Purpose.BLOB) }
+        // Re-arm the blob sources before fetching, but only if a prior cycle exhausted them.
+        verify(exactly = 1) { sourceProvider.restartIfExhausted(RemoteConfigSourceHandle.Purpose.BLOB) }
         // The server prefetch set and any item flagged prefetch=true are warmed; non-flagged items are not.
         val prefetched = slot<List<String>>()
         verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
@@ -439,7 +439,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
-        verify(exactly = 0) { sourceProvider.restart(any()) }
+        verify(exactly = 0) { sourceProvider.restartIfExhausted(any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
     }
 
@@ -450,7 +450,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(null, VerificationResult.VERIFIED)
 
-        verify(exactly = 0) { sourceProvider.restart(any()) }
+        verify(exactly = 0) { sourceProvider.restartIfExhausted(any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
     }
 
