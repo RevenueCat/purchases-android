@@ -77,8 +77,15 @@ internal class FileHelper(
 
     private fun openBufferedReader(filePath: String, contentBlock: ((BufferedReader) -> Unit)) {
         val file = getFileInFilesDir(filePath)
-        FileInputStream(file).use { fileInputStream ->
-            InputStreamReader(fileInputStream).use { inputStreamReader ->
+        val fileInputStream = try {
+            FileInputStream(file)
+        } catch (e: FileNotFoundException) {
+            // File may be missing or deleted concurrently. Treat as an empty read.
+            errorLog(e) { "FileHelper: file not found when trying to read file: $filePath. Ignoring." }
+            return
+        }
+        fileInputStream.use { stream ->
+            InputStreamReader(stream).use { inputStreamReader ->
                 BufferedReader(inputStreamReader).use { bufferedReader ->
                     contentBlock(bufferedReader)
                 }

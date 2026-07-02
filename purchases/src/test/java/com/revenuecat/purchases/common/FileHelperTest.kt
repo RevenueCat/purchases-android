@@ -160,6 +160,18 @@ class FileHelperTest {
         assertThat(receivedValues).isEqualTo(listOf("first line", "second line"))
     }
 
+    @Test
+    fun `readFilePerLines treats a missing file as empty instead of throwing`() {
+        verifyFileDoesNotExist()
+        val receivedValues = mutableListOf<String>()
+        fileHelper.readFilePerLines(testFilePath) { sequence ->
+            sequence.forEach {
+                receivedValues.add(it)
+            }
+        }
+        assertThat(receivedValues).isEmpty()
+    }
+
     private fun verifyFileDoesNotExist() {
         val file = File(testFolder, testFilePath)
         if (file.exists()) {
