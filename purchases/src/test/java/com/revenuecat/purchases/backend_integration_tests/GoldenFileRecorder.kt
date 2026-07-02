@@ -4,6 +4,7 @@ import com.revenuecat.purchases.common.RequestResponseListener
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.net.URL
 
 /**
  * Data class representing a recorded HTTP request in the golden file format.
@@ -84,7 +85,9 @@ class GoldenFileRecorder(
     private val testName: String,
     private val baseDirectory: File,
     headersToIgnore: Set<String> = DEFAULT_HEADERS_TO_IGNORE,
-    private val bodyFieldsToIgnore: Set<String> = DEFAULT_BODY_FIELDS_TO_IGNORE
+    private val bodyFieldsToIgnore: Set<String> = DEFAULT_BODY_FIELDS_TO_IGNORE,
+    private val requestBodyFieldsToIgnoreByPath: Map<Regex, Set<String>> =
+        DEFAULT_REQUEST_BODY_FIELDS_TO_IGNORE_BY_PATH,
 ) : RequestResponseListener {
 
     companion object {
@@ -141,6 +144,10 @@ class GoldenFileRecorder(
             "events > [offering_id]",
             "events > [timestamp]",
         )
+
+        val DEFAULT_REQUEST_BODY_FIELDS_TO_IGNORE_BY_PATH = mapOf(
+            Regex("^/v1/config/[^/]+$") to setOf("manifest"),
+        )
     }
 
     private var requestCounter = 0
@@ -168,7 +175,7 @@ class GoldenFileRecorder(
             url = url,
             method = method,
             headers = filterHeaders(requestHeaders),
-            body = filterBody(requestBody)
+            body = filterBody(requestBody, requestBodyFieldsToIgnore(url))
         )
         val response = RecordedResponse(
             statusCode = responseCode,
@@ -186,14 +193,15 @@ class GoldenFileRecorder(
         }
     }
 
-    private fun filterBody(body: String?): String? {
-        if (body == null || bodyFieldsToIgnore.isEmpty()) {
+    private fun filterBody(body: String?, additionalFieldsToIgnore: Set<String> = emptySet()): String? {
+        val fieldsToIgnore = bodyFieldsToIgnore + additionalFieldsToIgnore
+        if (body == null || fieldsToIgnore.isEmpty()) {
             return body
         }
 
         return try {
             val jsonObject = JSONObject(body)
-            bodyFieldsToIgnore.forEach { pathSpec ->
+            fieldsToIgnore.forEach { pathSpec ->
                 applyFieldFilter(jsonObject, pathSpec)
             }
             jsonObject.toString()
@@ -201,6 +209,19 @@ class GoldenFileRecorder(
             // Not a JSON object or parsing failed, return as-is
             body
         }
+    }
+
+    private fun requestBodyFieldsToIgnore(url: String): Set<String> {
+        val path = try {
+            URL(url).path
+        } catch (@Suppress("SwallowedException") _: Exception) {
+            url
+        }
+        return requestBodyFieldsToIgnoreByPath
+            .filterKeys { pattern -> pattern.matches(path) }
+            .values
+            .flatten()
+            .toSet()
     }
 
     /**
