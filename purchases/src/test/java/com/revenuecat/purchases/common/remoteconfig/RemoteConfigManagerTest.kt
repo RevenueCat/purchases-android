@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
@@ -54,7 +55,7 @@ class RemoteConfigManagerTest {
     private var capturedManifest: String? = null
     private var capturedPrefetchedBlobs: List<String>? = null
     private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
-    private lateinit var onError: (PurchasesError) -> Unit
+    private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
     @Before
     fun setup() {
@@ -471,9 +472,66 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
-        onError.invoke(PurchasesError(PurchasesErrorCode.UnknownError, "boom"))
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownError, "boom"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
 
         verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `a 4xx disables the endpoint for the session and blocks further refreshes and blob work`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        assertThat(manager.isUnavailable).isTrue()
+
+        // No further config request and no blob fetch happen for the rest of the session.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
+    fun `a retryable error does not disable the endpoint`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        assertThat(manager.isUnavailable).isFalse()
+
+        // The endpoint is still usable, so a subsequent refresh fires.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `clearCache does not re-enable an endpoint disabled by a 4xx`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        // Identity change: the disable survives (it is an endpoint/app-level fact, not per-user).
+        manager.clearCache()
+
+        assertThat(manager.isUnavailable).isTrue()
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -503,7 +561,10 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
-        onError.invoke(PurchasesError(PurchasesErrorCode.UnknownError, "boom"))
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownError, "boom"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }

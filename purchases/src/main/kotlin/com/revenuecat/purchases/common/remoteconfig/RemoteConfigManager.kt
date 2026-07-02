@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -71,6 +73,20 @@ internal class RemoteConfigManager(
     @Volatile
     private var lastRefreshedAt: Date? = null
 
+    // Session-scoped kill-switch. Set when `/v1/config` returns a 4xx (the endpoint intentionally refused the
+    // request). While set, no config request is issued and — since blob prefetch only runs after a successful
+    // persist — no blob fetch happens either. Memory-only: an app restart re-enables the endpoint. Intentionally
+    // NOT reset by clearCache() (a 4xx is an endpoint/app-level fact, not per-user).
+    @Volatile
+    private var unavailable = false
+
+    /**
+     * Whether `/v1/config` has been disabled for this session after a 4xx client error. Consumers can read this
+     * to know the remote config endpoint is not being used. Resets only on app restart.
+     */
+    val isUnavailable: Boolean
+        get() = unavailable
+
     fun refreshRemoteConfigIfStale(appInBackground: Boolean, appUserID: String) {
         if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider)) {
             refreshRemoteConfig(appInBackground, appUserID)
@@ -78,6 +94,10 @@ internal class RemoteConfigManager(
     }
 
     fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String) {
+        if (unavailable) {
+            debugLog { "Remote config is unavailable for this session (4xx). Skipping refresh." }
+            return
+        }
         val requestEpoch: Int
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
         // clearCache()'s epoch bump + guard release. Otherwise an identity change could slip its bump
@@ -136,12 +156,24 @@ internal class RemoteConfigManager(
                     }
                 }
             },
-            onError = { error ->
-                if (releaseGuardIfOwned(requestEpoch)) {
-                    errorLog(error)
-                }
-            },
+            onError = { error, behavior -> handleRefreshError(requestEpoch, error, behavior) },
         )
+    }
+
+    private fun handleRefreshError(
+        requestEpoch: Int,
+        error: PurchasesError,
+        behavior: GetRemoteConfigErrorHandlingBehavior,
+    ) {
+        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE) {
+            // A 4xx: disable the endpoint for the rest of the session. This is an endpoint-level fact, so set it
+            // regardless of epoch ownership (a late response for an old identity is still a valid signal that the
+            // endpoint refuses this app's requests).
+            unavailable = true
+        }
+        if (releaseGuardIfOwned(requestEpoch)) {
+            errorLog(error)
+        }
     }
 
     /**
@@ -153,6 +185,8 @@ internal class RemoteConfigManager(
             epoch.incrementAndGet()
             isRefreshing.set(false)
             lastRefreshedAt = null
+            // Intentionally NOT resetting `unavailable`: a 4xx is an endpoint/app-level fact that outlives an
+            // identity change. It clears only on app restart.
             diskCache.clear()
             blobStore.clear()
             sourceProvider.clear()
