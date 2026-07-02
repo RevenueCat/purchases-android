@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.AtomicFile
 import android.util.Base64
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.utils.toMap
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -23,14 +25,14 @@ import javax.crypto.spec.SecretKeySpec
  * ## Key derivation
  *
  * The symmetric key is derived once at initialization via `PBKDF2WithHmacSHA256` using the
- * supplied [password] and an optional salt. Because the key is derived deterministically, 
- * it survives backup/restore — as long as the same password is provided, the data is readable 
- * on any device, in contrast to Android Keystore-backed approaches where keys are 
+ * supplied [password] and an optional salt. Because the key is derived deterministically,
+ * it survives backup/restore — as long as the same password is provided, the data is readable
+ * on any device, in contrast to Android Keystore-backed approaches where keys are
  * hardware-bound and cannot be restored.
  *
  * ## Backup behaviour
  *
- * The [SecureItemAttributes.includedInBackup] attribute controls which directory a file is
+ * The [SecureItemAttributes.includedInBackup] attribute controls which partition an item is
  * written to:
  *
  * - `true` (the default): the item is stored under [Context.getFilesDir], which participates
@@ -46,12 +48,15 @@ import javax.crypto.spec.SecretKeySpec
  *
  */
 internal class EncryptedItemStorage private constructor(
-    private val backupFile: File,
-    private val noBackupFile: File,
+    private val backup: Partition,
+    private val noBackup: Partition,
     private val key: SecretKey,
-    private val backupStore: MutableMap<String, String>,
-    private val noBackupStore: MutableMap<String, String>,
+    private val computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : SecureItemStorage {
+
+    // Pairs a backing file with its in-memory map of encrypted entries.
+    private data class Partition(val file: File, val contents: MutableMap<String, String>)
 
     companion object {
         private const val PBKDF2_ALGORITHM = "PBKDF2WithHmacSHA256"
@@ -70,13 +75,15 @@ internal class EncryptedItemStorage private constructor(
         /**
          * Create an [EncryptedItemStorage] backed by PBKDF2-derived AES-256-GCM.
          *
-         * Key derivation runs on [Dispatchers.Default] (CPU-bound); store loading runs on
-         * [Dispatchers.IO]. Neither blocks the calling thread.
+         * Key derivation runs on [computationDispatcher] (CPU-bound); store loading runs on
+         * [ioDispatcher]. Neither blocks the calling thread.
          *
          * @param context the application context
          * @param password the password from which the encryption key is derived; the caller is
          *        responsible for zeroing this array after the call returns if desired
          * @param salt the PBKDF2 salt; defaults to [DEFAULT_SALT]
+         * @param computationDispatcher dispatcher for CPU-bound work; defaults to [Dispatchers.Default]
+         * @param ioDispatcher dispatcher for I/O-bound work; defaults to [Dispatchers.IO]
          * @throws GeneralSecurityException if key derivation fails
          */
         @Throws(GeneralSecurityException::class)
@@ -84,8 +91,10 @@ internal class EncryptedItemStorage private constructor(
             context: Context,
             password: CharArray,
             salt: String = DEFAULT_SALT,
+            computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+            ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
         ): EncryptedItemStorage {
-            val key = withContext(Dispatchers.Default) {
+            val key = withContext(computationDispatcher) {
                 val saltBytes = salt.toByteArray(Charsets.UTF_8)
                 val spec = PBEKeySpec(password, saltBytes, PBKDF2_ITERATIONS, KEY_LENGTH_BITS)
                 val keyBytes = SecretKeyFactory.getInstance(PBKDF2_ALGORITHM)
@@ -97,11 +106,11 @@ internal class EncryptedItemStorage private constructor(
             val backupFile = File(context.filesDir, "${DEFAULT_STORAGE_NAME}_backup.json")
             val noBackupFile = File(context.noBackupFilesDir, "${DEFAULT_STORAGE_NAME}_no_backup.json")
 
-            val (backupStore, noBackupStore) = withContext(Dispatchers.IO) {
-                loadStore(backupFile) to loadStore(noBackupFile)
+            val (backup, noBackup) = withContext(ioDispatcher) {
+                Partition(backupFile, loadStore(backupFile)) to Partition(noBackupFile, loadStore(noBackupFile))
             }
 
-            return EncryptedItemStorage(backupFile, noBackupFile, key, backupStore, noBackupStore)
+            return EncryptedItemStorage(backup, noBackup, key, computationDispatcher, ioDispatcher)
         }
 
         // Loads a JSON store file into a mutable map. Returns an empty map if the file does not
@@ -111,12 +120,7 @@ internal class EncryptedItemStorage private constructor(
             if (!file.exists()) return mutableMapOf()
             return try {
                 val bytes = AtomicFile(file).readFully()
-                val json = JSONObject(String(bytes, Charsets.UTF_8))
-                val map = mutableMapOf<String, String>()
-                for (k in json.keys()) {
-                    map[k] = json.getString(k)
-                }
-                map
+                JSONObject(String(bytes, Charsets.UTF_8)).toMap<String>().toMutableMap()
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 warnLog { "Failed to load secure store from ${file.name}, starting empty: $e" }
                 mutableMapOf()
@@ -124,38 +128,40 @@ internal class EncryptedItemStorage private constructor(
         }
     }
 
-    // Secondary constructor for tests: loads both stores synchronously from their files.
+    // Secondary constructor for tests: loads both partitions synchronously from their files.
     // Only used within the module; production code always goes through create().
     internal constructor(
         backupFile: File,
         noBackupFile: File,
         key: SecretKey,
+        computationDispatcher: CoroutineDispatcher = Dispatchers.Default,
+        ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     ) : this(
-        backupFile = backupFile,
-        noBackupFile = noBackupFile,
+        backup = Partition(backupFile, loadStore(backupFile)),
+        noBackup = Partition(noBackupFile, loadStore(noBackupFile)),
         key = key,
-        backupStore = loadStore(backupFile),
-        noBackupStore = loadStore(noBackupFile),
+        computationDispatcher = computationDispatcher,
+        ioDispatcher = ioDispatcher,
     )
 
     // region SecureItemStorage
 
     override fun containsItem(identifier: String): Boolean = synchronized(this) {
-        backupStore.containsKey(identifier) || noBackupStore.containsKey(identifier)
+        backup.contents.containsKey(identifier) || noBackup.contents.containsKey(identifier)
     }
 
     override fun allItemIdentifiers(): List<String> = synchronized(this) {
-        (backupStore.keys + noBackupStore.keys).toList()
+        (backup.contents.keys + noBackup.contents.keys).toList()
     }
 
     override fun readItem(identifier: String): ByteArray? {
         // Grab the encoded ciphertext under the lock, then decrypt outside it so we don't
         // hold the monitor during a potentially slow crypto operation.
         val encoded = synchronized(this) {
-            backupStore[identifier] ?: noBackupStore[identifier]
+            backup.contents[identifier] ?: noBackup.contents[identifier]
         } ?: return null
         return try {
-            decrypt(Base64.decode(encoded, Base64.DEFAULT), identifier)
+            decrypt(Base64.decode(encoded, Base64.NO_WRAP), identifier)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             throw SecureStorageException("Failed to read item '$identifier'", e)
         }
@@ -164,30 +170,28 @@ internal class EncryptedItemStorage private constructor(
     override fun saveItem(identifier: String, contents: ByteArray, attributes: SecureItemAttributes) {
         // Encrypt outside the lock — crypto is stateless and needs no shared state.
         val encoded = try {
-            Base64.encodeToString(encrypt(contents, identifier), Base64.DEFAULT)
+            Base64.encodeToString(encrypt(contents, identifier), Base64.NO_WRAP)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             throw SecureStorageException("Failed to save item '$identifier'", e)
         }
-        val targetStore = if (attributes.includedInBackup) backupStore else noBackupStore
-        val otherStore = if (attributes.includedInBackup) noBackupStore else backupStore
-        val targetFile = if (attributes.includedInBackup) backupFile else noBackupFile
-        val otherFile = if (attributes.includedInBackup) noBackupFile else backupFile
+        val target = if (attributes.includedInBackup) backup else noBackup
+        val other = if (attributes.includedInBackup) noBackup else backup
         synchronized(this) {
-            // If the item previously lived in the other store (attributes changed), evict it so
-            // it doesn't appear under both allItemIdentifiers() and readItem().
-            if (otherStore.remove(identifier) != null) saveStore(otherFile, otherStore)
-            targetStore[identifier] = encoded
-            saveStore(targetFile, targetStore)
+            // If the item previously lived in the other partition (attributes changed), evict it
+            // so it doesn't appear under both allItemIdentifiers() and readItem().
+            if (other.contents.remove(identifier) != null) savePartition(other)
+            target.contents[identifier] = encoded
+            savePartition(target)
         }
     }
 
     override fun deleteItem(identifier: String) {
         synchronized(this) {
-            // Only flush a file to disk if the item was actually present in it.
-            val backupChanged = backupStore.remove(identifier) != null
-            val noBackupChanged = noBackupStore.remove(identifier) != null
-            if (backupChanged) saveStore(backupFile, backupStore)
-            if (noBackupChanged) saveStore(noBackupFile, noBackupStore)
+            // Only flush a partition to disk if the item was actually present in it.
+            val backupChanged = backup.contents.remove(identifier) != null
+            val noBackupChanged = noBackup.contents.remove(identifier) != null
+            if (backupChanged) savePartition(backup)
+            if (noBackupChanged) savePartition(noBackup)
         }
     }
 
@@ -216,11 +220,11 @@ internal class EncryptedItemStorage private constructor(
 
     // region File I/O
 
-    private fun saveStore(file: File, store: Map<String, String>) {
+    private fun savePartition(partition: Partition) {
         val json = JSONObject()
-        store.forEach { (k, v) -> json.put(k, v) }
-        file.parentFile?.mkdirs()
-        val atomicFile = AtomicFile(file)
+        partition.contents.forEach { (k, v) -> json.put(k, v) }
+        partition.file.parentFile?.mkdirs()
+        val atomicFile = AtomicFile(partition.file)
         val stream = atomicFile.startWrite()
         try {
             stream.write(json.toString().toByteArray(Charsets.UTF_8))

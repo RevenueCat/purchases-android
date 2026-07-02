@@ -103,9 +103,8 @@ internal data class SecureItemAttributes(
      * When `true` (the default), the item is eligible for Auto Backup and will be restored when
      * a device is set up from a backup.
      *
-     * When `false`, the item is written to a separate storage file whose name should be added to
-     * the app's `backup_rules.xml` (API 31+) or `full_backup_content.xml` exclusion list to
-     * prevent it from being backed up.
+     * When `false`, the item is written to a separate storage file that is not included in
+     * a device backup.
      *
      * This attribute does not affect whether items are accessible from other apps or devices.
      */
