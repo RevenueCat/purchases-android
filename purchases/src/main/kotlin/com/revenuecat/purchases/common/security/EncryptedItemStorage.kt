@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.security
 
 import android.content.Context
+import android.util.AtomicFile
 import android.util.Base64
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.Dispatchers
@@ -22,10 +23,10 @@ import javax.crypto.spec.SecretKeySpec
  * ## Key derivation
  *
  * The symmetric key is derived once at initialization via `PBKDF2WithHmacSHA256` using the
- * supplied [password] and an optional salt taken from [AccessGroup.accessGroup]. Because the
- * key is derived deterministically, it survives backup/restore — as long as the same password
- * is provided, the data is readable on any device, in contrast to Android Keystore-backed
- * approaches where keys are hardware-bound and cannot be restored.
+ * supplied [password] and an optional salt. Because the key is derived deterministically, 
+ * it survives backup/restore — as long as the same password is provided, the data is readable 
+ * on any device, in contrast to Android Keystore-backed approaches where keys are 
+ * hardware-bound and cannot be restored.
  *
  * ## Backup behaviour
  *
@@ -109,7 +110,8 @@ internal class EncryptedItemStorage private constructor(
         internal fun loadStore(file: File): MutableMap<String, String> {
             if (!file.exists()) return mutableMapOf()
             return try {
-                val json = JSONObject(file.readText())
+                val bytes = AtomicFile(file).readFully()
+                val json = JSONObject(String(bytes, Charsets.UTF_8))
                 val map = mutableMapOf<String, String>()
                 for (k in json.keys()) {
                     map[k] = json.getString(k)
@@ -218,10 +220,15 @@ internal class EncryptedItemStorage private constructor(
         val json = JSONObject()
         store.forEach { (k, v) -> json.put(k, v) }
         file.parentFile?.mkdirs()
-        // Write to a temp file then rename for atomicity.
-        val temp = File(file.parent, "${file.name}.tmp")
-        temp.writeText(json.toString())
-        temp.renameTo(file)
+        val atomicFile = AtomicFile(file)
+        val stream = atomicFile.startWrite()
+        try {
+            stream.write(json.toString().toByteArray(Charsets.UTF_8))
+            atomicFile.finishWrite(stream)
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            atomicFile.failWrite(stream)
+            throw e
+        }
     }
 
     // endregion
