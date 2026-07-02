@@ -53,6 +53,37 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
     }
 
     @Test
+    fun `decodes an inline workflows content blob`() {
+        setupTest(SignatureVerificationMode.Informational())
+
+        val (error, container, verification) = fetchRemoteConfig(manifest = null)
+
+        assertThat(error).isNull()
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+        val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
+
+        val config = RemoteConfiguration.parse(rcContainer.config.data)
+
+        // Pick a workflows item whose blob was inlined in the container, so we can decode it directly.
+        val workflows = requireNotNull(config.topics["workflows"]) { "Expected a workflows topic." }
+        val ref = requireNotNull(
+            workflows.values.mapNotNull { it.blobRef }.firstOrNull { it in rcContainer.elements },
+        ) { "Expected a workflows item with an inlined blob_ref." }
+        val element = rcContainer.elements.getValue(ref)
+
+        // isChecksumValid() decodes (uncompresses) the element and checks the SHA-256 of the
+        // uncompressed bytes against the advertised ref, so a true result proves the uncompression
+        // produced exactly the content the backend addressed.
+        assertThat(element.isChecksumValid()).isTrue()
+
+        // The decoded bytes are real, structured content (a non-empty JSON object), not garbage.
+        val decodedView = element.decode().duplicate().apply { rewind() }
+        val decodedBytes = ByteArray(decodedView.remaining()).also { decodedView.get(it) }
+        val json = JsonProvider.defaultJson.parseToJsonElement(decodedBytes.decodeToString())
+        assertThat(json.jsonObject).isNotEmpty()
+    }
+
+    @Test
     fun `replaying the manifest returns no content`() {
         setupTest(SignatureVerificationMode.Informational())
 
