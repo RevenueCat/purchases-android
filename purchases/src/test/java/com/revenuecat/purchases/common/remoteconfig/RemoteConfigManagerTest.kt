@@ -36,6 +36,8 @@ class RemoteConfigManagerTest {
     private lateinit var backend: Backend
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var blobStore: RemoteConfigBlobStore
+    private lateinit var sourceProvider: RemoteConfigSourceProvider
+    private lateinit var blobFetcher: RemoteConfigBlobFetcher
     private lateinit var manager: RemoteConfigManager
 
     // Unconfined so the launched 200-path coroutine runs eagerly: invoke(onSuccess) then verify still works.
@@ -59,8 +61,17 @@ class RemoteConfigManagerTest {
         backend = mockk()
         diskCache = mockk(relaxed = true)
         blobStore = mockk(relaxed = true)
-        currentTimeMillis = FIXED_MILLIS
-        manager = RemoteConfigManager(backend, diskCache, blobStore, dateProvider = dateProvider, scope = testScope)
+        sourceProvider = mockk(relaxed = true)
+        blobFetcher = mockk(relaxed = true)
+        manager = RemoteConfigManager(
+            backend,
+            diskCache,
+            blobStore,
+            dateProvider = dateProvider,
+            scope = testScope,
+            sourceProvider = sourceProvider,
+            blobFetcher = blobFetcher,
+        )
 
         // Persist succeeds by default; the blob store is only touched once the configuration is persisted.
         every { diskCache.write(any()) } returns true
@@ -361,6 +372,89 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a 200 response prefetches wanted blobs not already cached, after re-arming the blob sources`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag2",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": {
+                "workflows": {
+                  "wf1": { "blob_ref": "$REF_TAMPERED", "prefetch": true },
+                  "wf2": { "blob_ref": "$REF_UNWANTED", "prefetch": false }
+                }
+              }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        // Re-arm the (possibly exhausted) blob sources before fetching.
+        verify(exactly = 1) { sourceProvider.restart(RemoteConfigSourceHandle.Purpose.BLOB) }
+        // The server prefetch set and any item flagged prefetch=true are warmed; non-flagged items are not.
+        val prefetched = slot<List<String>>()
+        verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
+        assertThat(prefetched.captured).containsExactlyInAnyOrder(REF_VALID, REF_TAMPERED)
+    }
+
+    @Test
+    fun `a 200 response does not prefetch blobs already cached`() {
+        every { diskCache.read() } returns null
+        every { blobStore.contains(REF_VALID) } returns true
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID", "$REF_TAMPERED"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_TAMPERED" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        val prefetched = slot<List<String>>()
+        verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
+        assertThat(prefetched.captured).containsExactly(REF_TAMPERED)
+    }
+
+    @Test
+    fun `a failed persist neither re-arms the sources nor prefetches`() {
+        every { diskCache.read() } returns null
+        every { diskCache.write(any()) } returns false
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        verify(exactly = 0) { sourceProvider.restart(any()) }
+        verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
+    fun `a 204 response does not re-arm the sources nor prefetch`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        verify(exactly = 0) { sourceProvider.restart(any()) }
+        verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
     fun `a 204 response leaves the cache untouched and does no blob work`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
@@ -441,11 +535,12 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `clearCache wipes the disk cache and blob store`() {
+    fun `clearCache wipes the disk cache, blob store and resolved sources`() {
         manager.clearCache()
 
         verify(exactly = 1) { diskCache.clear() }
         verify(exactly = 1) { blobStore.clear() }
+        verify(exactly = 1) { sourceProvider.clear() }
     }
 
     @Test

@@ -49,6 +49,12 @@ internal interface RemoteConfigSourceProvider {
 
     /** Rewinds the given purpose to its first source, e.g. to start fresh on a new fetch cycle. */
     fun restart(purpose: RemoteConfigSourceHandle.Purpose)
+
+    /**
+     * Drops any resolved sources and returns to the embedded defaults, e.g. on an identity change so a new
+     * user's sources are re-resolved from a fresh config. No-op for providers that hold no per-user state.
+     */
+    fun clear() {}
 }
 
 /**
@@ -109,6 +115,12 @@ internal class DefaultRemoteConfigSourceProvider(
         }
     }
 
+    override fun clear() {
+        // Identity change: rebuild from an empty topic, back to the embedded defaults. The next access after the
+        // new user's config commits sees a changed hash and rebuilds from it.
+        synchronized(lock) { rebuild(topic = null) }
+    }
+
     private fun failoverFor(purpose: RemoteConfigSourceHandle.Purpose): SourceFailover =
         when (purpose) {
             RemoteConfigSourceHandle.Purpose.API -> api
@@ -121,8 +133,13 @@ internal class DefaultRemoteConfigSourceProvider(
      */
     private fun rebuildIfChanged(): Boolean {
         val topic = topicStore.topic(SOURCES_TOPIC)
-        val hash = topic?.contentHash
-        if (hash == builtHash) return false
+        if (topic?.contentHash == builtHash) return false
+        rebuild(topic)
+        return true
+    }
+
+    /** Rebuilds both failovers from [topic] (null → embedded defaults) and records its hash. Callers hold [lock]. */
+    private fun rebuild(topic: ConfigTopic?) {
         // Seed the new generation past any token the previous one could have handed out, so reports left
         // over from before the rebuild are ignored instead of advancing the freshly-restarted list.
         val nextToken = maxOf(api.currentToken, blob.currentToken) + 1
@@ -138,8 +155,7 @@ internal class DefaultRemoteConfigSourceProvider(
             random,
             nextToken,
         )
-        builtHash = hash
-        return true
+        builtHash = topic?.contentHash
     }
 
     private companion object {

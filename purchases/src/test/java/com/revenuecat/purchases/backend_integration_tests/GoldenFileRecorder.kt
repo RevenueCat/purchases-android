@@ -122,6 +122,8 @@ class GoldenFileRecorder(
             "Accept-Ranges",
             "X-Cache",
             "Alt-Svc",
+            "X-Revenuecat-App-Id",
+            "x-revenuecat-app-id",
         )
 
         /**

@@ -3,8 +3,7 @@
   "headers": {
     "Connection": "keep-alive",
     "Content-Length": "94043",
-    "Server": "cloudflare",
-    "x-revenuecat-app-id": "appc735cd95ea"
+    "Server": "cloudflare"
   },
   "body": {
     "current_offering_id": "default",
