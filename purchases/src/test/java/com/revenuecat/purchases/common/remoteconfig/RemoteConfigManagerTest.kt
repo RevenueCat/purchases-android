@@ -711,15 +711,34 @@ class RemoteConfigManagerTest {
         )
         val manager = readManager()
 
-        assertThat(manager.topic("sources")).containsKey("default")
-        assertThat(manager.topic("workflows")).isNull()
+        assertThat(manager.topic(RemoteConfigTopic.Sources)).containsKey("default")
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
     }
 
     @Test
     fun `topic returns null when nothing is cached`() = runTest {
         every { diskCache.read() } returns null
 
-        assertThat(readManager().topic("sources")).isNull()
+        assertThat(readManager().topic(RemoteConfigTopic.Sources)).isNull()
+    }
+
+    @Test
+    fun `topic maps each enum value to its wire name`() = runTest {
+        // Persisted (and served) under the backend wire names; reads go through the typed enum.
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows", "ui_config", "sources"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+                "ui_config" to ConfigTopic(mapOf("ui" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED))),
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = REF_UNWANTED))),
+            ),
+        )
+        val manager = readManager()
+
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).containsKey("wf")
+        assertThat(manager.topic(RemoteConfigTopic.UiConfig)).containsKey("ui")
+        assertThat(manager.topic(RemoteConfigTopic.Sources)).containsKey("default")
     }
 
     @Test
@@ -733,7 +752,7 @@ class RemoteConfigManagerTest {
             ),
         )
 
-        val result = readManager().body("workflows", "wf1")
+        val result = readManager().body(RemoteConfigTopic.Workflows, "wf1")
 
         val expected = JsonProvider.defaultJson.encodeToString(JsonObject.serializer(), content).encodeToByteArray()
         assertThat(result).isEqualTo(expected)
@@ -754,7 +773,7 @@ class RemoteConfigManagerTest {
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
         every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
 
-        val result = readManager().body("workflows", "wf1")
+        val result = readManager().body(RemoteConfigTopic.Workflows, "wf1")
 
         assertThat(result).isEqualTo(byteArrayOf(4, 2))
         coVerify(exactly = 1) { blobFetcher.ensureDownloaded(REF_VALID) }
@@ -771,7 +790,7 @@ class RemoteConfigManagerTest {
         )
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns false
 
-        assertThat(readManager().body("workflows", "wf1")).isNull()
+        assertThat(readManager().body(RemoteConfigTopic.Workflows, "wf1")).isNull()
         verify(exactly = 0) { blobStore.read(any()) }
     }
 
@@ -792,7 +811,7 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
         )
 
-        assertThat(manager.body("workflows", "wf1")).isNull()
+        assertThat(manager.body(RemoteConfigTopic.Workflows, "wf1")).isNull()
         coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
     }
 
@@ -806,7 +825,7 @@ class RemoteConfigManagerTest {
         // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
         var result: ByteArray? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body("workflows", "wf1")
+            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
         }
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
         // The on-demand sync is issued as foreground for the current user.
@@ -832,7 +851,7 @@ class RemoteConfigManagerTest {
     fun `body returns null without triggering a sync when no app user is known`() = runTest {
         every { diskCache.read() } returns null
 
-        assertThat(readManager(appUserIDProvider = { null }).body("workflows", "wf1")).isNull()
+        assertThat(readManager(appUserIDProvider = { null }).body(RemoteConfigTopic.Workflows, "wf1")).isNull()
         verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
 
@@ -847,7 +866,7 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
         )
 
-        assertThat(manager.body("workflows", "wf1")).isNull()
+        assertThat(manager.body(RemoteConfigTopic.Workflows, "wf1")).isNull()
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
 
@@ -864,7 +883,7 @@ class RemoteConfigManagerTest {
         // The item is not committed yet, so the read parks on the in-flight refresh.
         var result: ByteArray? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body("workflows", "wf1")
+            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
         }
         assertThat(read.isActive).isTrue()
 
@@ -900,7 +919,7 @@ class RemoteConfigManagerTest {
         // A refresh is in flight and never settles; a committed read must not block on it (else this hangs).
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
-        assertThat(manager.body("workflows", "wf1")).isEqualTo(byteArrayOf(9))
+        assertThat(manager.body(RemoteConfigTopic.Workflows, "wf1")).isEqualTo(byteArrayOf(9))
     }
 
     @Test
@@ -911,7 +930,7 @@ class RemoteConfigManagerTest {
 
         var result: ByteArray? = byteArrayOf(1)
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body("workflows", "wf1")
+            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
         }
         assertThat(read.isActive).isTrue()
 
@@ -930,7 +949,7 @@ class RemoteConfigManagerTest {
 
         var result: ByteArray? = byteArrayOf(1)
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body("workflows", "wf1")
+            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
         }
         assertThat(read.isActive).isTrue()
 
@@ -948,7 +967,7 @@ class RemoteConfigManagerTest {
 
         var result: ByteArray? = byteArrayOf(1)
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body("workflows", "wf1")
+            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
         }
         assertThat(read.isActive).isTrue()
 

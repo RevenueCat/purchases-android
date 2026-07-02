@@ -442,7 +442,8 @@ class RemoteConfigBlobFetcherTest {
     }
 
     private class FakeTopicStore(private val sources: ConfigTopic?) : RemoteConfigTopicStore {
-        override fun topic(name: String): ConfigTopic? = if (name == "sources") sources else null
+        override fun topic(topic: RemoteConfigTopic): ConfigTopic? =
+            if (topic == RemoteConfigTopic.Sources) sources else null
     }
 
     /** Deterministic randomizer for weighted source selection: always returns the first candidate. */

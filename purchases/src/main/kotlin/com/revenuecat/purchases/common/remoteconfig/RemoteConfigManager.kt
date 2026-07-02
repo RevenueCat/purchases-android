@@ -67,18 +67,12 @@ internal class RemoteConfigManager(
     private val blobStore: RemoteConfigBlobStore,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    // The manager owns the threading for its reads: disk-touching read methods hop to this dispatcher, so
-    // callers never read disk on their own thread. Injectable so tests can run reads deterministically.
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    // The single read seam over the persisted item index: shared by the read facade (topic()/body()) and the
-    // source provider. Synchronous + metadata-only (no blob, no wait); the manager adds the IO hop / wait.
     private val topicStore: RemoteConfigTopicStore =
-        RemoteConfigTopicStore { diskCache.read()?.topics?.get(it) },
+        RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) },
     private val sourceProvider: RemoteConfigSourceProvider =
         DefaultRemoteConfigSourceProvider(topicStore),
     private val blobFetcher: RemoteConfigBlobFetcher = RemoteConfigBlobFetcher(blobStore, sourceProvider),
-    // The current app user id, used only to self-trigger a sync on a cold read (see [body]). A blank/null result
-    // means "no user yet", so no sync is triggered. Defaults to none so tests never self-trigger unless they opt in.
     private val appUserIDProvider: () -> String? = { null },
 ) {
     private val isRefreshing = AtomicBoolean(false)
@@ -217,7 +211,6 @@ internal class RemoteConfigManager(
             epoch.incrementAndGet()
             isRefreshing.set(false)
             lastRefreshedAt = null
-            // Unblock any read waiting on the refresh we just superseded; it re-reads the now-wiped cache.
             completeRefresh()
             // Intentionally NOT resetting `unavailable`: a 4xx is an endpoint/app-level fact that outlives an
             // identity change. It clears only on app restart.
@@ -247,11 +240,6 @@ internal class RemoteConfigManager(
         owned
     }
 
-    /**
-     * Unblocks any read waiting on the in-flight refresh and clears the handle. Completes (never cancels) so a
-     * waiting [body] resumes and re-reads the committed state rather than throwing. Must be called while holding
-     * [cacheLock] — every call site (terminal refresh points and [clearCache]) already does.
-     */
     private fun completeRefresh() {
         refreshCompletion?.complete(Unit)
         refreshCompletion = null
@@ -267,7 +255,7 @@ internal class RemoteConfigManager(
      * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
      * so it wants the un-jittered, prompt request.
      */
-    suspend fun awaitConfigForRead() {
+    private suspend fun awaitConfigForRead() {
         if (awaitInFlightRefresh()) return
         // Nothing in flight: trigger a sync on demand, unless the endpoint is disabled or no user is known yet.
         val appUserID = appUserIDProvider()?.takeIf { it.isNotBlank() }
@@ -291,18 +279,18 @@ internal class RemoteConfigManager(
 
     /**
      * A topic's persisted item index (metadata only — inline `content` + `blob_ref`, no blob bytes), or `null`
-     * when the topic is unknown / nothing is cached. Does not wait for an in-flight refresh; use [body] for a
-     * resolved payload that waits and resolves blobs. Reads disk on [ioDispatcher].
+     * when nothing is cached for [topic]. Does not wait for an in-flight refresh; use [body] for a resolved
+     * payload that waits and resolves blobs. Reads disk on [ioDispatcher].
      */
-    suspend fun topic(name: String): ConfigTopic? = withContext(ioDispatcher) {
-        topicStore.topic(name)
+    suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
+        topicStore.topic(topic)
     }
 
     /**
-     * The resolved payload bytes for `itemKey` in `topicName`, or `null` when the item is unknown or its blob
-     * can't be resolved. Owns the inline-vs-`blob_ref` rule: an item with no `blob_ref` returns its inline
-     * `content` bytes; otherwise the referenced blob is resolved on demand (HIGH priority, joining any in-flight
-     * prefetch of the same ref) and read back.
+     * The resolved payload bytes for `itemKey` in [topic], or `null` when the item is unknown or its blob can't
+     * be resolved. Owns the inline-vs-`blob_ref` rule: an item with no `blob_ref` returns its inline `content`
+     * bytes; otherwise the referenced blob is resolved on demand (HIGH priority, joining any in-flight prefetch
+     * of the same ref) and read back.
      *
      * When the item isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or triggers
      * one on demand — and then re-reads before giving up, so a read during the initial sync (or before any sync)
@@ -312,11 +300,11 @@ internal class RemoteConfigManager(
      * Short-circuits the network when the endpoint is [isUnavailable] (the 4xx session kill-switch): inline
      * content is still returned, but no on-demand config/blob fetch is attempted. Runs on [ioDispatcher].
      */
-    suspend fun body(topicName: String, itemKey: String): ByteArray? = withContext(ioDispatcher) {
-        val item = topicStore.topic(topicName)?.get(itemKey)
+    suspend fun body(topic: RemoteConfigTopic, itemKey: String): ByteArray? = withContext(ioDispatcher) {
+        val item = topicStore.topic(topic)?.get(itemKey)
             ?: run {
                 awaitConfigForRead()
-                topicStore.topic(topicName)?.get(itemKey)
+                topicStore.topic(topic)?.get(itemKey)
             }
             ?: return@withContext null
 

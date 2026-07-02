@@ -516,7 +516,8 @@ class RemoteConfigSourceProviderTest {
     }
 
     private class FakeTopicStore(var sources: ConfigTopic?) : RemoteConfigTopicStore {
-        override fun topic(name: String): ConfigTopic? = if (name == "sources") sources else null
+        override fun topic(topic: RemoteConfigTopic): ConfigTopic? =
+            if (topic == RemoteConfigTopic.Sources) sources else null
     }
 
     private fun runConcurrently(iterations: Int, block: () -> Unit) {
