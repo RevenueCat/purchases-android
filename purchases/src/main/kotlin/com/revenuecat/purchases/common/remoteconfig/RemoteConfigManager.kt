@@ -58,8 +58,6 @@ import java.util.concurrent.atomic.AtomicInteger
  * fetches its own data) — unless the endpoint is [isUnavailable] or no app user is known yet.
  */
 @OptIn(InternalRevenueCatAPI::class)
-// TooManyFunctions: the sync lifecycle and the read facade (topic/body + wait) both live here by design — the
-// manager is the single seam consumer topics read through (see class KDoc).
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class RemoteConfigManager(
     private val backend: Backend,
