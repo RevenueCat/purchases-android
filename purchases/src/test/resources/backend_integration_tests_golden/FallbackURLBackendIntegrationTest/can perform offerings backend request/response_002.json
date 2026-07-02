@@ -17,7 +17,7 @@
         "paywall_components": {
           "id": "pw13dea1ae2d694a7c",
           "template_name": "components",
-          "revision": 5,
+          "revision": 6,
           "asset_base_url": "https:\/\/assets.pawwalls.com",
           "components_config": {
             "base": {
