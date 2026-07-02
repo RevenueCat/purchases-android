@@ -177,21 +177,25 @@ internal class EncryptedItemStorage private constructor(
         val target = if (attributes.includedInBackup) backup else noBackup
         val other = if (attributes.includedInBackup) noBackup else backup
         synchronized(this) {
-            // If the item previously lived in the other partition (attributes changed), evict it
-            // so it doesn't appear under both allItemIdentifiers() and readItem().
-            if (other.contents.remove(identifier) != null) savePartition(other)
+            // Write the new disk state first — any I/O failure leaves memory unchanged so the
+            // two are never left inconsistent. Memory is updated only after all writes succeed.
+            val evictingFromOther = other.contents.containsKey(identifier)
+            if (evictingFromOther) saveContents(other.file, other.contents - identifier)
+            saveContents(target.file, target.contents + (identifier to encoded))
+            if (evictingFromOther) other.contents.remove(identifier)
             target.contents[identifier] = encoded
-            savePartition(target)
         }
     }
 
     override fun deleteItem(identifier: String) {
         synchronized(this) {
-            // Only flush a partition to disk if the item was actually present in it.
-            val backupChanged = backup.contents.remove(identifier) != null
-            val noBackupChanged = noBackup.contents.remove(identifier) != null
-            if (backupChanged) savePartition(backup)
-            if (noBackupChanged) savePartition(noBackup)
+            // Write the new disk state first — any I/O failure leaves memory unchanged.
+            val inBackup = backup.contents.containsKey(identifier)
+            val inNoBackup = noBackup.contents.containsKey(identifier)
+            if (inBackup) saveContents(backup.file, backup.contents - identifier)
+            if (inNoBackup) saveContents(noBackup.file, noBackup.contents - identifier)
+            if (inBackup) backup.contents.remove(identifier)
+            if (inNoBackup) noBackup.contents.remove(identifier)
         }
     }
 
@@ -220,18 +224,21 @@ internal class EncryptedItemStorage private constructor(
 
     // region File I/O
 
-    private fun savePartition(partition: Partition) {
+    // Writes [contents] to [file] atomically. Any I/O failure is wrapped as a
+    // [SecureStorageException] so callers never need to handle raw IOException alongside it.
+    @Throws(SecureStorageException::class)
+    private fun saveContents(file: File, contents: Map<String, String>) {
         val json = JSONObject()
-        partition.contents.forEach { (k, v) -> json.put(k, v) }
-        partition.file.parentFile?.mkdirs()
-        val atomicFile = AtomicFile(partition.file)
+        contents.forEach { (k, v) -> json.put(k, v) }
+        file.parentFile?.mkdirs()
+        val atomicFile = AtomicFile(file)
         val stream = atomicFile.startWrite()
         try {
             stream.write(json.toString().toByteArray(Charsets.UTF_8))
             atomicFile.finishWrite(stream)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             atomicFile.failWrite(stream)
-            throw e
+            throw SecureStorageException("Failed to write secure store to ${file.name}", e)
         }
     }
 
