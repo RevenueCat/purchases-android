@@ -25,12 +25,12 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(error).isNull()
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
+        assertThat(rcContainer.config.isChecksumValid()).isTrue()
 
         val config = RemoteConfiguration.parse(rcContainer.config.data)
         assertThat(config.domain).isEqualTo("app")
         assertThat(config.manifest).isNotEmpty()
         assertThat(config.activeTopics).contains("sources", "ui_config", "workflows")
-        assertThat(rcContainer.contentElements).isNotEmpty()
 
         val topicsSerializer = MapSerializer(
             String.serializer(),
