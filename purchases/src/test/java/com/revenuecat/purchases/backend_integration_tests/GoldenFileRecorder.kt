@@ -140,6 +140,7 @@ class GoldenFileRecorder(
             "events > [app_session_id]",
             "events > [offering_id]",
             "events > [timestamp]",
+            "manifest",
         )
     }
 
