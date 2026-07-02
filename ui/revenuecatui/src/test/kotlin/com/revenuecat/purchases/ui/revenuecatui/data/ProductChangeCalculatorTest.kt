@@ -51,7 +51,7 @@ class ProductChangeCalculatorTest {
     }
 
     @Test
-    fun `returns null for non-subscription products`() = runTest {
+    fun `returns NoChange for non-subscription products`() = runTest {
         val lifetimePackage = createPackage(
             productId = "com.test.lifetime",
             period = null,
@@ -64,11 +64,11 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(ProductChangeResult.NoChange)
     }
 
     @Test
-    fun `returns null when user has no active subscriptions`() = runTest {
+    fun `returns NoChange when user has no active subscriptions`() = runTest {
         every { customerInfo.subscriptionsByProductIdentifier } returns emptyMap()
 
         val packageToPurchase = createSubscriptionPackage(
@@ -82,11 +82,11 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(ProductChangeResult.NoChange)
     }
 
     @Test
-    fun `returns null when active subscription is not from Play Store`() = runTest {
+    fun `returns NoChange when active subscription is not from Play Store`() = runTest {
         val appStoreSubscription = createSubscriptionInfo(
             productIdentifier = "com.test.subscription.basic",
             store = Store.APP_STORE,
@@ -108,11 +108,11 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(ProductChangeResult.NoChange)
     }
 
     @Test
-    fun `returns null when purchasing same product with different base plan`() = runTest {
+    fun `returns NoChange when purchasing same product with different base plan`() = runTest {
         val activeSubscription = createSubscriptionInfo(
             productIdentifier = "com.test.subscription",
             productPlanIdentifier = "monthly_plan",
@@ -135,11 +135,11 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(ProductChangeResult.NoChange)
     }
 
     @Test
-    fun `throws ProductAlreadyPurchasedError when purchasing same product and base plan`() = runTest {
+    fun `returns AlreadySubscribed when purchasing same product and base plan`() = runTest {
         val activeSubscription = createSubscriptionInfo(
             productIdentifier = "com.test.subscription",
             productPlanIdentifier = "monthly_plan",
@@ -157,16 +157,12 @@ class ProductChangeCalculatorTest {
             priceMicros = 9_990_000,
         )
 
-        val exception = runCatching {
-            calculator.calculateProductChangeInfo(
-                sameProductSameBasePlan,
-                defaultProductChangeConfig,
-            )
-        }.exceptionOrNull()
+        val result = calculator.calculateProductChangeInfo(
+            sameProductSameBasePlan,
+            defaultProductChangeConfig,
+        )
 
-        assertThat(exception).isInstanceOf(PurchasesException::class.java)
-        assertThat((exception as PurchasesException).code)
-            .isEqualTo(PurchasesErrorCode.ProductAlreadyPurchasedError)
+        assertThat(result).isEqualTo(ProductChangeResult.AlreadySubscribed)
     }
 
     @Test
@@ -200,9 +196,10 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNotNull
-        assertThat(result!!.oldProductId).isEqualTo("com.test.subscription.basic")
-        assertThat(result.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(result).isInstanceOf(ProductChangeResult.Change::class.java)
+        val info = (result as ProductChangeResult.Change).info
+        assertThat(info.oldProductId).isEqualTo("com.test.subscription.basic")
+        assertThat(info.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
     }
 
     @Test
@@ -236,9 +233,10 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNotNull
-        assertThat(result!!.oldProductId).isEqualTo("com.test.subscription.premium")
-        assertThat(result.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
+        assertThat(result).isInstanceOf(ProductChangeResult.Change::class.java)
+        val info = (result as ProductChangeResult.Change).info
+        assertThat(info.oldProductId).isEqualTo("com.test.subscription.premium")
+        assertThat(info.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     @Test
@@ -272,9 +270,10 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNotNull
-        assertThat(result!!.oldProductId).isEqualTo("com.test.subscription.basic")
-        assertThat(result.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
+        assertThat(result).isInstanceOf(ProductChangeResult.Change::class.java)
+        val info = (result as ProductChangeResult.Change).info
+        assertThat(info.oldProductId).isEqualTo("com.test.subscription.basic")
+        assertThat(info.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_PRORATED_PRICE)
     }
 
     @Test
@@ -313,8 +312,9 @@ class ProductChangeCalculatorTest {
             customConfig,
         )
 
-        assertThat(result).isNotNull
-        assertThat(result!!.replacementMode).isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
+        assertThat(result).isInstanceOf(ProductChangeResult.Change::class.java)
+        assertThat((result as ProductChangeResult.Change).info.replacementMode)
+            .isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
     }
 
     @Test
@@ -343,12 +343,13 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNotNull
-        assertThat(result!!.replacementMode).isEqualTo(StoreReplacementMode.DEFERRED)
+        assertThat(result).isInstanceOf(ProductChangeResult.Change::class.java)
+        assertThat((result as ProductChangeResult.Change).info.replacementMode)
+            .isEqualTo(StoreReplacementMode.DEFERRED)
     }
 
     @Test
-    fun `returns null when exception is thrown`() = runTest {
+    fun `returns NoChange when exception is thrown`() = runTest {
         coEvery { purchases.awaitCustomerInfo() } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.NetworkError, "Network error"),
         )
@@ -364,7 +365,7 @@ class ProductChangeCalculatorTest {
             defaultProductChangeConfig,
         )
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(ProductChangeResult.NoChange)
     }
 
     @Test

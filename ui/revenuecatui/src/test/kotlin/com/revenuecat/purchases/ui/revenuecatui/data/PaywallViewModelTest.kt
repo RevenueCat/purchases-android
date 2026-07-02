@@ -2395,9 +2395,11 @@ class PaywallViewModelTest {
         val productChangeCalculator = mockk<ProductChangeCalculator>()
         coEvery {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
-        } returns ProductChangeInfo(
-            oldProductId = "old_product",
-            replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        } returns ProductChangeResult.Change(
+            ProductChangeInfo(
+                oldProductId = "old_product",
+                replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+            ),
         )
 
         val transaction = mockk<StoreTransaction>()
@@ -2524,7 +2526,7 @@ class PaywallViewModelTest {
         val productChangeCalculator = mockk<ProductChangeCalculator>()
         coEvery {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
-        } returns null
+        } returns ProductChangeResult.NoChange
 
         val transaction = mockk<StoreTransaction>()
         coEvery {
@@ -2594,7 +2596,7 @@ class PaywallViewModelTest {
         val productChangeCalculator = mockk<ProductChangeCalculator>()
         coEvery {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
-        } throws PurchasesException(expectedError)
+        } returns ProductChangeResult.AlreadySubscribed
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -2715,9 +2717,11 @@ class PaywallViewModelTest {
         val productChangeCalculator = mockk<ProductChangeCalculator>()
         coEvery {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
-        } returns ProductChangeInfo(
-            oldProductId = "old_product",
-            replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+        } returns ProductChangeResult.Change(
+            ProductChangeInfo(
+                oldProductId = "old_product",
+                replacementMode = StoreReplacementMode.CHARGE_PRORATED_PRICE,
+            ),
         )
 
         val model = PaywallViewModelImpl(
@@ -2793,9 +2797,11 @@ class PaywallViewModelTest {
         val productChangeCalculator = mockk<ProductChangeCalculator>()
         coEvery {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
-        } returns ProductChangeInfo(
-            oldProductId = "old_product",
-            replacementMode = StoreReplacementMode.DEFERRED,
+        } returns ProductChangeResult.Change(
+            ProductChangeInfo(
+                oldProductId = "old_product",
+                replacementMode = StoreReplacementMode.DEFERRED,
+            ),
         )
 
         val model = PaywallViewModelImpl(
@@ -2871,7 +2877,7 @@ class PaywallViewModelTest {
         val productChangeCalculator = mockk<ProductChangeCalculator>()
         coEvery {
             productChangeCalculator.calculateProductChangeInfo(any(), any())
-        } returns null
+        } returns ProductChangeResult.NoChange
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
