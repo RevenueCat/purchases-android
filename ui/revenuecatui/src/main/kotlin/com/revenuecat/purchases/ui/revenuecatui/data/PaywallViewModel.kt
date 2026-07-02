@@ -670,8 +670,23 @@ internal class PaywallViewModelImpl(
         try {
             trackPaywallPurchaseInitiated(packageToPurchase)
 
-            val productChangeInfo = productChangeConfig?.let {
+            val productChangeResult = productChangeConfig?.let {
                 productChangeCalculator.calculateProductChangeInfo(packageToPurchase, it)
+            } ?: ProductChangeResult.NoChange
+
+            val productChangeInfo = when (productChangeResult) {
+                is ProductChangeResult.AlreadySubscribed -> {
+                    // Launching the billing flow would fail with ITEM_ALREADY_OWNED, so surface
+                    // the error without launching it.
+                    val error = PurchasesError(PurchasesErrorCode.ProductAlreadyPurchasedError)
+                    trackPaywallPurchaseError(packageToPurchase, error)
+                    listener?.onPurchaseError(error)
+                    _actionError.value = error
+                    finishAction()
+                    return
+                }
+                is ProductChangeResult.NoChange -> null
+                is ProductChangeResult.Change -> productChangeResult.info
             }
 
             when (purchases.purchasesAreCompletedBy) {

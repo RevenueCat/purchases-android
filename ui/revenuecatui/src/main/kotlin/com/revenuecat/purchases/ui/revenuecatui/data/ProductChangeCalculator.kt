@@ -17,6 +17,14 @@ internal data class ProductChangeInfo(
     val replacementMode: StoreReplacementMode,
 )
 
+internal sealed interface ProductChangeResult {
+    data class Change(val info: ProductChangeInfo) : ProductChangeResult
+
+    object NoChange : ProductChangeResult
+
+    object AlreadySubscribed : ProductChangeResult
+}
+
 /**
  * Calculates product change information for subscription upgrades/downgrades.
  *
@@ -28,48 +36,63 @@ internal data class ProductChangeInfo(
 internal class ProductChangeCalculator(
     private val purchases: PurchasesType,
 ) {
+    @Suppress("ReturnCount")
     suspend fun calculateProductChangeInfo(
         packageToPurchase: Package,
         productChangeConfig: ProductChangeConfig,
-    ): ProductChangeInfo? {
+    ): ProductChangeResult {
         if (packageToPurchase.product.type != ProductType.SUBS) {
-            return null
+            return ProductChangeResult.NoChange
         }
 
-        return try {
-            val customerInfo = purchases.awaitCustomerInfo()
-            customerInfo.subscriptionsByProductIdentifier.values
-                .firstOrNull { subscriptionInfo ->
-                    subscriptionInfo.isActive && subscriptionInfo.store == Store.PLAY_STORE
-                }?.let { activePlayStoreSubscription ->
-                    calculateProductChange(
-                        activePlayStoreSubscription = activePlayStoreSubscription,
-                        packageToPurchase = packageToPurchase,
-                        productChangeConfig = productChangeConfig,
-                    )
-                }
+        val customerInfo = try {
+            purchases.awaitCustomerInfo()
         } catch (e: PurchasesException) {
-            Logger.e("Error determining product change info: ${e.message}")
-            null
+            Logger.e("Error fetching customer info to determine product change: ${e.message}")
+            return ProductChangeResult.NoChange
         }
+
+        val activePlayStoreSubscription = customerInfo.subscriptionsByProductIdentifier.values
+            .firstOrNull { subscriptionInfo ->
+                subscriptionInfo.isActive && subscriptionInfo.store == Store.PLAY_STORE
+            } ?: return ProductChangeResult.NoChange
+
+        return calculateProductChange(
+            activePlayStoreSubscription = activePlayStoreSubscription,
+            packageToPurchase = packageToPurchase,
+            productChangeConfig = productChangeConfig,
+        )
     }
 
+    @Suppress("ReturnCount")
     private suspend fun calculateProductChange(
         activePlayStoreSubscription: SubscriptionInfo,
         packageToPurchase: Package,
         productChangeConfig: ProductChangeConfig,
-    ): ProductChangeInfo? {
+    ): ProductChangeResult {
         val oldSubscriptionId = activePlayStoreSubscription.productIdentifier
         val oldBasePlanId = activePlayStoreSubscription.productPlanIdentifier
 
-        val (newSubscriptionId, _) = packageToPurchase.product.subscriptionIdentifiers()
+        val (newSubscriptionId, newBasePlanId) = packageToPurchase.product.subscriptionIdentifiers()
 
         if (oldSubscriptionId == newSubscriptionId) {
+            if (oldBasePlanId == newBasePlanId) {
+                // The user already actively owns this exact subscription (same product and base
+                // plan). Launching the billing flow would fail with ITEM_ALREADY_OWNED.
+                Logger.d("Already subscribed to $newSubscriptionId ($newBasePlanId)")
+                return ProductChangeResult.AlreadySubscribed
+            }
+            // Same product, different base plan: Google handles the base plan change automatically.
             Logger.d("Same product ($newSubscriptionId), Google handles base plan change automatically")
-            return null
+            return ProductChangeResult.NoChange
         }
 
-        val oldProduct = purchases.awaitGetProduct(oldSubscriptionId, oldBasePlanId)
+        val oldProduct = try {
+            purchases.awaitGetProduct(oldSubscriptionId, oldBasePlanId)
+        } catch (e: PurchasesException) {
+            Logger.e("Error fetching currently subscribed product to determine product change: ${e.message}")
+            return ProductChangeResult.NoChange
+        }
         val isSandbox = activePlayStoreSubscription.isSandbox
 
         val oldNormalizedPrice = oldProduct?.getNormalizedPrice(isSandbox)
@@ -93,9 +116,11 @@ internal class ProductChangeCalculator(
             productChangeConfig.downgradeReplacementMode
         }
 
-        return ProductChangeInfo(
-            oldProductId = oldSubscriptionId,
-            replacementMode = replacementMode,
+        return ProductChangeResult.Change(
+            ProductChangeInfo(
+                oldProductId = oldSubscriptionId,
+                replacementMode = replacementMode,
+            ),
         )
     }
 
