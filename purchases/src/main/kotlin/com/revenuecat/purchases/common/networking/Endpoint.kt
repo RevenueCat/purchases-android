@@ -108,8 +108,12 @@ internal sealed class Endpoint(
     data class GetRemoteConfig(val domain: String) : Endpoint(
         pathTemplate = "/v1/config/%s",
         name = "remote_config",
+        fallbackPath = "/v1/config/%s",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(domain))
+        override fun getPath(useFallback: Boolean): String {
+            val template = if (useFallback && fallbackPath != null) fallbackPath else pathTemplate
+            return template.format(Uri.encode(domain))
+        }
         override val expectsRCFormatResponse: Boolean = true
     }
     object PostCreateSupportTicket : Endpoint(
