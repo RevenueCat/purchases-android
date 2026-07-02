@@ -52,13 +52,8 @@ internal class RemoteConfigManager(
     private val blobStore: RemoteConfigBlobStore,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
-    // Resolves blob source URLs lazily from the committed `sources` topic, read through a RemoteConfigTopicStore
-    // backed by the disk cache. It rebuilds only when the topic's content hash changes.
     private val sourceProvider: RemoteConfigSourceProvider =
-        DefaultRemoteConfigSourceProvider(RemoteConfigTopicStore { diskCache.read()?.topics?.get(it) }),
-    // The fetcher owns its own worker-pool scope on purpose: clearCache() cancels this manager's scope
-    // children (the in-flight parse/persist), and sharing it would also cancel the fetcher's long-lived
-    // workers, permanently disabling blob fetching for the next user.
+        DefaultRemoteConfigSourceProvider({ diskCache.read()?.topics?.get(it) }),
     private val blobFetcher: RemoteConfigBlobFetcher = RemoteConfigBlobFetcher(blobStore, sourceProvider),
 ) {
     private val isRefreshing = AtomicBoolean(false)
