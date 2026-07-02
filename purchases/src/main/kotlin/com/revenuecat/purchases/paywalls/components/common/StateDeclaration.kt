@@ -10,6 +10,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -55,7 +56,9 @@ internal object StateDeclarationMapSerializer : KSerializer<Map<String, StateDec
         val jsonObject = jsonDecoder.decodeJsonElement() as? JsonObject ?: return emptyMap()
         return jsonObject.mapNotNull { (key, element) ->
             try {
-                key to jsonDecoder.json.decodeFromJsonElement(StateDeclaration.serializer(), element)
+                val declaration = jsonDecoder.json.decodeFromJsonElement(StateDeclaration.serializer(), element)
+                // Parity with iOS, where a null default fails ConditionValue decoding: drop the declaration.
+                declaration.takeIf { it.defaultValue !is JsonNull }?.let { key to it }
             } catch (_: IllegalArgumentException) {
                 null
             }
