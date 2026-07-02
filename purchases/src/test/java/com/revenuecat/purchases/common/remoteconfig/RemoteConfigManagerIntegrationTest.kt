@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerTestData
 import com.revenuecat.purchases.common.networking.RCContentEncoding
@@ -13,7 +14,9 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.serialization.json.JsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -266,6 +269,27 @@ class RemoteConfigManagerIntegrationTest {
         assertThat(topics["workflows"]!!["wf1234"]!!.blobRef).isNull()
         assertThat(topics["workflows"]!!.values.mapNotNull { it.blobRef }).isEmpty()
         assertThat(blobStore.cachedRefs()).isEmpty()
+    }
+
+    @Test
+    fun `a synced inline item is readable through the topic and body facade`() {
+        // An inline-only item: its payload lives in the config's inline content, persisted to disk, no blob.
+        val config = workflowsConfig(items = mapOf("wf1234" to null))
+
+        sync(container(config))
+
+        // topic(): the committed item index is served from the real disk cache through the facade.
+        val topic = runBlocking { manager.topic(RemoteConfigTopic.Workflows) }
+        assertThat(topic).isNotNull
+        assertThat(topic!!["wf1234"]!!.content).containsKey("offering_identifier")
+
+        // body(): an item with no blob_ref returns its inline content bytes (JsonObject -> UTF-8) off disk,
+        // never touching the blob fetcher/store.
+        val body = runBlocking { manager.body(RemoteConfigTopic.Workflows, "wf1234") }
+        val expected = JsonProvider.defaultJson
+            .encodeToString(JsonObject.serializer(), topic["wf1234"]!!.content)
+            .encodeToByteArray()
+        assertThat(body).isEqualTo(expected)
     }
 
     /** Builds a workflows-topic config. Each item maps an item key to its `blob_ref`, or `null` for inline-only. */

@@ -1,20 +1,42 @@
 package com.revenuecat.purchases.backend_integration_tests
 
+import android.content.Context
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.mockk
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Test
+import java.io.File
+import kotlin.time.Duration.Companion.seconds
 
 internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
+
+    private val testFolder = "temp_production_remote_config_integration_test_folder"
+
+    private lateinit var remoteConfigBlobStore: RemoteConfigBlobStore
+
+    @After
+    fun tearDownRemoteConfigStorage() {
+        File(testFolder).deleteRecursively()
+    }
 
     @Test
     fun `can fetch remote config`() {
@@ -81,6 +103,42 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val decodedBytes = ByteArray(decodedView.remaining()).also { decodedView.get(it) }
         val json = JsonProvider.defaultJson.parseToJsonElement(decodedBytes.decodeToString())
         assertThat(json.jsonObject).isNotEmpty()
+    }
+
+    @Test
+    fun `fetches, persists and reads an inlined workflows blob back through the manager facade`() {
+        setupTest(SignatureVerificationMode.Informational())
+        every { appConfig.isDebugBuild } returns false
+        val manager = buildRemoteConfigManager()
+
+        // A cold read finds nothing cached, so through the facade it triggers a real /v1/config fetch, persists
+        // the whole config to disk (extracting inline blobs into the blob store), and only then resolves. The
+        // sources "api" item is a stable inline item, so this both drives the end-to-end fetch -> persist and
+        // returns non-null, leaving every active topic committed on disk for the reads below.
+        val sourcesBody = runBlocking {
+            withTimeout(FETCH_TIMEOUT) { manager.body(RemoteConfigTopic.Sources, "api") }
+        }
+        assertThat(sourcesBody).isNotNull
+
+        // topic(): the workflows item index is now served from the real on-disk cache through the facade.
+        val workflows = requireNotNull(runBlocking { manager.topic(RemoteConfigTopic.Workflows) }) {
+            "Expected a workflows topic after the sync."
+        }
+
+        // Pick a workflows item whose blob the backend inlined and the manager extracted to disk during persist.
+        val (itemKey, ref) = requireNotNull(
+            workflows.entries.firstNotNullOfOrNull { (key, item) ->
+                item.blobRef?.takeIf { remoteConfigBlobStore.contains(it) }?.let { key to it }
+            },
+        ) { "Expected a workflows item with an inlined blob stored on disk." }
+
+        // body(): resolves the blob-backed item off disk through the facade (no network: it is already cached).
+        val body = runBlocking { manager.body(RemoteConfigTopic.Workflows, itemKey) }
+        assertThat(body).isNotNull
+        assertThat(body).isEqualTo(remoteConfigBlobStore.read(ref))
+        // The bytes are real, structured content (a non-empty JSON object), not garbage.
+        val json = JsonProvider.defaultJson.parseToJsonElement(body!!.decodeToString()).jsonObject
+        assertThat(json).isNotEmpty()
     }
 
     @Test
@@ -165,5 +223,34 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             )
         }
         return Triple(error, container, verification)
+    }
+
+    /**
+     * Builds a [RemoteConfigManager] wired to the real [backend] and backed by the real [RemoteConfigDiskCache] +
+     * [RemoteConfigBlobStore] on a temp folder, so a read exercises the full fetch -> persist -> disk -> read path.
+     *
+     * Only the blob fetcher's network layer is kept out: it is unit-tested elsewhere, and these reads only touch a
+     * blob the real backend inlined and the manager extracted to disk, so [RemoteConfigBlobFetcher.ensureDownloaded]
+     * resolves from the store (its real short-circuit for an already-cached ref) with no CDN call, and prefetch is
+     * a no-op.
+     */
+    private fun buildRemoteConfigManager(): RemoteConfigManager {
+        val context = mockk<Context>()
+        every { context.noBackupFilesDir } returns File(testFolder).apply { mkdirs() }
+        remoteConfigBlobStore = RemoteConfigBlobStore(context)
+        val blobFetcher = mockk<RemoteConfigBlobFetcher>(relaxed = true)
+        coEvery { blobFetcher.ensureDownloaded(any<String>()) } answers { remoteConfigBlobStore.contains(firstArg()) }
+        return RemoteConfigManager(
+            backend = backend,
+            diskCache = RemoteConfigDiskCache(context),
+            blobStore = remoteConfigBlobStore,
+            blobFetcher = blobFetcher,
+            appUserIDProvider = { REMOTE_CONFIG_USER },
+        )
+    }
+
+    private companion object {
+        private const val REMOTE_CONFIG_USER = "integrationTestRemoteConfigUser"
+        private val FETCH_TIMEOUT = 15.seconds
     }
 }
