@@ -110,8 +110,10 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
-internal typealias RemoteConfigCallback =
-    Pair<(RCContainer?, VerificationResult) -> Unit, (PurchasesError) -> Unit>
+internal typealias RemoteConfigCallback = Pair<
+    (RCContainer?, VerificationResult) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
+    >
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias WorkflowDetailCallback = Pair<
@@ -138,6 +140,15 @@ internal enum class GetOfferingsErrorHandlingBehavior {
 internal enum class GetWorkflowsErrorHandlingBehavior {
     SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
     SHOULD_NOT_FALLBACK,
+}
+
+internal enum class GetRemoteConfigErrorHandlingBehavior {
+    // 5xx, transport, or parse failures: the endpoint may recover, keep retrying on future syncs.
+    SHOULD_RETRY,
+
+    // A 4xx client error: the endpoint intentionally refused the request (bad shape, feature not provisioned,
+    // auth rejection). Stop hitting it for the rest of the session.
+    SHOULD_DISABLE,
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -1317,7 +1328,7 @@ internal class Backend(
         manifest: String?,
         prefetchedBlobs: List<String>,
         onSuccess: (RCContainer?, VerificationResult) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig(domain)
         val path = endpoint.getPath()
@@ -1350,7 +1361,8 @@ internal class Backend(
                 synchronized(this@Backend) {
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    // Transport/IO failure: no HTTP status, the endpoint may recover on a future sync.
+                    onErrorHandler(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
                 }
             }
 
@@ -1371,16 +1383,31 @@ internal class Backend(
                                     PurchasesErrorCode.UnknownError,
                                     "Expected an RC Container Format payload for remote config.",
                                 ).also { errorLog(it) },
+                                // A 2xx with an unexpected payload is not a client error; keep retrying.
+                                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
                             )
                             return@forEach
                         }
                         try {
                             onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
                         } catch (e: RCContainerFormatException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            // Parse failure of an otherwise-successful response; keep retrying.
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+                            )
                         }
                     } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                        // A 4xx means the endpoint intentionally refused: disable it for the session. Any other
+                        // non-success (5xx) may recover, so keep retrying.
+                        val isClientError = !RCHTTPStatusCodes.isSuccessful(result.responseCode) &&
+                            !RCHTTPStatusCodes.isServerError(result.responseCode)
+                        val behavior = if (isClientError) {
+                            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE
+                        } else {
+                            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, behavior)
                     }
                 }
             }
