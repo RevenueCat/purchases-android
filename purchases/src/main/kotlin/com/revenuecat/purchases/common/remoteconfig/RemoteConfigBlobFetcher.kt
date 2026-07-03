@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -113,11 +114,14 @@ internal class RemoteConfigBlobFetcher(
     /** Best-effort background warm of [refs] at LOW priority. Fire-and-forget; failures are tolerated. */
     fun prefetch(refs: List<String>) {
         scope.launch {
+            var enqueued = 0
             refs.forEach { ref ->
                 if (RemoteConfigUtils.isValidRef(ref) && !blobStore.contains(ref)) {
                     enqueue(ref, Priority.LOW)
+                    enqueued++
                 }
             }
+            verboseLog { "Enqueued $enqueued remote config blob(s) for prefetch." }
         }
     }
 
@@ -193,6 +197,10 @@ internal class RemoteConfigBlobFetcher(
                 DownloadOutcome.SOURCE_UNHEALTHY -> {
                     sourceProvider.reportUnhealthy(handle)
                     handle = sourceProvider.getCurrent(Purpose.BLOB)
+                    verboseLog {
+                        "Remote config blob source unhealthy for '$ref'; " +
+                            (handle?.let { "falling over to the next source." } ?: "no sources left.")
+                    }
                 }
             }
         }
@@ -233,6 +241,7 @@ internal class RemoteConfigBlobFetcher(
         // A failed disk write isn't a source problem, so don't condemn the source: report the blob as unavailable
         // (yields false, stops) and let a later sync/on-demand read re-fetch it.
         return if (blobStore.write(ref, ByteBuffer.wrap(bytes))) {
+            verboseLog { "Downloaded and stored remote config blob '$ref' (${bytes.size} bytes) from $url." }
             DownloadOutcome.SUCCESS
         } else {
             DownloadOutcome.BLOB_UNAVAILABLE
