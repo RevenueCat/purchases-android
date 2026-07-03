@@ -274,7 +274,7 @@ internal class PurchasesFactory(
 
             val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
-            val remoteConfigManager = if (BuildConfig.ENABLE_REMOTE_CONFIG) {
+            val remoteConfigManager = if (BuildConfig.ENABLE_REMOTE_CONFIG && !appConfig.customEntitlementComputation) {
                 RemoteConfigManager(
                     backend = backend,
                     diskCache = RemoteConfigDiskCache(contextForStorage),

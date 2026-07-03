@@ -12,6 +12,8 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
+import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -134,6 +136,7 @@ internal class RemoteConfigManager(
         }
         val persisted = diskCache.read()
         val storedBlobs = blobStore.cachedRefs()
+        logRefreshStart(persisted, appInBackground)
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = appUserID,
@@ -149,14 +152,7 @@ internal class RemoteConfigManager(
                     return@getRemoteConfig
                 }
                 if (container == null) {
-                    // 204: nothing changed
-                    synchronized(cacheLock) {
-                        if (epoch.get() == requestEpoch) {
-                            lastRefreshedAt = dateProvider.now
-                            isRefreshing.set(false)
-                            completeRefresh()
-                        }
-                    }
+                    handleNotModified(requestEpoch)
                     return@getRemoteConfig
                 }
                 scope.launch {
@@ -181,6 +177,25 @@ internal class RemoteConfigManager(
             },
             onError = { error, behavior -> handleRefreshError(requestEpoch, error, behavior) },
         )
+    }
+
+    /** Handles a `204 Not Modified`: nothing changed, so keep the cache and just advance the refresh bookkeeping. */
+    private fun handleNotModified(requestEpoch: Int) {
+        debugLog { "Remote config unchanged (204 Not Modified)." }
+        synchronized(cacheLock) {
+            if (epoch.get() == requestEpoch) {
+                lastRefreshedAt = dateProvider.now
+                isRefreshing.set(false)
+                completeRefresh()
+            }
+        }
+    }
+
+    private fun logRefreshStart(persisted: PersistedRemoteConfigurationState?, appInBackground: Boolean) {
+        verboseLog {
+            "Refreshing remote config (domain=${persisted?.domain ?: DEFAULT_DOMAIN}, " +
+                "manifest present=${persisted?.manifest != null}, appInBackground=$appInBackground)."
+        }
     }
 
     private fun handleRefreshError(
@@ -257,13 +272,22 @@ internal class RemoteConfigManager(
      * so it wants the un-jittered, prompt request.
      */
     private suspend fun awaitConfigForRead() {
-        if (awaitInFlightRefresh()) return
+        if (awaitInFlightRefresh()) {
+            verboseLog { "Cold remote config read waiting on the refresh already in progress." }
+            return
+        }
         // Nothing in flight: trigger a sync on demand, unless the endpoint is disabled or no user is known yet.
         val appUserID = appUserIDProvider()?.takeIf { it.isNotBlank() }
         if (!disabled && appUserID != null) {
+            verboseLog { "Cold remote config read triggering an on-demand sync." }
             refreshRemoteConfig(appInBackground = false, appUserID = appUserID)
             // Join whatever is now in flight — the sync we just triggered, or one a concurrent caller started.
             awaitInFlightRefresh()
+        } else {
+            verboseLog {
+                "Cold remote config read skipped on-demand sync " +
+                    "(disabled=$disabled, user known=${appUserID != null})."
+            }
         }
     }
 
@@ -290,10 +314,21 @@ internal class RemoteConfigManager(
      * that also resolves the referenced blob. Reads disk on [ioDispatcher].
      */
     suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
-        if (disabled) return@withContext null
-        topicStore.topic(topic)?.let { return@withContext it }
-        awaitConfigForRead()
-        topicStore.topic(topic)
+        if (disabled) {
+            verboseLog { "Remote config disabled (4xx); skipping topic read '${topic.wireName}'." }
+            return@withContext null
+        }
+        // A committed topic returns immediately; only a miss waits for (or triggers) a refresh, then re-reads.
+        val result = topicStore.topic(topic) ?: run {
+            awaitConfigForRead()
+            topicStore.topic(topic)
+        }
+        result.also {
+            verboseLog {
+                val state = it?.let { committed -> "${committed.size} items" } ?: "not cached"
+                "Reading remote config topic '${topic.wireName}': $state."
+            }
+        }
     }
 
     /**
@@ -342,23 +377,41 @@ internal class RemoteConfigManager(
      * unknown, or it has no `blob_ref`.
      */
     private suspend fun resolveBlobBytes(topic: RemoteConfigTopic, itemKey: String): ByteArray? {
-        if (disabled) return null
+        if (disabled) {
+            verboseLog { "Remote config disabled (4xx); skipping read of item '$itemKey'." }
+            return null
+        }
+        verboseLog { "Reading remote config blob (topic='${topic.wireName}', item='$itemKey')." }
         val ref = committedItem(topic, itemKey)?.blobRef
         return when {
-            ref == null -> null
-            blobFetcher.ensureDownloaded(ref) -> blobStore.read(ref)
-            else -> null
+            ref == null -> {
+                verboseLog { "Remote config item '$itemKey' is missing or has no blob ref; returning null." }
+                null
+            }
+            blobFetcher.ensureDownloaded(ref) -> {
+                blobStore.read(ref).also { bytes ->
+                    if (bytes != null) {
+                        verboseLog { "Resolved '$itemKey' from remote config blob '$ref' (${bytes.size} bytes)." }
+                    } else {
+                        warnLog { "Remote config blob '$ref' for item '$itemKey' downloaded but read back null." }
+                    }
+                }
+            }
+            else -> {
+                warnLog { "Failed to resolve remote config blob '$ref' for item '$itemKey'." }
+                null
+            }
         }
     }
 
-    /**
-     * The committed item for `itemKey` in [topic], awaiting an in-flight or on-demand refresh once when it
-     * isn't cached yet (see [awaitConfigForRead]), or `null` when it still isn't found.
-     */
+    /** The committed item for [itemKey], waiting for or triggering a sync once when it is not cached yet. */
     private suspend fun committedItem(topic: RemoteConfigTopic, itemKey: String): RemoteConfiguration.ConfigItem? {
         topicStore.topic(topic)?.get(itemKey)?.let { return it }
+        verboseLog { "Remote config item '$itemKey' not committed yet; awaiting config." }
         awaitConfigForRead()
-        return topicStore.topic(topic)?.get(itemKey)
+        return topicStore.topic(topic)?.get(itemKey).also {
+            if (it == null) verboseLog { "Remote config item '$itemKey' not found in topic '${topic.wireName}'." }
+        }
     }
 
     private fun persist(
@@ -366,6 +419,13 @@ internal class RemoteConfigManager(
         response: RemoteConfiguration,
         container: RCContainer,
     ) {
+        debugLog {
+            val changed = response.topics.entries.joinToString { (name, topic) ->
+                "$name -> items=${topic.keys}"
+            }
+            "Received remote config: active topics=${response.activeTopics}; changed topics: " +
+                "[${changed.ifEmpty { "none" }}]."
+        }
         val previousTopics = previous?.topics ?: emptyMap()
         // Changed topics (present in the response) overwrite their item index; unchanged active topics keep their
         // carried-forward index (the server omits them); topics no longer active are pruned.
@@ -391,6 +451,10 @@ internal class RemoteConfigManager(
 
         if (persisted) {
             lastRefreshedAt = dateProvider.now
+            debugLog {
+                "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
+                    "${blobRefsToKeep.size} blobs wanted)."
+            }
             extractInlineBlobs(container, blobRefsToKeep)
             blobStore.retainOnly(blobRefsToKeep)
             prefetchBlobs(response, mergedTopics)
@@ -415,7 +479,9 @@ internal class RemoteConfigManager(
                 topic.values.forEach { item -> if (item.prefetch) item.blobRef?.let(::add) }
             }
         }
-        blobFetcher.prefetch(refs.filterNot { blobStore.contains(it) })
+        val toPrefetch = refs.filterNot { blobStore.contains(it) }
+        verboseLog { "Prefetching ${toPrefetch.size} remote config blob(s)." }
+        blobFetcher.prefetch(toPrefetch)
     }
 
     /** Caches inlined content elements the config still wants, whose bytes match their content-address ref. */
@@ -431,7 +497,11 @@ internal class RemoteConfigManager(
                 return@forEach
             }
             if (element.matchesChecksum(decoded)) {
-                blobStore.write(ref, decoded)
+                val size = decoded.remaining()
+                // write() logs its own error on failure; only report success when it actually stored the blob.
+                if (blobStore.write(ref, decoded)) {
+                    verboseLog { "Stored inlined remote config blob '$ref' ($size bytes)." }
+                }
             } else {
                 errorLog { "Skipping remote config blob '$ref': checksum verification failed." }
             }
