@@ -1424,7 +1424,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne, "step-2" to stepTwo),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
         coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
         coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow, null)
@@ -1483,7 +1482,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
         coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
         coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow, null)
@@ -3069,7 +3067,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
 
         val model = PaywallViewModelImpl(
@@ -3156,7 +3153,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
         coEvery { purchases.awaitGetWorkflow(workflowId) } returns WorkflowDataResult(workflow, null)
 
@@ -3206,7 +3202,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
         coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns WorkflowDataResult(workflow, null)
 

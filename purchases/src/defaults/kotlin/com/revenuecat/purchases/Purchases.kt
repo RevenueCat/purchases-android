@@ -427,6 +427,16 @@ public class Purchases internal constructor(
 
     @InternalRevenueCatAPI
     @JvmSynthetic
+    @Throws(PurchasesException::class)
+    public suspend fun awaitGetUiConfig(): UiConfig = suspendCoroutine { continuation ->
+        purchasesOrchestrator.getUiConfig(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
     public suspend fun workflowIdForOfferingId(offeringId: String): String? =
         purchasesOrchestrator.workflowIdForOfferingId(offeringId)
 

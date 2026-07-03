@@ -24,6 +24,9 @@ internal class WorkflowAssetPreDownloader(
         workflow.screens.values.forEach { screen ->
             paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base)
         }
-        offeringFontPreDownloader.preDownloadFontsIfNeeded(workflow.uiConfig.app.fonts.values)
+        // ui_config no longer lives on PublishedWorkflow — it has its own independent read path
+        // (UiConfigProvider / PurchasesOrchestrator.getUiConfig). Font pre-download needs to be re-wired to
+        // pull fonts from that path; left as a no-op pending that wiring.
+        offeringFontPreDownloader.preDownloadFontsIfNeeded(emptyList())
     }
 }

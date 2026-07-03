@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.awaitCreateSupportTicket
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
@@ -68,6 +69,9 @@ internal interface PurchasesType {
 
     @Throws(PurchasesException::class)
     suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult
+
+    @Throws(PurchasesException::class)
+    suspend fun awaitGetUiConfig(): UiConfig
 
     suspend fun workflowIdForOfferingId(offeringId: String): String?
 
@@ -145,6 +149,9 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
         return purchases.awaitGetWorkflow(workflowId)
     }
+
+    @Throws(PurchasesException::class)
+    override suspend fun awaitGetUiConfig(): UiConfig = purchases.awaitGetUiConfig()
 
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun workflowIdForOfferingId(offeringId: String): String? =
