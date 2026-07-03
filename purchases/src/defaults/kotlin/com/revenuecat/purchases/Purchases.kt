@@ -431,6 +431,18 @@ public class Purchases internal constructor(
         purchasesOrchestrator.workflowIdForOfferingId(offeringId)
 
     /**
+     * Whether the remote-config layer serving workflows is disabled for this session (the `/v1/config` 4xx
+     * kill switch). Paywall consumers read this to skip the workflow path and render the offerings-provided
+     * paywall directly. Resets only on app restart.
+     */
+    // @get:JvmSynthetic keeps the getter out of the Java API surface (and the metalava dump), like the
+    // sibling workflow functions — a bare property annotation never reaches the getter Java sees.
+    @InternalRevenueCatAPI
+    @get:JvmSynthetic
+    public val isRemoteConfigUnavailable: Boolean
+        get() = purchasesOrchestrator.isRemoteConfigUnavailable
+
+    /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds
      * @param [callback] Response callback

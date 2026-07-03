@@ -805,20 +805,11 @@ internal class PaywallViewModelImpl(
         // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
         // deliberately do NOT gate on `paywallComponents`, which is going away.
         if (useWorkflowsEndpoint && selectedOffering != null && selectedOffering.paywall == null) {
-            try {
-                presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
-                return
-            } catch (e: PurchasesException) {
-                // The workflow could not be served — the config endpoint is disabled for the session
-                // (4xx kill switch), unreachable, or the offering has no workflow yet. Degrade to the
-                // paywall /offerings already delivered so the app still shows something; rethrow
-                // (→ PaywallState.Error) only when there is nothing to fall back to.
-                if (selectedOffering.paywallComponents == null) throw e
-                Logger.w(
-                    "Paywalls: Failed to fetch workflow for offering '${selectedOffering.identifier}' " +
-                        "(${e.message}). Falling back to the offerings-provided paywall.",
-                )
-            }
+            val presented = presentWorkflowOrFallBack(
+                selectedOffering,
+                resolvedOfferingSelection.offeringsForExitOfferLookup,
+            )
+            if (presented) return
         }
 
         val exitOfferingId = selectedOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
@@ -852,6 +843,37 @@ internal class PaywallViewModelImpl(
         )
         startWorkflowPresentation(injectedWorkflow, offerings, offering?.presentedOfferingContext)
         return true
+    }
+
+    /**
+     * Attempts the workflow path for [offering]. Returns `true` when the workflow was presented; `false` when
+     * the caller should render the offerings-provided paywall instead — the config endpoint is disabled for
+     * the session (4xx kill switch), unreachable, or the offering has no workflow yet. Rethrows the fetch
+     * failure (→ PaywallState.Error) only when there is nothing to fall back to.
+     */
+    private suspend fun presentWorkflowOrFallBack(offering: Offering, preloadedOfferings: Offerings?): Boolean {
+        // Read at fetch time, not construction time: the endpoint becomes session-disabled the moment
+        // /v1/config answers a 4xx, which can happen at any point mid-session. With no fallback to render,
+        // the fetch is still attempted — a previously-committed workflow can still serve from the local
+        // config cache, which beats erroring without trying.
+        if (purchases.isRemoteConfigUnavailable && offering.paywallComponents != null) {
+            Logger.w(
+                "Paywalls: Remote config is disabled for this session. Rendering the offerings-provided " +
+                    "paywall for offering '${offering.identifier}' without fetching its workflow.",
+            )
+            return false
+        }
+        return try {
+            presentWorkflow(offering, preloadedOfferings)
+            true
+        } catch (e: PurchasesException) {
+            if (offering.paywallComponents == null) throw e
+            Logger.w(
+                "Paywalls: Failed to fetch workflow for offering '${offering.identifier}' " +
+                    "(${e.message}). Falling back to the offerings-provided paywall.",
+            )
+            false
+        }
     }
 
     private suspend fun presentWorkflow(offering: Offering, preloadedOfferings: Offerings?) {

@@ -72,6 +72,9 @@ internal interface PurchasesType {
     suspend fun workflowIdForOfferingId(offeringId: String): String?
 
     val useWorkflows: Boolean
+
+    /** True once `/v1/config` is session-disabled (4xx kill switch) — the workflow path cannot serve. */
+    val isRemoteConfigUnavailable: Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -153,4 +156,8 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override val useWorkflows: Boolean
         get() = purchases.currentConfiguration.dangerousSettings.useWorkflows
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override val isRemoteConfigUnavailable: Boolean
+        get() = purchases.isRemoteConfigUnavailable
 }

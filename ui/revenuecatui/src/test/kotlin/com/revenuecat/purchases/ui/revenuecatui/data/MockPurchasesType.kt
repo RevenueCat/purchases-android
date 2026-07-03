@@ -23,6 +23,7 @@ internal class MockPurchasesType(
     override val storefrontCountryCode: String? = null,
     override val customerCenterListener: CustomerCenterListener? = null,
     override val useWorkflows: Boolean = false,
+    override val isRemoteConfigUnavailable: Boolean = false,
 ) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         throw NotImplementedError("Mock implementation")

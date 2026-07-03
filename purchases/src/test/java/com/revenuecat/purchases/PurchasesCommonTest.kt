@@ -2830,6 +2830,15 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `isRemoteConfigUnavailable reflects the remote config manager kill switch`() {
+        every { mockRemoteConfigManager.isDisabled } returns true
+        assertThat(purchases.purchasesOrchestrator.isRemoteConfigUnavailable).isTrue()
+
+        every { mockRemoteConfigManager.isDisabled } returns false
+        assertThat(purchases.purchasesOrchestrator.isRemoteConfigUnavailable).isFalse()
+    }
+
     // endregion
 
     // region getWorkflow

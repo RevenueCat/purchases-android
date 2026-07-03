@@ -616,6 +616,15 @@ internal class PurchasesOrchestrator(
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
 
+    /**
+     * Whether the remote-config layer serving workflows is disabled for this session (`/v1/config` answered a
+     * 4xx — the kill switch). Consumers use it to skip the workflow path up front and render the
+     * offerings-provided paywall instead. `false` when workflows are off entirely (no manager). Resets only on
+     * app restart.
+     */
+    val isRemoteConfigUnavailable: Boolean
+        get() = remoteConfigManager?.isDisabled ?: false
+
     fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
