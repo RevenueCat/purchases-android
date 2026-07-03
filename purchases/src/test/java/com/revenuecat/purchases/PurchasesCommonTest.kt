@@ -2841,12 +2841,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val successSlot = slot<(WorkflowDataResult) -> Unit>()
         every {
             mockWorkflowManager.getWorkflow(
-                appUserID = appUserId,
                 workflowOrOfferingId = "wf_1",
-                appInBackground = any(),
                 onSuccess = capture(successSlot),
                 onError = any(),
-                callbackDispatcher = any(),
             )
         } answers { successSlot.captured(expected) }
 
@@ -2869,12 +2866,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
             mockWorkflowManager.getWorkflow(
-                appUserID = appUserId,
                 workflowOrOfferingId = "wf_1",
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = capture(errorSlot),
-                callbackDispatcher = any(),
             )
         } answers { errorSlot.captured(expectedError) }
 
@@ -2907,7 +2901,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
         assertThat(received).isNull()
         verify(exactly = 0) {
-            mockWorkflowManager.getWorkflow(any(), any(), any(), any(), any(), any())
+            mockWorkflowManager.getWorkflow(any(), any(), any())
         }
     }
 

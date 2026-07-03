@@ -69,7 +69,7 @@ internal interface PurchasesType {
     @Throws(PurchasesException::class)
     suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult
 
-    fun workflowIdForOfferingId(offeringId: String): String?
+    suspend fun workflowIdForOfferingId(offeringId: String): String?
 
     val useWorkflows: Boolean
 }
@@ -147,7 +147,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    override fun workflowIdForOfferingId(offeringId: String): String? =
+    override suspend fun workflowIdForOfferingId(offeringId: String): String? =
         purchases.workflowIdForOfferingId(offeringId)
 
     @OptIn(InternalRevenueCatAPI::class)
