@@ -800,14 +800,26 @@ internal class PaywallViewModelImpl(
         val resolvedOfferingSelection = resolveOfferingSelection(offeringSelection)
         val selectedOffering = resolvedOfferingSelection.selectedOffering
 
-        // When workflows are enabled, every non-legacy paywall is served through the /workflows
-        // endpoint. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
+        // When workflows are enabled, every non-legacy paywall is served through the workflows
+        // path. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
         // paywall: a legacy v1 paywall always carries `offering.paywall`, and that field stays
         // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
         // deliberately do NOT gate on `paywallComponents`, which is going away.
         if (useWorkflowsEndpoint && selectedOffering != null && selectedOffering.paywall == null) {
-            presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
-            return
+            try {
+                presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
+                return
+            } catch (e: PurchasesException) {
+                // The workflow could not be served — the config endpoint is disabled for the session
+                // (4xx kill switch), unreachable, or the offering has no workflow yet. Degrade to the
+                // paywall /offerings already delivered so the app still shows something; rethrow
+                // (→ PaywallState.Error) only when there is nothing to fall back to.
+                if (selectedOffering.paywallComponents == null) throw e
+                Logger.w(
+                    "Paywalls: Failed to fetch workflow for offering '${selectedOffering.identifier}' " +
+                        "(${e.message}). Falling back to the offerings-provided paywall.",
+                )
+            }
         }
 
         val exitOfferingId = selectedOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
