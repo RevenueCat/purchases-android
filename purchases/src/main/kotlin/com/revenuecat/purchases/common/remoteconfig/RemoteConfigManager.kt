@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -388,11 +389,16 @@ internal class RemoteConfigManager(
                 null
             }
             blobFetcher.ensureDownloaded(ref) -> {
-                verboseLog { "Resolving '$itemKey' from remote config blob '$ref'." }
-                blobStore.read(ref).also { verboseLog { "Resolved blob '$ref' (${it?.size ?: 0} bytes)." } }
+                blobStore.read(ref).also { bytes ->
+                    if (bytes != null) {
+                        verboseLog { "Resolved '$itemKey' from remote config blob '$ref' (${bytes.size} bytes)." }
+                    } else {
+                        warnLog { "Remote config blob '$ref' for item '$itemKey' downloaded but read back null." }
+                    }
+                }
             }
             else -> {
-                verboseLog { "Failed to resolve remote config blob '$ref' for item '$itemKey'." }
+                warnLog { "Failed to resolve remote config blob '$ref' for item '$itemKey'." }
                 null
             }
         }
@@ -492,8 +498,10 @@ internal class RemoteConfigManager(
             }
             if (element.matchesChecksum(decoded)) {
                 val size = decoded.remaining()
-                blobStore.write(ref, decoded)
-                verboseLog { "Stored inlined remote config blob '$ref' ($size bytes)." }
+                // write() logs its own error on failure; only report success when it actually stored the blob.
+                if (blobStore.write(ref, decoded)) {
+                    verboseLog { "Stored inlined remote config blob '$ref' ($size bytes)." }
+                }
             } else {
                 errorLog { "Skipping remote config blob '$ref': checksum verification failed." }
             }
