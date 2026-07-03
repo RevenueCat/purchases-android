@@ -22,7 +22,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -41,7 +40,6 @@ import org.robolectric.annotation.Config
 import java.nio.ByteBuffer
 import java.util.Date
 import java.util.concurrent.CountDownLatch
-import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -747,80 +745,6 @@ class RemoteConfigManagerTest {
         assertThat(clearEntered.count).isZero()
         verify(exactly = 1) { diskCache.write(any()) }
         verify(exactly = 1) { diskCache.clear() }
-    }
-
-    @Test
-    fun `clearCache is not blocked behind the post-commit blob pass`() {
-        every { diskCache.read() } returns null
-        val response = """
-            {
-              "domain": "app",
-              "manifest": "v1.200.sources:etag2",
-              "active_topics": ["sources"],
-              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
-            }
-        """.trimIndent()
-
-        val retainEntered = CountDownLatch(1)
-        val releaseRetain = CountDownLatch(1)
-        val clearEntered = CountDownLatch(1)
-        // The blob pass runs after the commit, outside cacheLock; park inside it to race clearCache.
-        every { blobStore.retainOnly(any()) } answers {
-            retainEntered.countDown()
-            check(releaseRetain.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "retainOnly was not released in time" }
-        }
-        every { diskCache.clear() } answers { clearEntered.countDown() }
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
-        val persistThread = thread { onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED) }
-        check(retainEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "sync did not reach retainOnly" }
-
-        // Identity change mid-blob-pass: the commit already released cacheLock, so the wipe runs immediately
-        // instead of waiting for the (potentially long) blob IO to finish.
-        val clearThread = thread { manager.clearCache() }
-        assertThat(clearEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
-
-        releaseRetain.countDown()
-        persistThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
-        clearThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
-
-        verify(exactly = 1) { diskCache.write(any()) }
-        verify(exactly = 1) { diskCache.clear() }
-    }
-
-    @Test
-    fun `refreshRemoteConfig reads disk on the manager scope, not the caller thread`() {
-        val ioThreadName = "rc-manager-io"
-        val ioScope = CoroutineScope(
-            Executors.newSingleThreadExecutor { runnable -> Thread(runnable, ioThreadName) }
-                .asCoroutineDispatcher(),
-        )
-        var readThreadName: String? = null
-        every { diskCache.read() } answers {
-            readThreadName = Thread.currentThread().name
-            null
-        }
-        val requestIssued = CountDownLatch(1)
-        every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
-        } answers { requestIssued.countDown() }
-        val manager = RemoteConfigManager(
-            backend,
-            diskCache,
-            blobStore,
-            dateProvider = dateProvider,
-            scope = ioScope,
-            sourceProvider = sourceProvider,
-            blobFetcher = blobFetcher,
-        )
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
-
-        // The pre-request disk reads hop to the manager scope: an identity change on the main thread must
-        // never do file IO. The request is still issued (from that scope).
-        check(requestIssued.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "request was not issued in time" }
-        // Coroutine debug mode may append " @coroutine#N" to the carrier thread's name.
-        assertThat(readThreadName).startsWith(ioThreadName)
     }
 
     @Test

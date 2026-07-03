@@ -43,11 +43,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * from the response's [RemoteConfiguration.activeTopics]. The manager is topic-agnostic: it never interprets item
  * shapes or branches on topic name — consumer topics are read lazily by providers through the manager.
  *
- * A refresh's disk work runs on [scope]: the pre-request reads (persisted state + cached blob refs) and the
- * `200` path's parse/commit/blob pass, so callers never touch disk on their own thread and the launch lets
- * [clearCache] cancel in-flight work. Blob prefetch runs on the fetcher's own worker pool (not [scope]).
- * Identity changes call [clearCache], which bumps an epoch so a late `/v1/config` response (its HTTP request
- * cannot be socket-cancelled) is dropped instead of persisting over the freshly wiped cache.
+ * The `200` path runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel the
+ * in-flight parse/persist. Blob prefetch runs on the fetcher's own worker pool (not [scope]). Identity changes
+ * call [clearCache], which bumps an epoch so a late `/v1/config` response (its HTTP request cannot be
+ * socket-cancelled) is dropped instead of persisting over the freshly wiped cache.
  *
  * Overlapping refreshes are deduped: only one [refreshRemoteConfig] runs at a time. A call made while one is
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
@@ -82,11 +81,9 @@ internal class RemoteConfigManager(
     // socket-cancelled), so an old user's response can never persist over the wiped cache.
     private val epoch = AtomicInteger(0)
 
-    // Serializes a sync's "re-check epoch + commit" against clearCache()'s "bump epoch + wipe". commitConfig()
-    // is synchronous, so cancellation can't interrupt it; this lock makes the two critical sections atomic so a
-    // late commit either runs fully before the wipe or sees the bumped epoch and skips — the configuration is
-    // never written after the wipe. The best-effort blob pass deliberately runs outside this lock (see
-    // handleContainer), so an identity change is never blocked behind blob IO.
+    // Serializes a sync's "re-check epoch + persist" against clearCache()'s "bump epoch + wipe". persist() is
+    // synchronous, so cancellation can't interrupt it; this lock makes the two critical sections atomic so a
+    // late persist either runs fully before the wipe or sees the bumped epoch and skips — never writes after it.
     private val cacheLock = Any()
 
     @Volatile
@@ -137,75 +134,49 @@ internal class RemoteConfigManager(
             requestEpoch = epoch.get()
             refreshCompletion = CompletableDeferred()
         }
-        // The pre-request disk reads (persisted state + cached blob refs, which may scan the blobs directory)
-        // run on the manager's scope so callers — e.g. an identity change on the main thread — never touch
-        // disk. The guard and completion were acquired synchronously above, so a concurrent read can already
-        // await this refresh.
-        scope.launch {
-            // Cleared (identity change) before this ran: the guard was already handed back by clearCache().
-            if (epoch.get() != requestEpoch) return@launch
-            val persisted = diskCache.read()
-            val storedBlobs = blobStore.cachedRefs()
-            logRefreshStart(persisted, appInBackground)
-            backend.getRemoteConfig(
-                appInBackground = appInBackground,
-                appUserID = appUserID,
-                domain = persisted?.domain ?: DEFAULT_DOMAIN,
-                // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
-                manifest = persisted?.manifest,
-                // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
-                prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
-                onSuccess = { container, _ ->
-                    if (epoch.get() != requestEpoch) {
-                        // The cache was cleared (identity change) after this request started. Drop the stale
-                        // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
-                        return@getRemoteConfig
+        val persisted = diskCache.read()
+        val storedBlobs = blobStore.cachedRefs()
+        logRefreshStart(persisted, appInBackground)
+        backend.getRemoteConfig(
+            appInBackground = appInBackground,
+            appUserID = appUserID,
+            domain = persisted?.domain ?: DEFAULT_DOMAIN,
+            // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
+            manifest = persisted?.manifest,
+            // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
+            prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
+            onSuccess = { container, _ ->
+                if (epoch.get() != requestEpoch) {
+                    // The cache was cleared (identity change) after this request started. Drop the stale
+                    // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
+                    return@getRemoteConfig
+                }
+                if (container == null) {
+                    handleNotModified(requestEpoch)
+                    return@getRemoteConfig
+                }
+                scope.launch {
+                    try {
+                        val response = RemoteConfiguration.parse(container.config.decode())
+                        synchronized(cacheLock) {
+                            if (epoch.get() != requestEpoch) return@launch
+                            persist(previous = persisted, response = response, container = container)
+                        }
+                    } catch (e: SerializationException) {
+                        errorLog(e) {
+                            "Failed to parse remote config response. Keeping the cached configuration."
+                        }
+                    } catch (e: RCContainerFormatException) {
+                        errorLog(e) {
+                            "Failed to decode remote config response. Keeping the cached configuration."
+                        }
+                    } finally {
+                        releaseGuardIfOwned(requestEpoch)
                     }
-                    if (container == null) {
-                        handleNotModified(requestEpoch)
-                        return@getRemoteConfig
-                    }
-                    scope.launch {
-                        handleContainer(requestEpoch, persisted, container)
-                    }
-                },
-                onError = { error, behavior -> handleRefreshError(requestEpoch, error, behavior) },
-            )
-        }
-    }
-
-    /**
-     * The `200` path: parses the container's config element, commits it under [cacheLock], then runs the
-     * best-effort blob sync **outside** the lock so an identity change ([clearCache]) is never blocked behind
-     * blob IO. Only the commit needs atomicity with the epoch check; a stale blob written past a concurrent
-     * wipe is inert (content-addressed and unreferenced by the new config) and pruned by the next sync's
-     * retain pass.
-     */
-    private fun handleContainer(
-        requestEpoch: Int,
-        persisted: PersistedRemoteConfigurationState?,
-        container: RCContainer,
-    ) {
-        try {
-            val response = RemoteConfiguration.parse(container.config.decode())
-            val commit = synchronized(cacheLock) {
-                if (epoch.get() != requestEpoch) return
-                commitConfig(previous = persisted, response = response)
-            }
-            if (commit != null && epoch.get() == requestEpoch) {
-                syncBlobs(container, response, commit)
-            }
-        } catch (e: SerializationException) {
-            errorLog(e) {
-                "Failed to parse remote config response. Keeping the cached configuration."
-            }
-        } catch (e: RCContainerFormatException) {
-            errorLog(e) {
-                "Failed to decode remote config response. Keeping the cached configuration."
-            }
-        } finally {
-            releaseGuardIfOwned(requestEpoch)
-        }
+                }
+            },
+            onError = { error, behavior -> handleRefreshError(requestEpoch, error, behavior) },
+        )
     }
 
     /** Handles a `204 Not Modified`: nothing changed, so keep the cache and just advance the refresh bookkeeping. */
@@ -443,23 +414,11 @@ internal class RemoteConfigManager(
         }
     }
 
-    /** What a committed sync leaves for the out-of-lock blob pass: the merged index + the wanted blob refs. */
-    private class CommittedSync(
-        val mergedTopics: Map<String, ConfigTopic>,
-        val blobRefsToKeep: Set<String>,
-    )
-
-    /**
-     * Persists the configuration — the full topic index (incl. each item's inline content) plus the manifest
-     * the server diffs against is the source of truth, and persisting it IS the entire commit (the manifest
-     * advances unconditionally). Returns what the blob pass needs, or `null` when the write failed (the
-     * previous state stands and the next sync replays it). Callers must hold [cacheLock]; only the commit
-     * needs that atomicity, so this deliberately does no blob IO.
-     */
-    private fun commitConfig(
+    private fun persist(
         previous: PersistedRemoteConfigurationState?,
         response: RemoteConfiguration,
-    ): CommittedSync? {
+        container: RCContainer,
+    ) {
         debugLog {
             val changed = response.topics.entries.joinToString { (name, topic) ->
                 "$name -> items=${topic.keys}"
@@ -476,6 +435,10 @@ internal class RemoteConfigManager(
         // Blobs the current config still wants: the prefetch set plus any active-topic blob ref.
         val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
 
+        // Persist the configuration first: the full topic index (incl. each item's inline content) plus the
+        // manifest the server diffs against is the source of truth, and persisting it IS the entire commit (the
+        // manifest advances unconditionally). Inline blobs are recoverable over the network, so only touch the
+        // blob store once the state is durably committed — a failed persist never orphans or evicts blobs.
         val persisted = diskCache.write(
             PersistedRemoteConfigurationState(
                 domain = response.domain,
@@ -486,28 +449,18 @@ internal class RemoteConfigManager(
             ),
         )
 
-        return if (persisted) {
+        if (persisted) {
             lastRefreshedAt = dateProvider.now
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."
             }
-            CommittedSync(mergedTopics, blobRefsToKeep)
+            extractInlineBlobs(container, blobRefsToKeep)
+            blobStore.retainOnly(blobRefsToKeep)
+            prefetchBlobs(response, mergedTopics)
         } else {
             errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
-            null
         }
-    }
-
-    /**
-     * The best-effort blob pass after a committed sync: extract the inlined blobs the config still wants,
-     * prune the rest, and prefetch what is missing. Inline blobs are recoverable over the network, so this
-     * only runs once the state is durably committed — a failed persist never orphans or evicts blobs.
-     */
-    private fun syncBlobs(container: RCContainer, response: RemoteConfiguration, commit: CommittedSync) {
-        extractInlineBlobs(container, commit.blobRefsToKeep)
-        blobStore.retainOnly(commit.blobRefsToKeep)
-        prefetchBlobs(response, commit.mergedTopics)
     }
 
     /**
@@ -515,7 +468,7 @@ internal class RemoteConfigManager(
      * [RemoteConfiguration.prefetchBlobs] plus any item flagged `prefetch`. Re-arms the blob source provider
      * first **only if a prior cycle exhausted its sources** (otherwise failover progress is kept, so a
      * known-bad higher-priority source isn't re-tried every sync), then hands the not-yet-cached refs to the
-     * fetcher's LOW-priority queue. Runs on the manager's IO scope (inside [syncBlobs]), so it never blocks the
+     * fetcher's LOW-priority queue. Runs on the manager's IO scope (inside [persist]), so it never blocks the
      * main thread; a failed download is tolerated (re-fetched next sync / on demand).
      */
     private fun prefetchBlobs(response: RemoteConfiguration, mergedTopics: Map<String, ConfigTopic>) {
