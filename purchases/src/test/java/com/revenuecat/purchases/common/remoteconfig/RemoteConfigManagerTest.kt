@@ -19,8 +19,14 @@ import io.mockk.slot
 import io.mockk.verify
 import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -35,7 +41,9 @@ import org.robolectric.annotation.Config
 import java.nio.ByteBuffer
 import java.util.Date
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -155,6 +163,23 @@ class RemoteConfigManagerTest {
 
         // Identity change wipes the cache and the in-memory marker, so the next user refreshes immediately.
         manager.clearCache()
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed refresh does not stamp the refresh time, so the next staleness check retries`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        // Same clock: the failure left lastRefreshedAt unset, so the staleness check retries immediately
+        // instead of sitting out the window with no data.
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
@@ -610,6 +635,32 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a non-object topic item leaves the cache untouched and releases the guard, without crashing`() {
+        every { diskCache.read() } returns null
+
+        // Well-formed JSON whose topic item is a primitive: the custom item serializer must surface this as a
+        // SerializationException the manager catches, not an uncaught error that would crash the app.
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "manifest-1",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "api": "not-an-object" } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(config), VerificationResult.VERIFIED)
+
+        // The parse failure is caught: nothing is persisted and the cache is left intact.
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        // The guard was released in the finally block, so a subsequent refresh is allowed to start.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `a config element that fails to decode leaves the cache untouched and releases the guard`() {
         every { diskCache.read() } returns null
 
@@ -696,6 +747,80 @@ class RemoteConfigManagerTest {
         assertThat(clearEntered.count).isZero()
         verify(exactly = 1) { diskCache.write(any()) }
         verify(exactly = 1) { diskCache.clear() }
+    }
+
+    @Test
+    fun `clearCache is not blocked behind the post-commit blob pass`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        val retainEntered = CountDownLatch(1)
+        val releaseRetain = CountDownLatch(1)
+        val clearEntered = CountDownLatch(1)
+        // The blob pass runs after the commit, outside cacheLock; park inside it to race clearCache.
+        every { blobStore.retainOnly(any()) } answers {
+            retainEntered.countDown()
+            check(releaseRetain.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "retainOnly was not released in time" }
+        }
+        every { diskCache.clear() } answers { clearEntered.countDown() }
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        val persistThread = thread { onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED) }
+        check(retainEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "sync did not reach retainOnly" }
+
+        // Identity change mid-blob-pass: the commit already released cacheLock, so the wipe runs immediately
+        // instead of waiting for the (potentially long) blob IO to finish.
+        val clearThread = thread { manager.clearCache() }
+        assertThat(clearEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+
+        releaseRetain.countDown()
+        persistThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        clearThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+
+        verify(exactly = 1) { diskCache.write(any()) }
+        verify(exactly = 1) { diskCache.clear() }
+    }
+
+    @Test
+    fun `refreshRemoteConfig reads disk on the manager scope, not the caller thread`() {
+        val ioThreadName = "rc-manager-io"
+        val ioScope = CoroutineScope(
+            Executors.newSingleThreadExecutor { runnable -> Thread(runnable, ioThreadName) }
+                .asCoroutineDispatcher(),
+        )
+        var readThreadName: String? = null
+        every { diskCache.read() } answers {
+            readThreadName = Thread.currentThread().name
+            null
+        }
+        val requestIssued = CountDownLatch(1)
+        every {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+        } answers { requestIssued.countDown() }
+        val manager = RemoteConfigManager(
+            backend,
+            diskCache,
+            blobStore,
+            dateProvider = dateProvider,
+            scope = ioScope,
+            sourceProvider = sourceProvider,
+            blobFetcher = blobFetcher,
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        // The pre-request disk reads hop to the manager scope: an identity change on the main thread must
+        // never do file IO. The request is still issued (from that scope).
+        check(requestIssued.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "request was not issued in time" }
+        // Coroutine debug mode may append " @coroutine#N" to the carrier thread's name.
+        assertThat(readThreadName).startsWith(ioThreadName)
     }
 
     @Test
@@ -1121,6 +1246,72 @@ class RemoteConfigManagerTest {
         assertThat(result).isNull()
     }
 
+    @Test
+    fun `concurrent reads with interleaved refreshes and cache clears all complete`() {
+        // language=json
+        val stressResponse = """
+            {
+              "domain": "app",
+              "manifest": "m-stress",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "api": { "url": "https://api.revenuecat.com" } } }
+            }
+        """.trimIndent()
+        // A tiny thread-safe fake of the persisted state, so commits and wipes interleave like the real cache.
+        val state = AtomicReference<PersistedRemoteConfigurationState?>(null)
+        every { diskCache.read() } answers { state.get() }
+        every { diskCache.write(any()) } answers { state.set(firstArg()); true }
+        every { diskCache.clear() } answers { state.set(null) }
+        every { blobStore.cachedRefs() } returns emptySet()
+        every {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            arg<(RCContainer?, VerificationResult) -> Unit>(5)
+                .invoke(containerWithConfig(stressResponse), VerificationResult.VERIFIED)
+        }
+        val manager = RemoteConfigManager(
+            backend,
+            diskCache,
+            blobStore,
+            dateProvider = dateProvider,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            ioDispatcher = Dispatchers.IO,
+            sourceProvider = sourceProvider,
+            blobFetcher = blobFetcher,
+            appUserIDProvider = { TEST_APP_USER_ID },
+        )
+
+        val clearer = thread { repeat(STRESS_ITERATIONS) { manager.clearCache() } }
+        val refresher = thread {
+            repeat(STRESS_ITERATIONS) {
+                manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+            }
+        }
+        // Cold readers constantly wait on (or self-trigger) refreshes; the epoch/guard/completion machinery
+        // must never strand one on a hung await, even with clearCache racing every step.
+        runBlocking {
+            withTimeout(TimeUnit.SECONDS.toMillis(STRESS_TIMEOUT_SECONDS)) {
+                List(STRESS_READERS) {
+                    launch(Dispatchers.IO) {
+                        repeat(STRESS_ITERATIONS) { manager.topic(RemoteConfigTopic.Sources) }
+                    }
+                }.joinAll()
+            }
+        }
+        clearer.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        refresher.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        assertThat(clearer.isAlive).isFalse()
+        assertThat(refresher.isAlive).isFalse()
+
+        // The manager is still functional after the churn: a read self-primes and serves the committed topic.
+        runBlocking {
+            val topic = withTimeout(TimeUnit.SECONDS.toMillis(STRESS_TIMEOUT_SECONDS)) {
+                manager.topic(RemoteConfigTopic.Sources)
+            }
+            assertThat(topic).isNotNull
+        }
+    }
+
     // A manager whose read methods run on this test's scheduler, so suspend reads are deterministic.
     private fun TestScope.readManager(appUserIDProvider: () -> String? = { null }): RemoteConfigManager {
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
@@ -1191,6 +1382,9 @@ class RemoteConfigManagerTest {
         private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L
         private const val WAIT_SECONDS = 5L
         private const val BLOCKED_MILLIS = 200L
+        private const val STRESS_ITERATIONS = 50
+        private const val STRESS_READERS = 8
+        private const val STRESS_TIMEOUT_SECONDS = 30L
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"

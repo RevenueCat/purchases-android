@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import android.content.Context
+import androidx.core.util.AtomicFile
 import com.revenuecat.purchases.common.errorLog
 import java.io.File
 import java.io.IOException
@@ -47,31 +48,33 @@ internal class RemoteConfigBlobStore(
         }
     }
 
-    /** Returns whether the blob was actually persisted; IO failures are logged, swallowed, and reported as `false`. */
+    /**
+     * Returns whether the blob was actually persisted; IO failures are logged, swallowed, and reported as `false`.
+     *
+     * Writes are crash-safe via [AtomicFile] (mirroring [RemoteConfigDiskCache]): the bytes go to a `<ref>.new`
+     * side file that is synced and renamed over the target only on success, so the blob file itself is never
+     * partial. An interrupted write leaves only the `.new` orphan, whose name is not a valid ref — it is
+     * invisible to the index scan and pruned by [retainOnly].
+     */
     fun write(ref: String, data: ByteBuffer): Boolean {
         val target = blobFile(ref)
         if (target == null) {
             errorLog { "Refusing to write remote config blob with malformed ref '$ref'." }
             return false
         }
-        val parent = blobsDir()
         return try {
-            if (!parent.exists()) {
-                parent.mkdirs()
-            }
             val view = data.duplicate()
             val bytes = ByteArray(view.remaining())
             view.get(bytes)
-            val tempFile = File.createTempFile("rc_blob_", ".tmp", parent)
+            // startWrite creates the blobs directory when missing.
+            val atomicFile = AtomicFile(target)
+            val out = atomicFile.startWrite()
             try {
-                tempFile.writeBytes(bytes)
-                if (!tempFile.renameTo(target)) {
-                    tempFile.copyTo(target, overwrite = true)
-                }
-            } finally {
-                if (tempFile.exists()) {
-                    tempFile.delete()
-                }
+                out.write(bytes)
+                atomicFile.finishWrite(out)
+            } catch (e: IOException) {
+                atomicFile.failWrite(out)
+                throw e
             }
             synchronized(lock) { loadedRefs().add(ref) }
             true
@@ -86,8 +89,9 @@ internal class RemoteConfigBlobStore(
 
     /**
      * Deletes every cached blob whose ref is not in [refs]. Scans the directory (not just the in-memory index)
-     * so orphans the index never tracks are pruned too: leftover `rc_blob_*.tmp` files from a write interrupted
-     * by a process kill, and any invalid-named file. Runs once per sync, so the scan is not on a hot path.
+     * so orphans the index never tracks are pruned too: leftover `<ref>.new` side files from an [AtomicFile]
+     * write interrupted by a process kill, and any invalid-named file. Runs once per sync, so the scan is not
+     * on a hot path.
      */
     fun retainOnly(refs: Set<String>) {
         val parent = blobsDir()

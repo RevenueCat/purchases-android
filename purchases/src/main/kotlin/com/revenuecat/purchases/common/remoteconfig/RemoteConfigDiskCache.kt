@@ -34,13 +34,44 @@ internal data class PersistedRemoteConfigurationState(
  * Persists [PersistedRemoteConfigurationState] to `noBackupFilesDir/RevenueCat/remote_config/`
  * (excluded from backups as a regenerable cache). Writes are atomic and crash-safe via [AtomicFile];
  * a missing or corrupt file reads back as `null`.
+ *
+ * The last read or written state is kept as an in-memory snapshot, so the file is parsed at most once:
+ * reads on the hot path (every `topic()`/`blobData()` call, every blob-source lookup during a download)
+ * answer from memory, and the shared object identity also lets the source provider's lazily-computed
+ * [ConfigTopic.contentHash] be reused instead of recomputed per read. The cache is the file's sole
+ * accessor, so the snapshot stays authoritative; [write]/[clear] keep it in sync.
  */
 internal class RemoteConfigDiskCache(
     private val applicationContext: Context,
 ) {
     private val json = JsonProvider.defaultJson
+    private val lock = Any()
 
-    fun read(): PersistedRemoteConfigurationState? {
+    // In-memory snapshot of the persisted state. `snapshotLoaded` distinguishes "not read yet" from
+    // "read: nothing usable on disk (null)", so a missing/corrupt file is not re-read on every call.
+    private var snapshot: PersistedRemoteConfigurationState? = null
+    private var snapshotLoaded = false
+
+    fun read(): PersistedRemoteConfigurationState? = synchronized(lock) {
+        if (!snapshotLoaded) {
+            snapshot = readFromDisk()
+            snapshotLoaded = true
+        }
+        snapshot
+    }
+
+    /** Returns `true` once the state is durably persisted, `false` if serialization or IO failed. */
+    fun write(config: PersistedRemoteConfigurationState): Boolean = synchronized(lock) {
+        writeToDisk(config).also { persisted ->
+            if (persisted) {
+                // Only mirror a durable write; on failure the previous state is still what is on disk.
+                snapshot = config
+                snapshotLoaded = true
+            }
+        }
+    }
+
+    private fun readFromDisk(): PersistedRemoteConfigurationState? {
         val target = targetFile()
         if (!target.exists()) return null
         val atomicFile = AtomicFile(target)
@@ -58,8 +89,7 @@ internal class RemoteConfigDiskCache(
         }
     }
 
-    /** Returns `true` once the state is durably persisted, `false` if serialization or IO failed. */
-    fun write(config: PersistedRemoteConfigurationState): Boolean {
+    private fun writeToDisk(config: PersistedRemoteConfigurationState): Boolean {
         return try {
             val target = targetFile()
             target.parentFile?.let { parent ->
@@ -95,10 +125,14 @@ internal class RemoteConfigDiskCache(
      * change to keep configuration from bleeding across users.
      */
     fun clear() {
-        try {
-            AtomicFile(targetFile()).delete()
-        } catch (e: SecurityException) {
-            errorLog(e) { "Failed to clear remote config from disk." }
+        synchronized(lock) {
+            snapshot = null
+            snapshotLoaded = true
+            try {
+                AtomicFile(targetFile()).delete()
+            } catch (e: SecurityException) {
+                errorLog(e) { "Failed to clear remote config from disk." }
+            }
         }
     }
 
