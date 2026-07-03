@@ -156,8 +156,6 @@ internal object ConfigItemSerializer : KSerializer<RemoteConfiguration.ConfigIte
     override fun deserialize(decoder: Decoder): RemoteConfiguration.ConfigItem {
         val jsonDecoder = decoder as? JsonDecoder
             ?: throw SerializationException("ConfigItem can only be deserialized from JSON.")
-        // Throw SerializationException (not the ISE of the .jsonObject accessor) so a malformed item is a
-        // recoverable parse failure to callers catching serialization errors, never an uncaught crash.
         val element = jsonDecoder.decodeJsonElement()
         val obj = element as? JsonObject
             ?: throw SerializationException("ConfigItem must be a JSON object, but was: $element.")
