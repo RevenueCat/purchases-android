@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
@@ -798,6 +799,26 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `reified blobData fetches the blob on demand then deserializes it, like the transform overload`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns """{"id":"wf-1"}""".toByteArray()
+
+        // The reified overload delegates to the transform overload, so it resolves the blob the same way:
+        // fetch on demand (waiting for the download) and read it back, then decode the bytes as JSON.
+        val result = readManager().blobData<TestBlob>(RemoteConfigTopic.Workflows, "wf1")
+
+        assertThat(result).isEqualTo(TestBlob(id = "wf-1"))
+        coVerify(exactly = 1) { blobFetcher.ensureDownloaded(REF_VALID) }
+    }
+
+    @Test
     fun `blobData returns null for a blob-backed item that cannot be fetched`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
@@ -1058,6 +1079,9 @@ class RemoteConfigManagerTest {
         every { container.elements } returns emptyMap()
         return container
     }
+
+    @Serializable
+    private data class TestBlob(val id: String)
 
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"

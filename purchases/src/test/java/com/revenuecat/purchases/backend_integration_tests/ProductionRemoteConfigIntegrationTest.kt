@@ -17,6 +17,8 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.jsonObject
@@ -139,6 +141,51 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val json = JsonProvider.defaultJson.parseToJsonElement(body!!.decodeToString()).jsonObject
         assertThat(json).isNotEmpty()
     }
+
+    @Test
+    fun `reads and deserializes a workflows blob into a typed value through the facade`() {
+        setupTest(SignatureVerificationMode.Informational())
+        every { appConfig.isDebugBuild } returns false
+        val manager = buildRemoteConfigManager()
+
+        // A cold read drives the real /v1/config fetch -> persist, committing every active topic (and its
+        // inlined blobs) to disk. topic() does not itself wait for a refresh, so this priming read is what
+        // makes the workflows index below available off disk.
+        runBlocking {
+            withTimeout(FETCH_TIMEOUT) { manager.blobData(RemoteConfigTopic.Sources, "api") { it } }
+        }
+
+        val workflows = requireNotNull(runBlocking { manager.topic(RemoteConfigTopic.Workflows) }) {
+            "Expected a workflows topic after the sync."
+        }
+
+        // Pick a workflows item whose blob the backend inlined and the manager extracted to disk during persist.
+        val itemKey = requireNotNull(
+            workflows.entries.firstNotNullOfOrNull { (key, item) ->
+                key.takeIf { item.blobRef?.let(remoteConfigBlobStore::contains) == true }
+            },
+        ) { "Expected a workflows item with an inlined blob stored on disk." }
+
+        // The reified facade resolves the blob off disk and deserializes it into a concrete @Serializable type.
+        // We use a minimal test-only type (not the full PublishedWorkflow) because the shared defaultJson used by
+        // the reified overload can't decode the full workflow's polymorphic component tree, and these lazy paywall
+        // workflows carry no ui_config; a small subset over the stable top-level fields exercises the typed path.
+        val workflow = runBlocking { manager.blobData<TestWorkflowBlob>(RemoteConfigTopic.Workflows, itemKey) }
+
+        assertThat(workflow).isNotNull
+        assertThat(workflow!!.id).isNotEmpty()
+        assertThat(workflow.displayName).isNotEmpty()
+        assertThat(workflow.initialStepId).isNotEmpty()
+    }
+
+    // A minimal projection of a workflows blob's stable top-level fields, used only to exercise the reified
+    // blobData<T> deserialization path. Extra keys (screens, steps, metadata, ...) are ignored by defaultJson.
+    @Serializable
+    private data class TestWorkflowBlob(
+        val id: String,
+        @SerialName("display_name") val displayName: String,
+        @SerialName("initial_step_id") val initialStepId: String,
+    )
 
     @Test
     fun `replaying the manifest returns no content`() {
