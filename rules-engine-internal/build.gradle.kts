@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.revenuecat.public.library)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -7,10 +8,10 @@ android {
 }
 
 dependencies {
-    // `org.json` ships with the Android runtime (and is the same artifact
-    // backing `JSONObject` in production), so this only adds bytes to the
-    // local JVM test classpath. Used exclusively by the test-only
-    // `ValueJsonHelper` to express predicates as JSON literals.
+    // `org.json` is provided by the Android platform for the main source set;
+    // this dependency adds a real implementation to the JVM unit-test classpath
+    // (which exercises the production `ValueJson` parser).
     testImplementation(libs.json)
+    testImplementation(libs.kotlinx.serialization.json)
     testImplementation(libs.bundles.test)
 }

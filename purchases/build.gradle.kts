@@ -66,20 +66,8 @@ android {
 
         buildConfigField(
             type = "boolean",
-            name = "USE_WORKFLOWS_ENDPOINT",
-            value = (resolveProperty("revenuecat.useWorkflowsEndpoint") == "true").toString(),
-        )
-
-        buildConfigField(
-            type = "String",
-            name = "REMOTE_CONFIG_BASE_URL",
-            value = "\"${(localProperties["REMOTE_CONFIG_BASE_URL"] as? String) ?: ""}\"",
-        )
-
-        buildConfigField(
-            type = "String",
-            name = "SAMSUNG_IAP_SDK_VERSION",
-            value = "\"${libs.versions.samsungIap.get()}\"",
+            name = "ENABLE_REMOTE_CONFIG",
+            value = (localProperties["ENABLE_REMOTE_CONFIG"] as? String ?: "false"),
         )
 
         packagingOptions.resources.excludes.addAll(

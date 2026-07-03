@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
@@ -60,6 +61,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -154,11 +156,12 @@ internal class PurchasesOrchestrator(
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
 
-    private val workflowManager: WorkflowManager,
+    private val workflowManager: WorkflowManager?,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    private val remoteConfigManager: RemoteConfigManager? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -171,6 +174,9 @@ internal class PurchasesOrchestrator(
 
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsManager.cachedCurrentOfferingIdentifier
+
+    val cachedOfferings: Offerings?
+        get() = offeringsManager.cachedOfferings
 
     val currentConfiguration: PurchasesConfiguration
         get() = if (initialConfiguration.appUserID == null) {
@@ -311,6 +317,11 @@ internal class PurchasesOrchestrator(
 
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
+
+            remoteConfigManager?.refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = identityManager.currentAppUserID,
+            )
 
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
@@ -567,14 +578,45 @@ internal class PurchasesOrchestrator(
         onSuccess: (WorkflowDataResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
+        // Deliver every outcome through dispatch so the callback always lands on the main thread,
+        // matching the rest of the SDK's callback APIs (e.g. getOfferings, getCustomerInfo).
+        // WorkflowManager.getWorkflow intentionally has no fixed delivery thread — a cache hit calls
+        // back synchronously on the caller's thread while a miss resolves on its IO scope, and the
+        // prefetch path routes detail callbacks onto a dedicated dispatcher — so normalizing here, at
+        // the consumer boundary, is what gives callers (including awaitGetWorkflow) a stable thread.
+        if (appConfig.uiPreviewMode) {
+            dispatch {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ConfigurationError,
+                        "Workflows cannot be fetched in UI preview mode.",
+                    ),
+                )
+            }
+            return
+        }
+        if (workflowManager == null) {
+            dispatch {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ConfigurationError,
+                        "Workflows are not enabled.",
+                    ),
+                )
+            }
+            return
+        }
         workflowManager.getWorkflow(
             appUserID = identityManager.currentAppUserID,
-            workflowId = workflowId,
+            workflowOrOfferingId = workflowId,
             appInBackground = state.appInBackground,
-            onSuccess = onSuccess,
-            onError = onError,
+            onSuccess = { dispatch { onSuccess(it) } },
+            onError = { dispatch { onError(it) } },
         )
     }
+
+    fun workflowIdForOfferingId(offeringId: String): String? =
+        workflowManager?.workflowIdForOfferingId(offeringId)
 
     fun getProducts(
         productIds: List<String>,
@@ -763,6 +805,7 @@ internal class PurchasesOrchestrator(
                             callback?.onReceived(customerInfo, created)
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
+                        remoteConfigManager?.refreshRemoteConfig(state.appInBackground, newAppUserID)
                         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                         backupManager.dataChanged()
                     },
@@ -807,7 +850,8 @@ internal class PurchasesOrchestrator(
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
         this.backend.close()
-        this.workflowManager.close()
+        this.remoteConfigManager?.close()
+        this.workflowManager?.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
@@ -905,6 +949,19 @@ internal class PurchasesOrchestrator(
             description,
             onSuccessHandler = onSuccess,
             onErrorHandler = onError,
+        )
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    fun getRewardVerificationResult(
+        clientTransactionId: String,
+        callback: GetRewardVerificationResultCallback,
+    ) {
+        backend.getRewardVerificationResult(
+            appUserID = identityManager.currentAppUserID,
+            clientTransactionId = clientTransactionId,
+            onSuccess = { callback.onReceived(it) },
+            onError = { callback.onError(it) },
         )
     }
 
@@ -1257,6 +1314,7 @@ internal class PurchasesOrchestrator(
         identityManager.switchUser(newAppUserID)
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+        remoteConfigManager?.refreshRemoteConfig(state.appInBackground, newAppUserID)
     }
     //endregion
 
@@ -1332,6 +1390,7 @@ internal class PurchasesOrchestrator(
         completion: ReceiveCustomerInfoCallback? = null,
     ) {
         state.appInBackground.let { appInBackground ->
+            remoteConfigManager?.refreshRemoteConfig(appInBackground, appUserID)
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,

@@ -10,6 +10,8 @@
 #     https://docs.fastlane.tools/plugins/available-plugins
 #
 
+require "cgi"
+
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
@@ -35,12 +37,16 @@ default_platform(:android)
 
 # Hack to work around a Fastlane quirk where plugin actions are run from the parent of the current working directory.
 # We switch to the first subdirectory, then run the action. The action will run from the parent of the subdirectory, which is
-# our actual current working directory. The obvious limitation is that this doesn't work if the current working directory
-# does not have any subdirectories.
+# our actual current working directory.
 # This is only needed when our current working directory is not the ./fastlane directory.
 # https://docs.fastlane.tools/advanced/fastlane/#directory-behavior
 def run_plugin_action_in_current_directory(&block)
-  Dir.chdir(Dir["*/"].first.chomp("/"), &block)
+  first_subdirectory = Dir["*/"].first
+  if first_subdirectory.nil?
+    block.call
+  else
+    Dir.chdir(first_subdirectory.chomp("/"), &block)
+  end
 end
 
 platform :android do
@@ -901,9 +907,11 @@ DESC
     begin
       record_paparazzi_screenshots(gradle_module: ":ui:revenuecatui", tests: "PaywallComponentsTemplatePreviewRecorder", output_dir: tmp_dir)
       # Loop over all PNG files in the tmp_dir, parse the offering ID from the file names, and move them into the target repository.
+      produced_offering_ids = []
       sh("find #{tmp_dir} -name '*.png'").split("\n").each do |file_path|
-        if file_path =~ /\_\_\_(.*?)\_\_\_/
-          offering_id = $1
+        if file_path =~ /___([0-9A-Za-z%.-]+)___/
+          offering_id = CGI.unescape($1).force_encoding("UTF-8")
+          produced_offering_ids << offering_id
           target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"
           sh("mkdir -p \"#{target_dir}\"")
           sh("mv \"#{file_path}\" \"#{target_dir}/android.png\"")
@@ -911,6 +919,11 @@ DESC
           UI.user_error!("No offering ID found in file: #{File.basename(file_path)}")
         end
       end
+
+      remove_stale_android_template_screenshots(
+        target_repository_path: target_repository_path,
+        produced_offering_ids: produced_offering_ids
+      )
     ensure
       sh("rm -rf #{tmp_dir}")
     end
@@ -925,6 +938,29 @@ DESC
         body: "This is an automatic update of the Android template screenshots.",
         team_reviewers: ["coresdk", "monetization", "bab-s"]
       )
+    end
+  end
+
+  # Removes android.png screenshots (and now-empty directories) for paywalls that were not rendered in this run, Only
+  # touches android.png, so it never deletes screenshots owned by other platforms (e.g. ios.png, mac-*.png).
+  private_lane :remove_stale_android_template_screenshots do |options|
+    target_repository_path = options[:target_repository_path] || UI.user_error!("No target_repository_path provided")
+    produced_offering_ids = options[:produced_offering_ids] || UI.user_error!("No produced_offering_ids provided")
+
+    UI.user_error!("No Android screenshots were produced; refusing to prune stale screenshots.") if produced_offering_ids.empty?
+
+    templates_dir = "#{target_repository_path}/screenshots/templates"
+    Dir.glob("#{templates_dir}/*/android.png").each do |existing|
+      offering_id = File.basename(File.dirname(existing)).force_encoding("UTF-8")
+      next if produced_offering_ids.include?(offering_id)
+      UI.message("Removing stale Android screenshot: #{existing}")
+      File.delete(existing)
+    end
+
+    # Remove any empty directories.
+    Dir.glob("#{templates_dir}/*").each do |dir|
+      next unless File.directory?(dir)
+      Dir.rmdir(dir) if Dir.empty?(dir)
     end
   end
 

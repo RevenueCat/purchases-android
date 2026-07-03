@@ -7,6 +7,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 
 internal class OfferingImagePreDownloader(
@@ -43,9 +44,19 @@ internal class OfferingImagePreDownloader(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun downloadV2Images(offering: Offering) {
         offering.paywallComponents?.let { paywallComponents ->
-            paywallComponentsImagePreDownloader.preDownloadImages(paywallComponents.data.componentsConfig.base)
+            // `paywallComponents.data` is decoded lazily on first access and can throw if the component tree passed
+            // the cheap parse-time shape check but is structurally invalid. Pre-downloading is best-effort, so a
+            // decode failure here must not abort the offerings success/caching path — log and skip instead.
+            val componentsConfig = try {
+                paywallComponents.data.componentsConfig.base
+            } catch (e: Throwable) {
+                errorLog(e) { "Error deserializing paywall components data. Skipping V2 image pre-download." }
+                return
+            }
+            paywallComponentsImagePreDownloader.preDownloadImages(componentsConfig)
         }
     }
 }

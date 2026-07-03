@@ -21,6 +21,8 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -29,11 +31,9 @@ import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
-import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.IOException
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -81,25 +81,41 @@ internal class HTTPClient(
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
+
+        // Accept header value requesting the RC Container Format response.
+        const val RC_FORMAT_ACCEPT = "application/x-rc-format"
+
+        // Request header advertising which per-element codecs the SDK can decode. Dedicated to RC Container
+        // Format body compression so it never collides with the transport-level Accept-Encoding.
+        const val RC_FORMAT_ACCEPT_ENCODING_HEADER = "Accept-RC-Element-Encoding"
+
+        // Per-element codecs the SDK can decode, advertised so the server never picks one we can't
+        // (e.g. brotli/zstd). "gzip" implies "identity" is also acceptable.
+        const val RC_FORMAT_ACCEPT_ENCODING = "gzip"
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
-
-    private fun buffer(inputStream: InputStream): BufferedReader {
-        return BufferedReader(InputStreamReader(inputStream))
-    }
 
     private fun buffer(outputStream: OutputStream): BufferedWriter {
         return BufferedWriter(OutputStreamWriter(outputStream))
     }
 
     @Throws(IOException::class)
-    private fun readFully(inputStream: InputStream): String {
-        return buffer(inputStream).readText()
+    private fun readBytesFully(inputStream: InputStream): ByteArray {
+        return inputStream.readBytes()
     }
 
+    /** A human-readable rendering of a response body for logging: byte size for RC Format, text otherwise. */
+    private fun ByteArray.describeForLogging(endpoint: Endpoint, responseCode: Int): String =
+        if (endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)) {
+            "<rc-format: $size bytes>"
+        } else {
+            String(this, Charsets.UTF_8)
+        }
+
     @Suppress("TooGenericExceptionCaught")
-    private fun getInputStream(connection: HttpURLConnection): InputStream? {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getInputStream(connection: HttpURLConnection): InputStream? {
         return try {
             connection.inputStream
         } catch (e: Exception) {
@@ -285,6 +301,7 @@ internal class HTTPClient(
                 nonce,
                 shouldSignResponse,
                 postFieldsToSignHeader,
+                endpoint,
             )
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
@@ -305,14 +322,17 @@ internal class HTTPClient(
 
         val inputStream = getInputStream(connection)
 
-        val payload: String?
+        val payloadBytes: ByteArray?
         val responseCode: Int
         try {
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
-            payload = inputStream?.let { readFully(it) }
+            payloadBytes = inputStream?.let { readBytesFully(it) }
             if (enableExtraRequestLogging) {
-                debugLog { "HTTP response:\\n  status code: $responseCode \\n  body: $payload" }
+                debugLog {
+                    "HTTP response:\\n  status code: $responseCode \\n  " +
+                        "body: ${payloadBytes?.describeForLogging(endpoint, responseCode)}"
+                }
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             if (enableExtraRequestLogging) {
@@ -325,9 +345,24 @@ internal class HTTPClient(
         }
 
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
-        if (payload == null) {
+        if (payloadBytes == null &&
+            (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)
+        ) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
+        // A 204 No Content response legitimately has no body, so a missing payload is treated as empty bytes.
+        val bodyBytes = payloadBytes ?: ByteArray(0)
+
+        // RC Format endpoints expose successful responses as raw bytes; everything else (including error
+        // responses, which are still JSON) is decoded as UTF-8 text.
+        val payload: HTTPResult.Payload = if (
+            endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
+        ) {
+            HTTPResult.Payload.RCFormat(bodyBytes)
+        } else {
+            HTTPResult.Payload.Text(String(bodyBytes, Charsets.UTF_8))
+        }
+        val payloadText = payload.text
 
         // Notify listener if present
         if (appConfig.runningTests) {
@@ -352,11 +387,12 @@ internal class HTTPClient(
                             nonce,
                             shouldSignResponse,
                             postFieldsToSignHeader,
+                            endpoint,
                         ),
                         requestBody = jsonBody?.toString(),
                         responseCode = responseCode,
                         responseHeaders = responseHeaders,
-                        responseBody = payload,
+                        responseBody = payloadText.orEmpty(),
                     )
                 } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                     // Don't let listener errors break the request
@@ -368,7 +404,15 @@ internal class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, connection, payload, nonce, postFieldsToSignHeader)
+            if (endpoint.expectsRCFormatResponse) {
+                if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
+                    verifyRCFormatNoContentResponse(path, connection, nonce)
+                } else {
+                    verifyRCFormatResponse(path, connection, bodyBytes, nonce)
+                }
+            } else {
+                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
+            }
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -380,17 +424,30 @@ internal class HTTPClient(
         }
 
         val isLoadShedderResponse = getLoadShedderHeader(connection)
-        return eTagManager.getHTTPResultFromCacheOrBackend(
-            responseCode,
-            payload,
-            getETagHeader(connection),
-            fullURL.toString(),
-            refreshETag,
-            getRequestDateHeader(connection),
-            verificationResult,
-            isLoadShedderResponse,
-            isFallbackURL,
-        )
+        // RC Container Format endpoints are not ETag-cached: build the result directly and skip the cache.
+        return if (endpoint.expectsRCFormatResponse) {
+            HTTPResult(
+                responseCode,
+                payload,
+                HTTPResult.Origin.BACKEND,
+                getRequestDateHeader(connection),
+                verificationResult,
+                isLoadShedderResponse,
+                isFallbackURL,
+            )
+        } else {
+            eTagManager.getHTTPResultFromCacheOrBackend(
+                responseCode,
+                payloadText.orEmpty(),
+                getETagHeader(connection),
+                fullURL.toString(),
+                refreshETag,
+                getRequestDateHeader(connection),
+                verificationResult,
+                isLoadShedderResponse,
+                isFallbackURL,
+            )
+        }
     }
 
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
@@ -466,9 +523,16 @@ internal class HTTPClient(
         nonce: String?,
         shouldSignResponse: Boolean,
         postFieldsToSignHeader: String?,
+        endpoint: Endpoint,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
+            "Accept" to if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT else null,
+            // Advertise supported per-element codecs for RC Container Format responses (gzip-only on Android).
+            // Uses a dedicated header (not standard Accept-Encoding) so it only governs per-element body
+            // compression and never the HTTP transport encoding.
+            RC_FORMAT_ACCEPT_ENCODING_HEADER to
+                if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT_ENCODING else null,
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
@@ -492,7 +556,14 @@ internal class HTTPClient(
             "X-Billing-Client-Sdk-Version" to BuildConfig.BILLING_CLIENT_VERSION,
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
+            // RC Container Format endpoints are not ETag-cached, so they send no If-None-Match header.
+            .plus(
+                if (endpoint.expectsRCFormatResponse) {
+                    emptyMap()
+                } else {
+                    eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag)
+                },
+            )
             .filterNotNullValues()
     }
 
@@ -528,10 +599,62 @@ internal class HTTPClient(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            body = payload,
+            bodyBytes = payload?.toByteArray(),
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = postFieldsToSignHeader,
+        )
+    }
+
+    /**
+     * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
+     * bytes exactly as received — the config part / `main_body` — so we verify the signature over those bytes.
+     * The per-element container checksums are untrusted lookup hints, not a trust anchor: inline blob elements
+     * are not signed and are instead authenticated transitively by hashing against the `blob_ref` in the signed
+     * config. This endpoint is not ETag-cached and sends no post params, but the signature does cover the request
+     * [nonce].
+     */
+    private fun verifyRCFormatResponse(
+        urlPath: String,
+        connection: URLConnection,
+        payloadBytes: ByteArray,
+        nonce: String?,
+    ): VerificationResult {
+        val config = try {
+            RCContainer.parse(payloadBytes).config
+        } catch (e: RCContainerFormatException) {
+            errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
+            return VerificationResult.FAILED
+        }
+        return signingManager.verifyResponse(
+            urlPath = urlPath,
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            nonce = nonce,
+            bodyBytes = config.dataBytes(),
+            requestTime = getRequestTimeHeader(connection),
+            eTag = getETagHeader(connection),
+            postFieldsToSignHeader = null,
+        )
+    }
+
+    /**
+     * Verifies a `204 No Content` RC Container Format response. There is no body to sign, but the signature still
+     * covers the request context (api key, [nonce], path, request time), so the empty response remains replay-
+     * and tamper-evident. This endpoint emits no ETag, so the empty body is the only signed payload component.
+     */
+    private fun verifyRCFormatNoContentResponse(
+        urlPath: String,
+        connection: URLConnection,
+        nonce: String?,
+    ): VerificationResult {
+        return signingManager.verifyResponse(
+            urlPath = urlPath,
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            nonce = nonce,
+            bodyBytes = ByteArray(0),
+            requestTime = getRequestTimeHeader(connection),
+            eTag = getETagHeader(connection),
+            postFieldsToSignHeader = null,
         )
     }
 

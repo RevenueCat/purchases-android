@@ -41,6 +41,19 @@ internal class PurchasesLoginTests : BasePurchasesTest() {
     }
 
     @Test
+    fun `switchUser refreshes remote config`() {
+        val newAppUserID = "newUser"
+        every {
+            mockIdentityManager.switchUser(newAppUserID)
+        } just Runs
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.switchUser(newAppUserID)
+
+        verify(exactly = 1) { mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID) }
+    }
+
+    @Test
     fun `switchUser no ops if new app user ID is same as current`() {
         val newAppUserID = appUserId
         every {
@@ -52,6 +65,7 @@ internal class PurchasesLoginTests : BasePurchasesTest() {
 
         verify(exactly = 0) { mockIdentityManager.switchUser(newAppUserID) }
         verify(exactly = 0) { mockOfferingsManager.fetchAndCacheOfferings(newAppUserID, false, any(), any()) }
+        verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfig(any(), any()) }
     }
     // endregion
 }

@@ -6,15 +6,34 @@ package com.revenuecat.purchases.rules
  * Numbers are split into [IntValue] and [FloatValue] to preserve type intent.
  * Cross-type numeric comparisons still work — see [looseEq] and [strictEq].
  */
-internal sealed class Value {
+public sealed class Value {
 
-    object Null : Value()
-    data class BoolValue(val value: Boolean) : Value()
-    data class IntValue(val value: Long) : Value()
-    data class FloatValue(val value: Double) : Value()
-    data class StringValue(val value: String) : Value()
-    data class ArrayValue(val items: List<Value>) : Value()
-    data class ObjectValue(val entries: Map<String, Value>) : Value()
+    /** JSON `null`. */
+    public object Null : Value()
+
+    /**
+     * JS `undefined`. Not expressible in JSON. Only produced internally by
+     * operators (e.g. `{"and": []}`, `{"or": []}`, `{"log": []}`).
+     */
+    public object Undefined : Value()
+
+    /** A JSON boolean. */
+    public data class BoolValue(val value: Boolean) : Value()
+
+    /** A JSON integer-valued number. */
+    public data class IntValue(val value: Long) : Value()
+
+    /** A JSON fractional (non-integer) number. */
+    public data class FloatValue(val value: Double) : Value()
+
+    /** A JSON string. */
+    public data class StringValue(val value: String) : Value()
+
+    /** A JSON array. */
+    public data class ArrayValue(val items: List<Value>) : Value()
+
+    /** A JSON object. */
+    public data class ObjectValue(val entries: Map<String, Value>) : Value()
 
     /**
      * JSON Logic truthiness rules:
@@ -22,9 +41,9 @@ internal sealed class Value {
      * - `ObjectValue(_)` → always truthy
      * - everything else → truthy
      */
-    val isTruthy: Boolean
+    internal val isTruthy: Boolean
         get() = when (this) {
-            Null -> false
+            Null, Undefined -> false
             is BoolValue -> value
             is IntValue -> value != 0L
             is FloatValue -> value != 0.0 && !value.isNaN()
@@ -48,8 +67,12 @@ internal sealed class Value {
      * callers wrap with `?: Double.NaN` to get the JS arithmetic
      * propagation.
      */
-    fun toNumberOrNull(): Double? = when (this) {
+    internal fun toNumberOrNull(): Double? = when (this) {
         Null -> 0.0
+        // JS `Number(undefined)` is `NaN`; returning `null` keeps the
+        // "no comparable number" contract (looseEq fallback fails,
+        // arithmetic callers map to `NaN`).
+        Undefined -> null
         is BoolValue -> if (value) 1.0 else 0.0
         is IntValue -> value.toDouble()
         is FloatValue -> value
@@ -62,6 +85,24 @@ internal sealed class Value {
             if (trimmed.isEmpty()) 0.0 else trimmed.toDoubleOrNull()
         }
     }
+}
+
+/**
+ * JS `ToNumber` for numeric comparisons (`>=`, etc.). Unlike
+ * [toNumberOrNull], unparseable strings and compound values yield
+ * [Double.NaN] so relational comparisons fail per the spec.
+ */
+internal fun jsToNumber(value: Value): Double = when (value) {
+    Value.Null -> 0.0
+    Value.Undefined -> Double.NaN
+    is Value.BoolValue -> if (value.value) 1.0 else 0.0
+    is Value.IntValue -> value.value.toDouble()
+    is Value.FloatValue -> value.value
+    is Value.StringValue -> {
+        val trimmed = value.value.trim()
+        if (trimmed.isEmpty()) 0.0 else trimmed.toDoubleOrNull() ?: Double.NaN
+    }
+    is Value.ArrayValue, is Value.ObjectValue -> Double.NaN
 }
 
 /**
@@ -85,6 +126,15 @@ internal sealed class Value {
  */
 @Suppress("ReturnCount", "ComplexMethod")
 internal fun looseEq(lhs: Value, rhs: Value): Boolean {
+    // JS abstract equality: `undefined` is loosely equal to `null` and to
+    // itself, and unequal to everything else. Handle this before the `null`
+    // arms so `null == undefined` doesn't fall through to `false`.
+    if (lhs is Value.Undefined || rhs is Value.Undefined) {
+        val lhsNullish = lhs is Value.Undefined || lhs is Value.Null
+        val rhsNullish = rhs is Value.Undefined || rhs is Value.Null
+        return lhsNullish && rhsNullish
+    }
+
     if (lhs is Value.Null && rhs is Value.Null) return true
     if (lhs is Value.Null || rhs is Value.Null) return false
 
@@ -135,6 +185,7 @@ internal fun looseEq(lhs: Value, rhs: Value): Boolean {
  */
 internal fun jsString(value: Value): String = when (value) {
     Value.Null -> "null"
+    Value.Undefined -> "undefined"
     is Value.BoolValue -> if (value.value) "true" else "false"
     is Value.IntValue -> value.value.toString()
     is Value.FloatValue -> jsNumberString(value.value)
@@ -186,8 +237,8 @@ private fun jsArrayJoin(items: List<Value>): String =
  * render as the empty string (not `"null"`); everything else uses
  * [jsString].
  */
-private fun jsArrayElementString(value: Value): String {
-    if (value is Value.Null) return ""
+internal fun jsArrayElementString(value: Value): String {
+    if (value is Value.Null || value is Value.Undefined) return ""
     return jsString(value)
 }
 
@@ -228,6 +279,7 @@ private const val JS_OBJECT_STRING = "[object Object]"
 @Suppress("ReturnCount", "ComplexMethod")
 internal fun strictEq(lhs: Value, rhs: Value): Boolean {
     if (lhs is Value.Null && rhs is Value.Null) return true
+    if (lhs is Value.Undefined && rhs is Value.Undefined) return true
     if (lhs is Value.BoolValue && rhs is Value.BoolValue) return lhs.value == rhs.value
     if (lhs is Value.IntValue && rhs is Value.IntValue) return lhs.value == rhs.value
     if (lhs is Value.FloatValue && rhs is Value.FloatValue) return lhs.value == rhs.value

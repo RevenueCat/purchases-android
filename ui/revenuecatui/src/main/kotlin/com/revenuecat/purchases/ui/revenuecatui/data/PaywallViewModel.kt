@@ -24,8 +24,11 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
@@ -33,7 +36,6 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -66,6 +68,7 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowNavigator
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -160,7 +163,8 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
-    private val useWorkflowsEndpoint: Boolean = BuildConfig.USE_WORKFLOWS_ENDPOINT,
+    private val useWorkflowsEndpoint: Boolean = purchases.useWorkflows,
+    private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
@@ -183,6 +187,7 @@ internal class PaywallViewModelImpl(
     private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _purchaseCompleted: MutableState<Boolean> = mutableStateOf(false)
     private val _workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
+    private var workflowTraceId: String = UUID.randomUUID().toString()
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -201,9 +206,25 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowResult: WorkflowDataResult? = null
     private var currentWorkflowOfferings: Offerings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
+    private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
+
+    // Per-session flag: a completed purchase or a successful restore is a natural workflow exit, not an
+    // abandonment, so it suppresses workflows_close. The session boundary is the dismiss (reset in
+    // clearWorkflowState), NOT each render/refresh, so an in-session completion that leaves the paywall
+    // visible (e.g. a restore with no shouldDisplayBlock) survives option/locale/color refreshes. Tracked
+    // separately from the sticky, public _purchaseCompleted (which also gates exit offers and is observed
+    // by the host, and which a restore only sets when shouldDisplayBlock auto-dismisses). Mirrors iOS's
+    // per-session hasCompletedInSession (purchased || restored), reset at the dismiss boundary.
+    private var workflowCompletedInSession: Boolean = false
+
+    private enum class WorkflowStepEntryReason(val value: String) {
+        START("start"),
+        FORWARD("forward"),
+        BACK("back"),
+    }
 
     private sealed interface ExitOfferData {
         val preloadRequested: Boolean
@@ -305,6 +326,10 @@ internal class PaywallViewModelImpl(
 
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
+        trackCurrentWorkflowStepCompleted()
+        if (!workflowCompletedInSession) {
+            trackCurrentWorkflowAbandoned()
+        }
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
@@ -315,6 +340,7 @@ internal class PaywallViewModelImpl(
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
         paywallPresentationData = null
+        clearWorkflowState()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
             dismissWithExitOffering(exitOffering, result)
@@ -331,6 +357,24 @@ internal class PaywallViewModelImpl(
         updateStateJob?.cancel()
         // Exit offer data is intentionally preserved here: locale/color/options refreshes should
         // not discard resolution that already ran. The async update sets new data via updateExitOfferData.
+    }
+
+    private fun clearWorkflowState() {
+        preWarmJob?.cancel()
+        preWarmJob = null
+        workflowNavigator = null
+        currentWorkflowResult = null
+        currentWorkflowOfferings = null
+        currentWorkflowPresentedOfferingContext = null
+        currentWorkflowStepTracksPaywallEvents = true
+        workflowStepStateCache.clear()
+        _workflowState.value = null
+        // The dismiss is the session boundary: the next presentation on this ViewModel is a new session,
+        // so completion from this one must not suppress its abandonment. Runs after closePaywall has
+        // already made its workflows_close decision. A refresh/re-render of an open session does not
+        // pass through here, so an in-session completion (e.g. a restore that leaves the paywall up)
+        // is preserved across refreshes.
+        workflowCompletedInSession = false
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
@@ -393,13 +437,26 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     override fun trackPaywallImpressionIfNeeded() {
+        val isWorkflowPresentation = currentWorkflowResult != null
+        if (isWorkflowPresentation && !currentWorkflowStepTracksPaywallEvents) {
+            paywallPresentationData = null
+            return
+        }
+
         val targetFingerprint = computePresentationFingerprint() ?: return
         val existing = paywallPresentationData
 
-        if (existing?.presentationFingerprint() == targetFingerprint) return
+        if (existing?.presentationFingerprint() == targetFingerprint) {
+            // Impressions are de-duped by visual presentation, but workflow attribution
+            // is contextual and can change while the presentation stays the same.
+            paywallPresentationData = existing.withCurrentWorkflowMetadata()
+            return
+        }
 
         if (existing != null) {
-            track(PaywallEventType.CLOSE)
+            if (!isWorkflowPresentation) {
+                track(PaywallEventType.CLOSE)
+            }
             paywallPresentationData = null
         }
 
@@ -429,6 +486,7 @@ internal class PaywallViewModelImpl(
     override fun trackComponentInteraction(data: PaywallComponentInteractionData) {
         val eventData = paywallPresentationData
         if (eventData == null) {
+            if (currentWorkflowResult != null && !currentWorkflowStepTracksPaywallEvents) return
             Logger.e("Paywall event data is null, not tracking paywall component interaction")
             return
         }
@@ -474,6 +532,9 @@ internal class PaywallViewModelImpl(
                     when (val result = customRestoreHandler(customerInfo)) {
                         is PurchaseLogicResult.Success -> {
                             val updatedCustomerInfo = purchases.awaitSyncPurchases()
+                            // A successful restore is a natural workflow exit, not an abandonment, even if
+                            // the paywall stays visible (no shouldDisplayBlock). Suppress workflows_close.
+                            workflowCompletedInSession = true
 
                             shouldDisplayBlock?.let {
                                 if (!it(updatedCustomerInfo)) {
@@ -506,13 +567,20 @@ internal class PaywallViewModelImpl(
                     }
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
+                    // A successful restore is a natural workflow exit, not an abandonment, even if the
+                    // paywall stays visible (no shouldDisplayBlock). Suppress workflows_close on dismiss.
+                    workflowCompletedInSession = true
                     listener?.onRestoreCompleted(customerInfo)
 
                     shouldDisplayBlock?.let {
                         if (!it(customerInfo)) {
                             _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
+                            trackCurrentWorkflowStepCompleted()
                             options.dismissRequest()
+                            // Bypasses closePaywall, so run the same session cleanup here to reset
+                            // workflowCompletedInSession at the dismiss boundary.
+                            clearWorkflowState()
                         }
                     }
                 }
@@ -627,6 +695,8 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Success -> {
                             val customerInfo = purchases.awaitSyncPurchases()
                             _purchaseCompleted.value = true
+                            // Set before closePaywall so the abandonment gate sees this as a completion.
+                            workflowCompletedInSession = true
                             Logger.d("Dismissing paywall after purchase")
                             closePaywall(PaywallResult.Purchased(customerInfo))
                         }
@@ -671,9 +741,14 @@ internal class PaywallViewModelImpl(
 
                     val purchaseResult = purchases.awaitPurchase(purchaseParamsBuilder)
                     _purchaseCompleted.value = true
+                    workflowCompletedInSession = true
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
+                    trackCurrentWorkflowStepCompleted()
                     options.dismissRequest()
+                    // This direct-dismiss completion bypasses closePaywall, so run the same session
+                    // cleanup here to reset workflowCompletedInSession at the dismiss boundary.
+                    clearWorkflowState()
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
@@ -716,13 +791,25 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
-        if (updateStateFromWorkflowEndpointIfNeeded(offeringSelection)) {
+        // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.
+        if (presentInjectedWorkflowIfNeeded(offeringSelection)) {
             return
         }
 
         val resolvedOfferingSelection = resolveOfferingSelection(offeringSelection)
-        val currentOffering = resolvedOfferingSelection.selectedOffering
-        val exitOfferingId = currentOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
+        val selectedOffering = resolvedOfferingSelection.selectedOffering
+
+        // When workflows are enabled, every non-legacy paywall is served through the /workflows
+        // endpoint. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
+        // paywall: a legacy v1 paywall always carries `offering.paywall`, and that field stays
+        // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
+        // deliberately do NOT gate on `paywallComponents`, which is going away.
+        if (useWorkflowsEndpoint && selectedOffering != null && selectedOffering.paywall == null) {
+            presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
+            return
+        }
+
+        val exitOfferingId = selectedOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
 
         val offerings = resolvedOfferingSelection.offeringsForExitOfferLookup
         updateExitOfferData(
@@ -735,34 +822,40 @@ internal class PaywallViewModelImpl(
                 ExitOfferData.Unavailable()
             },
         )
-        updatePaywallState(currentOffering)
+        updatePaywallState(selectedOffering)
     }
 
-    private suspend fun updateStateFromWorkflowEndpointIfNeeded(offeringSelection: OfferingSelection): Boolean {
-        var updatedFromWorkflow = false
-        if (useWorkflowsEndpoint) {
-            val workflowParams = when (offeringSelection) {
-                is OfferingSelection.IdAndPresentedOfferingContext ->
-                    offeringSelection.offeringId to offeringSelection.presentedOfferingContext
-                is OfferingSelection.OfferingType ->
-                    offeringSelection.offeringType.identifier to offeringSelection.offeringType.presentedOfferingContext
-                is OfferingSelection.None -> null
-            }
-            if (workflowParams != null) {
-                val (offeringId, presentedOfferingContext) = workflowParams
-                coroutineScope {
-                    val fetchResultDeferred = async { purchases.awaitGetWorkflow(offeringId) }
-                    val offeringsDeferred = async { purchases.awaitOfferings() }
-                    applyWorkflowState(
-                        fetchResultDeferred.await(),
-                        offeringsDeferred.await(),
-                        presentedOfferingContext,
-                    )
-                }
-                updatedFromWorkflow = true
-            }
+    private fun presentInjectedWorkflowIfNeeded(offeringSelection: OfferingSelection): Boolean {
+        val injectedWorkflow = options.injectedWorkflow ?: return false
+        val offering = offeringSelection.offering
+        if (offering == null) {
+            Logger.w(
+                "Paywalls: injectedWorkflow set without a concrete Offering (use setOffering); " +
+                    "workflow screens may fail to resolve their packages.",
+            )
         }
-        return updatedFromWorkflow
+        val offerings = Offerings(
+            current = offering,
+            all = offering?.let { mapOf(it.identifier to it) } ?: emptyMap(),
+        )
+        startWorkflowPresentation(injectedWorkflow, offerings, offering?.presentedOfferingContext)
+        return true
+    }
+
+    private suspend fun presentWorkflow(offering: Offering, preloadedOfferings: Offerings?) {
+        // Prefer the configured workflow id, which aligns with the prefetch cache key. Fall back to
+        // the offering id, which the backend lazily converts into a workflow for paywalls not yet
+        // converted to a workflow.
+        val workflowIdentifier = purchases.workflowIdForOfferingId(offering.identifier) ?: offering.identifier
+        coroutineScope {
+            val fetchResultDeferred = async { purchases.awaitGetWorkflow(workflowIdentifier) }
+            val offeringsDeferred = async { preloadedOfferings ?: purchases.awaitOfferings() }
+            startWorkflowPresentation(
+                fetchResultDeferred.await(),
+                offeringsDeferred.await(),
+                offering.presentedOfferingContext,
+            )
+        }
     }
 
     private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): ResolvedOfferingSelection =
@@ -822,17 +915,17 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    internal fun updateStateFromWorkflow(
+    internal fun startWorkflowPresentationFromResult(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
         cancelStateUpdate()
-        applyWorkflowState(fetchResult, offerings, presentedOfferingContext)
+        startWorkflowPresentation(fetchResult, offerings, presentedOfferingContext)
     }
 
     @Suppress("ReturnCount")
-    private fun applyWorkflowState(
+    private fun startWorkflowPresentation(
         fetchResult: WorkflowDataResult,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
@@ -846,6 +939,10 @@ internal class PaywallViewModelImpl(
             )
             return
         }
+
+        // Close the lifecycle of any step the user was already on before starting a new presentation.
+        // Uses the old currentWorkflowResult and _workflowState before either is mutated below.
+        trackCurrentWorkflowStepCompleted()
 
         currentWorkflowResult = fetchResult
         currentWorkflowOfferings = offerings
@@ -866,7 +963,13 @@ internal class PaywallViewModelImpl(
         if (stepWithPackagesId != null && workflow.steps[stepWithPackagesId] == null) {
             Logger.w("Workflow singleStepFallbackId '$stepWithPackagesId' not found in steps")
         }
-        buildWorkflowStates(workflow, offerings, presentedOfferingContext, currentStep = initialStep)
+        buildWorkflowStates(
+            workflow = workflow,
+            offerings = offerings,
+            presentedOfferingContext = presentedOfferingContext,
+            currentStep = initialStep,
+            isNewWorkflowImpression = true,
+        )
     }
 
     /**
@@ -884,6 +987,7 @@ internal class PaywallViewModelImpl(
             offerings = offerings,
             presentedOfferingContext = currentWorkflowPresentedOfferingContext,
             currentStep = currentStep,
+            isNewWorkflowImpression = false,
         )
     }
 
@@ -897,19 +1001,36 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         currentStep: WorkflowStep,
+        isNewWorkflowImpression: Boolean,
     ) {
         preWarmJob?.cancel()
         workflowStepStateCache.clear()
         _workflowState.value = null
+        if (isNewWorkflowImpression) {
+            workflowTraceId = UUID.randomUUID().toString()
+        }
 
         // Pre-compute the package step so its default package is available in cache
         // for early packageless steps to use as context.
         val stepWithPackages = workflow.singleStepFallbackId?.let { workflow.steps[it] }
         if (stepWithPackages != null && stepWithPackages.id != currentStep.id) {
-            buildStateFromStep(stepWithPackages, workflow, offerings, presentedOfferingContext)
+            buildStateFromStep(
+                stepWithPackages,
+                workflow,
+                offerings,
+                presentedOfferingContext,
+                shouldApplyState = false,
+            )
         }
 
         buildStateFromStep(currentStep, workflow, offerings, presentedOfferingContext)
+        if (isNewWorkflowImpression && _workflowState.value != null) {
+            trackWorkflowStepStarted(
+                step = currentStep,
+                fromStepId = null,
+                entryReason = WorkflowStepEntryReason.START,
+            )
+        }
         preWarmWorkflowStepCache(workflow, offerings, presentedOfferingContext)
     }
 
@@ -920,6 +1041,7 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
         fromStepId: String? = null,
         navigationDirection: NavigationDirection? = null,
+        shouldApplyState: Boolean = true,
     ) {
         val cached = workflowStepStateCache[step.id]
         val newState = cached ?: computeStateForStep(step, workflow, offerings, presentedOfferingContext)
@@ -936,6 +1058,9 @@ internal class PaywallViewModelImpl(
                 newState.setDefaultPackage(defaultPackage)
             }
         }
+        if (!shouldApplyState) return
+        currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
+            step.tracksPaywallEvents(workflow)
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
                 fromStepId = fromStepId,
@@ -949,6 +1074,11 @@ internal class PaywallViewModelImpl(
         // sees the workflow branch and the correct step, not the single-page branch.
         // On error, clear workflowState so the UI falls through to the normal error path rather
         // than entering workflow mode with a currentStepId absent from stepStates.
+        if (newState !is PaywallState.Loaded.Components) {
+            currentWorkflowStep?.let { currentStep ->
+                trackWorkflowStepCompleted(step = currentStep, toStepId = null)
+            }
+        }
         _workflowState.value = if (newState is PaywallState.Loaded.Components) {
             WorkflowPaywallUiState(
                 currentStepId = step.id,
@@ -1015,7 +1145,7 @@ internal class PaywallViewModelImpl(
         preWarmJob = viewModelScope.launch {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
-                val computed = withContext(Dispatchers.Default) {
+                val computed = withContext(backgroundDispatcher) {
                     computeStateForStep(step, workflow, offerings, presentedOfferingContext)
                 }
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
@@ -1040,7 +1170,8 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate to step '${candidate.id}': $error")
             return
         }
-        val fromStepId = navigator.currentStep?.id
+        val fromStep = navigator.currentStep
+        val fromStepId = fromStep?.id
         // triggerAction repeats the same lookup as peekTriggerStep. It should not return null
         // given the peek succeeded, but guard anyway to avoid a hard crash.
         val newStep = navigator.triggerAction(componentId, triggerType) ?: run {
@@ -1055,6 +1186,11 @@ internal class PaywallViewModelImpl(
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.FORWARD,
         )
+        trackWorkflowStepNavigation(
+            fromStep = fromStep,
+            toStep = newStep,
+            entryReason = WorkflowStepEntryReason.FORWARD,
+        )
     }
 
     @Suppress("ReturnCount")
@@ -1068,7 +1204,8 @@ internal class PaywallViewModelImpl(
             Logger.e("Cannot navigate back to step '${candidate.id}': $error")
             return false
         }
-        val fromStepId = navigator.currentStep?.id
+        val fromStep = navigator.currentStep
+        val fromStepId = fromStep?.id
         // navigateBack should not return null given canNavigateBack is true, but guard to be safe.
         val newStep = navigator.navigateBack() ?: run {
             Logger.e("navigateBack returned null after canNavigateBack was true — this is a bug")
@@ -1082,7 +1219,115 @@ internal class PaywallViewModelImpl(
             fromStepId = fromStepId,
             navigationDirection = NavigationDirection.BACKWARD,
         )
+        trackWorkflowStepNavigation(
+            fromStep = fromStep,
+            toStep = newStep,
+            entryReason = WorkflowStepEntryReason.BACK,
+        )
         return true
+    }
+
+    private fun trackWorkflowStepNavigation(
+        fromStep: WorkflowStep?,
+        toStep: WorkflowStep,
+        entryReason: WorkflowStepEntryReason,
+    ) {
+        // If _workflowState is null after buildStateFromStep, an error occurred and
+        // StepCompleted was already fired inside buildStateFromStep.
+        if (_workflowState.value == null) return
+
+        fromStep?.let { from ->
+            trackWorkflowStepCompleted(step = from, toStepId = toStep.id)
+        }
+        trackWorkflowStepStarted(
+            step = toStep,
+            fromStepId = fromStep?.id,
+            entryReason = entryReason,
+        )
+    }
+
+    private fun trackWorkflowStepStarted(
+        step: WorkflowStep,
+        fromStepId: String?,
+        entryReason: WorkflowStepEntryReason,
+    ) {
+        val workflowResult = currentWorkflowResult ?: return
+        val workflow = workflowResult.workflow
+        purchases.track(
+            WorkflowEvent.StepStarted(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = step.id,
+                traceId = workflowTraceId,
+                fromStepId = fromStepId,
+                entryReason = entryReason.value,
+                isFirstStep = step.id == workflow.initialStepId,
+                isLastStep = isTerminalStep(workflow, step.id),
+            ),
+        )
+    }
+
+    private fun trackWorkflowStepCompleted(step: WorkflowStep, toStepId: String?) {
+        val workflowResult = currentWorkflowResult ?: return
+        val workflow = workflowResult.workflow
+        purchases.track(
+            WorkflowEvent.StepCompleted(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = step.id,
+                traceId = workflowTraceId,
+                toStepId = toStepId,
+                isFirstStep = step.id == workflow.initialStepId,
+                isLastStep = isTerminalStep(workflow, step.id),
+            ),
+        )
+    }
+
+    private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
+        val step = workflow.steps[stepId] ?: return false
+        return step.triggerActions.values.none { it is WorkflowTriggerAction.Step }
+    }
+
+    private val currentWorkflowStep: WorkflowStep?
+        get() {
+            val stepId = _workflowState.value?.currentStepId ?: return null
+            return currentWorkflowResult?.workflow?.steps?.get(stepId)
+        }
+
+    /**
+     * Fires [WorkflowEvent.StepCompleted] for the step the user is currently on, if any. No-op for
+     * non-workflow paywalls. Used when the current step is left without navigating to another one.
+     * Called directly on dismiss paths that intentionally do not emit a paywall close event (a
+     * successful purchase, and the REVENUECAT restore-dismiss), and from [closePaywall] (which
+     * additionally emits the close event). This keeps paywall_close behavior identical to non-workflow.
+     */
+    private fun trackCurrentWorkflowStepCompleted() {
+        currentWorkflowStep?.let { step ->
+            trackWorkflowStepCompleted(step = step, toStepId = null)
+        }
+    }
+
+    /**
+     * Fires [WorkflowEvent.Close] for the step the user is currently on, if any. No-op for
+     * non-workflow paywalls. This is the workflow-level abandonment signal: unlike paywall_close it is
+     * not gated by [WorkflowStep.tracksPaywallEvents], so abandonment that happens on a non-paywall step
+     * (e.g. before the offer is shown) is still captured. Only fired from [closePaywall] when the
+     * workflow was not completed (no purchase).
+     */
+    private fun trackCurrentWorkflowAbandoned() {
+        val workflowResult = currentWorkflowResult ?: return
+        val step = currentWorkflowStep ?: return
+        val workflow = workflowResult.workflow
+        purchases.track(
+            WorkflowEvent.Close(
+                creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+                workflowId = workflow.id,
+                stepId = step.id,
+                traceId = workflowTraceId,
+                isFirstStep = step.id == workflow.initialStepId,
+                isLastStep = isTerminalStep(workflow, step.id),
+            ),
+        )
     }
 
     @Suppress("ReturnCount")
@@ -1096,6 +1341,25 @@ internal class PaywallViewModelImpl(
         offerings[offeringId]
             ?: return "Offering '$offeringId' not found for screen '$screenId'"
         return null
+    }
+
+    /**
+     * Whether this workflow step reports paywall events (`paywall_impression` / `paywall_close`),
+     * driven by the backend `screen_type` tag (khepri #21429):
+     * - tagged with `paywall` → reports;
+     * - tagged without `paywall` (including an empty list) → suppressed;
+     * - untagged (null `screen_type`, e.g. a pre-rollout/legacy payload) → falls back to the prior
+     *   structural inference `id == singleStepFallbackId`, so untagged workflows behave exactly as
+     *   before the `screen_type` rollout (only the fallback step reports) rather than over-reporting
+     *   on every step.
+     *
+     * Once the backend republishes a workflow it tags exactly the fallback step as `["paywall"]`, so
+     * tagged behavior is equivalent to the fallback while the explicit signal lets the backend classify
+     * steps independently of `single_step_fallback_id`.
+     */
+    private fun WorkflowStep.tracksPaywallEvents(workflow: PublishedWorkflow): Boolean {
+        val screenType = stepScreenType ?: return id == workflow.singleStepFallbackId
+        return screenType.contains(WorkflowScreenType.PAYWALL)
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {
@@ -1247,11 +1511,13 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private fun createEventData(): PaywallEvent.Data? =
-        when (val currentState = state.value) {
-            is PaywallState.Loaded.Legacy -> currentState.createEventData()
+    private fun createEventData(): PaywallEvent.Data? {
+        val workflowId = currentWorkflowResult?.workflow?.id
+        val stepId = _workflowState.value?.currentStepId
+        return when (val currentState = state.value) {
+            is PaywallState.Loaded.Legacy -> currentState.createEventData(workflowId, stepId)
 
-            is PaywallState.Loaded.Components -> currentState.createEventData()
+            is PaywallState.Loaded.Components -> currentState.createEventData(workflowId, stepId)
 
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -1260,8 +1526,9 @@ internal class PaywallViewModelImpl(
                 null
             }
         }
+    }
 
-    private fun PaywallState.Loaded.Legacy.createEventData(): PaywallEvent.Data? {
+    private fun PaywallState.Loaded.Legacy.createEventData(workflowId: String?, stepId: String?): PaywallEvent.Data? {
         val offering = offering
         val revision = this.offering.paywall?.revision ?: this.offering.paywallComponents?.data?.revision ?: run {
             Logger.e("Null paywall revision trying to create event data")
@@ -1271,16 +1538,21 @@ internal class PaywallViewModelImpl(
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
             paywallIdentifier = paywallId,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
             darkMode = isDarkMode,
+            workflowId = workflowId,
+            stepId = stepId,
         )
     }
 
-    private fun PaywallState.Loaded.Components.createEventData(): PaywallEvent.Data? {
+    private fun PaywallState.Loaded.Components.createEventData(
+        workflowId: String?,
+        stepId: String?,
+    ): PaywallEvent.Data? {
         val offering = offering
         val paywallData = this.offering.paywallComponents ?: run {
             Logger.e("Null paywall revision trying to create event data")
@@ -1288,12 +1560,14 @@ internal class PaywallViewModelImpl(
         }
         return PaywallEvent.Data(
             paywallIdentifier = paywallData.data.id,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = paywallData.data.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
             darkMode = isDarkMode,
+            workflowId = workflowId,
+            stepId = stepId,
         )
     }
 
@@ -1325,7 +1599,7 @@ internal class PaywallViewModelImpl(
         val locale = localeList.get(0) ?: Locale.getDefault()
         return PaywallPresentationFingerprint(
             paywallIdentifier = paywallId,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = revision,
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
@@ -1340,7 +1614,7 @@ internal class PaywallViewModelImpl(
         val paywallData = offering.paywallComponents ?: return null
         return PaywallPresentationFingerprint(
             paywallIdentifier = paywallData.data.id,
-            presentedOfferingContext = offering.presentedOfferingContext,
+            presentedOfferingContext = offering.presentedOfferingContextOrDefault,
             paywallRevision = paywallData.data.revision,
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
@@ -1358,6 +1632,16 @@ internal class PaywallViewModelImpl(
             darkMode = darkMode,
         )
 
+    private fun PaywallEvent.Data.withCurrentWorkflowMetadata(): PaywallEvent.Data {
+        val workflowId = currentWorkflowResult?.workflow?.id
+        val stepId = _workflowState.value?.currentStepId
+        return if (this.workflowId == workflowId && this.stepId == stepId) {
+            this
+        } else {
+            copy(workflowId = workflowId, stepId = stepId)
+        }
+    }
+
     /**
      * Extracts default custom variable values from the offering's UiConfig.
      */
@@ -1366,6 +1650,6 @@ internal class PaywallViewModelImpl(
             ?.mapValues { (_, definition) -> CustomVariableValue.from(definition.defaultValue) }
             ?: emptyMap()
 
-    private val Offering.presentedOfferingContext: PresentedOfferingContext
-        get() = availablePackages.firstOrNull()?.presentedOfferingContext ?: PresentedOfferingContext(identifier)
+    private val Offering.presentedOfferingContextOrDefault: PresentedOfferingContext
+        get() = presentedOfferingContext ?: PresentedOfferingContext(identifier)
 }

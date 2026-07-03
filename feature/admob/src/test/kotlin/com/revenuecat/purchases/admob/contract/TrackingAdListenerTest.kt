@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.admob
 
 import com.google.android.gms.ads.AdListener
+import com.revenuecat.purchases.admob.tracking.TrackingAdListener
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.lang.reflect.Modifier

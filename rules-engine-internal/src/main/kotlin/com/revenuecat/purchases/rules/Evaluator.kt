@@ -46,6 +46,7 @@ internal object Evaluator {
         vars: Value,
     ): Value = when (predicate) {
         Value.Null,
+        Value.Undefined,
         is Value.BoolValue,
         is Value.IntValue,
         is Value.FloatValue,

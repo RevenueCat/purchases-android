@@ -134,6 +134,10 @@ public open class DeviceCache(
 
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
+    private val workflowsListResponseCacheKey: String by lazy { "$apiKeyPrefix.workflowsListResponse" }
+
+    private val workflowDetailEnvelopesCacheKey: String by lazy { "$apiKeyPrefix.workflowDetailEnvelopes" }
+
     internal fun startEditing(): SharedPreferences.Editor {
         return preferences.edit()
     }
@@ -605,6 +609,48 @@ public open class DeviceCache(
     @Synchronized
     internal fun clearOfferingsResponseCache() {
         preferences.edit().remove(offeringsResponseCacheKey).apply()
+    }
+
+    // endregion
+
+    // region workflows list response
+
+    @Synchronized
+    internal fun getWorkflowsListResponseCache(): String? {
+        return preferences.getString(workflowsListResponseCacheKey, null)
+    }
+
+    @Synchronized
+    internal fun cacheWorkflowsListResponse(payload: String) {
+        preferences.edit()
+            .putString(workflowsListResponseCacheKey, payload)
+            .apply()
+    }
+
+    @Synchronized
+    internal fun clearWorkflowsListResponseCache() {
+        preferences.edit().remove(workflowsListResponseCacheKey).apply()
+    }
+
+    // endregion
+
+    // region workflow detail envelopes
+
+    @Synchronized
+    internal fun getWorkflowDetailEnvelopesCache(): String? {
+        return preferences.getString(workflowDetailEnvelopesCacheKey, null)
+    }
+
+    @Synchronized
+    internal fun cacheWorkflowDetailEnvelopes(payload: String) {
+        preferences.edit()
+            .putString(workflowDetailEnvelopesCacheKey, payload)
+            .apply()
+    }
+
+    @Synchronized
+    internal fun clearWorkflowDetailEnvelopesCache() {
+        preferences.edit().remove(workflowDetailEnvelopesCacheKey).apply()
     }
 
     // endregion

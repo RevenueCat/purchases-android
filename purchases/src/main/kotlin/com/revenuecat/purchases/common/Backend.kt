@@ -12,17 +12,22 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.api.BuildConfig
+import com.revenuecat.purchases.RewardVerificationError
+import com.revenuecat.purchases.RewardVerificationPollStatus
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.backendName
+import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigResponse
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
 import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
@@ -101,12 +106,23 @@ internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit,
 
 internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
 
-internal typealias RemoteConfigCallback = Pair<(RemoteConfigResponse) -> Unit, (PurchasesError) -> Unit>
+@OptIn(InternalRevenueCatAPI::class)
+internal typealias RewardVerificationResultCallback =
+    Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
+
+internal typealias RemoteConfigCallback =
+    Pair<(RCContainer?, VerificationResult) -> Unit, (PurchasesError) -> Unit>
 
 @OptIn(InternalRevenueCatAPI::class)
-internal typealias WorkflowDetailCallback = Pair<(WorkflowDetailResponse) -> Unit, (PurchasesError) -> Unit>
+internal typealias WorkflowDetailCallback = Pair<
+    (WorkflowDetailResponse) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetWorkflowsErrorHandlingBehavior) -> Unit,
+    >
 
-internal typealias WorkflowsListCallback = Pair<(WorkflowsListResponse) -> Unit, (PurchasesError) -> Unit>
+internal typealias WorkflowsListCallback = Pair<
+    (WorkflowsListResponse) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetWorkflowsErrorHandlingBehavior) -> Unit,
+    >
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -116,6 +132,11 @@ internal enum class PostReceiptErrorHandlingBehavior {
 
 internal enum class GetOfferingsErrorHandlingBehavior {
     SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
+    SHOULD_NOT_FALLBACK,
+}
+
+internal enum class GetWorkflowsErrorHandlingBehavior {
+    SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
     SHOULD_NOT_FALLBACK,
 }
 
@@ -188,6 +209,10 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var rewardVerificationResultCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RewardVerificationResultCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var workflowDetailCallbacks =
@@ -282,6 +307,7 @@ internal class Backend(
         receiptInfo: ReceiptInfo,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
+        workflowMetadata: WorkflowMetadata? = null,
         // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataStore
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
         onSuccess: PostReceiptDataSuccessCallback,
@@ -319,6 +345,8 @@ internal class Backend(
             "proration_mode" to receiptInfo.replacementMode?.backendName(store = appConfig.store),
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "presented_workflow_id" to workflowMetadata?.workflowId,
+            "presented_step_id" to workflowMetadata?.stepId,
             "sdk_originated" to receiptInfo.sdkOriginated,
             "payload_version" to POST_RECEIPT_PAYLOAD_VERSION,
         ).filterNotNullValues()
@@ -769,7 +797,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val customerCenterRoot = json.decodeFromString<CustomerCenterRoot>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(customerCenterRoot.customerCenter)
                         } catch (e: SerializationException) {
@@ -999,12 +1027,14 @@ internal class Backend(
         }
     }
 
+    @Suppress("LongParameterList")
     fun getWorkflow(
         appUserID: String,
         workflowId: String,
         appInBackground: Boolean,
         onSuccess: (WorkflowDetailResponse) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        onError: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit,
+        callbackDispatcher: Dispatcher = dispatcher,
     ) {
         val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
         val path = endpoint.getPath()
@@ -1025,7 +1055,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     workflowDetailCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    onErrorHandler(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
                 }
             }
 
@@ -1036,15 +1066,26 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             onSuccessHandler(
-                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payload),
+                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payloadText),
                             )
                         } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
                         } catch (e: IllegalArgumentException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
                         }
                     } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                        val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS
+                        } else {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, errorBehavior)
                     }
                 }
             }
@@ -1053,7 +1094,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             workflowDetailCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                callbackDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,
@@ -1066,7 +1107,7 @@ internal class Backend(
         appInBackground: Boolean,
         type: String? = null,
         onSuccess: (WorkflowsListResponse) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        onError: (PurchasesError, GetWorkflowsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetWorkflows(appUserID, type)
         val path = endpoint.getPath()
@@ -1087,7 +1128,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     workflowsListCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    onErrorHandler(error, GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS)
                 }
             }
 
@@ -1098,15 +1139,26 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             onSuccessHandler(
-                                WorkflowJsonParser.parseWorkflowsListResponse(result.payload),
+                                WorkflowJsonParser.parseWorkflowsListResponse(result.payloadText),
                             )
                         } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
                         } catch (e: IllegalArgumentException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
+                            )
                         }
                     } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                        val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_WORKFLOWS
+                        } else {
+                            GetWorkflowsErrorHandlingBehavior.SHOULD_NOT_FALLBACK
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, errorBehavior)
                     }
                 }
             }
@@ -1158,7 +1210,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val productsResponse = json.decodeFromString<WebBillingProductsResponse>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(productsResponse)
                         } catch (e: SerializationException) {
@@ -1183,27 +1235,111 @@ internal class Backend(
         }
     }
 
+    fun getRewardVerificationResult(
+        appUserID: String,
+        clientTransactionId: String,
+        onSuccess: (RewardVerificationPollStatus) -> Unit,
+        onError: (RewardVerificationError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetRewardVerification(
+            userId = appUserID,
+            clientTransactionId = clientTransactionId,
+        )
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground = false)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    rewardVerificationResultCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(RewardVerificationError(error, isServerError = false))
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    rewardVerificationResultCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val response = json.decodeFromString<RewardVerificationResponse>(
+                                result.payloadText,
+                            )
+                            onSuccessHandler(response.toRewardVerificationPollStatus())
+                        } catch (e: SerializationException) {
+                            onErrorHandler(
+                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(
+                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
+                        }
+                    } else {
+                        onErrorHandler(
+                            RewardVerificationError(
+                                result.toPurchasesError().also { errorLog(it) },
+                                isServerError = RCHTTPStatusCodes.isServerError(result.responseCode),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            rewardVerificationResultCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                Delay.NONE,
+            )
+        }
+    }
+
+    @Suppress("LongParameterList")
     fun getRemoteConfig(
         appInBackground: Boolean,
-        onSuccess: (RemoteConfigResponse) -> Unit,
+        appUserID: String,
+        domain: String,
+        manifest: String?,
+        prefetchedBlobs: List<String>,
+        onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig(domain)
         val path = endpoint.getPath()
-        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        // Include the app user in the key: the path carries the domain but not the app_user_id (sent in the
+        // request body), so concurrent calls for different users must not be deduped onto a single shared request.
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path, appUserID), appInBackground)
 
-        val overrideURL = BuildConfig.REMOTE_CONFIG_BASE_URL
-            .takeIf { it.isNotEmpty() && appConfig.isDebugBuild }
-            ?.let { runCatching { URL(it) }.getOrNull() }
-        val baseURL = overrideURL ?: appConfig.baseURL
-        val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+        val baseURL = appConfig.baseURL
+        val fallbackBaseURLs = appConfig.fallbackBaseURLs
+        // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
+        val body = buildMap<String, Any?> {
+            put(APP_USER_ID, appUserID)
+            manifest?.let { put("manifest", it) }
+            put("prefetched_blobs", prefetchedBlobs)
+        }
 
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     baseURL,
                     endpoint,
-                    body = null,
+                    body = body,
                     postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                     fallbackBaseURLs = fallbackBaseURLs,
@@ -1223,12 +1359,24 @@ internal class Backend(
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
+                        if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
+                            // 204: nothing changed, no container to parse.
+                            onSuccessHandler(null, result.verificationResult)
+                            return@forEach
+                        }
+                        val payload = result.payload
+                        if (payload !is HTTPResult.Payload.RCFormat) {
+                            onErrorHandler(
+                                PurchasesError(
+                                    PurchasesErrorCode.UnknownError,
+                                    "Expected an RC Container Format payload for remote config.",
+                                ).also { errorLog(it) },
+                            )
+                            return@forEach
+                        }
                         try {
-                            val response = json.decodeFromString<RemoteConfigResponse>(result.payload)
-                            onSuccessHandler(response)
-                        } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
-                        } catch (e: IllegalArgumentException) {
+                            onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
+                        } catch (e: RCContainerFormatException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {

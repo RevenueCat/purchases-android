@@ -1,709 +1,684 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
-import io.mockk.coEvery
-import io.mockk.coVerify
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
+import com.revenuecat.purchases.common.networking.RCElement
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlin.concurrent.thread
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.nio.ByteBuffer
 import java.util.Date
-import kotlin.random.Random
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class RemoteConfigManagerTest {
 
     private lateinit var backend: Backend
-    private lateinit var topicFetcher: TopicFetcher
     private lateinit var diskCache: RemoteConfigDiskCache
-    private lateinit var dateProvider: DateProvider
-    private var fakeNow: Date = Date(0)
+    private lateinit var blobStore: RemoteConfigBlobStore
+    private lateinit var sourceProvider: RemoteConfigSourceProvider
+    private lateinit var blobFetcher: RemoteConfigBlobFetcher
+    private lateinit var manager: RemoteConfigManager
+
+    // Unconfined so the launched 200-path coroutine runs eagerly: invoke(onSuccess) then verify still works.
+    private val testScope = CoroutineScope(UnconfinedTestDispatcher())
+
+    // Mutable clock so staleness tests can advance time past the refresh window.
+    private var currentTimeMillis = FIXED_MILLIS
+    private val dateProvider = object : DateProvider {
+        override val now: Date get() = Date(currentTimeMillis)
+    }
+
+    private var capturedAppUserID: String? = null
+    private var capturedDomain: String? = null
+    private var capturedManifest: String? = null
+    private var capturedPrefetchedBlobs: List<String>? = null
+    private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
+    private lateinit var onError: (PurchasesError) -> Unit
 
     @Before
-    fun setUp() {
+    fun setup() {
         backend = mockk()
-        topicFetcher = mockk()
-        coEvery { topicFetcher.cleanupUnreferencedTopics(any()) } returns Unit
         diskCache = mockk(relaxed = true)
-        fakeNow = Date(0)
-        dateProvider = mockk()
-        every { dateProvider.now } answers { fakeNow }
-    }
-
-    @Test
-    fun `single topic with single source delegates to fetcher and completes with null`() = runTest {
-        val manager = newManager(testScheduler)
-        val src = source("primary")
-        val entry = topicEntry("blob-default")
-        val response = response(
-            blobSources = listOf(src),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to entry)),
+        blobStore = mockk(relaxed = true)
+        sourceProvider = mockk(relaxed = true)
+        blobFetcher = mockk(relaxed = true)
+        manager = RemoteConfigManager(
+            backend,
+            diskCache,
+            blobStore,
+            dateProvider = dateProvider,
+            scope = testScope,
+            sourceProvider = sourceProvider,
+            blobFetcher = blobFetcher,
         )
-        mockBackendSuccess(response)
-        val capturedTopic = slot<Topic>()
-        val capturedEntryId = slot<String>()
-        val capturedEntry = slot<TopicEntry>()
-        val capturedSource = slot<BlobSource>()
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(
-                topic = capture(capturedTopic),
-                entryId = capture(capturedEntryId),
-                topicEntry = capture(capturedEntry),
-                source = capture(capturedSource),
-            )
-        } returns null
 
-        var completionInvoked = false
-        var completionError: PurchasesError? = null
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
-            completionInvoked = true
-            completionError = error
-        }
-        testScheduler.advanceUntilIdle()
+        // Persist succeeds by default; the blob store is only touched once the configuration is persisted.
+        every { diskCache.write(any()) } returns true
 
-        assertThat(completionInvoked).isTrue
-        assertThat(completionError).isNull()
-        assertThat(capturedTopic.captured).isEqualTo(Topic.PRODUCT_ENTITLEMENT_MAPPING)
-        assertThat(capturedEntryId.captured).isEqualTo("default")
-        assertThat(capturedEntry.captured).isEqualTo(entry)
-        assertThat(capturedSource.captured).isEqualTo(src)
-    }
-
-    @Test
-    fun `empty sources skips fetcher, completes with null, and does not cache`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = emptyList(),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-
-        var completionError: PurchasesError? = PurchasesError(PurchasesErrorCode.UnknownError)
-        var completionInvoked = false
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
-            completionInvoked = true
-            completionError = error
-        }
-        testScheduler.advanceUntilIdle()
-
-        assertThat(completionInvoked).isTrue
-        assertThat(completionError).isNull()
-        coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
-        verify(exactly = 0) { diskCache.write(any()) }
-        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
-
-        // Cache wasn't populated, so a follow-up call still hits the backend.
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
-    }
-
-    @Test
-    fun `empty topics map skips fetcher, completes with null, and does not cache`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = emptyMap(),
-        )
-        mockBackendSuccess(response)
-
-        var completionInvoked = false
-        var completionError: PurchasesError? = PurchasesError(PurchasesErrorCode.UnknownError)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
-            completionInvoked = true
-            completionError = error
-        }
-        testScheduler.advanceUntilIdle()
-
-        assertThat(completionInvoked).isTrue
-        assertThat(completionError).isNull()
-        coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
-        verify(exactly = 0) { diskCache.write(any()) }
-        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
-    }
-
-    @Test
-    fun `topic without default entryId is skipped and not cached`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(
-                Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("EXPERIMENT_A" to topicEntry("blob")),
-            ),
-        )
-        mockBackendSuccess(response)
-
-        var completionInvoked = false
-        var completionError: PurchasesError? = PurchasesError(PurchasesErrorCode.UnknownError)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
-            completionInvoked = true
-            completionError = error
-        }
-        testScheduler.advanceUntilIdle()
-
-        assertThat(completionInvoked).isTrue
-        assertThat(completionError).isNull()
-        coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
-        verify(exactly = 0) { diskCache.write(any()) }
-        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
-    }
-
-    @Test
-    fun `selects one of the top priority sources and ignores lower priority ones`() = runTest {
-        val manager = newManager(testScheduler)
-        val highA = source("highA", priority = 1)
-        val highB = source("highB", priority = 1)
-        val lowA = source("lowA", priority = 0)
-        val lowB = source("lowB", priority = 0)
-        val response = response(
-            blobSources = listOf(lowA, highA, lowB, highB),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        val capturedSource = slot<BlobSource>()
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(
-                topic = any(),
-                entryId = any(),
-                topicEntry = any(),
-                source = capture(capturedSource),
-            )
-        } returns null
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        assertThat(capturedSource.captured).isIn(highA, highB)
-    }
-
-    @Test
-    fun `selects the highest priority source even with lower weight`() = runTest {
-        val manager = newManager(testScheduler)
-        val low = source("low", priority = 0, weight = 999)
-        val high = source("high", priority = 5, weight = 1)
-        val response = response(
-            blobSources = listOf(low, high),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        val capturedSource = slot<BlobSource>()
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(
-                topic = any(),
-                entryId = any(),
-                topicEntry = any(),
-                source = capture(capturedSource),
-            )
-        } returns null
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        assertThat(capturedSource.captured).isEqualTo(high)
-    }
-
-    @Test
-    fun `forwards fetcher error to completion`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        val fetcherError = PurchasesError(PurchasesErrorCode.NetworkError, "fetcher failed")
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns fetcherError
-
-        var completionInvoked = false
-        var completionError: PurchasesError? = null
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
-            completionInvoked = true
-            completionError = error
-        }
-        testScheduler.advanceUntilIdle()
-
-        assertThat(completionInvoked).isTrue
-        assertThat(completionError).isSameAs(fetcherError)
-    }
-
-    @Test
-    fun `backend error short-circuits and never invokes fetcher`() = runTest {
-        val manager = newManager(testScheduler)
-        val backendError = PurchasesError(PurchasesErrorCode.NetworkError, "backend down")
-        val onErrorSlot = slot<(PurchasesError) -> Unit>()
         every {
-            backend.getRemoteConfig(any(), any(), capture(onErrorSlot))
-        } answers { onErrorSlot.captured.invoke(backendError) }
-
-        var completionInvoked = false
-        var completionError: PurchasesError? = null
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
-            completionInvoked = true
-            completionError = error
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            capturedAppUserID = arg(1)
+            capturedDomain = arg(2)
+            capturedManifest = arg(3)
+            capturedPrefetchedBlobs = arg(4)
+            onSuccess = arg(5)
+            onError = arg(6)
         }
-        testScheduler.advanceUntilIdle()
-
-        assertThat(completionInvoked).isTrue
-        assertThat(completionError).isSameAs(backendError)
-        coVerify(exactly = 0) { topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any()) }
     }
 
     @Test
-    fun `forwards background flag to backend`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+    fun `first run sends the app domain with no manifest`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
+        assertThat(capturedDomain).isEqualTo("app")
+        assertThat(capturedManifest).isNull()
+        assertThat(capturedPrefetchedBlobs).isEmpty()
+    }
+
+    @Test
+    fun `refreshRemoteConfigIfStale refreshes on the first call in a process`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `refreshRemoteConfigIfStale skips within the staleness window after a successful sync`() {
+        every { diskCache.read() } returns null
+
+        // First refresh completes (204), stamping the in-memory last-sync time.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        // Same clock: still within the foreground window, so no new request.
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `refreshRemoteConfigIfStale refreshes again once the window elapses`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        currentTimeMillis = FIXED_MILLIS + STALE_FOREGROUND_AGE_MILLIS
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `clearCache makes refreshRemoteConfigIfStale refresh again within the window`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        // Identity change wipes the cache and the in-memory marker, so the next user refreshes immediately.
+        manager.clearCache()
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `replays the persisted opaque manifest on subsequent runs`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.123.sources:etag1", domain = "app")
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        assertThat(capturedDomain).isEqualTo("app")
+        assertThat(capturedManifest).isEqualTo("v1.123.sources:etag1")
+    }
+
+    @Test
+    fun `reports only the prefetch blobs actually held on the request`() {
+        every { diskCache.read() } returns persisted(
+            manifest = "v1.1.sources:etag1",
+            prefetchBlobs = listOf(REF_VALID, REF_TAMPERED),
         )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+        every { blobStore.cachedRefs() } returns setOf(REF_VALID)
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = true) {}
-        testScheduler.advanceUntilIdle()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
-        verify(exactly = 1) {
-            backend.getRemoteConfig(
-                appInBackground = true,
-                onSuccess = any(),
-                onError = any(),
-            )
-        }
+        assertThat(capturedPrefetchedBlobs).containsExactly(REF_VALID)
     }
 
     @Test
-    fun `null completion does not crash on success`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+    fun `a 200 response persists the server manifest, active topics and changed topic blob refs`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["newBlob"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false)
-        testScheduler.advanceUntilIdle()
-        // Reaching here means no exception was thrown.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        val written = slot<PersistedRemoteConfigurationState>()
+        verify(exactly = 1) { diskCache.write(capture(written)) }
+        assertThat(written.captured.manifest).isEqualTo("v1.200.sources:etag2")
+        assertThat(written.captured.activeTopics).containsExactly("sources")
+        assertThat(written.captured.prefetchBlobs).containsExactly("newBlob")
+        assertThat(written.captured.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
     }
 
     @Test
-    fun `refresh runs even when completion is null`() = runTest {
-        val manager = newManager(testScheduler)
-        val src = source("primary")
-        val entry = topicEntry("blob-default")
-        val response = response(
-            blobSources = listOf(src),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to entry)),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false, completion = null)
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 1) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
-        coVerify(exactly = 1) {
-            topicFetcher.fetchTopicIfNeeded(
-                topic = Topic.PRODUCT_ENTITLEMENT_MAPPING,
-                entryId = "default",
-                topicEntry = entry,
-                source = src,
-            )
-        }
-    }
-
-    @Test
-    fun `triggers cleanup with all entryId blob refs after successful download`() = runTest {
-        val manager = newManager(testScheduler)
-        val defaultEntry = topicEntry("blob-default")
-        val experimentEntry = topicEntry("blob-experiment")
-        val response = response(
-            blobSources = listOf(source("primary")),
+    fun `a 200 response overwrites changed topics, carries unchanged active topics forward, and prunes inactive ones`() {
+        every { diskCache.read() } returns persisted(
+            manifest = "v1.1.sources:etag1,workflows:wfEtag1,product_entitlement_mapping:pemEtag1",
             topics = mapOf(
-                Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf(
-                    "default" to defaultEntry,
-                    "EXPERIMENT_A" to experimentEntry,
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "oldSources"))),
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "wfBlob"))),
+                "product_entitlement_mapping" to ConfigTopic(
+                    mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
                 ),
             ),
         )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
-        val capturedReferenced = slot<Map<Topic, Set<String>>>()
-        coEvery { topicFetcher.cleanupUnreferencedTopics(capture(capturedReferenced)) } returns Unit
+        // sources changed; workflows still active but unchanged (omitted by the server); PEM no longer active.
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.2.sources:etag2",
+              "active_topics": ["sources", "workflows"],
+              "topics": { "sources": { "default": { "blob_ref": "newSources" } } }
+            }
+        """.trimIndent()
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
-        assertThat(capturedReferenced.captured).isEqualTo(
-            mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to setOf("blob-default", "blob-experiment")),
-        )
+        val written = slot<PersistedRemoteConfigurationState>()
+        verify(exactly = 1) { diskCache.write(capture(written)) }
+        assertThat(written.captured.topics).containsOnlyKeys("sources", "workflows")
+        // Changed topic overwritten with the new index.
+        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newSources")
+        // Unchanged-but-active topic carried forward verbatim (the server omitted its body).
+        assertThat(written.captured.topics["workflows"]!!["wf1"]!!.blobRef).isEqualTo("wfBlob")
     }
 
     @Test
-    fun `does not trigger cleanup when a fetcher download fails`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
+    fun `a 200 response caches valid inline blobs and skips tampered ones`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID", "$REF_TAMPERED"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        val validData = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(
+            containerWithConfig(
+                response,
+                elements = mapOf(
+                    REF_VALID to inlineElement(validData, checksumValid = true),
+                    REF_TAMPERED to inlineElement(ByteBuffer.wrap(byteArrayOf(9)), checksumValid = false),
+                ),
+            ),
+            VerificationResult.VERIFIED,
         )
-        mockBackendSuccess(response)
-        val fetcherError = PurchasesError(PurchasesErrorCode.NetworkError, "fetcher failed")
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns fetcherError
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
+        verify(exactly = 1) { blobStore.write(REF_VALID, validData) }
+        verify(exactly = 0) { blobStore.write(REF_TAMPERED, any()) }
     }
 
     @Test
-    fun `does not trigger cleanup when backend errors`() = runTest {
-        val manager = newManager(testScheduler)
-        val backendError = PurchasesError(PurchasesErrorCode.NetworkError, "backend down")
-        val onErrorSlot = slot<(PurchasesError) -> Unit>()
-        every {
-            backend.getRemoteConfig(any(), any(), capture(onErrorSlot))
-        } answers { onErrorSlot.captured.invoke(backendError) }
+    fun `a 200 response does not cache a valid inline blob the config does not reference`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        val wantedData = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(
+            containerWithConfig(
+                response,
+                elements = mapOf(
+                    REF_VALID to inlineElement(wantedData, checksumValid = true),
+                    // Valid bytes, but not in prefetch_blobs nor referenced by any active topic.
+                    REF_UNWANTED to inlineElement(ByteBuffer.wrap(byteArrayOf(7)), checksumValid = true),
+                ),
+            ),
+            VerificationResult.VERIFIED,
+        )
 
-        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
+        verify(exactly = 1) { blobStore.write(REF_VALID, wantedData) }
+        verify(exactly = 0) { blobStore.write(REF_UNWANTED, any()) }
     }
 
     @Test
-    fun `does not trigger cleanup when manifest has no topics`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = emptyMap(),
+    fun `a failed persist leaves the blob store untouched`() {
+        every { diskCache.read() } returns null
+        every { diskCache.write(any()) } returns false
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(
+            containerWithConfig(
+                response,
+                elements = mapOf(REF_VALID to inlineElement(ByteBuffer.wrap(byteArrayOf(1, 2, 3)), checksumValid = true)),
+            ),
+            VerificationResult.VERIFIED,
         )
-        mockBackendSuccess(response)
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        coVerify(exactly = 0) { topicFetcher.cleanupUnreferencedTopics(any()) }
+        // Both blob-store mutations are gated on a successful persist.
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
     }
 
     @Test
-    fun `successful refresh writes response to disk cache`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+    fun `a 200 response evicts blobs no longer referenced by the config`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_TAMPERED" } } }
+            }
+        """.trimIndent()
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
-        verify(exactly = 1) { diskCache.write(response) }
+        val retained = slot<Set<String>>()
+        verify(exactly = 1) { blobStore.retainOnly(capture(retained)) }
+        // Prefetch blobs plus topic blob refs are retained; everything else is evicted.
+        assertThat(retained.captured).containsExactlyInAnyOrder(REF_VALID, REF_TAMPERED)
     }
 
     @Test
-    fun `topic fetch error skips disk write and leaves cache unpopulated`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns PurchasesError(PurchasesErrorCode.NetworkError, "boom")
+    fun `a 200 response records no blob refs for an inline-only topic and does no blob work`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": {
+                "sources": {
+                  "api": { "id": "primary", "url": "https://api.revenuecat.com", "priority": 100, "weight": 100 }
+                }
+              }
+            }
+        """.trimIndent()
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        val written = slot<PersistedRemoteConfigurationState>()
+        verify(exactly = 1) { diskCache.write(capture(written)) }
+        // An inline-only topic is persisted with its inline content and no blob_ref, and triggers no blob write.
+        assertThat(written.captured.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.topics["sources"]!!["api"]!!.blobRef).isNull()
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+    }
+
+    @Test
+    fun `a 200 response prefetches wanted blobs not already cached, after re-arming the blob sources`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag2",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": {
+                "workflows": {
+                  "wf1": { "blob_ref": "$REF_TAMPERED", "prefetch": true },
+                  "wf2": { "blob_ref": "$REF_UNWANTED", "prefetch": false }
+                }
+              }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        // Re-arm the blob sources before fetching, but only if a prior cycle exhausted them.
+        verify(exactly = 1) { sourceProvider.restartIfExhausted(RemoteConfigSourceHandle.Purpose.BLOB) }
+        // The server prefetch set and any item flagged prefetch=true are warmed; non-flagged items are not.
+        val prefetched = slot<List<String>>()
+        verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
+        assertThat(prefetched.captured).containsExactlyInAnyOrder(REF_VALID, REF_TAMPERED)
+    }
+
+    @Test
+    fun `a 200 response does not prefetch blobs already cached`() {
+        every { diskCache.read() } returns null
+        every { blobStore.contains(REF_VALID) } returns true
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID", "$REF_TAMPERED"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_TAMPERED" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        val prefetched = slot<List<String>>()
+        verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
+        assertThat(prefetched.captured).containsExactly(REF_TAMPERED)
+    }
+
+    @Test
+    fun `a failed persist neither re-arms the sources nor prefetches`() {
+        every { diskCache.read() } returns null
+        every { diskCache.write(any()) } returns false
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["$REF_VALID"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        verify(exactly = 0) { sourceProvider.restartIfExhausted(any()) }
+        verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
+    fun `a 204 response does not re-arm the sources nor prefetch`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        verify(exactly = 0) { sourceProvider.restartIfExhausted(any()) }
+        verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
+    fun `a 204 response leaves the cache untouched and does no blob work`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
 
         verify(exactly = 0) { diskCache.write(any()) }
-
-        // Subsequent call should hit backend again because cache was never populated.
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
     }
 
     @Test
-    fun `backend error skips disk write and leaves cache unpopulated`() = runTest {
-        val manager = newManager(testScheduler)
-        val backendError = PurchasesError(PurchasesErrorCode.NetworkError, "backend down")
-        val onErrorSlot = slot<(PurchasesError) -> Unit>()
-        every {
-            backend.getRemoteConfig(any(), any(), capture(onErrorSlot))
-        } answers { onErrorSlot.captured.invoke(backendError) }
+    fun `an error leaves the cache untouched`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(PurchasesError(PurchasesErrorCode.UnknownError, "boom"))
 
         verify(exactly = 0) { diskCache.write(any()) }
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
     }
 
     @Test
-    fun `second call within foreground TTL is skipped without hitting backend`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
+    fun `a refresh while one is already in flight is skipped`() {
+        every { diskCache.read() } returns null
 
-        fakeNow = Date(0)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // The first refresh has not settled yet (the stub captures callbacks without invoking them).
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
-        // Advance 4 minutes — within 5-minute foreground TTL.
-        fakeNow = Date(4.minutes.inWholeMilliseconds)
-        var completionInvoked = false
-        var completionError: PurchasesError? = PurchasesError(PurchasesErrorCode.UnknownError)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) { error ->
-            completionInvoked = true
-            completionError = error
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a new refresh is allowed after a success settles the in-flight one`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a new refresh is allowed after an error settles the in-flight one`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(PurchasesError(PurchasesErrorCode.UnknownError, "boom"))
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a malformed config payload leaves the cache untouched`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
+
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `a config element that fails to decode leaves the cache untouched and releases the guard`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithUndecodableConfig(), VerificationResult.VERIFIED)
+
+        // The decode failure is caught: nothing is persisted and the cache is left intact.
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        // The guard was released in the finally block, so a subsequent refresh is allowed to start.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `clearCache wipes the disk cache, blob store and resolved sources`() {
+        manager.clearCache()
+
+        verify(exactly = 1) { diskCache.clear() }
+        verify(exactly = 1) { blobStore.clear() }
+        verify(exactly = 1) { sourceProvider.clear() }
+    }
+
+    @Test
+    fun `a response that arrives after clearCache does not persist`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // Identity change wipes the cache before the in-flight request settles.
+        manager.clearCache()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        // The stale response is dropped (epoch guard): nothing is written over the wiped cache.
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `clearCache during an in-flight persist wipes after the write, never leaving stale config`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        val writeEntered = CountDownLatch(1)
+        val releaseWrite = CountDownLatch(1)
+        val clearEntered = CountDownLatch(1)
+        // persist() holds cacheLock while it writes; block inside the write so a concurrent clearCache races it.
+        every { diskCache.write(any()) } answers {
+            writeEntered.countDown()
+            check(releaseWrite.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "write was not released in time" }
+            true
         }
-        testScheduler.advanceUntilIdle()
+        every { diskCache.clear() } answers { clearEntered.countDown() }
 
-        assertThat(completionInvoked).isTrue
-        assertThat(completionError).isNull()
-        verify(exactly = 1) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        // Run the 200 path on its own thread: it enters the lock and parks inside diskCache.write.
+        val persistThread = thread { onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED) }
+        check(writeEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "persist did not reach diskCache.write" }
+
+        // Identity change mid-persist: clearCache must block on the lock persist is holding.
+        val clearThread = thread { manager.clearCache() }
+
+        // While persist holds the lock, the wipe cannot run — the stale config can't be cleared out from under it.
+        assertThat(clearEntered.await(BLOCKED_MILLIS, TimeUnit.MILLISECONDS)).isFalse()
+
+        // Release the write: persist finishes and frees the lock, and only then does the wipe run.
+        releaseWrite.countDown()
+        persistThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        clearThread.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+
+        assertThat(clearEntered.count).isZero()
+        verify(exactly = 1) { diskCache.write(any()) }
+        verify(exactly = 1) { diskCache.clear() }
+    }
+
+    @Test
+    fun `the manager can sync again after clearCache`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+            }
+        """.trimIndent()
+
+        manager.clearCache()
+        // A brand-new sync (e.g. for the new user) proceeds normally: the guard was released by clearCache.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
         verify(exactly = 1) { diskCache.write(any()) }
     }
 
-    @Test
-    fun `call after foreground TTL expiry refetches and updates cache`() = runTest {
-        val manager = newManager(testScheduler)
-        val first = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob-1"))),
-        )
-        val second = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob-2"))),
-        )
-        val onSuccessSlot = slot<(RemoteConfigResponse) -> Unit>()
-        val responses = ArrayDeque(listOf(first, second))
-        every {
-            backend.getRemoteConfig(any(), capture(onSuccessSlot), any())
-        } answers { onSuccessSlot.captured.invoke(responses.removeFirst()) }
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
-
-        fakeNow = Date(0)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        // Advance just past 5-minute foreground TTL.
-        fakeNow = Date(6.minutes.inWholeMilliseconds)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
-        verify(exactly = 1) { diskCache.write(first) }
-        verify(exactly = 1) { diskCache.write(second) }
-    }
-
-    @Test
-    fun `30 minutes after foreground populate, foregrounded call refetches but backgrounded call is skipped`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
-
-        fakeNow = Date(0)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        // 30 minutes later: stale under 5 min foreground TTL, fresh under 25 hr background TTL.
-        fakeNow = Date(30.minutes.inWholeMilliseconds)
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = true) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 1) {
-            backend.getRemoteConfig(appInBackground = any(), onSuccess = any(), onError = any())
-        }
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = any(), onSuccess = any(), onError = any())
-        }
-    }
-
-    @Test
-    fun `call past background TTL refetches even when backgrounded`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
-
-        fakeNow = Date(0)
-        manager.updateRemoteConfigIfNeeded(appInBackground = true) {}
-        testScheduler.advanceUntilIdle()
-
-        // Just past 25-hour background TTL.
-        fakeNow = Date(26.hours.inWholeMilliseconds)
-        manager.updateRemoteConfigIfNeeded(appInBackground = true) {}
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = true, onSuccess = any(), onError = any())
-        }
-    }
-
-    @Test
-    fun `identical responses across TTL gap only write disk once`() = runTest {
-        val manager = newManager(testScheduler)
-        val response = response(
-            blobSources = listOf(source("primary")),
-            topics = mapOf(Topic.PRODUCT_ENTITLEMENT_MAPPING to mapOf("default" to topicEntry("blob"))),
-        )
-        mockBackendSuccess(response)
-        coEvery {
-            topicFetcher.fetchTopicIfNeeded(any(), any(), any(), any())
-        } returns null
-
-        fakeNow = Date(0)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        fakeNow = Date(6.minutes.inWholeMilliseconds)
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
-        verify(exactly = 1) { diskCache.write(response) }
-    }
-
-    @Test
-    fun `consecutive stale calls each issue a backend request`() = runTest {
-        val manager = newManager(testScheduler)
-        val onErrorSlot = slot<(PurchasesError) -> Unit>()
-        every {
-            backend.getRemoteConfig(any(), any(), capture(onErrorSlot))
-        } answers {
-            onErrorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.NetworkError, "boom"))
-        }
-
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-        manager.updateRemoteConfigIfNeeded(appInBackground = false) {}
-        testScheduler.advanceUntilIdle()
-
-        verify(exactly = 2) {
-            backend.getRemoteConfig(appInBackground = false, onSuccess = any(), onError = any())
-        }
-    }
-
-    private fun newManager(
-        scheduler: TestCoroutineScheduler,
-        random: Random = Random(0L),
-    ) = RemoteConfigManager(
-        backend = backend,
-        topicFetcher = topicFetcher,
-        diskCache = diskCache,
-        dateProvider = dateProvider,
-        random = random,
-        dispatcher = UnconfinedTestDispatcher(scheduler),
+    private fun persisted(
+        manifest: String,
+        domain: String = "app",
+        activeTopics: List<String> = emptyList(),
+        prefetchBlobs: List<String> = emptyList(),
+        topics: Map<String, ConfigTopic> = emptyMap(),
+    ) = PersistedRemoteConfigurationState(
+        domain = domain,
+        manifest = manifest,
+        activeTopics = activeTopics,
+        prefetchBlobs = prefetchBlobs,
+        topics = topics,
     )
 
-    private fun mockBackendSuccess(response: RemoteConfigResponse) {
-        val onSuccess = slot<(RemoteConfigResponse) -> Unit>()
-        every {
-            backend.getRemoteConfig(any(), capture(onSuccess), any())
-        } answers { onSuccess.captured.invoke(response) }
+    private fun inlineElement(data: ByteBuffer, checksumValid: Boolean): RCElement {
+        val element = mockk<RCElement>()
+        every { element.data } returns data
+        // The manager decodes (codec-aware) then verifies the decoded bytes against the checksum.
+        every { element.decode() } returns data
+        every { element.matchesChecksum(any()) } returns checksumValid
+        return element
     }
 
-    private fun response(
-        blobSources: List<BlobSource>,
-        topics: Map<Topic, Map<String, TopicEntry>>,
-    ): RemoteConfigResponse = RemoteConfigResponse(
-        blobSources = blobSources,
-        manifest = Manifest(topics = topics),
-    )
+    private fun containerWithConfig(json: String, elements: Map<String, RCElement> = emptyMap()): RCContainer {
+        val element = mockk<RCElement>()
+        every { element.decode() } returns ByteBuffer.wrap(json.toByteArray())
+        val container = mockk<RCContainer>()
+        every { container.config } returns element
+        every { container.elements } returns elements
+        return container
+    }
 
-    private fun source(
-        id: String,
-        priority: Int = 0,
-        weight: Int = 100,
-    ) = BlobSource(
-        id = id,
-        urlFormat = "https://assets.example/{blob_ref}",
-        priority = priority,
-        weight = weight,
-    )
+    private fun containerWithUndecodableConfig(): RCContainer {
+        val element = mockk<RCElement>()
+        every { element.decode() } throws RCContainerFormatException("Unsupported content encoding id 2.")
+        val container = mockk<RCContainer>()
+        every { container.config } returns element
+        every { container.elements } returns emptyMap()
+        return container
+    }
 
-    private fun topicEntry(blobRef: String) = TopicEntry(blobRef = blobRef)
+    private companion object {
+        private const val TEST_APP_USER_ID = "test-app-user-id"
+        private const val FIXED_MILLIS = 1_710_000_000_000L
+
+        // Older than the 5-minute foreground staleness window (see Date?.isCacheStale).
+        private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L
+        private const val WAIT_SECONDS = 5L
+        private const val BLOCKED_MILLIS = 200L
+        private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
+        private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
+        private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
+    }
 }

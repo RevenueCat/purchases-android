@@ -28,5 +28,14 @@ package com.revenuecat.purchases.admob {
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static com.google.android.gms.ads.AdLoader.Builder forNativeAdWithTracking(com.google.android.gms.ads.AdLoader.Builder, String adUnitId, optional String? placement, optional com.google.android.gms.ads.AdListener? adListener, optional com.google.android.gms.ads.OnPaidEventListener? onPaidEventListener, optional kotlin.jvm.functions.Function1<? super com.google.android.gms.ads.nativead.NativeAd,kotlin.Unit> onNativeAdLoaded);
   }
 
+  public final class RewardVerificationExtensionsKt {
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void enableRewardVerification(com.google.android.gms.ads.rewarded.RewardedAd);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void enableRewardVerification(com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.rewarded.RewardedAd, android.app.Activity activity, String? placement, optional kotlin.jvm.functions.Function0<kotlin.Unit>? rewardVerificationStarted, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult,kotlin.Unit> rewardVerificationCompleted);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.rewarded.RewardedAd, android.app.Activity activity, optional kotlin.jvm.functions.Function0<kotlin.Unit>? rewardVerificationStarted, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult,kotlin.Unit> rewardVerificationCompleted);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd, android.app.Activity activity, String? placement, optional kotlin.jvm.functions.Function0<kotlin.Unit>? rewardVerificationStarted, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult,kotlin.Unit> rewardVerificationCompleted);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd, android.app.Activity activity, optional kotlin.jvm.functions.Function0<kotlin.Unit>? rewardVerificationStarted, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult,kotlin.Unit> rewardVerificationCompleted);
+  }
+
 }
 

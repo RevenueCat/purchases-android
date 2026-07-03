@@ -101,6 +101,7 @@ internal object ComparisonOperators {
     private fun toPrimitiveForComparison(value: Value): Value = when (value) {
         is Value.StringValue,
         Value.Null,
+        Value.Undefined,
         is Value.BoolValue,
         is Value.IntValue,
         is Value.FloatValue,

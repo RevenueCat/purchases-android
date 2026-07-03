@@ -2,24 +2,37 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.data
 
+import android.app.Activity
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
+import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
+import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -31,8 +44,13 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -43,6 +61,9 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -50,6 +71,9 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -172,6 +196,9 @@ class PaywallViewModelWorkflowTest {
         return WorkflowDataResult(workflow = wfl, enrolledVariants = null) to offerings
     }
 
+    private fun screenTypeMetadata(vararg types: String): JsonObject =
+        JsonObject(mapOf(WorkflowScreenType.METADATA_KEY to JsonArray(types.map { JsonPrimitive(it) })))
+
     private fun makeContextPackageWorkflow(): Pair<WorkflowDataResult, Offerings> {
         val earlyScreen = makeScreen(screenId1).copy(componentsConfig = noPackagesComponentsConfig)
         val terminalScreen = makeScreen(screenId2).copy(componentsConfig = twoPackageComponentsConfig)
@@ -190,6 +217,8 @@ class PaywallViewModelWorkflowTest {
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
             paramValues = emptyMap(),
+            // Context (non-paywall) step: tagged with an empty screen_type so it suppresses paywall events.
+            metadata = screenTypeMetadata(),
         )
         val terminalStep = WorkflowStep(
             id = "step-2",
@@ -198,6 +227,8 @@ class PaywallViewModelWorkflowTest {
             triggers = emptyList(),
             triggerActions = emptyMap(),
             paramValues = emptyMap(),
+            // Paywall step: tagged so it reports paywall events.
+            metadata = screenTypeMetadata(WorkflowScreenType.PAYWALL),
         )
         val wfl = workflow.copy(
             steps = mapOf("step-1" to earlyStep, "step-2" to terminalStep),
@@ -224,6 +255,7 @@ class PaywallViewModelWorkflowTest {
         screens = mapOf(screenId1 to makeScreen(screenId1), screenId2 to makeScreen(screenId2)),
         uiConfig = UiConfig(),
         metadata = emptyMap(),
+        singleStepFallbackId = "step-1",
     )
     private val fetchResult = WorkflowDataResult(workflow = workflow, enrolledVariants = null)
 
@@ -324,6 +356,98 @@ class PaywallViewModelWorkflowTest {
         enrolledVariants = null,
     )
 
+    // An offering with no packages — validateStep passes but calculateState returns PaywallState.Error.
+    private val emptyOfferingId = "empty_offering"
+    private val emptyOffering = Offering(
+        identifier = emptyOfferingId,
+        serverDescription = "",
+        metadata = emptyMap(),
+        availablePackages = emptyList(),
+        paywallComponents = null,
+        webCheckoutURL = null,
+    )
+    private val testOfferingsWithEmpty = Offerings(
+        testOffering,
+        mapOf(offeringId to testOffering, emptyOfferingId to emptyOffering),
+    )
+
+    private val screenEmptyId = "screen-empty"
+    private val screenWithEmptyOffering = WorkflowScreen(
+        name = "screen-empty",
+        templateName = "template_v2",
+        revision = 1,
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = componentsConfig,
+        componentsLocalizations = localizations,
+        defaultLocaleIdentifier = defaultLocaleId,
+        offeringIdentifier = emptyOfferingId,
+    )
+
+    private val step3EmptyOffering = WorkflowStep(
+        id = "step-3",
+        type = "screen",
+        screenId = screenEmptyId,
+        triggers = emptyList(),
+        triggerActions = emptyMap(),
+    )
+
+    private val step1ToStep3 = WorkflowStep(
+        id = "step-1",
+        type = "screen",
+        screenId = screenId1,
+        triggers = listOf(
+            WorkflowTrigger(
+                name = "Next",
+                type = WorkflowTriggerType.ON_PRESS,
+                actionId = "action-next",
+                componentId = "btn-next",
+            ),
+        ),
+        triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-3")),
+    )
+
+    private val screenWithEmptyOffering2 = WorkflowScreen(
+        name = "screen-empty-initial",
+        templateName = "template_v2",
+        revision = 1,
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = componentsConfig,
+        componentsLocalizations = localizations,
+        defaultLocaleIdentifier = defaultLocaleId,
+        offeringIdentifier = emptyOfferingId,
+    )
+
+    private val step1WithEmptyOffering = WorkflowStep(
+        id = "step-1",
+        type = "screen",
+        screenId = "screen-empty-initial",
+        triggers = emptyList(),
+        triggerActions = emptyMap(),
+    )
+
+    private val workflowFailingInitial = PublishedWorkflow(
+        id = "wfl-failing",
+        displayName = "Failing",
+        initialStepId = "step-1",
+        steps = mapOf("step-1" to step1WithEmptyOffering),
+        screens = mapOf("screen-empty-initial" to screenWithEmptyOffering2),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+    )
+    private val fetchResultFailingInitial = WorkflowDataResult(workflow = workflowFailingInitial, enrolledVariants = null)
+
+    private val workflowToError = PublishedWorkflow(
+        id = "wfl-to-error",
+        displayName = "Test",
+        initialStepId = "step-1",
+        steps = mapOf("step-1" to step1ToStep3, "step-3" to step3EmptyOffering),
+        screens = mapOf(screenId1 to makeScreen(screenId1), screenEmptyId to screenWithEmptyOffering),
+        uiConfig = UiConfig(),
+        metadata = emptyMap(),
+    )
+    private val fetchResultToError = WorkflowDataResult(workflow = workflowToError, enrolledVariants = null)
+
+
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -331,6 +455,7 @@ class PaywallViewModelWorkflowTest {
             every { storefrontCountryCode } returns "US"
             every { preferredUILocaleOverride } returns null
             every { purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
+            every { useWorkflows } returns true
             every { track(any()) } just Runs
             coEvery { awaitOfferings() } returns testOfferings
             coEvery { awaitCustomerInfo(any()) } returns mockk {
@@ -348,9 +473,11 @@ class PaywallViewModelWorkflowTest {
 
     private fun createVm(
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        listener: PaywallListener? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = {})
         dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
+        listener?.let { builder.setListener(it) }
         return PaywallViewModelImpl(
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
@@ -358,7 +485,28 @@ class PaywallViewModelWorkflowTest {
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
+            // Run the step-state pre-warm on the test scheduler so advanceUntilIdle() awaits it
+            // instead of it escaping to Dispatchers.Default and resuming after resetMain().
+            backgroundDispatcher = testDispatcher,
         )
+    }
+
+    private fun makeListener(): PaywallListener = mockk {
+        every { onPurchasePackageInitiated(any(), any()) } answers {
+            val resume = secondArg<Resumable>()
+            resume(true)
+        }
+        every { onRestoreInitiated(any()) } answers {
+            val resume = firstArg<Resumable>()
+            resume(true)
+        }
+        every { onPurchaseStarted(any()) } just runs
+        every { onPurchaseCompleted(any(), any()) } just runs
+        every { onPurchaseCancelled() } just runs
+        every { onPurchaseError(any()) } just runs
+        every { onRestoreStarted() } just runs
+        every { onRestoreCompleted(any()) } just runs
+        every { onRestoreError(any()) } just runs
     }
 
     // region forward navigation
@@ -366,7 +514,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `forward navigation sets FORWARD on pendingTransition`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
@@ -377,7 +525,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `forward navigation sets fromStepId to the step navigated away from`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
@@ -391,7 +539,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `back navigation sets BACKWARD on pendingTransition`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
 
@@ -404,7 +552,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `back navigation sets fromStepId to the step navigated away from`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
 
@@ -420,7 +568,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `second visit to a step returns the cached state instance`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
         // First visit to step-2: state is computed and cached.
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -440,7 +588,7 @@ class PaywallViewModelWorkflowTest {
     fun `back navigation returns step state with the selection the user left on it`() {
         val (fetchResult2, offerings2) = makeTwoPackageWorkflow()
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult2, offerings2, null)
+        vm.startWorkflowPresentationFromResult(fetchResult2, offerings2, null)
 
         // Switch step-1 to annual before navigating forward.
         val step1State = vm.workflowState.value?.stepStates?.get("step-1")!!
@@ -463,7 +611,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `two rapid forward navigations from same step do not corrupt state`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
         // Two calls before any transition completes.
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -488,8 +636,11 @@ class PaywallViewModelWorkflowTest {
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
+            // Run the step-state pre-warm on the test scheduler so advanceUntilIdle() awaits it
+            // instead of it escaping to Dispatchers.Default and resuming after resetMain().
+            backgroundDispatcher = testDispatcher,
         )
-        vmWithVars.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vmWithVars.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
 
         vmWithVars.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
@@ -507,7 +658,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `onTransitionComplete clears pendingTransition for the matching id`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         val id = vm.workflowState.value!!.pendingTransition!!.id
 
@@ -519,7 +670,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `onTransitionComplete with stale id does not clear a newer transition`() {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         val staleId = vm.workflowState.value!!.pendingTransition!!.id
         vm.onTransitionComplete(staleId)
@@ -543,7 +694,7 @@ class PaywallViewModelWorkflowTest {
         val (result, offerings) = makeContextPackageWorkflow()
         val vm = createVm()
 
-        vm.updateStateFromWorkflow(result, offerings, null)
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
 
         val step1State = vm.workflowState.value?.stepStates?.get("step-1")
         assertThat(step1State).isNotNull()
@@ -557,7 +708,7 @@ class PaywallViewModelWorkflowTest {
     fun `back navigation does not overwrite early step context on return`() {
         val (result, offerings) = makeContextPackageWorkflow()
         val vm = createVm()
-        vm.updateStateFromWorkflow(result, offerings, null)
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
 
         // Step-1 initial context is MONTHLY (from singleStepFallbackId → step-2 default).
         val step1StateBefore = vm.workflowState.value?.stepStates?.get("step-1")
@@ -681,7 +832,7 @@ class PaywallViewModelWorkflowTest {
         val wflResult = WorkflowDataResult(workflow = threeStepWorkflow, enrolledVariants = null)
 
         val vm = createVm()
-        vm.updateStateFromWorkflow(wflResult, threeStepOfferings, null)
+        vm.startWorkflowPresentationFromResult(wflResult, threeStepOfferings, null)
 
         // Navigate step-A → step-B → step-C.
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -709,7 +860,7 @@ class PaywallViewModelWorkflowTest {
     fun `own package selection on packaged step is preserved through back-and-forward navigation`() {
         val (result, offerings) = makeContextPackageWorkflow()
         val vm = createVm()
-        vm.updateStateFromWorkflow(result, offerings, null)
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
 
         // Navigate to terminal step-2 (has packages, default is MONTHLY).
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -741,7 +892,7 @@ class PaywallViewModelWorkflowTest {
         )
         val vm = createVm()
 
-        vm.updateStateFromWorkflow(brokenResult, offerings, null)
+        vm.startWorkflowPresentationFromResult(brokenResult, offerings, null)
 
         val step1State = vm.workflowState.value?.stepStates?.get("step-1")
         assertThat(step1State).isNotNull()
@@ -759,7 +910,7 @@ class PaywallViewModelWorkflowTest {
         )
         val vm = createVm()
 
-        vm.updateStateFromWorkflow(singleFallbackResult, twoPackageOfferings, null)
+        vm.startWorkflowPresentationFromResult(singleFallbackResult, twoPackageOfferings, null)
 
         val step1State = vm.workflowState.value?.stepStates?.get("step-1")
         assertThat(step1State).isNotNull()
@@ -777,7 +928,7 @@ class PaywallViewModelWorkflowTest {
         coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
 
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
 
@@ -787,7 +938,7 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `preloadExitOffering without singleStepFallbackId does not set preloaded offering`() = runTest {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResult, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
 
@@ -800,7 +951,7 @@ class PaywallViewModelWorkflowTest {
         coEvery { purchases.awaitOfferings() } returns testOfferings
 
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferings, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
 
@@ -810,12 +961,12 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `preloadExitOffering not-found result is not re-attempted when same offerings are re-set`() = runTest {
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferings, null)
         vm.preloadExitOffering()
         assertThat(vm.preloadedExitOffering).isNull()
 
         // Simulate locale/colour/options refresh pushing the same workflow data again.
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferings, null)
 
         // Still null — carry-forward prevented a redundant lookup and a duplicate error log.
         assertThat(vm.preloadedExitOffering).isNull()
@@ -825,12 +976,12 @@ class PaywallViewModelWorkflowTest {
     fun `preloadExitOffering re-resolves when offerings are refreshed and now contain the exit offering`() = runTest {
         val vm = createVm()
         // First update: exit offering absent.
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferings, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferings, null)
         vm.preloadExitOffering()
         assertThat(vm.preloadedExitOffering).isNull()
 
         // Second update: fresh offerings that now include the exit offering.
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
 
         assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
@@ -845,7 +996,7 @@ class PaywallViewModelWorkflowTest {
                 receivedExitOffering = offering
             },
         )
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -868,7 +1019,7 @@ class PaywallViewModelWorkflowTest {
                 receivedExitOffering = offering
             },
         )
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
 
@@ -888,20 +1039,20 @@ class PaywallViewModelWorkflowTest {
 
         val vm = createVm()
         vm.preloadExitOffering()
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         advanceUntilIdle()
 
         assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
 
     @Test
-    fun `updateStateFromWorkflow with same workflow data reloads preloaded exit offering`() = runTest {
+    fun `startWorkflowPresentationFromResult with same workflow data reloads preloaded exit offering`() = runTest {
         val vm = createVm()
         vm.preloadExitOffering()
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
 
-        vm.updateStateFromWorkflow(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         assertThat(vm.preloadedExitOffering?.identifier).isEqualTo(exitOfferingId)
     }
 
@@ -910,7 +1061,7 @@ class PaywallViewModelWorkflowTest {
         coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
 
         val vm = createVm()
-        vm.updateStateFromWorkflow(fetchResultWithFallback, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(fetchResultWithFallback, testOfferingsWithExitOffer, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
 
@@ -922,7 +1073,7 @@ class PaywallViewModelWorkflowTest {
         coEvery { purchases.awaitOfferings() } returns testOfferingsWithExitOffer
 
         val vm = createVm()
-        vm.updateStateFromWorkflow(singleStepFetchResultWithExitOffer, testOfferingsWithExitOffer, null)
+        vm.startWorkflowPresentationFromResult(singleStepFetchResultWithExitOffer, testOfferingsWithExitOffer, null)
         vm.preloadExitOffering()
         advanceUntilIdle()
 
@@ -930,4 +1081,992 @@ class PaywallViewModelWorkflowTest {
     }
 
     // endregion exit offers
+
+    // region event tracking
+
+    @Test
+    fun `workflow load tracks StepStarted with start entryReason`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers {
+            captured.add(firstArg())
+        }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
+        assertThat(started).hasSize(1)
+        assertThat(started.first().workflowId).isEqualTo("wfl-test")
+        assertThat(started.first().stepId).isEqualTo("step-1")
+        assertThat(started.first().entryReason).isEqualTo("start")
+        assertThat(started.first().fromStepId).isNull()
+        assertThat(started.first().isFirstStep).isTrue
+        assertThat(started.first().isLastStep).isFalse
+        assertThat(started.first().traceId).isNotEmpty()
+    }
+
+    @Test
+    fun `color scheme rebuild during workflow does not track another StepStarted`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        val initialTraceId = captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId
+        captured.clear()
+
+        vm.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val navigationTraceIds = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct()
+        assertThat(navigationTraceIds).isEqualTo(listOf(initialTraceId))
+    }
+
+    @Test
+    fun `failed initial step after successful fallback cache build does not complete fallback step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val workflowWithFailingInitialAndSuccessfulFallback = PublishedWorkflow(
+            id = "wfl-failing-with-fallback",
+            displayName = "Failing with fallback",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to step1WithEmptyOffering, "step-2" to step2),
+            screens = mapOf(
+                "screen-empty-initial" to screenWithEmptyOffering2,
+                screenId2 to makeScreen(screenId2),
+            ),
+            uiConfig = UiConfig(),
+            metadata = emptyMap(),
+            singleStepFallbackId = "step-2",
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            WorkflowDataResult(workflowWithFailingInitialAndSuccessfulFallback, enrolledVariants = null),
+            testOfferingsWithEmpty,
+            null,
+        )
+
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
+        assertThat(vm.workflowState.value).isNull()
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Error::class.java)
+    }
+
+    @Test
+    fun `forward navigation fires StepCompleted for current step and StepStarted for next`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        captured.clear()
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        // Expect: StepCompleted(step-1, to=step-2), StepStarted(step-2, forward)
+        assertThat(workflowEvents).hasSize(2)
+        val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
+        assertThat(completed.stepId).isEqualTo("step-1")
+        assertThat(completed.toStepId).isEqualTo("step-2")
+        assertThat(completed.isFirstStep).isTrue
+        assertThat(completed.isLastStep).isFalse
+        val nextStarted = workflowEvents[1] as WorkflowEvent.StepStarted
+        assertThat(nextStarted.stepId).isEqualTo("step-2")
+        assertThat(nextStarted.entryReason).isEqualTo("forward")
+        assertThat(nextStarted.fromStepId).isEqualTo("step-1")
+        assertThat(nextStarted.isFirstStep).isFalse
+        assertThat(nextStarted.isLastStep).isTrue
+        assertThat(completed.traceId).isEqualTo(nextStarted.traceId)
+    }
+
+    @Test
+    fun `back navigation fires StepCompleted for current step and StepStarted for previous with back reason`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        captured.clear() // clear load + forward nav events
+
+        vm.handleBackNavigation()
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        assertThat(workflowEvents).hasSize(2)
+        val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
+        assertThat(completed.stepId).isEqualTo("step-2")
+        assertThat(completed.toStepId).isEqualTo("step-1")
+        assertThat(completed.isFirstStep).isFalse
+        assertThat(completed.isLastStep).isTrue
+        val started = workflowEvents[1] as WorkflowEvent.StepStarted
+        assertThat(started.stepId).isEqualTo("step-1")
+        assertThat(started.entryReason).isEqualTo("back")
+        assertThat(started.fromStepId).isEqualTo("step-2")
+        assertThat(started.isFirstStep).isTrue
+        assertThat(started.isLastStep).isFalse
+    }
+
+    @Test
+    fun `closePaywall during workflow fires StepCompleted with null toStepId`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        captured.clear() // clear load event
+
+        vm.closePaywall(result = null)
+
+        val completed = captured.filterIsInstance<WorkflowEvent.StepCompleted>().single()
+        assertThat(completed.stepId).isEqualTo("step-1")
+        assertThat(completed.toStepId).isNull()
+    }
+
+    @Test
+    fun `closePaywall without a purchase fires workflows Close for the current step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        captured.clear() // clear load event
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.workflowId).isEqualTo(workflow.id)
+        assertThat(close.stepId).isEqualTo("step-1")
+        assertThat(close.isFirstStep).isTrue
+        // step-1 has a trigger to step-2, so it is not the terminal step.
+        assertThat(close.isLastStep).isFalse
+    }
+
+    @Test
+    fun `closePaywall after navigating forward fires workflows Close for the non-initial step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        // Navigate step-1 → step-2 (the terminal step) and settle the transition.
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        captured.clear() // clear load + forward nav events
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.workflowId).isEqualTo(workflow.id)
+        assertThat(close.stepId).isEqualTo("step-2")
+        // step-2 is reached via a trigger and has none of its own, so it is the last (terminal) step.
+        assertThat(close.isFirstStep).isFalse
+        assertThat(close.isLastStep).isTrue
+    }
+
+    @Test
+    fun `closePaywall fires Close even on a non-paywall step that suppresses paywall events`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        // step-1 is a context (non-paywall) step: paywall_close is suppressed, but workflows_close
+        // is a workflow-level abandonment signal and must still fire.
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.CLOSE })
+            .isEmpty()
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.stepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `closePaywall clears workflowState`() {
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        assertThat(vm.workflowState.value).isNotNull()
+
+        vm.closePaywall(result = null)
+
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `impression after closePaywall reuse does not carry stale workflowId`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        vm.closePaywall(result = null)
+        captured.clear()
+
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+        assertThat(impressions.first().data.workflowId).isNull()
+    }
+
+    @Test
+    fun `impression after closePaywall from non-paywall step is not suppressed`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        // step-1 is a context (non-paywall) step, so currentWorkflowStepTracksPaywallEvents = false
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        vm.closePaywall(result = null)
+        captured.clear()
+
+        // After close, simulate the VM being reused: navigate to step-2 (paywall step) via a new
+        // workflow presentation and verify impression is tracked normally (not suppressed by stale state).
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+    }
+
+    @Test
+    fun `RevenueCat purchase completion during workflow fires StepCompleted with null toStepId`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
+        assertThat(completed).hasSize(1)
+        assertThat(completed[0].stepId).isEqualTo("step-1")
+        assertThat(completed[0].toStepId).isNull()
+    }
+
+    @Test
+    fun `closePaywall after a completed purchase does not fire workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        captured.clear()
+
+        // A close after the purchase completed is not an abandonment, so no workflows_close.
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+    }
+
+    @Test
+    fun `closePaywall after a successful restore does not fire workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+
+        // shouldDisplayBlock is null in createVm, so a successful REVENUECAT restore does NOT auto-dismiss
+        // and does NOT set purchaseCompleted: the paywall stays up and the user dismisses manually.
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+        captured.clear()
+
+        // Premise: the purchase-completed gate alone would not have suppressed Close here.
+        assertThat(vm.purchaseCompleted.value).isFalse
+
+        // A successful restore is a natural exit, not an abandonment, so no workflows_close.
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+        // The workflow was still live (StepCompleted fires on close), so Close was specifically
+        // suppressed by the restore flag, not because there was no current step to report.
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).hasSize(1)
+    }
+
+    @Test
+    fun `closePaywall after restore then a re-presentation refresh does not fire workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        // Successful restore with shouldDisplayBlock null: the paywall stays open, completion recorded.
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        // A refresh re-presents the SAME open session (e.g. updateOptions -> presentWorkflow ->
+        // startWorkflowPresentation). The user has NOT dismissed, so the restore completion must survive
+        // and still suppress workflows_close on the eventual manual dismiss.
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
+    }
+
+    @Test
+    fun `closePaywall on a new session after an earlier purchase-dismiss still fires workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        coEvery { purchases.awaitSyncPurchases() } returns mockk<CustomerInfo> {
+            every { activeSubscriptions } returns setOf()
+            every { nonSubscriptionTransactions } returns listOf()
+        }
+        val myAppPurchaseLogic = object : PaywallPurchaseLogic {
+            override suspend fun performPurchase(activity: Activity, params: PaywallPurchaseLogicParams) =
+                PurchaseLogicResult.Success
+            override suspend fun performRestore(customerInfo: CustomerInfo) = PurchaseLogicResult.Success
+        }
+
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {}).setPurchaseLogic(myAppPurchaseLogic).build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        // MY_APP purchase completes and auto-dismisses the paywall (closePaywall -> clearWorkflowState),
+        // which ends the session.
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        // The same ViewModel later presents a NEW workflow session. _purchaseCompleted stays true (sticky),
+        // but this session had no purchase, so abandoning it must still emit workflows_close.
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.stepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `closePaywall on a new session after a REVENUECAT purchase-dismiss still fires workflows Close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        // REVENUECAT purchase completes and dismisses via options.dismissRequest() (not closePaywall),
+        // which ends the session on an embedded ViewModel that is not destroyed.
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        // The same ViewModel later presents a NEW workflow session with no purchase, so abandoning it
+        // must still emit workflows_close (the completion must not stick past the dismiss).
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.closePaywall(result = null)
+
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.stepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `MY_APP purchase success during workflow fires StepCompleted with null toStepId`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        coEvery { purchases.awaitSyncPurchases() } returns mockk<CustomerInfo> {
+            every { activeSubscriptions } returns setOf()
+            every { nonSubscriptionTransactions } returns listOf()
+        }
+
+        val myAppPurchaseLogic = object : PaywallPurchaseLogic {
+            override suspend fun performPurchase(
+                activity: Activity,
+                params: PaywallPurchaseLogicParams,
+            ): PurchaseLogicResult = PurchaseLogicResult.Success
+
+            override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
+                PurchaseLogicResult.Success
+        }
+
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .setPurchaseLogic(myAppPurchaseLogic)
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
+        assertThat(completed).hasSize(1)
+        assertThat(completed[0].stepId).isEqualTo("step-1")
+        assertThat(completed[0].toStepId).isNull()
+    }
+
+    @Test
+    fun `RevenueCat restore dismiss during workflow fires StepCompleted with null toStepId`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = { false },
+            backgroundDispatcher = testDispatcher,
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        val completed = captured.filterIsInstance<WorkflowEvent.StepCompleted>()
+        assertThat(completed).hasSize(1)
+        assertThat(completed[0].stepId).isEqualTo("step-1")
+        assertThat(completed[0].toStepId).isNull()
+    }
+
+    @Test
+    fun `failed initial workflow load does not fire StepStarted`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResultFailingInitial, testOfferingsWithEmpty, null)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
+        assertThat(started).isEmpty()
+    }
+
+    @Test
+    fun `error during navigation clears workflow state and fires StepCompleted with null toStepId`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResultToError, testOfferingsWithEmpty, null)
+        captured.clear() // clear load event
+
+        // Navigate to step-3 — computeStateForStep returns Error since its offering has no packages
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        // StepCompleted for step-1 must be fired when _workflowState is cleared due to error
+        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>()
+        assertThat(completed).hasSize(1)
+        assertThat(completed[0].stepId).isEqualTo("step-1")
+        assertThat(completed[0].toStepId).isNull()
+    }
+
+    @Test
+    fun `all events within one impression share the same traceId, new impression gets a new one`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        val firstImpressionTraceId = captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct().single()
+
+        captured.clear()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        // The abandoned step's StepCompleted carries the old trace ID; the new StepStarted gets a fresh one.
+        val secondImpressionEvents = captured.filterIsInstance<WorkflowEvent>()
+        val abandoned = secondImpressionEvents.filterIsInstance<WorkflowEvent.StepCompleted>().single()
+        assertThat(abandoned.traceId).isEqualTo(firstImpressionTraceId)
+        val newStarted = secondImpressionEvents.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(newStarted.traceId).isNotEqualTo(firstImpressionTraceId)
+    }
+
+    @Test
+    fun `workflows Close carries the same traceId as the StepStarted from the same impression`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        val startedTraceId = captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId
+
+        vm.closePaywall(result = null)
+
+        // The abandonment Close belongs to the same impression, so it shares the load's trace ID.
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+        assertThat(close.traceId).isEqualTo(startedTraceId)
+        // And the whole impression (StepStarted, StepCompleted, Close) shares one trace ID.
+        assertThat(captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct())
+            .containsExactly(startedTraceId)
+    }
+
+    @Test
+    fun `re-presenting workflow while on step-2 fires StepCompleted for the abandoned step`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        captured.clear()
+
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        val completed = workflowEvents.filterIsInstance<WorkflowEvent.StepCompleted>().single()
+        assertThat(completed.stepId).isEqualTo("step-2")
+        assertThat(completed.toStepId).isNull()
+        val started = workflowEvents.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.stepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `first workflow presentation with no prior step does not fire a spurious StepCompleted`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        assertThat(captured.filterIsInstance<WorkflowEvent.StepCompleted>()).isEmpty()
+    }
+
+    @Test
+    fun `workflow impression event carries workflowId from loaded workflow`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).isNotEmpty()
+        assertThat(impressions.first().data.workflowId).isEqualTo(fetchResult.workflow.id)
+    }
+
+    @Test
+    fun `purchase initiated after same paywall workflow re-presentation carries current step metadata`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk(relaxed = true),
+        )
+        val vm = createVm()
+
+        // Both steps render the same screen, so the visual presentation fingerprint is identical
+        // across the re-presentation and the impression is de-duped. Only the workflow step id
+        // changes, which is exactly what withCurrentWorkflowMetadata must refresh on the
+        // already-tracked presentation data.
+        val sharedScreenSteps = mapOf(
+            "step-1" to step1.copy(screenId = screenId2),
+            "step-2" to step2.copy(screenId = screenId2),
+        )
+        val step1Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-1",
+                singleStepFallbackId = "step-1",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+        val step2Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-2",
+                singleStepFallbackId = "step-2",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+
+        vm.startWorkflowPresentationFromResult(step1Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        captured.clear()
+
+        vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        // Same visual fingerprint, so no new impression is emitted: this proves the de-dup branch
+        // (the one withCurrentWorkflowMetadata lives in) was taken, not a fresh re-creation.
+        assertThat(
+            captured.filterIsInstance<PaywallEvent>().none { it.type == PaywallEventType.IMPRESSION },
+        ).isTrue
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        val purchaseInitiated = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.PURCHASE_INITIATED }
+        assertThat(purchaseInitiated.data.workflowId).isEqualTo(step2Result.workflow.id)
+        assertThat(purchaseInitiated.data.stepId).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `exit offer after same paywall workflow re-presentation carries current step metadata`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val vm = createVm()
+
+        // Both steps render the same screen, so the visual presentation fingerprint is identical
+        // across the re-presentation and the impression is de-duped. Only the workflow step id
+        // changes, which is exactly what withCurrentWorkflowMetadata must refresh on the
+        // already-tracked presentation data.
+        val sharedScreenSteps = mapOf(
+            "step-1" to step1.copy(screenId = screenId2),
+            "step-2" to step2.copy(screenId = screenId2),
+        )
+        val step1Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-1",
+                singleStepFallbackId = "step-1",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+        val step2Result = WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-2",
+                singleStepFallbackId = "step-2",
+                steps = sharedScreenSteps,
+            ),
+            enrolledVariants = null,
+        )
+
+        vm.startWorkflowPresentationFromResult(step1Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        captured.clear()
+
+        vm.startWorkflowPresentationFromResult(step2Result, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+        // Same visual fingerprint, so no new impression is emitted: this proves the de-dup branch
+        // (the one withCurrentWorkflowMetadata lives in) was taken, not a fresh re-creation.
+        assertThat(
+            captured.filterIsInstance<PaywallEvent>().none { it.type == PaywallEventType.IMPRESSION },
+        ).isTrue
+        vm.trackExitOffer(ExitOfferType.DISMISS, exitOfferingIdentifier = "exit-offering-id")
+        advanceUntilIdle()
+
+        val exitOffer = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.EXIT_OFFER }
+        assertThat(exitOffer.data.workflowId).isEqualTo(step2Result.workflow.id)
+        assertThat(exitOffer.data.stepId).isEqualTo("step-2")
+    }
+
+    @Test
+    fun `packageless workflow steps do not emit paywall events`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val (result, offerings) = makeContextPackageWorkflow()
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(result, offerings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        val closes = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.CLOSE }
+        assertThat(impressions).hasSize(1)
+        assertThat(closes).isEmpty()
+
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleBackNavigation()
+        vm.trackPaywallImpressionIfNeeded()
+
+        val paywallEvents = captured.filterIsInstance<PaywallEvent>()
+        assertThat(paywallEvents.filter { it.type == PaywallEventType.IMPRESSION }).hasSize(1)
+        assertThat(paywallEvents.filter { it.type == PaywallEventType.CLOSE }).isEmpty()
+
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.IMPRESSION })
+            .hasSize(1)
+        assertThat(captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.CLOSE })
+            .isEmpty()
+    }
+
+    // endregion
+
+    // region purchase/restore callbacks
+
+    @Test
+    fun `onPurchaseStarted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val transaction = mockk<StoreTransaction>()
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(transaction, mockk(relaxed = true))
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verify { listener.onPurchaseStarted(TestData.Packages.monthly) }
+    }
+
+    @Test
+    fun `onPurchaseCompleted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val transaction = mockk<StoreTransaction>()
+        val customerInfo = mockk<CustomerInfo>(relaxed = true)
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(transaction, customerInfo)
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verifyOrder {
+            listener.onPurchaseStarted(TestData.Packages.monthly)
+            listener.onPurchaseCompleted(customerInfo, transaction)
+        }
+    }
+
+    @Test
+    fun `onPurchaseCancelled fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val cancelError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(cancelError)
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verify { listener.onPurchaseCancelled() }
+        verify(exactly = 0) { listener.onPurchaseError(any()) }
+    }
+
+    @Test
+    fun `onPurchaseError fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val purchaseError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(purchaseError)
+        val activity = mockk<Activity>()
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handlePackagePurchase(activity, TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        verify { listener.onPurchaseError(purchaseError) }
+        verify(exactly = 0) { listener.onPurchaseCancelled() }
+    }
+
+    @Test
+    fun `onRestoreStarted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        coEvery { purchases.awaitRestore() } returns mockk(relaxed = true)
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        verify { listener.onRestoreStarted() }
+    }
+
+    @Test
+    fun `onRestoreCompleted fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val customerInfo = mockk<CustomerInfo>(relaxed = true)
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreCompleted(customerInfo)
+        }
+    }
+
+    @Test
+    fun `onRestoreError fires from initial workflow step`() = runTest {
+        val listener = makeListener()
+        val restoreError = PurchasesError(PurchasesErrorCode.NetworkError)
+        coEvery { purchases.awaitRestore() } throws PurchasesException(restoreError)
+        val vm = createVm(listener = listener)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        verify { listener.onRestoreError(restoreError) }
+        verify(exactly = 0) { listener.onRestoreCompleted(any()) }
+    }
+
+    // endregion purchase/restore callbacks
+
+    // region screen_type paywall-event gating
+
+    private fun singleStepScreenTypeWorkflow(metadata: JsonObject?): WorkflowDataResult {
+        val step = WorkflowStep(
+            id = "step-only",
+            type = "screen",
+            screenId = screenId1,
+            triggers = emptyList(),
+            triggerActions = emptyMap(),
+            metadata = metadata,
+        )
+        return WorkflowDataResult(
+            workflow = workflow.copy(
+                initialStepId = "step-only",
+                steps = mapOf("step-only" to step),
+                screens = mapOf(screenId1 to makeScreen(screenId1)),
+                singleStepFallbackId = "step-only",
+            ),
+            enrolledVariants = null,
+        )
+    }
+
+    private fun List<FeatureEvent>.paywallEventsOfType(type: PaywallEventType) =
+        filterIsInstance<PaywallEvent>().filter { it.type == type }
+
+    @Test
+    fun `step tagged paywall reports impression and close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            singleStepScreenTypeWorkflow(screenTypeMetadata(WorkflowScreenType.PAYWALL)),
+            testOfferings,
+            null,
+        )
+        vm.trackPaywallImpressionIfNeeded()
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).hasSize(1)
+
+        vm.closePaywall(result = null)
+        assertThat(captured.paywallEventsOfType(PaywallEventType.CLOSE)).hasSize(1)
+    }
+
+    @Test
+    fun `step tagged non-paywall suppresses impression and close`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        // Empty screen_type means "explicitly not a paywall".
+        vm.startWorkflowPresentationFromResult(
+            singleStepScreenTypeWorkflow(screenTypeMetadata()),
+            testOfferings,
+            null,
+        )
+        vm.trackPaywallImpressionIfNeeded()
+        vm.closePaywall(result = null)
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+    }
+
+    @Test
+    fun `untagged fallback step reports impression to preserve behavior`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        // No metadata → stepScreenType is null (untagged / pre-rollout) → falls back to the structural
+        // inference `id == singleStepFallbackId`. Here the only step is the fallback, so it reports.
+        vm.startWorkflowPresentationFromResult(
+            singleStepScreenTypeWorkflow(metadata = null),
+            testOfferings,
+            null,
+        )
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).hasSize(1)
+    }
+
+    @Test
+    fun `untagged non-fallback step suppresses impression matching pre-rollout behavior`() = runTest {
+        // When no step carries screen_type (pre-rollout / legacy backend), gating falls back to the
+        // prior structural inference: only the singleStepFallbackId step reports. step-1 (initial) is
+        // NOT the fallback here (step-2 is), so it suppresses — matching the behavior on main before the
+        // screen_type rollout, rather than over-reporting on every step.
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        // Base workflow steps carry no screen_type; point the fallback at step-2 so step-1 is a
+        // non-fallback initial step.
+        val untaggedMultiStep = WorkflowDataResult(
+            workflow = workflow.copy(singleStepFallbackId = "step-2"),
+            enrolledVariants = null,
+        )
+        vm.startWorkflowPresentationFromResult(untaggedMultiStep, testOfferings, null)
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.paywallEventsOfType(PaywallEventType.IMPRESSION)).isEmpty()
+    }
+
+    // endregion
 }

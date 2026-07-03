@@ -6,12 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.workflows.WorkflowManager
 import io.mockk.clearAllMocks
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -192,53 +189,6 @@ class PurchasesFactoryTest {
     fun `shouldInitializeDiagnostics returns false when both diagnostics disabled and preview mode on`() {
         assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = true))
             .isFalse
-    }
-
-    // endregion
-
-    // region createWorkflowPreWarmer
-
-    @Test
-    fun `createWorkflowPreWarmer returns null when workflows endpoint is disabled`() {
-        val workflowManager = mockk<WorkflowManager>()
-
-        val workflowPreWarmer = PurchasesFactory.createWorkflowPreWarmer(
-            workflowManager = workflowManager,
-            useWorkflowsEndpoint = false,
-        )
-
-        assertThat(workflowPreWarmer).isNull()
-    }
-
-    @Test
-    fun `createWorkflowPreWarmer fetches workflow when workflows endpoint is enabled`() {
-        val workflowManager = mockk<WorkflowManager>()
-        every {
-            workflowManager.getWorkflow(
-                appUserID = "appUserID",
-                workflowId = "default",
-                appInBackground = true,
-                onSuccess = any(),
-                onError = any(),
-            )
-        } just runs
-
-        val workflowPreWarmer = PurchasesFactory.createWorkflowPreWarmer(
-            workflowManager = workflowManager,
-            useWorkflowsEndpoint = true,
-        )
-
-        workflowPreWarmer?.invoke("appUserID", "default", true)
-
-        verify(exactly = 1) {
-            workflowManager.getWorkflow(
-                appUserID = "appUserID",
-                workflowId = "default",
-                appInBackground = true,
-                onSuccess = any(),
-                onError = any(),
-            )
-        }
     }
 
     // endregion

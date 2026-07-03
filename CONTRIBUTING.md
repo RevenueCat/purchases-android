@@ -14,9 +14,9 @@ If you decide you want to help, that [you can do this!](https://github.com/Reven
 
 ## Environment Setup
 
-We use sdkman to specify the environment that should be used when developing. Install sdkman using  their 
-[official instructions](https://sdkman.io/install). Navigate to the root of this project and do `sdk env install`,
-which should install the specific Java version we expect you to use.
+We use [mise](https://mise.jdx.dev/) to manage the JDK. Install mise (`brew install mise`), enable shell
+activation (`mise activate`), then run `mise install` in the root of this project to install the specific Java
+version we expect you to use. (sdkman via `sdk env install` is also supported.)
 
 ```bash
 bundle exec fastlane setup_dev
