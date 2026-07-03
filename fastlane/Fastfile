@@ -266,7 +266,8 @@ platform :android do
     UI.verbose("Deploying #{version}")
     gradle(
       tasks: [
-        "publish --no-daemon --no-parallel"
+        # --no-build-cache: always build released artifacts fresh (see deploy_specific_package).
+        "publish --no-daemon --no-parallel --no-build-cache"
       ],
       properties: gradle_properties
     )
@@ -329,7 +330,9 @@ platform :android do
     command = module_to_deploy == nil ? "publish" : "#{module_to_deploy}:publish"
     gradle(
       tasks: [
-        "#{command} --no-daemon --no-parallel"
+        # --no-build-cache: always build released artifacts fresh, even though the
+        # build cache is enabled globally. Cheap insurance for an infrequent build.
+        "#{command} --no-daemon --no-parallel --no-build-cache"
       ],
       properties: gradle_properties
     )

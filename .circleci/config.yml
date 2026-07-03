@@ -30,13 +30,17 @@ aliases:
       tag: 2025.04.1
     environment:
       JVM_OPTS: -Xmx6g
-      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
+      # org.gradle.caching=false: the Gradle build cache stays on for local/worktree builds
+      # (gradle.properties) but is forced off in CI. See PR description for why.
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2 -Dorg.gradle.caching=false"
 
   android-machine-emulator: &android-machine-emulator
     executor:
       name: android/android_machine
       resource_class: xlarge
       tag: 2024.11.1
+    environment:
+      GRADLE_OPTS: "-Dorg.gradle.caching=false"
 
 version: 2.1
 orbs:
