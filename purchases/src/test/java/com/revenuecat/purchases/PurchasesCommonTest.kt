@@ -17,6 +17,7 @@ import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -2930,6 +2931,27 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         purchases.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
+        }
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded refreshes remote config`() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+        } answers { lambda<() -> Unit>().captured.invoke() }
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        } just Runs
+
+        purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(
+            object : SyncAttributesAndOfferingsCallback {
+                override fun onSuccess(offerings: Offerings) {}
+                override fun onError(error: PurchasesError) {}
+            },
+        )
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId)
         }
     }
 

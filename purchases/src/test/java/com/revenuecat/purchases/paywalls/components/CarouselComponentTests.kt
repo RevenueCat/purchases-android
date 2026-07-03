@@ -3,6 +3,8 @@ package com.revenuecat.purchases.paywalls.components
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -195,7 +197,10 @@ internal class CarouselComponentTests {
                               "components": []
                             }
                           ],
-                          "visible": false
+                          "visible": false,
+                          "state_updates": [
+                            { "set": "activeSlide", "to": "${'$'}value" }
+                          ]
                         }
                         """.trimIndent(),
                         expected = CarouselComponent(
@@ -291,7 +296,10 @@ internal class CarouselComponentTests {
                                 msTimePerPage = 1000,
                                 msTransitionTime = 500,
                                 transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
-                            )
+                            ),
+                            stateUpdates = listOf(
+                                StateUpdate.Set(key = "activeSlide", value = StateUpdateValue.PayloadReference),
+                            ),
                         )
                     ),
                 ),

@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.CarouselComponent.PageControl
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -70,6 +71,9 @@ public class CarouselComponent(
     public val overrides: List<ComponentOverride<PartialCarouselComponent>> = emptyList(),
     @get:JvmSynthetic
     public val name: String? = null,
+    @get:JvmSynthetic
+    @SerialName("state_updates")
+    public val stateUpdates: List<StateUpdate>? = null,
 ) : PaywallComponent {
 
     @Poko
