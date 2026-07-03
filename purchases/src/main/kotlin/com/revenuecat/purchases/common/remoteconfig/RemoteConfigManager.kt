@@ -219,6 +219,10 @@ internal class RemoteConfigManager(
 
     fun close() {
         scope.cancel()
+        synchronized(cacheLock) {
+            isRefreshing.set(false)
+            completeRefresh()
+        }
     }
 
     /**

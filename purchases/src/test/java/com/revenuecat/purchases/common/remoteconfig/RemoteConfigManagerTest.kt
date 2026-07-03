@@ -1064,6 +1064,25 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `close unblocks a body waiting on an in-flight refresh`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        var result: ByteArray? = byteArrayOf(1)
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+        }
+        assertThat(read.isActive).isTrue()
+
+        // SDK teardown unblocks the waiter, which re-reads the still-empty cache and gives up.
+        manager.close()
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `a 204 unblocks a body waiting on an in-flight refresh`() = runTest {
         every { diskCache.read() } returns null
         val manager = readManager()
