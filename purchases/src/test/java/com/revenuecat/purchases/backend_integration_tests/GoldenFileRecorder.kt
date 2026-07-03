@@ -122,6 +122,8 @@ class GoldenFileRecorder(
             "Accept-Ranges",
             "X-Cache",
             "Alt-Svc",
+            "X-Revenuecat-App-Id",
+            "x-revenuecat-app-id",
         )
 
         /**
@@ -140,6 +142,7 @@ class GoldenFileRecorder(
             "events > [app_session_id]",
             "events > [offering_id]",
             "events > [timestamp]",
+            "manifest",
         )
     }
 

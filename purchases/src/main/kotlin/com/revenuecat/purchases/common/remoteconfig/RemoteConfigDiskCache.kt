@@ -14,13 +14,12 @@ import java.io.IOException
  *
  * [manifest] is the **opaque** server token, stored verbatim and replayed on the next request; the SDK never
  * parses it. [activeTopics] is the last response's full active-topic-name set (used to detect removed topics).
- * [prefetchBlobs] is the last response's prefetch set (retention input + which blobs to fetch). [lastRefreshAt]
- * is the SDK's own wall-clock of the last sync attempt, used only for refresh cadence.
+ * [prefetchBlobs] is the last response's prefetch set (retention input + which blobs to fetch).
  *
- * The full topic bodies are intentionally **not** persisted: an item's payload lives either in the blob store
- * (addressed by its blob ref) or is projected into a purpose-built cache by its topic handler, so the only
- * topic state the sync needs to keep is which blobs each topic keeps alive for retention. [topicBlobRefs] holds
- * an empty list for inline-only topics.
+ * [topics] is the full per-topic item index — the configuration itself (each item's `blob_ref` plus its inline
+ * `content`), which is the **source of truth**: persisting it is the whole sync commit, and consumers read their
+ * topic metadata back from it. Only the heavy blob *bytes* live elsewhere (the content-addressed blob store,
+ * keyed by `blob_ref`); the index holds the small metadata map per topic (an empty map for inline-only topics).
  */
 @Serializable
 internal data class PersistedRemoteConfigurationState(
@@ -28,8 +27,7 @@ internal data class PersistedRemoteConfigurationState(
     val manifest: String,
     val activeTopics: List<String> = emptyList(),
     val prefetchBlobs: List<String> = emptyList(),
-    val topicBlobRefs: Map<String, List<String>> = emptyMap(),
-    val lastRefreshAt: Long = 0,
+    val topics: Map<String, ConfigTopic> = emptyMap(),
 )
 
 /**
@@ -60,8 +58,9 @@ internal class RemoteConfigDiskCache(
         }
     }
 
-    fun write(config: PersistedRemoteConfigurationState) {
-        try {
+    /** Returns `true` once the state is durably persisted, `false` if serialization or IO failed. */
+    fun write(config: PersistedRemoteConfigurationState): Boolean {
+        return try {
             val target = targetFile()
             target.parentFile?.let { parent ->
                 if (!parent.exists()) {
@@ -81,10 +80,25 @@ internal class RemoteConfigDiskCache(
                 atomicFile.failWrite(out)
                 throw e
             }
+            true
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist remote config to disk." }
+            false
         } catch (e: SerializationException) {
             errorLog(e) { "Failed to serialize remote config for disk persistence." }
+            false
+        }
+    }
+
+    /**
+     * Deletes the persisted state so the next sync starts fresh (no manifest -> full re-fetch). Used on identity
+     * change to keep configuration from bleeding across users.
+     */
+    fun clear() {
+        try {
+            AtomicFile(targetFile()).delete()
+        } catch (e: SecurityException) {
+            errorLog(e) { "Failed to clear remote config from disk." }
         }
     }
 

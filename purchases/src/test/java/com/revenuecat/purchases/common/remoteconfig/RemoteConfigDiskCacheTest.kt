@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -52,11 +54,12 @@ class RemoteConfigDiskCacheTest {
             manifest = "v1.1710000100.sources:etag1,product_entitlement_mapping:etag2",
             activeTopics = listOf("sources", "product_entitlement_mapping"),
             prefetchBlobs = listOf("blobRefA"),
-            topicBlobRefs = mapOf(
-                "sources" to listOf("blobRefA"),
-                "product_entitlement_mapping" to listOf("pemBlob"),
+            topics = mapOf(
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "blobRefA"))),
+                "product_entitlement_mapping" to ConfigTopic(
+                    mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
+                ),
             ),
-            lastRefreshAt = 1710000100L,
         )
 
         diskCache.write(config)
@@ -66,17 +69,49 @@ class RemoteConfigDiskCacheTest {
     }
 
     @Test
-    fun `inline-only topics persist with an empty blob ref list`() {
+    fun `write returns true on a successful persist`() {
+        val persisted = diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0."))
+
+        assertThat(persisted).isTrue
+    }
+
+    @Test
+    fun `a topic with inline-only items round-trips its content with no blob ref`() {
         val config = PersistedRemoteConfigurationState(
             domain = "app",
             manifest = "v1.1.sources:etag1",
             activeTopics = listOf("sources"),
-            topicBlobRefs = mapOf("sources" to emptyList()),
+            topics = mapOf(
+                "sources" to ConfigTopic(
+                    mapOf(
+                        "api" to RemoteConfiguration.ConfigItem(
+                            metadata = buildJsonObject { put("url", "https://api.revenuecat.com") },
+                        ),
+                    ),
+                ),
+            ),
         )
 
         diskCache.write(config)
 
-        assertThat(diskCache.read()?.topicBlobRefs).isEqualTo(mapOf("sources" to emptyList<String>()))
+        val read = diskCache.read()!!
+        assertThat(read.topics["sources"]!!["api"]!!.blobRef).isNull()
+        assertThat(read).isEqualTo(config)
+    }
+
+    @Test
+    fun `an old-format file with topicBlobRefs is read with empty topics and self-heals`() {
+        // The previous format stored "topicBlobRefs"; it is now "topics". With a string manifest the file still
+        // deserializes — the unknown key is ignored and topics defaults empty, so the next sync rebuilds the index.
+        val parent = File(File(testFolder, "RevenueCat"), "remote_config").apply { mkdirs() }
+        File(parent, "remote_config.json").writeText(
+            """{"domain":"app","manifest":"v1.1.sources:etag1","topicBlobRefs":{"sources":["a"]}}""",
+        )
+
+        val read = diskCache.read()
+        assertThat(read).isNotNull
+        assertThat(read!!.manifest).isEqualTo("v1.1.sources:etag1")
+        assertThat(read.topics).isEmpty()
     }
 
     @Test
@@ -106,6 +141,25 @@ class RemoteConfigDiskCacheTest {
         diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.2.sources:new"))
 
         assertThat(diskCache.read()?.manifest).isEqualTo("v1.2.sources:new")
+    }
+
+    @Test
+    fun `clear deletes the persisted state so read returns null`() {
+        diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.1.sources:etag1"))
+
+        diskCache.clear()
+
+        assertThat(diskCache.read()).isNull()
+        assertThat(
+            File(File(File(testFolder, "RevenueCat"), "remote_config"), "remote_config.json").exists(),
+        ).isFalse
+    }
+
+    @Test
+    fun `clear is a no-op when nothing has been persisted`() {
+        diskCache.clear()
+
+        assertThat(diskCache.read()).isNull()
     }
 
     @Test

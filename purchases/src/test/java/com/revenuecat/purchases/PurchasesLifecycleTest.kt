@@ -74,6 +74,19 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `onAppForegrounded refreshes remote config if stale`() {
+        mockOfferingsManagerAppForeground()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = appUserId,
+            )
+        }
+    }
+
+    @Test
     fun `don't force update of caches when app foregrounded not for the first time`() {
         every {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
@@ -130,6 +143,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), callback = any())
         }
+        verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfigIfStale(any(), any()) }
         verify(exactly = 0) { mockOfferingsManager.onAppForeground(any()) }
         verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any()) }
         verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }

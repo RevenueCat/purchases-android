@@ -1,5 +1,7 @@
 package com.revenuecat.purchases
 
+import java.util.Date
+
 /**
  * Reward payload carried by a verified reward-verification result.
  */
@@ -11,6 +13,14 @@ public sealed interface VerifiedReward {
     public data class VirtualCurrency(
         val code: String,
         val amount: Int,
+    ) : VerifiedReward
+
+    /**
+     * An entitlement reward.
+     */
+    public data class Entitlement(
+        val identifier: String,
+        val expiresAt: Date,
     ) : VerifiedReward
 
     /**

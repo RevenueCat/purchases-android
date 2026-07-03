@@ -1,15 +1,15 @@
-package com.revenuecat.purchases.admob.rewardverification
+package com.revenuecat.purchases.ads.rewardverification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationException
-import com.revenuecat.purchases.RewardVerificationResult as CoreRewardVerificationResult
+import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
-import com.revenuecat.purchases.admob.VerifiedReward
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
+import java.util.Date
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -17,8 +17,11 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@RunWith(RobolectricTestRunner::class)
 class PollerTest {
 
     private val recordedSleeps = mutableListOf<Double>()
@@ -27,13 +30,14 @@ class PollerTest {
     private val noSleep: suspend (Double) -> Unit = { recordedSleeps.add(it) }
     private val fixedJitter: () -> Double = { 1.0 }
 
-    // Captures the user-facing failure message (and its severity) logged for a failed poll.
+    // Captures the severity a failed poll logged at (warning vs error). The message text itself is a
+    // dev-facing log string and deliberately not asserted.
     private val recordedFailures = mutableListOf<RecordedFailure>()
-    private val captureFailure: (String, Boolean) -> Unit = { message, isError ->
-        recordedFailures.add(RecordedFailure(message, isError))
+    private val captureFailure: (String, Boolean) -> Unit = { _, isError ->
+        recordedFailures.add(RecordedFailure(isError))
     }
 
-    private data class RecordedFailure(val message: String, val isError: Boolean)
+    private data class RecordedFailure(val isError: Boolean)
 
     @Test
     fun `poll calls core status fetch with client transaction id`() = runBlocking {
@@ -43,7 +47,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = { clientTransactionId ->
                 receivedClientTransactionId = clientTransactionId
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -64,7 +68,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10))
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10))
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -76,6 +80,30 @@ class PollerTest {
     }
 
     @Test
+    fun `poll maps primary and more rewards including entitlement`() = runBlocking {
+        val expiresAt = Date(1_800_000_000_000L)
+
+        val result = Poller.poll(
+            clientTransactionId = "ct_1",
+            fetcher = {
+                RewardVerificationPollStatus.Verified(
+                    reward = CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 10),
+                    moreRewards = listOf(CoreVerifiedReward.Entitlement(identifier = "pro", expiresAt = expiresAt)),
+                )
+            },
+            sleepSeconds = noSleep,
+            jitterSeconds = fixedJitter,
+        )
+
+        assertFalse(result.failed)
+        assertEquals(VerifiedReward.VirtualCurrency(code = "gems", amount = 10), result.verifiedReward)
+        assertEquals(
+            listOf(VerifiedReward.Entitlement(identifier = "pro", expiresAt = expiresAt)),
+            result.moreRewards,
+        )
+    }
+
+    @Test
     fun `poll maps failed status to terminal failed outcome without retrying`() = runBlocking {
         var attempts = 0
         val backendMessage = "AdMob server-side reward verification is not enabled for this app."
@@ -84,7 +112,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.Failed(failureReason = "ssv_not_enabled", message = backendMessage)
+                RewardVerificationPollStatus.Failed(failureReason = "ssv_not_enabled", message = backendMessage)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -94,48 +122,8 @@ class PollerTest {
         assertEquals(1, attempts)
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
-        // Backend-rejected: the backend message is logged verbatim, at warning level.
-        assertEquals(listOf(RecordedFailure(backendMessage, isError = false)), recordedFailures)
-    }
-
-    @Test
-    fun `poll logs a fallback message when the backend rejects without a message`() = runBlocking {
-        val result = Poller.poll(
-            clientTransactionId = "ct_1",
-            fetcher = { CoreRewardVerificationResult.Failed() },
-            sleepSeconds = noSleep,
-            jitterSeconds = fixedJitter,
-            logFailure = captureFailure,
-        )
-
-        assertTrue(result.failed)
-        assertEquals(
-            listOf(RecordedFailure(RewardVerificationStrings.BACKEND_REJECTED_WITHOUT_MESSAGE, isError = false)),
-            recordedFailures,
-        )
-    }
-
-    @Test
-    fun `poll falls back to the failure reason when the backend rejects without a message`() = runBlocking {
-        val result = Poller.poll(
-            clientTransactionId = "ct_1",
-            fetcher = { CoreRewardVerificationResult.Failed(failureReason = "no_reward_rule") },
-            sleepSeconds = noSleep,
-            jitterSeconds = fixedJitter,
-            logFailure = captureFailure,
-        )
-
-        assertTrue(result.failed)
-        // No human-readable message, but the machine-readable reason is still surfaced in the log.
-        assertEquals(
-            listOf(
-                RecordedFailure(
-                    RewardVerificationStrings.backendRejectedWithReason("no_reward_rule"),
-                    isError = false,
-                ),
-            ),
-            recordedFailures,
-        )
+        // Backend-rejected is logged at warning level (not an SDK error).
+        assertEquals(listOf(RecordedFailure(isError = false)), recordedFailures)
     }
 
     @Test
@@ -147,9 +135,9 @@ class PollerTest {
             fetcher = {
                 attempts++
                 if (attempts < 3) {
-                    CoreRewardVerificationResult.PENDING
+                    RewardVerificationPollStatus.PENDING
                 } else {
-                    CoreRewardVerificationResult.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 5))
+                    RewardVerificationPollStatus.Verified(CoreVerifiedReward.VirtualCurrency(code = "gems", amount = 5))
                 }
             },
             sleepSeconds = noSleep,
@@ -171,7 +159,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.PENDING
+                RewardVerificationPollStatus.PENDING
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -183,11 +171,8 @@ class PollerTest {
         assertEquals(3, recordedSleeps.size)
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
-        // Exhausted while every read was still pending.
-        assertEquals(
-            listOf(RecordedFailure(RewardVerificationStrings.EXHAUSTED_WHILE_PENDING, isError = false)),
-            recordedFailures,
-        )
+        // Exhausted while every read was still pending: logged at warning level.
+        assertEquals(listOf(RecordedFailure(isError = false)), recordedFailures)
     }
 
     @Test
@@ -198,7 +183,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.UNKNOWN
+                RewardVerificationPollStatus.UNKNOWN
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -209,12 +194,8 @@ class PollerTest {
         assertEquals(3, attempts)
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
-        // An unknown status seen along the way is reported as unexpected_response (error level), not as a
-        // plain pending timeout.
-        assertEquals(
-            listOf(RecordedFailure(RewardVerificationStrings.UNEXPECTED_RESPONSE, isError = true)),
-            recordedFailures,
-        )
+        // An unknown status seen along the way is reported at error level, not as a plain pending timeout.
+        assertEquals(listOf(RecordedFailure(isError = true)), recordedFailures)
     }
 
     @Test
@@ -227,7 +208,7 @@ class PollerTest {
                 attempts++
                 // Unknown first, then transient errors until exhaustion: the unknown status wins.
                 if (attempts == 1) {
-                    CoreRewardVerificationResult.UNKNOWN
+                    RewardVerificationPollStatus.UNKNOWN
                 } else {
                     throw RewardVerificationException(
                         PurchasesError(PurchasesErrorCode.NetworkError),
@@ -242,10 +223,8 @@ class PollerTest {
         )
 
         assertTrue(result.failed)
-        assertEquals(
-            listOf(RecordedFailure(RewardVerificationStrings.UNEXPECTED_RESPONSE, isError = true)),
-            recordedFailures,
-        )
+        // Unknown status wins over transient exhaustion: logged at error level.
+        assertEquals(listOf(RecordedFailure(isError = true)), recordedFailures)
     }
 
     @Test
@@ -265,10 +244,8 @@ class PollerTest {
         )
 
         assertTrue(result.failed)
-        assertEquals(
-            listOf(RecordedFailure(RewardVerificationStrings.EXHAUSTED_WHILE_TRANSIENT_ERRORING, isError = false)),
-            recordedFailures,
-        )
+        // Repeated transient errors exhaust to a failure logged at warning level.
+        assertEquals(listOf(RecordedFailure(isError = false)), recordedFailures)
     }
 
     @Test
@@ -285,7 +262,7 @@ class PollerTest {
                         isServerError = false,
                     )
                 }
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -310,7 +287,7 @@ class PollerTest {
                         isServerError = true,
                     )
                 }
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -381,7 +358,7 @@ class PollerTest {
                         isServerError = true,
                     )
                 }
-                CoreRewardVerificationResult.Verified(CoreVerifiedReward.NoReward)
+                RewardVerificationPollStatus.Verified(CoreVerifiedReward.NoReward)
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
@@ -412,16 +389,8 @@ class PollerTest {
         assertEquals(1, attempts)
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
-        // Terminal error: the failing error description is threaded into the terminal-error message at error level.
-        assertEquals(
-            listOf(
-                RecordedFailure(
-                    RewardVerificationStrings.terminalError(PurchasesErrorCode.InvalidCredentialsError.description),
-                    isError = true,
-                ),
-            ),
-            recordedFailures,
-        )
+        // A terminal (non-transient) error fails immediately and is logged at error level.
+        assertEquals(listOf(RecordedFailure(isError = true)), recordedFailures)
     }
 
     @Test
@@ -442,10 +411,8 @@ class PollerTest {
         assertEquals(1, attempts)
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
-        assertEquals(
-            listOf(RecordedFailure(RewardVerificationStrings.terminalError("backend exploded"), isError = true)),
-            recordedFailures,
-        )
+        // An unexpected (non-PurchasesException) throw fails immediately and is logged at error level.
+        assertEquals(listOf(RecordedFailure(isError = true)), recordedFailures)
     }
 
     @Test
@@ -456,7 +423,7 @@ class PollerTest {
             clientTransactionId = "ct_1",
             fetcher = {
                 attempts++
-                CoreRewardVerificationResult.PENDING
+                RewardVerificationPollStatus.PENDING
             },
             sleepSeconds = { throw IllegalStateException("scheduler down") },
             jitterSeconds = fixedJitter,
@@ -468,9 +435,7 @@ class PollerTest {
         assertTrue(result.failed)
         assertNull(result.verifiedReward)
         // A backoff scheduling failure ends the poll as a terminal error at error level.
-        val failure = recordedFailures.single()
-        assertTrue(failure.isError)
-        assertTrue(failure.message.contains("unrecoverable error"))
+        assertTrue(recordedFailures.single().isError)
     }
 
     @Test
@@ -493,7 +458,7 @@ class PollerTest {
         try {
             Poller.poll(
                 clientTransactionId = "ct_1",
-                fetcher = { CoreRewardVerificationResult.PENDING },
+                fetcher = { RewardVerificationPollStatus.PENDING },
                 sleepSeconds = { throw CancellationException("cancelled") },
                 jitterSeconds = fixedJitter,
             )

@@ -4,16 +4,22 @@ package com.revenuecat.purchases
  * Result of a single reward verification status request.
  */
 @InternalRevenueCatAPI
-public sealed interface RewardVerificationResult {
+public sealed interface RewardVerificationPollStatus {
     /**
      * Verified by the backend with the associated reward payload.
+     *
+     * @param reward The primary granted reward.
+     * @param moreRewards Additional granted rewards; does not repeat [reward].
      */
-    public data class Verified(val reward: VerifiedReward) : RewardVerificationResult
+    public data class Verified(
+        val reward: VerifiedReward,
+        val moreRewards: List<VerifiedReward> = emptyList(),
+    ) : RewardVerificationPollStatus
 
     /**
      * Verification has started but has not yet reached a terminal state.
      */
-    public object PENDING : RewardVerificationResult
+    public object PENDING : RewardVerificationPollStatus
 
     /**
      * Verification reached a terminal failure state.
@@ -24,10 +30,10 @@ public sealed interface RewardVerificationResult {
     public data class Failed(
         val failureReason: String? = null,
         val message: String? = null,
-    ) : RewardVerificationResult
+    ) : RewardVerificationPollStatus
 
     /**
      * The backend returned a status value that is not recognized by this SDK version.
      */
-    public object UNKNOWN : RewardVerificationResult
+    public object UNKNOWN : RewardVerificationPollStatus
 }

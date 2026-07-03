@@ -1,30 +1,17 @@
 package com.revenuecat.purchases.admob
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import dev.drewhamilton.poko.Poko
 
 /**
- * Reward payload delivered when server-side reward verification succeeds.
+ * Moved to [com.revenuecat.purchases.ads.rewardverification.VerifiedReward].
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
-public interface VerifiedReward {
-
-    /**
-     * A virtual-currency reward with a code and amount.
-     */
-    @Poko
-    public class VirtualCurrency(
-        public val code: String,
-        public val amount: Int,
-    ) : VerifiedReward
-
-    /**
-     * Verification succeeded but no reward was granted.
-     */
-    public object NoReward : VerifiedReward
-
-    /**
-     * Verification succeeded but the reward type is not modeled by this SDK version.
-     */
-    public object UnsupportedReward : VerifiedReward
-}
+@Deprecated(
+    "Moved to com.revenuecat.purchases.ads.rewardverification.VerifiedReward",
+    ReplaceWith(
+        "VerifiedReward",
+        "com.revenuecat.purchases.ads.rewardverification.VerifiedReward",
+    ),
+)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+public typealias VerifiedReward =
+    com.revenuecat.purchases.ads.rewardverification.VerifiedReward

@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases
 
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.CustomerInfoFactory
@@ -55,10 +56,20 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult as PollResult
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
+import java.util.Date
 import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.net.URL
 import java.util.Locale
@@ -664,6 +675,28 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `login successful with new appUserID refreshes remote config`() {
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID)
+        }
+    }
+
+    @Test
     fun `logout called with identified user makes right calls`() {
         val appUserID = "fakeUserID"
         every {
@@ -689,6 +722,22 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         verify(exactly = 1) {
             mockBackupManager.dataChanged()
+        }
+    }
+
+    @Test
+    fun `logout refreshes remote config`() {
+        val appUserID = "fakeUserID"
+        every {
+            mockCache.cleanupOldAttributionData()
+        } just Runs
+        mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
+
+        purchases.logOut()
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserID)
         }
     }
 
@@ -1885,7 +1934,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getRewardVerificationResult returns result from backend on success`() {
-        val expectedResult = RewardVerificationResult.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10))
+        val expectedResult = RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10))
         every {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
@@ -1894,14 +1943,14 @@ internal class PurchasesTest : BasePurchasesTest() {
                 onError = any(),
             )
         } answers {
-            lambda<(RewardVerificationResult) -> Unit>().captured.invoke(expectedResult)
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(expectedResult)
         }
 
-        var receivedResult: RewardVerificationResult? = null
+        var receivedResult: RewardVerificationPollStatus? = null
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
             callback = object : GetRewardVerificationResultCallback {
-                override fun onReceived(result: RewardVerificationResult) {
+                override fun onReceived(result: RewardVerificationPollStatus) {
                     receivedResult = result
                 }
 
@@ -1914,6 +1963,186 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(receivedResult).isEqualTo(expectedResult)
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `generateRewardVerificationToken builds custom data with impression id and unique transaction id`() {
+        val token = purchases.generateRewardVerificationToken(impressionId = "imp-1")
+
+        val payload = JSONObject(token.customData)
+        assertThat(payload.getString("api_key")).isEqualTo(purchases.purchasesOrchestrator.currentConfiguration.apiKey)
+        assertThat(payload.getString("client_transaction_id")).isEqualTo(token.clientTransactionId)
+        assertThat(payload.getString("impression_id")).isEqualTo("imp-1")
+        assertThat(token.clientTransactionId).isNotBlank()
+        assertThat(token.appUserID).isEqualTo(appUserId)
+
+        // Each call mints a distinct client transaction id so concurrent verifications don't collide.
+        assertThat(purchases.generateRewardVerificationToken(impressionId = "imp-1").clientTransactionId)
+            .isNotEqualTo(token.clientTransactionId)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification invalidates virtual currencies cache on verified virtual currency reward`() {
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = { PollResult.verified(PollReward.VirtualCurrency(code = "gems", amount = 5)) },
+            )
+        }
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "gems", amount = 5))
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification does not invalidate virtual currencies cache on non virtual currency reward`() {
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = { PollResult.verified(PollReward.NoReward) },
+            )
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_2",
+                poll = { PollResult.failed },
+            )
+        }
+
+        verify(exactly = 0) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitPollRewardVerification polls the backend and returns the verified reward`() = runTest {
+        mockVerifiedVirtualCurrencyRewardBackend()
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        val result = purchases.awaitPollRewardVerification("ct_1")
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `reward verification poll launcher delivers the result to the callback`() {
+        val launcher = RewardVerificationPollLauncher(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+        val expected = PollResult.verified(PollReward.VirtualCurrency(code = "coins", amount = 10))
+
+        var delivered: PollResult? = null
+        launcher.launch(poll = { expected }, onCompleted = { delivered = it })
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(delivered?.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `closing the reward verification poll launcher cancels an in-flight poll`() {
+        val launcher = RewardVerificationPollLauncher(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+        val gate = CompletableDeferred<PollResult>()
+
+        var delivered: PollResult? = null
+        launcher.launch(poll = { gate.await() }, onCompleted = { delivered = it })
+
+        launcher.close()
+        gate.complete(PollResult.verified(PollReward.VirtualCurrency(code = "coins", amount = 10)))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(delivered).isNull()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification invalidates virtual currencies cache for a reward in moreRewards`() {
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = {
+                    PollResult.verified(
+                        reward = PollReward.NoReward,
+                        moreRewards = listOf(PollReward.VirtualCurrency(code = "gems", amount = 5)),
+                    )
+                },
+            )
+        }
+
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification refreshes customer info on verified entitlement reward`() {
+        mockCustomerInfoHelper()
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = {
+                    PollResult.verified(
+                        PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                    )
+                },
+            )
+        }
+
+        assertThat(result.failed).isFalse
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                CacheFetchPolicy.FETCH_CURRENT,
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification returns failed when entitlement customer info refresh fails`() {
+        mockCustomerInfoHelper(
+            errorGettingCustomerInfo = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"),
+        )
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                poll = {
+                    PollResult.verified(
+                        PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                    )
+                },
+            )
+        }
+
+        assertThat(result.failed).isTrue
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun mockVerifiedVirtualCurrencyRewardBackend() {
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
+                RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+            )
+        }
+    }
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getRewardVerificationResult returns error from backend on error`() {
@@ -1935,7 +2164,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.getRewardVerificationResult(
             clientTransactionId = "ct_1",
             callback = object : GetRewardVerificationResultCallback {
-                override fun onReceived(result: RewardVerificationResult) {
+                override fun onReceived(result: RewardVerificationPollStatus) {
                     fail("should be error")
                 }
 
@@ -1951,7 +2180,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `awaitGetRewardVerificationResult returns backend result`() = runTest {
-        val expectedResult = RewardVerificationResult.PENDING
+        val expectedResult = RewardVerificationPollStatus.PENDING
         every {
             mockBackend.getRewardVerificationResult(
                 appUserID = appUserId,
@@ -1960,7 +2189,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 onError = any(),
             )
         } answers {
-            lambda<(RewardVerificationResult) -> Unit>().captured.invoke(expectedResult)
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(expectedResult)
         }
 
         val result = purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")

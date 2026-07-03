@@ -48,6 +48,10 @@ public class PaywallComponentsData(
     @get:JvmSynthetic
     @SerialName("automatically_scale_font_size")
     public val automaticallyScaleFontSize: Boolean = true,
+    @get:JvmSynthetic
+    @Serializable(with = StateDeclarationMapSerializer::class)
+    @SerialName("state_declarations")
+    public val stateDeclarations: Map<String, StateDeclaration>? = null,
 )
 
 @OptIn(InternalRevenueCatAPI::class)

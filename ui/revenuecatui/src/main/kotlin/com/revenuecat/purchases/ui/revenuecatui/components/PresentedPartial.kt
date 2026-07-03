@@ -147,6 +147,8 @@ private fun ComponentOverride.Condition.evaluate(
     is ComponentOverride.Condition.PromoOfferRule -> evaluate(offerEligibility)
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
+    // State condition evaluation lands in a later phase; until then it never applies its override.
+    is ComponentOverride.Condition.State -> false
     ComponentOverride.Condition.Unsupported -> false
 }
 

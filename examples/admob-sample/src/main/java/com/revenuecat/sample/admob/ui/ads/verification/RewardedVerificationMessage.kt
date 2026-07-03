@@ -1,8 +1,8 @@
 package com.revenuecat.sample.admob.ui.ads.verification
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.RewardVerificationResult
-import com.revenuecat.purchases.admob.VerifiedReward
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 
 /**
  * Status message surfaced in the sample UI while loading, showing and verifying a rewarded ad.
@@ -42,7 +42,12 @@ internal data class RewardedVerificationMessage(
             return when (val reward = result.verifiedReward) {
                 is VerifiedReward.VirtualCurrency ->
                     RewardedVerificationMessage(
-                        "✅ Verified\n🎁 Reward granted: ${reward.amount} ${reward.code}",
+                        "✅ Verified\n🎁 Currency granted: ${reward.amount} ${reward.code}",
+                        Severity.SUCCESS,
+                    )
+                is VerifiedReward.Entitlement ->
+                    RewardedVerificationMessage(
+                        text = "✅ Verified\n🎁 Entitlement granted: ${reward.identifier}",
                         Severity.SUCCESS,
                     )
                 VerifiedReward.NoReward ->

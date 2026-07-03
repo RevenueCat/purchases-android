@@ -481,10 +481,11 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->access$
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->access$updateStateFromOffering(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;Lcom/revenuecat/purchases/ui/revenuecatui/OfferingSelection;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->calculateState(Lcom/revenuecat/purchases/Offering;Landroidx/compose/material3/ColorScheme;Ljava/lang/String;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallMode;)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->cancelStateUpdate()V
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->clearWorkflowState()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->closePaywall(Lcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallResult;)V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->computePresentationFingerprint()Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$PaywallPresentationFingerprint;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->createEventData()Lcom/revenuecat/purchases/paywalls/events/PaywallEvent$Data;
-HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->createEventData(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;)Lcom/revenuecat/purchases/paywalls/events/PaywallEvent$Data;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->createEventData(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;Ljava/lang/String;Ljava/lang/String;)Lcom/revenuecat/purchases/paywalls/events/PaywallEvent$Data;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getActionError()Landroidx/compose/runtime/State;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getActionInProgress()Landroidx/compose/runtime/State;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getCurrentLocaleList()Landroidx/core/os/LocaleListCompat;
@@ -496,13 +497,14 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getShou
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->getState()Lkotlinx/coroutines/flow/StateFlow;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->handleBackNavigation()Z
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->preloadExitOffering()V
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->presentInjectedWorkflowIfNeeded(Lcom/revenuecat/purchases/ui/revenuecatui/OfferingSelection;)Z
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->presentationFingerprintLegacy(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallMode;Landroidx/core/os/LocaleListCompat;Z)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$PaywallPresentationFingerprint;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->refreshStateIfColorsChanged(Landroidx/compose/material3/ColorScheme;Z)V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->refreshStateIfLocaleChanged()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->resolveIfNeeded(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$ExitOfferData;)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$ExitOfferData;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->resolveOfferingSelection(Lcom/revenuecat/purchases/ui/revenuecatui/OfferingSelection;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->startWorkflowPresentationIfNeeded(Lcom/revenuecat/purchases/ui/revenuecatui/OfferingSelection;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->track(Lcom/revenuecat/purchases/paywalls/events/PaywallEventType;)V
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->trackCurrentWorkflowAbandoned()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->trackCurrentWorkflowStepCompleted()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->trackPaywallClose()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->trackPaywallImpressionIfNeeded()V
@@ -535,8 +537,6 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$ResolvedO
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$ResolvedOfferingSelection;->getSelectedOffering()Lcom/revenuecat/purchases/Offering;
 Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$resolveOfferingSelection$1;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$resolveOfferingSelection$1;-><init>(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;Lkotlin/coroutines/Continuation;)V
-Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$startWorkflowPresentationIfNeeded$1;
-HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$startWorkflowPresentationIfNeeded$1;-><init>(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;Lkotlin/coroutines/Continuation;)V
 Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$updateState$1;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$updateState$1;-><init>(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;Lkotlin/coroutines/Continuation;)V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl$updateState$1;->create(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
@@ -812,3 +812,4 @@ Lcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$HeaderImage$1$1$
 HSPLcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$HeaderImage$1$1$2$1;-><init>(I)V
 Lcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$Template1MainContent$2;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$Template1MainContent$2;-><init>(Landroidx/compose/foundation/layout/ColumnScope;Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;I)V
+Lcom/revenuecat/purchases/ui/revenuecatui/workflow/WorkflowNavigator;

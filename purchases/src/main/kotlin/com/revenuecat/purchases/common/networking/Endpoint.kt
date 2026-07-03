@@ -105,11 +105,15 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
 
-    object GetRemoteConfig : Endpoint(
-        pathTemplate = "/v1/config",
+    data class GetRemoteConfig(val domain: String) : Endpoint(
+        pathTemplate = "/v1/config/%s",
         name = "remote_config",
+        fallbackPath = "/v1/config/%s",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate
+        override fun getPath(useFallback: Boolean): String {
+            val template = if (useFallback && fallbackPath != null) fallbackPath else pathTemplate
+            return template.format(Uri.encode(domain))
+        }
         override val expectsRCFormatResponse: Boolean = true
     }
     object PostCreateSupportTicket : Endpoint(
@@ -161,7 +165,7 @@ internal sealed class Endpoint(
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
             is GetRewardVerification,
-            GetRemoteConfig,
+            is GetRemoteConfig,
             ->
                 true
             is GetAmazonReceipt,
@@ -184,6 +188,7 @@ internal sealed class Endpoint(
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
             is GetRewardVerification,
+            is GetRemoteConfig,
             ->
                 true
             is GetAmazonReceipt,
@@ -198,8 +203,6 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
-            // WIP: Move to true when we have the final endpoint for remote config, and we can remove the fallback
-            GetRemoteConfig,
             ->
                 false
         }
