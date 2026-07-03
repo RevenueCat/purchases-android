@@ -85,7 +85,7 @@ class RemoteConfigDiskCacheTest {
                 "sources" to ConfigTopic(
                     mapOf(
                         "api" to RemoteConfiguration.ConfigItem(
-                            content = buildJsonObject { put("url", "https://api.revenuecat.com") },
+                            metadata = buildJsonObject { put("url", "https://api.revenuecat.com") },
                         ),
                     ),
                 ),

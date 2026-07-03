@@ -152,7 +152,7 @@ internal class DefaultRemoteConfigSourceProvider(
      * a rebuild happened. Callers must hold [lock].
      */
     private fun rebuildIfChanged(): Boolean {
-        val topic = topicStore.topic(SOURCES_TOPIC)
+        val topic = topicStore.topic(RemoteConfigTopic.Sources)
         if (topic?.contentHash == builtHash) return false
         rebuild(topic)
         return true
@@ -179,7 +179,6 @@ internal class DefaultRemoteConfigSourceProvider(
     }
 
     private companion object {
-        private const val SOURCES_TOPIC = "sources"
         private const val API_ITEM = "api"
         private const val BLOB_ITEM = "blob"
         private const val SOURCES_KEY = "sources"
@@ -215,7 +214,7 @@ internal class DefaultRemoteConfigSourceProvider(
          * entry's url from [urlKey] (`url` for api, `url_format` for blob). Malformed entries are skipped.
          */
         fun parseSources(topic: ConfigTopic?, itemKey: String, urlKey: String): List<RemoteConfigSource> {
-            val entries = topic?.get(itemKey)?.content?.get(SOURCES_KEY) as? JsonArray ?: return emptyList()
+            val entries = topic?.get(itemKey)?.metadata?.get(SOURCES_KEY) as? JsonArray ?: return emptyList()
             return entries.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
                 val url = obj.string(urlKey) ?: return@mapNotNull null

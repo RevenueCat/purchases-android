@@ -135,11 +135,11 @@ class RemoteConfigurationTest {
         val item = response.topics.getValue("sources").getValue("blob")
         assertThat(item.blobRef).isEqualTo("sourcesBlob")
         assertThat(item.prefetch).isTrue
-        // Non-reserved keys are kept in content (not dropped).
-        assertThat(item.content["future_field"]?.jsonPrimitive?.content).isEqualTo("kept")
-        // Reserved keys are not duplicated into content.
-        assertThat(item.content).doesNotContainKey("blob_ref")
-        assertThat(item.content).doesNotContainKey("prefetch")
+        // Non-reserved keys are kept in metadata (not dropped).
+        assertThat(item.metadata["future_field"]?.jsonPrimitive?.content).isEqualTo("kept")
+        // Reserved keys are not duplicated into metadata.
+        assertThat(item.metadata).doesNotContainKey("blob_ref")
+        assertThat(item.metadata).doesNotContainKey("prefetch")
     }
 
     @Test
@@ -163,10 +163,10 @@ class RemoteConfigurationTest {
         val item = response.topics.getValue("sources").getValue("api")
         assertThat(item.blobRef).isNull()
         assertThat(item.prefetch).isFalse
-        assertThat(item.content["id"]?.jsonPrimitive?.content).isEqualTo("primary")
-        assertThat(item.content["url"]?.jsonPrimitive?.content).isEqualTo("https://api.revenuecat.com")
-        assertThat(item.content["priority"]?.jsonPrimitive?.int).isEqualTo(100)
-        assertThat(item.content["weight"]?.jsonPrimitive?.int).isEqualTo(100)
+        assertThat(item.metadata["id"]?.jsonPrimitive?.content).isEqualTo("primary")
+        assertThat(item.metadata["url"]?.jsonPrimitive?.content).isEqualTo("https://api.revenuecat.com")
+        assertThat(item.metadata["priority"]?.jsonPrimitive?.int).isEqualTo(100)
+        assertThat(item.metadata["weight"]?.jsonPrimitive?.int).isEqualTo(100)
     }
 
     @Test

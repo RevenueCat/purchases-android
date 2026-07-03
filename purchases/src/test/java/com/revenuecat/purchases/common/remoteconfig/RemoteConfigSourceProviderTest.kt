@@ -500,7 +500,7 @@ class RemoteConfigSourceProviderTest {
     /** Builds a `sources` ConfigTopic matching the backend shape: api entries use `url`, blob use `url_format`. */
     private fun sourcesTopic(api: List<RemoteConfigSource>, blob: List<RemoteConfigSource>): ConfigTopic {
         fun item(sources: List<RemoteConfigSource>, urlKey: String) = RemoteConfiguration.ConfigItem(
-            content = buildJsonObject {
+            metadata = buildJsonObject {
                 putJsonArray("sources") {
                     sources.forEach { s ->
                         addJsonObject {
@@ -516,7 +516,8 @@ class RemoteConfigSourceProviderTest {
     }
 
     private class FakeTopicStore(var sources: ConfigTopic?) : RemoteConfigTopicStore {
-        override fun topic(name: String): ConfigTopic? = if (name == "sources") sources else null
+        override fun topic(topic: RemoteConfigTopic): ConfigTopic? =
+            if (topic == RemoteConfigTopic.Sources) sources else null
     }
 
     private fun runConcurrently(iterations: Int, block: () -> Unit) {
