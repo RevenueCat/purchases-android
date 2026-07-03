@@ -160,6 +160,18 @@ class FileHelperTest {
         assertThat(receivedValues).isEqualTo(listOf("first line", "second line"))
     }
 
+    @Test
+    fun `readFilePerLines does not throw when file is deleted after fileIsEmpty check (TOCTOU race)`() {
+        // Simulate the race: call readFilePerLines on a path that has never existed (or was
+        // deleted between a fileIsEmpty() check and the open). The block must not be called
+        // and no exception must propagate.
+        val receivedValues = mutableListOf<String>()
+        fileHelper.readFilePerLines("RevenueCat/nonexistent_file.txt") { sequence ->
+            sequence.forEach { receivedValues.add(it) }
+        }
+        assertThat(receivedValues).isEmpty()
+    }
+
     private fun verifyFileDoesNotExist() {
         val file = File(testFolder, testFilePath)
         if (file.exists()) {
