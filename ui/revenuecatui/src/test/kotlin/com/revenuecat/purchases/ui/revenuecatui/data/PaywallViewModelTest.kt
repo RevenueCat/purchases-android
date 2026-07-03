@@ -234,6 +234,7 @@ class PaywallViewModelTest {
         every { purchases.preferredUILocaleOverride } returns null
         every { purchases.useWorkflows } returns false
         coEvery { purchases.workflowIdForOfferingId(any()) } returns null
+        coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -3074,7 +3075,7 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .injectedWorkflow(WorkflowDataResult(workflow, null), defaultOffering)
+                .injectedWorkflow(WorkflowDataResult(workflow, null), defaultOffering, UiConfig())
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -3247,6 +3248,57 @@ class PaywallViewModelTest {
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(offeringWithWPL.identifier) }
+    }
+
+    @Test
+    fun `when useWorkflows is true and the ui config fetch fails, falls back to the offerings-provided paywall`() {
+        // The ui_config leg of the parallel fetch can fail independently of the workflow leg. With the
+        // offering carrying the paywall /offerings delivered, the paywall renders through the regular
+        // components path instead of erroring.
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns null
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val workflow = PublishedWorkflow(
+            id = "wfl-ui-config-fails",
+            displayName = "Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to stepOne),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetUiConfig() } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.UnknownError, "UI config is unavailable from remote config."),
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetUiConfig() }
     }
 
     @Test

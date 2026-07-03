@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.utils
 
+import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.NoOpLogHandler
 import com.revenuecat.purchases.UiConfig
@@ -46,24 +47,35 @@ class WorkflowAssetPreDownloaderTest {
     }
 
     @Test
-    fun `preDownloadWorkflowAssets downloads screen images`() {
+    fun `preDownloadWorkflowAssets downloads screen images and workflow fonts`() {
         val screenConfig = mockk<PaywallComponentsConfig>()
         val localizations = mapOf(
             LocaleId("en_US") to mapOf(
                 LocalizationKey("title") to LocalizationData.Text("Title"),
             ),
         )
+        val font = UiConfig.AppConfig.FontsConfig(
+            android = UiConfig.AppConfig.FontsConfig.FontInfo.GoogleFonts("Roboto"),
+        )
         val workflow = createWorkflow(
             screens = mapOf(
                 "screen_1" to createScreen(screenConfig, localizations),
             ),
         )
+        val uiConfig = UiConfig(
+            app = UiConfig.AppConfig(
+                fonts = mapOf(FontAlias("font_1") to font),
+            ),
+        )
 
-        preDownloader.preDownloadWorkflowAssets(workflow)
+        preDownloader.preDownloadWorkflowAssets(workflow, uiConfig)
 
+        val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
             imagePreDownloader.preDownloadImages(screenConfig)
+            fontPreDownloader.preDownloadFontsIfNeeded(capture(fontsSlot))
         }
+        assertThat(fontsSlot.captured).containsExactly(font)
     }
 
     @Test
@@ -73,8 +85,8 @@ class WorkflowAssetPreDownloaderTest {
             screens = mapOf("screen_1" to createScreen(screenConfig)),
         )
 
-        preDownloader.preDownloadWorkflowAssets(workflow)
-        preDownloader.preDownloadWorkflowAssets(workflow)
+        preDownloader.preDownloadWorkflowAssets(workflow, UiConfig())
+        preDownloader.preDownloadWorkflowAssets(workflow, UiConfig())
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
