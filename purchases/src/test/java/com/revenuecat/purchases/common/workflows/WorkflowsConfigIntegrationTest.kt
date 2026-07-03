@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.UiConfigProvider
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.utils.UrlConnection
@@ -30,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -133,18 +135,13 @@ class WorkflowsConfigIntegrationTest {
     }
 
     @Test
-    fun `getWorkflow assembles ui_config from its own topic's three inline parts`() = runTest(testDispatcher) {
-        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+    fun `UiConfigProvider assembles ui_config from its own topic's three inline parts`() = runTest(testDispatcher) {
         val config = """
             {
               "domain": "app",
               "manifest": "v1.workflows:etag1",
-              "active_topics": ["workflows", "ui_config"],
-              "prefetch_blobs": ["$INLINE_REF"],
+              "active_topics": ["ui_config"],
               "topics": {
-                "workflows": {
-                  "wf-1": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual", "prefetch": true }
-                },
                 "ui_config": {
                   "app": { "colors": {}, "fonts": {} },
                   "localizations": { "en_US": { "day": "Day" } },
@@ -154,36 +151,58 @@ class WorkflowsConfigIntegrationTest {
             }
         """.trimIndent()
 
-        sync(config, INLINE_REF to workflowJson)
+        sync(config)
 
-        val result = provider.getWorkflow("wf-1")
-        assertThat(result).isNotNull
-        assertThat(result!!.workflow.uiConfig.localizations)
+        val uiConfig = UiConfigProvider(manager).getUiConfig()
+        assertThat(uiConfig.localizations)
             .isEqualTo(mapOf(LocaleId("en_US") to mapOf(VariableLocalizationKey.DAY to "Day")))
     }
 
     @Test
-    fun `getWorkflow defaults ui_config when the topic is absent`() = runTest(testDispatcher) {
-        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+    fun `UiConfigProvider defaults ui_config when the topic is absent`() = runTest(testDispatcher) {
         val config = """
             {
               "domain": "app",
               "manifest": "v1.workflows:etag1",
-              "active_topics": ["workflows"],
-              "prefetch_blobs": ["$INLINE_REF"],
+              "active_topics": [],
+              "topics": {}
+            }
+        """.trimIndent()
+
+        sync(config)
+
+        val uiConfig = UiConfigProvider(manager).getUiConfig()
+        assertThat(uiConfig).isEqualTo(UiConfig())
+    }
+
+    @Test
+    fun `UiConfigProvider propagates a malformed part instead of defaulting`() = runTest(testDispatcher) {
+        // "colors" should be an object (alias -> ColorScheme); an array is a shape mismatch that should
+        // surface as a decode failure, not silently default like a missing part does.
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["ui_config"],
               "topics": {
-                "workflows": {
-                  "wf-1": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual", "prefetch": true }
+                "ui_config": {
+                  "app": { "colors": [], "fonts": {} },
+                  "localizations": { "en_US": { "day": "Day" } },
+                  "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} }
                 }
               }
             }
         """.trimIndent()
 
-        sync(config, INLINE_REF to workflowJson)
+        sync(config)
 
-        val result = provider.getWorkflow("wf-1")
-        assertThat(result).isNotNull
-        assertThat(result!!.workflow.uiConfig).isEqualTo(UiConfig())
+        var thrown: Throwable? = null
+        try {
+            UiConfigProvider(manager).getUiConfig()
+        } catch (e: SerializationException) {
+            thrown = e
+        }
+        assertThat(thrown).isNotNull
     }
 
     @Test
@@ -286,7 +305,6 @@ class WorkflowsConfigIntegrationTest {
         initialStepId = "step-1",
         steps = emptyMap(),
         screens = emptyMap(),
-        uiConfig = UiConfig(),
     )
 
     private fun containerWith(configJson: String, vararg blobs: Pair<String, String>): RCContainer {

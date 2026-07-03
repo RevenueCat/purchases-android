@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.UiConfig
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
@@ -71,7 +70,6 @@ class WorkflowManagerTest {
             initialStepId = "step-1",
             steps = emptyMap(),
             screens = emptyMap(),
-            uiConfig = UiConfig(),
         ),
         enrolledVariants = null,
     )

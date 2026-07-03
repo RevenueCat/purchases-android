@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -60,6 +61,10 @@ internal class MockPurchasesType(
         return CreateSupportTicketResult(success = true)
     }
     override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+        throw NotImplementedError("Mock implementation")
+    }
+
+    override suspend fun awaitGetUiConfig(): UiConfig {
         throw NotImplementedError("Mock implementation")
     }
 

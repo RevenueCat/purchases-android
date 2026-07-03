@@ -53,7 +53,6 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -253,7 +252,6 @@ class PaywallViewModelWorkflowTest {
         initialStepId = "step-1",
         steps = mapOf("step-1" to step1, "step-2" to step2),
         screens = mapOf(screenId1 to makeScreen(screenId1), screenId2 to makeScreen(screenId2)),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
         singleStepFallbackId = "step-1",
     )
@@ -304,7 +302,6 @@ class PaywallViewModelWorkflowTest {
             screenId1 to makeScreen(screenId1),
             screenId2 to makeScreenWithExitOffer(screenId2),
         ),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
         singleStepFallbackId = "step-2",
     )
@@ -327,7 +324,6 @@ class PaywallViewModelWorkflowTest {
         initialStepId = "step-only",
         steps = mapOf("step-only" to singleStep),
         screens = mapOf(screenId1 to makeScreenWithExitOffer(screenId1)),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
         singleStepFallbackId = "step-only",
     )
@@ -347,7 +343,6 @@ class PaywallViewModelWorkflowTest {
             screenId1 to makeScreenWithExitOffer(screenId1),
             screenId2 to makeScreen(screenId2),
         ),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
         singleStepFallbackId = "step-1",
     )
@@ -431,7 +426,6 @@ class PaywallViewModelWorkflowTest {
         initialStepId = "step-1",
         steps = mapOf("step-1" to step1WithEmptyOffering),
         screens = mapOf("screen-empty-initial" to screenWithEmptyOffering2),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
     )
     private val fetchResultFailingInitial = WorkflowDataResult(workflow = workflowFailingInitial, enrolledVariants = null)
@@ -442,7 +436,6 @@ class PaywallViewModelWorkflowTest {
         initialStepId = "step-1",
         steps = mapOf("step-1" to step1ToStep3, "step-3" to step3EmptyOffering),
         screens = mapOf(screenId1 to makeScreen(screenId1), screenEmptyId to screenWithEmptyOffering),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
     )
     private val fetchResultToError = WorkflowDataResult(workflow = workflowToError, enrolledVariants = null)
@@ -816,7 +809,6 @@ class PaywallViewModelWorkflowTest {
             initialStepId = "step-A",
             steps = mapOf("step-A" to stepA, "step-B" to stepB, "step-C" to stepC),
             screens = mapOf(screenAId to earlyScreen1, screenBId to earlyScreen2, screenCId to terminalScreen3),
-            uiConfig = UiConfig(),
             metadata = emptyMap(),
             singleStepFallbackId = "step-C",
         )
@@ -1142,7 +1134,6 @@ class PaywallViewModelWorkflowTest {
                 "screen-empty-initial" to screenWithEmptyOffering2,
                 screenId2 to makeScreen(screenId2),
             ),
-            uiConfig = UiConfig(),
             metadata = emptyMap(),
             singleStepFallbackId = "step-2",
         )

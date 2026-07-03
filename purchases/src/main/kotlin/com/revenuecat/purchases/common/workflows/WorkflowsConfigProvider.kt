@@ -7,7 +7,6 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
-import com.revenuecat.purchases.common.remoteconfig.UiConfigProvider
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -20,7 +19,6 @@ import kotlinx.serialization.json.JsonPrimitive
  */
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
-    private val uiConfigProvider: UiConfigProvider = UiConfigProvider(manager),
 ) {
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? {
@@ -50,10 +48,7 @@ internal class WorkflowsConfigProvider(
             return null
         }
         return try {
-            // ui_config is its own topic (WFL-374), no longer embedded in the workflow body; the parsed
-            // uiConfig defaults to an empty UiConfig() until it's resolved and swapped in here.
             val workflow = WorkflowJsonParser.parsePublishedWorkflow(body.decodeToString())
-                .copy(uiConfig = uiConfigProvider.getUiConfig())
             debugLog { "Parsed workflow '$workflowId' (${workflow.steps.size} step(s))" }
             // enrolled_variants is out of scope for this spike; it does not fit the topic-dedup model and is
             // being designed separately.
