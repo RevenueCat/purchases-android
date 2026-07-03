@@ -73,10 +73,16 @@ internal class PaywallComponentsImagePreDownloader(
                             component.overrides.imageUrisToDownload { it.background.findImageUrisToDownload() }
                     }
                     is IconComponent -> {
-                        // Concatenate like IconComponentState.url does. Uri.Builder.path() would replace the
-                        // base URL's path (dropping e.g. /icons), and any mismatch with the render-time URL
-                        // defeats the pre-warm since the image cache is keyed by the exact URL string.
-                        setOf(Uri.parse("${component.baseUrl}/${component.formats.webp}"))
+                        // appendEncodedPath, not path() (which replaces the base URL's path, dropping e.g.
+                        // /icons) nor appendPath (which percent-encodes the segment). The result must match
+                        // the URL IconComponentState builds at render time by raw concatenation, since the
+                        // image cache is keyed by the exact URL string.
+                        setOf(
+                            Uri.parse(component.baseUrl)
+                                .buildUpon()
+                                .appendEncodedPath(component.formats.webp)
+                                .build(),
+                        )
                     }
                     is CarouselComponent -> {
                         // pages are visited by BFS; only extract this component's own background
