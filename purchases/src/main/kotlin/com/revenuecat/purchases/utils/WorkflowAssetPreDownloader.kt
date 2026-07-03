@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.utils
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -14,7 +15,7 @@ internal class WorkflowAssetPreDownloader(
 
     private val preDownloadedWorkflowIds = mutableSetOf<String>()
 
-    fun preDownloadWorkflowAssets(workflow: PublishedWorkflow) {
+    fun preDownloadWorkflowAssets(workflow: PublishedWorkflow, uiConfig: UiConfig) {
         synchronized(preDownloadedWorkflowIds) {
             if (!preDownloadedWorkflowIds.add(workflow.id)) return
         }
@@ -24,9 +25,6 @@ internal class WorkflowAssetPreDownloader(
         workflow.screens.values.forEach { screen ->
             paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base)
         }
-        // ui_config no longer lives on PublishedWorkflow — it has its own independent read path
-        // (UiConfigProvider / PurchasesOrchestrator.getUiConfig). Font pre-download needs to be re-wired to
-        // pull fonts from that path; left as a no-op pending that wiring.
-        offeringFontPreDownloader.preDownloadFontsIfNeeded(emptyList())
+        offeringFontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values)
     }
 }
