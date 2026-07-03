@@ -50,11 +50,11 @@ import java.util.concurrent.atomic.AtomicInteger
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
  * would otherwise parse and persist the same response more than once).
  *
- * Consumers read through the facade: [topic] for a topic's committed item index (metadata only, no wait) and
- * [blobData] for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers
- * never touch disk on their own thread. When [blobData] finds no committed data it calls [awaitConfigForRead]
- * rather than failing — waiting for a refresh in progress, or triggering one on demand when none is (a cold read
- * fetches its own data) — unless the endpoint is [isDisabled] or no app user is known yet.
+ * Consumers read through the facade: [topic] for a topic's committed item index (metadata only) and [blobData]
+ * for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers never touch disk
+ * on their own thread. When either read finds no committed data it calls [awaitConfigForRead] rather than
+ * failing — waiting for a refresh in progress, or triggering one on demand when none is (a cold read fetches its
+ * own data) — unless the endpoint is [isDisabled] or no app user is known yet.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -276,12 +276,19 @@ internal class RemoteConfigManager(
 
     /**
      * A topic's persisted item index (metadata only — inline `metadata` + `blob_ref`, no blob bytes), or `null`
-     * when nothing is cached for [topic] or the endpoint is [isDisabled] (the 4xx session kill-switch). Does not
-     * wait for an in-flight refresh; use [blobData] for a resolved payload that waits and resolves blobs. Reads
-     * disk on [ioDispatcher].
+     * when nothing is cached for [topic] even after a refresh, or when the endpoint is [isDisabled] (the 4xx
+     * session kill-switch).
+     *
+     * When the topic isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
+     * triggers one on demand — and then re-reads before giving up, so a read during the initial sync (or before
+     * any sync) returns fresh data instead of `null`, mirroring [blobData]. A committed topic returns
+     * immediately, never delayed by an unrelated in-flight refresh. Use [blobData] for a resolved item payload
+     * that also resolves the referenced blob. Reads disk on [ioDispatcher].
      */
     suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
         if (disabled) return@withContext null
+        topicStore.topic(topic)?.let { return@withContext it }
+        awaitConfigForRead()
         topicStore.topic(topic)
     }
 

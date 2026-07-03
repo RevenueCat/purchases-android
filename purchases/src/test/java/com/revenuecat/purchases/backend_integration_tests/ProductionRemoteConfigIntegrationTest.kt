@@ -16,7 +16,6 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.MapSerializer
@@ -26,7 +25,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
 import java.io.File
-import kotlin.time.Duration.Companion.seconds
 
 internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
@@ -113,15 +111,6 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         every { appConfig.isDebugBuild } returns false
         val manager = buildRemoteConfigManager()
 
-        // A cold read finds nothing cached, so through the facade it triggers a real /v1/config fetch, persists
-        // the whole config to disk (extracting inline blobs into the blob store), and only then resolves. The
-        // sources "api" item has no blob_ref, so it resolves to null, but the read still drives the end-to-end
-        // fetch -> persist, leaving every active topic committed on disk for the reads below.
-        runBlocking {
-            withTimeout(FETCH_TIMEOUT) { manager.blobData(RemoteConfigTopic.Sources, "api") { it } }
-        }
-
-        // topic(): the workflows item index is now served from the real on-disk cache through the facade.
         val workflows = requireNotNull(runBlocking { manager.topic(RemoteConfigTopic.Workflows) }) {
             "Expected a workflows topic after the sync."
         }
@@ -147,13 +136,6 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         setupTest(SignatureVerificationMode.Informational())
         every { appConfig.isDebugBuild } returns false
         val manager = buildRemoteConfigManager()
-
-        // A cold read drives the real /v1/config fetch -> persist, committing every active topic (and its
-        // inlined blobs) to disk. topic() does not itself wait for a refresh, so this priming read is what
-        // makes the workflows index below available off disk.
-        runBlocking {
-            withTimeout(FETCH_TIMEOUT) { manager.blobData(RemoteConfigTopic.Sources, "api") { it } }
-        }
 
         val workflows = requireNotNull(runBlocking { manager.topic(RemoteConfigTopic.Workflows) }) {
             "Expected a workflows topic after the sync."
@@ -297,6 +279,5 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
     private companion object {
         private const val REMOTE_CONFIG_USER = "integrationTestRemoteConfigUser"
-        private val FETCH_TIMEOUT = 15.seconds
     }
 }

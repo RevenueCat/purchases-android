@@ -736,10 +736,91 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `topic returns null when nothing is cached`() = runTest {
+    fun `topic returns null without triggering a sync when nothing is cached and no app user is known`() = runTest {
         every { diskCache.read() } returns null
 
-        assertThat(readManager().topic(RemoteConfigTopic.Sources)).isNull()
+        assertThat(readManager(appUserIDProvider = { null }).topic(RemoteConfigTopic.Sources)).isNull()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `topic triggers a sync for an uncached topic when none is in flight and returns the committed index`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
+        var result: ConfigTopic? = null
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.topic(RemoteConfigTopic.Workflows)
+        }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        // The on-demand sync is issued as foreground for the current user.
+        assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
+        assertThat(read.isActive).isTrue()
+
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag",
+              "active_topics": ["workflows"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).containsKey("wf1")
+    }
+
+    @Test
+    fun `topic waits for an in-flight refresh and returns the freshly committed index`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager()
+
+        // A refresh is in flight: the backend stub captures the callbacks without settling them yet.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        // The topic is not committed yet, so the read parks on the in-flight refresh.
+        var result: ConfigTopic? = null
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.topic(RemoteConfigTopic.Workflows)
+        }
+        assertThat(read.isActive).isTrue()
+
+        // Settle the refresh with a 200 that commits the topic.
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag",
+              "active_topics": ["workflows"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).containsKey("wf1")
+    }
+
+    @Test
+    fun `topic returns a committed topic without waiting even while a refresh is in flight`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+
+        // A refresh is in flight and never settles; a committed read must not block on it (else this hangs).
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).containsKey("wf1")
     }
 
     @Test
