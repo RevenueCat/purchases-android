@@ -48,6 +48,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.UiConfigProvider
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.verboseLog
@@ -106,6 +107,11 @@ import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -162,9 +168,12 @@ internal class PurchasesOrchestrator(
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
     private val remoteConfigManager: RemoteConfigManager? = null,
+    private val uiConfigProvider: UiConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
+
+    private val uiConfigScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
@@ -619,6 +628,44 @@ internal class PurchasesOrchestrator(
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
 
+    fun getUiConfig(
+        onSuccess: (UiConfig) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        if (appConfig.uiPreviewMode) {
+            dispatch {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ConfigurationError,
+                        "UI config cannot be fetched in UI preview mode.",
+                    ),
+                )
+            }
+            return
+        }
+        if (uiConfigProvider == null) {
+            dispatch {
+                onError(
+                    PurchasesError(
+                        PurchasesErrorCode.ConfigurationError,
+                        "UI config is not enabled.",
+                    ),
+                )
+            }
+            return
+        }
+        uiConfigScope.launch {
+            try {
+                val uiConfig = uiConfigProvider.getUiConfig()
+                dispatch { onSuccess(uiConfig) }
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                dispatch {
+                    onError(PurchasesError(PurchasesErrorCode.UnknownError, "Failed to fetch UI config: ${e.message}"))
+                }
+            }
+        }
+    }
+
     fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
@@ -852,6 +899,7 @@ internal class PurchasesOrchestrator(
         }
         this.backend.close()
         this.remoteConfigManager?.close()
+        this.uiConfigScope.cancel()
         this.workflowManager?.close()
 
         billing.close()
