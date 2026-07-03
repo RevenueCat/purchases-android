@@ -22,7 +22,6 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.JsonObject
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -52,10 +51,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * would otherwise parse and persist the same response more than once).
  *
  * Consumers read through the facade: [topic] for a topic's committed item index (metadata only, no wait) and
- * [body] for a resolved item payload (inline content or an on-demand blob). Both run on [ioDispatcher] so
- * callers never touch disk on their own thread. When [body] finds no committed data it calls [awaitConfigForRead]
+ * [blobData] for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers
+ * never touch disk on their own thread. When [blobData] finds no committed data it calls [awaitConfigForRead]
  * rather than failing — waiting for a refresh in progress, or triggering one on demand when none is (a cold read
- * fetches its own data) — unless the endpoint is [isUnavailable] or no app user is known yet.
+ * fetches its own data) — unless the endpoint is [isDisabled] or no app user is known yet.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -100,14 +99,14 @@ internal class RemoteConfigManager(
     // persist — no blob fetch happens either. Memory-only: an app restart re-enables the endpoint. Intentionally
     // NOT reset by clearCache() (a 4xx is an endpoint/app-level fact, not per-user).
     @Volatile
-    private var unavailable = false
+    private var disabled = false
 
     /**
      * Whether `/v1/config` has been disabled for this session after a 4xx client error. Consumers can read this
      * to know the remote config endpoint is not being used. Resets only on app restart.
      */
-    val isUnavailable: Boolean
-        get() = unavailable
+    val isDisabled: Boolean
+        get() = disabled
 
     fun refreshRemoteConfigIfStale(appInBackground: Boolean, appUserID: String) {
         if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider)) {
@@ -116,8 +115,8 @@ internal class RemoteConfigManager(
     }
 
     fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String) {
-        if (unavailable) {
-            debugLog { "Remote config is unavailable for this session (4xx). Skipping refresh." }
+        if (disabled) {
+            debugLog { "Remote config is disabled for this session (4xx). Skipping refresh." }
             return
         }
         val requestEpoch: Int
@@ -193,7 +192,7 @@ internal class RemoteConfigManager(
             // A 4xx: disable the endpoint for the rest of the session. This is an endpoint-level fact, so set it
             // regardless of epoch ownership (a late response for an old identity is still a valid signal that the
             // endpoint refuses this app's requests).
-            unavailable = true
+            disabled = true
         }
         if (releaseGuardIfOwned(requestEpoch)) {
             errorLog(error)
@@ -210,7 +209,7 @@ internal class RemoteConfigManager(
             isRefreshing.set(false)
             lastRefreshedAt = null
             completeRefresh()
-            // Intentionally NOT resetting `unavailable`: a 4xx is an endpoint/app-level fact that outlives an
+            // Intentionally NOT resetting `disabled`: a 4xx is an endpoint/app-level fact that outlives an
             // identity change. It clears only on app restart.
             diskCache.clear()
             blobStore.clear()
@@ -247,7 +246,7 @@ internal class RemoteConfigManager(
      * Makes a best effort to have the configuration loaded before a read that found no cached data gives up:
      * - a refresh already in progress → wait for it (a read during the initial sync sees its result);
      * - otherwise trigger a sync on demand and wait for it, so a cold read fetches its own data instead of
-     *   returning `null` — **unless** the endpoint is [isUnavailable] (the 4xx session kill-switch) or no app
+     *   returning `null` — **unless** the endpoint is [isDisabled] (the 4xx session kill-switch) or no app
      *   user is known yet, in which case it gives up without a network call.
      *
      * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
@@ -257,7 +256,7 @@ internal class RemoteConfigManager(
         if (awaitInFlightRefresh()) return
         // Nothing in flight: trigger a sync on demand, unless the endpoint is disabled or no user is known yet.
         val appUserID = appUserIDProvider()?.takeIf { it.isNotBlank() }
-        if (!unavailable && appUserID != null) {
+        if (!disabled && appUserID != null) {
             refreshRemoteConfig(appInBackground = false, appUserID = appUserID)
             // Join whatever is now in flight — the sync we just triggered, or one a concurrent caller started.
             awaitInFlightRefresh()
@@ -276,45 +275,79 @@ internal class RemoteConfigManager(
     }
 
     /**
-     * A topic's persisted item index (metadata only — inline `content` + `blob_ref`, no blob bytes), or `null`
-     * when nothing is cached for [topic]. Does not wait for an in-flight refresh; use [body] for a resolved
-     * payload that waits and resolves blobs. Reads disk on [ioDispatcher].
+     * A topic's persisted item index (metadata only — inline `metadata` + `blob_ref`, no blob bytes), or `null`
+     * when nothing is cached for [topic] or the endpoint is [isDisabled] (the 4xx session kill-switch). Does not
+     * wait for an in-flight refresh; use [blobData] for a resolved payload that waits and resolves blobs. Reads
+     * disk on [ioDispatcher].
      */
     suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
+        if (disabled) return@withContext null
         topicStore.topic(topic)
     }
 
     /**
-     * The resolved payload bytes for `itemKey` in [topic], or `null` when the item is unknown or its blob can't
-     * be resolved. Owns the inline-vs-`blob_ref` rule: an item with no `blob_ref` returns its inline `content`
-     * bytes; otherwise the referenced blob is resolved on demand (HIGH priority, joining any in-flight prefetch
-     * of the same ref) and read back.
-     *
-     * When the item isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or triggers
-     * one on demand — and then re-reads before giving up, so a read during the initial sync (or before any sync)
-     * returns fresh data instead of `null`. A committed item returns immediately, never delayed by an unrelated
-     * in-flight refresh.
-     *
-     * Short-circuits the network when the endpoint is [isUnavailable] (the 4xx session kill-switch): inline
-     * content is still returned, but no on-demand config/blob fetch is attempted. Runs on [ioDispatcher].
+     * The resolved blob payload for `itemKey` in [topic], parsed from JSON into [T], or `null` when the item
+     * is unknown, has no `blob_ref`, its blob can't be resolved, or its bytes don't deserialize into [T]. [T]
+     * must be a concrete `@Serializable` type; parsing uses the shared [JsonProvider.defaultJson]. For non-JSON
+     * payloads use the `transform` overload, which also documents the resolution and waiting rules.
      */
-    suspend fun body(topic: RemoteConfigTopic, itemKey: String): ByteArray? = withContext(ioDispatcher) {
-        val item = topicStore.topic(topic)?.get(itemKey)
-            ?: run {
-                awaitConfigForRead()
-                topicStore.topic(topic)?.get(itemKey)
+    suspend inline fun <reified T> blobData(topic: RemoteConfigTopic, itemKey: String): T? =
+        blobData(topic, itemKey) { bytes ->
+            try {
+                JsonProvider.defaultJson.decodeFromString<T>(bytes.decodeToString())
+            } catch (e: SerializationException) {
+                errorLog(e) { "Failed to parse remote config blob for item '$itemKey' as JSON." }
+                null
             }
-            ?: return@withContext null
+        }
 
-        val ref = item.blobRef
-            ?: return@withContext JsonProvider.defaultJson
-                .encodeToString(JsonObject.serializer(), item.content)
-                .encodeToByteArray()
+    /**
+     * Resolves the blob payload bytes for `itemKey` in [topic] and maps them through [transform], or `null`
+     * when the item is unknown or its blob can't be resolved. Use this for non-JSON blobs the caller parses
+     * itself; the reified overload is the JSON convenience built on top of it.
+     *
+     * Owns the `blob_ref` rule: an item with **no** `blob_ref` resolves to `null` (its inline metadata is
+     * exposed only through [topic], never as a payload); otherwise the referenced blob is resolved on demand
+     * (HIGH priority, joining any in-flight prefetch of the same ref) and read back.
+     *
+     * When the item isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
+     * triggers one on demand — and then re-reads before giving up, so a read during the initial sync (or
+     * before any sync) returns fresh data instead of `null`. A committed item returns immediately, never
+     * delayed by an unrelated in-flight refresh.
+     *
+     * Returns `null` without any read when the endpoint is [isDisabled] (the 4xx session kill-switch). Runs on
+     * [ioDispatcher].
+     */
+    suspend fun <T> blobData(
+        topic: RemoteConfigTopic,
+        itemKey: String,
+        transform: (ByteArray) -> T?,
+    ): T? = withContext(ioDispatcher) {
+        resolveBlobBytes(topic, itemKey)?.let(transform)
+    }
 
-        // Blob-backed but the endpoint is disabled for the session: skip the on-demand network fetch.
-        if (unavailable) return@withContext null
+    /**
+     * Resolves an item's referenced-blob bytes, or `null` when the endpoint is [isDisabled], the item is
+     * unknown, or it has no `blob_ref`.
+     */
+    private suspend fun resolveBlobBytes(topic: RemoteConfigTopic, itemKey: String): ByteArray? {
+        if (disabled) return null
+        val ref = committedItem(topic, itemKey)?.blobRef
+        return when {
+            ref == null -> null
+            blobFetcher.ensureDownloaded(ref) -> blobStore.read(ref)
+            else -> null
+        }
+    }
 
-        if (blobFetcher.ensureDownloaded(ref)) blobStore.read(ref) else null
+    /**
+     * The committed item for `itemKey` in [topic], awaiting an in-flight or on-demand refresh once when it
+     * isn't cached yet (see [awaitConfigForRead]), or `null` when it still isn't found.
+     */
+    private suspend fun committedItem(topic: RemoteConfigTopic, itemKey: String): RemoteConfiguration.ConfigItem? {
+        topicStore.topic(topic)?.get(itemKey)?.let { return it }
+        awaitConfigForRead()
+        return topicStore.topic(topic)?.get(itemKey)
     }
 
     private fun persist(

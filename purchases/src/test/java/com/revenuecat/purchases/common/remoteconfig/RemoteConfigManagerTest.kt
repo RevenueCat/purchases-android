@@ -8,7 +8,6 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
-import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
@@ -25,7 +24,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
@@ -499,13 +497,34 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
         )
 
-        assertThat(manager.isUnavailable).isTrue()
+        assertThat(manager.isDisabled).isTrue()
 
         // No further config request and no blob fetch happen for the rest of the session.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
+    fun `topic returns null once the endpoint is disabled even when data is cached`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+        // A 4xx disables the endpoint for the session.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        // Even though the topic is cached, a disabled endpoint yields no reads.
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
     }
 
     @Test
@@ -518,7 +537,7 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
 
-        assertThat(manager.isUnavailable).isFalse()
+        assertThat(manager.isDisabled).isFalse()
 
         // The endpoint is still usable, so a subsequent refresh fires.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
@@ -538,7 +557,7 @@ class RemoteConfigManagerTest {
         // Identity change: the disable survives (it is an endpoint/app-level fact, not per-user).
         manager.clearCache()
 
-        assertThat(manager.isUnavailable).isTrue()
+        assertThat(manager.isDisabled).isTrue()
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
@@ -742,27 +761,26 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `body returns the inline content bytes for an item without a blob ref`() = runTest {
-        val content = buildJsonObject { put("offering_id", "offer_123") }
+    fun `blobData returns null for an item without a blob ref`() = runTest {
+        val metadata = buildJsonObject { put("offering_id", "offer_123") }
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
             topics = mapOf(
-                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(content = content))),
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(metadata = metadata))),
             ),
         )
 
-        val result = readManager().body(RemoteConfigTopic.Workflows, "wf1")
+        val result = readManager().blobData(RemoteConfigTopic.Workflows, "wf1") { it }
 
-        val expected = JsonProvider.defaultJson.encodeToString(JsonObject.serializer(), content).encodeToByteArray()
-        assertThat(result).isEqualTo(expected)
-        // Inline content is resolved without touching the network or the blob store.
+        // An item with no blob ref has no payload: neither the network nor the blob store is touched.
+        assertThat(result).isNull()
         coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
         verify(exactly = 0) { blobStore.read(any()) }
     }
 
     @Test
-    fun `body resolves a blob-backed item by fetching on demand then reading the blob`() = runTest {
+    fun `blobData resolves a blob-backed item by fetching on demand then reading the blob`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -773,14 +791,14 @@ class RemoteConfigManagerTest {
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
         every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
 
-        val result = readManager().body(RemoteConfigTopic.Workflows, "wf1")
+        val result = readManager().blobData(RemoteConfigTopic.Workflows, "wf1") { it }
 
         assertThat(result).isEqualTo(byteArrayOf(4, 2))
         coVerify(exactly = 1) { blobFetcher.ensureDownloaded(REF_VALID) }
     }
 
     @Test
-    fun `body returns null for a blob-backed item that cannot be fetched`() = runTest {
+    fun `blobData returns null for a blob-backed item that cannot be fetched`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -790,12 +808,12 @@ class RemoteConfigManagerTest {
         )
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns false
 
-        assertThat(readManager().body(RemoteConfigTopic.Workflows, "wf1")).isNull()
+        assertThat(readManager().blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
         verify(exactly = 0) { blobStore.read(any()) }
     }
 
     @Test
-    fun `body skips the network for a blob-backed item once the endpoint is unavailable`() = runTest {
+    fun `blobData skips the network for a blob-backed item once the endpoint is disabled`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -811,21 +829,23 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
         )
 
-        assertThat(manager.body(RemoteConfigTopic.Workflows, "wf1")).isNull()
+        assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
         coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
     }
 
     @Test
-    fun `body triggers a sync for an uncached item when none is in flight and returns the committed data`() = runTest {
+    fun `blobData triggers a sync for an uncached item when none is in flight and returns the committed data`() = runTest {
         var state: PersistedRemoteConfigurationState? = null
         every { diskCache.read() } answers { state }
         every { diskCache.write(any()) } answers { state = firstArg(); true }
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
         val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
 
         // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
         var result: ByteArray? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
         }
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
         // The on-demand sync is issued as foreground for the current user.
@@ -837,26 +857,25 @@ class RemoteConfigManagerTest {
               "domain": "app",
               "manifest": "v1.200.workflows:etag",
               "active_topics": ["workflows"],
-              "topics": { "workflows": { "wf1": { "offering_id": "offer_123" } } }
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         assertThat(read.isCompleted).isTrue()
-        assertThat(result).isNotNull()
-        assertThat(result!!.decodeToString()).contains("offer_123")
+        assertThat(result).isEqualTo(byteArrayOf(4, 2))
     }
 
     @Test
-    fun `body returns null without triggering a sync when no app user is known`() = runTest {
+    fun `blobData returns null without triggering a sync when no app user is known`() = runTest {
         every { diskCache.read() } returns null
 
-        assertThat(readManager(appUserIDProvider = { null }).body(RemoteConfigTopic.Workflows, "wf1")).isNull()
+        assertThat(readManager(appUserIDProvider = { null }).blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
         verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun `body does not trigger a sync for an uncached item once the endpoint is unavailable`() = runTest {
+    fun `blobData does not trigger a sync for an uncached item once the endpoint is disabled`() = runTest {
         every { diskCache.read() } returns null
         val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
         // A 4xx disables the endpoint for the session (this is the only config request that should ever fire).
@@ -866,15 +885,17 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
         )
 
-        assertThat(manager.body(RemoteConfigTopic.Workflows, "wf1")).isNull()
+        assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun `body waits for an in-flight refresh and returns the freshly committed data`() = runTest {
+    fun `blobData waits for an in-flight refresh and returns the freshly committed data`() = runTest {
         var state: PersistedRemoteConfigurationState? = null
         every { diskCache.read() } answers { state }
         every { diskCache.write(any()) } answers { state = firstArg(); true }
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
         val manager = readManager()
 
         // A refresh is in flight: the backend stub captures the callbacks without settling them yet.
@@ -883,7 +904,7 @@ class RemoteConfigManagerTest {
         // The item is not committed yet, so the read parks on the in-flight refresh.
         var result: ByteArray? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
         }
         assertThat(read.isActive).isTrue()
 
@@ -893,18 +914,17 @@ class RemoteConfigManagerTest {
               "domain": "app",
               "manifest": "v1.200.workflows:etag",
               "active_topics": ["workflows"],
-              "topics": { "workflows": { "wf1": { "offering_id": "offer_123" } } }
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         assertThat(read.isCompleted).isTrue()
-        assertThat(result).isNotNull()
-        assertThat(result!!.decodeToString()).contains("offer_123")
+        assertThat(result).isEqualTo(byteArrayOf(4, 2))
     }
 
     @Test
-    fun `body returns a committed item without waiting even while a refresh is in flight`() = runTest {
+    fun `blobData returns a committed item without waiting even while a refresh is in flight`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -919,7 +939,7 @@ class RemoteConfigManagerTest {
         // A refresh is in flight and never settles; a committed read must not block on it (else this hangs).
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
-        assertThat(manager.body(RemoteConfigTopic.Workflows, "wf1")).isEqualTo(byteArrayOf(9))
+        assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isEqualTo(byteArrayOf(9))
     }
 
     @Test
@@ -930,7 +950,7 @@ class RemoteConfigManagerTest {
 
         var result: ByteArray? = byteArrayOf(1)
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
         }
         assertThat(read.isActive).isTrue()
 
@@ -949,7 +969,7 @@ class RemoteConfigManagerTest {
 
         var result: ByteArray? = byteArrayOf(1)
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
         }
         assertThat(read.isActive).isTrue()
 
@@ -967,7 +987,7 @@ class RemoteConfigManagerTest {
 
         var result: ByteArray? = byteArrayOf(1)
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.body(RemoteConfigTopic.Workflows, "wf1")
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
         }
         assertThat(read.isActive).isTrue()
 

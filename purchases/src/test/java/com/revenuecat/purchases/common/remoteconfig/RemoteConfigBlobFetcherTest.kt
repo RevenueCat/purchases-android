@@ -384,7 +384,7 @@ class RemoteConfigBlobFetcherTest {
     private fun sourcesTopic(blob: List<RemoteConfigSource>): ConfigTopic = ConfigTopic(
         mapOf(
             "blob" to RemoteConfiguration.ConfigItem(
-                content = buildJsonObject {
+                metadata = buildJsonObject {
                     putJsonArray("sources") {
                         blob.forEach { s ->
                             addJsonObject {

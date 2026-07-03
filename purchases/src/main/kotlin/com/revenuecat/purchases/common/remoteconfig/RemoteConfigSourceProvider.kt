@@ -214,7 +214,7 @@ internal class DefaultRemoteConfigSourceProvider(
          * entry's url from [urlKey] (`url` for api, `url_format` for blob). Malformed entries are skipped.
          */
         fun parseSources(topic: ConfigTopic?, itemKey: String, urlKey: String): List<RemoteConfigSource> {
-            val entries = topic?.get(itemKey)?.content?.get(SOURCES_KEY) as? JsonArray ?: return emptyList()
+            val entries = topic?.get(itemKey)?.metadata?.get(SOURCES_KEY) as? JsonArray ?: return emptyList()
             return entries.mapNotNull { element ->
                 val obj = element as? JsonObject ?: return@mapNotNull null
                 val url = obj.string(urlKey) ?: return@mapNotNull null

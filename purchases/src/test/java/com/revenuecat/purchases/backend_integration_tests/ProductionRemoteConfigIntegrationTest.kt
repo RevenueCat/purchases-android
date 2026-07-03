@@ -113,12 +113,11 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
         // A cold read finds nothing cached, so through the facade it triggers a real /v1/config fetch, persists
         // the whole config to disk (extracting inline blobs into the blob store), and only then resolves. The
-        // sources "api" item is a stable inline item, so this both drives the end-to-end fetch -> persist and
-        // returns non-null, leaving every active topic committed on disk for the reads below.
-        val sourcesBody = runBlocking {
-            withTimeout(FETCH_TIMEOUT) { manager.body(RemoteConfigTopic.Sources, "api") }
+        // sources "api" item has no blob_ref, so it resolves to null, but the read still drives the end-to-end
+        // fetch -> persist, leaving every active topic committed on disk for the reads below.
+        runBlocking {
+            withTimeout(FETCH_TIMEOUT) { manager.blobData(RemoteConfigTopic.Sources, "api") { it } }
         }
-        assertThat(sourcesBody).isNotNull
 
         // topic(): the workflows item index is now served from the real on-disk cache through the facade.
         val workflows = requireNotNull(runBlocking { manager.topic(RemoteConfigTopic.Workflows) }) {
@@ -132,8 +131,8 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             },
         ) { "Expected a workflows item with an inlined blob stored on disk." }
 
-        // body(): resolves the blob-backed item off disk through the facade (no network: it is already cached).
-        val body = runBlocking { manager.body(RemoteConfigTopic.Workflows, itemKey) }
+        // blobData(): resolves the blob-backed item off disk through the facade (no network: it is already cached).
+        val body = runBlocking { manager.blobData(RemoteConfigTopic.Workflows, itemKey) { it } }
         assertThat(body).isNotNull
         assertThat(body).isEqualTo(remoteConfigBlobStore.read(ref))
         // The bytes are real, structured content (a non-empty JSON object), not garbage.

@@ -500,7 +500,7 @@ class RemoteConfigSourceProviderTest {
     /** Builds a `sources` ConfigTopic matching the backend shape: api entries use `url`, blob use `url_format`. */
     private fun sourcesTopic(api: List<RemoteConfigSource>, blob: List<RemoteConfigSource>): ConfigTopic {
         fun item(sources: List<RemoteConfigSource>, urlKey: String) = RemoteConfiguration.ConfigItem(
-            content = buildJsonObject {
+            metadata = buildJsonObject {
                 putJsonArray("sources") {
                     sources.forEach { s ->
                         addJsonObject {
