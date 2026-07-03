@@ -3,6 +3,8 @@ package com.revenuecat.purchases.paywalls.components
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -12,6 +14,7 @@ import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import kotlinx.serialization.json.JsonPrimitive
 
 @RunWith(Enclosed::class)
 internal class ButtonComponentTests {
@@ -57,7 +60,10 @@ internal class ButtonComponentTests {
                                 "type": "text"
                               }
                             ]
-                          }
+                          },
+                          "state_updates": [
+                            { "set": "planComparisonOpen", "to": true }
+                          ]
                         }
                         """.trimIndent(),
                         expected = ButtonComponent(
@@ -70,7 +76,13 @@ internal class ButtonComponentTests {
                                         name = "Text",
                                     )
                                 ),
-                            )
+                            ),
+                            stateUpdates = listOf(
+                                StateUpdate.Set(
+                                    key = "planComparisonOpen",
+                                    value = StateUpdateValue.Literal(JsonPrimitive(true)),
+                                ),
+                            ),
                         )
                     ),
                 ),
