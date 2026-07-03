@@ -581,10 +581,9 @@ internal class PurchasesOrchestrator(
     ) {
         // Deliver every outcome through dispatch so the callback always lands on the main thread,
         // matching the rest of the SDK's callback APIs (e.g. getOfferings, getCustomerInfo).
-        // WorkflowManager.getWorkflow intentionally has no fixed delivery thread — a cache hit calls
-        // back synchronously on the caller's thread while a miss resolves on its IO scope, and the
-        // prefetch path routes detail callbacks onto a dedicated dispatcher — so normalizing here, at
-        // the consumer boundary, is what gives callers (including awaitGetWorkflow) a stable thread.
+        // WorkflowManager.getWorkflow intentionally has no fixed delivery thread — it calls back on its
+        // IO scope — so normalizing here, at the consumer boundary, is what gives callers (including
+        // awaitGetWorkflow) a stable thread.
         if (appConfig.uiPreviewMode) {
             dispatch {
                 onError(
@@ -608,15 +607,13 @@ internal class PurchasesOrchestrator(
             return
         }
         workflowManager.getWorkflow(
-            appUserID = identityManager.currentAppUserID,
             workflowOrOfferingId = workflowId,
-            appInBackground = state.appInBackground,
             onSuccess = { dispatch { onSuccess(it) } },
             onError = { dispatch { onError(it) } },
         )
     }
 
-    fun workflowIdForOfferingId(offeringId: String): String? =
+    suspend fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
 
     fun getProducts(

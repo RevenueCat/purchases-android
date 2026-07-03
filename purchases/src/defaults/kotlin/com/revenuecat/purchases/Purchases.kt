@@ -426,7 +426,8 @@ public class Purchases internal constructor(
     }
 
     @InternalRevenueCatAPI
-    public fun workflowIdForOfferingId(offeringId: String): String? =
+    @JvmSynthetic
+    public suspend fun workflowIdForOfferingId(offeringId: String): String? =
         purchasesOrchestrator.workflowIdForOfferingId(offeringId)
 
     /**
