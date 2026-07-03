@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
+import com.revenuecat.purchases.common.offerings.OfferingsConfigGate
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
@@ -398,6 +399,15 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
+                // Reinstates "wait for workflows before returning offerings", now gated on the shared config
+                // sync instead of a per-offerings workflows-list fetch. Only wired when workflows are on.
+                offeringsConfigGate = if (workflowManager != null && remoteConfigManager != null) {
+                    OfferingsConfigGate { appInBackground, appUserID, onReady ->
+                        remoteConfigManager.awaitConfigReady(appInBackground, appUserID, onReady)
+                    }
+                } else {
+                    null
+                },
             )
 
             log(LogIntent.DEBUG) { ConfigureStrings.DEBUG_ENABLED }

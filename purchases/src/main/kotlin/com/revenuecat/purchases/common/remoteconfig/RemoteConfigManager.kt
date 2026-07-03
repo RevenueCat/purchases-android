@@ -54,7 +54,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers never touch disk
  * on their own thread. When either read finds no committed data it calls [awaitConfigForRead] rather than
  * failing — waiting for a refresh in progress, or triggering one on demand when none is (a cold read fetches its
- * own data) — unless the endpoint is [isDisabled] or no app user is known yet.
+ * own data) — unless the endpoint is [isDisabled] or no app user is known yet. [awaitConfigReady] exposes the
+ * same wait as a callback-based readiness gate for consumers that only need to order their delivery after the
+ * sync (offerings), without reading anything themselves.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -272,6 +274,30 @@ internal class RemoteConfigManager(
         val completion = synchronized(cacheLock) { refreshCompletion } ?: return false
         completion.await()
         return true
+    }
+
+    /**
+     * Invokes [onReady] (on [scope]) once the configuration consumers gate on is in place:
+     * - something already committed → wait only for any refresh in flight, so a delivery issued together with a
+     *   sync sees that sync's result;
+     * - cold cache → join the refresh in flight, or trigger one and wait for it, so the first delivery after
+     *   install doesn't run ahead of the initial sync.
+     *
+     * It never waits for data that cannot arrive: when the endpoint is [isDisabled] it reports ready
+     * immediately, and every refresh terminal path (200, 204, error, [clearCache]) completes the wait. This is
+     * a readiness signal, not a success signal — a failed sync still reports ready.
+     */
+    fun awaitConfigReady(appInBackground: Boolean, appUserID: String, onReady: () -> Unit) {
+        scope.launch {
+            if (!disabled) {
+                val committed = withContext(ioDispatcher) { diskCache.read() != null }
+                if (!committed && !awaitInFlightRefresh()) {
+                    refreshRemoteConfig(appInBackground, appUserID)
+                }
+                awaitInFlightRefresh()
+            }
+            onReady()
+        }
     }
 
     /**

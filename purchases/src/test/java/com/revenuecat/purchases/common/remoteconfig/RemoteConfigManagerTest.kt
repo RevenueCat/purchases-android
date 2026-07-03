@@ -1120,6 +1120,110 @@ class RemoteConfigManagerTest {
 
     // endregion
 
+    // region awaitConfigReady
+
+    @Test
+    fun `awaitConfigReady reports ready without a sync when config is already committed`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.workflows:etag1")
+
+        val ready = CountDownLatch(1)
+        manager.awaitConfigReady(appInBackground = false, appUserID = TEST_APP_USER_ID) { ready.countDown() }
+
+        assertThat(ready.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `awaitConfigReady waits for the refresh in flight even when config is committed`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.workflows:etag1")
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        val ready = CountDownLatch(1)
+        manager.awaitConfigReady(appInBackground = false, appUserID = TEST_APP_USER_ID) { ready.countDown() }
+
+        // Blocked while the refresh is in flight; a 204 terminal completes it.
+        assertThat(ready.await(BLOCKED_MILLIS, TimeUnit.MILLISECONDS)).isFalse()
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        assertThat(ready.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `awaitConfigReady triggers a sync on a cold cache and reports ready when it finishes`() {
+        every { diskCache.read() } returns null
+        val backendCalled = CountDownLatch(1)
+        every {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            onSuccess = arg(5)
+            backendCalled.countDown()
+        }
+
+        val ready = CountDownLatch(1)
+        manager.awaitConfigReady(appInBackground = false, appUserID = TEST_APP_USER_ID) { ready.countDown() }
+
+        // The gate itself issued the sync (from the manager's scope), and stays blocked until it finishes.
+        assertThat(backendCalled.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+        assertThat(ready.await(BLOCKED_MILLIS, TimeUnit.MILLISECONDS)).isFalse()
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        assertThat(ready.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+    }
+
+    @Test
+    fun `awaitConfigReady joins the refresh in flight on a cold cache instead of triggering another`() {
+        every { diskCache.read() } returns null
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        val ready = CountDownLatch(1)
+        manager.awaitConfigReady(appInBackground = false, appUserID = TEST_APP_USER_ID) { ready.countDown() }
+
+        assertThat(ready.await(BLOCKED_MILLIS, TimeUnit.MILLISECONDS)).isFalse()
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        assertThat(ready.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `awaitConfigReady reports ready immediately when the endpoint is session-disabled`() {
+        every { diskCache.read() } returns null
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        val ready = CountDownLatch(1)
+        manager.awaitConfigReady(appInBackground = false, appUserID = TEST_APP_USER_ID) { ready.countDown() }
+
+        assertThat(ready.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+        // Only the original request went out: the disabled endpoint is never retried by the gate.
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `awaitConfigReady reports ready when the triggered sync fails`() {
+        every { diskCache.read() } returns null
+        val backendCalled = CountDownLatch(1)
+        every {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            onError = arg(6)
+            backendCalled.countDown()
+        }
+
+        val ready = CountDownLatch(1)
+        manager.awaitConfigReady(appInBackground = false, appUserID = TEST_APP_USER_ID) { ready.countDown() }
+
+        assertThat(backendCalled.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        assertThat(ready.await(WAIT_SECONDS, TimeUnit.SECONDS)).isTrue()
+    }
+
+    // endregion
+
     private fun persisted(
         manifest: String,
         domain: String = "app",

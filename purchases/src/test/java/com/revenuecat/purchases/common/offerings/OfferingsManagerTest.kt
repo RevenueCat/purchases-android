@@ -453,6 +453,67 @@ class OfferingsManagerTest {
 
     // endregion getOfferings
 
+    // region offerings config gate
+
+    @Test
+    fun `getOfferings defers network-fetched delivery until the config gate reports ready`() {
+        var pendingReady: (() -> Unit)? = null
+        val gatedManager = managerWithGate { _, _, onReady -> pendingReady = onReady }
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        gatedManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected success but got error: $it") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        // Held back until the gate opens.
+        assertThat(receivedOfferings).isNull()
+        pendingReady!!.invoke()
+        assertThat(receivedOfferings).isEqualTo(testOfferings)
+    }
+
+    @Test
+    fun `getOfferings defers cached delivery until the config gate reports ready`() {
+        var pendingReady: (() -> Unit)? = null
+        val gatedManager = managerWithGate { appInBackground, appUserID, onReady ->
+            assertThat(appInBackground).isFalse()
+            assertThat(appUserID).isEqualTo(appUserId)
+            pendingReady = onReady
+        }
+        every { cache.cachedOfferings } returns testOfferings
+        mockCacheStale(offeringsStale = false)
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        gatedManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected success but got error: $it") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNull()
+        pendingReady!!.invoke()
+        assertThat(receivedOfferings).isEqualTo(testOfferings)
+    }
+
+    private fun managerWithGate(gate: OfferingsConfigGate) = OfferingsManager(
+        offeringsCache = cache,
+        backend = backend,
+        offeringsFactory = offeringsFactory,
+        offeringImagePreDownloader = offeringImagePreDownloader,
+        diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+        offeringFontPreDownloader = mockOfferingFontPreDownloader,
+        offeringsConfigGate = gate,
+    )
+
+    // endregion offerings config gate
+
     // region pre download offering images
 
     @Test
