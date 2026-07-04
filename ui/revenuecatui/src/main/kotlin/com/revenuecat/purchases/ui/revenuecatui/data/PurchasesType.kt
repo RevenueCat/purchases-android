@@ -70,8 +70,6 @@ internal interface PurchasesType {
     suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult
 
     fun workflowIdForOfferingId(offeringId: String): String?
-
-    val useWorkflows: Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -149,8 +147,4 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override fun workflowIdForOfferingId(offeringId: String): String? =
         purchases.workflowIdForOfferingId(offeringId)
-
-    @OptIn(InternalRevenueCatAPI::class)
-    override val useWorkflows: Boolean
-        get() = purchases.currentConfiguration.dangerousSettings.useWorkflows
 }

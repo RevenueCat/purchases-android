@@ -98,12 +98,11 @@ Lcom/revenuecat/purchases/DangerousSettings;
 HSPLcom/revenuecat/purchases/DangerousSettings;-><clinit>()V
 HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(Z)V
 HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(ZZZZZ)V
+HSPLcom/revenuecat/purchases/DangerousSettings;-><init>(ZZZZ)V
 HSPLcom/revenuecat/purchases/DangerousSettings;->getApplyObfuscatedAccountIdToSubscriptionChanges$purchases_defaultsBc8Release()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getAutoSyncPurchases()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getCustomEntitlementComputation$purchases_defaultsBc8Release()Z
 HSPLcom/revenuecat/purchases/DangerousSettings;->getUiPreviewMode$purchases_defaultsBc8Release()Z
-HSPLcom/revenuecat/purchases/DangerousSettings;->getUseWorkflows()Z
 Lcom/revenuecat/purchases/DangerousSettings$Companion;
 HSPLcom/revenuecat/purchases/DangerousSettings$Companion;-><init>()V
 HSPLcom/revenuecat/purchases/DangerousSettings$Companion;-><init>(Lkotlin/jvm/internal/DefaultConstructorMarker;)V
