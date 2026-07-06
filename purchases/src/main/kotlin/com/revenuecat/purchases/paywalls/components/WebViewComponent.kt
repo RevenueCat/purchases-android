@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
+import com.revenuecat.purchases.paywalls.components.StackComponent
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,4 +37,6 @@ public class WebViewComponent(
     public val protocolVersion: Int? = null,
     @get:JvmSynthetic
     public val size: Size = Size(width = Fill, height = SizeConstraint.Fit),
+    @get:JvmSynthetic
+    public val fallback: StackComponent? = null,
 ) : PaywallComponent
