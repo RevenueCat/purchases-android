@@ -84,9 +84,14 @@ internal class UiConfigProviderTest {
         assertThat(uiConfig.customVariables).isEmpty()
     }
 
+    // Each part is decoded by blobData's transform overload. Stubbing that overload to actually run the
+    // transform against the part's real bytes exercises each field's real serializer, exactly as production does.
     private fun stubBlob(key: String, content: kotlinx.serialization.json.JsonObjectBuilder.() -> Unit) {
+        val bytes = buildJsonObject(content).toString().encodeToByteArray()
         coEvery {
-            manager.blobData<Any>(RemoteConfigTopic.UiConfig, key, any())
-        } returns buildJsonObject(content)
+            manager.blobData(RemoteConfigTopic.UiConfig, key, any<(ByteArray) -> Any?>())
+        } answers {
+            thirdArg<(ByteArray) -> Any?>().invoke(bytes)
+        }
     }
 }
