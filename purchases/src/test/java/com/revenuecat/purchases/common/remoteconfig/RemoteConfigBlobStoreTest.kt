@@ -123,19 +123,39 @@ class RemoteConfigBlobStoreTest {
     }
 
     @Test
-    fun `retainOnly prunes orphan temp files and invalid-named files the index never tracks`() {
+    fun `retainOnly prunes orphan side files and invalid-named files the index never tracks`() {
         blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
-        // Simulate a temp file left by a write interrupted mid-flight, plus a stray invalid-named file.
+        // Simulate the AtomicFile side file left by a write interrupted mid-flight, plus a stray
+        // invalid-named file.
         val blobsDir = File(File(testFolder, "RevenueCat"), "blobs")
-        val orphanTemp = File(blobsDir, "rc_blob_orphan.tmp").apply { writeBytes(byteArrayOf(9)) }
+        val orphanSideFile = File(blobsDir, "$refB.new").apply { writeBytes(byteArrayOf(9)) }
         val invalidNamed = File(blobsDir, "not-a-valid-ref").apply { writeBytes(byteArrayOf(9)) }
 
         blobStore.retainOnly(setOf(refA))
 
-        assertThat(orphanTemp.exists()).isFalse
+        assertThat(orphanSideFile.exists()).isFalse
         assertThat(invalidNamed.exists()).isFalse
         assertThat(blobStore.contains(refA)).isTrue
         assertThat(blobStore.cachedRefs()).containsExactly(refA)
+    }
+
+    @Test
+    fun `a write interrupted mid-flight leaves no readable blob`() {
+        // An interrupted AtomicFile write leaves only the `<ref>.new` side file: the blob file itself is
+        // renamed into place only on a successful finish, so it can never exist half-written.
+        val blobsDir = File(File(testFolder, "RevenueCat"), "blobs").apply { mkdirs() }
+        File(blobsDir, "$refA.new").writeBytes(byteArrayOf(1, 2))
+
+        // Neither the store nor a fresh instance's disk scan sees the interrupted write as a cached blob.
+        assertThat(blobStore.contains(refA)).isFalse
+        assertThat(blobStore.read(refA)).isNull()
+        val reopened = RemoteConfigBlobStore(applicationContext)
+        assertThat(reopened.contains(refA)).isFalse
+        assertThat(reopened.cachedRefs()).isEmpty()
+
+        // A retry completes normally, replacing the leftover side file.
+        assertThat(blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(3, 4)))).isTrue
+        assertThat(blobStore.read(refA)).isEqualTo(byteArrayOf(3, 4))
     }
 
     @Test
