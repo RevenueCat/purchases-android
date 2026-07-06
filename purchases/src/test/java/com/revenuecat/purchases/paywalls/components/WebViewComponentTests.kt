@@ -23,7 +23,11 @@ class WebViewComponentTests {
             "height": { "type": "fit" }
           },
           "visible": true,
-          "name": "Promo web component"
+          "name": "Promo web component",
+          "fallback": {
+            "type": "stack",
+            "components": []
+          }
         }
         """
 
@@ -40,6 +44,8 @@ class WebViewComponentTests {
         assertThat(webView.protocolVersion).isEqualTo(1)
         assertThat(webView.url).isEqualTo("https://assets.pawwalls.com/web_bundles/123/index.html")
         assertThat(webView.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit))
+        assertThat(webView.fallback).isNotNull
+        assertThat(webView.fallback?.components).isEmpty()
     }
 
     @Test
