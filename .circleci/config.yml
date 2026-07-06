@@ -129,7 +129,7 @@ commands:
           command: |
             bundle exec fastlane android build_rct_tester_bundle
       - store_artifacts:
-          path: examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab
+          path: examples/rcttester/build/outputs/bundle/release/rcttester-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
 
@@ -246,40 +246,36 @@ jobs:
       flavor:
         type: string
         description: "Flavor to test: defaults or customEntitlementComputation"
-      bc_version:
-        type: string
-        description: "BC version: bc7 or bc8"
       build_type:
         type: string
         description: "Build type: debug or release"
       run_kover:
         type: boolean
         default: false
-        description: "Whether to run kover commands (only for defaults bc8 release)"
+        description: "Whether to run kover commands (only for defaults release)"
     steps:
       - checkout
       - attach_workspace:
           at: .
       - android/restore_gradle_cache
       - run:
-          name: Run << parameters.flavor >> << parameters.bc_version >> << parameters.build_type >> Tests
+          name: Run << parameters.flavor >> << parameters.build_type >> Tests
           command: |
             FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
-            BC_VERSION_CAPITALIZED=$(echo << parameters.bc_version >> | sed 's/\b\(.\)/\u\1/')
             BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
-            TASK="test${FLAVOR_CAPITALIZED}${BC_VERSION_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
+            TASK="test${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
             ./gradlew $TASK --parallel --no-daemon
       - when:
           condition: << parameters.run_kover >>
           steps:
             - run:
                 name: Generate Kover HTML
-                command: ./gradlew purchases:koverHtmlReportDefaultsBc8Release
+                command: ./gradlew purchases:koverHtmlReportDefaultsRelease
             - run:
                 name: Generate Kover XML
-                command: ./gradlew purchases:koverXmlReportDefaultsBc8Release
+                command: ./gradlew purchases:koverXmlReportDefaultsRelease
             - codecov/upload:
-                file: purchases/build/reports/kover/reportDefaultsBc8Release.xml
+                file: purchases/build/reports/kover/reportDefaultsRelease.xml
       - run:
           name: Collect JUnit XMLs
           when: always
@@ -494,13 +490,13 @@ jobs:
           command: |
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab
+          path: examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab
       - android/save_gradle_cache
       - android/save_build_cache
       - run:
           name: Publish aab
           command: |
-            bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/bc8Release/purchase-tester-bc8-release.aab'
+            bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
 
   assemble-paywall-tester-release:
     <<: *android-executor
@@ -525,7 +521,7 @@ jobs:
       - run:
           name: Publish aab
           command: |
-            bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/bc8Release/paywall-tester-bc8-release.aab' track:'<< parameters.track >>'
+            bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab' track:'<< parameters.track >>'
 
   assemble-rct-tester-release:
     <<: *android-executor
@@ -550,7 +546,7 @@ jobs:
       - run:
           name: Publish aab
           command: |
-            bundle exec fastlane android publish_rct_tester aab_path:'examples/rcttester/build/outputs/bundle/bc8Release/rcttester-bc8-release.aab' track:'<< parameters.track >>'
+            bundle exec fastlane android publish_rct_tester aab_path:'examples/rcttester/build/outputs/bundle/release/rcttester-release.aab' track:'<< parameters.track >>'
 
   run-purchases-integration-tests:
     description: "Run purchases module integration tests on CircleCI emulator. Accepts backend_environment parameter: 'production' or 'load_shedder_us_east_1' or 'load_shedder_us_east_2'"
@@ -848,11 +844,11 @@ jobs:
           cache_prefix: ui-tests-v1
       - android/start_emulator:
           avd_name: test-revenuecat-ui
-          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleBc8DebugAndroidTest
+          post_emulator_launch_assemble_command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
       - run:
           name: Run RevenueCatUI UI tests for Android in CircleCI
           command: |
-            ./gradlew ui:revenuecatui:connectedBc8DebugAndroidTest
+            ./gradlew ui:revenuecatui:connectedDebugAndroidTest
       - android/save_gradle_cache:
           cache_prefix: ui-tests-v1
       - android/save_build_cache:
@@ -1003,33 +999,23 @@ workflows:
     jobs:
       - prepare-tests
       - test:
-          name: test_defaults_bc8_debug
+          name: test_defaults_debug
           flavor: "defaults"
-          bc_version: "bc8"
           build_type: "debug"
-          requires:
-            - prepare-tests
-      - test:
-          name: test_defaults_bc7_release
-          flavor: "defaults"
-          bc_version: "bc7"
-          build_type: "release"
           requires:
             - prepare-tests
       - test:
           name: test_cec_<< matrix.build_type >>
           flavor: "customEntitlementComputation"
-          bc_version: "bc8"
           requires:
             - prepare-tests
           matrix:
             parameters:
               build_type: ["debug", "release"]
-      # Special case for defaults BC8 release with kover
+      # Special case for defaults release with kover
       - test:
-          name: test_defaults_bc8_release
+          name: test_defaults_release
           flavor: "defaults"
-          bc_version: "bc8"
           build_type: "release"
           run_kover: true
           requires:
@@ -1100,9 +1086,8 @@ workflows:
       - hold:
           type: approval
           requires:
-            - test_defaults_bc8_debug
-            - test_defaults_bc8_release
-            - test_defaults_bc7_release
+            - test_defaults_debug
+            - test_defaults_release
             - test-rules-engine-internal
             - test_cec_debug
             - test_cec_release
@@ -1241,7 +1226,7 @@ workflows:
       - revenuecat/update-error-codes:
           platform: android
           outputs: "PurchasesErrorCode.kt:purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt"
-          commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defaults-bc7.txt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
+          commit_paths: "purchases/src/main/kotlin/generated/com/revenuecat/purchases/PurchasesErrorCode.kt,purchases/api-defauts.txt,purchases/api-entitlement.txt"
           executor:
             name: android/android_docker
             tag: 2025.04.1

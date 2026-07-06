@@ -272,41 +272,9 @@ platform :android do
       properties: gradle_properties
     )
 
-    UI.verbose("Deploying purchases Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-bc7",
-      "purchases",
-      gradle_properties
-    )
-
-    UI.verbose("Deploying purchases-ui Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-ui-bc7",
-      "ui:revenuecatui",
-      gradle_properties
-    )
-
-    UI.verbose("Deploying amazon Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-store-amazon-bc7",
-      "feature:amazon",
-      gradle_properties
-    )
-
-    UI.verbose("Deploying galaxy Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-store-galaxy-bc7",
-      "feature:galaxy",
-      gradle_properties
-    )
-
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
-      "customEntitlementComputationBc8Release",
+      "customEntitlementComputationRelease",
       "purchases-custom-entitlement-computation",
       "purchases",
       gradle_properties
@@ -314,7 +282,7 @@ platform :android do
 
     UI.verbose("Deploying Debug view version")
     deploy_specific_package(
-      "defaultsBc8Debug",
+      "defaultsDebug",
       "purchases-debug-view",
       "ui:debugview",
       gradle_properties
@@ -393,7 +361,7 @@ platform :android do
   desc "Build purchase tester app bundle"
   lane :build_purchase_tester_bundle do
     build_bundle(
-      build_task: 'examples:purchase-tester:bundleBc8',
+      build_task: 'examples:purchase-tester:bundle',
       env_prefix: 'PURCHASE_TESTER',
       extra_properties: {
         purchaseTesterSupportedStores: 'google'
@@ -405,7 +373,7 @@ platform :android do
   desc "Build paywall tester app bundle"
   lane :build_paywall_tester_bundle do
     build_bundle(
-      build_task: 'examples:paywall-tester:bundleBc8',
+      build_task: 'examples:paywall-tester:bundle',
       env_prefix: 'PAYWALL_TESTER',
       gradle_properties_prefix: 'paywallTester',
       extra_properties: {
@@ -420,7 +388,7 @@ platform :android do
   desc "Build RCT tester app bundle"
   lane :build_rct_tester_bundle do
     build_bundle(
-      build_task: 'examples:rcttester:bundleBc8',
+      build_task: 'examples:rcttester:bundle',
       env_prefix: 'RCT_TESTER',
       gradle_properties_prefix: 'rcTester'
     )
@@ -438,7 +406,7 @@ platform :android do
     UI.user_error!("LOAD_SHEDDER_REVENUECAT_API_KEY environment variable is not set") if ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'].to_s.empty?
 
     gradle(
-      task: ':purchases:testDefaultsBc8DebugUnitTest',
+      task: ':purchases:testDefaultsDebugUnitTest',
       flags: '--tests "com.revenuecat.purchases.backend_integration_tests.*"',
       properties: {
         "minSdkVersion" => 23,
@@ -564,7 +532,7 @@ platform :android do
         UI.message("Attempt #{attempt} of #{max_retries}")
 
         gradle(
-          task: ":purchases:connectedDefaultsBc8ReleaseAndroidTest",
+          task: ":purchases:connectedDefaultsReleaseAndroidTest",
           properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
         )
 
@@ -606,7 +574,7 @@ platform :android do
     }
 
     gradle(
-      task: ":purchases:connectedCustomEntitlementComputationBc8ReleaseAndroidTest",
+      task: ":purchases:connectedCustomEntitlementComputationReleaseAndroidTest",
       properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
     )
   end
@@ -971,7 +939,7 @@ DESC
 
     sh("rm -rf #{paparazzi_output_dir}")
     gradle_args = {
-      task: "#{gradle_module}:recordPaparazziBc8Debug",
+      task: "#{gradle_module}:recordPaparazziDebug",
     }
     gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
     # This is not yet supported in the Paparazzi version we're using.

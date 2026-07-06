@@ -14,17 +14,6 @@ android {
         missingDimensionStrategy("apis", "defaults")
     }
 
-    flavorDimensions += "billingclient"
-    productFlavors {
-        create("bc8") {
-            dimension = "billingclient"
-            isDefault = true
-        }
-        create("bc7") {
-            dimension = "billingclient"
-        }
-    }
-
     testOptions {
         unitTests.isReturnDefaultValues = true
         unitTests.isIncludeAndroidResources = true
