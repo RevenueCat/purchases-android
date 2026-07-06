@@ -11,14 +11,27 @@ import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -28,6 +41,7 @@ import java.nio.ByteBuffer
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -147,6 +161,23 @@ class RemoteConfigManagerTest {
 
         // Identity change wipes the cache and the in-memory marker, so the next user refreshes immediately.
         manager.clearCache()
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed refresh does not stamp the refresh time, so the next staleness check retries`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        // Same clock: the failure left lastRefreshedAt unset, so the staleness check retries immediately
+        // instead of sitting out the window with no data.
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
@@ -490,13 +521,34 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
         )
 
-        assertThat(manager.isUnavailable).isTrue()
+        assertThat(manager.isDisabled).isTrue()
 
         // No further config request and no blob fetch happen for the rest of the session.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
+    fun `topic returns null once the endpoint is disabled even when data is cached`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+        // A 4xx disables the endpoint for the session.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        // Even though the topic is cached, a disabled endpoint yields no reads.
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
     }
 
     @Test
@@ -509,7 +561,7 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
 
-        assertThat(manager.isUnavailable).isFalse()
+        assertThat(manager.isDisabled).isFalse()
 
         // The endpoint is still usable, so a subsequent refresh fires.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
@@ -529,7 +581,7 @@ class RemoteConfigManagerTest {
         // Identity change: the disable survives (it is an endpoint/app-level fact, not per-user).
         manager.clearCache()
 
-        assertThat(manager.isUnavailable).isTrue()
+        assertThat(manager.isDisabled).isTrue()
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
@@ -578,6 +630,32 @@ class RemoteConfigManagerTest {
         onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
 
         verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `a non-object topic item leaves the cache untouched and releases the guard, without crashing`() {
+        every { diskCache.read() } returns null
+
+        // Well-formed JSON whose topic item is a primitive: the custom item serializer must surface this as a
+        // SerializationException the manager catches, not an uncaught error that would crash the app.
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "manifest-1",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "api": "not-an-object" } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(config), VerificationResult.VERIFIED)
+
+        // The parse failure is caught: nothing is persisted and the cache is left intact.
+        verify(exactly = 0) { diskCache.write(any()) }
+
+        // The guard was released in the finally block, so a subsequent refresh is allowed to start.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -689,6 +767,493 @@ class RemoteConfigManagerTest {
         verify(exactly = 1) { diskCache.write(any()) }
     }
 
+    // region Phase 6 read facade (topic / body) + wait-for-in-flight
+
+    @Test
+    fun `topic returns the committed item index and null for an unknown topic`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("sources"),
+            topics = mapOf(
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+
+        assertThat(manager.topic(RemoteConfigTopic.Sources)).containsKey("default")
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
+    }
+
+    @Test
+    fun `topic returns null without triggering a sync when nothing is cached and no app user is known`() = runTest {
+        every { diskCache.read() } returns null
+
+        assertThat(readManager(appUserIDProvider = { null }).topic(RemoteConfigTopic.Sources)).isNull()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `topic triggers a sync for an uncached topic when none is in flight and returns the committed index`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
+        var result: ConfigTopic? = null
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.topic(RemoteConfigTopic.Workflows)
+        }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        // The on-demand sync is issued as foreground for the current user.
+        assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
+        assertThat(read.isActive).isTrue()
+
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag",
+              "active_topics": ["workflows"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).containsKey("wf1")
+    }
+
+    @Test
+    fun `topic waits for an in-flight refresh and returns the freshly committed index`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager()
+
+        // A refresh is in flight: the backend stub captures the callbacks without settling them yet.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        // The topic is not committed yet, so the read parks on the in-flight refresh.
+        var result: ConfigTopic? = null
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.topic(RemoteConfigTopic.Workflows)
+        }
+        assertThat(read.isActive).isTrue()
+
+        // Settle the refresh with a 200 that commits the topic.
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag",
+              "active_topics": ["workflows"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).containsKey("wf1")
+    }
+
+    @Test
+    fun `topic returns a committed topic without waiting even while a refresh is in flight`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+
+        // A refresh is in flight and never settles; a committed read must not block on it (else this hangs).
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).containsKey("wf1")
+    }
+
+    @Test
+    fun `topic maps each enum value to its wire name`() = runTest {
+        // Persisted (and served) under the backend wire names; reads go through the typed enum.
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows", "ui_config", "sources"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+                "ui_config" to ConfigTopic(mapOf("ui" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED))),
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = REF_UNWANTED))),
+            ),
+        )
+        val manager = readManager()
+
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).containsKey("wf")
+        assertThat(manager.topic(RemoteConfigTopic.UiConfig)).containsKey("ui")
+        assertThat(manager.topic(RemoteConfigTopic.Sources)).containsKey("default")
+    }
+
+    @Test
+    fun `blobData returns null for an item without a blob ref`() = runTest {
+        val metadata = buildJsonObject { put("offering_id", "offer_123") }
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(metadata = metadata))),
+            ),
+        )
+
+        val result = readManager().blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+
+        // An item with no blob ref has no payload: neither the network nor the blob store is touched.
+        assertThat(result).isNull()
+        coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
+        verify(exactly = 0) { blobStore.read(any()) }
+    }
+
+    @Test
+    fun `blobData resolves a blob-backed item by fetching on demand then reading the blob`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+
+        val result = readManager().blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+
+        assertThat(result).isEqualTo(byteArrayOf(4, 2))
+        coVerify(exactly = 1) { blobFetcher.ensureDownloaded(REF_VALID) }
+    }
+
+    @Test
+    fun `reified blobData fetches the blob on demand then deserializes it, like the transform overload`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns """{"id":"wf-1"}""".toByteArray()
+
+        // The reified overload delegates to the transform overload, so it resolves the blob the same way:
+        // fetch on demand (waiting for the download) and read it back, then decode the bytes as JSON.
+        val result = readManager().blobData<TestBlob>(RemoteConfigTopic.Workflows, "wf1")
+
+        assertThat(result).isEqualTo(TestBlob(id = "wf-1"))
+        coVerify(exactly = 1) { blobFetcher.ensureDownloaded(REF_VALID) }
+    }
+
+    @Test
+    fun `blobData returns null for a blob-backed item that cannot be fetched`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns false
+
+        assertThat(readManager().blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
+        verify(exactly = 0) { blobStore.read(any()) }
+    }
+
+    @Test
+    fun `blobData skips the network for a blob-backed item once the endpoint is disabled`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+        // A 4xx disables the endpoint for the session.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
+        coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
+    }
+
+    @Test
+    fun `blobData triggers a sync for an uncached item when none is in flight and returns the committed data`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
+        var result: ByteArray? = null
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+        }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        // The on-demand sync is issued as foreground for the current user.
+        assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
+        assertThat(read.isActive).isTrue()
+
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag",
+              "active_topics": ["workflows"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).isEqualTo(byteArrayOf(4, 2))
+    }
+
+    @Test
+    fun `blobData returns null without triggering a sync when no app user is known`() = runTest {
+        every { diskCache.read() } returns null
+
+        assertThat(readManager(appUserIDProvider = { null }).blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `blobData does not trigger a sync for an uncached item once the endpoint is disabled`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+        // A 4xx disables the endpoint for the session (this is the only config request that should ever fire).
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `blobData waits for an in-flight refresh and returns the freshly committed data`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+        val manager = readManager()
+
+        // A refresh is in flight: the backend stub captures the callbacks without settling them yet.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        // The item is not committed yet, so the read parks on the in-flight refresh.
+        var result: ByteArray? = null
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+        }
+        assertThat(read.isActive).isTrue()
+
+        // Settle the refresh with a 200 that commits the item.
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag",
+              "active_topics": ["workflows"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).isEqualTo(byteArrayOf(4, 2))
+    }
+
+    @Test
+    fun `blobData returns a committed item without waiting even while a refresh is in flight`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(9)
+        val manager = readManager()
+
+        // A refresh is in flight and never settles; a committed read must not block on it (else this hangs).
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isEqualTo(byteArrayOf(9))
+    }
+
+    @Test
+    fun `clearCache unblocks a body waiting on an in-flight refresh`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        var result: ByteArray? = byteArrayOf(1)
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+        }
+        assertThat(read.isActive).isTrue()
+
+        // Identity change unblocks the waiter, which re-reads the now-wiped cache and gives up.
+        manager.clearCache()
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `close unblocks a body waiting on an in-flight refresh`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        var result: ByteArray? = byteArrayOf(1)
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+        }
+        assertThat(read.isActive).isTrue()
+
+        // SDK teardown unblocks the waiter, which re-reads the still-empty cache and gives up.
+        manager.close()
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `a 204 unblocks a body waiting on an in-flight refresh`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        var result: ByteArray? = byteArrayOf(1)
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+        }
+        assertThat(read.isActive).isTrue()
+
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `an error unblocks a body waiting on an in-flight refresh`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        var result: ByteArray? = byteArrayOf(1)
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+        }
+        assertThat(read.isActive).isTrue()
+
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownError, "boom"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        assertThat(read.isCompleted).isTrue()
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `concurrent reads with interleaved refreshes and cache clears all complete`() {
+        // language=json
+        val stressResponse = """
+            {
+              "domain": "app",
+              "manifest": "m-stress",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "api": { "url": "https://api.revenuecat.com" } } }
+            }
+        """.trimIndent()
+        // A tiny thread-safe fake of the persisted state, so commits and wipes interleave like the real cache.
+        val state = AtomicReference<PersistedRemoteConfigurationState?>(null)
+        every { diskCache.read() } answers { state.get() }
+        every { diskCache.write(any()) } answers { state.set(firstArg()); true }
+        every { diskCache.clear() } answers { state.set(null) }
+        every { blobStore.cachedRefs() } returns emptySet()
+        every {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            arg<(RCContainer?, VerificationResult) -> Unit>(5)
+                .invoke(containerWithConfig(stressResponse), VerificationResult.VERIFIED)
+        }
+        val manager = RemoteConfigManager(
+            backend,
+            diskCache,
+            blobStore,
+            dateProvider = dateProvider,
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+            ioDispatcher = Dispatchers.IO,
+            sourceProvider = sourceProvider,
+            blobFetcher = blobFetcher,
+            appUserIDProvider = { TEST_APP_USER_ID },
+        )
+
+        val clearer = thread { repeat(STRESS_ITERATIONS) { manager.clearCache() } }
+        val refresher = thread {
+            repeat(STRESS_ITERATIONS) {
+                manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+            }
+        }
+        // Cold readers constantly wait on (or self-trigger) refreshes; the epoch/guard/completion machinery
+        // must never strand one on a hung await, even with clearCache racing every step.
+        runBlocking {
+            withTimeout(TimeUnit.SECONDS.toMillis(STRESS_TIMEOUT_SECONDS)) {
+                List(STRESS_READERS) {
+                    launch(Dispatchers.IO) {
+                        repeat(STRESS_ITERATIONS) { manager.topic(RemoteConfigTopic.Sources) }
+                    }
+                }.joinAll()
+            }
+        }
+        clearer.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        refresher.join(TimeUnit.SECONDS.toMillis(WAIT_SECONDS))
+        assertThat(clearer.isAlive).isFalse()
+        assertThat(refresher.isAlive).isFalse()
+
+        // The manager is still functional after the churn: a read self-primes and serves the committed topic.
+        runBlocking {
+            val topic = withTimeout(TimeUnit.SECONDS.toMillis(STRESS_TIMEOUT_SECONDS)) {
+                manager.topic(RemoteConfigTopic.Sources)
+            }
+            assertThat(topic).isNotNull
+        }
+    }
+
+    // A manager whose read methods run on this test's scheduler, so suspend reads are deterministic.
+    private fun TestScope.readManager(appUserIDProvider: () -> String? = { null }): RemoteConfigManager {
+        val dispatcher = UnconfinedTestDispatcher(testScheduler)
+        return RemoteConfigManager(
+            backend,
+            diskCache,
+            blobStore,
+            dateProvider = dateProvider,
+            scope = CoroutineScope(dispatcher),
+            ioDispatcher = dispatcher,
+            sourceProvider = sourceProvider,
+            blobFetcher = blobFetcher,
+            appUserIDProvider = appUserIDProvider,
+        )
+    }
+
+    // endregion
+
     private fun persisted(
         manifest: String,
         domain: String = "app",
@@ -730,6 +1295,9 @@ class RemoteConfigManagerTest {
         return container
     }
 
+    @Serializable
+    private data class TestBlob(val id: String)
+
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"
         private const val FIXED_MILLIS = 1_710_000_000_000L
@@ -738,6 +1306,9 @@ class RemoteConfigManagerTest {
         private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L
         private const val WAIT_SECONDS = 5L
         private const val BLOCKED_MILLIS = 200L
+        private const val STRESS_ITERATIONS = 50
+        private const val STRESS_READERS = 8
+        private const val STRESS_TIMEOUT_SECONDS = 30L
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"

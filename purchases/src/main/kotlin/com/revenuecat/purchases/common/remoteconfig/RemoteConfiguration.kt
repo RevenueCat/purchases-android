@@ -4,6 +4,7 @@ import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -16,7 +17,6 @@ import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.jsonObject
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
@@ -55,17 +55,15 @@ internal data class RemoteConfiguration(
     /**
      * A single item within a topic. An item is arbitrary, topic-specific JSON; [blobRef] and [prefetch] are
      * the only reserved conventions the SDK interprets, and every other key is preserved verbatim in
-     * [content].
+     * [metadata].
      *
-     * An item's payload arrives one of two ways, chosen by the server per response:
-     * - **inline**: [blobRef] is `null` and the payload is the topic-specific JSON in [content]
-     *   (e.g. a `sources` `api`/`blob` descriptor, or an inline `product_entitlement_mapping` entry).
-     * - **by reference**: [blobRef] is set and the payload lives in an external blob to fetch/read by that
-     *   ref; [content] then holds only whatever extra inline keys (if any) accompanied the reference.
+     * An item's payload lives in an external blob addressed by [blobRef]; [metadata] holds any inline keys
+     * (other than the reserved [blobRef]/[prefetch]) that accompanied the item. Reads go through
+     * `RemoteConfigManager.blobData`, which resolves the referenced blob and returns `null` when [blobRef] is
+     * absent — inline [metadata] is exposed only as the topic's item index, never as a payload.
      *
-     * Topic handlers resolve the payload as `blobRef?.let { read+parse blob } ?: content`, so both modes work
-     * for any topic. Unknown reserved keys are not a concern: anything that is not [blobRef]/[prefetch] is
-     * kept in [content], keeping the SDK forward-compatible.
+     * Unknown reserved keys are not a concern: anything that is not [blobRef]/[prefetch] is kept in
+     * [metadata], keeping the SDK forward-compatible.
      */
     @Serializable(with = ConfigItemSerializer::class)
     internal data class ConfigItem(
@@ -73,8 +71,8 @@ internal data class RemoteConfiguration(
         val blobRef: String? = null,
         /** When `true`, the SDK should proactively cache this item's blob. */
         val prefetch: Boolean = false,
-        /** The topic-specific item content (all keys except the reserved [blobRef]/[prefetch]). */
-        val content: JsonObject = JsonObject(emptyMap()),
+        /** The topic-specific item metadata (all keys except the reserved [blobRef]/[prefetch]). */
+        val metadata: JsonObject = JsonObject(emptyMap()),
     )
 
     companion object {
@@ -146,7 +144,7 @@ internal object ConfigTopicSerializer : KSerializer<ConfigTopic> {
 
 /**
  * Serializes [RemoteConfiguration.ConfigItem] as a flat JSON object: the reserved keys `blob_ref`/`prefetch`
- * plus every key of [RemoteConfiguration.ConfigItem.content], so arbitrary inline item content survives a
+ * plus every key of [RemoteConfiguration.ConfigItem.metadata], so arbitrary inline item metadata survives a
  * parse -> persist -> parse round-trip.
  */
 internal object ConfigItemSerializer : KSerializer<RemoteConfiguration.ConfigItem> {
@@ -157,19 +155,21 @@ internal object ConfigItemSerializer : KSerializer<RemoteConfiguration.ConfigIte
 
     override fun deserialize(decoder: Decoder): RemoteConfiguration.ConfigItem {
         val jsonDecoder = decoder as? JsonDecoder
-            ?: error("ConfigItem can only be deserialized from JSON.")
-        val obj = jsonDecoder.decodeJsonElement().jsonObject
+            ?: throw SerializationException("ConfigItem can only be deserialized from JSON.")
+        val element = jsonDecoder.decodeJsonElement()
+        val obj = element as? JsonObject
+            ?: throw SerializationException("ConfigItem must be a JSON object, but was: $element.")
         val blobRef = (obj[BLOB_REF_KEY] as? JsonPrimitive)?.takeIf { it.isString }?.content
         val prefetch = (obj[PREFETCH_KEY] as? JsonPrimitive)?.booleanOrNull ?: false
-        val content = JsonObject(obj.filterKeys { it != BLOB_REF_KEY && it != PREFETCH_KEY })
-        return RemoteConfiguration.ConfigItem(blobRef = blobRef, prefetch = prefetch, content = content)
+        val metadata = JsonObject(obj.filterKeys { it != BLOB_REF_KEY && it != PREFETCH_KEY })
+        return RemoteConfiguration.ConfigItem(blobRef = blobRef, prefetch = prefetch, metadata = metadata)
     }
 
     override fun serialize(encoder: Encoder, value: RemoteConfiguration.ConfigItem) {
         val jsonEncoder = encoder as? JsonEncoder
-            ?: error("ConfigItem can only be serialized to JSON.")
+            ?: throw SerializationException("ConfigItem can only be serialized to JSON.")
         val merged = buildMap<String, JsonElement> {
-            putAll(value.content)
+            putAll(value.metadata)
             value.blobRef?.let { put(BLOB_REF_KEY, JsonPrimitive(it)) }
             if (value.prefetch) put(PREFETCH_KEY, JsonPrimitive(true))
         }

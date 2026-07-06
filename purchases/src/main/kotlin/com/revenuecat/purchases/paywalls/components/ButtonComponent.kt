@@ -7,6 +7,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
@@ -28,6 +29,7 @@ public class ButtonComponent(
     @get:JvmSynthetic public val transition: PaywallTransition? = null,
     @get:JvmSynthetic public val name: String? = null,
     @get:JvmSynthetic public val id: String? = null,
+    @get:JvmSynthetic @SerialName("state_updates") public val stateUpdates: List<StateUpdate>? = null,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI

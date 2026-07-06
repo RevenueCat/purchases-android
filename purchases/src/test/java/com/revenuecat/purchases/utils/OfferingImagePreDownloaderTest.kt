@@ -150,7 +150,7 @@ class OfferingImagePreDownloaderTest {
         val expectedImageDownloads = listOf(
             "https://pawwalls.com/test_stack_light_low_res.webp",
             "https://pawwalls.com/test_stack_dark_low_res.webp",
-            "https://pawwalls.com/test_icon_1.webp",
+            "https://pawwalls.com/icons/test_icon_1.webp",
             "https://pawwalls.com/test_image_light_low_res.webp",
             "https://pawwalls.com/test_image_dark_low_res.webp",
             "https://pawwalls.com/test_image_override_light_low_res.webp",
@@ -168,11 +168,11 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_sticky_footer_override_dark_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_override_2_light_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_override_2_dark_low_res.webp",
-            "https://pawwalls.com/test_icon_2.webp",
+            "https://pawwalls.com/icons/test_icon_2.webp",
             "https://pawwalls.com/test_header_low_res.webp",
-            "https://pawwalls.com/test_icon_5.webp",
-            "https://pawwalls.com/test_icon_3.webp",
-            "https://pawwalls.com/test_icon_4.webp",
+            "https://pawwalls.com/icons/test_icon_5.webp",
+            "https://pawwalls.com/icons/test_icon_3.webp",
+            "https://pawwalls.com/icons/test_icon_4.webp",
         )
 
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall(
@@ -193,7 +193,7 @@ class OfferingImagePreDownloaderTest {
                             color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
                         ),
                         IconComponent(
-                            baseUrl = "https://pawwalls.com",
+                            baseUrl = "https://pawwalls.com/icons",
                             iconName = "test_icon",
                             formats = IconComponent.Formats(
                                 webp = "test_icon_1.webp",
@@ -292,7 +292,7 @@ class OfferingImagePreDownloaderTest {
                                         color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
                                     ),
                                     icon = IconComponent(
-                                        baseUrl = "https://pawwalls.com",
+                                        baseUrl = "https://pawwalls.com/icons",
                                         iconName = "test_icon",
                                         formats = IconComponent.Formats(
                                             webp = "test_icon_3.webp",
@@ -305,7 +305,7 @@ class OfferingImagePreDownloaderTest {
                                         color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
                                     ),
                                     icon = IconComponent(
-                                        baseUrl = "https://pawwalls.com",
+                                        baseUrl = "https://pawwalls.com/icons",
                                         iconName = "test_icon",
                                         formats = IconComponent.Formats(
                                             webp = "test_icon_4.webp",
@@ -330,7 +330,7 @@ class OfferingImagePreDownloaderTest {
                                 color = ColorScheme(light = ColorInfo.Alias(ColorAlias("")))
                             ),
                             IconComponent(
-                                baseUrl = "https://pawwalls.com",
+                                baseUrl = "https://pawwalls.com/icons",
                                 iconName = "test_icon",
                                 formats = IconComponent.Formats(
                                     webp = "test_icon_2.webp",
@@ -373,7 +373,7 @@ class OfferingImagePreDownloaderTest {
                     stack = StackComponent(
                         components = listOf(
                             IconComponent(
-                                baseUrl = "https://pawwalls.com",
+                                baseUrl = "https://pawwalls.com/icons",
                                 iconName = "test_icon",
                                 formats = IconComponent.Formats(
                                     webp = "test_icon_5.webp",

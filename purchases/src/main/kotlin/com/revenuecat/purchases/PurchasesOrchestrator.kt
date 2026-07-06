@@ -431,6 +431,7 @@ internal class PurchasesOrchestrator(
         }
 
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            remoteConfigManager?.refreshRemoteConfig(state.appInBackground, appUserID)
             getOfferings(receiveOfferingsCallback, fetchCurrent = true)
         }
     }
