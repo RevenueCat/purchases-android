@@ -275,9 +275,22 @@ internal class PaywallViewModelImpl(
         val needsUpdateState = this.options.hashCode() != options.hashCode()
         // Some properties not considered for equality (hashCode) may have changed
         // (e.g. the listener may change in some re-renderers)
+        val previousWebViewMessageHandler = this.options.webViewMessageHandler
         this.options = options
         if (needsUpdateState) {
             updateState()
+        } else if (previousWebViewMessageHandler !== options.webViewMessageHandler) {
+            // The web view message handler is excluded from hashCode and is baked into the loaded
+            // Components state, so a handler-only change won't rebuild state. Refresh it in place
+            // (like refreshStateIfLocaleChanged) so web_view components get the latest handler without
+            // re-resolving the offering or resetting selections.
+            val currentState = _state.value
+            if (currentState is PaywallState.Loaded.Components) {
+                currentState.update(webViewMessageHandler = options.webViewMessageHandler)
+                workflowStepStateCache.values.forEach {
+                    it.update(webViewMessageHandler = options.webViewMessageHandler)
+                }
+            }
         }
     }
 
@@ -1186,7 +1199,12 @@ internal class PaywallViewModelImpl(
                 }
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
                     workflowStepStateCache[stepId] = computed
+                    // Re-stamp the locale and web view message handler from the latest values at insertion
+                    // time: this step's state was computed on the background dispatcher with a snapshot
+                    // taken before any concurrent updateOptions/locale change, and updateOptions only
+                    // refreshes steps already present in the cache when it runs.
                     computed.update(localeList = _lastLocaleList.value.toFrameworkLocaleList())
+                    computed.update(webViewMessageHandler = options.webViewMessageHandler)
                     workflow.singleStepFallbackId
                         ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
                         ?.let { computed.setDefaultPackage(it) }
@@ -1459,6 +1477,7 @@ internal class PaywallViewModelImpl(
                 purchases = purchases,
                 customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
+                webViewMessageHandler = options.webViewMessageHandler,
             )
         }
     }
