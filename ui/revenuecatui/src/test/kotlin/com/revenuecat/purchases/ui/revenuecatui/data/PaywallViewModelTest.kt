@@ -232,7 +232,7 @@ class PaywallViewModelTest {
         coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
         every { purchases.useWorkflows } returns false
-        every { purchases.workflowIdForOfferingId(any()) } returns null
+        coEvery { purchases.workflowIdForOfferingId(any()) } returns null
         coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
 
         every { listener.onPurchaseStarted(any()) } just runs
@@ -1424,9 +1424,8 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne, "step-2" to stepTwo),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
-        every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
         coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
 
         val model = PaywallViewModelImpl(
@@ -1483,9 +1482,8 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
-        every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
         coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
 
         val model = PaywallViewModelImpl(
@@ -3069,7 +3067,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
 
         val model = PaywallViewModelImpl(
@@ -3133,7 +3130,7 @@ class PaywallViewModelTest {
         // offeringWithWPL has no legacy paywall (offering.paywall == null), so it is served through
         // the workflows endpoint. With a mapped workflow id, that id (not the offering id) is used.
         val workflowId = "wfl-real-id"
-        every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns workflowId
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns workflowId
         val workflowScreen = WorkflowScreen(
             templateName = "template",
             revision = 0,
@@ -3156,7 +3153,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
         coEvery { purchases.awaitGetWorkflow(workflowId) } returns workflow
 
@@ -3183,7 +3179,7 @@ class PaywallViewModelTest {
         // offeringWithWPL has no legacy paywall and no mapped workflow (not yet converted). It must
         // still hit the workflows endpoint, passing the offering id so the backend lazily converts
         // it — rather than falling back to a legacy paywall that does not exist.
-        every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns null
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns null
         val workflowScreen = WorkflowScreen(
             templateName = "template",
             revision = 0,
@@ -3206,7 +3202,6 @@ class PaywallViewModelTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to stepOne),
             screens = mapOf("screen-1" to workflowScreen),
-            uiConfig = UiConfig(),
         )
         coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns workflow
 

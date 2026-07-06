@@ -5,7 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
-import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.networking.RCContainer
@@ -23,6 +23,7 @@ import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -205,6 +206,64 @@ class WorkflowsConfigIntegrationTest {
         assertThat(downloadCount).isEqualTo(1)
     }
 
+    @Test
+    fun `WorkflowManager kept as the seam serves through the config path by offering id`() = runTest(testDispatcher) {
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val ref = refOf(workflowJson.toByteArray())
+        downloads[ref] = workflowJson.toByteArray()
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows"],
+              "topics": {
+                "workflows": { "wf-1": { "blob_ref": "$ref", "offering_identifier": "premium_annual" } }
+              }
+            }
+        """.trimIndent()
+        sync(config)
+
+        // WorkflowManager is kept as the consumer-facing seam; only its data source moved to the config layer.
+        val workflowManager = WorkflowManager(workflowsConfigProvider = provider, scope = testScope)
+
+        var delivered: PublishedWorkflow? = null
+        var error: PurchasesError? = null
+        workflowManager.getWorkflow(
+            workflowOrOfferingId = "premium_annual", // by offering id; resolved via config metadata, not a backend call
+            onSuccess = { delivered = it },
+            onError = { error = it },
+        )
+
+        assertThat(error).isNull()
+        assertThat(delivered?.id).isEqualTo("wf-1")
+        assertThat(downloadCount).isEqualTo(1) // body pulled on demand through the manager
+    }
+
+    @Test
+    fun `awaitWorkflowsReady completes once the topic is committed, without forcing a second sync`() =
+        runTest(testDispatcher) {
+            val config = """
+                {
+                  "domain": "app",
+                  "manifest": "v1.workflows:etag1",
+                  "active_topics": ["workflows"],
+                  "topics": {
+                    "workflows": { "wf-1": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual" } }
+                  }
+                }
+            """.trimIndent()
+            sync(config)
+
+            val workflowManager = WorkflowManager(workflowsConfigProvider = provider, scope = testScope)
+            var completed = false
+            workflowManager.awaitWorkflowsReady { completed = true }
+
+            assertThat(completed).isTrue()
+            // The topic was already committed by the sync() above — awaitWorkflowsReady must not trigger
+            // another one; this is what keeps OfferingsManager's gate cheap on a warm cache.
+            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        }
+
     private fun sync(configJson: String, vararg blobs: Pair<String, String>) {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = "user-1")
         onSuccess.invoke(containerWith(configJson, *blobs), VerificationResult.VERIFIED)
@@ -216,8 +275,6 @@ class WorkflowsConfigIntegrationTest {
         initialStepId = "step-1",
         steps = emptyMap(),
         screens = emptyMap(),
-        // Still required pre-switch; the config-endpoint bodies stop shipping it once serving moves over.
-        uiConfig = UiConfig(),
     )
 
     private fun containerWith(configJson: String, vararg blobs: Pair<String, String>): RCContainer {

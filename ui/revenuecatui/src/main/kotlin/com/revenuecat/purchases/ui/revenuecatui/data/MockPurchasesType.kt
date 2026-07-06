@@ -70,5 +70,5 @@ internal class MockPurchasesType(
         throw NotImplementedError("Mock implementation for previews only")
     }
 
-    override fun workflowIdForOfferingId(offeringId: String): String? = null
+    override suspend fun workflowIdForOfferingId(offeringId: String): String? = null
 }
