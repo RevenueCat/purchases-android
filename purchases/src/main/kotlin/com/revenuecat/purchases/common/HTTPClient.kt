@@ -193,8 +193,6 @@ internal class HTTPClient(
 
         val isMainBackend = fallbackURLIndex == 0
 
-        // Resolve the API base host from the source provider on the main attempt; endpoint fallback-host
-        // attempts (fallbackURLIndex > 0) keep using their fallback base URL.
         val requestBaseURL = apiSourceURL(endpoint, baseURL, isFallbackAttempt = fallbackURLIndex > 0) ?: baseURL
 
         var callSuccessful = false
