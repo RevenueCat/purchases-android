@@ -139,6 +139,76 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         apiSourceServer.shutdown()
     }
 
+    @Test
+    fun `performRequest ETag retry targets the same API source host`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // GetCustomerInfo has no endpoint fallback URL, isolating API-source host resolution.
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null),
+            apiSourceProvider = provider,
+        )
+
+        val urlString = server.url("/v1/subscribers/test_user_id").toString()
+
+        // First attempt: an ETag cache miss (null result) forces a refresh retry.
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.NOT_MODIFIED,
+                payload = "",
+                eTagHeader = any(),
+                urlString = urlString,
+                refreshETag = false,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        } returns null
+
+        val expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                expectedResult.responseCode,
+                payload = expectedResult.payloadText,
+                eTagHeader = any(),
+                urlString = urlString,
+                refreshETag = true,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        } returns expectedResult
+
+        server.enqueue(MockResponse().setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED))
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(expectedResult.responseCode)
+                .setBody(expectedResult.payloadText),
+        )
+
+        val result = client.performRequest(
+            URL(AppConfig.baseUrlString),
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        // Both the initial request and the ETag refresh retry must hit the API source host resolved from the
+        // provider, not fall back to AppConfig.baseUrlString. If the retry ignored the API source, this server
+        // would only see one request.
+        val firstRequest = server.takeRequest()
+        val secondRequest = server.takeRequest()
+        assertThat(firstRequest.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(secondRequest.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(2)
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+    }
+
     /** A minimal [APISourceProvider] whose current API source is the first of [urls]. */
     private class FakeAPISourceProvider(urls: List<String>) : APISourceProvider {
         private val handles = urls.mapIndexed { index, url ->
