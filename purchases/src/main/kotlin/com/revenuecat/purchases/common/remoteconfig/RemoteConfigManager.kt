@@ -19,8 +19,10 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
@@ -370,6 +372,56 @@ internal class RemoteConfigManager(
         transform: (ByteArray) -> T?,
     ): T? = withContext(ioDispatcher) {
         resolveBlobBytes(topic, itemKey)?.let(transform)
+    }
+
+    /**
+     * The resolved blob payloads for [itemKeys] in [topic], each parsed from JSON into [T], keyed by item key.
+     * The batch counterpart of the single-key reified overload: every requested key is present in the result,
+     * mapping to `null` when that item is unknown, has no `blob_ref`, its blob can't be resolved, or its bytes
+     * don't deserialize into [T]. Duplicate keys collapse to one entry; an empty [itemKeys] returns an empty
+     * map. [T] must be a concrete `@Serializable` type; parsing uses the shared [JsonProvider.defaultJson]. For
+     * non-JSON payloads use the `transform` batch overload, which documents the resolution and waiting rules.
+     */
+    suspend inline fun <reified T> blobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): Map<String, T?> =
+        blobData(topic, itemKeys) { bytes ->
+            try {
+                JsonProvider.defaultJson.decodeFromString<T>(bytes.decodeToString())
+            } catch (e: SerializationException) {
+                errorLog(e) { "Failed to parse remote config blob as JSON." }
+                null
+            }
+        }
+
+    /**
+     * Resolves the blob payload bytes for each key in [itemKeys] within [topic] **concurrently** and maps each
+     * through [transform], keyed by item key. The batch counterpart of the single-key `transform` overload:
+     * every requested key is present in the result, mapping to `null` when that item is unknown or its blob
+     * can't be resolved. Duplicate keys collapse to one entry; an empty [itemKeys] returns an empty map.
+     *
+     * Each key resolves through the same path as the single-key overload (see its KDoc for the `blob_ref`,
+     * on-demand fetch, and waiting rules), so the per-item semantics are identical — this only fans them out.
+     * The fan-out is safe: a shared in-flight `/v1/config` refresh is deduped across all keys, and the blob
+     * fetcher dedupes concurrent downloads of the same ref. When the endpoint is [isDisabled] (the 4xx session
+     * kill-switch) every key resolves to `null` without any read. Runs on [ioDispatcher].
+     */
+    suspend fun <T> blobData(
+        topic: RemoteConfigTopic,
+        itemKeys: Collection<String>,
+        transform: (ByteArray) -> T?,
+    ): Map<String, T?> = withContext(ioDispatcher) {
+        coroutineScope {
+            itemKeys.distinct()
+                .associateWith { key -> async { resolveBlobBytes(topic, key)?.let(transform) } }
+                .mapValues { (_, deferred) -> deferred.await() }
+        }.also { resolved ->
+            val unresolved = resolved.filterValues { it == null }.keys
+            if (unresolved.isNotEmpty()) {
+                warnLog {
+                    "Could not resolve remote config blob(s) for ${unresolved.size} of ${resolved.size} " +
+                        "requested item(s) in topic '${topic.wireName}': $unresolved."
+                }
+            }
+        }
     }
 
     /**
