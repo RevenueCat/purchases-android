@@ -12,6 +12,12 @@ internal object WebViewMessageType {
     const val REQUEST_VARIABLES = "rc:request-variables"
     const val ERROR = "rc:error"
     const val VARIABLES = "rc:variables"
+
+    /** Host → content: which axes the native host sizes to the content (`fit`). */
+    const val FIT = "fit"
+
+    /** Content → host: reported content box size in CSS pixels. */
+    const val RESIZE = "resize"
 }
 
 /**

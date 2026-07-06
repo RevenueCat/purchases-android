@@ -47,6 +47,9 @@ internal class WebViewJavaScriptBridge(
     locale: String,
     messageHandler: PaywallWebViewMessageHandler?,
     protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
+    private val sizeToContentWidth: Boolean = false,
+    private val sizeToContentHeight: Boolean = false,
+    private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
 ) : PaywallWebViewController {
 
@@ -170,11 +173,35 @@ internal class WebViewJavaScriptBridge(
                 componentId = componentId,
             ),
         )
+        sendFitIfNeeded()
+    }
+
+    private fun sendFitIfNeeded() {
+        if (!sizeToContentWidth && !sizeToContentHeight) return
+        val payload = JSONObject().apply {
+            if (sizeToContentWidth) put("width", true)
+            if (sizeToContentHeight) put("height", true)
+        }
+        deliverEnvelope(
+            WebViewEnvelope.build(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                protocolVersion = protocolVersion,
+                componentId = componentId,
+                type = WebViewMessageType.FIT,
+                payload = payload,
+            ),
+        )
     }
 
     @MainThread
     private fun handleAppFrame(rawJson: String) {
         if (!channelOpen) return
+
+        val transport = WebViewEnvelope.parse(rawJson) ?: return
+        if (transport.kind == WebViewEnvelope.KIND_MESSAGE && transport.type == WebViewMessageType.RESIZE) {
+            handleResize(transport)
+            return
+        }
 
         val parsed = WebViewMessageParser.parse(
             rawJson = rawJson,
@@ -203,6 +230,15 @@ internal class WebViewJavaScriptBridge(
         }
 
         messageHandler?.onMessage(message, this)
+    }
+
+    @MainThread
+    private fun handleResize(envelope: WebViewEnvelope.Parsed) {
+        if (envelope.componentId != componentId) return
+        val payload = envelope.payload ?: return
+        val width = payload.optInt("width").takeIf { payload.has("width") }
+        val height = payload.optInt("height").takeIf { payload.has("height") }
+        onContentResize(width, height)
     }
 
     override fun postVariables(componentId: String, variables: Map<String, PaywallWebViewValue>) {
