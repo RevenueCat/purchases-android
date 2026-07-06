@@ -474,6 +474,79 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
     }
 
+    @Test
+    fun `performRequest ETag retry after a failover stays on the current API source`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val apiSourceServer2 = MockWebServer()
+        val provider = FakeAPISourceProvider(
+            listOf(server.url("/").toString(), apiSourceServer2.url("/").toString()),
+        )
+        val client = createClient(appConfig = createAppConfig(proxyURL = null), apiSourceProvider = provider)
+
+        val source2UrlString = apiSourceServer2.url("/v1/subscribers/test_user_id").toString()
+
+        // Source 1 returns a server error, so the request fails over to source 2.
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+
+        // On source 2 the first attempt is an ETag cache miss (null), forcing a refresh retry on source 2.
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.NOT_MODIFIED,
+                payload = "",
+                eTagHeader = any(),
+                urlString = source2UrlString,
+                refreshETag = false,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        } returns null
+
+        val expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                expectedResult.responseCode,
+                payload = expectedResult.payloadText,
+                eTagHeader = any(),
+                urlString = source2UrlString,
+                refreshETag = true,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        } returns expectedResult
+
+        apiSourceServer2.enqueue(MockResponse().setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED))
+        apiSourceServer2.enqueue(
+            MockResponse()
+                .setResponseCode(expectedResult.responseCode)
+                .setBody(expectedResult.payloadText),
+        )
+
+        try {
+            val result = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+
+            // Source 1 was hit once (the error that triggered failover); the ETag retry stays on source 2,
+            // the source made current by the failover, rather than rewinding to source 1 or the default host.
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(apiSourceServer2.requestCount).isEqualTo(2)
+            assertThat(provider.reportedUrls).containsExactly(server.url("/").toString())
+        } finally {
+            apiSourceServer2.shutdown()
+        }
+    }
+
     /**
      * An [APISourceProvider] that walks [urls] in order, recording the sources reported unhealthy.
      * Mirrors the real provider's token-based advancement so stale reports are ignored.
