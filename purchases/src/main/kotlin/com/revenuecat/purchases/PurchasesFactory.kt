@@ -290,8 +290,6 @@ internal class PurchasesFactory(
                     backend = backend,
                     diskCache = remoteConfigDiskCache,
                     blobStore = RemoteConfigBlobStore(contextForStorage),
-                    // Shared with the HTTP client so API base-host resolution and remote-config reads
-                    // draw from the same source provider and on-disk topics.
                     topicStore = remoteConfigTopicStore,
                     sourceProvider = apiSourceProvider,
                     // Lets a cold on-demand read self-trigger a sync for the current user (see blobData()).
