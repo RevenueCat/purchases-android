@@ -193,7 +193,7 @@ internal class HTTPClient(
 
         val isMainBackend = fallbackURLIndex == 0
 
-        val requestBaseURL = apiSourceURL(endpoint, baseURL, isFallbackAttempt = fallbackURLIndex > 0) ?: baseURL
+        val requestBaseURL = apiSourceURL(endpoint, baseURL, isFallbackAttempt = !isMainBackend) ?: baseURL
 
         var callSuccessful = false
         val requestStartTime = dateProvider.now
