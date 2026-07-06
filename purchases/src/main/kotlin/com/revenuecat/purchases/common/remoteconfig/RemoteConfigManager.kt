@@ -378,16 +378,17 @@ internal class RemoteConfigManager(
     }
 
     /**
-     * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, merges each (parsed as a
-     * JSON object) into one combined JSON object, and decodes that into a single [T]. Use this when a single
-     * logical object is assembled from data spread across several items in a topic (e.g. item `a` carries
-     * `{"x":...}` and item `b` carries `{"y":...}`, together decoding into `T(x, y)`).
+     * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, builds a single JSON
+     * object mapping **each item key to that item's parsed blob JSON**, and decodes it into a single [T]. Use
+     * this to assemble one object from several items in a topic: given items `wf1 -> {"a":...}` and
+     * `wf2 -> {"b":...}`, the merged object is `{"wf1": {"a":...}, "wf2": {"b":...}}`, so [T] declares a field
+     * per item key.
      *
      * This is **all-or-nothing**: if any requested item is unknown, has no `blob_ref`, or its blob can't be
      * resolved, the call returns `null` (a partial object is never produced) and warn-logs the missing keys.
-     * It also returns `null` if any resolved blob isn't valid JSON, isn't a JSON object, or the merged object
-     * doesn't deserialize into [T]. On a key collision the later item in [itemKeys] wins. Duplicate keys are
-     * de-duplicated; [T] must be a concrete `@Serializable` type and parsing uses [JsonProvider.defaultJson].
+     * It also returns `null` if any resolved blob isn't valid JSON, or the merged object doesn't deserialize
+     * into [T]. Duplicate keys are de-duplicated; [T] must be a concrete `@Serializable` type and parsing uses
+     * [JsonProvider.defaultJson].
      *
      * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
      * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
@@ -406,10 +407,10 @@ internal class RemoteConfigManager(
     }
 
     /**
-     * Resolves every item in [itemKeys] concurrently and merges each blob (parsed as a JSON object) into one
-     * combined object, or `null` if any item can't be resolved or any resolved blob isn't a JSON object. The
-     * non-inline worker behind [mergeItemsBlobData]; kept non-`private` so the reified `inline` function can
-     * call it. Runs on [ioDispatcher].
+     * Resolves every item in [itemKeys] concurrently and builds a JSON object keyed by item key, each mapping
+     * to that item's parsed blob JSON, or `null` if any item can't be resolved or any resolved blob isn't valid
+     * JSON. The non-inline worker behind [mergeItemsBlobData]; kept non-`private` so the reified `inline`
+     * function can call it. Runs on [ioDispatcher].
      */
     suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? =
         withContext(ioDispatcher) {
@@ -434,12 +435,8 @@ internal class RemoteConfigManager(
                     errorLog(e) { "Remote config blob for item '$key' in topic '${topic.wireName}' is not valid JSON." }
                     return@withContext null
                 }
-                if (element !is JsonObject) {
-                    errorLog { "Remote config blob for item '$key' in topic '${topic.wireName}' is not a JSON object." }
-                    return@withContext null
-                }
-                // Later items in itemKeys override earlier ones on a key collision.
-                merged.putAll(element)
+                // Nest each item's blob JSON under its item key.
+                merged[key] = element
             }
             JsonObject(merged)
         }
