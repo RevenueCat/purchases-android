@@ -1226,6 +1226,24 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `mergeItemsBlobData returns null for an empty key list once the endpoint is disabled`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager()
+        // A 4xx disables the endpoint for the session.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        // Without the disabled short-circuit an empty key list would build an empty object and decode to a
+        // non-null OptionalBlob (all fields optional); the kill-switch must take precedence and return null.
+        val result = manager.mergeItemsBlobData<OptionalBlob>(RemoteConfigTopic.Workflows, emptyList())
+
+        assertThat(result).isNull()
+    }
+
+    @Test
     fun `mergeItemsBlobData triggers a single shared sync for multiple uncached items then decodes`() = runTest {
         var state: PersistedRemoteConfigurationState? = null
         every { diskCache.read() } answers { state }
@@ -1476,6 +1494,11 @@ class RemoteConfigManagerTest {
 
     @Serializable
     private data class MergedBlob(val wf1: Section, val wf2: Section)
+
+    // All fields optional, so it decodes from an empty JSON object to a non-null instance — used to prove the
+    // disabled kill-switch short-circuits before an empty key list would build and decode an empty object.
+    @Serializable
+    private data class OptionalBlob(val a: String? = null)
 
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"

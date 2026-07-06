@@ -393,8 +393,8 @@ internal class RemoteConfigManager(
      * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
      * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
      * `/v1/config` refresh is deduped across all keys, and the blob fetcher dedupes concurrent downloads of the
-     * same ref. When the endpoint is [isDisabled] (the 4xx session kill-switch) every item resolves to `null`,
-     * so the call returns `null` without any read. Runs on [ioDispatcher].
+     * same ref. When the endpoint is [isDisabled] (the 4xx session kill-switch) the call returns `null`
+     * immediately without any read (including for an empty [itemKeys]). Runs on [ioDispatcher].
      */
     suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
         mergeItemsBlobData(topic, itemKeys) { merged ->
@@ -429,6 +429,10 @@ internal class RemoteConfigManager(
      */
     @Suppress("ReturnCount")
     private suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? {
+        if (disabled) {
+            verboseLog { "Remote config disabled (4xx); skipping merged read for topic '${topic.wireName}'." }
+            return null
+        }
         val keys = itemKeys.distinct()
         val resolved = coroutineScope {
             keys.associateWith { key -> async { resolveBlobBytes(topic, key) } }
