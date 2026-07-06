@@ -396,50 +396,65 @@ internal class RemoteConfigManager(
      * same ref. When the endpoint is [isDisabled] (the 4xx session kill-switch) every item resolves to `null`,
      * so the call returns `null` without any read. Runs on [ioDispatcher].
      */
-    suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? {
-        val merged = mergedBlobObject(topic, itemKeys) ?: return null
-        return try {
-            JsonProvider.defaultJson.decodeFromJsonElement<T>(merged)
-        } catch (e: SerializationException) {
-            errorLog(e) { "Failed to decode merged remote config blobs from topic '${topic.wireName}' as JSON." }
-            null
+    suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
+        mergeItemsBlobData(topic, itemKeys) { merged ->
+            try {
+                JsonProvider.defaultJson.decodeFromJsonElement<T>(merged)
+            } catch (e: SerializationException) {
+                errorLog(e) { "Failed to decode merged remote config blobs from topic '${topic.wireName}' as JSON." }
+                null
+            }
         }
+
+    /**
+     * Resolves + merges the [itemKeys] blobs (see the reified [mergeItemsBlobData] for the merge shape and rules)
+     * and maps the resulting keyed JSON object through [transform] — resolution, merge, and [transform] all run
+     * on [ioDispatcher] so JSON decoding never runs on the caller's thread. Returns `null` when the merged
+     * object can't be built (any item unresolvable or non-JSON). The non-inline worker behind the reified
+     * overload; kept non-`private` so the `inline` function can call it.
+     */
+    suspend fun <T> mergeItemsBlobData(
+        topic: RemoteConfigTopic,
+        itemKeys: Collection<String>,
+        transform: (JsonObject) -> T?,
+    ): T? = withContext(ioDispatcher) {
+        mergedBlobObject(topic, itemKeys)?.let(transform)
     }
 
     /**
      * Resolves every item in [itemKeys] concurrently and builds a JSON object keyed by item key, each mapping
      * to that item's parsed blob JSON, or `null` if any item can't be resolved or any resolved blob isn't valid
-     * JSON. The non-inline worker behind [mergeItemsBlobData]; kept non-`private` so the reified `inline`
-     * function can call it. Runs on [ioDispatcher].
+     * JSON. Assumes it is already running on [ioDispatcher] (its only caller wraps it), so it doesn't switch
+     * context itself.
      */
-    suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? =
-        withContext(ioDispatcher) {
-            val keys = itemKeys.distinct()
-            val resolved = coroutineScope {
-                keys.associateWith { key -> async { resolveBlobBytes(topic, key) } }
-                    .mapValues { (_, deferred) -> deferred.await() }
-            }
-            val missing = resolved.filterValues { it == null }.keys
-            if (missing.isNotEmpty()) {
-                warnLog {
-                    "Could not resolve remote config blob(s) for ${missing.size} of ${resolved.size} " +
-                        "requested item(s) in topic '${topic.wireName}': $missing. Returning null."
-                }
-                return@withContext null
-            }
-            val merged = LinkedHashMap<String, JsonElement>()
-            for (key in keys) {
-                val element = try {
-                    JsonProvider.defaultJson.parseToJsonElement(resolved.getValue(key)!!.decodeToString())
-                } catch (e: SerializationException) {
-                    errorLog(e) { "Remote config blob for item '$key' in topic '${topic.wireName}' is not valid JSON." }
-                    return@withContext null
-                }
-                // Nest each item's blob JSON under its item key.
-                merged[key] = element
-            }
-            JsonObject(merged)
+    @Suppress("ReturnCount")
+    private suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? {
+        val keys = itemKeys.distinct()
+        val resolved = coroutineScope {
+            keys.associateWith { key -> async { resolveBlobBytes(topic, key) } }
+                .mapValues { (_, deferred) -> deferred.await() }
         }
+        val missing = resolved.filterValues { it == null }.keys
+        if (missing.isNotEmpty()) {
+            warnLog {
+                "Could not resolve remote config blob(s) for ${missing.size} of ${resolved.size} " +
+                    "requested item(s) in topic '${topic.wireName}': $missing. Returning null."
+            }
+            return null
+        }
+        val merged = LinkedHashMap<String, JsonElement>()
+        for (key in keys) {
+            val element = try {
+                JsonProvider.defaultJson.parseToJsonElement(resolved.getValue(key)!!.decodeToString())
+            } catch (e: SerializationException) {
+                errorLog(e) { "Remote config blob for item '$key' in topic '${topic.wireName}' is not valid JSON." }
+                return null
+            }
+            // Nest each item's blob JSON under its item key.
+            merged[key] = element
+        }
+        return JsonObject(merged)
+    }
 
     /**
      * Resolves an item's referenced-blob bytes, or `null` when the endpoint is [isDisabled], the item is
