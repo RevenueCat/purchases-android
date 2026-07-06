@@ -317,4 +317,45 @@ class EndpointTest {
                 .isFalse
         }
     }
+
+    @Test
+    fun `usesAPISources is true for main API endpoints`() {
+        val mainApiEndpoints = listOf(
+            Endpoint.GetCustomerInfo("test-user-id"),
+            Endpoint.LogIn,
+            Endpoint.PostReceipt,
+            Endpoint.GetOfferings("test-user-id"),
+            Endpoint.GetWorkflow("test-user-id", "wf_1"),
+            Endpoint.GetWorkflows("test-user-id"),
+            Endpoint.AliasUsers("test-user-id"),
+            Endpoint.PostAttributes("test-user-id"),
+            Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
+            Endpoint.GetProductEntitlementMapping,
+            Endpoint.GetCustomerCenterConfig("test-user-id"),
+            Endpoint.GetRemoteConfig("app"),
+            Endpoint.PostCreateSupportTicket,
+            Endpoint.PostRedeemWebPurchase,
+            Endpoint.GetVirtualCurrencies("test-user-id"),
+            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+        )
+        for (endpoint in mainApiEndpoints) {
+            assertThat(endpoint.usesAPISources)
+                .withFailMessage { "Endpoint $endpoint expected to use API sources" }
+                .isTrue
+        }
+    }
+
+    @Test
+    fun `usesAPISources is false for endpoints hosted elsewhere`() {
+        val nonApiEndpoints = listOf(
+            Endpoint.PostDiagnostics,
+            Endpoint.PostEvents,
+            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
+        )
+        for (endpoint in nonApiEndpoints) {
+            assertThat(endpoint.usesAPISources)
+                .withFailMessage { "Endpoint $endpoint expected to not use API sources" }
+                .isFalse
+        }
+    }
 }

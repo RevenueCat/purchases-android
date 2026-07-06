@@ -24,6 +24,7 @@ import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamE
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.remoteconfig.APISourceProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -70,6 +71,7 @@ internal class HTTPClient(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
     private val storefrontProvider: StorefrontProvider,
+    private val apiSourceProvider: APISourceProvider?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
@@ -191,6 +193,10 @@ internal class HTTPClient(
 
         val isMainBackend = fallbackURLIndex == 0
 
+        // Resolve the API base host from the source provider on the main attempt; endpoint fallback-host
+        // attempts (fallbackURLIndex > 0) keep using their fallback base URL.
+        val requestBaseURL = apiSourceURL(endpoint, baseURL, isFallbackAttempt = fallbackURLIndex > 0) ?: baseURL
+
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
@@ -199,7 +205,7 @@ internal class HTTPClient(
 
         try {
             callResult = performCall(
-                baseURL,
+                requestBaseURL,
                 fallbackURLIndex > 0,
                 endpoint,
                 body,
@@ -226,7 +232,7 @@ internal class HTTPClient(
             timeoutManager.recordRequestResult(requestResult)
 
             trackHttpRequestPerformedIfNeeded(
-                baseURL,
+                requestBaseURL,
                 endpoint,
                 requestStartTime,
                 callSuccessful,
@@ -252,6 +258,23 @@ internal class HTTPClient(
             callResult = performRequestToFallbackURL()
         }
         return callResult
+    }
+
+    /**
+     * The API base URL to use for [endpoint], or null to keep using [baseURL].
+     *
+     * API sources apply only when this is not an endpoint fallback-host attempt, the endpoint opts in via
+     * [Endpoint.usesAPISources], and [baseURL] is still the default host (a proxy or an overridden base URL
+     * pins the host and bypasses API sources).
+     */
+    private fun apiSourceURL(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): URL? {
+        // A proxy or an overridden base URL pins the host (baseURL differs from the default); endpoint
+        // fallback-host attempts and opted-out endpoints keep the provided base URL as well.
+        val eligible = !isFallbackAttempt &&
+            endpoint.usesAPISources &&
+            baseURL.toString() == AppConfig.baseUrlString
+        if (!eligible) return null
+        return apiSourceProvider?.currentAPISource()?.url?.let { runCatching { URL(it) }.getOrNull() }
     }
 
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")

@@ -16,6 +16,9 @@ import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.remoteconfig.APISourceProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -64,6 +67,92 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.method).isEqualTo("GET")
         assertThat(request.path).isEqualTo("/v1/subscribers/identify")
     }
+
+    // region API source base host
+
+    @Test
+    fun `performRequest resolves base host from the API source provider when baseURL is the default host`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null),
+            apiSourceProvider = provider,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            URL(AppConfig.baseUrlString),
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `performRequest uses the provided base URL when there is no API source provider`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null),
+            apiSourceProvider = null,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `performRequest bypasses the API source provider when the base URL is not the default host`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // An overridden/proxy base URL pins the host; the API source (a different server) must not be used.
+        val apiSourceServer = MockWebServer()
+        val provider = FakeAPISourceProvider(listOf(apiSourceServer.url("/").toString()))
+        val client = createClient(apiSourceProvider = provider)
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(apiSourceServer.requestCount).isEqualTo(0)
+        apiSourceServer.shutdown()
+    }
+
+    /** A minimal [APISourceProvider] whose current API source is the first of [urls]. */
+    private class FakeAPISourceProvider(urls: List<String>) : APISourceProvider {
+        private val handles = urls.mapIndexed { index, url ->
+            RemoteConfigSourceHandle(
+                purpose = RemoteConfigSourceHandle.Purpose.API,
+                source = RemoteConfigSource(url = url, priority = index, weight = 1),
+                token = index,
+            )
+        }
+
+        override fun currentAPISource(): RemoteConfigSourceHandle? = handles.firstOrNull()
+    }
+
+    // endregion
 
     @Test
     fun forwardsTheResponseCode() {

@@ -37,9 +37,11 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
+import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
@@ -200,12 +202,24 @@ internal class PurchasesFactory(
             val cache = DeviceCache(prefs, apiKey)
 
             val localeProvider = DefaultLocaleProvider()
+
+            val remoteConfigEnabled = BuildConfig.ENABLE_REMOTE_CONFIG && !appConfig.customEntitlementComputation
+            // The disk cache is only created when remote config is enabled, but the API source provider is
+            // always created: even with remote config disabled it resolves the API base host (falling back to
+            // its embedded defaults), so requests always go through the API source list.
+            val remoteConfigDiskCache = if (remoteConfigEnabled) RemoteConfigDiskCache(contextForStorage) else null
+            val remoteConfigTopicStore = RemoteConfigTopicStore {
+                remoteConfigDiskCache?.read()?.topics?.get(it.wireName)
+            }
+            val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
+
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
                 diagnosticsTracker,
                 signingManager,
                 cache,
+                apiSourceProvider,
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
             )
@@ -274,11 +288,15 @@ internal class PurchasesFactory(
 
             val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
-            val remoteConfigManager = if (BuildConfig.ENABLE_REMOTE_CONFIG && !appConfig.customEntitlementComputation) {
+            val remoteConfigManager = if (remoteConfigDiskCache != null) {
                 RemoteConfigManager(
                     backend = backend,
-                    diskCache = RemoteConfigDiskCache(contextForStorage),
+                    diskCache = remoteConfigDiskCache,
                     blobStore = RemoteConfigBlobStore(contextForStorage),
+                    // Shared with the HTTP client so API base-host resolution and remote-config reads
+                    // draw from the same source provider and on-disk topics.
+                    topicStore = remoteConfigTopicStore,
+                    sourceProvider = apiSourceProvider,
                     // Lets a cold on-demand read self-trigger a sync for the current user (see blobData()).
                     appUserIDProvider = { cache.getCachedAppUserID() },
                 )
