@@ -17,6 +17,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
@@ -85,7 +86,7 @@ internal sealed interface PaywallState {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "TooManyFunctions")
         @Stable
         class Components(
             val stack: ComponentStyle,
@@ -116,6 +117,7 @@ internal sealed interface PaywallState {
              * Default custom variables from the dashboard configuration.
              */
             val defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+            initialWebViewMessageHandler: PaywallWebViewMessageHandler? = null,
             initialLocaleList: LocaleList = LocaleList.current,
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
@@ -187,6 +189,17 @@ internal sealed interface PaywallState {
             }
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
+
+            /**
+             * Optional handler for messages sent by `web_view` components, set via
+             * [com.revenuecat.purchases.ui.revenuecatui.PaywallOptions.Builder.setWebViewMessageHandler].
+             *
+             * Backed by snapshot state and refreshed in place (without rebuilding the paywall state) when
+             * the handler changes on [com.revenuecat.purchases.ui.revenuecatui.PaywallOptions]; see
+             * `PaywallViewModelImpl.updateOptions`.
+             */
+            var webViewMessageHandler by mutableStateOf(initialWebViewMessageHandler)
+                private set
 
             // We find all available device locales with the same country as the storefront country.
             private val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> by lazy {
@@ -331,6 +344,10 @@ internal sealed interface PaywallState {
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
+            }
+
+            fun update(webViewMessageHandler: PaywallWebViewMessageHandler?) {
+                this.webViewMessageHandler = webViewMessageHandler
             }
 
             fun update(selectedPackageUniqueId: String) {
