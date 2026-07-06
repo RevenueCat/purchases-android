@@ -288,6 +288,56 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
     }
 
+    @Test
+    fun `performRequest rearms exhausted API sources on a later request`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // GetCustomerInfo has no endpoint fallback URL, so the first request just fails once sources run out.
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val apiSourceServer2 = MockWebServer()
+        val provider = FakeAPISourceProvider(
+            listOf(server.url("/").toString(), apiSourceServer2.url("/").toString()),
+        )
+        val client = createClient(appConfig = createAppConfig(proxyURL = null), apiSourceProvider = provider)
+
+        try {
+            // First request exhausts every source: both return a server error, leaving no healthy source.
+            enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+            enqueue(
+                endpoint.getPath(),
+                expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR),
+                server = apiSourceServer2,
+            )
+
+            val firstResult = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+            assertThat(firstResult.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
+            assertThat(provider.reportedUrls)
+                .containsExactly(server.url("/").toString(), apiSourceServer2.url("/").toString())
+
+            // The next request rearms the exhausted list and starts over from the first source.
+            enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS))
+
+            val secondResult = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+
+            assertThat(secondResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(server.requestCount).isEqualTo(2)
+        } finally {
+            apiSourceServer2.shutdown()
+        }
+    }
+
     /**
      * An [APISourceProvider] that walks [urls] in order, recording the sources reported unhealthy.
      * Mirrors the real provider's token-based advancement so stale reports are ignored.
@@ -310,6 +360,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 reportedUrls.add(handle.url)
                 index++
             }
+        }
+
+        override fun restartAPISourcesIfExhausted() {
+            if (currentAPISource() == null) index = 0
         }
     }
 

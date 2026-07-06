@@ -50,6 +50,13 @@ internal interface APISourceProvider {
      * No-op if [handle] is no longer the current source (stale/concurrent reports are ignored).
      */
     fun reportUnhealthy(handle: RemoteConfigSourceHandle)
+
+    /**
+     * Rewinds the API sources to the first one, but only if every API source has been reported
+     * unhealthy. Lets a new request start over instead of being permanently stuck with no source
+     * after a transient outage burned through the whole list. No-op while any source is still healthy.
+     */
+    fun restartAPISourcesIfExhausted()
 }
 
 internal interface RemoteConfigSourceProvider : APISourceProvider {
@@ -58,6 +65,10 @@ internal interface RemoteConfigSourceProvider : APISourceProvider {
     fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle?
 
     override fun currentAPISource(): RemoteConfigSourceHandle? = getCurrent(RemoteConfigSourceHandle.Purpose.API)
+
+    override fun restartAPISourcesIfExhausted() {
+        restartIfExhausted(RemoteConfigSourceHandle.Purpose.API)
+    }
 
     /** Falls back to the next source for the handle's purpose. No-op if [handle] is no longer current. */
     override fun reportUnhealthy(handle: RemoteConfigSourceHandle)

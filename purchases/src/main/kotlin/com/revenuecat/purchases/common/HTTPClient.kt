@@ -168,10 +168,19 @@ internal class HTTPClient(
         refreshETag: Boolean = false,
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
+        isInitialAttempt: Boolean = true,
     ): HTTPResult {
         val isMainBackend = fallbackURLIndex == 0
 
-        val apiSourceHandle = currentApiSourceHandle(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
+        // Rearm exhausted API sources only on the initial attempt, never on a retry, so a request made
+        // after a transient outage burned through the whole list starts over from the top instead of
+        // skipping straight to the default host - while retries keep walking the list without re-arming.
+        val apiSourceHandle = currentApiSourceHandle(
+            endpoint,
+            baseURL,
+            isFallbackAttempt = !isMainBackend,
+            rearmExhaustedSources = isInitialAttempt,
+        )
         val requestBaseURL = apiSourceHandle?.url?.let { runCatching { URL(it) }.getOrNull() } ?: baseURL
 
         fun canUseFallback(): Boolean =
@@ -194,6 +203,7 @@ internal class HTTPClient(
                 refreshETag,
                 fallbackBaseURLs,
                 fallbackURLIndex + 1,
+                isInitialAttempt = false,
             )
         }
 
@@ -217,6 +227,7 @@ internal class HTTPClient(
                     refreshETag,
                     fallbackBaseURLs,
                     fallbackURLIndex,
+                    isInitialAttempt = false,
                 )
             }
         }
@@ -279,6 +290,7 @@ internal class HTTPClient(
                 refreshETag = true,
                 fallbackBaseURLs,
                 fallbackURLIndex,
+                isInitialAttempt = false,
             )
         } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode)) {
             // Server error: fail over to the next API source first, then to the endpoint fallback URLs.
@@ -294,16 +306,24 @@ internal class HTTPClient(
      * API sources apply only when this is not an endpoint fallback-host attempt, the endpoint opts in via
      * [Endpoint.usesAPISources], and [baseURL] is still the default host (a proxy or an overridden base URL
      * pins the host and bypasses API sources).
+     *
+     * When [rearmExhaustedSources] is set (i.e. on a request's initial attempt), exhausted API sources are
+     * rewound first, so a request made after a previous one burned through every source starts over from
+     * the top instead of skipping straight to the default host.
      */
     private fun currentApiSourceHandle(
         endpoint: Endpoint,
         baseURL: URL,
         isFallbackAttempt: Boolean,
+        rearmExhaustedSources: Boolean,
     ): RemoteConfigSourceHandle? {
         val eligible = !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
-        return if (eligible) apiSourceProvider?.currentAPISource() else null
+        if (!eligible) return null
+        val provider = apiSourceProvider ?: return null
+        if (rearmExhaustedSources) provider.restartAPISourcesIfExhausted()
+        return provider.currentAPISource()
     }
 
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
