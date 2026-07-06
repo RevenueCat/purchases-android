@@ -279,7 +279,8 @@ internal class PurchasesFactory(
                     backend = backend,
                     diskCache = RemoteConfigDiskCache(contextForStorage),
                     blobStore = RemoteConfigBlobStore(contextForStorage),
-                    // Lets a cold on-demand read self-trigger a sync for the current user (see blobData()).
+                    // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
+                    // the first identity change the manager syncs for the user clearCache() binds instead.
                     appUserIDProvider = { cache.getCachedAppUserID() },
                 )
             } else {

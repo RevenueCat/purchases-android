@@ -107,7 +107,7 @@ internal class IdentityManager(
                         }
                         offeringsCache.clearCache()
                         workflowsCache?.clearCache()
-                        remoteConfigManager?.clearCache()
+                        remoteConfigManager?.clearCache(newAppUserID)
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
@@ -161,7 +161,7 @@ internal class IdentityManager(
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
                         offeringsCache.clearCache()
                         workflowsCache?.clearCache()
-                        remoteConfigManager?.clearCache()
+                        remoteConfigManager?.clearCache(newAppUserID)
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -265,7 +265,7 @@ internal class IdentityManager(
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         offeringsCache.clearCache()
         workflowsCache?.clearCache()
-        remoteConfigManager?.clearCache()
+        remoteConfigManager?.clearCache(newUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)

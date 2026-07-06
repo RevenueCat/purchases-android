@@ -160,7 +160,7 @@ class RemoteConfigManagerTest {
         onSuccess.invoke(null, VerificationResult.VERIFIED)
 
         // Identity change wipes the cache and the in-memory marker, so the next user refreshes immediately.
-        manager.clearCache()
+        manager.clearCache(TEST_APP_USER_ID)
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
@@ -579,7 +579,7 @@ class RemoteConfigManagerTest {
         )
 
         // Identity change: the disable survives (it is an endpoint/app-level fact, not per-user).
-        manager.clearCache()
+        manager.clearCache(TEST_APP_USER_ID)
 
         assertThat(manager.isDisabled).isTrue()
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
@@ -675,7 +675,7 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `clearCache wipes the disk cache, blob store and resolved sources`() {
-        manager.clearCache()
+        manager.clearCache(TEST_APP_USER_ID)
 
         verify(exactly = 1) { diskCache.clear() }
         verify(exactly = 1) { blobStore.clear() }
@@ -696,7 +696,7 @@ class RemoteConfigManagerTest {
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         // Identity change wipes the cache before the in-flight request settles.
-        manager.clearCache()
+        manager.clearCache(TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         // The stale response is dropped (epoch guard): nothing is written over the wiped cache.
@@ -732,7 +732,7 @@ class RemoteConfigManagerTest {
         check(writeEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "persist did not reach diskCache.write" }
 
         // Identity change mid-persist: clearCache must block on the lock persist is holding.
-        val clearThread = thread { manager.clearCache() }
+        val clearThread = thread { manager.clearCache(TEST_APP_USER_ID) }
 
         // While persist holds the lock, the wipe cannot run — the stale config can't be cleared out from under it.
         assertThat(clearEntered.await(BLOCKED_MILLIS, TimeUnit.MILLISECONDS)).isFalse()
@@ -759,7 +759,7 @@ class RemoteConfigManagerTest {
             }
         """.trimIndent()
 
-        manager.clearCache()
+        manager.clearCache(TEST_APP_USER_ID)
         // A brand-new sync (e.g. for the new user) proceeds normally: the guard was released by clearCache.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
@@ -821,6 +821,46 @@ class RemoteConfigManagerTest {
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).containsKey("wf1")
+    }
+
+    @Test
+    fun `an on-demand sync after clearCache uses the newly bound user, not the lagging provider`() = runTest {
+        // The device-cache-backed provider can still return the previous user for a window after an identity
+        // change (the caller caches the new ID only after wiping remote config), but clearCache() binds the new
+        // user atomically with the epoch bump. The on-demand sync this cold read triggers must therefore fetch
+        // for the new user — otherwise it would repopulate the freshly wiped cache with the previous user's
+        // config and bleed it across identities.
+        every { diskCache.read() } returns null
+        val manager = readManager(appUserIDProvider = { "old-user" })
+
+        manager.clearCache("new-user")
+
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            manager.topic(RemoteConfigTopic.Workflows)
+        }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedAppUserID).isEqualTo("new-user")
+
+        // Settle the triggered sync so the parked read completes cleanly.
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        assertThat(read.isCompleted).isTrue()
+    }
+
+    @Test
+    fun `an on-demand sync before any identity change syncs for the bootstrap provider user`() = runTest {
+        // No clearCache() yet, so no identity is bound: the cold read falls back to the provider (the device
+        // cache), which is accurate in this pre-first-change window since no transition is racing.
+        every { diskCache.read() } returns null
+        val manager = readManager(appUserIDProvider = { "bootstrap-user" })
+
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            manager.topic(RemoteConfigTopic.Workflows)
+        }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedAppUserID).isEqualTo("bootstrap-user")
+
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        assertThat(read.isCompleted).isTrue()
     }
 
     @Test
@@ -1106,7 +1146,7 @@ class RemoteConfigManagerTest {
         assertThat(read.isActive).isTrue()
 
         // Identity change unblocks the waiter, which re-reads the now-wiped cache and gives up.
-        manager.clearCache()
+        manager.clearCache(TEST_APP_USER_ID)
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).isNull()
@@ -1205,7 +1245,7 @@ class RemoteConfigManagerTest {
             appUserIDProvider = { TEST_APP_USER_ID },
         )
 
-        val clearer = thread { repeat(STRESS_ITERATIONS) { manager.clearCache() } }
+        val clearer = thread { repeat(STRESS_ITERATIONS) { manager.clearCache(TEST_APP_USER_ID) } }
         val refresher = thread {
             repeat(STRESS_ITERATIONS) {
                 manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
