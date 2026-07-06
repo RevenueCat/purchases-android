@@ -97,7 +97,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Test
     fun `GetRemoteConfig sends the RC format Accept header, skips ETags, and exposes an RC Format payload`() {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
         val containerBytes = byteArrayOf('R'.code.toByte(), 'C'.code.toByte(), 1, 0, 0, 0, 0, 0)
         server.enqueue(MockResponse().setResponseCode(200).setBody(Buffer().write(containerBytes)))
 
@@ -105,6 +105,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val request = server.takeRequest()
         assertThat(request.getHeader("Accept")).isEqualTo("application/x-rc-format")
+        // Advertise the per-element codecs the SDK can decode so the server never sends brotli/zstd.
+        assertThat(request.getHeader("Accept-RC-Element-Encoding")).isEqualTo("gzip")
         // RC Format endpoints are not ETag-cached: no If-None-Match is sent and the cache is bypassed.
         assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isNull()
         verify(exactly = 0) {
@@ -124,7 +126,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val result = spyClient.performRequest(
             baseURL,
-            Endpoint.GetRemoteConfig,
+            Endpoint.GetRemoteConfig("app"),
             body = null,
             postFieldsToSign = null,
             mapOf("" to ""),
@@ -143,7 +145,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         spyClient.performRequest(
             baseURL,
-            Endpoint.GetRemoteConfig,
+            Endpoint.GetRemoteConfig("app"),
             body = null,
             postFieldsToSign = null,
             mapOf("" to ""),

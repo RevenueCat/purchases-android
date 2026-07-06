@@ -38,7 +38,7 @@ class RCContainerBackwardsCompatTest {
     @Test
     fun `single-element fixture parses`() {
         val container = parseFixture("v1_single_element.bin")
-        val blob = RCContainerTestData.ENTITLEMENT_MAPPING_BLOB
+        val blob = RCContainerTestData.WORKFLOW_BLOB
 
         assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
         assertThat(container.contentElements).hasSize(1)
@@ -53,7 +53,7 @@ class RCContainerBackwardsCompatTest {
         val expected = listOf(
             RCContainerTestData.SMALL_BLOB,
             ByteArray(0),
-            RCContainerTestData.ENTITLEMENT_MAPPING_BLOB,
+            RCContainerTestData.WORKFLOW_BLOB,
             RCContainerTestData.LARGE_BLOB,
         )
 
@@ -70,7 +70,7 @@ class RCContainerBackwardsCompatTest {
     @Test
     fun `empty-config fixture parses`() {
         val container = parseFixture("v1_empty_config.bin")
-        val blob = RCContainerTestData.ENTITLEMENT_MAPPING_BLOB
+        val blob = RCContainerTestData.WORKFLOW_BLOB
 
         assertThat(container.config.data.remaining()).isEqualTo(0)
         assertThat(container.contentElements).hasSize(1)
@@ -83,6 +83,22 @@ class RCContainerBackwardsCompatTest {
 
         assertThat(container.flags).isEqualTo(0x07)
         assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
+    }
+
+    @Test
+    fun `gzip-element fixture decodes to the uncompressed blob and verifies`() {
+        val container = parseFixture("v1_gzip_element.bin")
+        val blob = RCContainerTestData.WORKFLOW_BLOB
+
+        assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
+        assertThat(container.contentElements).hasSize(1)
+        val element = container.contentElements[0]
+        assertThat(element.codec).isEqualTo(RCContentEncoding.GZIP.id)
+        // The on-wire body is compressed, but decode() recovers the original and the checksum verifies.
+        assertThat(element.data.readBytes()).isNotEqualTo(blob)
+        assertThat(element.decode().readBytes()).isEqualTo(blob)
+        assertThat(element.isChecksumValid()).isTrue()
+        assertThat(container.elements[RCContainerTestData.refOf(blob)]!!.decode().readBytes()).isEqualTo(blob)
     }
 
     @Test

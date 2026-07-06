@@ -406,11 +406,10 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     // region RC Container Format verification
 
     @Test
-    fun `performRequest verifies an RC Container Format response over the config checksum`() {
-        val endpoint = Endpoint.GetRemoteConfig
+    fun `performRequest verifies an RC Container Format response over the config part bytes`() {
+        val endpoint = Endpoint.GetRemoteConfig("app")
         val configBytes = "{\"config\":true}".toByteArray()
         val container = buildContainer(configBytes)
-        val expectedChecksum = sha256Truncated(configBytes)
 
         mockSigningResult(VerificationResult.VERIFIED)
         enqueueRCFormat(container)
@@ -423,16 +422,19 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             requestHeaders = emptyMap()
         )
 
-        server.takeRequest()
+        val recordedRequest = server.takeRequest()
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
         assertThat(result.payload).isInstanceOf(HTTPResult.Payload.RCFormat::class.java)
+        // The endpoint requires a nonce, so it is sent on the request and covered by the signature.
+        assertThat(recordedRequest.getHeader("X-Nonce")).isEqualTo("test-nonce")
+        // The signed payload is the config part bytes exactly as received, not the element checksum.
         verify(exactly = 1) {
             mockSigningManager.verifyResponse(
                 urlPath = endpoint.getPath(),
                 "test-signature",
-                null,
-                match<ByteArray> { it.contentEquals(expectedChecksum) },
+                "test-nonce",
+                match<ByteArray> { it.contentEquals(configBytes) },
                 "1234567890",
                 "test-etag",
                 postFieldsToSignHeader = null
@@ -441,10 +443,11 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `performRequest fails RC Format verification when the config data does not match its checksum`() {
-        val endpoint = Endpoint.GetRemoteConfig
+    fun `performRequest verifies the config part bytes regardless of the element checksum`() {
+        val endpoint = Endpoint.GetRemoteConfig("app")
         val configBytes = "{\"config\":true}".toByteArray()
-        // Store a checksum that does not match the config data.
+        // The element checksum is an untrusted lookup hint: a mismatch must not affect verification, which is
+        // anchored on the signature over the config part bytes.
         val container = buildContainer(configBytes, configChecksum = ByteArray(24) { 0x7F })
 
         mockSigningResult(VerificationResult.VERIFIED)
@@ -460,13 +463,23 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         server.takeRequest()
 
-        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
-        assertSigningNotPerformed()
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = endpoint.getPath(),
+                "test-signature",
+                "test-nonce",
+                match<ByteArray> { it.contentEquals(configBytes) },
+                "1234567890",
+                "test-etag",
+                postFieldsToSignHeader = null
+            )
+        }
     }
 
     @Test
     fun `performRequest fails RC Format verification when the response is not a valid RC Container`() {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
 
         mockSigningResult(VerificationResult.VERIFIED)
         enqueueRCFormat(byteArrayOf(1, 2, 3, 4))
@@ -488,7 +501,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     @Test
     fun `performRequest on enforced client throws when RC Format verification fails`() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig("app")
         val container = buildContainer("{\"config\":true}".toByteArray())
 
         mockSigningResult(VerificationResult.FAILED)
@@ -506,8 +519,8 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `performRequest skips RC Format verification and returns VERIFIED for a 204 empty response`() {
-        val endpoint = Endpoint.GetRemoteConfig
+    fun `performRequest verifies a 204 empty response over the request context with an empty body`() {
+        val endpoint = Endpoint.GetRemoteConfig("app")
 
         mockSigningResult(VerificationResult.VERIFIED)
         enqueueRCFormat(ByteArray(0), responseCode = RCHTTPStatusCodes.NO_CONTENT)
@@ -524,7 +537,37 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NO_CONTENT)
         assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
-        assertSigningNotPerformed()
+        // A 204 has no body, so the signed payload is the request context plus an empty body.
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = endpoint.getPath(),
+                "test-signature",
+                "test-nonce",
+                match<ByteArray> { it.isEmpty() },
+                "1234567890",
+                "test-etag",
+                postFieldsToSignHeader = null
+            )
+        }
+    }
+
+    @Test
+    fun `performRequest on enforced client throws when a 204 fails verification`() {
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
+        val endpoint = Endpoint.GetRemoteConfig("app")
+
+        mockSigningResult(VerificationResult.FAILED)
+        enqueueRCFormat(ByteArray(0), responseCode = RCHTTPStatusCodes.NO_CONTENT)
+
+        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = emptyMap()
+            )
+        }
     }
 
     // endregion

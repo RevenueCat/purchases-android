@@ -13,9 +13,8 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
-import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -109,10 +108,12 @@ internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias RewardVerificationResultCallback =
-    Pair<(RewardVerificationResult) -> Unit, (RewardVerificationError) -> Unit>
+    Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
-internal typealias RemoteConfigCallback =
-    Pair<(RCContainer?, VerificationResult) -> Unit, (PurchasesError) -> Unit>
+internal typealias RemoteConfigCallback = Pair<
+    (RCContainer?, VerificationResult) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
+    >
 
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias WorkflowDetailCallback = Pair<
@@ -139,6 +140,15 @@ internal enum class GetOfferingsErrorHandlingBehavior {
 internal enum class GetWorkflowsErrorHandlingBehavior {
     SHOULD_FALLBACK_TO_CACHED_WORKFLOWS,
     SHOULD_NOT_FALLBACK,
+}
+
+internal enum class GetRemoteConfigErrorHandlingBehavior {
+    // 5xx, transport, or parse failures: the endpoint may recover, keep retrying on future syncs.
+    SHOULD_RETRY,
+
+    // A 4xx client error: the endpoint intentionally refused the request (bad shape, feature not provisioned,
+    // auth rejection). Stop hitting it for the rest of the session.
+    SHOULD_DISABLE,
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -1239,7 +1249,7 @@ internal class Backend(
     fun getRewardVerificationResult(
         appUserID: String,
         clientTransactionId: String,
-        onSuccess: (RewardVerificationResult) -> Unit,
+        onSuccess: (RewardVerificationPollStatus) -> Unit,
         onError: (RewardVerificationError) -> Unit,
     ) {
         val endpoint = Endpoint.GetRewardVerification(
@@ -1277,7 +1287,7 @@ internal class Backend(
                             val response = json.decodeFromString<RewardVerificationResponse>(
                                 result.payloadText,
                             )
-                            onSuccessHandler(response.toRewardVerificationResult())
+                            onSuccessHandler(response.toRewardVerificationPollStatus())
                         } catch (e: SerializationException) {
                             onErrorHandler(
                                 RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
@@ -1318,23 +1328,19 @@ internal class Backend(
         manifest: String?,
         prefetchedBlobs: List<String>,
         onSuccess: (RCContainer?, VerificationResult) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig(domain)
         val path = endpoint.getPath()
-        // Include the app user in the key: the path is static but the request body carries app_user_id, so
-        // concurrent calls for different users must not be deduped onto a single shared request.
+        // Include the app user in the key: the path carries the domain but not the app_user_id (sent in the
+        // request body), so concurrent calls for different users must not be deduped onto a single shared request.
         val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path, appUserID), appInBackground)
 
-        val overrideURL = BuildConfig.REMOTE_CONFIG_BASE_URL
-            .takeIf { it.isNotEmpty() && appConfig.isDebugBuild }
-            ?.let { runCatching { URL(it) }.getOrNull() }
-        val baseURL = overrideURL ?: appConfig.baseURL
-        val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+        val baseURL = appConfig.baseURL
+        val fallbackBaseURLs = appConfig.fallbackBaseURLs
         // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
         val body = buildMap<String, Any?> {
             put(APP_USER_ID, appUserID)
-            put("domain", domain)
             manifest?.let { put("manifest", it) }
             put("prefetched_blobs", prefetchedBlobs)
         }
@@ -1355,7 +1361,8 @@ internal class Backend(
                 synchronized(this@Backend) {
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    // Transport/IO failure: no HTTP status, the endpoint may recover on a future sync.
+                    onErrorHandler(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
                 }
             }
 
@@ -1376,16 +1383,31 @@ internal class Backend(
                                     PurchasesErrorCode.UnknownError,
                                     "Expected an RC Container Format payload for remote config.",
                                 ).also { errorLog(it) },
+                                // A 2xx with an unexpected payload is not a client error; keep retrying.
+                                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
                             )
                             return@forEach
                         }
                         try {
                             onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
                         } catch (e: RCContainerFormatException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                            // Parse failure of an otherwise-successful response; keep retrying.
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+                            )
                         }
                     } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                        // A 4xx means the endpoint intentionally refused: disable it for the session. Any other
+                        // non-success (5xx) may recover, so keep retrying.
+                        val isClientError = !RCHTTPStatusCodes.isSuccessful(result.responseCode) &&
+                            !RCHTTPStatusCodes.isServerError(result.responseCode)
+                        val behavior = if (isClientError) {
+                            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE
+                        } else {
+                            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, behavior)
                     }
                 }
             }

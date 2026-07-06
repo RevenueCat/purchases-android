@@ -3,7 +3,7 @@ package com.revenuecat.purchases.common.backend
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.RewardVerificationResult
+import com.revenuecat.purchases.RewardVerificationPollStatus
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -84,7 +84,7 @@ class BackendGetRewardVerificationResultTest {
             payload = """{"status":"verified","reward":{"type":"virtual_currency","code":"coins","amount":10}}""",
         )
 
-        var receivedResult: RewardVerificationResult? = null
+        var receivedResult: RewardVerificationPollStatus? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
@@ -93,7 +93,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationResult.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+            RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
         )
         verify(exactly = 1) {
             httpClient.performRequest(
@@ -110,7 +110,7 @@ class BackendGetRewardVerificationResultTest {
     fun `getRewardVerificationResult maps unknown statuses`() {
         mockHttpResult(payload = """{"status":"new_status"}""")
 
-        var receivedResult: RewardVerificationResult? = null
+        var receivedResult: RewardVerificationPollStatus? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
@@ -118,14 +118,14 @@ class BackendGetRewardVerificationResultTest {
             onError = { error -> fail("Expected success. Got error: $error") },
         )
 
-        assertThat(receivedResult).isEqualTo(RewardVerificationResult.UNKNOWN)
+        assertThat(receivedResult).isEqualTo(RewardVerificationPollStatus.UNKNOWN)
     }
 
     @Test
     fun `getRewardVerificationResult maps unsupported reward payload`() {
         mockHttpResult(payload = """{"status":"verified","reward":{"type":"new_type"}}""")
 
-        var receivedResult: RewardVerificationResult? = null
+        var receivedResult: RewardVerificationPollStatus? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
@@ -134,7 +134,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationResult.Verified(VerifiedReward.UnsupportedReward),
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
         )
     }
 
@@ -142,7 +142,7 @@ class BackendGetRewardVerificationResultTest {
     fun `getRewardVerificationResult maps malformed virtual currency reward payload`() {
         mockHttpResult(payload = """{"status":"verified","reward":{"type":"virtual_currency","code":"","amount":0}}""")
 
-        var receivedResult: RewardVerificationResult? = null
+        var receivedResult: RewardVerificationPollStatus? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
@@ -151,7 +151,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationResult.Verified(VerifiedReward.UnsupportedReward),
+            RewardVerificationPollStatus.Verified(VerifiedReward.UnsupportedReward),
         )
     }
 
@@ -161,7 +161,7 @@ class BackendGetRewardVerificationResultTest {
             payload = """{"status":"verified","reward":null}""",
         )
 
-        var receivedResult: RewardVerificationResult? = null
+        var receivedResult: RewardVerificationPollStatus? = null
         backend.getRewardVerificationResult(
             appUserID = appUserId,
             clientTransactionId = clientTransactionId,
@@ -170,7 +170,7 @@ class BackendGetRewardVerificationResultTest {
         )
 
         assertThat(receivedResult).isEqualTo(
-            RewardVerificationResult.Verified(VerifiedReward.NoReward),
+            RewardVerificationPollStatus.Verified(VerifiedReward.NoReward),
         )
     }
 

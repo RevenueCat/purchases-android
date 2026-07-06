@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 import android.util.Base64
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
+import java.util.zip.GZIPOutputStream
 
 /**
  * Shared builders and fixture definitions for RC Container Format tests.
@@ -18,54 +19,56 @@ internal object RCContainerTestData {
     const val FIXTURE_DIR = "rc_container"
 
     /**
-     * A representative `/v1/config` payload, modeled on `get_remote_config_success.json`. Stored as
-     * the config element (element 0) of most fixtures so they resemble real wire data.
+     * Arbitrary placeholder workflow blobs, the kind of static content the config below references by ref.
+     * The exact shape is not asserted anywhere; they only need stable bytes so their content-address is stable.
+     * Declared before [CONFIG_JSON_TEXT] because that payload embeds their content-addresses (via [refOf]).
+     */
+    // language=json
+    private val WORKFLOW_BLOB_TEXT: String = """
+        {
+          "id": "wf1234",
+          "steps": [ { "type": "paywall", "offering": "default" } ]
+        }
+    """.trimIndent()
+
+    val WORKFLOW_BLOB: ByteArray = WORKFLOW_BLOB_TEXT.toByteArray()
+
+    // language=json
+    private val SUMMER_WORKFLOW_BLOB_TEXT: String = """
+        {
+          "id": "wf5678",
+          "steps": [ { "type": "paywall", "offering": "summerCampaign" } ]
+        }
+    """.trimIndent()
+
+    val SUMMER_WORKFLOW_BLOB: ByteArray = SUMMER_WORKFLOW_BLOB_TEXT.toByteArray()
+
+    /**
+     * A representative `/v1/config` payload, modeled on `get_remote_config_success.json`. Stored as the config
+     * element (element 0) of most fixtures so they resemble real wire data.
+     *
+     * Uses the `workflows` topic: each item is keyed by the workflow `rc_public_id` and carries an inline
+     * `offering_identifier` (the human-readable offering ID) plus a `blob_ref` pointing at the workflow's static
+     * blob. The refs below are the real content-addresses of [WORKFLOW_BLOB] / [SUMMER_WORKFLOW_BLOB], so a
+     * container that inlines those blobs round-trips through the manager end-to-end.
      */
     // language=json
     private val CONFIG_JSON_TEXT: String = """
         {
-          "api_sources": [
-            {
-              "id": "primary",
-              "url": "https://api.revenuecat.com/",
-              "priority": 0,
-              "weight": 100
-            }
-          ],
-          "blob_sources": [
-            {
-              "id": "cloudfront-primary",
-              "url_format": "https://assets.revenuecat.com/rc_app_1234/{blob_ref}",
-              "priority": 0,
-              "weight": 100
-            }
-          ],
-          "manifest": {
-            "topics": {
-              "product_entitlement_mapping": {
-                "DEFAULT": {
-                  "blob_ref": "6a4d0f53d9f6b8e2f4dca0fd1c7c4f5e3e1b1ef0f45d989e2f8f8d0d91ec1b6a"
-                }
-              }
+          "domain": "app",
+          "manifest": "v1.1710000000.workflows:etag1",
+          "active_topics": ["workflows"],
+          "prefetch_blobs": ["${refOf(WORKFLOW_BLOB)}"],
+          "topics": {
+            "workflows": {
+              "wf1234": { "offering_identifier": "default", "blob_ref": "${refOf(WORKFLOW_BLOB)}" },
+              "wf5678": { "offering_identifier": "summerCampaign", "blob_ref": "${refOf(SUMMER_WORKFLOW_BLOB)}" }
             }
           }
         }
     """.trimIndent()
 
     val CONFIG_JSON: ByteArray = CONFIG_JSON_TEXT.toByteArray()
-
-    /** A JSON-ish content blob, the kind of thing the config above would reference by ref. */
-    // language=json
-    private val ENTITLEMENT_MAPPING_TEXT: String = """
-        {
-          "products": {
-            "monthly": ["pro"],
-            "annual": ["pro", "plus"]
-          }
-        }
-    """.trimIndent()
-
-    val ENTITLEMENT_MAPPING_BLOB: ByteArray = ENTITLEMENT_MAPPING_TEXT.toByteArray()
 
     /** A >255-byte body, so its size encodes across multiple little-endian bytes (0x2C 0x01 = 300). */
     val LARGE_BLOB: ByteArray = ByteArray(300) { (it % 256).toByte() }
@@ -86,17 +89,17 @@ internal object RCContainerTestData {
         RCContainerFixture(
             fileName = "v1_single_element.bin",
             config = CONFIG_JSON,
-            elements = listOf(ENTITLEMENT_MAPPING_BLOB),
+            elements = listOf(WORKFLOW_BLOB),
         ),
         RCContainerFixture(
             fileName = "v1_multiple_elements.bin",
             config = CONFIG_JSON,
-            elements = listOf(SMALL_BLOB, ByteArray(0), ENTITLEMENT_MAPPING_BLOB, LARGE_BLOB),
+            elements = listOf(SMALL_BLOB, ByteArray(0), WORKFLOW_BLOB, LARGE_BLOB),
         ),
         RCContainerFixture(
             fileName = "v1_empty_config.bin",
             config = ByteArray(0),
-            elements = listOf(ENTITLEMENT_MAPPING_BLOB),
+            elements = listOf(WORKFLOW_BLOB),
         ),
         RCContainerFixture(
             fileName = "v1_flags_set.bin",
@@ -106,17 +109,34 @@ internal object RCContainerTestData {
         RCContainerFixture(
             fileName = "v1_duplicate_elements.bin",
             config = CONFIG_JSON,
-            elements = listOf(ENTITLEMENT_MAPPING_BLOB, ENTITLEMENT_MAPPING_BLOB.copyOf()),
+            elements = listOf(WORKFLOW_BLOB, WORKFLOW_BLOB.copyOf()),
+        ),
+        RCContainerFixture(
+            fileName = "v1_gzip_element.bin",
+            config = CONFIG_JSON,
+            elements = listOf(WORKFLOW_BLOB),
+            // Element index 1 (the content blob) is gzipped on the wire; config (index 0) stays uncompressed.
+            codecForIndex = { index -> if (index == 1) RCContentEncoding.GZIP.id else RCContentEncoding.NONE.id },
         ),
     )
 
-    /** Serializes a fixture/spec to RC Container Format v1 bytes. */
+    /**
+     * Serializes a fixture/spec to RC Container Format v1 bytes.
+     *
+     * [elements]/[config] are the **uncompressed** payloads. [codecForIndex] picks a codec id per element
+     * (index 0 is the config); when it returns [RCContentEncoding.GZIP] the body is gzipped on the wire while
+     * the checksum still covers the uncompressed bytes (so the content-address is unchanged). Any other codec
+     * id is written verbatim into the reserved low byte with the raw (un-encoded) body, for unsupported-codec
+     * tests.
+     */
     fun buildContainer(
         version: Int = 1,
         flags: Int = 0,
         config: ByteArray = ByteArray(0),
         elements: List<ByteArray> = emptyList(),
         checksumOverride: ((index: Int, element: ByteArray) -> ByteArray)? = null,
+        codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
+        reservedForIndex: ((index: Int) -> Long)? = null,
     ): ByteArray {
         val out = ByteArrayOutputStream()
         out.write('R'.code)
@@ -128,13 +148,24 @@ internal object RCContainerTestData {
         // Element 0 is always the config, followed by the content elements.
         val allElements = listOf(config) + elements
         allElements.forEachIndexed { index, element ->
+            val codec = codecForIndex(index)
             val checksum = checksumOverride?.invoke(index, element) ?: sha256(element)
+            val onWire = if (codec == RCContentEncoding.GZIP.id) gzip(element) else element
+            // The reserved u32's low byte is the codec id; reservedForIndex lets tests set the upper bits.
+            val reserved = reservedForIndex?.invoke(index) ?: (codec.toLong() and 0xFF)
             out.write(checksum)
-            out.writeUInt32(element.size)
-            out.writeUInt32(0) // element reserved
-            out.write(element)
+            out.writeUInt32(onWire.size)
+            out.writeUInt32(reserved.toInt())
+            out.write(onWire)
             out.padTo8()
         }
+        return out.toByteArray()
+    }
+
+    /** Gzip-compresses [data] (matches the wire format the backend produces for the GZIP codec). */
+    fun gzip(data: ByteArray): ByteArray {
+        val out = ByteArrayOutputStream()
+        GZIPOutputStream(out).use { it.write(data) }
         return out.toByteArray()
     }
 
@@ -143,6 +174,7 @@ internal object RCContainerTestData {
         flags = fixture.flags,
         config = fixture.config,
         elements = fixture.elements,
+        codecForIndex = fixture.codecForIndex,
     )
 
     /** Content-addressed ref: SHA-256 truncated to 24 bytes, URL-safe base64 (no padding). */
@@ -174,4 +206,5 @@ internal class RCContainerFixture(
     val flags: Int = 0,
     val config: ByteArray,
     val elements: List<ByteArray> = emptyList(),
+    val codecForIndex: (index: Int) -> Int = { RCContentEncoding.NONE.id },
 )
