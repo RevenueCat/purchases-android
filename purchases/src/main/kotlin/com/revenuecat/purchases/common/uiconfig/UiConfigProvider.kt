@@ -1,8 +1,10 @@
-package com.revenuecat.purchases.common.remoteconfig
+package com.revenuecat.purchases.common.uiconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
